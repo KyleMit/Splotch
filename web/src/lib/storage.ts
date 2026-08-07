@@ -184,11 +184,11 @@ export async function hydrateDurableStorage() {
     const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
     const backups: Promise<unknown>[] = [];
     hydrationKeys.forEach((key, i) => {
-      const local = localStorage.getItem(key);
+      const local = safeStorageRead(() => localStorage.getItem(key), null);
       const { value } = durable[i];
       const action = reconcileStorageValues(local, value);
       if (action.restore !== undefined) {
-        localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
+        safeStorageMutation(() => localStorage.setItem(key, action.restore)); // WebView lost it — recover from durable store
         restored = true;
       } else if (action.backup !== undefined) {
         backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value

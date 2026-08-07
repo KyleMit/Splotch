@@ -49,50 +49,6 @@ a success. Nobody files a bug against a number; they just make decisions on it.
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] `hydrateDurableStorage` bypasses the module's own safe localStorage wrappers, so one throw aborts the whole restore
-
-**File(s):** `web/src/lib/storage.ts` (`hydrateDurableStorage`, lines 179–208; raw reads/writes at
-187 and 191) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-The first half of this file exists because "localStorage.setItem can throw — QuotaExceededError …
-SecurityError" (lines 34–38) and "merely touching the `localStorage` global raises SecurityError"
-(lines 51–55). Yet the restore loop touches localStorage raw:
-
-```ts
-hydrationKeys.forEach((key, i) => {
-  const local = localStorage.getItem(key);
-  ...
-  if (action.restore !== undefined) {
-    localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
-```
-
-A throw from either call propagates out of the `forEach`, is swallowed by
-`runWithDurablePreferences`'s blanket `catch` (line 89), and silently abandons every remaining key —
-no restore, no backup, no warning. The bitter irony: iOS storage pressure is both the scenario this
-function exists to recover from *and* a scenario where `setItem` throws `QuotaExceededError`. The
-keys that happen to sort after the failing one just stay lost, and nothing distinguishes this from a
-clean run (the partial `restored` flag still fires `notifyDurableRestore`).
-
-#### Proposed solution
-
-Use the module's own `safeStorageRead`/`safeStorageMutation` inside the loop:
-
-```ts
-const local = safeStorageRead(() => localStorage.getItem(key), null);
-...
-safeStorageMutation(() => localStorage.setItem(key, action.restore));
-```
-
-Per-key failures then degrade to a warn-once console message while every other key still reconciles.
-One subtlety: a failed `setItem` should ideally not count toward `restored` for that key, but the
-existing warn-once machinery doesn't report per-call success — keeping `restored = true` (stores
-re-read and fall back to defaults for the lost key) is acceptable and simpler. Extend
-`storage.test.ts`'s throwing-localStorage suite with a native hydrate case.
-
 ### [Correctness] A failed orientation lock latches `lastRequested`, permanently suppressing same-target retries for the session
 
 **File(s):** `web/src/lib/orientation.ts` (`applyDeviceOrientationPreference`, lines 11, 29–30,
