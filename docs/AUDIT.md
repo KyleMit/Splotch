@@ -44,35 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] model-eval-gen-inputs builds a data URI with the invalid MIME `image/*`
-
-**File(s):** `scripts/model-eval-gen-inputs.mjs` (line 87) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-```js
-const dataUri = `data:image/*;base64,${raw.toString('base64')}`;
-```
-
-`image/*` is a media-type *range*, not a media type — it is not valid in a data URI. The script
-works today only because Chromium content-sniffs the payload, an implementation kindness the spec
-doesn't promise (Firefox, for one, refuses to render `data:image/*` URIs). The repo already owns a
-format detector — `imageFormat(buffer)` in `scripts/lib/model-eval.mjs` (imported by
-`model-eval-run.mjs` at line 31 for exactly this: distinguishing png/jpeg from magic bytes) — so the
-correct MIME is one call away.
-
-#### Proposed solution
-
-```js
-const fmt = imageFormat(raw); // 'png' | 'jpeg' | …
-const dataUri = `data:image/${fmt === 'jpeg' ? 'jpeg' : 'png'};base64,${raw.toString('base64')}`;
-```
-
-(or reject/log when `imageFormat` can't identify the payload, which today would surface as an opaque
-`img.onerror`).
-
 ### [Correctness] status.mjs labels invalid drops as "completed", the exact conflation burndown.mjs warns against
 
 **File(s):** `scripts/audit-burndown/status.mjs` (lines 25–40) @ f5bf8767;
