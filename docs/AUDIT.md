@@ -52,43 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Types] `payloadStore`'s narrowed schema silently mistypes the master-key row — document or restructure the dual-schema trick
-
-**File(s):** `web/src/lib/secureStorage.ts` (`SecureDb`/`SecretPayloadDb` lines 34–46,
-`getDb`/`payloadStore` lines 61–62) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-The same IndexedDB store is typed two different ways: `getDb` sees `SecureDb`
-(`value: CryptoKey | SecretPayload` — the truth: the store holds both the master key and secret
-payloads), while `payloadStore` sees `SecretPayloadDb` (`value: SecretPayload` — a lie for the
-`master-key` row):
-
-```ts
-const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
-const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
-```
-
-The narrowing is a type assertion in module form — nothing stops `payloadStore.get(MASTER_KEY_ROW)`
-from typechecking as `SecretPayload | undefined` while returning a `CryptoKey` at runtime. Today it
-happens to be safe because secret names never collide with `'master-key'` and `webLoad` (lines
-128–134) runtime-validates with `isSecretPayload` anyway — but neither the safety argument nor the
-reason for two schemas is written down, in a file that otherwise explains every non-obvious decision
-at length. Per the conventions, an unvalidated-looking narrow at a non-boundary needs either removal
-or a WHY.
-
-#### Proposed solution
-
-Cheapest: a two-line comment on `SecretPayloadDb`/`payloadStore` stating the contract — "same store
-as SecureDb, narrowed to the secret rows; safe because the secret name (`API_KEY`) never equals
-`MASTER_KEY_ROW`, and webLoad still runtime-validates" — plus noting the payoff (put() through
-`payloadStore` cannot write a CryptoKey). Stronger: type `payloadStore` against `SecureDb` and let
-`webLoad`'s existing `isSecretPayload` guard do the narrowing; that deletes `SecretPayloadDb`
-entirely at the cost of a wider `put` signature. Either resolves the silent mismatch; the comment
-route preserves the current (real) typing benefit.
-
 ## Documentation that actively misdirects
 
 Not cosmetic doc rot. Each of these is read by an agent or a contributor *as instruction* and sends

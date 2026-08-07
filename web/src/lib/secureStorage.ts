@@ -59,6 +59,9 @@ const getPlugin = lazyPluginModule(() =>
 
 // --- web: IndexedDB via idb (also lazy) ---
 const getDb = lazyIdbDatabase<SecureDb>(DB_NAME, STORE);
+// This views SecureDb's physical store only through named secret-payload rows: webSave, webLoad,
+// and webClear receive the secret name, while MASTER_KEY_ROW stays exclusively on getDb. webLoad
+// still validates persisted data, and the narrow put type prevents payload-path writes of CryptoKey.
 const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
 
 function isSecretPayload(value: unknown): value is SecretPayload {
