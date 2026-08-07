@@ -282,6 +282,33 @@ describe('hydrateDurableStorage', () => {
     expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('recovered');
   });
 
+  it('reports no restore, and notifies nobody, when every restoring setItem throws', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.theme, 'lost-theme');
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'lost-width');
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const notified = vi.fn();
+    const off = onDurableRestore(notified);
+    let restored: boolean;
+    try {
+      restored = await hydrateDurableStorage();
+    } finally {
+      off();
+      setItem.mockRestore();
+      warn.mockRestore();
+    }
+
+    // localStorage changed zero times, so claiming a restore would make every
+    // registered store re-read values that were never written.
+    expect(restored).toBe(false);
+    expect(notified).not.toHaveBeenCalled();
+    expect(localStorage.getItem(STORAGE_KEYS.theme)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBeNull();
+  });
+
   it('reconciles the remaining keys when a reading getItem throws', async () => {
     ctrl.native = true;
     localStorage.setItem(STORAGE_KEYS.drawerOpen, 'keep');
