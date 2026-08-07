@@ -24,8 +24,6 @@ section are not comparable — the drain re-sorted across sections on severity. 
 issues #774–#785; see the 2026-08-05 `vet-audits` entry in `docs/AUDIT-LOG.md`. No P1 remains in
 this file.
 
-## Source: Code audit — Core UI controls
-
 ## Source: Code audit — Gestures / Svelte actions
 
 ### [Correctness] modalDialog leaves stale `--origin-x/y` behind for a later unanchored open

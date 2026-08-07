@@ -4,7 +4,22 @@
 > [#821](https://github.com/KyleMit/Splotch/pull/821) · Bulk-burn the `docs/AUDIT.md` backlog with
 > `scripts/audit-burndown/burndown.mjs`, running unattended.
 
-## Current state
+## Current state — wrapped up, resumable
+
+Wrapped on request after **20 fixed · 0 dropped · 1 deferred**; backlog 367 → 346 (canary 5 + full
+run 15). Nothing is in flight, `HEAD` == `origin/<branch>`, the comment store is drained, and
+`capture` reports `skipped 20 already posted` against 20 fixes. The counts close against git:
+commit-derived deferrals (1) and drops (0) agree independently, and
+`367 − 21 consumed == 346 ==
+pop.mjs --count`.
+
+Continue by relaunching with the command above — or, if PR #821 has merged by then, fork a fresh
+branch from the new `main` and open a new PR, because a merged PR cannot track new work.
+
+**Still owed on relaunch:** re-check whether GitHub Actions has recovered (see below). If it has, CI
+resumes as the cross-finding backstop and the periodic local full-suite runs can stop.
+
+## Origin
 
 Fresh campaign forked from `origin/main` at b8f7013283f8e3e5aa9337b7cc0a8e7450385947. The previous
 packet (`audit-burndown-427.md`) was **spent** — its PR
