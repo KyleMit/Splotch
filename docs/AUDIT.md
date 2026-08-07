@@ -52,47 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Types] playwright.shared.ts config objects bypass excess-property checking when spread
-
-**File(s):** `web/playwright.shared.ts` (`commonPlaywrightConfig` lines 6–11, `commonWebServer`
-lines 55–86) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-Both shared objects are plain untyped literals:
-
-```ts
-export const commonPlaywrightConfig = {
-  testDir: './tests',
-  globalSetup: './tests/global-setup.ts',
-  fullyParallel: true,
-  use: { baseURL: playwrightBaseURL },
-};
-```
-
-They only ever reach Playwright via spreads (`...commonPlaywrightConfig` in
-`playwright.config.ts:149` and `playwright.webkit-scratch.config.ts:12`; `...commonWebServer` in the
-`webServer` blocks) — and TypeScript's excess-property check does **not** apply to spread-introduced
-properties. A typo'd key here (`globalSteup`, `fullyParallell`) compiles clean in every consumer and
-is silently ignored by Playwright at runtime — the exact failure mode the repo's "close finite value
-sets in the type" convention exists to prevent, and the setup keys govern real behavior (a dropped
-`globalSetup` just makes DEV_SERVER runs flaky).
-
-#### Proposed solution
-
-Constrain the declarations at the source with `satisfies`:
-
-```ts
-import type { PlaywrightTestConfig } from '@playwright/test';
-export const commonPlaywrightConfig = { ... } satisfies PlaywrightTestConfig;
-export const commonWebServer = { ... } satisfies Partial<NonNullable<PlaywrightTestConfig['webServer']>> & { url: string };
-```
-
-`satisfies` keeps the narrow inferred type (so `use.baseURL` stays a `string` literal type for
-consumers) while making unknown keys a compile error.
-
 ### [Types] `payloadStore`'s narrowed schema silently mistypes the master-key row — document or restructure the dual-schema trick
 
 **File(s):** `web/src/lib/secureStorage.ts` (`SecureDb`/`SecretPayloadDb` lines 34–46,

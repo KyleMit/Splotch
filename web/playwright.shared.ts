@@ -1,3 +1,5 @@
+import type { PlaywrightTestConfig } from '@playwright/test';
+
 import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
 
 export const playwrightPort = 4173;
@@ -8,7 +10,7 @@ export const commonPlaywrightConfig = {
   globalSetup: './tests/global-setup.ts',
   fullyParallel: true,
   use: { baseURL: playwrightBaseURL },
-};
+} satisfies PlaywrightTestConfig;
 
 export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort}`;
 const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS = 180_000;
@@ -83,4 +85,6 @@ export const commonWebServer = {
     GITHUB_ISSUE_TOKEN: '',
     GITHUB_ISSUE_REPO: NOWHERE_ISSUE_REPO,
   },
+} satisfies Partial<NonNullable<PlaywrightTestConfig['webServer']>> & {
+  url: string;
 };
