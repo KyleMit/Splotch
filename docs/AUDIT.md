@@ -28,41 +28,6 @@ this file.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Correctness] pinchZoom writes a non-normalized identity transform on every plain tap (and while disabled)
-
-**File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`apply` lines 174–178, `onPointerUp` lines
-213–218) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-`apply()` writes unconditionally:
-
-```ts
-if (target) target.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
-```
-
-`onPointerUp` always calls `apply(getOptions().target)` (line 216) — including after a simple tap
-that never zoomed, and (per the deliberate comment at line 212) even after `enabled` flipped false
-mid-gesture, i.e. right after the reset `$effect` wrote `''`. So the "un-zoomed" state has two
-on-DOM representations: `''` and `translate(0px, 0px) scale(1)`. The non-empty inline transform
-creates a containing block/stacking context the reset state doesn't have, and makes DOM assertions
-("transform cleared") flaky-by-design. The sibling `pinchTextZoom` already normalizes:
-`target.style.zoom = zoom === MIN_TEXT_ZOOM ? '' : String(zoom)` (line 57).
-
-#### Proposed solution
-
-Normalize in `apply()` the way `pinchTextZoom` does:
-
-```ts
-const identity = t.scale === MIN_SCALE && t.x === 0 && t.y === 0;
-target.style.transform = identity ? '' : `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
-```
-
-That keeps the line-212 release path intact while collapsing the two rest-state representations into
-one.
-
 ### [Correctness] modalDialog leaves stale `--origin-x/y` behind for a later unanchored open
 
 **File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 113–128) @ 9ae62ff1
