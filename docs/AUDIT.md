@@ -58,43 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Maintainability] Audit skills link `audit-conventions.md` with a path that is broken in the `.agents/` tree (and inside `.ruler/` itself)
-
-**File(s):** `.ruler/skills/code-audit/SKILL.md` (line 63), `.ruler/skills/extract-audit/SKILL.md`
-(line 53), `.ruler/skills/lighthouse-audit/SKILL.md` (line 112),
-`.ruler/skills/session-audit/SKILL.md` (line 175), `.ruler/skills/dependency-health-audit/SKILL.md`
-(line 229), `.ruler/skills/dependency-update-audit/SKILL.md` (lines 28 vs 125),
-`.ruler/skills/workflow-audit/SKILL.md` (line 118) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-Skills are copied verbatim into **both** `.claude/skills/<name>/` and `.agents/skills/<name>/`
-(agent-files.md lines 10–11). Six audit skills link the shared conventions as
-`[`.claude/audit-conventions.md`](../../audit-conventions.md)`. That relative path only resolves
-from `.claude/skills/<name>/`; from `.agents/skills/<name>/` it points at
-`.agents/audit-conventions.md`, which does not exist (`.agents/` contains only `skills/` and
-`skill-notes/`), and from the `.ruler/` source itself it points at a nonexistent
-`.ruler/audit-conventions.md`. A Codex session following the link (the explicitly supported consumer
-per ADR-0058 and knowledge-map.md lines 3–5) hits a dead path for the conventions that define the
-finding format, the AUDIT-LOG entry, and the self-heal rule.
-
-The correct form already exists in the same tree — `dependency-update-audit/SKILL.md:28` uses
-`(../../../.claude/audit-conventions.md)`, which resolves to the repo-root
-`.claude/audit-conventions.md` from **both** generated locations — but the same file then uses the
-broken `(../../audit-conventions.md)` form at line 125, so even one skill is internally
-inconsistent.
-
-#### Proposed solution
-
-Normalize every audit-conventions link in `.ruler/skills/**` to the
-`../../../.claude/audit-conventions.md` form (or drop the hyperlink and keep the plain backticked
-path, which several skills — `vet-audits`, `fix-audits`, `skills-guide` — already do successfully).
-A cheap drift-guard in `scripts/tests/` that resolves every relative markdown link in the generated
-`.claude/skills/**` and `.agents/skills/**` and fails on a missing target would catch this whole
-class (see also the pr-screenshots and knowledge-map findings below).
-
 ## Coverage gaps on load-bearing paths
 
 Kept where the untested surface is one whose silent breakage is expensive and not otherwise
