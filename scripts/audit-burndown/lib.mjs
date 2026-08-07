@@ -44,10 +44,13 @@ export function findingPriority(title, body = '') {
 // the gap as failure throws away the most expensive work the driver does. Trust
 // git over the envelope: HEAD past the base means it committed, whatever it
 // remembered to report. An unmoved HEAD still yields '' so a genuine no-op
-// defers as before.
+// defers as before. The reported sha is only a fallback for an unmoved HEAD,
+// and only when it is a full 40-hex-char sha: a short or garbled one would
+// otherwise reach git as a bare ref argument.
 export function resolveImplSha({ reported, head, baseSha }) {
-  if (reported) return reported;
-  return head && head !== baseSha ? head : '';
+  const moved = head && head !== baseSha ? head : '';
+  if (moved) return moved;
+  return /^[0-9a-f]{40}$/.test(reported ?? '') ? reported : '';
 }
 
 export function implementationCommitMessage(title, round = 0) {

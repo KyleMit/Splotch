@@ -284,12 +284,21 @@ describe('resolveImplSha', () => {
   const baseSha = 'a'.repeat(40);
   const head = 'b'.repeat(40);
 
-  it('prefers the sha the implementer reported', () => {
-    expect(resolveImplSha({ reported: head, head: 'c'.repeat(40), baseSha })).toBe(head);
+  it('prefers where HEAD actually landed over the reported sha', () => {
+    expect(resolveImplSha({ reported: 'c'.repeat(40), head, baseSha })).toBe(head);
   });
 
   it('recovers a committed fix whose sha the implementer forgot to report', () => {
     expect(resolveImplSha({ reported: '', head, baseSha })).toBe(head);
+  });
+
+  it('falls back to a well-formed reported sha when HEAD never moved', () => {
+    expect(resolveImplSha({ reported: head, head: baseSha, baseSha })).toBe(head);
+  });
+
+  it('rejects a reported sha git could not resolve as a ref', () => {
+    expect(resolveImplSha({ reported: 'b'.repeat(7), head: baseSha, baseSha })).toBe('');
+    expect(resolveImplSha({ reported: 'not-a-sha', head: '', baseSha })).toBe('');
   });
 
   it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {

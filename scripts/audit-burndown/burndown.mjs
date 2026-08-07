@@ -770,6 +770,8 @@ export function createBurndownRun({ config, effects }) {
     });
     if (sha && !reportedSha)
       logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
+    if (sha && reportedSha && sha !== reportedSha)
+      logLine(`  implementer reported ${reportedSha.slice(0, 12)} — git says ${sha.slice(0, 12)}`);
 
     return {
       ok: impl.ok && impl.structured.success === true && Boolean(sha),
@@ -929,6 +931,10 @@ export function createBurndownRun({ config, effects }) {
         head: driverFixSha || headAfterFix,
         baseSha: sha,
       });
+      if (newSha && reportedFixSha && newSha !== reportedFixSha)
+        logLine(
+          `  implementer reported ${reportedFixSha.slice(0, 12)} — git says ${newSha.slice(0, 12)}`
+        );
       if (!newSha) {
         status = 'CHANGES_REQUIRED';
         implFailed = true;
