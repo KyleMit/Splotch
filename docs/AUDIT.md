@@ -44,56 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] retouch-line-art.mjs double-encodes its output, silently discarding WEBP_QUALITY
-
-**File(s):** `tools/asset-gen/legacy/retouch-line-art.mjs` (`normalize` lines 112–119, write at
-lines 134–137) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-`normalize()` already produces the final webp at the tool's declared quality:
-
-```js
-async function normalize(buf, width, height) {
-  return sharp(buf)
-    .resize(width, height, { fit: 'fill' })
-    .grayscale()
-    .linear(1.25, -18)
-    .webp({ quality: WEBP_QUALITY }) // 92
-    .toBuffer();
-}
-```
-
-but the write path then runs the encoded buffer through sharp again:
-
-```js
-const out = await normalize(edited, width, height);
-…
-await sharp(out).toFile(dest);
-```
-
-`sharp(out).toFile('*.webp')` decodes the q92 webp and re-encodes it with sharp's **default** webp
-quality (80). Net effect: two lossy generations, and the `WEBP_QUALITY = 92` constant (line 42) is
-dead — the shipped candidate is q80 of a q80-decoded q92 image. This is a kept-runnable tool (the
-README markets its `--instruction` mode as the template for one-off line-art edits), so the defect
-propagates into any future edit built from this template. Extra risk for this tool specifically:
-line-art candidates get copied over `*.outline.webp`, where compression ringing on edges is exactly
-what the chalk-crisping decision record documents as harmful.
-
-#### Proposed solution
-
-Replace the re-encode with a plain write:
-
-```js
-import { writeFile } from 'node:fs/promises';
-…
-await writeFile(dest, out);
-```
-
-(`mkdir` already precedes it). One-line fix; behavior otherwise identical.
-
 ### [Correctness] Mocked lib constants in audit-cli.test.mjs have already drifted from their real values
 
 **File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (mock factories, lines 58–139),
