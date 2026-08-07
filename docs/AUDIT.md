@@ -41,42 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Maintainability] Two wire shapes for JSON errors: thrown `error()` produces `{ message }`, handlers produce `{ ok: false, error }`
-
-**File(s):** `web/src/lib/server/http.ts` (`readJsonBody`, line 15; `throttled`, lines 59–64),
-`web/src/routes/api/generate-image/+server.ts` (lines 20, 67–68, 79–81, 124, 144–145) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-The section's error responses come in two incompatible body shapes:
-
-* `json({ ok: false, error }, { status })` — verify-key, verify-access-code, report, throttled 429s
-  (the shape `.claude/rules/server-api.md` documents as canonical).
-* `throw error(status, message)` — `readJsonBody`'s 400 (`http.ts:15`) and every generate-image
-  failure (400/413/415/422/403/500/502) — which SvelteKit serializes as `{ message }`.
-
-Concretely: a malformed JSON body sent to `/api/verify-access-code` yields a 400 whose body is
-`{ message: 'Expected a JSON body' }`; the client (`web/src/lib/aiCredential.ts:38–44`) reads
-`data.error`, finds `undefined`, and drops the server's explanation on the floor. The generate-image
-portion is partially insulated because its client reads raw text as `detail`, but the split still
-means every new endpoint author must know which of two error dialects each helper speaks.
-
-Note: open issue `#567` records this as a *sequencing constraint* ("until the error-shape
-unification lands, `ApiErrorResponse = { ok: false; error: string }` is false for `readJsonBody`'s
-400 and generate-image's thrown errors") — the unification itself is referenced there but is not
-itself an open tracked issue, so filing it here. Coordinate with `#567` rather than duplicating its
-contract-types work.
-
-#### Proposed solution
-
-Add a `fail(status, error)` helper next to `throttled()` in `http.ts` returning
-`json({ ok: false, error }, { status })`, convert `readJsonBody` and the generate-image validation
-throws to it (or have `handleError`/a small wrapper translate `HttpError` into the canonical shape
-for `/api/*`), and extend `scripts/api-smoke.mjs` assertions to pin the body shape on the
-400/413/415 cases. Sequence before `#567` per that issue's own recommendation.
-
 ### [Architecture] Give `authorizeGenerationRequest` one failure channel instead of three exit modes
 
 **File(s):** `web/src/lib/server/generationAuthorization.ts` (`authorizeGenerationRequest`, lines
