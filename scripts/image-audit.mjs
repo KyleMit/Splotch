@@ -20,7 +20,7 @@
 // `removeViewBox` is NOT part of preset-default, so the `viewBox` every icon
 // relies on for CSS scaling (Icon.svelte sizes the <svg> at 100%) is preserved.
 
-import { readFileSync, writeFileSync, globSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, globSync } from 'node:fs';
 import { relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { optimize } from 'svgo';
@@ -31,6 +31,10 @@ import { ROOT } from './lib/proc.mjs';
 // (no DOM/ship benefit) and at worst breaking: gen-large-image.mjs hand-parses
 // large-image.svg's `M x y L x y` paths and per-<path> stroke attributes, both
 // of which SVGO's convertPathData / attribute plugins rewrite. Skip them.
+//
+// Each entry is checked for existence below: nothing else references these
+// paths, so moving one leaves an exemption that silently matches nothing, and
+// the file gets optimized — breaking a generator that only runs on demand.
 const IGNORE = new Set(['web/static/large-image.svg', 'web/static/styles/source.svg']);
 
 const SVGO_CONFIG = { multipass: true, plugins: ['preset-default'] };
@@ -38,6 +42,15 @@ const SVGO_CONFIG = { multipass: true, plugins: ['preset-default'] };
 const {
   values: { check },
 } = parseArgs({ options: { check: { type: 'boolean' } } });
+
+const stale = [...IGNORE].filter((rel) => !existsSync(`${ROOT}/${rel}`));
+if (stale.length > 0) {
+  console.error(
+    `[image-audit] ignored path(s) no longer exist: ${stale.join(', ')}. ` +
+      `Update the IGNORE set in scripts/image-audit.mjs.`
+  );
+  process.exit(1);
+}
 
 const files = globSync('web/**/*.svg', { cwd: ROOT })
   .map((p) => `${ROOT}/${p}`)
@@ -71,10 +84,14 @@ for (const file of files) {
   changedCount++;
   const beforeBytes = Buffer.byteLength(before);
   const afterBytes = Buffer.byteLength(after);
-  savedTotal += beforeBytes - afterBytes;
-  const pct = (((beforeBytes - afterBytes) / beforeBytes) * 100).toFixed(0);
+  const delta = beforeBytes - afterBytes;
+  savedTotal += delta;
+  // SVGO's canonical form is occasionally larger than the hand-authored input,
+  // so the sign is carried explicitly rather than hardcoded to a minus.
+  const pct = Math.abs((delta / beforeBytes) * 100).toFixed(0);
   const verb = check ? 'NEEDS OPT' : 'optimized';
-  console.log(`[image-audit] ${verb}  ${rel}  ${beforeBytes} -> ${afterBytes} bytes (-${pct}%)`);
+  const size = `${beforeBytes} -> ${afterBytes} bytes (${delta < 0 ? '+' : '-'}${pct}%)`;
+  console.log(`[image-audit] ${verb}  ${rel}  ${size}`);
 
   if (!check) writeFileSync(file, after);
 }
@@ -86,15 +103,18 @@ if (changedCount === 0) {
   process.exit(0);
 }
 
+// The aggregate is a net of per-file deltas that individually go either way, so
+// like the per-file line it has to follow its own sign — a run whose growth
+// outweighs its savings otherwise reports a negative saving.
+const net =
+  savedTotal < 0 ? `${kib(-savedTotal)} KiB net growth` : `${kib(savedTotal)} KiB net saving`;
+
 if (check) {
   console.error(
     `\n[image-audit] ${changedCount} of ${files.length} SVG(s) are not optimized ` +
-      `(${kib(savedTotal)} KiB to save). Run \`npm run img:audit\` and commit the result.`
+      `(${net}). Run \`npm run img:audit\` and commit the result.`
   );
   process.exit(1);
 }
 
-console.log(
-  `\n[image-audit] optimized ${changedCount} of ${files.length} SVG(s), ` +
-    `saved ${kib(savedTotal)} KiB.`
-);
+console.log(`\n[image-audit] optimized ${changedCount} of ${files.length} SVG(s), ${net}.`);
