@@ -1124,7 +1124,7 @@ export function createBurndownRun({ config, effects }) {
 
     while (done < MAX_ISSUES) {
       if (stopRequested()) break;
-      const tag = `iter${String(done + deferred + 1).padStart(4, '0')}`;
+      const tag = `iter${String(done + dropped + deferred + 1).padStart(4, '0')}`;
       if (!(await runFinding(tag))) break;
     }
 

@@ -442,6 +442,35 @@ describe('close-out', () => {
   });
 });
 
+describe('iteration tags', () => {
+  // A drop is an outcome like any other, so the tag has to advance past it. When
+  // it did not, the next finding reused the dropped one's tag: agent-runner.mjs
+  // overwrote the drop's `<tag>.json` verify envelope and appended both
+  // findings' stderr into one `<tag>.err`.
+  it('gives the finding after an invalid drop a tag of its own', async () => {
+    let verified = 0;
+    const { agentCalls, run } = createRun({
+      respond: (options, api) => {
+        if (options.role === 'verify') {
+          verified += 1;
+          return verified === 1 ? invalidVerdict() : verifiedValid(api);
+        }
+        if (options.role === 'implement') return implemented(api);
+        return approved;
+      },
+    });
+
+    await run.execute();
+
+    expect(agentTags(agentCalls)).toEqual([
+      'iter0001.verify',
+      'iter0002.verify',
+      'iter0002.impl',
+      'iter0002.review1',
+    ]);
+  });
+});
+
 describe('review rounds', () => {
   it('resumes the implementer session for a rejected fix and re-reviews it', async () => {
     const { agentCalls, run } = createRun({
