@@ -68,6 +68,7 @@ export function createPWAUpdates() {
   // fires at stroke end, and kicking off the precache in that same frame could
   // contend with the commit fold of the stroke that tripped it.
   function scheduleRegistration() {
+    if (saveDataEnabled()) return;
     if (registrationScheduled) return;
     registrationScheduled = true;
     scheduleIdle(() => {
