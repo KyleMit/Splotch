@@ -46,41 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Performance] `generate-image` buffers up to 15 MB before rejecting an unsupported Content-Type on the raw path
-
-**File(s):** `web/src/routes/api/generate-image/+server.ts` (`POST`, lines 120–125; raw
-`readValidatedImage`, lines 77–84) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-On the raw-body contract the MIME type is known from the header before any body byte is read
-(`contentTypeOf(request)`, line 82), yet the allowlist check runs only after `readValidatedImage()`
-has buffered the full body:
-
-```ts
-const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
-// An empty type is fine (default to PNG below); only reject a type that's
-// present and not on the allowlist.
-if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-  throw error(415, 'Unsupported image type');
-}
-```
-
-A credentialed caller posting 15 MB of `application/octet-stream` costs a full buffer + copy on the
-single synchronous Netlify function (the memory/DoS scenario `MAX_IMAGE_BYTES`'s own comment worries
-about) before the cheap header check rejects it. The multipart path can't avoid buffering
-(credentials live in the body), but the raw path — the current contract — can.
-
-#### Proposed solution
-
-Move the allowlist check inside each `readValidatedImage` thunk: the raw thunk checks
-`contentTypeOf(request)` *before* `readBodyWithinLimit`; the multipart thunk checks `imageFile.type`
-after the (unavoidable) parse. This also relocates the 415 beside the 413/400 it belongs with.
-Gotcha: the raw path's status for "oversized AND unsupported" flips from 413 to 415 — update the
-api-smoke expectation if it pins that combination (it currently only pins the multipart 415 case).
-
 ### [Performance] Service-worker precache includes assets the app never fetches (social og:image, generator source SVGs)
 
 **File(s):** `web/vite.config.ts` (`workbox.globPatterns`, line 107) @ cd04c367

@@ -43,7 +43,7 @@ interface GenerationRequest {
   apiKey: string | null;
   style: string | null;
   // Deferred so the ≤15 MB body isn't read or validated until authorization
-  // succeeds — the thunk can throw 400 or 413. (The multipart shape has
+  // succeeds — the thunk can throw 400, 413, or 415. (The multipart shape has
   // already buffered by necessity; only the raw path actually saves the read.)
   readValidatedImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
 }
