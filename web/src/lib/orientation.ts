@@ -41,7 +41,9 @@ export async function applyDeviceOrientationPreference(
       else await ScreenOrientation.lock({ orientation: target });
     } catch {
       // Plugin unavailable or the platform refused the lock — the setting stays
-      // persisted for the next launch.
+      // persisted for the next launch. Clearing the latch lets a later call with
+      // the same target retry within this session.
+      lastRequested = null;
     }
     return;
   }
@@ -54,5 +56,7 @@ export async function applyDeviceOrientationPreference(
     orientation?.unlock?.();
     return;
   }
-  orientation?.lock?.(target).catch(() => {});
+  orientation?.lock?.(target).catch(() => {
+    lastRequested = null;
+  });
 }

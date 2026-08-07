@@ -49,52 +49,6 @@ a success. Nobody files a bug against a number; they just make decisions on it.
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] A failed orientation lock latches `lastRequested`, permanently suppressing same-target retries for the session
-
-**File(s):** `web/src/lib/orientation.ts` (`applyDeviceOrientationPreference`, lines 11, 29–30,
-42–46, 57) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-The dedup latch is set *before* the async lock attempt and never rolled back on failure:
-
-```ts
-if (target === lastRequested) return;
-lastRequested = target;
-```
-
-Native path (lines 42–46): if `ScreenOrientation.lock()` throws (plugin not ready during a boot
-race, OS transiently refuses), the catch swallows it — but `lastRequested` still holds `target`, so
-every later call with the same preference short-circuits at line 29. The comment says "the setting
-stays persisted for the next launch", i.e. the accepted cost is a whole relaunch, yet a one-line
-rollback would recover within the session. Web path (line 57):
-`orientation?.lock?.(target).catch(() => {})` — browsers commonly reject `lock()` outside
-fullscreen. The user later enters fullscreen (the app has a fullscreen affordance), the preference
-is re-applied from `+page.svelte` — and is silently skipped because the latch claims the lock
-already took. The latch conflates "requested" with "applied".
-
-Secondary issue: `lastRequested` is module-scope mutable `let` that is neither a pure memoization
-cache nor behind a `createX()` factory (the stated convention in `CLAUDE.md`), which is also why
-this module has no unit tests (see separate finding).
-
-#### Proposed solution
-
-Reset the latch when the attempt fails so the next call retries:
-
-```ts
-} catch {
-  lastRequested = null;
-}
-```
-
-on the native branch, and `orientation?.lock?.(target).catch(() => { lastRequested = null; })` on
-the web branch. Alternatively restructure as `createOrientationLock()` returning `{ apply }` with
-the latch inside, exported as a singleton instance for the app — which both fixes testability and
-makes the latch's lifecycle explicit. Gotcha: don't retry in a loop — the latch reset only re-arms
-the *next* explicit apply call, which is the right behavior.
-
 ### [Correctness] `measureSafeAreaInsets` silently returns garbage if its cached probe is ever detached
 
 **File(s):** `web/src/lib/safeArea.ts` (`measureSafeAreaInsets`, lines 16–37) @ f5bf8767
