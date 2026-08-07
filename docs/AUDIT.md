@@ -41,36 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] Every page tile in a book announces the same aria-label; `ColoringPage.name` has no production reader
-
-**File(s):** `web/src/lib/components/ColoringBook.svelte` (page-tile button, line 228);
-`web/src/lib/state/books.ts` (`ColoringPage.name`, line 78) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-Line 228:
-
-```svelte
-aria-label="{activeBook.name} coloring page"
-```
-
-All six page tiles inside a book get the identical label ("Farm coloring page"): a screen-reader or
-accessibility-tree consumer cannot distinguish Cat from Cow, and E2E specs cannot target a specific
-page by role+name. Meanwhile every page carries a human-readable `name` field ("Cat", "T. Rex",
-`books.ts` lines 283–346) that is populated for all 48 pages but — verified by grep — never read by
-any production code (only the `book()` builder stores it). Under the repo's "no speculative surface"
-rule, a field with no production caller is itself a smell; the aria-label is the caller it was
-obviously meant to have.
-
-#### Proposed solution
-
-`aria-label="{page.name} coloring page"` (or `"{page.name} — {activeBook.name}"`). This fixes the
-duplicate-label problem and gives `ColoringPage.name` its production reader in one line. If for some
-reason the name should not be exposed, the alternative is deleting the `name` field and the second
-`page(id, name)` argument — but wiring the label is clearly the better outcome for a picker grid.
-
 ### [Correctness] The Save-Data guard is bypassed on the repeat-visit registration path
 
 **File(s):** `web/src/lib/pwa/updates.ts` (`registerDeferredServiceWorker` lines 88–93,

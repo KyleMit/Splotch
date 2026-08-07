@@ -138,7 +138,7 @@ export async function settleTapGuard(page: Page) {
 
 export async function openFarmPageGrid(page: Page) {
   const dialog = page.locator('#coloring-book-dialog');
-  const pages = dialog.getByRole('button', { name: /Farm coloring page/i });
+  const pages = dialog.getByRole('button', { name: / coloring page$/i });
   await retryOpen(
     pages.first(),
     () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
