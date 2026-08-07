@@ -28,43 +28,6 @@ this file.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Maintainability] dragToClear's exit-choreography timings agree with ClearButton.svelte's CSS by prose only
-
-**File(s):** `web/src/lib/actions/dragToClear.ts` (lines 14–15, `playClearExit` lines 224–244) @
-9ae62ff1; `web/src/lib/components/ClearButton.svelte` (line 291)
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const PAGE_TURN_DURATION = 600;
-const EXIT_RETURN_DELAY = 650;
-```
-
-`PAGE_TURN_DURATION` must equal the ripple animation it waits out —
-`animation: ripple 0.6s var(--ease-glide) forwards;` (ClearButton.svelte line 291) — and
-`EXIT_RETURN_DELAY` is implicitly `PAGE_TURN_DURATION + 50` (the comment at lines 221–223 says the
-delays "only hand the classes over at each stage"). CLAUDE.md is explicit: cross-file agreement is
-never maintained by prose; when the agreeing sites can't share code (JS constant ↔ component CSS), a
-drift-guard test reads both sides. Today, retuning the ripple in CSS silently desynchronizes the
-class handoff: the `animating` class is removed before/after the animation actually ends, and
-`clearing-done` lands at the wrong moment.
-
-#### Proposed solution
-
-Two-part fix:
-
-1. Express the dependency inside the module:
-   `const EXIT_RETURN_DELAY_MS = PAGE_TURN_DURATION_MS + RETURN_HANDOFF_GAP_MS;` so only one number
-   encodes the ripple length.
-2. Add a drift-guard test in the pattern of `web/src/app.html.test.ts`: export
-   `PAGE_TURN_DURATION_MS`, and have a test read `ClearButton.svelte` source, extract the `ripple`
-   animation duration (regex on `animation: ripple ([\d.]+)s`), and assert it matches. (The existing
-   `onTransitionEnd` trick at lines 250–254 shows the codebase already prefers reading timing off
-   the DOM where possible — an alternative is doing the same for the ripple via `animationend`,
-   which removes the constant entirely.)
-
 ### [Maintainability] Tuning constants missing the mandated unit suffixes
 
 **File(s):** `web/src/lib/actions/dragToClear.ts` (lines 8–15) @ 9ae62ff1;

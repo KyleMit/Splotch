@@ -11,8 +11,9 @@ const MULTI_CLICK_WINDOW = 1000;
 const MULTI_CLICK_THRESHOLD = 3;
 const ACCEPT_ZONE_HIDE_DELAY = 250;
 const DRAW_SOUND_STOP_DELAY = 300;
-const PAGE_TURN_DURATION = 600;
-const EXIT_RETURN_DELAY = 650;
+export const PAGE_TURN_DURATION_MS = 600;
+const RETURN_HANDOFF_GAP_MS = 50;
+const EXIT_RETURN_DELAY_MS = PAGE_TURN_DURATION_MS + RETURN_HANDOFF_GAP_MS;
 
 function suppress(e: Event) {
   e.preventDefault();
@@ -231,13 +232,13 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       o.containerEl.style.transform = '';
       node.classList.remove('dragging');
       node.classList.add('clearing-done');
-    }, PAGE_TURN_DURATION);
+    }, PAGE_TURN_DURATION_MS);
 
     scheduleReset(() => {
       o.containerEl.classList.remove('dragging-active');
       node.classList.remove('clearing', 'clearing-done');
       node.classList.add('clearing-return');
-    }, EXIT_RETURN_DELAY);
+    }, EXIT_RETURN_DELAY_MS);
   }
 
   // The return leg's easing is the only reason .clearing-return exists, so it
