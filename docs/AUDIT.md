@@ -44,52 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] The implementer's self-reported SHA is trusted verbatim over git, with no format or ancestry validation
-
-**File(s):** `scripts/audit-burndown/lib.mjs` (`resolveImplSha`, lines 42–45) @ f5bf8767;
-`scripts/audit-burndown/burndown.mjs` (lines 755–766, 837, 916–932, 1004–1008)
-
-**Priority:** P3
-
-#### Problem
-
-```js
-export function resolveImplSha({ reported, head, baseSha }) {
-  if (reported) return reported;
-  return head && head !== baseSha ? head : '';
-}
-```
-
-`reported` is LLM-authored (`impl.structured.sha`). The driver sanitizes the other LLM-authored
-strings that reach commands hard — burndown.mjs lines 596–600 on `e2e_specs`: "these strings are
-LLM-authored and reach a shell, so keep only spec-path-shaped values" — but the SHA is used
-unvalidated as a git argument in the reviewer prompt's range (`${baseSha}..${sha}`, line 702),
-`gitOut('diff', baseSha, sha, …)` (line 820), and `gitOut('rev-list', '--count',`
-${baseSha}..${sha}`)` (line 823). Worse, when `reported` and `head` *both* exist and disagree —
-implementer reports a short SHA despite the prompt (implementer.md lines 40–41 begs for 40 chars
-precisely because it happens), or reports the first round's SHA after a second commit, or
-hallucinates — the envelope wins over git. That inverts the module's own stated philosophy (lib.mjs
-lines 30–33: "Trust git over the envelope"). The reviewer then reviews the wrong range, or git
-errors mid-flow on a garbage ref.
-
-#### Proposed solution
-
-Validate and prefer git:
-
-```js
-export function resolveImplSha({ reported, head, baseSha }) {
-  const moved = head && head !== baseSha ? head : '';
-  if (moved) return moved;
-  return /^[0-9a-f]{40}$/.test(reported ?? '') ? reported : '';
-}
-```
-
-Since `head` is `gitOut('rev-parse', 'HEAD')` captured right after the step, it is always at least
-as authoritative as `reported`; keep `reported` only as the fallback (with the hex-shape check) for
-the legacy-envelope case the comment describes. Log when the two disagree so a misreporting role is
-visible. Update the `resolveImplSha` unit tests in `scripts/tests/audit-burndown-lib.test.mjs` for
-the new precedence.
-
 ### [Correctness] pop.mjs treats any unknown flag as "print", so a typo'd `--delete` silently succeeds without deleting
 
 **File(s):** `scripts/audit-burndown/pop.mjs` (lines 18, 25–50) @ f5bf8767

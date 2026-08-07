@@ -771,11 +771,7 @@ export function createBurndownRun({ config, effects }) {
       impl.ok && impl.structured.success === true && headAfterImpl === baseSha
         ? commitCodexImplementation({ title, baseSha })
         : '';
-    const sha = resolveImplSha({
-      reported: reportedSha,
-      head: driverSha || headAfterImpl,
-      baseSha,
-    });
+    const sha = resolveImplSha({ head: driverSha || headAfterImpl, baseSha });
     if (sha && !reportedSha)
       logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
     if (reportedSha && sha !== reportedSha)
@@ -934,11 +930,7 @@ export function createBurndownRun({ config, effects }) {
         impl.structured.success === true && headAfterFix === sha
           ? commitCodexImplementation({ title, baseSha: sha, round })
           : '';
-      const newSha = resolveImplSha({
-        reported: reportedFixSha,
-        head: driverFixSha || headAfterFix,
-        baseSha: sha,
-      });
+      const newSha = resolveImplSha({ head: driverFixSha || headAfterFix, baseSha: sha });
       if (reportedFixSha && newSha !== reportedFixSha)
         logLine(`  implementer reported ${reportedFixSha.slice(0, 12)} — ${gitVerdict(newSha)}`);
       if (!newSha) {

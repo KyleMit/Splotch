@@ -39,21 +39,18 @@ export function findingPriority(title, body = '') {
   return stated ? Number(stated[1]) : null;
 }
 
-// The implementer reports the sha of the commit it made. Even with a required
-// schema field, a failed call or legacy runner envelope can omit it, and treating
-// the gap as failure throws away the most expensive work the driver does. Trust
-// git over the envelope: HEAD past the base means it committed, whatever it
-// remembered to report. An unmoved HEAD still yields '' so a genuine no-op
-// defers as before. The reported sha is only a fallback for an unmoved HEAD,
-// and only when it is a full 40-hex-char sha that isn't the base itself: a short
-// or garbled one would otherwise reach git as a bare ref argument, and an echo
-// of the base — the shape to expect, since the fix-round prompt names that sha
-// to the implementer — would pass the gates on an empty range.
-export function resolveImplSha({ reported, head, baseSha }) {
-  const moved = head && head !== baseSha ? head : '';
-  if (moved) return moved;
-  const usableFallback = /^[0-9a-f]{40}$/.test(reported ?? '') && reported !== baseSha;
-  return usableFallback ? reported : '';
+// The implementer reports the sha of the commit it made, but git decides whether
+// one exists, so the envelope never reaches this function. `head` is `rev-parse
+// HEAD` read immediately after the step: past the base means it committed,
+// whatever it remembered to report — which recovers the most expensive work the
+// driver does when a failed call or legacy envelope omits the field — and
+// unmoved means it committed nothing. A reported sha cannot rescue that branch,
+// because every value it could carry there names a commit this step did not make
+// (a previous round's, the base echoed back from the fix prompt, a short or
+// garbled string). Adopting one hands the reviewer a foreign range that passes
+// the gates on someone else's work and lets an approval amend it.
+export function resolveImplSha({ head, baseSha }) {
+  return head && head !== baseSha ? head : '';
 }
 
 export function implementationCommitMessage(title, round = 0) {

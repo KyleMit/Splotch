@@ -612,6 +612,42 @@ describe('review rounds', () => {
     expect(eventAt(events, 'round 1: gates red')).toBeGreaterThan(-1);
   });
 
+  // A fix round that reports failure has committed nothing, but its envelope can
+  // still carry a well-formed sha left over from the round before. Treating that
+  // as the round's own commit would send the reviewer a range the round did not
+  // write, and an approval would amend it.
+  it('defers a failed fix round that still reports a sha, spending no reviewer on it', async () => {
+    const staleSha = 'f'.repeat(40);
+    const { agentCalls, events, run } = createRun({
+      env: { MAX_ISSUES: '1', MAX_DEFERRALS: '1' },
+      respond: (options, api) => {
+        if (options.role === 'verify') return verifiedValid(api);
+        if (options.role === 'implement')
+          return options.sessionId
+            ? { ok: true, sessionId: 'impl-session', structured: { success: false, sha: staleSha } }
+            : implemented(api);
+        return {
+          ok: true,
+          structured: { status: 'CHANGES_REQUIRED', findings: ['missed a case'] },
+        };
+      },
+    });
+
+    await expect(run.execute()).rejects.toThrow('1 consecutive deferrals');
+
+    expect(agentTags(agentCalls)).toEqual([
+      'iter0001.verify',
+      'iter0001.impl',
+      'iter0001.review1',
+      'iter0001.fix1',
+    ]);
+    expect(events).toContain(
+      `  implementer reported ffffffffffff — git says nothing was committed`
+    );
+    expect(eventAt(events, 'implementer failed to deliver a fix round')).toBeGreaterThan(-1);
+    expect(readFileSync(DEFERRED_PATH, 'utf8')).toContain('implementer failed to deliver a fix');
+  });
+
   it('defers an unreviewable fix as unreviewed, not as rejected', async () => {
     const { events, gitCalls, run } = createRun({
       env: { MAX_ISSUES: '1', MAX_DEFERRALS: '1' },

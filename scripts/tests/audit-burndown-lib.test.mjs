@@ -284,33 +284,15 @@ describe('resolveImplSha', () => {
   const baseSha = 'a'.repeat(40);
   const head = 'b'.repeat(40);
 
-  it('prefers where HEAD actually landed over the reported sha', () => {
-    expect(resolveImplSha({ reported: 'c'.repeat(40), head, baseSha })).toBe(head);
-  });
-
   it('recovers a committed fix whose sha the implementer forgot to report', () => {
-    expect(resolveImplSha({ reported: '', head, baseSha })).toBe(head);
+    expect(resolveImplSha({ head, baseSha })).toBe(head);
   });
 
-  it('falls back to a well-formed reported sha when HEAD never moved', () => {
-    expect(resolveImplSha({ reported: head, head: baseSha, baseSha })).toBe(head);
-  });
-
-  it('rejects a reported sha git could not resolve as a ref', () => {
-    expect(resolveImplSha({ reported: 'b'.repeat(7), head: baseSha, baseSha })).toBe('');
-    expect(resolveImplSha({ reported: 'not-a-sha', head: '', baseSha })).toBe('');
-  });
-
-  // The fix-round prompt names the base sha to the implementer, so an echo of it
-  // is the likely misreport. Accepting it would hand the reviewer an empty range.
-  it('rejects a reported sha that just echoes the base', () => {
-    expect(resolveImplSha({ reported: baseSha, head: baseSha, baseSha })).toBe('');
-    expect(resolveImplSha({ reported: baseSha, head: '', baseSha })).toBe('');
-  });
-
+  // An unmoved HEAD means the step committed nothing, so there is no sha the
+  // envelope could offer that names this step's work — the resolver takes none.
   it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
-    expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
-    expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');
+    expect(resolveImplSha({ head: baseSha, baseSha })).toBe('');
+    expect(resolveImplSha({ head: '', baseSha })).toBe('');
   });
 });
 
