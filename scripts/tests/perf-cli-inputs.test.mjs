@@ -24,6 +24,7 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const analyzePath = join(repoRoot, 'scripts', 'perf', 'analyze.mjs');
 const webInspectorPath = join(repoRoot, 'scripts', 'perf', 'analyze-webinspector.mjs');
 const replayPath = join(repoRoot, 'scripts', 'perf', 'replay-scenario.mjs');
+const scenarioPath = join(repoRoot, 'scripts', 'perf', 'scenario.mjs');
 
 let fixtureDir;
 
@@ -123,6 +124,14 @@ describe('performance CLI input failures', () => {
       replayPath,
       [`--recording=${path}`],
       `Replay recording has no events array: ${path}`
+    );
+  });
+
+  it('reports an unknown --device instead of profiling the default viewport', () => {
+    expectCliFailure(
+      scenarioPath,
+      ['--device=tabelt'],
+      'Unknown --device=tabelt — known: phone, tablet, desktop'
     );
   });
 

@@ -44,40 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [DX] Unknown `--device` silently profiles the phone viewport while labeling artifacts with the typo
-
-**File(s):** `scripts/perf/devices.mjs` (`resolveDevice`, lines 9–11); `scripts/perf/scenario.mjs`
-(lines 28, 57) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-```js
-export function resolveDevice(name) {
-  return DEVICES[name] || DEVICES.phone;
-}
-```
-
-`--device=tabelt` (typo) resolves to the phone viewport, but `deviceName` — the raw string — is what
-gets baked into both the artifact directory (`profilePath('web', deviceName, throttle.tag)`,
-scenario.mjs:28) and the recorded settings (`device: deviceName`, scenario.mjs:57; same in
-ios.mjs:26/47). The resulting profile claims to be a "tabelt" run in its dirname and report header
-while actually measuring 412×915@2.6 — a silently wrong artifact that can mislead later comparisons.
-This contradicts both the closed-value-set convention ("never bare `string` … plus a runtime
-fallback") and the scripts convention ("validate inputs up front with a path-specific one-line error
-and a non-zero exit"). Note `parsePerfArgs` can't currently `fail()` at module scope (see the
-module-scope-parsing finding), so the fix sequencing matters.
-
-#### Proposed solution
-
-Make `resolveDevice` throw (or return `null` and have the entry `fail()`) on an unknown name:
-``fail(`Unknown --device=${name} — known: ${Object.keys(DEVICES).join(', ')}`)``. Land it after (or
-together with) moving argv parsing inside the entry functions so the hard failure can't fire during
-a vitest library import.
-
----
-
 ### [Types] Numeric flag values are never validated — `--throttle=abc`, `--port=abc`, `--hz=abc` all silently produce NaN behavior
 
 **File(s):** `scripts/perf/args.mjs` (`resolveThrottle`, lines 3–14; `parsePerfArgs`, line 52);

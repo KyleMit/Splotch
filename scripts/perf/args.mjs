@@ -1,4 +1,5 @@
-import { resolveDevice } from './devices.mjs';
+import { DEVICES, resolveDevice } from './devices.mjs';
+import { fail } from '../lib/proc.mjs';
 
 export const resolveThrottle = (args, defaultRate) => {
   const hit = args.find((arg) => arg.startsWith('--throttle='));
@@ -15,9 +16,10 @@ export const resolveThrottle = (args, defaultRate) => {
 
 const COMMON_FLAGS = ['device', 'port', 'no-build'];
 
-// Tolerant lookup (never throws) and an `entry`-gated warn-only unknown-flag
-// report: the perf entry modules parse at module scope but are also imported as
-// libraries by the vitest script suites, where argv is vitest's own.
+// Tolerant lookup and `entry`-gated input reports (warn-only for unknown flags,
+// fatal for an unknown device): the perf entry modules parse at module scope but
+// are also imported as libraries by the vitest script suites, where argv is
+// vitest's own.
 export function parsePerfArgs(
   { throttleDefault, extra = [], entry = false } = {},
   argv = process.argv.slice(2)
@@ -43,11 +45,16 @@ export function parsePerfArgs(
   }
 
   const deviceName = flag('device', 'phone');
+  const device = resolveDevice(deviceName);
+  if (entry && !device) {
+    fail(`Unknown --device=${deviceName} — known: ${Object.keys(DEVICES).join(', ')}`);
+  }
+
   return {
     flag,
     has,
     deviceName,
-    device: resolveDevice(deviceName),
+    device,
     throttle: throttleDefault === undefined ? undefined : resolveThrottle(argv, throttleDefault),
     port: Number(flag('port', '4173')),
     build: !has('no-build'),
