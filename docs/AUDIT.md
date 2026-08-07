@@ -16,17 +16,13 @@ remains in this file's git history. The re-pinning below dropped 3 more, leaving
 The 2026-08-07 `burn-down-audits` campaign (PR #830) then fixed 29 of those with no drops and no
 deferrals, which emptied the *Silent wrong output* group outright — its section is gone from the
 list below, and `docs/AUDIT-LOG.md` carries the run's row. The compatibility-register drift guard
-then removed one more resolved finding, leaving the 42 below.
+then removed one more resolved finding. This review dropped two more findings whose reports had
+drifted out of date, leaving the 40 below.
 
 **Citations are pinned to commit cd04c367 (2026-08-07), the current `main` head at the time of this
 review.** They were originally taken at 9ae62ff1 (2026-07-28), then re-pinned to f5bf8767
 (2026-08-06). Every cited line was re-derived against cd04c367 by following the referenced symbol or
 content, not by preserving its old offset.
-
-Two findings carry a **Pin drift:** line where the current code no longer fully supports the report:
-the platform-coverage finding overlooks indirect coverage, and the retry-token duplication has
-already been resolved. They remain staged for human keep-or-drop triage; every other finding still
-describes the cited code on cd04c367.
 
 The 3 findings dropped during the re-pinning were the ones whose citations still resolved but whose
 code no longer said what the finding described, because each had been fixed in the meantime:
@@ -441,48 +437,6 @@ keep `error()` throws for *both* 403/500 and throttling by throwing `HttpError`-
 `throttled()` is the repo's canonical 429, so the return-based shape fits better). Tradeoff: the
 route's `instanceof Response` check becomes a plain discriminant check, which is also more grepable.
 Update `generationAuthorization.test.ts` accordingly.
-
-### [Testing] `platform.ts`'s riskiest logic — `supportsOrientationLock`, `isStandalone`, `isIosDevice` — has zero unit coverage
-
-**File(s):** `web/src/lib/platform.ts` (`supportsOrientationLock`, lines 111–115; `isStandalone`,
-lines 25–33; `isIosDevice`, lines 40–46), `web/src/lib/breakpoints.ts` (`TABLET_MIN_SIDE_PX`, line
-16), `web/src/lib/platform.test.ts`, `web/src/lib/platform.osLabel.test.ts` @ cd04c367
-
-**Priority:** P3
-
-**Pin drift:** `supportsOrientationLock()` still has no direct coverage, but the report's "zero unit
-coverage" claim is overstated: `state/install.svelte.test.ts` indirectly exercises `isStandalone()`
-(lines 110–117) and `isIosDevice()` (lines 59–106). The proposed exhaustive direct cases remain
-broader than that coverage.
-
-#### Problem
-
-The two platform-specific test files cover only `getPlatform` (`platform.test.ts`, 28 lines) and
-`osLabelFromUserAgent` (`platform.osLabel.test.ts`). Direct coverage is absent for:
-
-* `supportsOrientationLock()` — the most consequential function in the module. It carries a 31-line
-  WHY comment (lines 79–109) explaining a subtle iPadOS-26 windowing heuristic and a named tuning
-  constant `TABLET_MIN_SIDE_PX = 600` (`breakpoints.ts`, line 16), and it gates whether orientation
-  toggles are shown *and* whether `applyDeviceOrientationPreference` does anything at all
-  (`orientation.ts` line 21). The `< 600` boundary, the "web always true", the "SSR false", and the
-  "native tablet false / native phone true" branches are all unasserted; a regression (e.g. flipping
-  `<` to `<=` or reading window instead of screen) would ship silently.
-* `isStandalone()` — four OR'd display-mode probes including the iOS-legacy `navigator.standalone`;
-  drives PWA-vs-tab classification in `deviceInfo.ts` and fullscreen affordances.
-* `isIosDevice()` — the iPadOS-masquerading-as-Mac branch (`MacIntel` + `maxTouchPoints > 1`) is
-  exactly the kind of clever check that dies quietly.
-
-These are pure, cheaply mockable functions (`globalThis.Capacitor` stubbing is already demonstrated
-in `platform.test.ts`; `matchMedia`/`screen` stubs via `vi.stubGlobal` are demonstrated in
-`idle.test.ts`).
-
-#### Proposed solution
-
-Extend `platform.test.ts` (happy-dom env) with table-driven cases: `supportsOrientationLock` at
-screen min-sides 599/600/601 for native vs web vs SSR (stub `globalThis.Capacitor.isNativePlatform`
-and `window.screen` width/height getters); `isStandalone` for each display-mode query plus the
-`navigator.standalone` legacy path; `isIosDevice` for iPhone UA, plain-Mac UA (false), and touch-Mac
-(true). Keep `osLabel` in its node-env sibling file as-is.
 
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
@@ -955,41 +909,6 @@ it('every scripts-info entry has a script', () =>
 
 Optionally assert matching key order so the two blocks read in parallel; that's a style choice — the
 presence checks are the load-bearing part.
-
-### [Maintainability] CI retry-token derivation formula is duplicated between playwright.config.ts and the spec that consumes it
-
-**File(s):** `web/playwright.config.ts` (`ciAllowedTokens`, lines 143–146),
-`web/playwright.shared.ts` (`managedAccessTokenForRetry`, lines 16–26),
-`web/tests/generate-image.spec.ts` (line 114) @ cd04c367
-
-**Priority:** P2
-
-**Pin drift:** This finding appears resolved. `managedAccessTokenForRetry()` owns the token formula
-in `playwright.shared.ts`; both `playwright.config.ts` and `generate-image.spec.ts` call it.
-
-#### Problem
-
-The current config derives the per-retry token list served to the web server at lines 143–146:
-
-```ts
-const ciRetries = 2;
-const ciAllowedTokens = allowedTokensList(
-  ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry)),
-);
-```
-
-and `web/tests/generate-image.spec.ts:114` calls the same helper:
-
-```ts
-const token = managedAccessTokenForRetry(testInfo.retry);
-```
-
-The shared helper at `web/playwright.shared.ts:24–26` removes the two hand-maintained copies the
-finding described. Renaming the base token or suffix scheme now updates both consumers together.
-
-#### Proposed solution
-
-Drop this finding unless there is a remaining concern with the helper's location or API.
 
 ### [Maintainability] `COLOR_CHANGE_DEBOUNCE_SETTLE_MS` keeps cross-file agreement with the engine by prose, not import
 
