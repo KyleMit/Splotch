@@ -8,6 +8,7 @@ import {
   RESPONSIVE_COLORING_URL_PATTERN,
   serveResponsiveColoringWithCanonicalFallback,
 } from './src/lib/pwa/coloringFallback';
+import { VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
 import { RESPONSIVE_COLORING_TIER_DIRECTORIES } from './src/lib/state/books';
 import { excludeNativeRoutes } from './nativeExcludedRoutes';
 
@@ -73,7 +74,7 @@ export default defineConfig({
       generateBundle() {
         this.emitFile({
           type: 'asset',
-          fileName: 'version.json',
+          fileName: VERSION_JSON_FILENAME,
           source: JSON.stringify({ version: APP_VERSION }),
         });
       },

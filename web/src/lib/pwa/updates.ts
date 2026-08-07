@@ -34,6 +34,7 @@
 
 import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
+import { VERSION_JSON_PATH } from '$lib/pwa/versionEndpoint';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -142,7 +143,7 @@ export function createPWAUpdates() {
 
   async function checkVersionMismatch(attemptedVersion: string | null = null) {
     try {
-      const resp = await fetch('/version.json', { cache: 'no-store' });
+      const resp = await fetch(VERSION_JSON_PATH, { cache: 'no-store' });
       if (!resp.ok) return;
       const { version } = (await resp.json()) as { version?: unknown };
       if (typeof version !== 'string' || version.length === 0) return;
