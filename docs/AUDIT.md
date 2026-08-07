@@ -28,34 +28,6 @@ this file.
 
 ## Source: Code audit — Gestures / Svelte actions
 
-### [Types] `onRequestClose` is documented required but typed optional
-
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`ModalOptions`, lines 38–46; doc lines
-16–18) @ 9ae62ff1
-
-**Priority:** P3
-
-#### Problem
-
-The header comment says:
-
-```
-//   onRequestClose  (required) called to dismiss — should flip `open` to false.
-```
-
-but the interface says `onRequestClose?: () => void;` (line 40). All five production call sites
-(`AiImagePrompt`, `AiImageResult`, `ColorPicker`, `ColoringBook`, `SettingsModal`) pass it. The
-optional marker forces `o.onRequestClose?.()` call sites (lines 73, 105) and lets a sixth dialog
-compile without any way to dismiss on backdrop tap or re-sync after Esc — exactly the bug the type
-should prevent. This is a closed contract being kept open at the type level, contradicting the
-repo's "close finite value sets in the type" spirit and its own docs.
-
-#### Proposed solution
-
-Make it required: `onRequestClose: () => void;`, drop the two `?.` invocations, and delete the
-now-redundant "(required)" prose (the type says it). Same review for `open` (already required —
-fine).
-
 ### [Correctness] pinchZoom writes a non-normalized identity transform on every plain tap (and while disabled)
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`apply` lines 174–178, `onPointerUp` lines
