@@ -15,20 +15,18 @@ remains in this file's git history. The re-pinning below dropped 3 more, leaving
 
 The 2026-08-07 `burn-down-audits` campaign (PR #830) then fixed 29 of those with no drops and no
 deferrals, which emptied the *Silent wrong output* group outright — its section is gone from the
-list below, and `docs/AUDIT-LOG.md` carries the run's row.
+list below, and `docs/AUDIT-LOG.md` carries the run's row. The compatibility-register drift guard
+then removed one more resolved finding, leaving the 42 below.
 
-**Citations are pinned to commit f5bf8767 (2026-08-06), the `main` head at the time of the
-re-pinning.** They were originally taken at 9ae62ff1 (2026-07-28). Every one of the 277 cited line
-numbers was re-derived against f5bf8767 by following the old line through the intervening diffs and
-requiring its content to match at the destination, so a citation here identifies the same code the
-finding was written about — not the same offset.
+**Citations are pinned to commit cd04c367 (2026-08-07), the current `main` head at the time of this
+review.** They were originally taken at 9ae62ff1 (2026-07-28), then re-pinned to f5bf8767
+(2026-08-06). Every cited line was re-derived against cd04c367 by following the referenced symbol or
+content, not by preserving its old offset.
 
-Of the 72 findings, 59 re-derived automatically, 12 were re-pinned by hand where the mapping was
-ambiguous (a wholesale restructure, or a range endpoint that was itself edited), and one — the
-COMPATIBILITY.md register finding — cites a section rather than lines and needs no pin. Three
-citations changed file: the `report` endpoint's validation was extracted to
-`web/src/lib/server/report.ts`, the README's prerequisites moved to `docs/CONTRIBUTING.md`, and
-`spreadTracker.svelte.ts` was renamed to `spreadTracker.ts`.
+Two findings carry a **Pin drift:** line where the current code no longer fully supports the report:
+the platform-coverage finding overlooks indirect coverage, and the retry-token duplication has
+already been resolved. They remain staged for human keep-or-drop triage; every other finding still
+describes the cited code on cd04c367.
 
 The 3 findings dropped during the re-pinning were the ones whose citations still resolved but whose
 code no longer said what the finding described, because each had been fixed in the meantime:
@@ -50,13 +48,13 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 ### [Correctness] Every page tile in a book announces the same aria-label; `ColoringPage.name` has no production reader
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte` (page-tile button, line 228);
-`web/src/lib/state/books.ts` (`ColoringPage.name`, line 78) @ f5bf8767
+`web/src/lib/state/books.ts` (`ColoringPage.name`, line 78) @ cd04c367
 
 **Priority:** P3
 
 #### Problem
 
-Line 163:
+Line 228:
 
 ```svelte
 aria-label="{activeBook.name} coloring page"
@@ -65,7 +63,7 @@ aria-label="{activeBook.name} coloring page"
 All six page tiles inside a book get the identical label ("Farm coloring page"): a screen-reader or
 accessibility-tree consumer cannot distinguish Cat from Cow, and E2E specs cannot target a specific
 page by role+name. Meanwhile every page carries a human-readable `name` field ("Cat", "T. Rex",
-`books.ts` lines 174–237) that is populated for all 48 pages but — verified by grep — never read by
+`books.ts` lines 283–346) that is populated for all 48 pages but — verified by grep — never read by
 any production code (only the `book()` builder stores it). Under the repo's "no speculative surface"
 rule, a field with no production caller is itself a smell; the aria-label is the caller it was
 obviously meant to have.
@@ -80,17 +78,17 @@ reason the name should not be exposed, the alternative is deleting the `name` fi
 ### [Correctness] The Save-Data guard is bypassed on the repeat-visit registration path
 
 **File(s):** `web/src/lib/pwa/updates.ts` (`registerDeferredServiceWorker` lines 88–93,
-`initPWAUpdates` lines 113–118, `scheduleRegistration` lines 70–83) @ f5bf8767
+`initPWAUpdates` lines 113–118, `scheduleRegistration` lines 70–83) @ cd04c367
 
 **Priority:** P4
 
 #### Problem
 
 `registerDeferredServiceWorker` refuses to register under Save-Data — "Save-Data users never get the
-~39 MB precache forced on them" (lines 85–87). But `initPWAUpdates` calls `scheduleRegistration()`
-directly when a registration already exists (lines 109–114), and `scheduleRegistration` has no
+~35 MB precache forced on them" (lines 85–87). But `initPWAUpdates` calls `scheduleRegistration()`
+directly when a registration already exists (lines 113–118), and `scheduleRegistration` has no
 Save-Data check. The stated purpose of that re-register is to *resume an interrupted precache*
-(lines 12–13: "so an install interrupted mid-precache resumes") — which is precisely the ~39 MB
+(lines 12–13: "so an install interrupted mid-precache resumes") — which is precisely the ~35 MB
 download the guard exists to prevent. Sequence: first visit on wifi with Save-Data off →
 registration starts, precache interrupted; later visit on metered data with Save-Data on → the
 resume path re-registers and the precache continues against the user's expressed preference.
@@ -114,7 +112,7 @@ call. Add a unit test: existing registration + Save-Data on → `register` not c
 
 ### [Correctness] modalDialog leaves stale `--origin-x/y` behind for a later unanchored open
 
-**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 118–133) @ f5bf8767
+**File(s):** `web/src/lib/actions/modalDialog.svelte.ts` (`$effect`, lines 118–133) @ cd04c367
 
 **Priority:** P4
 
@@ -145,7 +143,7 @@ keyframe's `0px` fallback applies. One-line fix, and it makes the `origin: null`
 ### [Correctness] Native shell chrome is hard-coded light while the app ships dark mode
 
 **File(s):** `android/app/src/main/res/values/styles.xml` (lines 5–10) · `capacitor.config.json`
-(lines 8–13) @ f5bf8767
+(lines 8–13) @ cd04c367
 
 **Priority:** P2
 
@@ -213,7 +211,7 @@ already exist).
 
 ### [Maintainability] Pencil-eraser attach silently no-ops if the web view is missing
 
-**File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ f5bf8767
+**File(s):** `ios/App/App/MainViewController.swift` (lines 13–19) @ cd04c367
 
 **Priority:** P5
 
@@ -252,7 +250,7 @@ against a future Capacitor picks up the regression immediately.
 
 ### [Readability] `ringAnimateKey`'s `Date.now()` suffix is dead — and the flourish cannot replay on a same-swatch re-tap
 
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (lines 58–60, 72, 122) @ f5bf8767
+**File(s):** `web/src/lib/components/ColorPalette.svelte` (lines 58–60, 72, 122) @ cd04c367
 
 **Priority:** P3
 
@@ -261,9 +259,9 @@ against a future Capacitor picks up the regression immediately.
 ```ts
 let ringAnimateKey = $state<string | null>(null);
 ...
-ringAnimateKey = hex + ':' + Date.now();          // line 73
+ringAnimateKey = hex + ':' + Date.now();          // line 72
 ...
-class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}   // line 123
+class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}   // line 122
 ```
 
 The only consumer of the key is `startsWith(hex + ':')`, which discards the timestamp entirely — the
@@ -271,7 +269,7 @@ state is functionally just "which hex was last tapped". The `Date.now()` suffix 
 per-tap uniqueness was intended (i.e., re-tapping the currently-selected swatch should restart the
 confirmation ring), but a class toggle can't deliver that: on a same-swatch re-tap the
 `ring-animate` class boolean stays `true`, the CSS animation (`swatch-ring-expand`, `forwards`,
-lines 214–230) has already completed, and nothing replays. So the code carries dead complexity *and*
+lines 221–237) has already completed, and nothing replays. So the code carries dead complexity *and*
 fails the behavior that complexity gestures at.
 
 #### Proposed solution
@@ -290,7 +288,7 @@ Decide which behavior is wanted:
 
 ### [Architecture] ColorPalette owns the black-ink/theme sync invariant and writes shared state directly from an `$effect`
 
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (`$effect`, lines 36–40) @ f5bf8767
+**File(s):** `web/src/lib/components/ColorPalette.svelte` (`$effect`, lines 36–40) @ cd04c367
 
 **Priority:** P2
 
@@ -309,11 +307,11 @@ theme flips live" — inside one component, by assigning `colors.activeColor` di
 
 1. `.claude/rules/svelte.md` is explicit: "Components read state and call setters; they never own
    shared state." Every other write to `colors` goes through `selectPaletteColor` /
-   `pickCustomColor` / `selectCustomSwatch` (`web/src/lib/state/colors.svelte.ts`, lines 47–64);
+   `pickCustomColor` / `selectCustomSwatch` (`web/src/lib/state/colors.svelte.ts`, lines 48–65);
    this is the sole direct field assignment from a component.
 2. The invariant only holds while `ColorPalette` happens to be mounted. Today it always is on the
    drawing route, but the engine consumes `colors.activeColor` independently
-   (`web/src/lib/drawing/earlyBoot.ts`, line 38), and nothing about the rule is palette-UI-specific
+   (`web/src/lib/drawing/earlyBoot.ts`, line 51), and nothing about the rule is palette-UI-specific
    — it's a property of the color state itself. A future surface that draws without mounting the
    palette (or a test exercising theme flips against the state module) silently loses the sync.
 
@@ -327,7 +325,7 @@ Move the rule into the state layer. Options, in increasing ambition:
 * Better: export `syncInkToTheme(dark: boolean)` from `colors.svelte.ts` (guarding on
   `activeSwatch === BLACK_INK` internally) and invoke it from the place that already observes theme
   changes at module scope — `appearance.svelte.ts` runs `updateThemeColorMeta(resolvedTheme())` on
-  every flip (line 38); the ink sync belongs beside it. `ColorPalette` then drops the `$effect`
+  every flip (line 53); the ink sync belongs beside it. `ColorPalette` then drops the `$effect`
   entirely.
 
 Tradeoff: option 2 introduces an `appearance → colors` module dependency; that direction seems safe
@@ -339,7 +337,7 @@ does not).
 
 **File(s):** `web/src/routes/api/verify-access-code/+server.ts` (line 28),
 `web/src/routes/api/verify-key/+server.ts` (line 25), `web/src/lib/server/report.ts` (lines 115–122)
-@ f5bf8767
+@ cd04c367
 
 **Priority:** P4
 
@@ -363,7 +361,7 @@ and monitoring can't distinguish client bugs (should be 4xx) from ordinary wrong
 #### Proposed solution
 
 Return `json({ ok: false, error: … }, { status: 400 })` for the empty-input branches of both verify
-endpoints. The client (`web/src/lib/aiCredential.ts:41`) already computes
+endpoints. The client (`web/src/lib/aiCredential.ts:42`) already computes
 `ok: res.ok && data.ok === true`, so behavior is unchanged there; the api-smoke doesn't pin these
 cases. Cheap, and it re-aligns the code with its own documented rule — if instead the 200 is
 deliberate (keep the oracle surface perfectly uniform), record that in the rule file, which
@@ -372,7 +370,7 @@ currently says the opposite.
 ### [Maintainability] Two wire shapes for JSON errors: thrown `error()` produces `{ message }`, handlers produce `{ ok: false, error }`
 
 **File(s):** `web/src/lib/server/http.ts` (`readJsonBody`, line 15; `throttled`, lines 59–64),
-`web/src/routes/api/generate-image/+server.ts` (lines 20, 67–68, 79–81, 124, 144–145) @ f5bf8767
+`web/src/routes/api/generate-image/+server.ts` (lines 20, 67–68, 79–81, 124, 144–145) @ cd04c367
 
 **Priority:** P3
 
@@ -386,7 +384,7 @@ The section's error responses come in two incompatible body shapes:
   failure (400/413/415/422/403/500/502) — which SvelteKit serializes as `{ message }`.
 
 Concretely: a malformed JSON body sent to `/api/verify-access-code` yields a 400 whose body is
-`{ message: 'Expected a JSON body' }`; the client (`web/src/lib/aiCredential.ts:37–44`) reads
+`{ message: 'Expected a JSON body' }`; the client (`web/src/lib/aiCredential.ts:38–44`) reads
 `data.error`, finds `undefined`, and drops the server's explanation on the floor. The generate-image
 portion is partially insulated because its client reads raw text as `detail`, but the split still
 means every new endpoint author must know which of two error dialects each helper speaks.
@@ -408,7 +406,7 @@ for `/api/*`), and extend `scripts/api-smoke.mjs` assertions to pin the body sha
 ### [Architecture] Give `authorizeGenerationRequest` one failure channel instead of three exit modes
 
 **File(s):** `web/src/lib/server/generationAuthorization.ts` (`authorizeGenerationRequest`, lines
-17–57) @ f5bf8767
+17–57) @ cd04c367
 
 **Priority:** P3
 
@@ -446,24 +444,29 @@ Update `generationAuthorization.test.ts` accordingly.
 
 ### [Testing] `platform.ts`'s riskiest logic — `supportsOrientationLock`, `isStandalone`, `isIosDevice` — has zero unit coverage
 
-**File(s):** `web/src/lib/platform.ts` (`supportsOrientationLock`, lines 122–126;
-`TABLET_MIN_SIDE_PX`, line 88; `isStandalone`, lines 23–31; `isIosDevice`, lines 38–44),
-`web/src/lib/platform.test.ts`, `web/src/lib/platform.osLabel.test.ts` @ f5bf8767
+**File(s):** `web/src/lib/platform.ts` (`supportsOrientationLock`, lines 111–115; `isStandalone`,
+lines 25–33; `isIosDevice`, lines 40–46), `web/src/lib/breakpoints.ts` (`TABLET_MIN_SIDE_PX`, line
+16), `web/src/lib/platform.test.ts`, `web/src/lib/platform.osLabel.test.ts` @ cd04c367
 
 **Priority:** P3
 
+**Pin drift:** `supportsOrientationLock()` still has no direct coverage, but the report's "zero unit
+coverage" claim is overstated: `state/install.svelte.test.ts` indirectly exercises `isStandalone()`
+(lines 110–117) and `isIosDevice()` (lines 59–106). The proposed exhaustive direct cases remain
+broader than that coverage.
+
 #### Problem
 
-The two existing test files cover only `getPlatform` (`platform.test.ts`, 28 lines) and
-`osLabelFromUserAgent` (`platform.osLabel.test.ts`). Untested:
+The two platform-specific test files cover only `getPlatform` (`platform.test.ts`, 28 lines) and
+`osLabelFromUserAgent` (`platform.osLabel.test.ts`). Direct coverage is absent for:
 
-* `supportsOrientationLock()` — the most consequential function in the module. It carries a 35-line
-  WHY comment (lines 79–111) explaining a subtle iPadOS-26 windowing heuristic and a named tuning
-  constant `TABLET_MIN_SIDE_PX = 600`, and it gates whether orientation toggles are shown *and*
-  whether `applyDeviceOrientationPreference` does anything at all (`orientation.ts` line 21). The
-  `< 600` boundary, the "web always true", the "SSR false", and the "native tablet false / native
-  phone true" branches are all unasserted; a regression (e.g. flipping `<` to `<=` or reading window
-  instead of screen) would ship silently.
+* `supportsOrientationLock()` — the most consequential function in the module. It carries a 31-line
+  WHY comment (lines 79–109) explaining a subtle iPadOS-26 windowing heuristic and a named tuning
+  constant `TABLET_MIN_SIDE_PX = 600` (`breakpoints.ts`, line 16), and it gates whether orientation
+  toggles are shown *and* whether `applyDeviceOrientationPreference` does anything at all
+  (`orientation.ts` line 21). The `< 600` boundary, the "web always true", the "SSR false", and the
+  "native tablet false / native phone true" branches are all unasserted; a regression (e.g. flipping
+  `<` to `<=` or reading window instead of screen) would ship silently.
 * `isStandalone()` — four OR'd display-mode probes including the iOS-legacy `navigator.standalone`;
   drives PWA-vs-tab classification in `deviceInfo.ts` and fullscreen affordances.
 * `isIosDevice()` — the iPadOS-masquerading-as-Mac branch (`MacIntel` + `maxTouchPoints > 1`) is
@@ -484,7 +487,7 @@ and `window.screen` width/height getters); `isStandalone` for each display-mode 
 ### [Performance] Pinch move path allocates per pointermove, against the repo's hot-path rule
 
 **File(s):** `web/src/lib/actions/pinchZoom.svelte.ts` (`centroid` lines 54–62, `recompute` lines
-89–108, `local` lines 169–172) @ f5bf8767; `web/src/lib/actions/spreadTracker.ts` (`points()` lines
+89–108, `local` lines 169–172) @ cd04c367; `web/src/lib/actions/spreadTracker.ts` (`points()` lines
 20–22)
 
 **Priority:** P4
@@ -522,7 +525,7 @@ production bundle or the clone weight without being needed there.
 ### [Performance] `generate-image` buffers up to 15 MB before rejecting an unsupported Content-Type on the raw path
 
 **File(s):** `web/src/routes/api/generate-image/+server.ts` (`POST`, lines 120–125; raw
-`readValidatedImage`, lines 77–84) @ f5bf8767
+`readValidatedImage`, lines 77–84) @ cd04c367
 
 **Priority:** P4
 
@@ -556,26 +559,26 @@ api-smoke expectation if it pins that combination (it currently only pins the mu
 
 ### [Performance] Service-worker precache includes assets the app never fetches (social og:image, generator source SVGs)
 
-**File(s):** `web/vite.config.ts` (`workbox.globPatterns`, line 105) @ f5bf8767
+**File(s):** `web/vite.config.ts` (`workbox.globPatterns`, line 107) @ cd04c367
 
 **Priority:** P3
 
 #### Problem
 
-`globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (line 93) sweeps everything
-in the build output — including `static/` files that only exist for *external* consumers and are
-never requested by the running app:
+`globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (line 107) sweeps
+everything in the build output — including `static/` files that only exist for *external* consumers
+and are never requested by the running app:
 
 * `web/static/large-image.png` (556,002 bytes) — referenced only by `og:image`/`twitter:image` meta
   in `web/src/app.html:32,41`; fetched by link-unfurling scrapers, never by a browser session.
 * `web/static/large-image.svg` (7,497 bytes) — input file for `scripts/gen-large-image.mjs:32`, not
   a runtime asset.
 * `web/static/styles/source.svg` (55,652 bytes) — input for
-  `tools/asset-gen/bin/gen-style-covers.mjs:21`, not a runtime asset.
+  `tools/asset-gen/bin/gen-style-covers.mjs:102`, not a runtime asset.
 
-That is ~620 KB of precache downloaded by every client that installs the SW, on top of the ~39 MB
+That is ~620 KB of precache downloaded by every client that installs the SW, on top of the ~35 MB
 the config already frets about ("a window.load registration would saturate a slow connection", lines
-76–81). The config already demonstrates deliberate precache curation (`navigateFallback: ''`, html
+89–94). The config already demonstrates deliberate precache curation (`navigateFallback: ''`, html
 excluded) — these files just slipped through the glob.
 
 #### Proposed solution
@@ -588,7 +591,7 @@ precache manifest after `npm run build`.
 
 ### [Architecture] Generator input files live in web/static and ship to production
 
-**File(s):** `web/static/large-image.svg`, `web/static/styles/source.svg` @ f5bf8767
+**File(s):** `web/static/large-image.svg`, `web/static/styles/source.svg` @ cd04c367
 
 **Priority:** P3
 
@@ -596,24 +599,25 @@ precache manifest after `npm run build`.
 
 Both SVGs are *inputs* to offline tooling, not app assets: `scripts/gen-large-image.mjs:32` reads
 `web/static/large-image.svg` to replay strokes onto the live canvas, and
-`tools/asset-gen/bin/gen-style-covers.mjs:21` reads `web/static/styles/source.svg` to generate the
-style-cover webps. Neither is referenced by any runtime code path (only `scripts/image-audit.mjs:34`
+`tools/asset-gen/bin/gen-style-covers.mjs:102` reads `web/static/styles/source.svg` to generate the
+style-cover webps. Neither is referenced by any runtime code path (only `scripts/image-audit.mjs:38`
 — which has to special-case both in its `IGNORE` set precisely because they aren't app images).
 Housing tool inputs in the production publish directory means they are served publicly, copied into
-the native binaries, and precached (previous finding), and it muddies the otherwise-clean rule that
-`static/` is "the files meant to be served verbatim" (`web/netlify.toml:16-17`).
+the web build, and precached (previous finding), and it muddies the otherwise-clean rule that
+`static/` is "the files meant to be served verbatim" (`web/netlify.toml:16-17`). The native build's
+`scripts/lib/native-export.mjs` already strips both inputs, so they no longer reach Android/iOS.
 
 #### Proposed solution
 
 Move `large-image.svg` beside its consumer (e.g. `scripts/assets/large-image.svg`) and `source.svg`
-into `tools/asset-gen/` (its docs at `tools/asset-gen/docs/README.md:142` already describe it as a
+into `tools/asset-gen/` (its docs at `tools/asset-gen/docs/README.md:152` already describe it as a
 committed pipeline input). Update the two generator paths and drop both entries from
 `scripts/image-audit.mjs`'s `IGNORE` set. Gotcha: confirm neither URL is referenced externally
 (nothing in-repo fetches them over HTTP).
 
 ### [Correctness] `install-maestro` pipes an unpinned remote script to bash and never verifies the pin took effect
 
-**File(s):** `.github/actions/install-maestro/action.yml` (lines 7–13) @ f5bf8767
+**File(s):** `.github/actions/install-maestro/action.yml` (lines 7–13) @ cd04c367
 
 **Priority:** P3
 
@@ -656,7 +660,7 @@ Tradeoff: vendoring means occasionally refreshing the script; the version assert
 
 ### [Correctness] The E2E spec sanitizer admits leading-dash values and `..` traversal
 
-**File(s):** `scripts/audit-burndown/burndown.mjs` (lines 701–707, 517–524) @ f5bf8767
+**File(s):** `scripts/audit-burndown/burndown.mjs` (lines 714–719, 530–537) @ cd04c367
 
 **Priority:** P4
 
@@ -674,8 +678,8 @@ does block shell metacharacters. But `-` and `.` are in the class unanchored, so
 362 (``runGate(`${E2E_CMD} ${specs.join(' ')}` …)``). A verifier that emits a flag-shaped "spec"
 silently changes Playwright's behavior for the gate (e.g. inverting the filter), which corrupts the
 gate's verdict rather than failing loudly. The verifier prompt says specs are "paths relative to
-web/, e.g. `tests/flows.spec.ts`" (verifier.md lines 51–52) — the sanitizer should encode that
-shape.
+web/, e.g. `tests/flows-undo-persistence.spec.ts`" (verifier.md lines 63–64) — the sanitizer should
+encode that shape.
 
 #### Proposed solution
 
@@ -690,7 +694,7 @@ or minimally reject `spec.startsWith('-')` and `spec.split('/').includes('..')`.
 
 ### [Correctness] overnight.mjs neither validates the count argument nor shell-quotes it
 
-**File(s):** `scripts/audit-burndown/overnight.mjs` (lines 24, 51–52) @ f5bf8767
+**File(s):** `scripts/audit-burndown/overnight.mjs` (lines 24, 51–52) @ cd04c367
 
 **Priority:** P3
 
@@ -706,7 +710,7 @@ const cmd = `env ${envPrefix} node scripts/audit-burndown/burndown.mjs`;
 Two defects:
 
 1. **No validation.** `npm run audit:burndown:overnight -- 6OO` (typo) launches a detached job whose
-   `Number('6OO')` is `NaN`; burndown's `while (done < MAX_ISSUES)` (line 513) is instantly false,
+   `Number('6OO')` is `NaN`; burndown's `while (done < MAX_ISSUES)` (line 1138) is instantly false,
    so the run preflights green, detaches, prints the launch banner… and exits having done nothing,
    with only a `finished: 0 fixed` line in a log nobody is watching. scripts/CLAUDE.md requires:
    "validate inputs up front with a path-specific one-line error and a non-zero exit."
@@ -716,7 +720,7 @@ Two defects:
    instead of failing loudly.
 
 The same `Number(...)`-NaN silence applies to `MAX_ISSUES`/`MAX_HANDLED`/etc. inside burndown.mjs
-itself (lines 76–111), but the launcher is where a human types the value.
+itself (lines 94–149), but the launcher is where a human types the value.
 
 #### Proposed solution
 
@@ -734,7 +738,7 @@ and `MAX_ISSUES=${shellQuote(count)}` in the prefix for symmetry with the forwar
 
 ### [Correctness] android-emulator-smoke boot wait can spin forever and crashes opaquely when no serial matches
 
-**File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ f5bf8767
+**File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ cd04c367
 
 **Priority:** P3
 
@@ -753,7 +757,7 @@ Three issues:
    hardware-accel misconfiguration this script preflights for at lines 25–38 is not the only way an
    emulator wedges) leaves `npm run test:android` spinning silently forever. `scripts/CLAUDE.md`
    says explicitly: "name polling budgets". The repo already has
-   `pollUntil(callback, timeoutMs, intervalMs)` in `scripts/lib/proc.mjs` (lines 82–91) built for
+   `pollUntil(callback, timeoutMs, intervalMs)` in `scripts/lib/proc.mjs` (lines 102–111) built for
    precisely this.
 2. The `emulatorCrash` race only guards `wait-for-device` (line 70); the boot-completed loop and
    `adb devices` call are outside it. (A hard crash usually makes `adb` reject so the failure
@@ -782,7 +786,7 @@ For the serial, guard the match:
 
 ### [Maintainability] `dev:kill` executes `kill-port` via bare `npx` — an undeclared, unpinned dependency fetched at run time
 
-**File(s):** `package.json` (line 16) @ f5bf8767
+**File(s):** `package.json` (line 16) @ cd04c367
 
 **Priority:** P4
 
@@ -797,7 +801,7 @@ resolves it from the registry on each first use: the script needs network to run
 precisely for when the local environment is wedged), executes whatever version is `latest` that day,
 and is exposed to registry-side supply-chain swaps. The repo's own ESLint config bans the bare
 `playwright` import specifically because "bare playwright is an undeclared transitive dependency"
-(eslint.config.js lines 60–65) — the same principle applies to tooling invoked from scripts.
+(eslint.config.js lines 65–69) — the same principle applies to tooling invoked from scripts.
 
 #### Proposed solution
 
@@ -811,13 +815,13 @@ remaining scripted network dependency for a purely local operation.
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-16/work/` (~14 MB),
 `tools/asset-gen/ideas-exploration/idea-15/{hotspots,compare,img,regionmean}/` (~11 MB, 285 PNGs),
-plus smaller sets in `idea-18/work/`, `idea-2/`, `idea-12/img/` @ f5bf8767
+plus smaller sets in `idea-18/work/`, `idea-2/`, `idea-12/img/` @ cd04c367
 
 **Priority:** P2
 
 #### Problem
 
-`ideas-exploration/` weighs 63 MB. Its own README (lines 122–129) defines the per-idea contract:
+`ideas-exploration/` weighs 62 MB. Its own README (lines 122–129) defines the per-idea contract:
 `report.md`, `meta.json`, `code/`, and "`*.webp` … before/after evidence (≤560 px)". But several
 ideas committed their entire full-resolution working sets wholesale:
 
@@ -848,7 +852,7 @@ goal is checkout/clone weight and honoring the folder's own layout contract, not
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-21/farm-compare-46bc770.html` (6.9 MB),
 `idea-21/farm-git-46bc770.html` (5.7 MB); smaller: `owl-tall-compare-34a606f-prerename.html`,
-`owl-tall-compare-6e3f14f.html` @ f5bf8767
+`owl-tall-compare-6e3f14f.html` @ cd04c367
 
 **Priority:** P3
 
@@ -881,7 +885,7 @@ restricted-import blocks, policy values re-declared in specs. One of these has a
 ### [Testing] Version numbers must agree across three files but have no at-rest drift guard
 
 **File(s):** `android/app/build.gradle` (lines 28–29) · `ios/App/App.xcodeproj/project.pbxproj`
-(lines 311, 318, 333, 340) · `package.json` (line 3) @ f5bf8767
+(lines 315, 322, 337, 344) · `package.json` (line 3) @ cd04c367
 
 **Priority:** P3
 
@@ -889,8 +893,8 @@ restricted-import blocks, policy values re-declared in specs. One of these has a
 
 The same release identity lives in three places: `package.json:3` (`"version": "1.4.0"`),
 `android/app/build.gradle:28–29` (`versionCode 6`, `versionName "1.4.0"`), and
-`ios/App/App.xcodeproj/project.pbxproj` (`CURRENT_PROJECT_VERSION = 6;` at 311/333,
-`MARKETING_VERSION = 1.4.0;` at 318/340). `scripts/release.mjs` (`bumpVersions`, lines 102–111)
+`ios/App/App.xcodeproj/project.pbxproj` (`CURRENT_PROJECT_VERSION = 6;` at 315/337,
+`MARKETING_VERSION = 1.4.0;` at 322/344). `scripts/release.mjs` (`bumpVersions`, lines 119–128)
 writes all three in one transaction, and `android/CLAUDE.md` warns "Don't hand-edit
 versionCode/versionName".
 
@@ -898,7 +902,7 @@ But the repo convention (root `CLAUDE.md`, "Cross-file agreement is never mainta
 requires a drift-guard test when agreeing sites can't share code — exactly the situation here
 (Groovy, pbxproj, JSON). The existing tests don't cover it: `scripts/tests/native-version.test.mjs`
 reads both real files but only asserts the bump transforms are idempotent per file ("is
-byte-identical when re-applying the committed version", lines 28–32 and 78–82) — it never compares
+byte-identical when re-applying the committed version", lines 28–32 and 77–81) — it never compares
 Android's committed version to iOS's or to `package.json`'s. A hand edit (or a partially applied
 release script run, e.g. killed between `setAndroidVersion` and `setIosVersion`) desyncs the stores'
 versions and nothing goes red until store submission.
@@ -921,20 +925,20 @@ Release); assert all occurrences are identical, not just the first match.
 
 ### [Testing] The `scripts` ↔ `scripts-info` contract (ADR-0019) has no drift guard
 
-**File(s):** `package.json` (lines 8–165 vs 166–323) @ f5bf8767
+**File(s):** `package.json` (lines 8–166 vs 167–325) @ cd04c367
 
 **Priority:** P3
 
 #### Problem
 
 CLAUDE.md's command section states the contract: "every new or renamed script gets a matching
-one-line entry in the `scripts-info` block". With 126 scripts and 126 descriptions maintained as two
+one-line entry in the `scripts-info` block". With 157 scripts and 157 descriptions maintained as two
 parallel JSON objects, that agreement is currently kept purely by discipline — nothing fails when a
 script is added without a description or a description is orphaned by a rename. (Today the key sets
-happen to match exactly; the *ordering* has already drifted — first divergence at index 68,
-`gen:shots` vs `gen:style-covers` — showing the two blocks are in fact edited independently.) The
-repo convention says exactly this situation gets a drift-guard test, and `scripts/tests/` already
-hosts the analogous guards (`workflow-hygiene.test.mjs`, `labels.test.mjs`,
+happen to match exactly; the *ordering* has already drifted — first divergence at index 45,
+`preperf:ipad` vs `preperf:ipad:frames` — showing the two blocks are in fact edited independently.)
+The repo convention says exactly this situation gets a drift-guard test, and `scripts/tests/`
+already hosts the analogous guards (`workflow-hygiene.test.mjs`, `labels.test.mjs`,
 `claude-permissions.test.mjs`).
 
 #### Proposed solution
@@ -954,53 +958,49 @@ presence checks are the load-bearing part.
 
 ### [Maintainability] CI retry-token derivation formula is duplicated between playwright.config.ts and the spec that consumes it
 
-**File(s):** `web/playwright.config.ts` (`ciAllowedTokens`, lines 143–146) @ f5bf8767
+**File(s):** `web/playwright.config.ts` (`ciAllowedTokens`, lines 143–146),
+`web/playwright.shared.ts` (`managedAccessTokenForRetry`, lines 16–26),
+`web/tests/generate-image.spec.ts` (line 114) @ cd04c367
 
 **Priority:** P2
 
+**Pin drift:** This finding appears resolved. `managedAccessTokenForRetry()` owns the token formula
+in `playwright.shared.ts`; both `playwright.config.ts` and `generate-image.spec.ts` call it.
+
 #### Problem
 
-`web/playwright.config.ts:64-67` derives the per-retry token list served to the web server:
+The current config derives the per-retry token list served to the web server at lines 143–146:
 
 ```ts
 const ciRetries = 2;
-const ciAllowedTokens = Array.from(
-  { length: ciRetries + 1 },
-  (_, retry) => retry === 0 ? 'daycare-club' : `daycare-club-retry${retry}`,
-).join(',');
+const ciAllowedTokens = allowedTokensList(
+  ...Array.from({ length: ciRetries + 1 }, (_, retry) => managedAccessTokenForRetry(retry)),
+);
 ```
 
-and `web/tests/generate-image.spec.ts:112` re-derives the identical formula independently:
+and `web/tests/generate-image.spec.ts:114` calls the same helper:
 
 ```ts
-const token = testInfo.retry === 0 ? 'daycare-club' : `daycare-club-retry${testInfo.retry}`;
+const token = managedAccessTokenForRetry(testInfo.retry);
 ```
 
-Two hand-maintained copies of the same string-construction rule. If either side changes (rename the
-base token, change the suffix scheme), the other keeps compiling and the breakage only manifests
-**on a CI retry** — the rarest, least-debuggable path, and precisely the situation the retry tokens
-exist to handle (rate-limit buckets per retry). CLAUDE.md's boundary-string rule ("declared once,
-imported everywhere") excepts *tests* re-typing literals, but here the non-test config side and the
-spec each derive a *formula*, not a literal — the derivation itself is the shared contract.
+The shared helper at `web/playwright.shared.ts:24–26` removes the two hand-maintained copies the
+finding described. Renaming the base token or suffix scheme now updates both consumers together.
 
 #### Proposed solution
 
-Extract `export function retryScopedToken(retry: number): string` (plus
-`export const CI_MANAGED_TOKEN = 'daycare-club'`) into a small shared module, e.g.
-`web/tests/ai-tokens.ts`, imported by both `playwright.config.ts` (which already imports from
-`./tests/admin-helpers`, so the precedent exists) and `generate-image.spec.ts`. `ciAllowedTokens`
-becomes `Array.from({ length: ciRetries + 1 }, (_, r) => retryScopedToken(r)).join(',')`.
+Drop this finding unless there is a remaining concern with the helper's location or API.
 
 ### [Maintainability] `COLOR_CHANGE_DEBOUNCE_SETTLE_MS` keeps cross-file agreement with the engine by prose, not import
 
 **File(s):** `web/tests/helpers.ts` (lines 29–30) and `web/src/lib/drawing/engine.ts`
-(`COLOR_CHANGE_DEBOUNCE_MS`, line 795) @ f5bf8767
+(`COLOR_CHANGE_DEBOUNCE_MS`, line 773) @ cd04c367
 
 **Priority:** P2
 
 #### Problem
 
-`web/tests/helpers.ts:27-28` is a textbook instance of the pattern CLAUDE.md calls a defect ("A
+`web/tests/helpers.ts:29–30` is a textbook instance of the pattern CLAUDE.md calls a defect ("A
 'keep in sync with X' comment marks a defect, not a mitigation"):
 
 ```ts
@@ -1008,12 +1008,12 @@ becomes `Array.from({ length: ciRetries + 1 }, (_, r) => retryScopedToken(r)).jo
 export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = 150;
 ```
 
-The engine's constant is module-private (`web/src/lib/drawing/engine.ts:702`:
+The engine's constant is module-private (`web/src/lib/drawing/engine.ts:773`:
 `const COLOR_CHANGE_DEBOUNCE_MS = 100;`), so the agreement is maintained only by this comment —
 which also restates the mutable value `(100)`, a second convention violation ("no restating mutable
 facts … owned elsewhere"). If the engine debounce is ever raised past 150 ms, every spec that sleeps
-`COLOR_CHANGE_DEBOUNCE_SETTLE_MS` (`flows-magic-brush.spec.ts:438`,
-`flows-palette-brush.spec.ts:70`, `engine-pointer-recovery.spec.ts:63`) starts flaking or silently
+`COLOR_CHANGE_DEBOUNCE_SETTLE_MS` (`flows-magic-brush.spec.ts:649`,
+`flows-palette-brush.spec.ts:77`, `engine-pointer-recovery.spec.ts:61`) starts flaking or silently
 testing inside the debounce window, with nothing failing loudly to point at the drift.
 
 The suite already imports engine constants directly — `engine-pointer-recovery.spec.ts:3-9` imports
@@ -1038,13 +1038,13 @@ Playwright's Node transform before choosing it as the export home; `strokeMath.t
 
 ### [Maintainability] `generate-image.spec.ts` re-declares server policy values (rate limits, upload cap) instead of importing them
 
-**File(s):** `web/tests/generate-image.spec.ts` (lines 20–23, 43–44) @ f5bf8767
+**File(s):** `web/tests/generate-image.spec.ts` (lines 19–22, 43–44) @ cd04c367
 
 **Priority:** P2
 
 > **Verified 2026-07-28** — `rateLimitPolicy.ts` is side-effect-free and `admin.spec.ts` line 2
-> already imports a server module by relative path, so the proposed import is proven viable.
-> Citation correction: the constants are on lines 19–20 (line 18 is the comment).
+> already imports a server module by relative path, so the proposed import is proven viable. The
+> policy mirrors are on lines 19–21, and the upload-cap neighbor is on lines 43–44.
 
 #### Problem
 
@@ -1057,7 +1057,7 @@ const GENERATE_LIMIT = 15;
 const BYOK_LIMIT = 30;
 ```
 
-(lines 19–21), and line 42 hard-codes the upload cap's neighbor:
+(lines 19–21), and lines 43–44 hard-code the upload cap's neighbor:
 
 ```ts
 // 16 MB — just over the 15 MB cap.
@@ -1091,7 +1091,7 @@ Playwright Node context (it imports the AI provider seam); if it doesn't, move t
 
 **File(s):** `tools/asset-gen/crayon-brush-samples/samples.mjs` (header lines 1–10, stage arrays
 through line 174), `build-sheet.mjs` (`STAGES`, lines 26–57), `README.md` (table lines 16–23) @
-f5bf8767
+cd04c367
 
 **Priority:** P4
 
@@ -1123,7 +1123,7 @@ code source to check against.
 ### [Maintainability] The supported Node floor (engines 22.13) is never exercised — CI hardcodes Node 24 with no tie to `engines`
 
 **File(s):** `.github/actions/setup-node/action.yml` (line 19); `package.json` (lines 5–7);
-`docs/CONTRIBUTING.md` (line 14) @ f5bf8767
+`docs/CONTRIBUTING.md` (line 14) @ cd04c367
 
 **Priority:** P3
 
@@ -1165,22 +1165,24 @@ Fix `docs/CONTRIBUTING.md`'s "Node 22" to match `engines` (or reword to "the ver
 
 ### [Testing] Android minSdk floor ↔ COMPATIBILITY.md agreement is maintained by prose
 
-**File(s):** `android/variables.gradle` (line 2) · `scripts/tests/android-config.test.mjs` (lines
-14–29) @ f5bf8767
+**File(s):** `android/variables.gradle` (line 2) · `docs/COMPATIBILITY.md` (lines 18, 35–37, 95–99)
+· `scripts/tests/android-config.test.mjs` (lines 14–29) @ cd04c367
 
 **Priority:** P4
 
 #### Problem
 
 `docs/COMPATIBILITY.md` names `android/variables.gradle → minSdkVersion` as the authoritative source
-of the "Android 7.0 / API 24+" support floor (its lines 18, 34–36, 52) and repeats "API 24" in
-several risk-register rows. The iOS side of the same table got a real drift guard —
-`web/src/browserFloor.test.ts` parses `IPHONEOS_DEPLOYMENT_TARGET` out of the pbxproj and compares
-it against `BROWSER_TARGETS`. The Android side has none: `scripts/tests/android-config.test.mjs`
-deliberately scopes its patterns to the *emulator* API level ("the API 24 minSdk floor … don't
-false-positive", lines 22–24), so nothing fails if `minSdkVersion = 24` (`variables.gradle:2`) is
-raised while COMPATIBILITY.md, the store listing floor, and the Maestro floor-run issues (\#483)
-still say 24. Per the cross-file-agreement convention this is exactly the drift-guard-test case.
+of the "Android 7.0 / API 24+" support floor (its lines 18, 35–37, 95–99). The iOS side of the same
+table got a real drift guard — `web/src/browserFloor.test.ts` parses `IPHONEOS_DEPLOYMENT_TARGET`
+out of the pbxproj and compares it against `BROWSER_TARGETS`. The new
+`compatibility-register.test.mjs` validates the separate API risk register's path/marker anchors,
+not the platform-floor values. The Android side has no numeric agreement guard:
+`scripts/tests/android-config.test.mjs` deliberately scopes its patterns to the *emulator* API level
+("the API 24 minSdk floor … don't false-positive", lines 22–24), so nothing fails if
+`minSdkVersion = 24` (`variables.gradle:2`) is raised while COMPATIBILITY.md, the store listing
+floor, and the Maestro floor-run issues (\#483) still say 24. Per the cross-file-agreement
+convention this is exactly the drift-guard-test case.
 
 #### Proposed solution
 
@@ -1192,20 +1194,20 @@ established for the emulator level, so historical docs stay exempt.
 
 ### [Maintainability] `version.json` boundary string is declared in two places (emitter and fetcher)
 
-**File(s):** `web/vite.config.ts` (`emit-version-json` plugin, line 74) @ f5bf8767
+**File(s):** `web/vite.config.ts` (`emit-version-json` plugin, lines 69–80) @ cd04c367
 
 **Priority:** P3
 
 #### Problem
 
-The build emits the version endpoint at `vite.config.ts:63` (`fileName: 'version.json'`) and the app
-fetches it at `web/src/lib/pwa/updates.ts:140`
+The build emits the version endpoint at `vite.config.ts:76` (`fileName: 'version.json'`) and the app
+fetches it at `web/src/lib/pwa/updates.ts:144`
 (`await fetch('/version.json', { cache: 'no-store' })`). CLAUDE.md's rule for boundary strings —
 "declared once, imported everywhere (tests deliberately excepted)" — applies squarely: both sides
 are production code, and both *can* share a constant (vite.config.ts already imports sibling TS
 modules, and Vite bundles the config with esbuild, so importing a side-effect-free module from
 `src/` works). Today a rename on either side deploys cleanly and only fails at runtime as a
-silently-dead stuck-client recovery path (updates.ts swallows the failed fetch at lines 148–150 by
+silently-dead stuck-client recovery path (updates.ts swallows the failed fetch at lines 154–156 by
 design).
 
 #### Proposed solution
@@ -1214,12 +1216,12 @@ Create a tiny constants module, e.g. `web/src/lib/pwa/versionEndpoint.ts` export
 `export const VERSION_JSON_FILENAME = 'version.json';` (and optionally
 `VERSION_JSON_PATH = '/' + VERSION_JSON_FILENAME`). Import it in both `vite.config.ts` and
 `updates.ts`. Keep the module side-effect-free (no browser globals at top level) so the node-side
-config import stays safe. The `updates.test.ts` literals (lines 131, 139) stay as literals per the
+config import stays safe. The `updates.test.ts` literals (lines 132, 140) stay as literals per the
 tests exception.
 
 ### [Maintainability] ESLint keeps two `no-restricted-imports` blocks in sync by comment instead of a shared constant
 
-**File(s):** `eslint.config.js` (lines 57–72 and 144–169) @ f5bf8767
+**File(s):** `eslint.config.js` (lines 56–72 and 141–169) @ cd04c367
 
 **Priority:** P3
 
@@ -1235,16 +1237,16 @@ a pair of warning comments:
 // carry the playwright path too.
 ```
 
-and (line 137–138) "this block must restate the repo-wide playwright ban from the root block
+and (lines 142–143) "this block must restate the repo-wide playwright ban from the root block
 alongside its own paths." The `paths` entry for `playwright` — name plus message string — is
-duplicated verbatim at lines 60–65 and 156–160. CLAUDE.md is explicit that "a 'keep in sync with X'
+duplicated verbatim at lines 65–69 and 161–165. CLAUDE.md is explicit that "a 'keep in sync with X'
 comment marks a defect, not a mitigation": whoever edits the ban's message (or adds a second
 repo-wide banned import) must remember to touch both blocks, and nothing fails if they don't — the
 web/src tree silently loses (or diverges from) the repo-wide ban.
 
 The same file has a smaller triplication: the three `rateLimit` `no-restricted-syntax` selectors
-(lines 83–96) differ only in `arguments.0.type` (`Literal` / `TemplateLiteral` / `BinaryExpression`)
-and repeat the identical message three times.
+(lines 88–100) differ only in `arguments.0.type` (`Literal` / `TemplateLiteral` /
+`BinaryExpression`) and repeat the identical message three times.
 
 #### Proposed solution
 
@@ -1273,7 +1275,7 @@ const RATE_LIMIT_KEY_ARG_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpressio
 ### [Types] playwright.shared.ts config objects bypass excess-property checking when spread
 
 **File(s):** `web/playwright.shared.ts` (`commonPlaywrightConfig` lines 6–11, `commonWebServer`
-lines 55–86) @ f5bf8767
+lines 55–86) @ cd04c367
 
 **Priority:** P3
 
@@ -1291,7 +1293,7 @@ export const commonPlaywrightConfig = {
 ```
 
 They only ever reach Playwright via spreads (`...commonPlaywrightConfig` in
-`playwright.config.ts:70` and `playwright.webkit-scratch.config.ts:12`; `...commonWebServer` in the
+`playwright.config.ts:149` and `playwright.webkit-scratch.config.ts:12`; `...commonWebServer` in the
 `webServer` blocks) — and TypeScript's excess-property check does **not** apply to spread-introduced
 properties. A typo'd key here (`globalSteup`, `fullyParallell`) compiles clean in every consumer and
 is silently ignored by Playwright at runtime — the exact failure mode the repo's "close finite value
@@ -1313,8 +1315,8 @@ consumers) while making unknown keys a compile error.
 
 ### [Types] `payloadStore`'s narrowed schema silently mistypes the master-key row — document or restructure the dual-schema trick
 
-**File(s):** `web/src/lib/secureStorage.ts` (`SecureDb`/`SecretPayloadDb` lines 37–49,
-`getDb`/`payloadStore` lines 64–65) @ f5bf8767
+**File(s):** `web/src/lib/secureStorage.ts` (`SecureDb`/`SecretPayloadDb` lines 34–46,
+`getDb`/`payloadStore` lines 61–62) @ cd04c367
 
 **Priority:** P4
 
@@ -1332,20 +1334,21 @@ const payloadStore = idbKvStore<SecretPayloadDb>(DB_NAME, STORE);
 
 The narrowing is a type assertion in module form — nothing stops `payloadStore.get(MASTER_KEY_ROW)`
 from typechecking as `SecretPayload | undefined` while returning a `CryptoKey` at runtime. Today it
-happens to be safe because secret names never collide with `'master-key'` and `webLoad` (line 134)
-runtime-validates with `isSecretPayload` anyway — but neither the safety argument nor the reason for
-two schemas is written down, in a file that otherwise explains every non-obvious decision at length.
-Per the conventions, an unvalidated-looking narrow at a non-boundary needs either removal or a WHY.
+happens to be safe because secret names never collide with `'master-key'` and `webLoad` (lines
+128–134) runtime-validates with `isSecretPayload` anyway — but neither the safety argument nor the
+reason for two schemas is written down, in a file that otherwise explains every non-obvious decision
+at length. Per the conventions, an unvalidated-looking narrow at a non-boundary needs either removal
+or a WHY.
 
 #### Proposed solution
 
 Cheapest: a two-line comment on `SecretPayloadDb`/`payloadStore` stating the contract — "same store
-as SecureDb, narrowed to the secret rows; safe because secret names (`API_KEY`, `ADMIN_SESSION`)
-never equal `MASTER_KEY_ROW`, and webLoad still runtime-validates" — plus noting the payoff (put()
-through `payloadStore` cannot write a CryptoKey). Stronger: type `payloadStore` against `SecureDb`
-and let `webLoad`'s existing `isSecretPayload` guard do the narrowing; that deletes
-`SecretPayloadDb` entirely at the cost of a wider `put` signature. Either resolves the silent
-mismatch; the comment route preserves the current (real) typing benefit.
+as SecureDb, narrowed to the secret rows; safe because the secret name (`API_KEY`) never equals
+`MASTER_KEY_ROW`, and webLoad still runtime-validates" — plus noting the payoff (put() through
+`payloadStore` cannot write a CryptoKey). Stronger: type `payloadStore` against `SecureDb` and let
+`webLoad`'s existing `isSecretPayload` guard do the narrowing; that deletes `SecretPayloadDb`
+entirely at the cost of a wider `put` signature. Either resolves the silent mismatch; the comment
+route preserves the current (real) typing benefit.
 
 ## Documentation that actively misdirects
 
@@ -1355,8 +1358,8 @@ link in every generated tree, prescribed scripts that do not exist.
 
 ### [Docs] architecture skill's "file-by-file source map" and route table have drifted well behind `web/src/`
 
-**File(s):** `.ruler/skills/architecture/SKILL.md` (source map lines 62–134, route table lines
-146–161, tech-stack lines 18–19 and 55–56, `server/rateLimit.ts` row line 132) @ f5bf8767
+**File(s):** `.ruler/skills/architecture/SKILL.md` (source map lines 62–135, route table lines
+147–161, tech-stack lines 18–19 and 55–56, `server/rateLimit.ts` row line 133) @ cd04c367
 
 **Priority:** P2
 
@@ -1365,18 +1368,18 @@ link in every generated tree, prescribed scripts that do not exist.
 The skill advertises a "file-by-file source map of web/src/" (description, line 3) and is the
 designated navigation reference, but large module families are absent or misdescribed:
 
-* **`lib/drawing/`** — the map (lines 66–76) omits `aiImage.ts`, `aiImageResponse.ts`,
+* **`lib/drawing/`** — the map (lines 66–90) omits `aiImage.ts`, `aiImageResponse.ts`,
   `earlyBoot.ts` (the ADR-0072 pre-hydration boot the run-splotch skill leans on), `folderSave.ts`
-  (named at line 71 as if mapped, but has no row), `magicBrush.ts`, and `perf.ts` (named at line 60
+  (named at line 81 as if mapped, but has no row), `magicBrush.ts`, and `perf.ts` (named at line 155
   of the profiling skill as the shared marks flag).
-* **`lib/state/`** — omits `aiGeneration.svelte.ts`, `aiKey.svelte.ts`, `modal.svelte.ts`,
+* **`lib/state/`** — omits `aiGeneration.svelte.ts`, `aiKey.ts`, `modal.svelte.ts`,
   `saveFolder.svelte.ts`, `ui.svelte.ts`.
-* **`lib/actions/`** — lists only `dragToClear` and `modalDialog` (lines 89–90); missing
+* **`lib/actions/`** — lists only `dragToClear` and `modalDialog` (lines 105–106); missing
   `launchGuard`, `pinchTextZoom`, `pinchZoom`, `pointerCapture`, `scribbleGuard`, `spreadTracker`.
-* **`lib/server/`** — lists five modules (lines 105–110); missing `http.ts` (the shared
+* **`lib/server/`** — the rows at lines 127–133 omit `http.ts` (the shared
   `throttled()`/`readJsonBody` helpers the api skill calls mandatory), `github.ts` (the ADR-0060
   seam), `config.ts`, `generationAuthorization.ts`, `rateLimitKeys.ts`, `rateLimitPolicy.ts`,
-  `securityHeaders.ts`, `usage.ts`. The `server/rateLimit.ts` row (line 110) still reads "per-token
+  `securityHeaders.ts`, `usage.ts`. The `server/rateLimit.ts` row (line 133) still reads "per-token
   rate limiting for the image generation endpoint" — it is the generic per-key sliding window
   backing seven endpoint policies in `rateLimitPolicy.ts`.
 * **`lib/` top level** — no rows for `adminFormat.ts`, `aiCredential.ts`, `apiHeaders.ts`,
@@ -1384,15 +1387,15 @@ designated navigation reference, but large module families are absent or misdesc
   `haptics.ts`, `idb.ts`, `idle.ts`, `imagePrefetch.ts`, `inviteLink.ts`, `latestRequest.ts`,
   `notchBand.ts`, `palette.ts`, `safeArea.ts`, `storageKeys.ts`, or the `plugins/` facades that
   mobile/native.md describes at length.
-* **Route table** (lines 124–137) — missing `/api/report` and `/api/csp-report`, both live routes
+* **Route table** (lines 147–161) — missing `/api/report` and `/api/csp-report`, both live routes
   (`web/src/routes/api/report/`, `web/src/routes/api/csp-report/`) fully documented in the api
   skill.
-* **Tech stack** — line 18–19 says Vite "Injects three compile-time constants: `__APP_VERSION__`,
-  `__BUILD_TIME__`, `__NATIVE_API_BASE__`"; `web/defines.ts` lines 15–19 defines five, and the two
-  omitted (`__IS_CAPACITOR__`, `__PERF_MARKS__`) are exactly the load-bearing ones other skills
-  document (the tree-shaking gate in mobile/native.md lines 54–60, the marks flag in profiling).
-  Line 55–56 describes Maestro as "Android smoke test" only; the iOS smoke (`npm run test:ios`) has
-  existed since the ios-deploy workflow landed.
+* **Tech stack** — lines 18–19 say Vite "Injects three compile-time constants: `__APP_VERSION__`,
+  `__BUILD_TIME__`, `__NATIVE_API_BASE__`"; `web/defines.ts` lines 17–22 define six, and the three
+  omitted (`__IS_CAPACITOR__`, `__PERF_MARKS__`, `__DEV_HARNESS__`) include load-bearing gates other
+  skills document (the tree-shaking gate in mobile/native.md lines 58–60 and the marks flag in
+  profiling lines 152–157). Line 55–56 describes Maestro as "Android smoke test" only; the iOS smoke
+  (`npm run test:ios`) has existed since the ios-deploy workflow landed.
 
 An auditor or contributor using this map concludes files don't exist, or places new code where an
 unlisted sibling already lives.
@@ -1400,7 +1403,7 @@ unlisted sibling already lives.
 #### Proposed solution
 
 Refresh the map against the actual tree (the listing above is the checklist), add the two missing
-route rows, fix the `rateLimit.ts` description, say "five compile-time constants" (or name the file
+route rows, fix the `rateLimit.ts` description, say "six compile-time constants" (or name the file
 `web/defines.ts` and drop the count per the no-mutable-facts convention), and mention iOS beside
 Android in the Maestro bullet. Consider a drift-guard test comparing `ls web/src/lib` module names
 against the map's cited paths so the next split fails CI instead of silently rotting — the repo's
@@ -1408,7 +1411,7 @@ own "cross-file agreement is never maintained by prose" convention applied to it
 
 ### [Docs] architecture route table describes generate-image's retired "base64 PNG" contract, contradicting the api skill
 
-**File(s):** `.ruler/skills/architecture/SKILL.md` (line 149) @ f5bf8767
+**File(s):** `.ruler/skills/architecture/SKILL.md` (line 150) @ cd04c367
 
 **Priority:** P2
 
@@ -1418,7 +1421,7 @@ The `/api/generate-image` row says:
 
 > Accepts a base64 PNG + style prompt, calls Gemini, returns the generated image.
 
-The api skill (`.ruler/skills/api/SKILL.md` lines 48–58, ADR-0064) documents the current contract
+The api skill (`.ruler/skills/api/SKILL.md` lines 48–65, ADR-0064) documents the current contract
 precisely: **raw image bytes as the body** (WebP preferred, `Content-Type` allowlist, style as a
 `?style=` query enum, credential in a header), with multipart as a labelled legacy shim. "base64
 PNG + style prompt" matches neither the current nor even the legacy multipart shape, and two
@@ -1435,7 +1438,7 @@ skill owns.
 ### [Docs] mobile and profiling docs prescribe npm scripts that don't exist (`ios:run:choose`, `ios:run:ipad`, `npm run ios`)
 
 **File(s):** `.ruler/skills/mobile/ios.md` (lines 65, 143),
-`.ruler/skills/profiling/ipad-device-profiling.md` (line 605) @ f5bf8767
+`.ruler/skills/profiling/ipad-device-profiling.md` (line 605) @ cd04c367
 
 **Priority:** P3
 
@@ -1444,12 +1447,12 @@ skill owns.
 Three commands cited as the way to run the app on iOS hardware are not in `package.json`:
 
 * `ios.md:65` — "or `npm run ios:run:choose` and choose the device at the prompt". No such script;
-  the chooser behavior belongs to plain `ios:run` (scripts-info line 243: "prompting to choose the
+  the chooser behavior belongs to plain `ios:run` (scripts-info line 305: "prompting to choose the
   iOS simulator or connected device").
 * `ios.md:143` — "covers all Debug builds — `ios:run`, `ios:run:ipad`, `cap:ios` Run". No
   `ios:run:ipad`; the real variants are `ios:run:emulator` and `ios:run:device` (package.json lines
-  116–117).
-* `ipad-device-profiling.md:212` — "Build + run the native app with marks on:
+  147–148).
+* `ipad-device-profiling.md:605` — "Build + run the native app with marks on:
   `PERF_MARKS=true npm run ios`". No `ios` script; should be `ios:run`.
 
 Each fails with `npm error Missing script` at the exact moment a user is mid-runbook with a device
@@ -1465,7 +1468,7 @@ fence the whole category — this audit found these three by exactly that grep.
 
 ### [Docs] `.claude/rules/testing.md` misstates what `npm test` runs (omits `test:scripts`)
 
-**File(s):** `.claude/rules/testing.md` (lines 22–23); `package.json` (line 46) @ f5bf8767
+**File(s):** `.claude/rules/testing.md` (lines 22–23); `package.json` (line 46) @ cd04c367
 
 **Priority:** P3
 
@@ -1478,7 +1481,7 @@ The path-scoped testing rule — loaded into context whenever an agent edits any
   `test:ios`) are deliberately excluded (need an emulator/simulator + native toolchain).
 ```
 
-but `package.json` line 40 is:
+but `package.json` line 46 is:
 
 ```json
 "test": "npm run test:unit && npm run test:asset-gen && npm run test:scripts && npm run test:e2e",
@@ -1501,7 +1504,7 @@ tier (see the `test` entry in package.json `scripts-info`); the native smokes (`
 
 ### [Docs] CONTRIBUTING.md "Release process" predates the three-phase model — it describes exactly the flow ADR-0077 was written to kill
 
-**File(s):** `docs/CONTRIBUTING.md` (lines 227–230) @ f5bf8767
+**File(s):** `docs/CONTRIBUTING.md` (lines 226–230) @ cd04c367
 
 **Priority:** P3
 
@@ -1518,7 +1521,7 @@ the tag.
 Two problems:
 
 1. **It omits phases 2 and 3.** `docs/adrs/0077-three-phase-release-verified-artifact-publish.md`
-   and `releases/README.md:41–52` define shipping as three ordered phases — `/release` → `/build` →
+   and `releases/README.md:44–54` define shipping as three ordered phases — `/release` → `/build` →
    `/publish-artifacts` (`npm run release` / `android:bundle`+`ios:ipa` / `release:publish`) —
    precisely because the "release does everything" mental model shipped a stale 1.2.0 binary on the
    v1.4.0 GitHub Release. A contributor following CONTRIBUTING's "short version" stops after phase 1
@@ -1540,7 +1543,7 @@ workflows."
 
 ### [Docs] pr-screenshots links ADR-0046 one directory too shallow — dead link in every generated location
 
-**File(s):** `.ruler/skills/pr-screenshots/SKILL.md` (line 22) @ f5bf8767
+**File(s):** `.ruler/skills/pr-screenshots/SKILL.md` (line 22) @ cd04c367
 
 **Priority:** P2
 
@@ -1566,7 +1569,7 @@ would have caught this too.
 (line 53), `.ruler/skills/lighthouse-audit/SKILL.md` (line 112),
 `.ruler/skills/session-audit/SKILL.md` (line 175), `.ruler/skills/dependency-health-audit/SKILL.md`
 (line 229), `.ruler/skills/dependency-update-audit/SKILL.md` (lines 28 vs 125),
-`.ruler/skills/workflow-audit/SKILL.md` (line 118) @ f5bf8767
+`.ruler/skills/workflow-audit/SKILL.md` (line 118) @ cd04c367
 
 **Priority:** P2
 
@@ -1582,10 +1585,10 @@ from `.claude/skills/<name>/`; from `.agents/skills/<name>/` it points at
 per ADR-0058 and knowledge-map.md lines 3–5) hits a dead path for the conventions that define the
 finding format, the AUDIT-LOG entry, and the self-heal rule.
 
-The correct form already exists in the same tree — `dependency-update-audit/SKILL.md:23` uses
+The correct form already exists in the same tree — `dependency-update-audit/SKILL.md:28` uses
 `(../../../.claude/audit-conventions.md)`, which resolves to the repo-root
 `.claude/audit-conventions.md` from **both** generated locations — but the same file then uses the
-broken `(../../audit-conventions.md)` form at line 120, so even one skill is internally
+broken `(../../audit-conventions.md)` form at line 125, so even one skill is internally
 inconsistent.
 
 #### Proposed solution
@@ -1604,8 +1607,8 @@ observable.
 
 ### [Testing] Run the self-contained API-contract smoke (`test:api:smoke`) in CI
 
-**File(s):** `.github/workflows/test.yml` (`test` job, lines 142–183); `package.json` (line 87,
-scripts-info line 245) @ f5bf8767
+**File(s):** `.github/workflows/test.yml` (`unit` job, lines 125–142; `test` job, lines 149–190);
+`package.json` (line 88, scripts-info line 247) @ cd04c367
 
 **Priority:** P2
 
@@ -1617,17 +1620,18 @@ The repo has a purpose-built, dependency-free gate for the `/api/*` contract:
 "test:api:smoke": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/api-smoke.mjs",
 ```
 
-whose own scripts-info description (package.json line 191) says it is "self-contained: boots a
+whose own scripts-info description (package.json line 247) says it is "self-contained: boots a
 throwaway vite dev with test env, exercises the CORS/preflight contract + the admin auth flow + a
 public oracle against the documented /api/* shapes, tears down (no Gemini/Blobs needed)". Nothing in
-`.github/workflows/test.yml` runs it — the `test` job runs `test:unit`, `test:asset-gen`,
-`test:scripts`, `test:e2e`, and `test:driver:smoke` (lines 98–144), and no other workflow references
-`api:smoke`/`api-smoke` (grep of `.github/` returns nothing). The driver smoke was added to CI at
-lines 140–144 precisely because "the gen:* generators … never run elsewhere in CI, so this smoke
-keeps that module from rotting silently" — the identical rationale applies to the API smoke, which
-`.claude/rules/server-api.md` (lines 45–47) relies on developers remembering to run by hand after
-endpoint changes. A CORS/auth/shape regression on `/api/*` currently ships with green CI and is only
-caught post-deploy by `blobs-smoke.yml` (which tests one narrow thing: Blobs persistence).
+`.github/workflows/test.yml` runs it — the `unit` job runs `test:unit`, `test:asset-gen`, and
+`test:scripts` (lines 125–142), while the sharded `test` job runs `test:e2e` and `test:driver:smoke`
+(lines 149–179); no other workflow references `api:smoke`/`api-smoke` (grep of `.github/` returns
+nothing). The driver smoke was added to CI at lines 173–179 precisely because "the gen:* generators
+… never run elsewhere in CI, so this smoke keeps that module from rotting silently" — the identical
+rationale applies to the API smoke, which `.claude/rules/server-api.md` (lines 45–47) relies on
+developers remembering to run by hand after endpoint changes. A CORS/auth/shape regression on
+`/api/*` currently ships with green CI and is only caught post-deploy by `blobs-smoke.yml` (which
+tests one narrow thing: Blobs persistence).
 
 #### Proposed solution
 
@@ -1640,7 +1644,7 @@ Add a step to the `test` job after the E2E run (it needs no browsers, so placeme
   run: npm run test:api:smoke
 ```
 
-Also consider folding it into `npm test` (package.json line 40) so the local composite matches; if
+Also consider folding it into `npm test` (package.json line 46) so the local composite matches; if
 that is done, update the `test` scripts-info entry and CLAUDE.md's command table in `.ruler/` in the
 same change. Gotcha: verify the throwaway vite dev server's port doesn't collide with the Playwright
 `vite preview` server if steps ever run concurrently (they don't today — steps are sequential).
