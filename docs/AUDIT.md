@@ -46,43 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Maintainability] Prune the full-resolution working-set images committed under ideas-exploration (~34 MB)
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-16/work/` (~14 MB),
-`tools/asset-gen/ideas-exploration/idea-15/{hotspots,compare,img,regionmean}/` (~11 MB, 285 PNGs),
-plus smaller sets in `idea-18/work/`, `idea-2/`, `idea-12/img/` @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-`ideas-exploration/` weighs 62 MB. Its own README (lines 122–129) defines the per-idea contract:
-`report.md`, `meta.json`, `code/`, and "`*.webp` … before/after evidence (≤560 px)". But several
-ideas committed their entire full-resolution working sets wholesale:
-
-* `idea-16/work/` — 14 MB of full-res takes and composites for an idea whose Status is **NOT
-  PROMOTED**; the decisive evidence is already inlined at 480 px (report line 156–162 names the
-  ≤480px webp files and then says "Full-resolution takes and all composites are in `work/`").
-* `idea-15/` — 12 MB for another **NOT PROMOTED** idea: four image dirs (`hotspots/`, `compare/`,
-  `img/`, `regionmean/`) full of uncompressed PNGs (285 PNGs totalling 29 MB across the folder vs 13
-  MB for all 416 webps).
-* A scripted cross-check found 442 image files (~34 MB) referenced by neither any `meta.json` (what
-  `build-review.mjs` inlines into the dashboard) nor individually by any `report.md` — they are
-  covered at best by a directory-level "everything else is in work/" sentence.
-
-This is committed R&D scratch, so the bar is "dead weight worth pruning": every clone, and every
-future `git` operation, carries 30+ MB of full-res exploration outputs whose conclusions are already
-captured in the ≤560 px evidence, the reports, and the 5 MB dashboard.
-
-#### Proposed solution
-
-For each idea, keep exactly what the README contract promises — the report, meta.json, code, and the
-small webp evidence the report/meta reference — and delete the wholesale full-res dirs (or, where a
-dir genuinely earns its keep, downsize to ≤560 px webp like the rest of the folder). `idea-16/work/`
-and `idea-15/`'s three of four PNG dirs are the big wins. Update the affected reports' "evidence
-files" sections in the same commit. Gotcha: history still carries the bytes — that's acceptable; the
-goal is checkout/clone weight and honoring the folder's own layout contract, not history rewriting.
-
 ### [Maintainability] idea-21 carries 12.6 MB of regenerable proof-sheet HTML for a LANDED feature
 
 **File(s):** `tools/asset-gen/ideas-exploration/idea-21/farm-compare-46bc770.html` (6.9 MB),
