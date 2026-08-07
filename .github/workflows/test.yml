@@ -1,13 +1,13 @@
-# WebKit timing is split by cost: pull requests run multi-finger (the sole
-# encode-path exerciser) plus crayon-scribbles (mid-stroke pass splits) in a
-# job parallel to Tests, while release tags run all seven scenarios. The fast
-# subset was sized to stay below the pre-shard Tests job's duration on the
-# measured macOS runner; Ubuntu's WebKit runtime exceeds that budget. With the
-# e2e suite sharded this job is the wall-clock floor of a PR run, and
-# crayon-scribbles' draw phase is most of its cost — decomposed, with the
-# options that were measured and rejected, in
-# docs/scratchpad/webkit-commit-gate-cost-2026-08.md. The tag-only full run
-# buys broader path coverage without adding its cost to every change.
+# The commit gate is split by what each half can decide (ADR-0100). Pull
+# requests run the structural guard on Chromium: an encode inside the commit
+# window is the defect, a count rather than a budget, so it needs neither WebKit
+# nor a stable host. The millisecond P95 does need both, so it runs post-merge
+# on macOS over multi-finger (the sole encode-path exerciser) plus
+# crayon-scribbles (mid-stroke pass splits), and release tags run all seven
+# scenarios. Ubuntu's WebKit runtime never fit the wall-clock budget; what
+# changed is that the macOS job became the floor of a PR run, with
+# crayon-scribbles' draw phase most of its cost — decomposed, with the options
+# measured and rejected, in docs/scratchpad/webkit-commit-gate-cost-2026-08.md.
 name: Tests
 
 on:
@@ -21,7 +21,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Pull requests collapse per ref, so a new push cancels the run it supersedes.
+  # Pushes get a per-commit group instead: the WebKit commit gate runs
+  # post-merge (ADR-0100), and a same-ref cancel would drop a commit's only
+  # coverage precisely when merges land back to back — a silent hole exactly
+  # when the safety net matters most.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'push' && github.sha || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -226,11 +231,55 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # The pre-merge half of the commit gate (ADR-0100). The defect class the gate
+  # exists to close is a full-raster encode returning to the pointerup path, and
+  # that is a structural fact — an engine.encode measure inside the commit
+  # window — rather than a duration. Chromium records that measure even though
+  # its in-parallel toBlob makes the duration meaningless, so this decides the
+  # question on Ubuntu in a job that hides under the e2e shards, and no amount of
+  # shared-host slowness can manufacture the failure. The millisecond verdict,
+  # which does need WebKit, moved post-merge.
+  commit-path-guard:
+    name: Commit path guard
+    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-node
+
+      - uses: ./.github/actions/setup-playwright
+        with:
+          browsers: chromium
+
+      - name: Run commit-path guard
+        run: npm run perf:undo:encode-path
+
+      - name: Upload commit-path diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: undo-encode-path-diagnostics
+          path: |
+            perf-profiles/**/undo-scenarios.json
+            perf-profiles/**/undo-scenarios.md
+          if-no-files-found: warn
+          retention-days: 7
+
+  # Post-merge, not per-PR (ADR-0100). This tier's verdict is a millisecond P95
+  # on a shared macOS runner: it is the wall-clock floor of a run, and its
+  # observed record on the pull-request path is false positives rather than
+  # catches. Landing it on main trades an immediate signal for a fast one, so
+  # the failure path files an issue rather than relying on someone noticing.
   webkit-commit-gate-fast:
     name: WebKit commit gate (fast)
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: macos-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -249,6 +298,38 @@ jobs:
             perf-profiles/**/undo-scenarios.md
           if-no-files-found: warn
           retention-days: 7
+
+      # A post-merge gate nobody is watching is not a gate. One open issue
+      # collects every red commit until it is closed, so a broken main does not
+      # file one issue per merge.
+      - name: File the failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='WebKit commit gate failed on main'
+          body="$(cat <<EOF
+          The post-merge WebKit commit gate failed on main at commit ${GITHUB_SHA}.
+
+          * Run: ${RUN_URL}
+          * Evidence: the webkit-undo-fast-diagnostics artifact on that run holds the scenario
+            table (undo-scenarios.md) and every raw commit sample (undo-scenarios.json).
+
+          This tier gates a millisecond P95 on a shared macOS runner, so before treating it as
+          product evidence read the raw commit P95 against the normalized gate value in the
+          report — ADR-0093 records why those differ and PR 729 records what happens when the
+          difference is ignored. The structural half of the gate runs pre-merge as
+          "Commit path guard", so a failure here is a timing regression that guard cannot see,
+          or it is host noise.
+          EOF
+          )"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label type:bug --label area:ci-testing --body "$body"
+          fi
 
   webkit-commit-gate-full:
     name: WebKit commit gate (full)

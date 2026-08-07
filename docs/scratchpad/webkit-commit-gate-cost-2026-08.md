@@ -148,3 +148,17 @@ Worth noting alongside it: run B measured `crayon-scribbles` at **21 ms raw comm
 commit max against a 25 ms gate**, green only because the 5.7× renderer normalization pulled it to
 3.7 ms. The raw signal on this runner class now sits at the threshold, which is its own question
 independent of wall clock.
+
+## Outcome
+
+Neither lever above was taken.
+[ADR-0100](../adrs/0100-split-the-commit-gate-by-what-each-half-can-decide.md) resolved this by
+splitting the gate on what each half can decide rather than by making the run cheaper: the #635
+defect class is a *count* — an `engine.encode` measure inside the commit window — which any engine
+can read, so it moved pre-merge onto Chromium on Ubuntu, while the millisecond P95 that genuinely
+needs WebKit and a quiet host moved to pushes on `main`.
+
+That removes the macOS job from the pull-request path entirely, so a PR run drops to the e2e shard
+floor. The numbers above stop being a wall-clock problem and become the standing cost of the
+post-merge tier, where they no longer gate anyone's iteration. The op-count lever remains available
+and remains unverified if that cost ever needs to come down.

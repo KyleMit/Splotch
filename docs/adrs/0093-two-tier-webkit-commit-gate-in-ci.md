@@ -1,7 +1,9 @@
 # ADR-0093: Run a Two-Tier WebKit Commit Gate in CI
 
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
-[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:** 2026-08
+[ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); amended by
+[ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md), which moved this tier off
+the pull-request path and put the structural half of its verdict there instead. **Date:** 2026-08
 
 ## Context
 
@@ -142,12 +144,13 @@ rather than in a delayed middle tier.
   measurements.
 * − The every-PR job consumes a macOS runner because the Ubuntu WebKit runtime does not fit the
   suite's wall-clock budget.
-* − The job is the wall-clock floor of a pull-request run, and `crayon-scribbles` is most of it: its
-  synchronous draw phase renders six pattern-filled surfaces per crayon op on a runner with no
-  GPU-accelerated canvas. Splitting the fast set into parallel one-scenario jobs was measured as
-  worth 5–10 seconds, because the two scenarios differ in cost by roughly 10×. Reducing the cost
-  further means changing the scenario's op count, which is the shape the 25 ms threshold and the
-  fast-set history were calibrated against. See
+* − The job was the wall-clock floor of a pull-request run until
+  [ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md) moved it post-merge, and
+  `crayon-scribbles` is most of its cost: its synchronous draw phase renders six pattern-filled
+  surfaces per crayon op on a runner with no GPU-accelerated canvas. Splitting the fast set into
+  parallel one-scenario jobs was measured as worth 5–10 seconds, because the two scenarios differ in
+  cost by roughly 10×. Reducing the cost further means changing the scenario's op count, which is
+  the shape the 25 ms threshold and the fast-set history were calibrated against. See
   `docs/scratchpad/webkit-commit-gate-cost-2026-08.md`.
 * − The rolling history has 90-day artifact retention. A longer release gap restarts from the
   compatible committed seed, so the first post-gap run has less historical depth.
