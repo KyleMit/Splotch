@@ -152,3 +152,50 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
 });
+
+test('a resume that beats the layout pass leaves the canvas drawable', async ({ page }) => {
+  // The visibilitychange a re-entry fires can land before the WebView has
+  // re-laid out, so the canvas reports a client rect with no area. Adopting one
+  // collapsed the paper and every live tile to zero, and nothing re-ran the
+  // rebuild afterwards: the app came back fully responsive — colors switched,
+  // buttons worked — with a canvas that silently ate every stroke until reload.
+  await page.evaluate(() => window.__engine.resumeTo(0, 0));
+
+  // The unmeasured rect is refused outright, so the paper is still the paper.
+  expect((await page.evaluate(() => window.__engine.getViewState())).paperCssWidth).toBe(300);
+
+  // Layout settles with no event of its own — the engine has to notice on its own.
+  await page.evaluate(() => window.__engine.layoutTo(300, 300));
+  await expect
+    .poll(async () => (await page.evaluate(() => window.__engine.getViewState())).paperCssWidth)
+    .toBe(300);
+
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 30, y: 30 },
+    { x: 120, y: 30 },
+  ]);
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+});
+
+test('a drawing survives a resume that beats the layout pass', async ({ page }) => {
+  // Same unmeasured rect, but with ink on the canvas: the presentation path
+  // fits the paper into the reported viewport, so a zero box scaled the view to
+  // nothing and mapped every later stroke through a degenerate transform.
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 40, y: 100 },
+      { x: 180, y: 100 },
+    ])
+  );
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.resumeTo(0, 0));
+  await page.evaluate(() => window.__engine.layoutTo(300, 300));
+  await expect.poll(() => count(page)).toBe(before);
+
+  const view = await page.evaluate(() => window.__engine.getViewState());
+  expect(view.scale).toBeGreaterThan(0);
+  expect(view.paperCssWidth).toBe(300);
+});

@@ -380,15 +380,27 @@ let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
 let rectScaleX = 1;
 let rectScaleY = 1;
 
+// A client rect with no area is not a layout, it's the absence of one: the
+// document can report it while the page is still being restored (the
+// `visibilitychange` that re-entry fires lands before the WebView has re-laid
+// out), while an ancestor is display:none, or before the first style pass. It
+// carries no geometry — neither a size to build surfaces from nor an origin to
+// map pointers through — so every reader here treats it as "not measured yet"
+// and keeps the last real one instead.
+function rectIsMeasured(rect: { width: number; height: number }): boolean {
+  return rect.width > 0 && rect.height > 0;
+}
+
 // Snapshot the canvas's client rect and the backing-pixel scale factors. Called
 // only off the hot path (resize/scroll/orientation), so the per-pointermove
 // pointerToScreen() can stay reflow-free.
 function refreshCanvasRect(rect?: DOMRect) {
   if (!canvas) return;
   rect ??= canvas.getBoundingClientRect();
+  if (!rectIsMeasured(rect)) return;
   canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-  rectScaleX = rect.width ? viewport.width / rect.width : 1;
-  rectScaleY = rect.height ? viewport.height / rect.height : 1;
+  rectScaleX = viewport.width / rect.width;
+  rectScaleY = viewport.height / rect.height;
 }
 
 // Backing-store (screen) coordinates of a pointer event — the physical space
@@ -459,7 +471,43 @@ function applyPaperView(presentation: PaperPresentation) {
   applyTiledView(tiledRendererActive() ? IDENTITY_PAPER_VIEW : paperView);
 }
 
+// Waits out an unmeasured canvas and runs the rebuild its rect was too early
+// for. A ResizeObserver rather than a polled frame: it fires on the very layout
+// that produces the box, and its initial callback covers a canvas that already
+// had one by the time it was armed. One-shot — a live engine's ordinary resizes
+// go through the window listener, not this.
+let pendingMeasure: ResizeObserver | null = null;
+
+function resizeWhenMeasured() {
+  if (pendingMeasure || !canvas) return;
+  pendingMeasure = new ResizeObserver(() => {
+    const rect = canvas.getBoundingClientRect();
+    if (!rectIsMeasured(rect)) return;
+    resizeCanvas(rect);
+  });
+  pendingMeasure.observe(canvas);
+}
+
+function cancelPendingMeasure() {
+  pendingMeasure?.disconnect();
+  pendingMeasure = null;
+}
+
+// Rebuilding from an unmeasured rect is unrecoverable, so it is skipped and
+// re-armed for the first layout that has a box. Adopting one collapses `paper`
+// to 0×0 — which pins paperIsSized() false, resizes every live tile to nothing,
+// and makes the fitted view scale 0 — after which strokes still track, record,
+// and fire their callbacks into surfaces with no area. Input keeps flowing and
+// the chrome keeps reacting, so the app looks alive while the canvas silently
+// eats every stroke, and nothing re-runs this until a real resize or rotation:
+// an installed PWA at a fixed size gets neither, so it stays dead until the app
+// is reloaded.
 function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
+  if (!rectIsMeasured(rect)) {
+    resizeWhenMeasured();
+    return;
+  }
+  cancelPendingMeasure();
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,
@@ -1315,6 +1363,7 @@ function teardownEngine() {
     clearTimeout(resizeSettleTimer);
     resizeSettleTimer = null;
   }
+  cancelPendingMeasure();
   // Pointer-input state must not outlive the mount, unlike the drawing
   // state (see the persistence note in undoHistory.ts): a stale
   // activePointers entry surviving into a remount would let hover moves paint
