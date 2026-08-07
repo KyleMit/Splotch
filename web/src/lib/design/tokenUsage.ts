@@ -111,7 +111,7 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   dangerText: 'Ink on --danger-wash.',
   paper: 'The drawing paper under the grain texture; JS reads it via PAPER_COLORS.',
   paperMargin: 'The flat tone behind the rotation-locked sheet.',
-  holeStroke: 'The dashed outline of the eraser-size hole previews.',
+  holeStroke: 'The dashed outline of the size-eraser hole previews.',
   lineartFilter: 'Coloring-page line art inversion — dark mode turns lines to chalk.',
   lineartBlend: 'The blend mode pairing --lineart-filter.',
   floatSurface: 'Cards floating over the paper: action buttons, flyouts.',

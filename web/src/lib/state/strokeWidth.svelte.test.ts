@@ -3,6 +3,8 @@ import { STORAGE_KEYS } from '../storage';
 import {
   STROKE_SIZES,
   DEFAULT_SIZE,
+  SIZE_ICON,
+  ERASER_SIZE_ICON,
   ERASER_SIZE_MULTIPLIER,
   strokeState,
   setStrokeSize,
@@ -20,6 +22,21 @@ beforeEach(() => {
   strokeState.penSize = DEFAULT_SIZE;
   strokeState.eraserSize = DEFAULT_SIZE;
   selectBrush('pen');
+});
+
+// The icon names are spelled out as literals in both maps on purpose (see the
+// comment there — icon-orphans.test.ts counts only quoted literals), so nothing
+// but this asserts each level still points at its own icon. Without it, renaming
+// a level or an SVG leaves the pairing silently crossed — or the two maps
+// swapped, painting eraser holes for a pen — since every name still type-checks
+// against the generated icon union.
+describe('SIZE_ICON / ERASER_SIZE_ICON', () => {
+  it('names each stroke-preview icon after its size and tool', () => {
+    for (const size of STROKE_SIZES) {
+      expect(SIZE_ICON[size]).toBe(`size-brush-${size}`);
+      expect(ERASER_SIZE_ICON[size]).toBe(`size-eraser-${size}`);
+    }
+  });
 });
 
 describe('getStrokeWidthPx', () => {

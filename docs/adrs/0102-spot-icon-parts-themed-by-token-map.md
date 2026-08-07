@@ -37,7 +37,7 @@ it stop being readable.
    already generates for `ThemeTokens` — `:root`, `:root[data-theme='dark']`, and the
    `prefers-color-scheme` mirror. Naming is mechanical, so there is no naming debate per addition.
 3. **The SVG paints with `style="fill:var(--icon-camera-body,#3f68a8)"`** — the spelling already
-   shipping in `eraser-size-1..5` and `line-weight-eraser`, so it is proven on our browser floor.
+   shipping in `size-eraser-1..5` and `line-weight-eraser`, so it is proven on our browser floor.
    The `,#hex` fallback keeps the raw file rendering correctly standalone (GitHub previews,
    `gen-icons-sheet`, design-tool round-trips).
 4. **A bidirectional drift guard** in `web/src/lib/icons/tokenFallback.test.ts` walks every shipped

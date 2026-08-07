@@ -39,7 +39,7 @@ const lightByCssVar = new Map<string, string>([
 ]);
 
 // The semantic (non per-icon) tokens an SVG is allowed to paint with. Pinned as
-// a list rather than a count so deleting the last eraser-size fallback fails
+// a list rather than a count so deleting the last size-eraser fallback fails
 // loudly instead of leaving every case below passing vacuously — and so adding
 // a new one is a deliberate edit here.
 const SEMANTIC_TOKENS_IN_SVGS = ['--hole-stroke', '--paper'];

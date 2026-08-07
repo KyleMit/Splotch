@@ -60,7 +60,7 @@
     {
       id: 'strokeWidthToggle',
       label: 'Stroke Width',
-      icon: 'line-weight',
+      icon: 'line-weight-brush',
       checked: () => settings.strokeWidthControlEnabled,
       toggle: setStrokeWidthControl,
     },
