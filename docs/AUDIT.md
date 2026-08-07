@@ -58,32 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Docs] architecture route table describes generate-image's retired "base64 PNG" contract, contradicting the api skill
-
-**File(s):** `.ruler/skills/architecture/SKILL.md` (line 150) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-The `/api/generate-image` row says:
-
-> Accepts a base64 PNG + style prompt, calls Gemini, returns the generated image.
-
-The api skill (`.ruler/skills/api/SKILL.md` lines 48–65, ADR-0064) documents the current contract
-precisely: **raw image bytes as the body** (WebP preferred, `Content-Type` allowlist, style as a
-`?style=` query enum, credential in a header), with multipart as a labelled legacy shim. "base64
-PNG + style prompt" matches neither the current nor even the legacy multipart shape, and two
-generated instruction files now contradict each other on the same endpoint — the exact
-"contradictory instructions" failure ruler exists to prevent.
-
-#### Proposed solution
-
-Rewrite the row to defer to the api skill for the contract, e.g.: "Serverless function (Netlify).
-Raw drawing bytes in, stylized image out — see the `api` skill for the full contract. Token-gated +
-rate-limited. Not bundled for native." Route-table rows shouldn't re-state wire details a sibling
-skill owns.
-
 ### [Docs] mobile and profiling docs prescribe npm scripts that don't exist (`ios:run:choose`, `ios:run:ipad`, `npm run ios`)
 
 **File(s):** `.ruler/skills/mobile/ios.md` (lines 65, 143),
