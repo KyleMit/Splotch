@@ -103,15 +103,18 @@ if (changedCount === 0) {
   process.exit(0);
 }
 
+// The aggregate is a net of per-file deltas that individually go either way, so
+// like the per-file line it has to follow its own sign — a run whose growth
+// outweighs its savings otherwise reports a negative saving.
+const net =
+  savedTotal < 0 ? `${kib(-savedTotal)} KiB net growth` : `${kib(savedTotal)} KiB net saving`;
+
 if (check) {
   console.error(
     `\n[image-audit] ${changedCount} of ${files.length} SVG(s) are not optimized ` +
-      `(${kib(savedTotal)} KiB to save). Run \`npm run img:audit\` and commit the result.`
+      `(${net}). Run \`npm run img:audit\` and commit the result.`
   );
   process.exit(1);
 }
 
-console.log(
-  `\n[image-audit] optimized ${changedCount} of ${files.length} SVG(s), ` +
-    `saved ${kib(savedTotal)} KiB.`
-);
+console.log(`\n[image-audit] optimized ${changedCount} of ${files.length} SVG(s), ${net}.`);
