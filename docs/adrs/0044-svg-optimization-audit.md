@@ -72,10 +72,5 @@ attribute plugins rewrite — so optimizing it would break that generator.
   bumping SVGO is a deliberate re-normalization, not silent drift.
 * New generator-input SVGs must be added to the script's `IGNORE` set; otherwise the audit will
   optimize them. This is a known, discoverable trade-off of not shipping a separate config file.
-  Moving or renaming an exempted input is caught: the script checks each `IGNORE` path exists and
-  fails with the stale entry, rather than silently optimizing the file under its new name.
-* An SVG SVGO cannot parse is reported per file and counted as a failure; the audit continues
-  through the rest of the tree. Aborting on the first one would leave every SVG sorted after it
-  unchecked while the run still exited non-zero — a guard that has stopped guarding but still looks
-  like a clean fail. `scripts/tests/image-audit.test.mjs` exercises these paths against a fixture
-  tree, since the real icon set can't produce them.
+  Moving or renaming an exempted input is caught — each `IGNORE` path is checked for existence, so a
+  stale entry fails the audit instead of silently matching nothing while the file gets optimized.
