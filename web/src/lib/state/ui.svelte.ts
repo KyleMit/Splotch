@@ -12,6 +12,15 @@ export const ui: UiState = $state({
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';
 
+// Deliberately here rather than beside the screenshot feedback that uses it.
+// ActionsPanel needs this id at startup; playScreenshotFeedback and the polaroid
+// animation are save-pipeline code that must stay off the startup critical path
+// (issue #461). Sharing one module for both hands Rollup an edge from the startup
+// graph into the save pipeline, and a chunk re-partition then drags the whole
+// module onto the preload list — which is what web/tests/startup-bundle.spec.ts
+// caught. This module is already on the startup path, so the id costs nothing here.
+export const SCREENSHOT_BUTTON_ID = 'screenshotButton';
+
 export const colorPickerModal = createModal();
 export const coloringBookModal = createModal();
 export const settingsModal = createModal();
