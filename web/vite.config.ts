@@ -106,6 +106,10 @@ export default defineConfig({
               // cache below so a manual refresh always fetches fresh markup.
               globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
               globIgnores: [
+                // The social card and generator inputs are served but never fetched by the application.
+                'large-image.png',
+                'large-image.svg',
+                'styles/source.svg',
                 '**/*.outline.webp',
                 '**/*.chalk.webp',
                 ...responsiveColoringGlobIgnores,
