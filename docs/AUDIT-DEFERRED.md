@@ -2143,3 +2143,56 @@ The rolled-back draft is kept at
 `docs/audit-deferred/maintainability-dev-kill-executes-kill-port-via-bare-npx-an-undeclared-u.patch`
 (3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/maintainability-dev-kill-executes-kill-port-via-bare-npx-an-undeclared-u.patch`.
+
+### [Maintainability] The supported Node floor (engines 22.13) is never exercised — CI hardcodes Node 24 with no tie to `engines`
+
+**File(s):** `.github/actions/setup-node/action.yml` (line 19); `package.json` (lines 5–7);
+`docs/CONTRIBUTING.md` (line 14) @ cd04c367
+
+**Priority:** P3
+
+#### Problem
+
+The Node version is stated independently in at least four places with three different values:
+
+* `package.json` engines: `"node": ">=22.13"` (line 6)
+* `.github/actions/setup-node/action.yml`: `node-version: 24` (line 19) — every CI job (quality,
+  tests, both deploy smokes, blobs smoke) runs on 24
+* `docs/CONTRIBUTING.md` line 14: "**Node 22** via nvm" (22.0 does not satisfy engines). This was
+  `README.md` line 39, "Node.js 22+ and npm", at 9ae62ff1; the README's prerequisites moved into the
+  contributing guide before f5bf8767 and the version claim moved with them.
+* `.codex/cloud/setup.sh`: 22.12 (previous finding)
+
+Meanwhile the production Netlify build pins no `NODE_VERSION` in `netlify.toml`, so it runs
+Netlify's platform default (a 22.x LTS). Net effect: **CI validates the whole suite on Node 24, but
+the deploy — and the declared minimum — run on 22.x, which CI never touches.** A dependency or
+script using an API that exists in 24 but not in 22.13 (the `--experimental-strip-types` behavior
+itself differs across these majors) goes green in CI and breaks only at deploy or on a floor-version
+dev machine. There is no comment in `action.yml` explaining why 24 was chosen over the floor, and no
+drift guard connecting any of these sites — the repo's own convention says cross-file agreement is
+kept by an imported constant or a drift-guard test, never prose.
+
+#### Proposed solution
+
+Pick one deliberate policy and encode it:
+
+* Cheapest: point CI at the floor via `node-version-file: package.json` (setup-node resolves
+  `engines.node`), so CI always tests the version the repo promises to support, and bumping the
+  floor is a one-line `engines` edit. If testing the latest major is also wanted, that's a matrix
+  decision worth a comment.
+* If staying on a hardcoded 24 (e.g. "test what developers actually run"), add the WHY comment in
+  `action.yml` and a drift-guard case in `scripts/tests/workflow-hygiene.test.mjs` asserting
+  `node-version` ≥ the `engines` floor, so a future engines bump can't silently overtake CI.
+
+Fix `docs/CONTRIBUTING.md`'s "Node 22" to match `engines` (or reword to "the version in package.json
+`engines`" so it can't drift again).
+
+#### Why it was deferred
+
+implementation failed
+
+#### What was tried
+
+The runner exposes `.codex/**` as read-only, so I could not update `.codex/cloud/setup.sh` from
+22.12+ to 22.13+. The remaining scoped changes are present, but returning a partial fix as
+successful would narrow the brief.
