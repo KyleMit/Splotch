@@ -24,6 +24,7 @@ import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:f
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { fail } from './lib/proc.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const COLORING = join(ROOT, 'web/static/coloring');
@@ -329,6 +330,16 @@ add({
   dim: 'tall',
   layers: [{ op: 'scene', scene: 'toysword' }],
 });
+
+// Every 'outline'/'reveal' layer resolves a `uri` from assetUri(); catch a missing or
+// renamed coloring asset here, in one pass across the whole corpus, rather than letting
+// it render as a silent blank layer.
+const missingAssets = specs.flatMap((spec) =>
+  spec.layers
+    .filter((l) => (l.op === 'outline' || l.op === 'reveal') && l.uri === null)
+    .map((l) => `${spec.id} (${l.op})`)
+);
+if (missingAssets.length) fail(`Missing coloring assets for: ${missingAssets.join(', ')}`);
 
 // --- in-page renderer -----------------------------------------------------------
 // Lives in its own file so it is real, lintable browser JS rather than a template string.
