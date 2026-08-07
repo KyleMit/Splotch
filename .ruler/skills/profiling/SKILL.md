@@ -31,7 +31,8 @@ re-runnable on any saved trace.
 | `npm run perf:frames:analyze -- <file>`       | re-reads a saved `real-screen.json` and recomputes every metric from the raw tables — the probe records and computes nothing, so a capture outlives the metric definitions taken with it                                                                                                                                                                                                                                                                                                           | the same tables, plus `summaries.json`                                                                                                           |
 | `npm run perf:undo`                           | the **undo** question specifically — drives `/dev/engine` (so it can read `getUndoDebug()`) through 7 shaped sessions (long squiggles, short marks, a mix, five-finger drags, pen scribbles, crayon squiggles, crayon reversal-scribbles); `--scenarios=a,b` runs a subset; tablet viewport, 4× throttle                                                                                                                                                                                           | CDP trace **+** per-scenario snapshot depth / live-raster / blob counts, commit + patch-capture + undo timing, and analytic raster + blob memory |
 | `npm run perf:undo:webkit`                    | the same 7 scenarios in Playwright **WebKit** — the engine family the iOS app ships. **Enforces the commit gate** (exits non-zero past `COMMIT_GATE_MS`); no throttle                                                                                                                                                                                                                                                                                                                              | engine marks (no CDP trace, no JS-heap table) **+** the same per-scenario tables                                                                 |
-| `npm run perf:undo:webkit:fast`               | the every-PR subset: `multi-finger` (the sole encode-path exerciser) + `crayon-scribbles` (mid-stroke pass splits). The named script owns the set; CI never repeats its scenario list. Multi-finger gates raw P95; crayon-scribbles normalizes P95 by same-run crayon renderer throughput so shared-host canvas slowdown does not impersonate new commit-only work                                                                                                                                 | raw and normalized gate evidence + the same per-scenario tables                                                                                  |
+| `npm run perf:undo:webkit:fast`               | the post-merge subset (ADR-0100): `multi-finger` (the sole encode-path exerciser) + `crayon-scribbles` (mid-stroke pass splits), run on pushes to `main`. The named script owns the set; CI never repeats its scenario list. Multi-finger gates raw P95; crayon-scribbles normalizes P95 by same-run crayon renderer throughput so shared-host canvas slowdown does not impersonate new commit-only work                                                                                           | raw and normalized gate evidence + the same per-scenario tables                                                                                  |
+| `npm run perf:undo:encode-path`               | the pre-merge structural guard (ADR-0100): every scenario declaring the cold-encode path, on Chromium. Fails on any `engine.encode` measure inside the commit window — the shape #635 regressed. A count, not a millisecond budget, so it is decidable on an engine whose timing is unfaithful and cannot be tripped by shared-runner slowness                                                                                                                                                     | encode-on-commit verdict + the same per-scenario tables                                                                                          |
 | `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `ipad-device-profiling.md`) at real timing                                                                                                                                                                                                                                                                                                          | CDP trace **+** how your input landed on the snapshot stack (`getUndoDebug`) + engine.draw/commit/undo cost                                      |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                                |
 
@@ -96,18 +97,21 @@ either — it is a desktop build with no throttle and `performance.now()` clampe
 gate is deliberately blunt (catch full-raster work reappearing on the pointerup path, not police
 drift). Absolute device milliseconds still come from `ipad-device-profiling.md`.
 
-CI uses the fast named subset on every pull request in a measured `macos-latest` job parallel to the
-ordinary test suite, then runs all seven scenarios on `v*` release tags (ADR-0093). Both jobs
-attempt to upload `undo-scenarios.json` and `undo-scenarios.md` after a failure; a gate breach
-produces them, while an earlier build/browser failure warns that none exist without masking the
-original error. An unknown requested key, incomplete scenario, missing `engine.commit` samples,
-absent encode-path coverage, or timing breach fails closed. The timing gate uses P95 so a
-catastrophic work shape must recur; it retains commit max and every raw duration for diagnosing an
-isolated runner interruption. This is a catastrophic-regression gate with a wide threshold, not
-physical-iPad approval; ADR-0090's real-device tier remains the authority for frame pacing and
-device-calibrated budgets.
+CI splits the gate by what each half can decide (ADR-0100, amending ADR-0093). Pull requests get the
+structural half only — `perf:undo:encode-path` on `ubuntu-latest`, which fails on an `engine.encode`
+inside the commit window and needs neither WebKit nor a quiet host. The timing half runs the fast
+named subset in a `macos-latest` job on pushes to `main`, after the merge rather than before it,
+because its millisecond P95 was the wall-clock floor of a pull-request run. All seven scenarios
+still run on `v*` release tags. Every job attempts to upload `undo-scenarios.json` and
+`undo-scenarios.md` after a failure; a gate breach produces them, while an earlier build/browser
+failure warns that none exist without masking the original error. An unknown requested key,
+incomplete scenario, missing `engine.commit` samples, absent encode-path coverage, or timing breach
+fails closed. The timing gate uses P95 so a catastrophic work shape must recur; it retains commit
+max and every raw duration for diagnosing an isolated runner interruption. This is a
+catastrophic-regression gate with a wide threshold, not physical-iPad approval; ADR-0090's
+real-device tier remains the authority for frame pacing and device-calibrated budgets.
 
-The every-PR fast tier gates `multi-finger` on raw P95 because it is the deterministic negative
+The post-merge fast tier gates `multi-finger` on raw P95 because it is the deterministic negative
 control for a cold encode returning to the commit path. Its `crayon-scribbles` scenario divides raw
 commit P95 by the same run's `engine.draw total / calls` slowdown relative to the controlled healthy
 crayon reference. Shared macOS runs that slowed all crayon rendering by roughly 8–10× made raw
