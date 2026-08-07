@@ -58,45 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Docs] CONTRIBUTING.md "Release process" predates the three-phase model — it describes exactly the flow ADR-0077 was written to kill
-
-**File(s):** `docs/CONTRIBUTING.md` (lines 226–230) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-The section reads, in full:
-
-```
-See the `/release` slash command in `.claude/skills/release/SKILL.md`. The short version:
-`npm run release` bumps the version, tags, and pushes; the `android-deploy.yml` CI workflow fires on
-the tag.
-```
-
-Two problems:
-
-1. **It omits phases 2 and 3.** `docs/adrs/0077-three-phase-release-verified-artifact-publish.md`
-   and `releases/README.md:44–54` define shipping as three ordered phases — `/release` → `/build` →
-   `/publish-artifacts` (`npm run release` / `android:bundle`+`ios:ipa` / `release:publish`) —
-   precisely because the "release does everything" mental model shipped a stale 1.2.0 binary on the
-   v1.4.0 GitHub Release. A contributor following CONTRIBUTING's "short version" stops after phase 1
-   and leaves the GitHub Release permanently binary-less (`release.mjs` now "attaches nothing,
-   unconditionally" per the ADR).
-2. **The `android-deploy.yml` mention misleads.** In a section titled "Release process", "the
-   `android-deploy.yml` CI workflow fires on the tag" reads as the deployment step. The workflow is
-   a tag-gated *Maestro smoke test* ("Runtime smoke test for the Android *deployment*… Tag-only by
-   design", `.github/workflows/android-deploy.yml:1–9`) — it deploys nothing; store artifacts are
-   built locally by `/build`.
-
-#### Proposed solution
-
-Rewrite the section to mirror `releases/README.md`'s three-phase table (or simply link it as the
-authoritative source and keep one sentence: "Shipping is three ordered phases — `/release`,
-`/build`, `/publish-artifacts` (ADR-0077); see `releases/README.md`."). If the smoke test stays
-mentioned, name it as such: "pushing the `v*` tag also triggers the Android/iOS launch smoke
-workflows."
-
 ### [Docs] pr-screenshots links ADR-0046 one directory too shallow — dead link in every generated location
 
 **File(s):** `.ruler/skills/pr-screenshots/SKILL.md` (line 22) @ cd04c367
