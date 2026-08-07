@@ -25,6 +25,12 @@ function safetyRefusal(reason: string): never {
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 
+function assertAllowedImageType(mimeType: string): void {
+  if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+    throw error(415, 'Unsupported image type');
+  }
+}
+
 // The credentials ride in headers, not the query string: the managed access
 // token and (especially) a parent's BYO Gemini key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
@@ -66,6 +72,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
       readValidatedImage: async () => {
         if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
         if (imageFile.size > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
+        assertAllowedImageType(imageFile.type);
         return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType: imageFile.type };
       },
     };
@@ -75,11 +82,13 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     apiKey: request.headers.get(API_KEY_HEADER),
     style: url.searchParams.get('style'),
     readValidatedImage: async () => {
+      const mimeType = contentTypeOf(request);
+      assertAllowedImageType(mimeType);
       const body = await readBodyWithinLimit(request, MAX_IMAGE_BYTES);
       if (!body.ok) throw error(413, 'Image is too large');
       const { bytes } = body;
       if (bytes.byteLength === 0) throw error(400, 'Missing image');
-      return { bytes, mimeType: contentTypeOf(request) };
+      return { bytes, mimeType };
     },
   };
 }
@@ -118,11 +127,6 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
   if (!authorization.authorized) return authorization.response;
 
   const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
-  // An empty type is fine (default to PNG below); only reject a type that's
-  // present and not on the allowlist.
-  if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-    throw error(415, 'Unsupported image type');
-  }
   const style = source.style;
 
   // Pinned to light: the request carries no theme yet, so a player in dark mode
