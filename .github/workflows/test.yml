@@ -3,9 +3,11 @@
 # job parallel to Tests, while release tags run all seven scenarios. The fast
 # subset was sized to stay below the pre-shard Tests job's duration on the
 # measured macOS runner; Ubuntu's WebKit runtime exceeds that budget. With the
-# e2e suite sharded it is the expected floor of a PR run, though it trades the
-# critical path with the longest e2e shard inside runner noise. The tag-only
-# full run buys broader path coverage without adding its cost to every change.
+# e2e suite sharded this job is the wall-clock floor of a PR run, and
+# crayon-scribbles' draw phase is most of its cost — decomposed, with the
+# options that were measured and rejected, in
+# docs/scratchpad/webkit-commit-gate-cost-2026-08.md. The tag-only full run
+# buys broader path coverage without adding its cost to every change.
 name: Tests
 
 on:
