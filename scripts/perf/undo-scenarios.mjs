@@ -51,12 +51,13 @@ import {
 } from './undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
+const entry = isMain(import.meta.url);
+
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
 // cost on that device (the hot tier holds 2 of them + the paper).
-const entry = isMain(import.meta.url);
 const { flag, throttle, port, build } = parsePerfArgs({
   throttleDefault: 4,
   extra: [
