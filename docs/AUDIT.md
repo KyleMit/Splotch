@@ -49,40 +49,6 @@ a success. Nobody files a bug against a number; they just make decisions on it.
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] `measureSafeAreaInsets` silently returns garbage if its cached probe is ever detached
-
-**File(s):** `web/src/lib/safeArea.ts` (`measureSafeAreaInsets`, lines 16–37) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-The probe `<div>` is created once, appended to `document.body`, and cached in module state forever
-(lines 20–27). `getBoundingClientRect()` on a *detached* element returns an all-zero rect, so if
-anything ever removes the probe from the DOM — a full-body re-render, test DOM cleanup between
-happy-dom cases, a future migration that replaces `document.body` content — the function keeps
-"working" but returns `{ top: 0, right: clientWidth, bottom: clientHeight, left: 0 }`: a fabricated
-right/bottom inset the size of the whole viewport. Downstream, `layout.svelte.ts`'s `syncViewport()`
-(line 61) would push those insets into every consumer (edge-swipe guard bands, notch band,
-action-button layout) on the next resize with no error anywhere. The failure mode is silent and
-bizarre-looking at the UI layer, which makes it expensive to trace back here.
-
-#### Proposed solution
-
-One-line hardening: treat a disconnected probe as absent —
-
-```ts
-if (!safeAreaProbe?.isConnected) {
-  safeAreaProbe = document.createElement('div');
-  ...
-  document.body.appendChild(safeAreaProbe);
-}
-```
-
-`isConnected` is universally supported far below the repo's browser floor. `safeArea.test.ts` can
-pin it with a case that removes the probe (`probe.remove()`) and asserts a re-append plus correct
-values on the next call.
-
 ### [Correctness] Every page tile in a book announces the same aria-label; `ColoringPage.name` has no production reader
 
 **File(s):** `web/src/lib/components/ColoringBook.svelte` (page-tile button, line 228);
