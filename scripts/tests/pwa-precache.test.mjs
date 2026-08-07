@@ -43,12 +43,7 @@ it('rejects responsive precache entries, missing fallbacks, and an oversized bun
 it('rejects served-only social card and generator inputs', () => {
   expect(
     pwaPrecacheProblems({
-      precacheUrls: [
-        '_app/env.js',
-        'large-image.png',
-        'large-image.svg',
-        'styles/source.svg',
-      ],
+      precacheUrls: ['_app/env.js', 'large-image.png', 'large-image.svg', 'styles/source.svg'],
       precacheBytes: 1,
       responsiveAssetUrls: [],
     })

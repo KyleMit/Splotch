@@ -46,38 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Performance] Service-worker precache includes assets the app never fetches (social og:image, generator source SVGs)
-
-**File(s):** `web/vite.config.ts` (`workbox.globPatterns`, line 107) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-`globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}']` (line 107) sweeps
-everything in the build output — including `static/` files that only exist for *external* consumers
-and are never requested by the running app:
-
-* `web/static/large-image.png` (556,002 bytes) — referenced only by `og:image`/`twitter:image` meta
-  in `web/src/app.html:32,41`; fetched by link-unfurling scrapers, never by a browser session.
-* `web/static/large-image.svg` (7,497 bytes) — input file for `scripts/gen-large-image.mjs:32`, not
-  a runtime asset.
-* `web/static/styles/source.svg` (55,652 bytes) — input for
-  `tools/asset-gen/bin/gen-style-covers.mjs:102`, not a runtime asset.
-
-That is ~620 KB of precache downloaded by every client that installs the SW, on top of the ~35 MB
-the config already frets about ("a window.load registration would saturate a slow connection", lines
-89–94). The config already demonstrates deliberate precache curation (`navigateFallback: ''`, html
-excluded) — these files just slipped through the glob.
-
-#### Proposed solution
-
-Add `globIgnores: ['large-image.png', 'large-image.svg', 'styles/source.svg']` beside `globPatterns`
-(workbox supports it at the same level), with a WHY comment ("social-card + generator inputs —
-served, never fetched by the app"). If the generator-input SVGs move out of `static/` entirely (see
-the next finding), only `large-image.png` needs ignoring. Verify by inspecting the emitted `sw.js`
-precache manifest after `npm run build`.
-
 ### [Architecture] Generator input files live in web/static and ship to production
 
 **File(s):** `web/static/large-image.svg`, `web/static/styles/source.svg` @ cd04c367
