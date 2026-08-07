@@ -2196,3 +2196,68 @@ implementation failed
 The runner exposes `.codex/**` as read-only, so I could not update `.codex/cloud/setup.sh` from
 22.12+ to 22.13+. The remaining scoped changes are present, but returning a partial fix as
 successful would narrow the brief.
+
+### [Testing] Android minSdk floor ↔ COMPATIBILITY.md agreement is maintained by prose
+
+**File(s):** `android/variables.gradle` (line 2) · `docs/COMPATIBILITY.md` (lines 18, 35–37, 95–99)
+· `scripts/tests/android-config.test.mjs` (lines 14–29) @ cd04c367
+
+**Priority:** P4
+
+#### Problem
+
+`docs/COMPATIBILITY.md` names `android/variables.gradle → minSdkVersion` as the authoritative source
+of the "Android 7.0 / API 24+" support floor (its lines 18, 35–37, 95–99). The iOS side of the same
+table got a real drift guard — `web/src/browserFloor.test.ts` parses `IPHONEOS_DEPLOYMENT_TARGET`
+out of the pbxproj and compares it against `BROWSER_TARGETS`. The new
+`compatibility-register.test.mjs` validates the separate API risk register's path/marker anchors,
+not the platform-floor values. The Android side has no numeric agreement guard:
+`scripts/tests/android-config.test.mjs` deliberately scopes its patterns to the *emulator* API level
+("the API 24 minSdk floor … don't false-positive", lines 22–24), so nothing fails if
+`minSdkVersion = 24` (`variables.gradle:2`) is raised while COMPATIBILITY.md, the store listing
+floor, and the Maestro floor-run issues (\#483) still say 24. Per the cross-file-agreement
+convention this is exactly the drift-guard-test case.
+
+#### Proposed solution
+
+Add a `describe('Android support floor single source')` block to `android-config.test.mjs`: parse
+`minSdkVersion = (\d+)` from `android/variables.gradle`, and assert the contextual "API 24"/"Android
+7.0 / API 24+" phrases in `docs/COMPATIBILITY.md` (and `.ruler/skills/mobile/android.md` if it
+states the floor) match. Use the same allowlist + context-anchored-pattern approach the file already
+established for the emulator level, so historical docs stay exempt.
+
+#### Why it was deferred
+
+failed adversarial review
+
+Reviewer's unresolved objections:
+
+* The guard omits the authoritative-table claim at `docs/COMPATIBILITY.md:99`, so changing
+  `minSdkVersion` and the two matched prose claims while leaving `Native Android min SDK | … | 24`
+  stale still passes. Add a context-anchored assertion for that value.
+* The drift guards validate only the API integer while hard-coding the human Android release as
+  regex context, so raising `minSdkVersion` to 25 and changing the captured claims to API 25 would
+  still allow stale “Android 7.0” labels in `docs/COMPATIBILITY.md`,
+  `.ruler/skills/mobile/android.md`, and `MIN_ANDROID_RELEASE` in
+  `web/src/lib/components/androidBeta/androidBeta.ts`; guard the API-to-release agreement too.
+* The support-floor allowlist in `scripts/tests/android-config.test.mjs` omits the current
+  floor-validation statement in `docs/COMPATIBILITY.md` (“API 24 emulator” / “Android 7”), so
+  updating the matched claims after a floor raise can leave that paragraph and its linked #483
+  floor-run stale while the guard passes. Add a context-anchored check for this floor-run claim.
+
+#### What was tried
+
+1. Added an Android support-floor drift guard that derives `minSdkVersion` from Gradle and verifies
+   the anchored compatibility and mobile-skill claims. This keeps public Android support statements
+   aligned while leaving emulator API validation independent.
+2. Added the missing context-anchored assertion for the Native Android min-SDK compatibility table
+   value, so that published claim now tracks Gradle along with the other support-floor contexts.
+3. The support-floor guard now maps Gradle’s API level to its Android release and verifies both
+   values across the compatibility claims, mobile skill, and in-app beta constants.
+
+#### Draft implementation
+
+The rolled-back draft is kept at
+`docs/audit-deferred/testing-android-minsdk-floor-compatibility-md-agreement-is-maintained-by.patch`
+(3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
+`git apply docs/audit-deferred/testing-android-minsdk-floor-compatibility-md-agreement-is-maintained-by.patch`.

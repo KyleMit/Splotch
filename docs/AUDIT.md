@@ -52,35 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Testing] Android minSdk floor ↔ COMPATIBILITY.md agreement is maintained by prose
-
-**File(s):** `android/variables.gradle` (line 2) · `docs/COMPATIBILITY.md` (lines 18, 35–37, 95–99)
-· `scripts/tests/android-config.test.mjs` (lines 14–29) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-`docs/COMPATIBILITY.md` names `android/variables.gradle → minSdkVersion` as the authoritative source
-of the "Android 7.0 / API 24+" support floor (its lines 18, 35–37, 95–99). The iOS side of the same
-table got a real drift guard — `web/src/browserFloor.test.ts` parses `IPHONEOS_DEPLOYMENT_TARGET`
-out of the pbxproj and compares it against `BROWSER_TARGETS`. The new
-`compatibility-register.test.mjs` validates the separate API risk register's path/marker anchors,
-not the platform-floor values. The Android side has no numeric agreement guard:
-`scripts/tests/android-config.test.mjs` deliberately scopes its patterns to the *emulator* API level
-("the API 24 minSdk floor … don't false-positive", lines 22–24), so nothing fails if
-`minSdkVersion = 24` (`variables.gradle:2`) is raised while COMPATIBILITY.md, the store listing
-floor, and the Maestro floor-run issues (\#483) still say 24. Per the cross-file-agreement
-convention this is exactly the drift-guard-test case.
-
-#### Proposed solution
-
-Add a `describe('Android support floor single source')` block to `android-config.test.mjs`: parse
-`minSdkVersion = (\d+)` from `android/variables.gradle`, and assert the contextual "API 24"/"Android
-7.0 / API 24+" phrases in `docs/COMPATIBILITY.md` (and `.ruler/skills/mobile/android.md` if it
-states the floor) match. Use the same allowlist + context-anchored-pattern approach the file already
-established for the emulator level, so historical docs stay exempt.
-
 ### [Maintainability] `version.json` boundary string is declared in two places (emitter and fetcher)
 
 **File(s):** `web/vite.config.ts` (`emit-version-json` plugin, lines 69–80) @ cd04c367
