@@ -102,6 +102,24 @@ describe('WebKit performance CI', () => {
     expect(fastJob).toContain('gh issue comment');
   });
 
+  // The filing step is a check-then-create, so "one open issue" only holds while
+  // one gate job runs at a time. Both halves are asserted because each alone is
+  // wrong: without the group two failing runs race and file duplicates, and with
+  // the default `queue: single` a third commit cancels the pending run and loses
+  // the coverage the per-SHA workflow group was added to preserve.
+  it('serializes the post-merge gate without dropping a queued commit', () => {
+    const fastJob = job('webkit-commit-gate-fast');
+    const concurrency = fastJob.match(/\n {4}concurrency:\n((?: {6}.*\n)+)/)?.[1];
+
+    expect(concurrency).toBeDefined();
+    expect(concurrency).toContain('group: webkit-commit-gate-fast');
+    expect(concurrency).toContain('queue: max');
+    expect(concurrency).toContain('cancel-in-progress: false');
+    // The group must be constant, not per-SHA — a SHA in it would serialize
+    // nothing, since every run would get its own group.
+    expect(concurrency).not.toContain('github.sha');
+  });
+
   it('decides the structural half pre-merge, off WebKit and off the macOS runner', () => {
     const guardJob = job('commit-path-guard');
     const guardScript = packageJson.scripts['perf:undo:encode-path'];

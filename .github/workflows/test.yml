@@ -277,6 +277,17 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: macos-latest
     timeout-minutes: 15
+    # Serialized across commits, deliberately against the per-SHA workflow group
+    # above. The filing step below is a check-then-create, so two failing runs
+    # reaching it together would both find no open issue and both create one.
+    # Running one gate at a time makes that check atomic by construction.
+    # `queue: max` is load-bearing: the default `queue: single` cancels the
+    # pending run when a third commit lands, which would reopen the very
+    # coverage hole the per-SHA workflow group exists to close.
+    concurrency:
+      group: webkit-commit-gate-fast
+      cancel-in-progress: false
+      queue: max
     permissions:
       contents: read
       issues: write
