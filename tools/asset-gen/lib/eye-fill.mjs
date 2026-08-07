@@ -342,12 +342,14 @@ export const BAND_BLIND_INK_FRAC = 0.5;
 // human-reviewed chalk is effectively the per-page eye annotation.
 const CHALK_WHITE_MIN = 245;
 
+const coreKey = (core) => `${core.x},${core.y}`;
+
 export function judgeNightEyes(scoredNight, scoredLight, { chalked = false } = {}) {
   let worst = null;
   let failed = 0;
-  for (let i = 0; i < scoredLight.cores.length; i++) {
-    const lightCore = scoredLight.cores[i];
-    const nightCore = scoredNight.cores[i];
+  const nightByCore = new Map(scoredNight.cores.map((core) => [coreKey(core), core]));
+  for (const lightCore of scoredLight.cores) {
+    const nightCore = nightByCore.get(coreKey(lightCore));
     const isReference =
       lightCore.lively && Math.max(lightCore.coreLuma, lightCore.bandLight) >= STRONG_LIGHT_SIDE;
     if (!isReference || !nightCore || nightCore.lively) continue;
