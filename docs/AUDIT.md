@@ -8,28 +8,29 @@
 That last line is the one this file kept failing. The 2026-07-28 comprehensive per-section audit
 filed 649 raw findings here and they were worked as a standing backlog for ten days. Successive
 burndown campaigns fixed roughly 300, and two `/vet-audits` passes drained the severity head into
-issues #774–#785. On 2026-08-07 the remaining 346 were re-triaged against `main` and cut to the
-**75** below; the other 271 were deleted outright. The deletion was the point rather than a side
-effect — the reasoning is in `docs/AUDIT-LOG.md` under 2026-08-07 · audit-triage, and every deleted
-finding remains in this file's git history.
+issues #774–#785. On 2026-08-07 the remaining 346 were re-triaged against `main` and cut to 75; the
+other 271 were deleted outright. The deletion was the point rather than a side effect — the
+reasoning is in `docs/AUDIT-LOG.md` under 2026-08-07 · audit-triage, and every deleted finding
+remains in this file's git history. The re-pinning below dropped 3 more, leaving the **72** here.
 
 **Citations are pinned to commit f5bf8767 (2026-08-06), the `main` head at the time of the
-re-pinning.** They were originally taken at 9ae62ff1 (2026-07-28). Every one of the 287 cited line
+re-pinning.** They were originally taken at 9ae62ff1 (2026-07-28). Every one of the 277 cited line
 numbers was re-derived against f5bf8767 by following the old line through the intervening diffs and
 requiring its content to match at the destination, so a citation here identifies the same code the
 finding was written about — not the same offset.
 
-Of the 75 findings, 59 re-derived automatically, 12 were re-pinned by hand where the mapping was
-ambiguous (a wholesale restructure, or a range endpoint that was itself edited), 3 carry a **Pin
-drift:** line, and one — the COMPATIBILITY.md register finding — cites a section rather than lines
-and needs no pin. Three citations changed file: the `report` endpoint's validation was extracted to
+Of the 72 findings, 59 re-derived automatically, 12 were re-pinned by hand where the mapping was
+ambiguous (a wholesale restructure, or a range endpoint that was itself edited), and one — the
+COMPATIBILITY.md register finding — cites a section rather than lines and needs no pin. Three
+citations changed file: the `report` endpoint's validation was extracted to
 `web/src/lib/server/report.ts`, the README's prerequisites moved to `docs/CONTRIBUTING.md`, and
 `spreadTracker.svelte.ts` was renamed to `spreadTracker.ts`.
 
-**A `Pin drift:` line means the citation resolves but the code there no longer says what the finding
-describes** — usually because the finding was fixed. Those three are the ones to score before
-acting. Every other finding's citation can be followed directly; re-verify the surrounding code
-anyway.
+The 3 findings dropped during the re-pinning were the ones whose citations still resolved but whose
+code no longer said what the finding described, because each had been fixed in the meantime:
+create-adr's step 4 now reads "do not count files"; `MAX_HOT_RASTERS` no longer exists in the perf
+harness; and `scripts/tests/dev-ports.test.mjs` now guards the dev/preview ports. Follow any
+citation below directly; re-verify the surrounding code anyway.
 
 The `##` sections below are **curated groups**, not the usual per-producer `## Source: <audit>`
 sections — each names the criterion that earned its findings a place, because that criterion is the
@@ -877,44 +878,6 @@ Track the names actually run this invocation (they're already computed in the ma
 filter `-prime` from the glob. Keeping the "read whatever's there" behavior behind an explicit
 `--summarize-existing` flag would preserve the re-summarize use case without contaminating fresh
 runs.
-
-### [Correctness] create-adr's "count the files" numbering rule produces wrong, colliding ADR numbers — and already has
-
-**File(s):** `.ruler/skills/create-adr/SKILL.md` (step 4, lines 42–43) @ f5bf8767
-
-**Pin drift:** Step 4 of the skill was rewritten between 9ae62ff1 and f5bf8767. It now reads "Do not
-count files" and derives the next number from the highest already in use, which is the fix this
-finding asks for. The cited lines still exist and still hold step 4, but no longer hold the counting
-rule; re-verify before acting.
-
-**Priority:** P2
-
-#### Problem
-
-Step 4 reads:
-
-> **Determine the next ADR number.** Count existing files in `docs/adrs/` (excluding `README.md`)
-> and use the next four-digit number (`0015`, `0016`, etc.).
-
-File count and max number diverged long ago: `docs/adrs/` currently holds **74** numbered files, but
-the highest number is **0077** — several ADRs were moved out to `tools/asset-gen/docs/` (the index
-marks them "Moved"), so counting yields 0075, a number that is already taken. The repo already shows
-the collision this instruction invites: both `0077-dependabot-claude-review-workflow.md` and
-`0077-three-phase-release-verified-artifact-publish.md` exist. (The duplicate files themselves are a
-`docs/` cleanup, but the instruction that manufactures duplicates lives here, and
-`update-adrs/SKILL.md:52` — "Use the next available four-digit number" — leans on the same broken
-procedure via its `/create-adr` reference.)
-
-#### Proposed solution
-
-Replace the counting rule with max+1 plus a collision check, e.g.:
-
-> Take the highest existing number (`ls docs/adrs | grep -oE '^[0-9]{4}' | sort | tail -1`) and add
-> one. Numbers are never reused — moved/superseded ADRs keep their number — and before writing,
-> confirm no existing file already carries the chosen number.
-
-Optionally note that a duplicate number is a defect to flag, not to extend. Regenerate with
-`npm run ruler:apply`.
 
 ### [Testing] The cloud-setup test harness can rot silently: an unchecked source patch and an answer-anything `node` stub
 
@@ -2050,63 +2013,8 @@ exemplar sheet is genuinely worth keeping browsable, publish the smallest owl sh
 ## Cross-file agreement held by prose
 
 CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather than a mitigation.
-Kept only where the two sides can diverge *silently* and ship — release versions, engine constants
-mirrored into the perf harness, policy values re-declared in specs. One of these has already
-drifted.
-
-### [Maintainability] Engine constants mirrored into the harness by prose comment, with no drift guard
-
-**File(s):** `scripts/perf/replay-scenario.mjs` (`SIZE_PX`, lines 28–30);
-`scripts/perf/undo-scenarios.mjs` (`MAX_UNDO_DEPTH`, line 230; `MAX_HOT_RASTERS`, removed) @
-f5bf8767
-
-**Pin drift:** `MAX_HOT_RASTERS` no longer exists in `scripts/perf/undo-scenarios.mjs`, so that half
-of the citation has no successor line. `MAX_UNDO_DEPTH` survives at line 230 but is now guarded by
-`web/src/lib/drawing/undoDepthContract.test.ts`. Only the `SIZE_PX` mirror in
-`scripts/perf/replay-scenario.mjs` still matches the finding as written.
-
-**Priority:** P2
-
-#### Problem
-
-Three engine-owned values are hand-copied into the harness and kept in sync only by comment —
-exactly the pattern CLAUDE.md calls a defect ("A 'keep in sync with X' comment marks a defect, not a
-mitigation"):
-
-1. `replay-scenario.mjs:28–30`:
-   ```js
-   // Mirrors SIZE_TO_PX in web/src/lib/state/strokeWidth.svelte.ts; this Node script
-   // cannot import the app's Svelte rune module.
-   export const SIZE_PX = { 1: 2, 2: 4, 3: 8, 4: 14, 5: 22 };
-   ```
-   The app source is `web/src/lib/state/strokeWidth.svelte.ts:36`. The existing test ("replays every
-   recorded size level at the app stroke width", `scripts/tests/perf-cli-inputs.test.mjs:129–149`)
-   asserts against a *third* hand-copied set of the same literals (2/4/8/14/22), so if the app
-   changes `SIZE_TO_PX`, both the mirror and its test stay green while replays silently use the
-   wrong widths.
-2. `undo-scenarios.mjs:148`: `const MAX_UNDO_DEPTH = 20;` mirrors the exported `MAX_UNDO_DEPTH` in
-   `web/src/lib/drawing/undoHistory.ts:58`. If the engine cap moves, `STROKES = MAX_UNDO_DEPTH + 2`
-   (line 150) silently stops exercising the depth-cap shift path the scenario exists to hit ("Two
-   strokes past MAX_UNDO_DEPTH, so every scenario … exercises the depth-cap shift path").
-3. `undo-scenarios.mjs:287`: `const MAX_HOT_RASTERS = 2;` mirrors the unexported `MAX_HOT_RASTERS`
-   in `undoHistory.ts:63`; `settleColdTier` uses it as its settling predicate, so a drifted value
-   makes the cold-tier wait either time out spuriously or return before demotion finishes —
-   corrupting the `historyRasterMB` gate numbers.
-
-The repo already has the canonical fix pattern for values that genuinely can't be imported:
-`scripts/tests/palette-source.test.mjs` regex-reads `web/src/lib/palette.ts` and fails on divergence
-(and it already covers `session.mjs`'s COLORS copy — these three constants have no equivalent).
-
-#### Proposed solution
-
-Add a drift-guard test (e.g. `scripts/tests/perf-engine-mirrors.test.mjs`) that reads the two app
-sources as text, extracts `SIZE_TO_PX`'s entries, `MAX_UNDO_DEPTH`, and `MAX_HOT_RASTERS` with
-anchored regexes, and asserts equality with the harness's exported/parsed values (export
-`MAX_UNDO_DEPTH`/`MAX_HOT_RASTERS` from the harness modules, or regex-read the harness files too).
-Then delete the hand-copied literals from the SIZE_PX replay test and assert against the imported
-`SIZE_PX` instead — the drift guard makes the mirror trustworthy.
-
----
+Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
+restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
 ### [Testing] Version numbers must agree across three files but have no at-rest drift guard
 
@@ -2181,55 +2089,6 @@ it('every scripts-info entry has a script', () =>
 
 Optionally assert matching key order so the two blocks read in parallel; that's a style choice — the
 presence checks are the load-bearing part.
-
-### [Maintainability] Dev/preview ports (5173, 4173) are synced by prose comments and hand-maintained duplicates, with no drift guard
-
-**File(s):** `web/vite.config.ts` (lines 39–43), `web/netlify.toml` (lines 25–28),
-`web/playwright.shared.ts` (line 3) @ f5bf8767
-
-**Pin drift:** Both cited comments were replaced. `scripts/tests/dev-ports.test.mjs` now exists and
-guards the ports against `vite.config.ts`, `netlify.toml`, and `dev:kill`, and the comments at the
-cited lines name it. The line numbers point at those successor comments, not at the prose-sync
-defect this finding describes — it reads as already resolved.
-
-**Priority:** P2
-
-#### Problem
-
-CLAUDE.md is explicit: "A 'keep in sync with X' comment marks a defect, not a mitigation" — when
-agreeing sites can't share code, a drift-guard test must read both sides (the
-`web/src/app.html.test.ts` / `scripts/tests/android-config.test.mjs` pattern). Both port values
-violate this:
-
-* **5173** — `web/vite.config.ts:30-32`:
-
-  ```ts
-  // Keep with web/netlify.toml's [dev].targetPort and Vite dev-port consumers:
-  // scripts/cloud-tunnel.mjs and root dev:kill/live-reload/ADB scripts must all update together.
-  port: 5173,
-  ```
-
-  mirrored by hand in `web/netlify.toml:26` (`targetPort = 5173`, with its own "Keep in sync with
-  server.port in web/vite.config.ts" comment at line 25), `scripts/cloud-tunnel.mjs:22`
-  (`const PORT = 5173`), and root `package.json` scripts `dev:kill` (line 16), `ios:live` (line
-  118), `adb:reverse` (line 124), plus `scripts/android-emulator.mjs:15`.
-* **4173** — `web/playwright.shared.ts:3` exports `playwrightPort = 4173`, but
-  `scripts/store-shots.mjs:37` (`const PORT = 4173`) and `package.json` `perf:serve` (line 48,
-  `--port 4173`) re-declare it independently.
-
-No test reads any of these (`scripts/tests/` has no port drift test; `vite-server.test.mjs` only
-tests `freePort` behavior). A port change breaks `dev:netlify` proxying or the phone-preview/perf
-tooling silently.
-
-#### Proposed solution
-
-Add `scripts/tests/dev-ports.test.mjs` (repo-script suite) that declares the two expected ports once
-and asserts, by text-parsing each non-importing site, that `web/vite.config.ts`, `web/netlify.toml`,
-`web/playwright.shared.ts`, `scripts/cloud-tunnel.mjs`, `scripts/store-shots.mjs`,
-`scripts/android-emulator.mjs`, and the relevant `package.json` scripts all agree — then delete the
-"keep in sync" comments (pointing instead at the guard). A fancier option (a shared `web/ports.ts`
-imported by the TS sites) works for `vite.config.ts`/`playwright.shared.ts` but not for `.mjs`
-scripts run directly by node or for TOML/JSON, so the drift test is needed either way.
 
 ### [Maintainability] CI retry-token derivation formula is duplicated between playwright.config.ts and the spec that consumes it
 
