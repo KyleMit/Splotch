@@ -162,6 +162,14 @@ describe('checkVersionMismatch', () => {
     expect(window.location.replace).toHaveBeenCalledWith(expect.stringContaining('?v=1.0.2'));
   });
 
+  it('does nothing when the payload has no version field', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
+
+    await pwaUpdates.checkVersionMismatch();
+
+    expect(window.location.replace).not.toHaveBeenCalled();
+  });
+
   // The canvas starts blank and gains ink while /version.json is still in flight —
   // the real post-deploy race, since the child can draw from the first frame
   // (ADR-0072) and the fetch takes seconds on a slow connection. Asserting from an

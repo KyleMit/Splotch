@@ -49,45 +49,6 @@ a success. Nobody files a bug against a number; they just make decisions on it.
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Correctness] Validate the `version.json` payload — a versionless 200 response causes `?v=undefined` and an infinite redirect loop
-
-**File(s):** `web/src/lib/pwa/updates.ts` (`checkVersionMismatch`, lines 144–152) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-const resp = await fetch('/version.json', { cache: 'no-store' });
-if (!resp.ok) return;
-const { version } = await resp.json();
-if (version !== __APP_VERSION__ && version !== attemptedVersion) {
-```
-
-`resp.json()` returns `any`; `version` is destructured with no runtime check, violating the
-"cast/validate at the wire boundary" convention. If a captive portal, misconfigured proxy, or broken
-deploy ever serves a 200 JSON body without a string `version` field, `version` is `undefined`, which
-`!==` both compared strings, so the client navigates to `?v=undefined`. Worse, the
-one-attempt-per-version loop guard then fails structurally: on the next load `attemptedVersion` is
-the *string* `'undefined'` (read from the URL at line 98) while `version` is the *value* `undefined`
-— they never compare equal, so the client redirects again, forever. The module header's promise
-("one attempt per deployed version, no reload loop", lines 28–29) doesn't hold for non-string
-payloads.
-
-#### Proposed solution
-
-Guard the field before using it:
-
-```ts
-const { version } = (await resp.json()) as { version?: unknown };
-if (typeof version !== 'string' || version.length === 0) return;
-```
-
-That single check fixes both the bogus redirect and the loop (a malformed payload simply skips
-cache-busting; the next healthy deploy resolves it). Add two unit tests to the existing
-`checkVersionMismatch` suite: `{}` payload → no redirect; non-JSON→`json()` rejects is already
-covered by the catch.
-
 ### [Correctness] `hydrateDurableStorage` bypasses the module's own safe localStorage wrappers, so one throw aborts the whole restore
 
 **File(s):** `web/src/lib/storage.ts` (`hydrateDurableStorage`, lines 179–208; raw reads/writes at
