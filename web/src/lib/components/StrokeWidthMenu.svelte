@@ -1,8 +1,10 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import {
     STROKE_SIZES,
     SIZE_ICON,
+    MAGIC_SIZE_ICON,
     ERASER_SIZE_ICON,
     type StrokeSize,
   } from '$lib/state/strokeWidth.svelte';
@@ -43,7 +45,8 @@
        otherwise look identical to the eraser): the pen shows ink strokes; the
        eraser shows dashed "holes in the paper" at its true effective size
        (ERASER_SIZE_MULTIPLIER × the pen's width), filled with --paper so the
-       hole shows the canvas through the flyout. -->
+       hole shows the canvas through the flyout. The magic previews carry the
+       brush's rainbow rather than the ink color, which that brush ignores. -->
   {#each STROKE_SIZES as size (size)}
     <button
       class="flyout-option"
@@ -52,7 +55,11 @@
       aria-pressed={activeSize === size}
       use:scribbleTap={() => onpick(size)}
     >
-      <Icon name={erasing ? ERASER_SIZE_ICON[size] : SIZE_ICON[size]} class="action-icon" />
+      {#if erasing}
+        <Icon name={ERASER_SIZE_ICON[size]} class="action-icon" />
+      {:else}
+        <InkOrMagicIcon ink={SIZE_ICON[size]} magic={MAGIC_SIZE_ICON[size]} class="action-icon" />
+      {/if}
     </button>
   {/each}
 </div>

@@ -385,12 +385,14 @@ body {
    screen px across the icons' very different viewBoxes (pen/crayon ~272). The
    action buttons and the Brush Menu stroke only the currentColor paths, leaving
    each icon's fixed-palette parts (colored pencils, the crayon's wrapper, the
-   magic/eraser entries) untouched; the Stroke Width Menu's icon is a single
-   currentColor path, so plain `path` suffices there. The #000 is a deliberate
-   one-off — black reads against every pen color and both papers. */
+   magic/eraser entries) untouched; the Stroke Width Menu's ink previews carry
+   currentColor on the <svg> rather than the path, so there the exclusion is
+   written the other way round — every path but a gradient-filled one, which is
+   what the magic previews use and what the ink color never reaches. The #000 is
+   a deliberate one-off — black reads against every pen color and both papers. */
 .action-button.white-stroke svg path[fill='currentColor'],
 .brush-menu.white-stroke svg path[fill='currentColor'],
-.stroke-width-menu.white-stroke svg path {
+.stroke-width-menu.white-stroke svg path:not([fill^='url']) {
   stroke: #000;
   stroke-width: 2px;
   paint-order: stroke;
@@ -399,7 +401,7 @@ body {
 
 .action-button.dark-stroke svg path[fill='currentColor'],
 .brush-menu.dark-stroke svg path[fill='currentColor'],
-.stroke-width-menu.dark-stroke svg path {
+.stroke-width-menu.dark-stroke svg path:not([fill^='url']) {
   stroke: var(--dark-ink-keyline);
   stroke-width: 2px;
   paint-order: stroke;

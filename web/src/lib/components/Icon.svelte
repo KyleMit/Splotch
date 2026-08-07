@@ -48,6 +48,11 @@
     'size-eraser-3',
     'size-eraser-4',
     'size-eraser-5',
+    'size-magic-1',
+    'size-magic-2',
+    'size-magic-3',
+    'size-magic-4',
+    'size-magic-5',
   ]);
 
   // The exclusions must be spelled out literally here — Vite resolves

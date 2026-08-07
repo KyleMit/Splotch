@@ -49,6 +49,11 @@
       members: ['size-brush-1', 'size-brush-2', 'size-brush-3', 'size-brush-4', 'size-brush-5'],
     },
     {
+      label: 'size-magic-1…5',
+      note: 'the magic stroke previews, carrying the brush’s rainbow',
+      members: ['size-magic-1', 'size-magic-2', 'size-magic-3', 'size-magic-4', 'size-magic-5'],
+    },
+    {
       label: 'size-eraser-1…5',
       note: 'the eraser hole previews (--paper / --hole-stroke)',
       members: [

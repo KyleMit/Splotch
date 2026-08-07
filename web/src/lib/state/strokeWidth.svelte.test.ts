@@ -4,6 +4,7 @@ import {
   STROKE_SIZES,
   DEFAULT_SIZE,
   SIZE_ICON,
+  MAGIC_SIZE_ICON,
   ERASER_SIZE_ICON,
   ERASER_SIZE_MULTIPLIER,
   strokeState,
@@ -30,10 +31,11 @@ beforeEach(() => {
 // a level or an SVG leaves the pairing silently crossed — or the two maps
 // swapped, painting eraser holes for a pen — since every name still type-checks
 // against the generated icon union.
-describe('SIZE_ICON / ERASER_SIZE_ICON', () => {
+describe('SIZE_ICON / MAGIC_SIZE_ICON / ERASER_SIZE_ICON', () => {
   it('names each stroke-preview icon after its size and tool', () => {
     for (const size of STROKE_SIZES) {
       expect(SIZE_ICON[size]).toBe(`size-brush-${size}`);
+      expect(MAGIC_SIZE_ICON[size]).toBe(`size-magic-${size}`);
       expect(ERASER_SIZE_ICON[size]).toBe(`size-eraser-${size}`);
     }
   });

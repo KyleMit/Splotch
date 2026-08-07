@@ -53,7 +53,10 @@ paths:
   `localStorage`-backed setting) keeps the *server-rendered* SVG after hydration until something
   else forces a re-render — the code looks correct but the wrong icon paints. Drive the
   server/client difference with a reconciled attribute/`class`/`transform` (e.g. rotate one chevron
-  with CSS) instead of swapping the `{@html}` body.
+  with CSS) instead of swapping the `{@html}` body. For an icon that follows the held brush, render
+  every face and let CSS pick off `[data-brush]` — `BrushButtonFaces.svelte` for the Brush Button,
+  `InkOrMagicIcon.svelte` for the ink/magic pair. The eraser is the one brush that may stay a plain
+  reactive branch: it is never persisted, so it cannot differ between SSR and hydration.
 * **`onDestroy` (and any component-init code outside `onMount`/`$effect`) also runs during SSR.**
   `onMount` never fires on the server, but `onDestroy` does — the server destroys the component
   immediately after rendering it. So any `window`/`document` access reached from `onDestroy` (or
