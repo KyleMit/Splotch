@@ -8,21 +8,26 @@ export const DEFAULT_SIZE: StrokeSize = 3;
 
 // Spelled out rather than built from a template string: each literal is checked
 // against the generated icon union, so a renamed or deleted SVG is a compile
-// error here instead of a blank icon at runtime.
+// error here instead of a blank icon at runtime. The literals are also what
+// keeps these SVGs off the orphan list — icon-orphans.test.ts counts an icon as
+// referenced only where a quoted string literal of its name appears in non-test
+// source, so deriving the names would stop these maps from vouching for their
+// own assets. The pairing each map spells out is held by a drift guard in
+// strokeWidth.svelte.test.ts.
 export const SIZE_ICON: Record<StrokeSize, CommonIconName> = {
-  1: 'size-1',
-  2: 'size-2',
-  3: 'size-3',
-  4: 'size-4',
-  5: 'size-5',
+  1: 'size-brush-1',
+  2: 'size-brush-2',
+  3: 'size-brush-3',
+  4: 'size-brush-4',
+  5: 'size-brush-5',
 };
 
 export const ERASER_SIZE_ICON: Record<StrokeSize, CommonIconName> = {
-  1: 'eraser-size-1',
-  2: 'eraser-size-2',
-  3: 'eraser-size-3',
-  4: 'eraser-size-4',
-  5: 'eraser-size-5',
+  1: 'size-eraser-1',
+  2: 'size-eraser-2',
+  3: 'size-eraser-3',
+  4: 'size-eraser-4',
+  5: 'size-eraser-5',
 };
 
 // The eraser runs noticeably larger than the pen at the same stroke level — a

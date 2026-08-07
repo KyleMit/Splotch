@@ -4,7 +4,7 @@
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
-  // Some (brush-pen, brush-crayon, line-weight) mix that fixed palette with currentColor
+  // Some (brush-pen, brush-crayon, line-weight-brush) mix that fixed palette with currentColor
   // ink parts that ActionsPanel tints to the active drawing color.
   //
   // Guarded by Icon.svelte.test.ts: every icon the chroma classifier deems
@@ -21,7 +21,7 @@
     'camera',
     'controls',
     'feedback',
-    'line-weight',
+    'line-weight-brush',
     'line-weight-eraser',
     'more-colors',
     'save-picture',
@@ -33,20 +33,20 @@
     'undo',
     'wand-stars',
     'whats-new',
-    // Stroke-size previews carry their own coloring — the pen sizes via
+    // Stroke-size previews carry their own coloring — the brush sizes via
     // currentColor (the active ink color), the eraser sizes and its
     // line-weight-eraser trigger via theme vars (--paper / --hole-stroke) —
     // so they must skip the monochrome tint filter too.
-    'size-1',
-    'size-2',
-    'size-3',
-    'size-4',
-    'size-5',
-    'eraser-size-1',
-    'eraser-size-2',
-    'eraser-size-3',
-    'eraser-size-4',
-    'eraser-size-5',
+    'size-brush-1',
+    'size-brush-2',
+    'size-brush-3',
+    'size-brush-4',
+    'size-brush-5',
+    'size-eraser-1',
+    'size-eraser-2',
+    'size-eraser-3',
+    'size-eraser-4',
+    'size-eraser-5',
   ]);
 
   // The exclusions must be spelled out literally here — Vite resolves

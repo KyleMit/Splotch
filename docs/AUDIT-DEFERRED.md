@@ -565,11 +565,11 @@ The drift since f934d43 makes the fix *more* natural, not less:
   component keeps "only what genuinely differs — the eraser-mode sizing and the
   white-stroke/dark-stroke keylines". But the keylines *don't* differ: all six rules carry identical
   declarations; only StrokeWidthMenu's selector varies.
-* That selector variance has a concrete cause: the `size-1..5` icons carry `fill="currentColor"` on
-  the `<svg>` root, not the `<path>` (e.g. `web/src/lib/icons/size-3.svg`), so
-  `path[fill='currentColor']` can't match them. The eraser-size icons use `<circle>` with
-  `--paper`/`--hole-stroke` fills and are correctly untouched by either selector (and ActionsPanel
-  drops the keyline flags while erasing anyway).
+* That selector variance has a concrete cause: the `size-brush-1..5` icons carry
+  `fill="currentColor"` on the `<svg>` root, not the `<path>` (e.g.
+  `web/src/lib/icons/size-brush-3.svg`), so `path[fill='currentColor']` can't match them. The
+  `size-eraser-*` icons use `<circle>` with `--paper`/`--hole-stroke` fills and are correctly
+  untouched by either selector (and ActionsPanel drops the keyline flags while erasing anyway).
 * `--dark-ink-keyline` is a real token (`web/src/tokens.css:110,153,197` — transparent in light
   mode), so the dark rule stays inert in light mode wherever it lives.
 
@@ -624,14 +624,14 @@ global-class table, edited at its source `.ruler/skills/design/SKILL.md` followe
 **Alternatives weighed:** 1. **Hoist to `app.css` with a union selector (winner).** One rule pair
 covers all three components; the icon variance is absorbed by adding `svg[fill='currentColor'] path`
 as a second branch. Verified safe at HEAD: no other icon rendered inside these controls (`pen`,
-`crayon`, `magic-brush`, `eraser`, `line-weight`, `line-weight-eraser`, `eraser-size-*`) puts
-`fill="currentColor"` on the svg root, so the branch matches exactly the `size-*` icons and nothing
-else. Zero asset churn. 2. **Hoist plus retag `size-1..5.svg`** (the finding's suggestion) so one
-`path[fill='currentColor']` selector suffices. Works, but edits five assets and requires a
-`gen:icons` pass, for the same rendered result; the union selector's second branch with a one-line
-comment is cheaper and self-explanatory. 3. **Leave in place.** Rejected: the app.css comment
-already mislabels the keylines as "genuinely differs", which is exactly the drift-inviting state the
-finding warns about.
+`crayon`, `magic-brush`, `eraser`, `line-weight-brush`, `line-weight-eraser`, `size-eraser-*`) puts
+`fill="currentColor"` on the svg root, so the branch matches exactly the `size-brush-*` icons and
+nothing else. Zero asset churn. 2. **Hoist plus retag `size-brush-1..5.svg`** (the finding's
+suggestion) so one `path[fill='currentColor']` selector suffices. Works, but edits five assets and
+requires a `gen:icons` pass, for the same rendered result; the union selector's second branch with a
+one-line comment is cheaper and self-explanatory. 3. **Leave in place.** Rejected: the app.css
+comment already mislabels the keylines as "genuinely differs", which is exactly the drift-inviting
+state the finding warns about.
 
 **Landing note:** Re-stage in docs/AUDIT.md (or file as a `type:audit` issue) with the updated line
 references and the union-selector approach above — it is a small, self-contained CSS move with a

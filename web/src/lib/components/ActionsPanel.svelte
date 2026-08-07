@@ -323,7 +323,7 @@
           use:scribbleTap={handleStrokeBtnClick}
           style:color={colors.activeColor}
         >
-          <Icon name={erasing ? 'line-weight-eraser' : 'line-weight'} class="action-icon" />
+          <Icon name={erasing ? 'line-weight-eraser' : 'line-weight-brush'} class="action-icon" />
         </button>
         <StrokeWidthMenu
           open={openFlyout === 'stroke'}

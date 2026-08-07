@@ -102,7 +102,7 @@ const REGISTRY = {
     count: () => null,
   },
   performance: {
-    icon: 'line-weight',
+    icon: 'line-weight-brush',
     hue: 'green',
     title: 'Cross-platform performance',
     blurb:
