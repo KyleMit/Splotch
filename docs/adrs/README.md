@@ -101,13 +101,13 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0006](0006-server-side-ai-generation.md)                  | Server-Side AI Image Generation via Netlify Serverless Function                     | Active                                                                         |
 | [0007](0007-cors-csrf-for-native-api-calls.md)             | CORS and CSRF Strategy for Native-to-Web API Calls                                  | Active (amended by [0064](0064-generate-image-raw-body-header-credentials.md)) |
 | [0014](0014-in-memory-rate-limiting.md)                    | In-Memory Rate Limiting (Per-Instance Sliding Window)                               | Active                                                                         |
-| [0016](0016-admin-console-bearer-api-for-native.md)        | Admin Console via Shared Server Core + Bearer-Session API for Native                | Active                                                                         |
 | [0025](0025-netlify-blobs-server-storage.md)               | Netlify Blobs for Server-Side Storage (Eventual Consistency, Env-Seeded Fallback)   | Active                                                                         |
 | [0047](0047-provider-agnostic-ai-adapter.md)               | Provider-Agnostic AI Image Adapter (`AiImageProvider` Seam)                         | Active                                                                         |
 | [0060](0060-user-feedback-github-issue-endpoint.md)        | In-App Feedback via a Server-Proxied GitHub Issue Endpoint                          | Active                                                                         |
 | [0063](0063-netlify-function-timeout-budget.md)            | Size AI Request Deadlines to Netlify's Measured 26s Function Ceiling                | Active                                                                         |
 | [0064](0064-generate-image-raw-body-header-credentials.md) | generate-image Takes a Raw Image Body; Credentials in Headers, Not the Query String | Active                                                                         |
 | [0073](0073-enforcing-csp-first-party-reporting.md)        | Enforcing CSP with a First-Party Violation Receiver                                 | Active                                                                         |
+| [0101](0101-admin-console-is-web-only-and-unlinked.md)     | The Admin Console Is Web-Only and Unlinked                                          | Active                                                                         |
 
 ## Web platform & PWA
 
@@ -171,6 +171,7 @@ chains stay intact (e.g. the undo saga: 0033 → 0035/0036 →
 | #                                                        | Title                                                                                              | Status                                                                   |
 | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [0011](0011-capacitor-cli-windows-patch.md)              | patch-package for Capacitor CLI Windows gradlew Bug                                                | Superseded by [0062](0062-drop-windows-dev-support.md)                   |
+| [0016](0016-admin-console-bearer-api-for-native.md)      | Admin Console via Shared Server Core + Bearer-Session API for Native                               | Superseded by [0101](0101-admin-console-is-web-only-and-unlinked.md)     |
 | [0033](0033-command-replay-undo.md)                      | Command-Replay Undo (Single Baseline + Stroke Log, replacing the snapshot stack)                   | Superseded by [0066](0066-snapshot-undo-reinstated.md)                   |
 | [0035](0035-keyframe-long-commands.md)                   | Keyframe Long Commands So Undo Doesn't Replay Thousands of Ops                                     | Superseded by [0066](0066-snapshot-undo-reinstated.md)                   |
 | [0036](0036-stroke-simplification-at-commit.md)          | Simplify Stroke Ops at Commit (Ramer–Douglas–Peucker) So Undo Replays Few Segments                 | Superseded by [0066](0066-snapshot-undo-reinstated.md)                   |

@@ -9,6 +9,7 @@ import {
   serveResponsiveColoringWithCanonicalFallback,
 } from './src/lib/pwa/coloringFallback';
 import { RESPONSIVE_COLORING_TIER_DIRECTORIES } from './src/lib/state/books';
+import { excludeNativeRoutes } from './nativeExcludedRoutes';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -63,6 +64,7 @@ export default defineConfig({
       }
     : {}),
   plugins: [
+    excludeNativeRoutes(isCapacitor),
     sveltekit(),
     // Emit a version.json on every build so the running app can detect
     // when the deployed version has moved on and force a fresh fetch.

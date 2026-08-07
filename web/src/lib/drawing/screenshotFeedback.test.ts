@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ACTION_UNAVAILABLE_CLASS } from '$lib/actionUnavailableFeedback';
-import {
-  SCREENSHOT_BUTTON_ID,
-  playScreenshotFeedback,
-  playScreenshotSuppressedFeedback,
-} from './screenshotFeedback';
+import { playScreenshotFeedback, playScreenshotSuppressedFeedback } from './screenshotFeedback';
+import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
 
 beforeEach(() => {
   document.body.innerHTML = `<button id="${SCREENSHOT_BUTTON_ID}"><span data-icon="camera"></span></button>`;

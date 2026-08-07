@@ -59,6 +59,14 @@ files it on every audit finding that survives validation, and `fix-audits` burns
 | `area:release`        | Release and deployment automation                   |
 | `area:infra`          | Dev tooling, dependencies, repo infrastructure      |
 | `area:asset-gen`      | Asset-generation image pipeline (`tools/asset-gen`) |
+| `area:store-launch`   | Blocks App Store / Play submission                  |
+
+`area:store-launch` is the one label in this group that names a **delivery goal** rather than a part
+of the product. Store-submission work cuts across native, AI, the Parent Center, and the privacy
+copy, and what those issues have in common is that shipping is blocked until they land — so they
+also carry whichever product `area:*` they touch. Browse the set with
+[`label:area:store-launch`](https://github.com/kylemit/splotch/issues?q=is%3Aissue+label%3Aarea%3Astore-launch),
+or read the tracking issue that lists them as sub-issues (see "Tracking issues" below).
 
 ### `priority:` — triage signal (optional, at most one)
 
@@ -76,6 +84,19 @@ deliberate triage call, not a default — most of the migrated backlog is intent
 | `needs-adr`        | Needs an architectural decision record before or alongside implementation                                                                |
 | `wont-do`          | Considered and declined (see "Closing" below)                                                                                            |
 | `good first issue` | Small, self-contained, good for a newcomer                                                                                               |
+
+## Tracking issues
+
+When a body of work only makes sense as a set — everything that must land before a release, a
+migration touching a dozen call sites — open a **tracking issue** and attach the others as GitHub
+**sub-issues** (the "Create sub-issue / Add existing issue" control on the parent). Sub-issues are a
+real parent/child relationship, not a Markdown checklist: GitHub renders the completion count on the
+parent, each child links back to it, and closing a child ticks the parent automatically. A hand-kept
+checklist of `#`-numbers goes stale the first time someone closes one from a PR.
+
+Pair the tracking issue with a label so the set stays findable when someone arrives from search
+instead of from the parent — the two answer different questions ("what's left for this goal?" vs "is
+this issue part of that goal?"). The tracking issue carries the same label as its children.
 
 ## Triage & lifecycle
 

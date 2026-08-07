@@ -1,18 +1,15 @@
-// Skip prerendering this route into the native export. It explains how to
-// install the native Android app, so an HTML page of it inside that app is
-// pointless, and anyone who already has the app is past every step on it.
+// This route is web-only. It explains how to install the native Android app, so
+// it is pointless inside that app — and its Play Store links inside an iOS
+// binary are an App Review 2.3.10 rejection.
 //
-// __IS_CAPACITOR__ is the single build-time web-vs-native signal
-// (svelte.config.js); adapter-static's `strict: false` lets the native build
-// skip the route the same way it skips /api, /admin, and /dev. The root
-// +layout.ts turns prerendering on for everything, so this override is what
-// keeps android-beta.html out of the static export.
+// Two layers keep it out of the native export, because they drop different
+// things. This flag drops the prerendered HTML (adapter-static's `strict: false`
+// allows the gap, the same way /api, /admin, and /dev are skipped; the root
+// +layout.ts turns prerendering on for everything, so the override is what
+// creates it). The build-time exclusion in web/nativeExcludedRoutes.ts drops the
+// module *source*, which is what keeps the Play Store URLs, the testers' group
+// link, and the support address out of the shipped JS chunk.
 //
-// This drops the HTML, NOT the route. The page's JS chunk — Play Store links,
-// group URL, support address — still ships in the native bundle, `entry/app.*`
-// still lists the route, and `fallback: '200.html'` means a webview navigated
-// to /android-beta would render it. Nothing in the app links there, so it is
-// unreachable in practice, and this matches how /admin is already handled.
-// Excluding it for real needs a build-time route exclusion under CAPACITOR=true,
-// which no route has today.
+// scripts/check-native-bundle.mjs scans the built native output for those
+// strings and fails the build if either layer stops working.
 export const prerender = !__IS_CAPACITOR__;

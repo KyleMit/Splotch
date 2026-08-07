@@ -16,10 +16,10 @@ const DRAWING_CANVAS = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'DrawingCanvas.svelte'),
   'utf8'
 );
-const SCREENSHOT_FEEDBACK = readFileSync(
-  join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshotFeedback.ts'),
-  'utf8'
-);
+// SCREENSHOT_BUTTON_ID lives with the other corner-button ids rather than beside
+// the screenshot feedback that uses it — the save pipeline has to stay off the
+// startup critical path (issue #461, web/tests/startup-bundle.spec.ts).
+const UI_STATE = readFileSync(join(ROOT, 'web', 'src', 'lib', 'state', 'ui.svelte.ts'), 'utf8');
 const SETTINGS_MODAL = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'SettingsModal.svelte'),
   'utf8'
@@ -73,7 +73,7 @@ describe('trusted action setup', () => {
       return true;
     });
 
-    const screenshotButtonId = /SCREENSHOT_BUTTON_ID = '([^']+)'/.exec(SCREENSHOT_FEEDBACK)?.[1];
+    const screenshotButtonId = /SCREENSHOT_BUTTON_ID = '([^']+)'/.exec(UI_STATE)?.[1];
     expect(screenshotButtonId).toBeTruthy();
     expect(expression).toContain(
       `document.querySelector('#${screenshotButtonId}')?.disabled === false`

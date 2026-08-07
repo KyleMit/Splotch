@@ -2,31 +2,14 @@
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import { APP_VERSION } from '$lib/appVersion';
-  import { settings, setAdminLinkVisible } from '$lib/state/settings.svelte';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { GITHUB_REPO_URL } from '$lib/githubRepo';
 
-  // Hidden admin unlock: tapping the version text 5 times reveals the link to
-  // the admin console. The reveal is persisted (so it survives a refresh) and
-  // stays put for anyone holding an admin session; the console resets it on
-  // logout / failed login / leaving without signing in. The secret itself is
-  // collected by the console's login form, so it never touches the client.
-  //
-  // This is a build-time choice, not a runtime one: the native bundle has no
-  // /admin route at all (it's server-only, excluded from the static export),
-  // and Capacitor's WebView can't reach it. Using the compile-time __IS_CAPACITOR__
-  // flag avoids a subtle bug — a runtime isNative() read inside a $derived
-  // memoizes on first render, and if window.Capacitor isn't injected yet it
-  // sticks on '/admin', whose full-navigation white-screens in the WebView.
-  const ADMIN_UNLOCK_TAPS = 5;
-  let versionClicks = $state(0);
-  const adminHref = __IS_CAPACITOR__ ? '/admin/native' : '/admin';
-  function handleVersionClick() {
-    versionClicks += 1;
-    if (versionClicks < ADMIN_UNLOCK_TAPS) return;
-    versionClicks = 0;
-    setAdminLinkVisible(true);
-  }
+  // The admin console is reached by typing /admin on the web, and exists only
+  // there. It is deliberately not linked from anywhere in the app: an in-app
+  // affordance for a privileged surface reads as hidden functionality to a store
+  // reviewer (Play Deceptive Behavior, App Review 2.3.1), which a children's app
+  // cannot afford.
 </script>
 
 <section class="setting-group">
@@ -49,14 +32,9 @@
         View on GitHub
       </a>
     </p>
-    <button type="button" class="version-text" onclick={handleVersionClick}
-      >Version {APP_VERSION}</button
-    >
-    {#if settings.adminLinkVisible}
-      <p class="admin-link"><a href={adminHref}>Admin</a></p>
-    {/if}
+    <p class="version-text">Version {APP_VERSION}</p>
     {#if import.meta.env.DEV}
-      <p class="admin-link"><a href="/dev/ai-timer">AI Timer</a></p>
+      <p class="dev-link"><a href="/dev/ai-timer">AI Timer</a></p>
     {/if}
   </div>
 </section>
@@ -142,23 +120,12 @@
   }
 
   .version-text {
-    /* A real <button> for accessibility, reset to look like the plain text it
-       replaced (the surrounding footer <p>s are centered with an 8px gap). */
-    display: block;
-    width: 100%;
-    margin: 0 0 8px;
-    padding: 0;
-    border: none;
-    background: none;
-    cursor: pointer;
-    text-align: center;
     font-size: var(--font-size-xs);
     color: var(--text-soft);
     font-family: var(--font-mono);
-    user-select: none;
   }
 
-  .admin-link {
+  .dev-link {
     font-size: var(--font-size-xs);
   }
 </style>
