@@ -29,7 +29,7 @@
 
   type DemoChip = 'eraser' | 'camera';
   const demoChipOptions: SegmentedPickerOption<DemoChip>[] = [
-    { value: 'eraser', label: 'Eraser', icon: 'eraser' },
+    { value: 'eraser', label: 'Eraser', icon: 'brush-eraser' },
     { value: 'camera', label: 'Screenshot', icon: 'camera' },
   ];
   let demoChips = $state<DemoChip[]>(['eraser']);

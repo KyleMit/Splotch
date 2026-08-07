@@ -92,7 +92,7 @@ const REGISTRY = {
     count: () => null,
   },
   'drawing-engine': {
-    icon: 'pen',
+    icon: 'brush-pen',
     hue: 'blue',
     title: 'How the drawing engine works',
     blurb:

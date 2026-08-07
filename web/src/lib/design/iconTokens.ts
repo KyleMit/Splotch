@@ -47,6 +47,14 @@ const iconThemes = {
   appearance: {
     night: { light: '#212d4c', dark: '#93a6d6' },
   },
+  'brush-magic': {
+    handle: { light: '#3a2470', dark: '#d5c4f5' },
+    // The cream original was near-invisible on paper, so it becomes the metal
+    // the shape already wanted. It must be lighter than the handle in light and
+    // darker than it in dark — the inversion, and the thing to check first if
+    // the brush ever looks flat.
+    ferrule: { light: '#6e7d99', dark: '#8fa0bd' },
+  },
   camera: {
     body: { light: '#3f68a8', dark: '#86aee0' },
     // Stays the darker of the two in both sets so the lens reads as recessed.
@@ -61,14 +69,6 @@ const iconThemes = {
   // still collapse into that card.
   controls: {
     track: { light: '#3d2570', dark: '#8fbdea' },
-  },
-  'magic-brush': {
-    handle: { light: '#3a2470', dark: '#d5c4f5' },
-    // The cream original was near-invisible on paper, so it becomes the metal
-    // the shape already wanted. It must be lighter than the handle in light and
-    // darker than it in dark — the inversion, and the thing to check first if
-    // the brush ever looks flat.
-    ferrule: { light: '#6e7d99', dark: '#8fa0bd' },
   },
   'save-picture': {
     photo: { light: '#5699cd', dark: '#7db4e0' },

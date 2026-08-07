@@ -39,6 +39,11 @@
 
   const spotFamilies: (IconFamily & { note: string })[] = [
     {
+      label: 'brush-*',
+      note: 'the Brush Menu entries, in menu order',
+      members: ['brush-pen', 'brush-crayon', 'brush-magic', 'brush-eraser'],
+    },
+    {
       label: 'size-1…5',
       note: 'the pen stroke previews, inked by currentColor',
       members: ['size-1', 'size-2', 'size-3', 'size-4', 'size-5'],
