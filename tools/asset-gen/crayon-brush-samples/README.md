@@ -11,16 +11,8 @@ reference art, published under
 
 ## The stages
 
-The set is progressive, mirroring how a toddler builds a mark up (ids are prefixed by stage):
-
-| Prefix | Stage                    | What it pins down                                                       |
-| ------ | ------------------------ | ----------------------------------------------------------------------- |
-| `1-`   | Single lines             | One straight crayon stroke per color — the baseline grainy waxy mark    |
-| `2-`   | Same-color overdraw      | Drawing back over a stroke → visible buildup (darker, denser, opaque)   |
-| `3-`   | Different-color overdraw | One color layered over another → partial wax mixing at the crossing     |
-| `4-`   | Scribble types           | Back-and-forth fills, circles, zigzags, hatching, loops, spirals, dots  |
-| `5-`   | Fills & swatches         | Area coverage at different pressures, blended gradients                 |
-| `6-`   | Macro close-ups          | Deposit physics at tooth scale — thickness → value, directional streaks |
+The progressive groups are declared in `samples.mjs`'s `STAGES`; the generated contact sheet
+displays them for review.
 
 ## Regenerating
 

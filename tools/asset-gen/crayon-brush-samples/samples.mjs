@@ -1,10 +1,4 @@
-// Reference sample specs for the crayon brush mode. Grouped in progressive
-// stages so the set can be generated and reviewed incrementally:
-//   1-  single lines (one crayon stroke per color)
-//   2-  same-color overdraw (wax buildup where a stroke is drawn over again)
-//   3-  different-color overdraw (wax layering / partial color mixing)
-//   4-  scribble types (the marks a toddler actually makes)
-//   5-  fills & swatches (area coverage, texture at a glance)
+// Reference sample specs for the crayon brush mode. STAGES owns their progressive grouping metadata.
 //
 // Every prompt shares BASE so the whole set reads as one consistent material —
 // the thing that varies between samples is the MARK, not the medium or camera.
@@ -171,4 +165,49 @@ const stage6 = [
   ),
 ];
 
-export const SAMPLES = [...stage1, ...stage2, ...stage3, ...stage4, ...stage5, ...stage6];
+export const STAGES = [
+  {
+    prefix: '1-',
+    heading: 'Stage 1 · Single lines',
+    blurb:
+      'One straight crayon stroke per color — the baseline mark. Note the paper tooth showing through and the waxy buildup at the ends.',
+    samples: stage1,
+  },
+  {
+    prefix: '2-',
+    heading: 'Stage 2 · Same-color overdraw',
+    blurb:
+      'Drawing back over a stroke in the SAME color. The overlap must read visibly darker, denser and more opaque — this is the buildup behavior the brush has to reproduce.',
+    samples: stage2,
+  },
+  {
+    prefix: '3-',
+    heading: 'Stage 3 · Different-color overdraw',
+    blurb:
+      'One color layered over another. Where waxes cross they partially mix (red+blue→purple, yellow+blue→green); away from the crossing each color stays itself.',
+    samples: stage3,
+  },
+  {
+    prefix: '4-',
+    heading: 'Stage 4 · Scribble types',
+    blurb:
+      'The marks a toddler actually makes — back-and-forth fills, circular scribbles, zigzags, hatching, loops, spirals, dots, wild multicolor tangles.',
+    samples: stage4,
+  },
+  {
+    prefix: '5-',
+    heading: 'Stage 5 · Fills & swatches',
+    blurb:
+      'Area coverage: how the texture reads when a shape is filled at different pressures, plus blended gradients.',
+    samples: stage5,
+  },
+  {
+    prefix: '6-',
+    heading: 'Stage 6 · Macro close-ups',
+    blurb:
+      'Deposit physics at tooth scale: wax thickness varies continuously (value follows thickness), grain streaks along the drag direction, and thin deposit goes translucent rather than vanishing.',
+    samples: stage6,
+  },
+];
+
+export const SAMPLES = STAGES.flatMap(({ samples }) => samples);

@@ -52,39 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Maintainability] Crayon stage vocabulary triplicated — and the samples.mjs copy already drifted (missing stage 6)
-
-**File(s):** `tools/asset-gen/crayon-brush-samples/samples.mjs` (header lines 1–10, stage arrays
-through line 174), `build-sheet.mjs` (`STAGES`, lines 26–57), `README.md` (table lines 16–23) @
-cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-The stage list (prefix → name → what it pins down) exists three times: the README table,
-`build-sheet.mjs`'s `STAGES` array, and `samples.mjs`'s header comment. The comment has already
-drifted — it enumerates stages 1–5:
-
-```js
-// Reference sample specs for the crayon brush mode. Grouped in progressive
-// stages so the set can be generated and reviewed incrementally:
-//   1-  single lines (one crayon stroke per color)
-//   …
-//   5-  fills & swatches (area coverage, texture at a glance)
-```
-
-while the file itself defines `stage6` (macro close-ups, lines 160–172) and exports it in `SAMPLES`
-(line 174), and the README/build-sheet both list six stages. This is the exact drift class the root
-conventions call out (comments restating facts owned elsewhere; cross-file agreement by prose).
-
-#### Proposed solution
-
-Make `samples.mjs` the single owner: export a `STAGES` array (`[{ prefix, heading, blurb }]`) beside
-`SAMPLES`, import it in `build-sheet.mjs`, and cut the header comment's stage enumeration down to
-"grouped in progressive stages — see STAGES". The README table stays as human prose but then has one
-code source to check against.
-
 ### [Maintainability] The supported Node floor (engines 22.13) is never exercised — CI hardcodes Node 24 with no tie to `engines`
 
 **File(s):** `.github/actions/setup-node/action.yml` (line 19); `package.json` (lines 5–7);
