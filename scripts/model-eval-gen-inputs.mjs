@@ -13,7 +13,7 @@ import { GoogleGenAI } from '@google/genai';
 import { chromium } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
+import { ROOT, PALETTE, PAPER, imageFormat } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
 import { requireEnv } from './lib/proc.mjs';
 
@@ -81,10 +81,15 @@ async function main() {
       console.log('no image');
       continue;
     }
+    const fmt = imageFormat(raw);
+    if (fmt === 'other') {
+      console.log('unrecognized image format');
+      continue;
+    }
     // Normalize onto the target canvas size + paper so all inputs match the corpus.
     const [w, h] = p.dim;
     await page.setContent(`<canvas id="c" width="${w}" height="${h}"></canvas>`);
-    const dataUri = `data:image/*;base64,${raw.toString('base64')}`;
+    const dataUri = `data:image/${fmt};base64,${raw.toString('base64')}`;
     const png = await page.evaluate(
       async ({ uri, w, h, paper }) => {
         const img = new Image();

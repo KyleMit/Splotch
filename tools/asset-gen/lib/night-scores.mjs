@@ -55,7 +55,7 @@ export async function scoreNightness(fillBuf, sourceBuf) {
     .raw()
     .toBuffer({ resolveWithObject: true });
   const t = await sharp(fillBuf)
-    .resize(NIGHT_W, null, { fit: 'inside' })
+    .resize(s.info.width, s.info.height, { fit: 'fill' })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -79,7 +79,7 @@ export async function scoreNightness(fillBuf, sourceBuf) {
 export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
   const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
+    .resize(s.info.width, s.info.height, { fit: 'fill' })
     .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -138,7 +138,7 @@ export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below th
 export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
   const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
   const t = await sharp(fillBuf)
-    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
+    .resize(s.info.width, s.info.height, { fit: 'fill' })
     .grayscale()
     .raw()
     .toBuffer({ resolveWithObject: true });

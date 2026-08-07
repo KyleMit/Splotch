@@ -37,14 +37,17 @@ export function onDurableRestore(cb: () => void) {
 // that triggered it. Swallow the failure (the native durable mirror still backs
 // the value up) and warn at most once so we don't spam the console.
 let storageMutationWarned = false;
-function safeStorageMutation(op: () => void) {
+/** Returns whether the write landed, so a caller can tell a real change from a swallowed failure. */
+function safeStorageMutation(op: () => void): boolean {
   try {
     op();
+    return true;
   } catch (err) {
     if (!storageMutationWarned) {
       storageMutationWarned = true;
       console.warn('localStorage write failed; relying on durable mirror', err);
     }
+    return false;
   }
 }
 
@@ -184,12 +187,14 @@ export async function hydrateDurableStorage() {
     const durable = await Promise.all(hydrationKeys.map((key) => Preferences.get({ key })));
     const backups: Promise<unknown>[] = [];
     hydrationKeys.forEach((key, i) => {
-      const local = localStorage.getItem(key);
+      const local = safeStorageRead(() => localStorage.getItem(key), null);
       const { value } = durable[i];
       const action = reconcileStorageValues(local, value);
       if (action.restore !== undefined) {
-        localStorage.setItem(key, action.restore); // WebView lost it — recover from durable store
-        restored = true;
+        // WebView lost it — recover from durable store. Only a write that actually
+        // landed counts as a restore: the callers this return value gates re-read
+        // localStorage, so a swallowed failure must not claim it changed.
+        if (safeStorageMutation(() => localStorage.setItem(key, action.restore))) restored = true;
       } else if (action.backup !== undefined) {
         backups.push(Preferences.set({ key, value: action.backup })); // back up the existing value
       }

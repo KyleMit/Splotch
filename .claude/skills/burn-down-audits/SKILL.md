@@ -373,11 +373,21 @@ finding text. Idempotent — it dedupes by SHA.
 > envelope it hands you looks exactly like a real one. Always filter by mtime against the run's
 > start line: `find .audit-work/logs -name 'iter*.json' -newermt '<HH:MM>'`.
 >
-> **Names also collide *within* a single run, on every drop.** The tag is
-> `iter${done + deferred + 1}` — `dropped` is not in it — so the finding after a dropped one reuses
-> the same `iterNNNN` and overwrites its envelopes. Two different findings legitimately logging
-> `iter0002` in one run is not a bug, but it means the tag is not a finding identifier: correlate by
-> the `run.log` line and its timestamp, not by iteration number.
+> **The canary is a separate run, so it is the usual victim of that restart — and `capture` cannot
+> rebuild its comments.** A normal session runs a 5-finding canary and then the full run, which
+> starts again at `iter0001` and overwrites the canary's first five envelopes. `capture` then reads
+> the *full run's* reviewer catches and attributes them to the *canary's* commits. Confirmed on
+> 2026-08-07 by re-capturing into a temp `COMMENT_STORE`: three canary fixes came back carrying the
+> catches of the full run's same-numbered iterations, each individually plausible. The canary's own
+> posted comments are correct because they were drained live, before the overwrite — so **never
+> re-run `capture` to "repair" a canary comment**; it replaces a right record with a wrong one. The
+> closeout `skipped N already posted` check is still sound, since `POSTED` dedupes by sha.
+>
+> **Within one run the tag counts outcomes, not fixes.** It is
+> `iter${done + dropped + deferred + 1}`, so a fix, a drop, and a deferral all advance it and no two
+> findings in a run share a tag or overwrite each other's envelopes. Across runs it is still not a
+> finding identifier — the restart above is what breaks that — so correlate by the `run.log` line
+> and its timestamp, not by iteration number.
 
 **Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
 plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
@@ -511,6 +521,15 @@ this is only about SHAs.)
   because the tree happened to be clean already. These are excluded from `CHECK_CMD` for exactly
   this reason — the exclusion is about the command being mutating, not about where it runs, so it
   applies to you too. CI's Agent-file drift job is the safe place to learn the same thing.
+
+  **This rule binds *you*, not the roles — do not flag an implementer for running it.** The hazard
+  is that a *supervisor's* writes land in a commit the driver is building; a role's writes belong to
+  its own commit, which is the whole point of the commit. An implementer that edits a `.ruler/`
+  source is in fact **required** to run `npm run ruler:apply` and commit the regenerated output (see
+  the `CHECK_CMD` exclusions above). A 2026-08-07 supervisor read the sentence above as universal
+  and flagged two findings for running `ruler:check`, then had to retract it on the PR when a third
+  correctly regenerated both mirrors after editing a Ruler source. Before flagging one, check what
+  the commit actually touched: writes confined to the finding's own files are the system working.
 * **A session hook will nag every turn that the commits are unsigned. It is a false positive —
   ignore it.** Verified 2026-07-25 by reading the commit objects: they *do* carry
   `gpgsig -----BEGIN SSH SIGNATURE-----`. Signing is delegated to `gpg.ssh.program=/tmp/code-sign`
@@ -824,22 +843,25 @@ state in the conversation:
   "healthy and working":
   ```bash
   tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
-    "HALT|hit a cap|red at batch|red on the final|push failed|no impl session|DEFERRED|INVALID|finished:|iter"
+    "HALT|hit a cap|red at batch|red on the final|push failed|WARNING|no impl session|DEFERRED|INVALID|finished:|iter"
   ```
   `push failed` matters as much as a halt: the run keeps committing perfectly well against a remote
-  it cannot reach, and every commit it makes after that is unprotected. `no impl session` means a
-  fix round lost the resume handoff and re-derived the change from review text — one such line is
-  tolerable, a pattern of them means the session minting is broken again.
+  it cannot reach, and every commit it makes after that is unprotected. A run that ends that way
+  logs `WARNING: <n> commit(s) not on origin` and exits non-zero — the `finished:` line still
+  prints, so the warning and the exit status are the only things separating that run from a healthy
+  one, and the commits it names exist nowhere but the container. `no impl session` means a fix round
+  lost the resume handoff and re-derived the change from review text — one such line is tolerable, a
+  pattern of them means the session minting is broken again.
 
   **`INVALID` is what a drop looks like — the word "dropped" never appears.** The driver logs the
   verdict verbatim (`INVALID: <reason>`) and only reports `dropped` in the closing `finished:`
   tally, so a filter without it stays silent through every drop. That silence is easy to misread as
-  progress, because the only other trace is an `iter` line whose tag *repeats* the previous one (the
-  tag is `done + deferred + 1`, which excludes drops) while the remaining-count still falls. Two or
-  three consecutive `iterNNNN` lines with a falling count is the drop signature, not a bug — but you
-  should be reading the verdict, not inferring it. Worth watching because a drop is the one
-  unrecoverable outcome: it deletes a finding permanently, so a wrong `INVALID` is the only mistake
-  this loop makes that nothing downstream can catch.
+  progress, and the `iter` lines will not break the tie for you: the tag counts every outcome
+  (`done + dropped + deferred + 1`), so a drop advances it exactly like a fix does and the sequence
+  of tags alone never says which one happened. Read the verdict rather than inferring it from the
+  tags or the falling remaining-count. Worth watching because a drop is the one unrecoverable
+  outcome: it deletes a finding permanently, so a wrong `INVALID` is the only mistake this loop
+  makes that nothing downstream can catch.
 
   **Arming it in the same breath as the launch does not work, and fails silently-ish.** A fresh
   container has no `run.log` until the driver's first write, and `tail -f` on a missing file exits

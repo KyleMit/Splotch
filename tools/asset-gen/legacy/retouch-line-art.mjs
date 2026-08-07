@@ -29,7 +29,7 @@
 //   --samples 3                                       3 candidates each (pick the best)
 //   --instruction "..."                               override the default (eye) edit
 import { parseArgs } from 'node:util';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
@@ -134,7 +134,7 @@ for (const arg of positionals) {
       const out = await normalize(edited, width, height);
       const dest = join(OUT_DIR, samples > 1 ? `${arg}.sample-${i + 1}.webp` : `${arg}.webp`);
       await mkdir(dirname(dest), { recursive: true });
-      await sharp(out).toFile(dest);
+      await writeFile(dest, out);
       console.log(`ok -> ${dest}`);
     } catch (err) {
       console.log(`FAILED: ${err.message}`);

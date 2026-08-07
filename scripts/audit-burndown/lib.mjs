@@ -13,6 +13,12 @@ export const WORK = '.audit-work';
 export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'scripts/audit-burndown/prompts';
 
+// What separates a dropped finding from a real fix in .audit-work/completed.log.
+// burndown.mjs writes it and status.mjs splits on it, so the two cannot drift:
+// counting drops as fixes overstates the run in the flattering direction, which
+// is the number a supervising agent copies into the AUDIT-LOG closeout row.
+export const INVALID_DROP_MARKER = '  [invalid]  ';
+
 // The backlog every entry helper below reads. `env` is a parameter for the same
 // reason readConfig's is: a run built from a supplied environment must select
 // the backlog that environment names, not the ambient one.
@@ -33,14 +39,17 @@ export function findingPriority(title, body = '') {
   return stated ? Number(stated[1]) : null;
 }
 
-// The implementer reports the sha of the commit it made. Even with a required
-// schema field, a failed call or legacy runner envelope can omit it, and treating
-// the gap as failure throws away the most expensive work the driver does. Trust
-// git over the envelope: HEAD past the base means it committed, whatever it
-// remembered to report. An unmoved HEAD still yields '' so a genuine no-op
-// defers as before.
-export function resolveImplSha({ reported, head, baseSha }) {
-  if (reported) return reported;
+// The implementer reports the sha of the commit it made, but git decides whether
+// one exists, so the envelope never reaches this function. `head` is `rev-parse
+// HEAD` read immediately after the step: past the base means it committed,
+// whatever it remembered to report — which recovers the most expensive work the
+// driver does when a failed call or legacy envelope omits the field — and
+// unmoved means it committed nothing. A reported sha cannot rescue that branch,
+// because every value it could carry there names a commit this step did not make
+// (a previous round's, the base echoed back from the fix prompt, a short or
+// garbled string). Adopting one hands the reviewer a foreign range that passes
+// the gates on someone else's work and lets an approval amend it.
+export function resolveImplSha({ head, baseSha }) {
   return head && head !== baseSha ? head : '';
 }
 

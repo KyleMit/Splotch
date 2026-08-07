@@ -56,6 +56,7 @@ import {
   gitOut,
   incompleteAuditCommitPlan,
   implementationCommitMessage,
+  INVALID_DROP_MARKER,
   launchCommand,
   lintablePaths,
   logLine,
@@ -263,6 +264,14 @@ const DEFERRED_HEADER = `# Audit — deferred findings
 > issue, or drop it.
 `;
 
+// What the log says about a sha the implementer reported and `resolveImplSha`
+// did not adopt. The empty case is the one worth naming: the report was
+// discarded and the finding defers, which without this reads as if the
+// implementer said nothing at all.
+function gitVerdict(sha) {
+  return sha ? `git says ${sha.slice(0, 12)}` : 'git says nothing was committed';
+}
+
 // Two findings whose titles slug to the same 72 characters would otherwise have
 // the second silently overwrite the first — losing a draft is the exact failure
 // this capture exists to prevent, so suffix instead.
@@ -342,7 +351,11 @@ export function createBurndownRun({ config, effects }) {
       return false;
     }
     if (!gitOk('push', '-u', 'origin', BRANCH)) {
-      logLine('  push failed — continuing, will retry next batch');
+      logLine(
+        final
+          ? '  push failed on the final batch — commits held locally, push them manually'
+          : '  push failed — continuing, will retry next batch'
+      );
       return false;
     }
     sincePush = 0;
@@ -720,7 +733,7 @@ export function createBurndownRun({ config, effects }) {
     );
     appendFileSync(
       join(WORK, 'completed.log'),
-      `${gitOut('rev-parse', 'HEAD')}  [invalid]  ${title}\n`
+      `${gitOut('rev-parse', 'HEAD')}${INVALID_DROP_MARKER}${title}\n`
     );
     dropped += 1;
     consecutive = 0;
@@ -758,13 +771,11 @@ export function createBurndownRun({ config, effects }) {
       impl.ok && impl.structured.success === true && headAfterImpl === baseSha
         ? commitCodexImplementation({ title, baseSha })
         : '';
-    const sha = resolveImplSha({
-      reported: reportedSha,
-      head: driverSha || headAfterImpl,
-      baseSha,
-    });
+    const sha = resolveImplSha({ head: driverSha || headAfterImpl, baseSha });
     if (sha && !reportedSha)
       logLine(`  implementer omitted its sha — recovered ${sha.slice(0, 12)}`);
+    if (reportedSha && sha !== reportedSha)
+      logLine(`  implementer reported ${reportedSha.slice(0, 12)} — ${gitVerdict(sha)}`);
 
     return {
       ok: impl.ok && impl.structured.success === true && Boolean(sha),
@@ -919,11 +930,9 @@ export function createBurndownRun({ config, effects }) {
         impl.structured.success === true && headAfterFix === sha
           ? commitCodexImplementation({ title, baseSha: sha, round })
           : '';
-      const newSha = resolveImplSha({
-        reported: reportedFixSha,
-        head: driverFixSha || headAfterFix,
-        baseSha: sha,
-      });
+      const newSha = resolveImplSha({ head: driverFixSha || headAfterFix, baseSha: sha });
+      if (reportedFixSha && newSha !== reportedFixSha)
+        logLine(`  implementer reported ${reportedFixSha.slice(0, 12)} — ${gitVerdict(newSha)}`);
       if (!newSha) {
         status = 'CHANGES_REQUIRED';
         implFailed = true;
@@ -1033,7 +1042,12 @@ export function createBurndownRun({ config, effects }) {
 
   function finish() {
     // Flush anything the last boundary held back (a failed push, or PUSH_EVERY > 1).
-    if (sincePush > 0) pushBatch({ final: true });
+    if (sincePush > 0 && !pushBatch({ final: true })) {
+      logLine(
+        `WARNING: ${sincePush} commit(s) not on origin — push manually before the container is reclaimed`
+      );
+      process.exitCode = 1;
+    }
 
     // Retire the compaction snapshot: nothing else deletes it, and its reader hook
     // would otherwise announce "a burndown was in progress" to every post-compaction
@@ -1123,7 +1137,7 @@ export function createBurndownRun({ config, effects }) {
 
     while (done < MAX_ISSUES) {
       if (stopRequested()) break;
-      const tag = `iter${String(done + deferred + 1).padStart(4, '0')}`;
+      const tag = `iter${String(done + dropped + deferred + 1).padStart(4, '0')}`;
       if (!(await runFinding(tag))) break;
     }
 

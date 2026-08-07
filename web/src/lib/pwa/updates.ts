@@ -143,7 +143,8 @@ export function createPWAUpdates() {
     try {
       const resp = await fetch('/version.json', { cache: 'no-store' });
       if (!resp.ok) return;
-      const { version } = await resp.json();
+      const { version } = (await resp.json()) as { version?: unknown };
+      if (typeof version !== 'string' || version.length === 0) return;
       if (version !== __APP_VERSION__ && version !== attemptedVersion) {
         if (!canvasState.canvasEmpty) return;
         const next = new URL(window.location.href);

@@ -1,4 +1,16 @@
-import { resolveDevice } from './devices.mjs';
+import { DEVICES, resolveDevice } from './devices.mjs';
+import { fail } from '../lib/proc.mjs';
+
+// `entry`-gated numeric parsing: an unparsable flag is fatal for a real CLI
+// invocation, but a library import (vitest's own argv) must not exit — mirrors
+// the `--device` fail() below.
+export function requireNumberFlag(name, raw, entry) {
+  const n = Number(raw);
+  if (entry && Number.isNaN(n)) {
+    fail(`--${name} must be a number, got "${raw}"`);
+  }
+  return n;
+}
 
 export const resolveThrottle = (args, defaultRate) => {
   const hit = args.find((arg) => arg.startsWith('--throttle='));
@@ -15,9 +27,10 @@ export const resolveThrottle = (args, defaultRate) => {
 
 const COMMON_FLAGS = ['device', 'port', 'no-build'];
 
-// Tolerant lookup (never throws) and an `entry`-gated warn-only unknown-flag
-// report: the perf entry modules parse at module scope but are also imported as
-// libraries by the vitest script suites, where argv is vitest's own.
+// Tolerant lookup and `entry`-gated input reports (warn-only for unknown flags,
+// fatal for an unknown device): the perf entry modules parse at module scope but
+// are also imported as libraries by the vitest script suites, where argv is
+// vitest's own.
 export function parsePerfArgs(
   { throttleDefault, extra = [], entry = false } = {},
   argv = process.argv.slice(2)
@@ -43,13 +56,24 @@ export function parsePerfArgs(
   }
 
   const deviceName = flag('device', 'phone');
+  const device = resolveDevice(deviceName);
+  if (entry && !device) {
+    fail(`Unknown --device=${deviceName} — known: ${Object.keys(DEVICES).join(', ')}`);
+  }
+
+  const throttle =
+    throttleDefault === undefined ? undefined : resolveThrottle(argv, throttleDefault);
+  if (entry && throttle && Number.isNaN(throttle.rate)) {
+    fail(`--throttle must be a number, got "${flag('throttle', String(throttleDefault))}"`);
+  }
+
   return {
     flag,
     has,
     deviceName,
-    device: resolveDevice(deviceName),
-    throttle: throttleDefault === undefined ? undefined : resolveThrottle(argv, throttleDefault),
-    port: Number(flag('port', '4173')),
+    device,
+    throttle,
+    port: requireNumberFlag('port', flag('port', '4173'), entry),
     build: !has('no-build'),
   };
 }
