@@ -58,37 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Docs] mobile and profiling docs prescribe npm scripts that don't exist (`ios:run:choose`, `ios:run:ipad`, `npm run ios`)
-
-**File(s):** `.ruler/skills/mobile/ios.md` (lines 65, 143),
-`.ruler/skills/profiling/ipad-device-profiling.md` (line 605) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-Three commands cited as the way to run the app on iOS hardware are not in `package.json`:
-
-* `ios.md:65` — "or `npm run ios:run:choose` and choose the device at the prompt". No such script;
-  the chooser behavior belongs to plain `ios:run` (scripts-info line 305: "prompting to choose the
-  iOS simulator or connected device").
-* `ios.md:143` — "covers all Debug builds — `ios:run`, `ios:run:ipad`, `cap:ios` Run". No
-  `ios:run:ipad`; the real variants are `ios:run:emulator` and `ios:run:device` (package.json lines
-  147–148).
-* `ipad-device-profiling.md:605` — "Build + run the native app with marks on:
-  `PERF_MARKS=true npm run ios`". No `ios` script; should be `ios:run`.
-
-Each fails with `npm error Missing script` at the exact moment a user is mid-runbook with a device
-cabled up. The repo's own guidance ("run `npm run info` before guessing at a script") exists because
-of this class of drift — the docs shouldn't require it.
-
-#### Proposed solution
-
-Replace with the real script names (`ios:run`; `ios:run:emulator` / `ios:run:device`;
-`PERF_MARKS=true npm run ios:run`). A tiny repo-script test that extracts `npm run <name>` tokens
-from `.ruler/**` and asserts each (or its namespace prefix) exists in `package.json` scripts would
-fence the whole category — this audit found these three by exactly that grep.
-
 ### [Docs] `.claude/rules/testing.md` misstates what `npm test` runs (omits `test:scripts`)
 
 **File(s):** `.claude/rules/testing.md` (lines 22–23); `package.json` (line 46) @ cd04c367
