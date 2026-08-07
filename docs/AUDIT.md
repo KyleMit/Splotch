@@ -46,54 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Correctness] android-emulator-smoke boot wait can spin forever and crashes opaquely when no serial matches
-
-**File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-```js
-await Promise.race([adb('wait-for-device'), emulatorCrash]);
-while ((await adb('shell', 'getprop', 'sys.boot_completed')) !== '1') await sleep(2000);
-emulatorProc.unref();
-const serial = (await adb('devices')).match(/emulator-\d+/)[0];
-```
-
-Three issues:
-
-1. The `getprop sys.boot_completed` loop (line 71) has no timeout. A boot that hangs (the exact
-   hardware-accel misconfiguration this script preflights for at lines 25–38 is not the only way an
-   emulator wedges) leaves `npm run test:android` spinning silently forever. `scripts/CLAUDE.md`
-   says explicitly: "name polling budgets". The repo already has
-   `pollUntil(callback, timeoutMs, intervalMs)` in `scripts/lib/proc.mjs` (lines 102–111) built for
-   precisely this.
-2. The `emulatorCrash` race only guards `wait-for-device` (line 70); the boot-completed loop and
-   `adb devices` call are outside it. (A hard crash usually makes `adb` reject so the failure
-   surfaces, but a crash that leaves adb responsive with no device does not.)
-3. `.match(/emulator-\d+/)[0]` (line 73) throws a bare `TypeError: Cannot read properties of null`
-   when no emulator serial appears — an opaque failure at the exact moment something already went
-   wrong.
-
-#### Proposed solution
-
-Name a budget and use the existing helper:
-
-```js
-const BOOT_TIMEOUT_MS = 300_000; // cold emulator boot on CI-class hardware
-const BOOT_POLL_INTERVAL_MS = 2_000;
-const booted = await pollUntil(
-  async () => (await adb('shell', 'getprop', 'sys.boot_completed')) === '1',
-  BOOT_TIMEOUT_MS,
-  BOOT_POLL_INTERVAL_MS,
-);
-if (!booted) throw new Error(`Emulator did not finish booting within ${BOOT_TIMEOUT_MS / 1000}s`);
-```
-
-For the serial, guard the match:
-`const serial = (await adb('devices')).match(/emulator-\d+/)?.[0]; if (!serial) throw new Error('No emulator serial in adb devices output');`.
-
 ### [Maintainability] `dev:kill` executes `kill-port` via bare `npx` — an undeclared, unpinned dependency fetched at run time
 
 **File(s):** `package.json` (line 16) @ cd04c367

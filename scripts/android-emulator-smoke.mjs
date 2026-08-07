@@ -12,11 +12,13 @@
 
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { sleep, sh } from './lib/proc.mjs';
+import { pollUntil, sh } from './lib/proc.mjs';
 import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android.mjs';
 import { runMaestroSmoke } from './lib/native-smoke.mjs';
 
 const execFileAsync = promisify(execFile);
+const EMULATOR_BOOT_TIMEOUT_MS = 5 * 60 * 1000;
+const EMULATOR_BOOT_POLL_INTERVAL_MS = 2000;
 
 // Capture adb output (direct executable call, no shell needed).
 const adb = async (...args) => (await execFileAsync(ADB, args)).stdout.trim();
@@ -67,20 +69,39 @@ const emulatorCrash = new Promise((_, reject) => {
 });
 
 // 3. Wait for it to come online and finish booting — but bail if the emulator crashes first.
-await Promise.race([adb('wait-for-device'), emulatorCrash]);
-while ((await adb('shell', 'getprop', 'sys.boot_completed')) !== '1') await sleep(2000);
-emulatorProc.unref(); // safe to detach now that we know it's alive
-const serial = (await adb('devices')).match(/emulator-\d+/)[0];
-console.log(`Emulator booted: ${serial}`);
-
-// 4. Build + install, run the flow, and always tear the emulator down.
+let serial;
 try {
+  serial = await Promise.race([
+    (async () => {
+      await adb('wait-for-device');
+      const bootCompleted = await pollUntil(
+        async () => (await adb('shell', 'getprop', 'sys.boot_completed')) === '1',
+        EMULATOR_BOOT_TIMEOUT_MS,
+        EMULATOR_BOOT_POLL_INTERVAL_MS
+      );
+      if (!bootCompleted)
+        throw new Error(`Emulator did not finish booting within ${EMULATOR_BOOT_TIMEOUT_MS}ms.`);
+
+      const serialMatch = (await adb('devices')).match(/emulator-\d+/);
+      if (!serialMatch) throw new Error('No emulator serial was found in adb devices output.');
+      return serialMatch[0];
+    })(),
+    emulatorCrash,
+  ]);
+  emulatorProc.unref(); // safe to detach now that we know it's alive
+  console.log(`Emulator booted: ${serial}`);
+
+  // 4. Build + install, run the flow, and always tear the emulator down.
   await sh('npm run cap:sync');
   await sh(`"${GRADLEW}" :app:installDebug`, ANDROID_DIR);
   await runMaestroSmoke();
 } finally {
-  console.log(`Shutting down ${serial}`);
-  await execFileAsync(ADB, ['-s', serial, 'emu', 'kill']);
+  if (serial) {
+    console.log(`Shutting down ${serial}`);
+    await execFileAsync(ADB, ['-s', serial, 'emu', 'kill']);
+  } else {
+    emulatorProc.kill();
+  }
 }
 
 console.log('\nSmoke test passed.');
