@@ -194,6 +194,53 @@ as possible:
   confirm every one exits 0 before launching. That is what makes a red gate mid-run attributable to
   a finding instead of a mystery, and it takes one command.
 
+  **Run them one at a time for this check, not `&&`-chained.** The chain short-circuits, so the
+  first red gate hides every gate after it and you fix them one relaunch at a time. A 2026-08-06 run
+  found `img:audit:check` red at base, repaired it, and only then discovered `lint:dead` was red too
+  — the chain had never reached it. Loop instead, and collect the whole list before repairing
+  anything:
+
+  ```bash
+  for g in check lint:tokens gen:tokens:check scrapbook:check img:audit:check check:assets:manifest lint:dead; do
+    npm run "$g" >/dev/null 2>&1 && echo "ok   $g" || echo "RED  $g"
+  done
+  ```
+
+### When the base commit is red — repair it, in its own commit, before launching
+
+Not a hypothetical: it happened on 2026-08-06, and the reason is structural rather than unlucky.
+`test.yml` sets `cancel-in-progress`, so a merge commit's push run is routinely **cancelled** by the
+next push and never reports — the merge that reddened `main` had *no CI run at all*. **A green-
+looking history is not evidence of a green base**, which is exactly why this check exists and why
+"main is always green, skip it" is wrong here.
+
+Fix it rather than working around it, and understand that this is not tidiness. Every gate in
+`CHECK_CMD` runs at the top of *every* review round, so a red base gate fails every finding, burns a
+fix round each, and halts the run on three consecutive deferrals having accomplished nothing. The
+run is impossible until the base is green.
+
+* **Its own commit, attributed to nobody.** A base repair is not attributable to an audit finding,
+  so it must not ride inside one. Land it as the branch's first commit with a message saying what
+  was already broken and why it blocks the run.
+* **Re-run the *whole* chain after each repair — a repair can redden a different gate.** Fixing
+  `img:audit:check` with `npm run img:audit` rewrote `line-weight.svg`, which `scrapbook/index.html`
+  **inlines** as a card emoji — so `scrapbook:check`, green at base, went red *because of the fix*
+  and needed `npm run scrapbook:index` in the same commit. Never re-run only the gate you just
+  fixed.
+* **A byte-level "optimization" is not self-evidently safe — prove it.** No gate in this repo
+  asserts that an optimized SVG still *renders* the same, and the icons in question had landed hours
+  earlier. Rasterize before and after and compare pixels rather than trusting the tool:
+
+  ```bash
+  # per file: git show HEAD:<path> vs the working copy, rendered at high DPI
+  sharp(buf, { density: 384 }).resize(256, 256, { fit: 'contain' }).flatten().raw().toBuffer()
+  ```
+
+  Count subpixels differing by more than a small threshold; a pure re-serialization gives zero.
+* **Prefer the minimal repair the gate itself prescribes.** knip's fix for an export consumed only
+  inside its own module is to drop the `export`, not to tag a `/** @public */` seam — check whether
+  the *function* wrapping it is the real API before touching either.
+
   Two of CI's Quality gates deliberately stay **out** of `CHECK_CMD`, and it is worth knowing why so
   the next run doesn't re-litigate it. `npm run format:check` costs ~23s (≈3 hours over a
   450-finding backlog) and is already covered: the repo's `format-edited-file.sh` `PostToolUse` hook
@@ -278,6 +325,13 @@ you can be bothered (and always at wrap-up), drain the store:
 `done` comes **after** the post, deliberately: a crash between the two re-offers the same record, so
 the loop is at-least-once. A duplicate comment is a triviality; a silently dropped one is the
 reviewer's only written catch, gone.
+
+**Batching several records inverts that ordering without you noticing.** The natural way to drain a
+backlog of them is one shell loop that prints each record and calls `done` — but the post is an MCP
+call you cannot make from inside a shell loop, so the loop necessarily `done`s a record it has not
+posted, and the at-least-once property is gone for the whole batch. A supervisor did this on
+2026-08-06; both posts happened to succeed, so nothing surfaced it. Batch the *reads* if you like,
+but keep one `done` per confirmed post, after that post returns.
 
 **Check every SHA the role wrote into its own prose — `git rev-parse --verify` is not the check.**
 The renderer's heading SHA is always right, but a fix that went through a review round routinely
@@ -502,6 +556,25 @@ this is only about SHAs.)
   the only signal that one finding broke something another finding's targeted specs don't cover.
   Check it when you drain comments; treat a red run as a reason to pause and diagnose rather than
   something to sweep up at the end, because every finding after it lands on a broken base.
+* **Distinguish "CI is red" from "CI never ran" — the second is invisible and this runbook assumes
+  it away.** On 2026-08-06 GitHub Actions stopped picking up work for the repo for an entire
+  session: runs sat `queued` for hours and the draft PR had **no run created at all**. Nothing goes
+  red, nothing alerts, and a supervisor watching for a red tick sees exactly what a healthy run
+  looks like. So check `total_count`, not just conclusions — `mcp__github__pull_request_read` with
+  `get_check_runs` returning `{"total_count": 0}` after a push is the tell, and
+  `mcp__github__actions_list` showing runs `queued` for hours across *other* branches confirms it is
+  the runner pool rather than your PR.
+
+  This is an annoyance, not a reason to stop — the commits are pushed and are the durable artifact —
+  but the posture changes, so say so explicitly rather than carrying on silently. The per-finding
+  gates still hold; what is gone is the cross-finding backstop.
+
+  **Do not reach for `PUSH_TEST_CMD='npm test'` to replace it.** That is the documented substitute
+  and the arithmetic kills it at backlog scale: ~5–6 min per finding over a few hundred findings is
+  tens of extra hours. Run the full suite **locally at intervals** instead — at minimum at the base
+  commit, at the end of the canary, and at the final head before marking the PR ready — and re-check
+  CI each time you drain comments, since a recovered CI backfills coverage on the next push. A
+  2026-08-06 run did exactly this and CI recovered at the final push, green.
 * **The container can vanish mid-run** — reclaimed for inactivity, with no signal and no chance to
   flush. Nothing local prevents that; pushing every finding is what makes it survivable. When you
   come back to a dead container, everything that mattered is on `origin` and the run relaunches
@@ -967,6 +1040,15 @@ Notes from real runs — set these before a large run rather than discovering th
   is genuinely broken and nothing should launch until it is fixed. Wrap the run so the exit code
   survives, too: `(npm run test:e2e; echo "EXIT=$?") > log` records the suite's status, while piping
   into anything else hands you the *last* command's code and a red suite reads as green.
+
+  **That trap is not specific to the e2e suite — it applies to every verification command you run by
+  hand, and it fails toward "green".** `npm run format:check 2>&1 | tail -5; echo "exit=$?"` prints
+  `exit=0` from `tail` while dprint is reporting an unformatted file two lines above; a 2026-08-06
+  supervisor read that as a pass. So does `cmd && echo OK || other && echo DONE`, which parses as
+  `((cmd && echo OK) || other) && echo DONE` and prints `DONE` on success without ever running
+  `other`. Capture the status in the subshell (`(cmd; echo "EXIT=$?") > log`) and read it from the
+  log, or check `${PIPESTATUS[0]}` — never trust the exit code of a pipeline whose last stage is
+  `tail`, `grep`, or `head`.
 
   Fix what you find, or at minimum record the spec name **and which of the two classes it is** in
   the durable checkpoint, so the next implementer that trips it recognises it instead of re-deriving

@@ -202,17 +202,39 @@ must reach origin before an ephemeral environment can be reclaimed.
    Require every check green. Read back `runner: codex`, `branch: ...`, `codex logged in`, origin
    reachable, and the parsed backlog count.
 
-4. Open a draft PR before the canary. The initial checkpoint gives GitHub the diff required to open
+4. Verify the composed gates **at the base commit**, one at a time rather than `&&`-chained, and
+   require every one green before going further. Preflight passing is not this check.
+
+   ```bash
+   for g in format:check check lint:tokens gen:tokens:check scrapbook:check; do
+     npm run "$g" >/dev/null 2>&1 && echo "ok   $g" || echo "RED  $g"
+   done
+   ```
+
+   A chain short-circuits, so the first red gate hides the rest and you repair them one relaunch at
+   a time. Assume nothing from a green-looking history: `test.yml` sets `cancel-in-progress`, so a
+   merge commit's run is routinely cancelled and never reports — `main` can be red with no failing
+   run anywhere. A 2026-08-06 run found `main` red on two Quality gates this way.
+
+   If the base is red, repair it **before launching, in its own commit**, attributed to no finding.
+   This is not tidiness: every `CHECK_CMD` gate runs at the top of every review round, so a red base
+   gate fails every finding, burns a fix round each, and halts the run on three consecutive
+   deferrals. After each repair re-run the *whole* set, not just the gate you fixed — a repair can
+   redden another (regenerating an SVG invalidated the committed `scrapbook/index.html` that inlines
+   it). And when a repair rewrites committed bytes, prove the output is equivalent rather than
+   trusting the tool; no gate here asserts that an optimized asset still renders the same.
+
+5. Open a draft PR before the canary. The initial checkpoint gives GitHub the diff required to open
    one. Replace `PR: pending` in the handoff with its number, commit, and push that second
    checkpoint before launching the canary.
 
-5. Run a five-outcome canary in the foreground with the same overrides, `MAX_ISSUES=5`, and
+6. Run a five-outcome canary in the foreground with the same overrides, `MAX_ISSUES=5`, and
    `MAX_HANDLED=5`. The canary validates a bounded sample; it does not need to land five fixes. If
    all five outcomes are drops or deferrals and no accepted fix exercises commit, gates, review,
    push, and comment capture, checkpoint and run one more five-outcome canary. Never remove the
    handled ceiling to chase a successful fix.
 
-6. Inspect every canary change without backlog churn:
+7. Inspect every canary change without backlog churn:
 
    ```bash
    git log main..HEAD -p -- . ':(exclude)docs/AUDIT.md'
@@ -222,7 +244,7 @@ must reach origin before an ephemeral environment can be reclaimed.
    coupled as though intentional, and runtime guards erased while tests were cast around a narrowed
    type.
 
-7. Check that each consumed finding deleted exactly one entry. A role may make intermediate fix
+8. Check that each consumed finding deleted exactly one entry. A role may make intermediate fix
    commits with zero deletions, so reconcile per finding:
 
    ```bash
@@ -233,16 +255,16 @@ must reach origin before an ephemeral environment can be reclaimed.
 
    Stop if any commit removed two entries.
 
-8. Confirm resume actually worked when a fix round occurred. The `thread_id` in that iteration's
+9. Confirm resume actually worked when a fix round occurred. The `thread_id` in that iteration's
    `.impl.json` and `.fix1.json` `thread.started` events must be identical; reviewer thread ids must
    differ. If no canary finding needed a fix round, do not invent one—continue only after the driver
    unit tests and the committed resume probe remain green.
 
-9. Check CI on the canary's final push and require green before a full run. Then run
-   `npm run audit:cost` and sanity-check both wall-clock and tokens. Its scope is every retained
-   role envelope under `.audit-work/logs`, not necessarily this continuation alone.
+10. Check CI on the canary's final push and require green before a full run. Then run
+    `npm run audit:cost` and sanity-check both wall-clock and tokens. Its scope is every retained
+    role envelope under `.audit-work/logs`, not necessarily this continuation alone.
 
-10. Launch the full run with the exact durable command:
+11. Launch the full run with the exact durable command:
 
     ```bash
     AGENT_RUNNER=codex \

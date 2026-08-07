@@ -10,8 +10,9 @@ runbook from the other. **The skill does not link here, deliberately** — do no
 
 Paths in this file are repo-root-relative and deliberately not links.
 
-Current as of **2026-07-25**. The skill is young: it was born on 2026-07-24 and nearly everything
-below was earned by two live runs on the following two days.
+Current as of **2026-08-07**. The skill is young — born 2026-07-24 — and every section below was
+earned by a live run rather than reasoned out in advance; the dated sections at the end are in
+chronological order.
 
 ## The invariants
 
@@ -1067,3 +1068,69 @@ Deliberately **not** built: a SHA-verifying helper script for hand-written comme
 SHAs from git — a script would be speculative surface), and pre-classifying sweeping multi-file
 findings to raise their turn caps (two data points, no mechanism recurring; recorded as a triage
 note in the skill instead).
+
+## 2026-08-07 — the base commit can be red, and CI can be absent rather than failing
+
+PR 821 (20 fixed · 0 dropped · 1 deferred from a 367-finding backlog) spent its most consequential
+effort before any finding ran. Two lessons are structural rather than incidental, and both are about
+a *premise the runbook held silently*.
+
+**The runbook told you to check the base commit but never what to do when it fails.** The base-gate
+paragraph has said "confirm every one exits 0 before launching" since early on, phrased as a
+formality — the interesting case was assumed impossible. It is not: `main` was failing two Quality
+gates, left by a merge hours earlier. The mechanism is worth internalising because it recurs by
+design: `test.yml` sets `cancel-in-progress`, so a merge commit's push run is routinely cancelled by
+the next push and *never reports at all*. The reddening merge had no CI run in its history. "Main is
+green" is therefore not an observation anyone actually made, and a supervisor who skips the base
+check to save 90 seconds is trusting a signal that does not exist.
+
+Consequences now written into the skill: run the base gates **un-chained** (the `&&` short-circuit
+hid the second failure until the first was repaired — one relaunch per gate); repair in a **separate
+commit** attributed to no finding; and **re-run the whole set after each repair**, because a repair
+can redden a different gate. That last one is not hypothetical either — `npm run img:audit` rewrote
+`line-weight.svg`, which `scrapbook/index.html` *inlines* as a card emoji, so `scrapbook:check` was
+green at base and red only after the fix.
+
+Why this matters more than it sounds: every `CHECK_CMD` gate runs at the top of *every* review
+round. A red base gate is not a nuisance, it is a guaranteed HALT after three findings, with three
+rolled-back fixes and nothing to show. The cost of not checking is the whole run.
+
+**A verification gate that can't see rendering deserves a real check.** The `img:audit` repair
+rewrote 11 freshly-designed icons, and nothing in the repo asserts that an optimized SVG still
+*looks* the same — `check:assets:manifest` guards bytes, which is precisely the thing being changed.
+Rasterizing each icon at 384 DPI before and after and counting differing subpixels took under a
+minute and turned "SVGO is presumably safe" into evidence (worst delta 4/255, zero pixels past
+threshold). Generalisable: when a repair rewrites committed bytes and the only gate is a byte gate,
+the gate is tautological and you need an independent one.
+
+**CI can be *absent*, which is invisible in a way that "CI is red" is not.** Actions stopped picking
+up work for the whole session — runs `queued` for hours, and the draft PR never had a run created.
+The supervision guidance said "watch CI" and "a red run means pause"; neither fires when
+`total_count` is 0, and a supervisor looking for a red tick sees what health looks like. The skill
+now says to check the *count*, not the conclusions.
+
+The posture question it forced: `PUSH_TEST_CMD='npm test'` is the documented substitute for the
+cross-finding backstop, and the arithmetic rules it out at backlog scale (~5–6 min × 346 ≈ 35 h).
+Periodic local full-suite runs — base, canary end, final head — cost three runs total and caught the
+same class of thing. Recorded in the skill as the standing answer, since the temptation to reach for
+the knob is strong and wrong.
+
+**One supervisor-hygiene item, self-inflicted and worth the entry** because the failure is
+structural rather than careless. Draining several pending comments "efficiently" in one shell loop
+necessarily breaks the at-least-once ordering: the post is an MCP call that cannot happen inside the
+loop, so the loop `done`s records it has not posted. Both posts happened to succeed, so nothing
+surfaced it. The skill now names the batching shape specifically, because "call `done` after the
+post" reads as already-followed while you are writing the loop.
+
+Also generalised: the piped-exit-code trap. It was on record scoped to the e2e suite; the same
+session read `npm run format:check 2>&1 | tail -5; echo exit=$?` as a pass when `tail` supplied the
+0, and wrote a `cmd && echo OK || other && echo DONE` chain whose precedence prints `DONE` without
+running `other`. Both fail toward green, which is the direction that matters.
+
+Deliberately **not** changed: nothing in the driver. Every one of these is supervisor guidance or a
+pre-run procedure — the loop itself behaved correctly all session, including the three red gates
+(one per distinct gate: `lint:tokens` on an improvement, `check`, `lint:dead` on an orphaned export)
+which each recovered or deferred cleanly. Also not done: porting this to the Codex runbook
+wholesale. It got one targeted step for the base-commit check, in its own numbered idiom, because
+that lesson is a fact about this repo rather than about a runner; the rest stays Claude-side until a
+Codex run earns its own version.
