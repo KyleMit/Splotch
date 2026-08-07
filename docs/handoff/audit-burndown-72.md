@@ -1,8 +1,8 @@
 # Handoff — audit burndown (72 triaged findings at launch)
 
 > 2026-08-07 · branch `claude/audit-burn-down-vf4iui` · PR
-> [#830](https://github.com/KyleMit/Splotch/pull/830) · Burn down the post-triage `docs/AUDIT.md`
-> backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
+> [#830](https://github.com/KyleMit/Splotch/pull/830) **(merged)** · Burn down the post-triage
+> `docs/AUDIT.md` backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
 
 ## Current state — wrapped up, resumable
 
@@ -21,12 +21,19 @@ re-pinning dropped one of them.
 The five remaining groups hold 43: app correctness 12 · cross-file agreement 12 · safety/resource 10
 · docs that misdirect 8 · coverage gaps 1.
 
-**To continue:** PR #830 is the live PR for this branch. If it has merged by then, fork a fresh
-branch from the new `main` and open a new PR — a merged PR cannot track new work. Otherwise relaunch
-with the command below and keep posting per-commit comments to #830.
+**To continue: PR #830 has merged, so it cannot track further work.** Re-cut the branch from the
+current `main`
+(`git fetch origin main && git checkout -B claude/audit-burn-down-vf4iui
+origin/main`), relaunch
+with the command below, and open a **new** PR to post per-commit comments to. Do not stack new
+commits on the merged history.
 
-**Still owed:** the inherited follow-ups at the bottom (six campaigns and counting — file them as
-issues), and the judgement call in 132a7c20ba48 recorded under Risks.
+The 43 remaining findings are still staged in `docs/AUDIT.md` and the relaunch command below is
+unchanged — the driver pops from the file, so it resumes at the next finding with no other setup.
+
+**Nothing is owed to this packet.** The inherited follow-ups it used to carry, and the judgement
+call in 132a7c20ba48 recorded under Risks, are now issues #833–#840 — see the table at the bottom.
+The only work this packet still describes is the 43 findings left in the backlog.
 
 ## Objective & non-goals
 
@@ -128,9 +135,9 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
   no finding, so it belongs in its own commit; and its diagnosis is by analogy — the implementer
   states the exact failure was not reproduced, and the mechanism it describes includes mock counts
   bleeding between tests, which a longer timeout makes rarer without fixing. Splitting it now needs
-  a history rewrite of pushed commits. Decide separately: keep, revert into its own commit, or
-  diagnose the isolation defect. If it is reverted, expect the flake to return and cost a fix round
-  on gate-tripping findings, since `TEST_CMD` runs on every one.
+  a history rewrite of pushed commits. **Tracked as #840** — do not revert it blind: if the flake is
+  real, its return costs a fix round on every gate-tripping finding, since `TEST_CMD` runs on all of
+  them. That is why the issue asks for a diagnosis rather than a revert.
 
 ## Supervising traps established by previous runs (do not re-derive)
 
@@ -165,34 +172,31 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
   (`git log <base>..HEAD -- eslint.config.js`), and judge the rate, not the instance.
 * Confirm CI green on the final push, then `mcp__github__update_pull_request` `draft: false`.
 
-## Inherited follow-ups (carried from the merged #552, #616, #627, #771, #805 and #821 burndowns)
+## Inherited follow-ups — FILED, no longer owed here
 
-Still owed; none block this run. These have now been carried across six campaigns, which is exactly
-what `docs/handoff/CLAUDE.md` says not to do — **file them as GitHub issues and delete this
-section** rather than carrying them a seventh time.
+These were carried across six campaigns (#552, #616, #627, #771, #805, #821) because none of them
+blocked a run. They are now **GitHub issues**, which is where a durable TODO belongs per
+`docs/handoff/CLAUDE.md` — the tracker is the live backlog, not this packet. Nothing in this section
+is outstanding work for a future burndown session; it is kept only so the trail from packet to issue
+is legible.
 
-* **Re-stage a mislabelled deferral.** `[P3][naming] Inconsistent script naming across idea dirs` in
-  `docs/AUDIT-DEFERRED.md` reads `fix introduced a lint violation`, which is false — its fix was
-  correct and was destroyed by a driver bug since fixed in 40d641b. Its saved
-  `docs/audit-deferred/*.patch` should apply.
-* **Re-stage the budget-capped extraction.** The #771 canary deferred "hand-rolled copies of the
-  iOS-style segmented control" at exactly `$4.0036` under the old `BUDGET_IMPL=4.00`. The default is
-  now `7.00`, and its 259-line draft survives at
-  `docs/audit-deferred/*-hand-rolled-copies-of-the-ios-style-segmented-cont.patch`.
-* **Exercise what CI cannot reach.** Three PR-552 fixes are code-motion in tiers CI excludes:
-  b1f327620958 (Maestro smoke runners), e0b9e7b221f4 (Gradle wrapper path constants), d685bdca3929
-  (the `blobs-smoke.mjs` half of the admin-client extraction — needs a live deploy + admin secret).
-* **`662c908ea936` is half-done.** It left `build-review.mjs:121` and `:212` still emitting
-  `IDEAS.md burn-down` in the `<title>`/`<h1>` — the same defect its finding names.
-* **Two judgement calls left in place**, each a one-hunk revert: 9efee0d724fc bumped a `MODEL` pin
-  in `tools/asset-gen/legacy/`, and 8a364faca967 documented `keepClass`'s 99/96 buckets as
-  intentionally stricter than the 92% ship gate.
-* **Consider naming `crayon-brush-samples/` exempt** in `tools/asset-gen/CLAUDE.md`; its licence to
-  import from repo-root `scripts/lib/` lives only in that subdirectory's README and was read as a
-  boundary violation twice.
-* **Three `max-lines` caps raised rather than cleared** in the #627 run (`engine.ts` 900 → 913,
-  `undoHistory.test.ts` 500 → 529). The right repair is extracting the duplicated helper so the
-  grandfathered override can be deleted outright.
+| Issue | Follow-up                                                                            |
+| ----- | ------------------------------------------------------------------------------------ |
+| #833  | Re-stage the mislabelled "Inconsistent script naming across idea dirs" deferral      |
+| #834  | Re-stage the budget-capped iOS-style segmented-control extraction                    |
+| #835  | Exercise the three PR-552 code-motion fixes CI cannot reach                          |
+| #836  | Finish the `build-review.mjs` rename — two sites still emit `IDEAS.md burn-down`     |
+| #837  | Ratify or revert two judgement calls (the `MODEL` pin, the `keepClass` buckets)      |
+| #838  | Document `crayon-brush-samples`' licence to import from `scripts/lib`                |
+| #839  | Clear the three grandfathered `max-lines` caps by extracting the duplicated helper   |
+| #840  | Diagnose the `drawingSound`/`aiImage` flake instead of masking it with a 20s timeout |
+
+#840 is the one this campaign created — the unattributed `testTimeout` raise recorded under Risks.
+The rest predate it.
+
+**Do not re-file these.** A future session finding this packet should read the issues, not this
+table; the issues carry the full what/why/where/done-when and this table will go stale as they
+close.
 
 ## Reread first
 
