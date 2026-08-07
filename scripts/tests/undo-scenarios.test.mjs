@@ -133,6 +133,18 @@ const mockTickingClock = () =>
 
 const REALISTIC_COMMIT_SAMPLE_COUNT = 22;
 
+// page.evaluate routed by a marker string in the evaluated function's source,
+// first match wins. An unmatched call throws instead of resolving undefined,
+// which the harness would otherwise read as a genuine empty reading.
+function stubPageEvaluate(routes) {
+  return vi.fn(async (fn, ...args) => {
+    const source = fn.toString();
+    const route = routes.find(({ marker }) => source.includes(marker));
+    if (!route) throw new Error(`Unmatched page.evaluate:\n${source}`);
+    return route.result(...args);
+  });
+}
+
 // A page whose engine.* measures are dictated by the caller, so a test can put
 // the run on either side of the commit gate without driving a real browser.
 //
@@ -147,6 +159,7 @@ function fakePage({
   encodeInCommitMaxMs = 0,
   deferredEncodeMaxMs = 0,
   blobBytes = 1,
+  liveRasters = 2,
   coldTierNeverSettles = false,
   coldTierNeverSettlesOnNavigation = null,
 } = {}) {
@@ -155,58 +168,67 @@ function fakePage({
   let drawEnd = null;
   let coldTierRead = 0;
   let navigations = 0;
+  const coldTierIsChurning = () =>
+    coldTierNeverSettles || navigations === coldTierNeverSettlesOnNavigation;
   return {
     goto: vi.fn(async () => {
       navigations++;
     }),
     waitForSelector: vi.fn(async () => {}),
     waitForFunction: vi.fn(async () => {}),
-    evaluate: vi.fn(async (fn, arg) => {
-      const source = fn.toString();
-      if (source.includes('getUndoDebug')) {
-        const neverSettles =
-          coldTierNeverSettles || navigations === coldTierNeverSettlesOnNavigation;
-        return {
+    evaluate: stubPageEvaluate([
+      {
+        marker: 'getUndoDebug',
+        result: () => ({
           snapshots: 22,
-          liveRasters: 2,
-          blobBytes: neverSettles ? coldTierRead++ : blobBytes,
-        };
-      }
-      if (source.includes('document.querySelector')) {
-        return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
-      }
-      if (source.includes("getEntriesByType('measure')")) {
+          liveRasters,
+          blobBytes: coldTierIsChurning() ? coldTierRead++ : blobBytes,
+        }),
+      },
+      {
+        marker: 'document.querySelector',
+        result: () => ({ backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 }),
+      },
+      {
+        marker: "getEntriesByType('measure')",
         // The draw window is the one starting at the phase's own start; the
         // deferred window is the one that opens where the draw window closed.
-        const isPostDraw = drawEnd != null && arg?.from === drawEnd;
-        const encodeMs = isPostDraw ? deferredEncodeMaxMs : encodeInCommitMaxMs;
-        return {
-          'engine.draw': { count: 1, total: 1, max: 1 },
-          'engine.commit': {
-            count: commitSamples.length,
-            total: commitSamples.reduce((total, duration) => total + duration, 0),
-            max: Math.max(0, ...commitSamples),
-            durationsMs: commitSamples,
-          },
-          'engine.snapshot': { count: 1, total: 1, max: 1 },
-          'engine.fold': { count: 1, total: 1, max: 1 },
-          'engine.encode': {
-            count: 1,
-            total: encodeMs,
-            max: encodeMs,
-          },
-          'engine.undo': { count: 1, total: 1, max: 1 },
-        };
-      }
-      if (source.includes('async (maxUndoSteps)')) return 1;
-      if (source.includes('performance.now')) {
-        const t = now();
-        // Second read per scenario is drawEnd (drawStart, drawEnd, settleEnd, …).
-        if (t % 5 === 1) drawEnd = t;
-        return t;
-      }
-      return undefined;
-    }),
+        result: (arg) => {
+          const isPostDraw = drawEnd != null && arg?.from === drawEnd;
+          const encodeMs = isPostDraw ? deferredEncodeMaxMs : encodeInCommitMaxMs;
+          return {
+            'engine.draw': { count: 1, total: 1, max: 1 },
+            'engine.commit': {
+              count: commitSamples.length,
+              total: commitSamples.reduce((total, duration) => total + duration, 0),
+              max: Math.max(0, ...commitSamples),
+              durationsMs: commitSamples,
+            },
+            'engine.snapshot': { count: 1, total: 1, max: 1 },
+            'engine.fold': { count: 1, total: 1, max: 1 },
+            'engine.encode': {
+              count: 1,
+              total: encodeMs,
+              max: encodeMs,
+            },
+            'engine.undo': { count: 1, total: 1, max: 1 },
+          };
+        },
+      },
+      // undoAll()'s source carries both this marker and 'performance.now', so it
+      // has to be matched here or it would be served the clock instead.
+      { marker: 'async (maxUndoSteps)', result: () => 1 },
+      {
+        marker: 'performance.now',
+        result: () => {
+          const t = now();
+          // Second read per scenario is drawEnd (drawStart, drawEnd, settleEnd, …).
+          if (t % 5 === 1) drawEnd = t;
+          return t;
+        },
+      },
+      { marker: 'resizeTo', result: () => {} },
+    ]),
     screenshot: vi.fn(async () => {}),
   };
 }
@@ -223,53 +245,12 @@ function fakeBrowser(page, { withCdp = true } = {}) {
 
 describe('undo scenario profiling', () => {
   it('writes artifacts and continues after a cold-tier timeout', async () => {
-    let navigations = 0;
-    let churn = 0;
-    const page = {
-      goto: vi.fn(async () => {
-        navigations++;
-      }),
-      waitForSelector: vi.fn(async () => {}),
-      waitForFunction: vi.fn(async () => {}),
-      evaluate: vi.fn(async (fn) => {
-        const source = fn.toString();
-        if (source.includes('getUndoDebug')) {
-          // One scenario's tier never quiesces — blobBytes keeps moving, so the
-          // settle poll never sees two identical samples and the scenario is
-          // skipped. The rest report a stable tier and settle immediately.
-          return navigations === 3
-            ? { snapshots: 22, liveRasters: 3, blobBytes: churn++ }
-            : { snapshots: 22, liveRasters: 2, blobBytes: 1 };
-        }
-        if (source.includes('document.querySelector')) {
-          return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
-        }
-        if (source.includes("getEntriesByType('measure')")) {
-          return {
-            'engine.draw': { count: 1, total: 1, max: 1 },
-            'engine.commit': { count: 1, total: 1, max: 1, durationsMs: [1] },
-            'engine.snapshot': { count: 1, total: 1, max: 1 },
-            'engine.undo': { count: 1, total: 1, max: 1 },
-          };
-        }
-        if (source.includes('async (maxUndoSteps)')) return 1;
-        if (source.includes('performance.now')) return 0;
-        return undefined;
-      }),
-      screenshot: vi.fn(async () => {}),
-    };
-    const cdp = { send: vi.fn(async () => {}) };
-    const context = {
-      newPage: vi.fn(async () => page),
-      newCDPSession: vi.fn(async () => cdp),
-    };
-    const browser = {
-      newContext: vi.fn(async () => context),
-      close: vi.fn(async () => {}),
-    };
-    state.browser = { launch: vi.fn(async () => browser) };
-    let clock = 0;
-    vi.spyOn(Date, 'now').mockImplementation(() => clock++);
+    // One scenario's tier never quiesces — blobBytes keeps moving, so the settle
+    // poll never sees two identical samples and the scenario is skipped. The
+    // rest report a stable tier and settle immediately.
+    const page = fakePage({ liveRasters: 3, coldTierNeverSettlesOnNavigation: 3 });
+    const { browser } = fakeBrowser(page);
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
