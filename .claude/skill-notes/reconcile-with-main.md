@@ -1,0 +1,50 @@
+<!-- Source: .ruler/skill-notes/reconcile-with-main.md.template -->
+
+# reconcile-with-main — design notes
+
+## The failure this exists to prevent
+
+Not a merge conflict. The opposite: the agent runs `git merge origin/main`, git reports no
+conflicts, and the agent reports success. Every genuinely dangerous interaction between a stale
+branch and a moved `main` is invisible to that check, because git's conflict detector only looks for
+overlapping line edits. A call site added on the branch *after* the merge base can never conflict
+with an upstream rename — upstream never touched a line that did not exist yet.
+
+The wording in the skill is doing specific work. "Deal with conflicts" is read as "git conflicts",
+and when there are none the instruction is satisfied and the agent stops. So the skill states the
+inversion twice, in the opening and again in Step 6: a clean merge is the starting condition, and an
+unmentioned report bucket reads as "not checked".
+
+## Why the survey runs before the merge
+
+`<merge-base>..origin/main` is empty the moment `origin/main` becomes an ancestor of `HEAD`. Every
+later attempt to answer "what came in?" has to reconstruct the range from reflog or the merge
+commit's second parent, which is both fiddlier and easy to get subtly wrong. Collecting it up front
+is one command and cannot be misordered. That is the entire reason `survey.mjs` exists rather than a
+list of git invocations in prose — the ordering constraint is the part an agent would silently get
+wrong, and prose does not enforce ordering.
+
+The two-sweep split in Step 3 (both-sides files vs. upstream-only changes) is the same concern:
+sweep A is where an agent naturally looks, sweep B is where the stranded call sites actually are,
+and without naming them separately only sweep A gets done.
+
+## Rejected
+
+* **Rebase instead of merge.** A long-running branch is the case this skill targets, and by
+  definition it is pushed and often reviewed. Rebasing rewrites history a reviewer has read. It also
+  destroys the legibility the skill depends on — after a rebase there is no incoming set to report
+  on. Left as a user-requested override rather than a default.
+* **Auto-push after reconciling.** Reconciling is local, reversible work; pushing is neither.
+* **Making it a `git` alias or a script that does the merge.** The merge is the trivial part. The
+  value is entirely in the review pass, which cannot be scripted — so the helper deliberately stops
+  at gathering facts and never moves a ref.
+
+## Open
+
+* The Step 4 trap list is repo-specific and will rot as the repo changes. It is written as "check
+  these by name" rather than "these are the only ones", but nothing enforces that it stays current —
+  a candidate for a `session-audit` finding if a merge ever goes wrong in a way Step 4 should have
+  named.
+* `survey.mjs` reports renames and deletions but not signature changes, which are the highest-value
+  and hardest-to-detect class in the Step 3 table. Detecting them properly means diffing exported
+  symbols, which needs type information. Left to the agent's reading for now.

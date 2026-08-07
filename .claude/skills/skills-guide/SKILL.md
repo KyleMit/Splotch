@@ -121,8 +121,16 @@ documents its own decisions under `tools/asset-gen/docs/`.
 | Skill                   | Use for                                                                            |
 | ----------------------- | ---------------------------------------------------------------------------------- |
 | `burn-down-backlog`     | Claim the newest unclaimed open issue (`in-progress` label) and drive it to a push |
+| `reconcile-with-main`   | Merge current `main` into a long-running branch and hunt the *semantic* conflicts  |
 | `prune-remote-branches` | Triage stale `origin` branches and hand back an approved deletion script           |
 | `skills-guide`          | This guide                                                                         |
+
+`reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
+has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
+incoming commits before merging (the range vanishes once `main` is an ancestor), then checks them
+against the branch's own changes for stranded call sites, changed contracts, and duplicated work.
+Reach for it before `address-pr-review` on a stale PR — reviewer comments written against a
+pre-merge diff are hard to triage until the branch is current.
 
 ## Keeping this guide current
 
