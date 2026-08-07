@@ -52,33 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Maintainability] `version.json` boundary string is declared in two places (emitter and fetcher)
-
-**File(s):** `web/vite.config.ts` (`emit-version-json` plugin, lines 69–80) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-The build emits the version endpoint at `vite.config.ts:76` (`fileName: 'version.json'`) and the app
-fetches it at `web/src/lib/pwa/updates.ts:144`
-(`await fetch('/version.json', { cache: 'no-store' })`). CLAUDE.md's rule for boundary strings —
-"declared once, imported everywhere (tests deliberately excepted)" — applies squarely: both sides
-are production code, and both *can* share a constant (vite.config.ts already imports sibling TS
-modules, and Vite bundles the config with esbuild, so importing a side-effect-free module from
-`src/` works). Today a rename on either side deploys cleanly and only fails at runtime as a
-silently-dead stuck-client recovery path (updates.ts swallows the failed fetch at lines 154–156 by
-design).
-
-#### Proposed solution
-
-Create a tiny constants module, e.g. `web/src/lib/pwa/versionEndpoint.ts` exporting
-`export const VERSION_JSON_FILENAME = 'version.json';` (and optionally
-`VERSION_JSON_PATH = '/' + VERSION_JSON_FILENAME`). Import it in both `vite.config.ts` and
-`updates.ts`. Keep the module side-effect-free (no browser globals at top level) so the node-side
-config import stays safe. The `updates.test.ts` literals (lines 132, 140) stay as literals per the
-tests exception.
-
 ### [Maintainability] ESLint keeps two `no-restricted-imports` blocks in sync by comment instead of a shared constant
 
 **File(s):** `eslint.config.js` (lines 56–72 and 141–169) @ cd04c367
