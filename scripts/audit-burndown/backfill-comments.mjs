@@ -205,8 +205,10 @@ if (mode === 'capture') {
   const remaining = store.filter((r) => r !== dropped);
   writeStore(remaining);
   appendFileSync(POSTED, `${dropped.sha}\n`);
-  logLine(`  posted per-commit comment for ${sha.slice(0, 12)}`);
-  console.log(`dropped ${sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`);
+  logLine(`  posted per-commit comment for ${dropped.sha.slice(0, 12)}`);
+  console.log(
+    `dropped ${dropped.sha.slice(0, 12)} — ${remaining.length} still pending in ${STORE}`
+  );
 } else if (mode === 'show') {
   const store = readStore();
   console.log(`${store.length} pending comment(s) in ${STORE}\n`);

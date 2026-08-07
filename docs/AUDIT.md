@@ -44,46 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] `backfill-comments done <sha>` with a short prefix can drop several records while marking only one posted
-
-**File(s):** `scripts/audit-burndown/backfill-comments.mjs` (lines 186–202) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-```js
-const remaining = store.filter((r) => !r.sha.startsWith(sha));
-…
-const [dropped] = store.filter((r) => r.sha.startsWith(sha));
-writeStore(remaining);
-appendFileSync(POSTED, `${dropped.sha}\n`);
-```
-
-`done` accepts any prefix. If the operator (an agent pasting a short SHA) supplies a prefix matching
-two pending records — unlikely with 12 chars, plausible with the 7-char form git prints elsewhere —
-*all* matches are removed from the store but only the first is appended to `POSTED`. The extra
-records are neither pending nor recorded as posted: `capture` will then re-add them (they fail the
-`posted.has(sha)` check at line 158), which is survivable but exactly the re-arming confusion the
-`POSTED` file exists to prevent (lines 27–37). The double `filter` over the same predicate is also
-wasted work.
-
-#### Proposed solution
-
-Partition once and refuse ambiguity:
-
-```js
-const matches = store.filter((r) => r.sha.startsWith(sha));
-if (matches.length > 1) {
-  console.error(
-    `ambiguous prefix ${sha} matches ${matches.length} pending records — use more characters`,
-  );
-  process.exit(1);
-}
-```
-
-then drop exactly `matches[0]`.
-
 ### [Correctness] Iteration tag omits `dropped`, so a drop makes the next finding reuse the same log-file names
 
 **File(s):** `scripts/audit-burndown/burndown.mjs` (line 1126) @ f5bf8767;
