@@ -66,6 +66,9 @@
 - name: 'area:asset-gen'
   color: 'e99695'
   description: 'Asset-generation image pipeline (tools/asset-gen)'
+- name: 'area:store-launch'
+  color: 'b83280'
+  description: 'Blocks App Store / Play submission — kids-audience compliance, store policy, review readiness'
 
 # --- priority: triage signal (optional, at most one) ---
 - name: 'priority:high'
