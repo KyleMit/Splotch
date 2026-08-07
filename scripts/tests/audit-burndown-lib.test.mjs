@@ -301,6 +301,13 @@ describe('resolveImplSha', () => {
     expect(resolveImplSha({ reported: 'not-a-sha', head: '', baseSha })).toBe('');
   });
 
+  // The fix-round prompt names the base sha to the implementer, so an echo of it
+  // is the likely misreport. Accepting it would hand the reviewer an empty range.
+  it('rejects a reported sha that just echoes the base', () => {
+    expect(resolveImplSha({ reported: baseSha, head: baseSha, baseSha })).toBe('');
+    expect(resolveImplSha({ reported: baseSha, head: '', baseSha })).toBe('');
+  });
+
   it('stays empty when HEAD never moved, so a genuine no-op still defers', () => {
     expect(resolveImplSha({ reported: '', head: baseSha, baseSha })).toBe('');
     expect(resolveImplSha({ reported: '', head: '', baseSha })).toBe('');

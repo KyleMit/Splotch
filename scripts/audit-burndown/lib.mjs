@@ -45,12 +45,15 @@ export function findingPriority(title, body = '') {
 // git over the envelope: HEAD past the base means it committed, whatever it
 // remembered to report. An unmoved HEAD still yields '' so a genuine no-op
 // defers as before. The reported sha is only a fallback for an unmoved HEAD,
-// and only when it is a full 40-hex-char sha: a short or garbled one would
-// otherwise reach git as a bare ref argument.
+// and only when it is a full 40-hex-char sha that isn't the base itself: a short
+// or garbled one would otherwise reach git as a bare ref argument, and an echo
+// of the base — the shape to expect, since the fix-round prompt names that sha
+// to the implementer — would pass the gates on an empty range.
 export function resolveImplSha({ reported, head, baseSha }) {
   const moved = head && head !== baseSha ? head : '';
   if (moved) return moved;
-  return /^[0-9a-f]{40}$/.test(reported ?? '') ? reported : '';
+  const usableFallback = /^[0-9a-f]{40}$/.test(reported ?? '') && reported !== baseSha;
+  return usableFallback ? reported : '';
 }
 
 export function implementationCommitMessage(title, round = 0) {
