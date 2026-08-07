@@ -5,7 +5,7 @@ export const COMMIT_GATE_PERCENTILE = 0.95;
 
 // Controlled healthy runs complete one crayon draw mark in at most this time.
 // A larger same-run average measures renderer-wide host slowdown, which the
-// pull-request gate must separate from new stroke-end work.
+// shared-runner timing gate must separate from new stroke-end work.
 export const CRAYON_DRAW_REFERENCE_MS_PER_CALL = 0.4;
 
 // #635's signature stated as structure rather than duration: the cold encode is

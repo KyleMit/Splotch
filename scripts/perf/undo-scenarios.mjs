@@ -1157,7 +1157,7 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
   );
   if (gate.scenarioTimings.some((timing) => timing.normalized)) {
     out.push(
-      'For the fast pull-request tier, crayon-scribbles divides raw commit P95 by the same-run ' +
+      'For the post-merge fast tier, crayon-scribbles divides raw commit P95 by the same-run ' +
         'crayon draw slowdown. This preserves the 25 ms work-shape contract when a shared host ' +
         'slows the renderer globally; a new commit-only regression still crosses the unchanged ' +
         'gate. Release and on-demand full runs use raw timing.\n'

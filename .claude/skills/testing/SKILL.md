@@ -7,21 +7,24 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 
 # Splotch — Testing Guide
 
-Splotch has five core automated suites across three test layers. The app-unit, asset-pipeline,
-repo-script, and E2E suites run on every push/PR. A two-scenario WebKit timing gate runs on every
-pull request in parallel with them; its full seven-scenario form and the real-device launch tests
-run only on tagged releases.
+Splotch's automated suites span three test layers. The app-unit, asset-pipeline, repo-script, and
+E2E suites run on every push/PR, alongside the WebKit smoke job and a structural commit-path guard
+on Chromium. The two-scenario WebKit *timing* gate that guard complements runs post-merge, on pushes
+to `main`, because its verdict is a millisecond P95 that needs WebKit and a quiet host; its full
+seven-scenario form and the real-device launch tests run only on tagged releases. That split is
+ADR-0100 — see the commit-gate section under Continuous integration.
 
-| Layer                 | Tool                | Command                         | Runs in CI                              |
-| --------------------- | ------------------- | ------------------------------- | --------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                         |
-| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                         |
-| Unit (repo scripts)   | Vitest (Node)       | `npm run test:scripts`          | every push / PR                         |
-| E2E (web)             | Playwright          | `npm run test:e2e`              | every push / PR                         |
-| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)          |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                |
-| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner) |
-| WebKit commit timing  | Playwright WebKit   | `npm run perf:undo:webkit:fast` | every PR; full suite on release tags    |
+| Layer                    | Tool                | Command                         | Runs in CI                                   |
+| ------------------------ | ------------------- | ------------------------------- | -------------------------------------------- |
+| Unit (app)               | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                              |
+| Unit (asset pipeline)    | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                              |
+| Unit (repo scripts)      | Vitest (Node)       | `npm run test:scripts`          | every push / PR                              |
+| E2E (web)                | Playwright          | `npm run test:e2e`              | every push / PR                              |
+| Smoke (WebKit)           | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)               |
+| Smoke (Android)          | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                     |
+| Smoke (iOS)              | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner)      |
+| Commit path (structural) | Playwright Chromium | `npm run perf:undo:encode-path` | every push / PR                              |
+| WebKit commit timing     | Playwright WebKit   | `npm run perf:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
@@ -411,12 +414,12 @@ npm run test:android:device     # re-run as often as you like
 
 ## Continuous integration
 
-| Workflow                               | Trigger                                                          | What it runs                                                                                                                                           |
-| -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on PRs; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                                                                             |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                                                                                  |
-| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                                        |
+| Workflow                               | Trigger                                                          | What it runs                                                                                                                                                                                             |
+| -------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job and the structural commit-path guard; fast WebKit commit gate on pushes to `main`; full gate on release tags |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                                                                                                                               |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                                                                                                                                    |
+| `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                                                                                          |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` + `test:scripts`)
@@ -433,16 +436,39 @@ The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a
 `macos-latest` runner — the debug build targets the simulator, so no signing secrets are involved.
 
-The WebKit commit gate is split by path coverage and cost (ADR-0093). Pull requests run
-`multi-finger` (the sole encode-path exerciser) and `crayon-scribbles` (mid-stroke pass splits) in a
-parallel `macos-latest` job sized to stay below the pre-shard Tests job's duration; the Ubuntu
-WebKit runtime did not meet that wall-clock constraint. With the e2e suite now sharded, this gate is
-the expected floor of a PR run — though it trades the critical path with the longest e2e shard
-inside runner noise. Release tags run all seven scenarios. A timing breach, an incomplete or unknown
-requested scenario, a run with no encode-path coverage, or a bundle with no `engine.commit` samples
-fails the job. Either tier attempts to upload `undo-scenarios.json` and `undo-scenarios.md` after a
-failure; an early build/browser failure may leave no reports, which warns without masking the
-original error.
+The commit gate is split by what each half can decide (ADR-0100, amending ADR-0093).
+
+**Pre-merge**, on every pull request and every push to `main`, the `commit-path-guard` job runs
+`npm run perf:undo:encode-path` on `ubuntu-latest` in headless Chromium, parallel to the e2e shards.
+It fails when any measured scenario recorded an `engine.encode` inside the commit window — the shape
+issue #635 regressed. That is a count, never a threshold: one such measure is the defect, no host
+slowness can manufacture it, and no engine's timing fidelity is needed to read it, which is why this
+half runs off WebKit and off the macOS runner. Its scenario set is derived from the declared
+`COLD_ENCODE_PATH` coverage rather than hand-listed, so it cannot drift from the declarations the
+full run verifies.
+
+**Post-merge**, on pushes to `main`, the `webkit-commit-gate-fast` job keeps the `COMMIT_GATE_MS`
+P95 verdict over `multi-finger` (the sole encode-path exerciser) and `crayon-scribbles` (mid-stroke
+pass splits) on `macos-latest`. That verdict genuinely needs a faithful engine and absolute
+milliseconds, and it is expensive: it was the wall-clock floor of a pull-request run, so it moved
+off that path. The trade is that a timing regression the structural guard cannot see — a fold
+blowup, or full-raster commit work that is not an encode — lands on `main` before it is caught. A
+failure there opens a GitHub issue with the run link and diagnostics, commenting on the existing
+open one rather than filing per red commit.
+
+**Release tags** run all seven scenarios.
+
+A timing breach, an incomplete or unknown requested scenario, a run with no encode-path coverage, or
+a bundle with no `engine.commit` samples fails the job. Coverage guards follow the assertion rather
+than the engine, so the pre-merge guard cannot pass over a set that never reached the encode path,
+while a diagnostic `--scenarios` subset on an ungated engine asserts neither and keeps its freedom.
+Every tier attempts to upload `undo-scenarios.json` and `undo-scenarios.md` after a failure; an
+early build/browser failure may leave no reports, which warns without masking the original error.
+
+The workflow's concurrency group folds `github.sha` in for `push` events. Pull requests still
+collapse per ref so a new push cancels the run it supersedes, but back-to-back merges no longer
+cancel each other — which would drop a commit's only WebKit coverage exactly when merge traffic is
+highest.
 
 The fast tier evaluates `multi-finger` against raw `engine.commit` P95. For `crayon-scribbles`, it
 divides raw commit P95 by the same run's renderer slowdown from `engine.draw total / calls` against
