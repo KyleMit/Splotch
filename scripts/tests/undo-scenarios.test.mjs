@@ -379,11 +379,15 @@ describe('engine selection', () => {
     const metrics = JSON.parse(readFileSync(join(fixtureDir, 'metrics.json'), 'utf8'));
     const frames = FRAMES_PER_SCENARIO * (1 + 2 + 3);
     const durationMs = FRAME_SPAN_MS_PER_SCENARIO * (1 + 2 + 3);
+    // Each scenario is its own rAF window, so the combined figure covers
+    // (count - 1) intervals per scenario — not (total count - 1), which would
+    // count the gaps between windows as frames.
+    const intervals = [1, 2, 3].reduce((sum, n) => sum + (FRAMES_PER_SCENARIO * n - 1), 0);
     expect(metrics.frames).toEqual({
       count: frames,
       durationMs,
       // Recomputed over the combined span, not carried over from a reading.
-      fps: ((frames - 1) / durationMs) * 1000,
+      fps: (intervals / durationMs) * 1000,
       longFrames: 1 + 2 + 3,
     });
     expect(metrics.longTasks.map((task) => task.duration)).toEqual([50, 100, 150]);

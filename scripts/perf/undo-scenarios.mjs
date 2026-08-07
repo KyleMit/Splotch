@@ -599,10 +599,15 @@ function aggregateObservers(results) {
   let durationMs = 0;
   let longFrames = 0;
   let heapBytes = null;
+  // Each scenario reloads, so its frame samples are an independent rAF window
+  // contributing count - 1 intervals. Summing the counts and subtracting one
+  // would price the gaps between windows as frames and inflate the fps.
+  let intervals = 0;
   for (const result of results) {
     if (!result.observers) continue;
     longTasks.push(...result.observers.longTasks);
     count += result.observers.frames.count;
+    intervals += Math.max(result.observers.frames.count - 1, 0);
     durationMs += result.observers.frames.durationMs;
     longFrames += result.observers.frames.longFrames;
     if (result.observers.heapBytes != null) heapBytes = result.observers.heapBytes;
@@ -612,7 +617,7 @@ function aggregateObservers(results) {
     frames: {
       count,
       durationMs,
-      fps: durationMs > 0 ? ((count - 1) / durationMs) * 1000 : null,
+      fps: durationMs > 0 ? (intervals / durationMs) * 1000 : null,
       longFrames,
     },
     heapBytes,
