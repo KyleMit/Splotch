@@ -14,6 +14,7 @@ const argumentsToPreserve = [
 ];
 const argumentPrinter = 'process.stdout.write(JSON.stringify(process.argv.slice(1)))';
 const procUrl = new URL('../lib/proc.mjs', import.meta.url).href;
+const missingCommand = 'splotch-command-that-does-not-exist';
 
 describe('command helpers', () => {
   it('detects commands without which on PATH', () => {
@@ -54,6 +55,34 @@ describe('command helpers', () => {
 
     expect(result.status).toBe(0);
     expect(JSON.parse(result.stdout)).toEqual(argumentsToPreserve);
+  });
+
+  it('reports why run could not launch the command', () => {
+    const script = `
+      import { run } from ${JSON.stringify(procUrl)};
+      run(${JSON.stringify(missingCommand)}, [], { echo: false });
+    `;
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(missingCommand);
+    expect(result.stderr).toContain('ENOENT');
+  });
+
+  it('reports why capture could not launch the command', () => {
+    const script = `
+      import { capture } from ${JSON.stringify(procUrl)};
+      capture(${JSON.stringify(missingCommand)});
+    `;
+    const result = spawnSync(process.execPath, ['--input-type=module', '-e', script], {
+      encoding: 'utf8',
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain(missingCommand);
+    expect(result.stderr).toContain('ENOENT');
   });
 
   it('recognizes a symlinked main module', () => {

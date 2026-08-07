@@ -44,40 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [DX] `run()` swallows the spawn error when the command itself can't be launched
-
-**File(s):** `scripts/lib/proc.mjs` (`run`, lines 61–69; `capture`, lines 113–117) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-`run()` checks only `result.status`:
-
-```js
-const result = spawnSync(cmd, args, { … });
-if (result.status !== 0) process.exit(result.status ?? 1);
-```
-
-When the command cannot be spawned at all (ENOENT — a missing SDK tool, `plutil` on Linux, an unset
-PATH), `spawnSync` returns `{ error: Error, status: null }` and nothing is written to stdio. The
-script prints `$ cmd args` and exits 1 with **no error message at all** — the classic "why did my
-script silently die" trap, in the single most-used helper in `scripts/`. `capture()` (line 96) is
-only slightly better: `fail(\`${cmd} failed (exit ${result.status})…\`)` prints "failed (exit null)"
-and an empty stderr for the same case, hiding the ENOENT.
-
-#### Proposed solution
-
-Surface `result.error` in both helpers before exiting:
-
-```js
-if (result.error) fail(`Failed to launch ${cmd}: ${result.error.message}`);
-if (result.status !== 0) process.exit(result.status ?? 1);
-```
-
-and in `capture()` include `result.error?.message` in the failure line. Two lines, and every script
-that shells out through proc.mjs gets an actionable message for missing-binary failures.
-
 ## App correctness that reaches users
 
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
