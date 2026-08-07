@@ -99,6 +99,25 @@
   --float-border: transparent;
   --float-shadow: 0 2px 6px rgba(93, 84, 68, 0.14), 0 6px 16px rgba(93, 84, 68, 0.1);
   --dark-ink-keyline: transparent;
+
+  --icon-appearance-night: #212d4c;
+  --icon-camera-body: #3f68a8;
+  --icon-camera-lens: #33487c;
+  --icon-camera-flash: #d97b06;
+  --icon-controls-track: #3d2570;
+  --icon-magic-brush-handle: #3a2470;
+  --icon-magic-brush-ferrule: #6e7d99;
+  --icon-save-picture-photo: #5699cd;
+  --icon-setup-chrome: #1c4c78;
+  --icon-shapes-car: #007dfe;
+  --icon-sound-cone: #0f5aa6;
+  --icon-sound-cone-highlight: #1781ee;
+  --icon-wand-stars-wand: #4a1a9e;
+  --icon-wand-stars-badge: #4a1a9e;
+  --icon-whats-new-body: #2a8cdc;
+  --icon-whats-new-mid: #277ec1;
+  --icon-whats-new-shadow: #1e3a6c;
+  --icon-whats-new-window: #bedaf2;
 }
 
 :root[data-theme='dark'] {
@@ -137,6 +156,25 @@
   --float-border: rgba(255, 255, 255, 0.1);
   --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
   --dark-ink-keyline: #e9e7f0;
+
+  --icon-appearance-night: #93a6d6;
+  --icon-camera-body: #86aee0;
+  --icon-camera-lens: #6b8cc0;
+  --icon-camera-flash: #fabb19;
+  --icon-controls-track: #8fbdea;
+  --icon-magic-brush-handle: #d5c4f5;
+  --icon-magic-brush-ferrule: #8fa0bd;
+  --icon-save-picture-photo: #7db4e0;
+  --icon-setup-chrome: #8ab8e4;
+  --icon-shapes-car: #5aa8fe;
+  --icon-sound-cone: #5aa6e8;
+  --icon-sound-cone-highlight: #86c7fa;
+  --icon-wand-stars-wand: #bb96f0;
+  --icon-wand-stars-badge: #4c1d95;
+  --icon-whats-new-body: #8ecdf8;
+  --icon-whats-new-mid: #6fb4e8;
+  --icon-whats-new-shadow: #6d94c8;
+  --icon-whats-new-window: #1f4e7d;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -176,5 +214,24 @@
     --float-border: rgba(255, 255, 255, 0.1);
     --float-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 3px 10px rgba(0, 0, 0, 0.5);
     --dark-ink-keyline: #e9e7f0;
+
+    --icon-appearance-night: #93a6d6;
+    --icon-camera-body: #86aee0;
+    --icon-camera-lens: #6b8cc0;
+    --icon-camera-flash: #fabb19;
+    --icon-controls-track: #8fbdea;
+    --icon-magic-brush-handle: #d5c4f5;
+    --icon-magic-brush-ferrule: #8fa0bd;
+    --icon-save-picture-photo: #7db4e0;
+    --icon-setup-chrome: #8ab8e4;
+    --icon-shapes-car: #5aa8fe;
+    --icon-sound-cone: #5aa6e8;
+    --icon-sound-cone-highlight: #86c7fa;
+    --icon-wand-stars-wand: #bb96f0;
+    --icon-wand-stars-badge: #4c1d95;
+    --icon-whats-new-body: #8ecdf8;
+    --icon-whats-new-mid: #6fb4e8;
+    --icon-whats-new-shadow: #6d94c8;
+    --icon-whats-new-window: #1f4e7d;
   }
 }

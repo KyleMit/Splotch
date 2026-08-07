@@ -130,8 +130,11 @@
       A first-party SVG set rendered inline through <code>&lt;Icon&gt;</code> — no icon font, no CDN
       set, no emoji-as-icons. Monochrome glyphs bake a near-black fill and get re-inked via
       <code>fill: var(--icon-ink)</code> on themed surfaces. Full-color "spot" icons carry their own
-      palette and are never tinted — the split below is <code>COLOR_ICONS</code> in
-      <code>Icon.svelte</code>.
+      palette and are never tinted wholesale — the split below is <code>COLOR_ICONS</code> in
+      <code>Icon.svelte</code>. Individual paths inside a spot icon can still take a per-theme fill:
+      they paint with <code>var(--icon-&lt;icon&gt;-&lt;part&gt;)</code>, declared in
+      <code>iconTokens.ts</code> and emitted into <code>tokens.css</code> beside the semantic tokens.
+      Flip the theme toggle above to see which parts move.
     </p>
 
     <h4>Monochrome · re-inked ({monoIcons.length})</h4>
