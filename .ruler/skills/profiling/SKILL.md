@@ -206,8 +206,8 @@ Read in this order:
    `web/src/` before chasing it.
 
 For a forced-reflow / layout-thrash check, the harness confirmed **0 forced synchronous layouts** in
-the drawing path (the engine caches `canvasRect`). If that ever turns non-zero, look for a new
-`getBoundingClientRect` in a hot path.
+the drawing path (`canvasMeasure.ts` caches the canvas rect for it). If that ever turns non-zero,
+look for a new `getBoundingClientRect` in a hot path.
 
 ## Known findings & deferred tradeoffs (as of ADR-0032)
 
