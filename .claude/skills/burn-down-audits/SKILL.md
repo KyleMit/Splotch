@@ -824,12 +824,15 @@ state in the conversation:
   "healthy and working":
   ```bash
   tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
-    "HALT|hit a cap|red at batch|red on the final|push failed|no impl session|DEFERRED|INVALID|finished:|iter"
+    "HALT|hit a cap|red at batch|red on the final|push failed|WARNING|no impl session|DEFERRED|INVALID|finished:|iter"
   ```
   `push failed` matters as much as a halt: the run keeps committing perfectly well against a remote
-  it cannot reach, and every commit it makes after that is unprotected. `no impl session` means a
-  fix round lost the resume handoff and re-derived the change from review text — one such line is
-  tolerable, a pattern of them means the session minting is broken again.
+  it cannot reach, and every commit it makes after that is unprotected. A run that ends that way
+  logs `WARNING: <n> commit(s) not on origin` and exits non-zero — the `finished:` line still
+  prints, so the warning and the exit status are the only things separating that run from a healthy
+  one, and the commits it names exist nowhere but the container. `no impl session` means a fix round
+  lost the resume handoff and re-derived the change from review text — one such line is tolerable, a
+  pattern of them means the session minting is broken again.
 
   **`INVALID` is what a drop looks like — the word "dropped" never appears.** The driver logs the
   verdict verbatim (`INVALID: <reason>`) and only reports `dropped` in the closing `finished:`

@@ -287,8 +287,11 @@ Monitor events, not by repeatedly loading every role envelope:
 
 ```bash
 tail -f -n 0 .audit-work/logs/run.log | grep -E --line-buffered \
-  "HALT|red at batch|red on the final|push failed|no impl session|DEFERRED|INVALID|finished:|iter"
+  "HALT|red at batch|red on the final|push failed|WARNING|no impl session|DEFERRED|INVALID|finished:|iter"
 ```
+
+A final flush that cannot push logs `WARNING: <n> commit(s) not on origin` and makes the run exit
+non-zero; the `finished:` tally prints either way, so do not read it alone as a clean run.
 
 `INVALID` is how a drop appears — the driver logs the verdict verbatim and only reports `dropped` in
 the closing `finished:` tally, so a filter without it stays silent through every drop.

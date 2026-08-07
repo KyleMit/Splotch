@@ -343,7 +343,11 @@ export function createBurndownRun({ config, effects }) {
       return false;
     }
     if (!gitOk('push', '-u', 'origin', BRANCH)) {
-      logLine('  push failed — continuing, will retry next batch');
+      logLine(
+        final
+          ? '  push failed on the final batch — commits held locally, push them manually'
+          : '  push failed — continuing, will retry next batch'
+      );
       return false;
     }
     sincePush = 0;

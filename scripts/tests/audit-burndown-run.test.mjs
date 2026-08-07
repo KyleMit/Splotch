@@ -74,11 +74,12 @@ const approved = { ok: true, structured: { status: 'APPROVED', findings: [] } };
 
 // Drives one run against a temp repo. `respond` stands in for every agent call,
 // `shellResult` for the deterministic gates, `shellOk` for the tree-is-green
-// checks, and `hasCommand` for preflight's runner-binary probe. Every observable
-// the driver emits in order — its log lines and its pushes — lands in one
-// `events` array, because what distinguishes a push at the cadence from the exit
-// flush is *when* it happens, not what it looks like.
-function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {}) {
+// checks, `gitOk` for the git commands whose exit status the driver branches on
+// (the push above all), and `hasCommand` for preflight's runner-binary probe.
+// Every observable the driver emits in order — its log lines and its pushes —
+// lands in one `events` array, because what distinguishes a push at the cadence
+// from the exit flush is *when* it happens, not what it looks like.
+function createRun({ env = {}, respond, shellResult, shellOk, gitOk, hasCommand } = {}) {
   const config = readConfig({ BUNDLE_SPEC: '', ...env });
   const events = [];
   const gitCalls = [];
@@ -117,8 +118,11 @@ function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {})
     },
     gitOk: (...args) => {
       gitCalls.push(args);
-      if (args[0] === 'push') events.push('PUSH');
-      return true;
+      const ok = gitOk?.(...args) ?? true;
+      // A push the remote rejected is not a push, so only a landed one joins the
+      // event stream the cadence assertions read.
+      if (args[0] === 'push' && ok) events.push('PUSH');
+      return ok;
     },
     gitOut: (...args) => {
       gitCalls.push(args);
@@ -274,7 +278,7 @@ describe('push cadence', () => {
     expect(events.indexOf('PUSH')).toBeLessThan(eventAt(events, 'finished:'));
   });
 
-  it('warns and exits non-zero when the final flush cannot push', async () => {
+  it('warns and exits non-zero when the final flush is gated by a red suite', async () => {
     // A finished: line and a zero exit are what a supervising agent reads as a
     // healthy run, so commits still sitting locally have to say so in both.
     const { events, run } = createRun({
@@ -286,9 +290,32 @@ describe('push cadence', () => {
     expect(await exitCodeOf(run)).toBe(1);
     expect(events).not.toContain('PUSH');
     expect(events).toContain(
+      `  ${FULL_SUITE_CMD} red on the final batch — commits held locally, not pushed`
+    );
+    expect(events).toContain(
       'WARNING: 2 commit(s) not on origin — push manually before the container is reclaimed'
     );
     expect(eventAt(events, 'WARNING:')).toBeLessThan(eventAt(events, 'finished:'));
+    expect(events).toContain('finished: 0 fixed, 0 dropped, 2 deferred, 0 remaining');
+  });
+
+  it('warns and exits non-zero when the final push itself is rejected', async () => {
+    // The other way the flush ends with commits held locally. There is no next
+    // batch to retry on, so the log has to ask the operator for the push.
+    const { events, run } = createRun({
+      env: { PUSH_EVERY: '3' },
+      respond: () => ({ ok: false }),
+      gitOk: (...args) => args[0] !== 'push',
+    });
+
+    expect(await exitCodeOf(run)).toBe(1);
+    expect(events).toContain(
+      '  push failed on the final batch — commits held locally, push them manually'
+    );
+    expect(events).not.toContain('  push failed — continuing, will retry next batch');
+    expect(events).toContain(
+      'WARNING: 2 commit(s) not on origin — push manually before the container is reclaimed'
+    );
     expect(events).toContain('finished: 0 fixed, 0 dropped, 2 deferred, 0 remaining');
   });
 

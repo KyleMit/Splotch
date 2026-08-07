@@ -44,49 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] The finish path swallows a failed final push — an unattended run can end "successfully" with unpushed commits
-
-**File(s):** `scripts/audit-burndown/burndown.mjs` (`pushBatch`, lines 335–350; finish, lines
-1034–1046) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-The whole design says an unpushed commit is a lost commit: the `PUSH_EVERY` comment (lines 82–87) —
-"an unpushed commit is a commit at risk: the only durable artifact is what is on origin". Yet the
-final flush ignores its own failure signal:
-
-```js
-if (sincePush > 0) pushBatch({ final: true });
-…
-logLine(`finished: ${done} fixed, …`);
-```
-
-`pushBatch` returns `false` on a red `PUSH_TEST_CMD` or a failed push (lines 473–486) — a return
-value no call site ever reads (lines 326, 577, 872, 877). Mid-run that's fine (the next boundary
-retries), but at the *end* there is no next boundary: the process logs a normal `finished:` line and
-exits 0. A supervising agent (or the overnight log reader) sees a clean completion while the tail of
-the run sits only in a reclaimable container. The mid-run "will retry next batch" copy inside
-`pushBatch` is also wrong for the `final` case, which its own message text acknowledges ("commits
-held locally, not pushed") without escalating.
-
-#### Proposed solution
-
-Have the finish path act on the result:
-
-```js
-if (sincePush > 0 && !pushBatch({ final: true })) {
-  logLine(
-    `WARNING: ${sincePush} commit(s) not on origin — push manually before the container is reclaimed`,
-  );
-  process.exitCode = 1;
-}
-```
-
-Exit code 1 makes the failure visible to `overnight.log` scrapers and any wrapper. Since the return
-value then has a real consumer, the unused-return smell disappears too.
-
 ### [Correctness] The implementer's self-reported SHA is trusted verbatim over git, with no format or ancestry validation
 
 **File(s):** `scripts/audit-burndown/lib.mjs` (`resolveImplSha`, lines 42–45) @ f5bf8767;
