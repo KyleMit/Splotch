@@ -20,7 +20,9 @@ import { chdirRoot, ensureWorkDirs, LAUNCH_KNOBS, LOGS, shellQuote, WORK } from 
 
 const count = process.argv[2] ?? '600';
 if (!/^[1-9]\d*$/.test(count)) {
-  console.error(`overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`);
+  console.error(
+    `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`
+  );
   process.exit(2);
 }
 
