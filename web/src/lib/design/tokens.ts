@@ -410,7 +410,14 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   darkInkKeyline: true,
 };
 
+// `appBg` → `app-bg`, `surface2` → `surface-2`. Exported for iconTokens.ts, which
+// composes its names from more than one segment and so can't use the `--`-prefixed
+// form below.
+export function toKebabCase(key: string): string {
+  return key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase();
+}
+
 // `appBg` → `--app-bg`, `surface2` → `--surface-2`, `brandSolidHover` → `--brand-solid-hover`.
 export function toCssVarName(key: string): string {
-  return `--${key.replace(/([a-z])([A-Z0-9])/g, '$1-$2').toLowerCase()}`;
+  return `--${toKebabCase(key)}`;
 }

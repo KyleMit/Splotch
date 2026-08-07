@@ -1,5 +1,6 @@
 // Generates web/src/tokens.css from the design-token source of truth in
-// web/src/lib/design/tokens.ts (ADR-0071). Run via `npm run gen:tokens`;
+// web/src/lib/design/tokens.ts (ADR-0071), plus the per-icon-part spot-icon
+// colors in web/src/lib/design/iconTokens.ts (ADR-0101). Run via `npm run gen:tokens`;
 // `--check` is the CI drift gate (regenerate and fail if the committed file
 // differs, like ruler:check). See the emitted banner in render() below for why
 // the dark declarations are emitted twice.
@@ -8,6 +9,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { brand, scale, themes, toCssVarName, zIndex } from '../web/src/lib/design/tokens.ts';
+import { iconTokenEntries } from '../web/src/lib/design/iconTokens.ts';
 import { ROOT } from './lib/proc.mjs';
 
 const OUT_PATH = resolve(ROOT, 'web/src/tokens.css');
@@ -15,6 +17,12 @@ const OUT_PATH = resolve(ROOT, 'web/src/tokens.css');
 function declarations(tokens, indent) {
   return Object.entries(tokens)
     .map(([key, value]) => `${indent}${toCssVarName(key)}: ${value};`)
+    .join('\n');
+}
+
+function iconDeclarations(theme, indent) {
+  return iconTokenEntries()
+    .map(({ cssVar, ...values }) => `${indent}${cssVar}: ${values[theme]};`)
     .join('\n');
 }
 
@@ -41,17 +49,23 @@ ${declarations(scale, '  ')}
 ${declarations(zIndex, '  ')}
 
 ${declarations(themes.light, '  ')}
+
+${iconDeclarations('light', '  ')}
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
 ${declarations(themes.dark, '  ')}
+
+${iconDeclarations('dark', '  ')}
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 ${declarations(themes.dark, '    ')}
+
+${iconDeclarations('dark', '    ')}
   }
 }
 `;
