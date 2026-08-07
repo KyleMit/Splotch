@@ -62,7 +62,7 @@
     {
       label: 'line-weight-*',
       note: 'the Stroke Width Button, per active tool',
-      members: ['line-weight-brush', 'line-weight-eraser'],
+      members: ['line-weight-brush', 'line-weight-eraser', 'line-weight-magic'],
     },
     {
       label: 'trash-*',

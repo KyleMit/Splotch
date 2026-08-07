@@ -23,6 +23,7 @@
     'feedback',
     'line-weight-brush',
     'line-weight-eraser',
+    'line-weight-magic',
     'more-colors',
     'save-picture',
     'setup',

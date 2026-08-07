@@ -29,6 +29,7 @@ export type IconName =
   | 'install-homescreen'
   | 'line-weight-brush'
   | 'line-weight-eraser'
+  | 'line-weight-magic'
   | 'loading'
   | 'lock'
   | 'mobile-landscape'

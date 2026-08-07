@@ -3,6 +3,7 @@
   import Icon from './Icon.svelte';
   import BrushButtonFaces from './BrushButtonFaces.svelte';
   import BrushMenu from './BrushMenu.svelte';
+  import StrokeWidthButtonFaces from './StrokeWidthButtonFaces.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
@@ -323,7 +324,7 @@
           use:scribbleTap={handleStrokeBtnClick}
           style:color={colors.activeColor}
         >
-          <Icon name={erasing ? 'line-weight-eraser' : 'line-weight-brush'} class="action-icon" />
+          <StrokeWidthButtonFaces {erasing} />
         </button>
         <StrokeWidthMenu
           open={openFlyout === 'stroke'}

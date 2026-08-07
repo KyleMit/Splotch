@@ -37,7 +37,21 @@ import { ROOT } from './lib/proc.mjs';
 // the file gets optimized — breaking a generator that only runs on demand.
 const IGNORE = new Set(['web/static/large-image.svg', 'web/static/styles/source.svg']);
 
-const SVGO_CONFIG = { multipass: true, plugins: ['preset-default'] };
+// `cleanupIds` minifies every surviving id to a one-letter name, so two icons
+// inlined into the same document collide (`more-colors.svg` already ships
+// `id="a"`, and `url(#a)`/`href="#a"` then resolve to whichever came first).
+// Icons that need a stable id opt out by prefixing it `icon-`; every other id
+// still gets minified, so no existing icon is rewritten by the override.
+// Uniqueness across the surviving ids is enforced by web/src/lib/icons/iconIds.test.ts.
+const SVGO_CONFIG = {
+  multipass: true,
+  plugins: [
+    {
+      name: 'preset-default',
+      params: { overrides: { cleanupIds: { preservePrefixes: ['icon-'] } } },
+    },
+  ],
+};
 
 const {
   values: { check },
