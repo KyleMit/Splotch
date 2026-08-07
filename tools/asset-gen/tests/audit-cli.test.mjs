@@ -119,7 +119,8 @@ vi.mock('../lib/night-composite.mjs', () => ({
   compositeNight: async (buffer) => buffer,
 }));
 
-vi.mock('../lib/golden-catalog.mjs', () => ({
+vi.mock('../lib/golden-catalog.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
   GOLDEN_VERDICTS: [],
   diffGoldenPage: () => {},
   scoreGoldenNightEyes: async () => ({}),
