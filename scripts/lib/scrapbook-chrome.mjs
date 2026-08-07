@@ -299,18 +299,28 @@ const MIME = {
   '.webp': 'image/webp',
 };
 
+// Re-encode quality for the `width`-driven downscale path — visually lossless at
+// scrapbook thumbnail sizes while keeping committed page weight low.
+const INLINE_WEBP_QUALITY = 78;
+
 // Inlines an image file as a data: URI. Pass `width` to downscale + re-encode as
-// webp (quality 78); omit it to pass the file through as-is, MIME-mapped by extension.
+// webp; omit it to pass the file through as-is, MIME-mapped by extension.
 export async function inlineImage(path, { width } = {}) {
   if (width) {
     const buf = await sharp(path)
       .resize({ width, withoutEnlargement: true })
-      .webp({ quality: 78 })
+      .webp({ quality: INLINE_WEBP_QUALITY })
       .toBuffer();
     return `data:image/webp;base64,${buf.toString('base64')}`;
   }
   const buf = await readFile(path);
-  return `data:${MIME[extname(path).toLowerCase()]};base64,${buf.toString('base64')}`;
+  const mime = MIME[extname(path).toLowerCase()];
+  if (!mime) {
+    throw new Error(
+      `inlineImage: no MIME mapping for ${path} — add it to MIME in scrapbook-chrome.mjs`
+    );
+  }
+  return `data:${mime};base64,${buf.toString('base64')}`;
 }
 
 // Full self-contained HTML document wrapper for the pages this module fully owns

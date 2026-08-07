@@ -44,44 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] `inlineImage` silently emits `data:undefined;…` for an unmapped extension
-
-**File(s):** `scripts/lib/scrapbook-chrome.mjs` (`inlineImage`, lines 282–292; `MIME`, lines
-273–278) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-The pass-through branch (line 291):
-
-```js
-return `data:${MIME[extname(path).toLowerCase()]};base64,${buf.toString('base64')}`;
-```
-
-For any extension outside the four-entry `MIME` map (`.svg`, `.gif`, `.avif`, a typo'd name), the
-lookup is `undefined` and the generator embeds the literal string `data:undefined;base64,…` into a
-committed, published page — a broken image discovered only by eyeballing the output. Also, the sharp
-branch's `quality: 78` (line 288) is a tuning literal that per convention wants a named constant
-(`INLINE_WEBP_QUALITY = 78`) carrying the size/fidelity rationale currently squeezed into the doc
-comment.
-
-#### Proposed solution
-
-Fail closed:
-
-```js
-const mime = MIME[extname(path).toLowerCase()];
-if (!mime) {
-  throw new Error(
-    `inlineImage: no MIME mapping for ${path} — add it to MIME in scrapbook-chrome.mjs`,
-  );
-}
-```
-
-Generators run at publish time, so a loud throw is strictly better than a silently broken committed
-page. Name the quality constant while in the file.
-
 ### [Correctness] model-eval-fixtures silently renders fixtures with missing coloring assets
 
 **File(s):** `scripts/model-eval-fixtures.mjs` (`assetUri`, lines 78–82; used at 124, 156, 177–179,
