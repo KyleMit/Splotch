@@ -46,34 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Maintainability] idea-21 carries 12.6 MB of regenerable proof-sheet HTML for a LANDED feature
-
-**File(s):** `tools/asset-gen/ideas-exploration/idea-21/farm-compare-46bc770.html` (6.9 MB),
-`idea-21/farm-git-46bc770.html` (5.7 MB); smaller: `owl-tall-compare-34a606f-prerename.html`,
-`owl-tall-compare-6e3f14f.html` @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-Idea 21's Status is LANDED: `--source git:<ref>` is now a first-class mode of
-`bin/gen-coloring-book-proof-sheet.mjs` (report line 3). The folder nonetheless commits four
-self-contained demo sheets, two of them whole-category farm sheets at ~6–7 MB each — 12.6 MB, the
-single largest weight in `ideas-exploration/` (15 MB total). Unlike NOT-PROMOTED evidence, these
-prove nothing that can't be reproduced in ~3 s offline by the shipped tool
-(`npm run gen:coloring-book-proof-sheet -- farm --source git:46bc770`); the small `pair-*.webp`
-crops and `overview-owl-compare.webp` already document the outcome visually. The repo also has a
-designated home for keeper run outputs — `/scrapbook` (ADR-0059) — and these aren't published there
-either; they're dead bytes in a frozen R&D folder.
-
-#### Proposed solution
-
-Delete the four HTML sheets (certainly the two farm ones) and let the report's "how to reproduce"
-line plus the committed webp crops carry the record; update `idea-21/report.md` and the folder
-README's layout note ("idea-21 carries generated comparison sheets") in the same commit. If one
-exemplar sheet is genuinely worth keeping browsable, publish the smallest owl sheet via
-`npm run scrapbook:publish` instead of storing it here.
-
 ## Cross-file agreement held by prose
 
 CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather than a mitigation.
