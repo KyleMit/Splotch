@@ -44,41 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] pop.mjs treats any unknown flag as "print", so a typo'd `--delete` silently succeeds without deleting
-
-**File(s):** `scripts/audit-burndown/pop.mjs` (lines 18, 25–50) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-```js
-const mode = process.argv[2] ?? 'print';
-```
-
-The mode is then compared against `--count`, `--peek`, and (at line 50) `--delete`; anything else
-falls through the whole ladder and behaves as `print`, exit 0. So `pop.mjs --delte` (or `--pop`,
-`-d`, a stray argument) prints the first entry and reports success — and the caller, typically an
-*agent* following a runbook, now believes the entry was consumed when the backlog is untouched. The
-header documents "Exit codes: … 2 bad usage" (line 10) but bad usage is only detected for `--peek`'s
-argument. For a tool whose whole reason to exist is deterministic surgery no agent should improvise
-around (lib.mjs lines 348–355), silently doing the wrong-but-plausible thing on a typo is the worst
-failure shape.
-
-#### Proposed solution
-
-Close the mode set:
-
-```js
-const MODES = new Set(['print', '--delete', '--count', '--peek']);
-if (!MODES.has(mode)) {
-  console.error(`pop: unknown mode ${mode} (see header for usage)`);
-  process.exit(2);
-}
-```
-
-(Also aligns with the CLAUDE.md "close finite value sets" instinct, applied at a CLI boundary.)
-
 ### [Correctness] lighthouse run-audit summary table ingests stale and priming reports from the output dir
 
 **File(s):** `.ruler/skills/lighthouse-audit/run-audit.mjs` (`printSummary`, lines 205–235; priming
