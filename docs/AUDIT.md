@@ -41,44 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Readability] `ringAnimateKey`'s `Date.now()` suffix is dead — and the flourish cannot replay on a same-swatch re-tap
-
-**File(s):** `web/src/lib/components/ColorPalette.svelte` (lines 58–60, 72, 122) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-```ts
-let ringAnimateKey = $state<string | null>(null);
-...
-ringAnimateKey = hex + ':' + Date.now();          // line 72
-...
-class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}   // line 122
-```
-
-The only consumer of the key is `startsWith(hex + ':')`, which discards the timestamp entirely — the
-state is functionally just "which hex was last tapped". The `Date.now()` suffix strongly implies
-per-tap uniqueness was intended (i.e., re-tapping the currently-selected swatch should restart the
-confirmation ring), but a class toggle can't deliver that: on a same-swatch re-tap the
-`ring-animate` class boolean stays `true`, the CSS animation (`swatch-ring-expand`, `forwards`,
-lines 221–237) has already completed, and nothing replays. So the code carries dead complexity *and*
-fails the behavior that complexity gestures at.
-
-#### Proposed solution
-
-Decide which behavior is wanted:
-
-* If replay-on-re-tap is *not* needed: simplify to
-  `let ringAnimateHex = $state<string | null>(null)` and
-  `class:ring-animate={ringAnimateHex === hex}` — same behavior, no fake uniqueness.
-* If replay *is* wanted: keep the timestamped key and force an element-level restart, e.g. wrap the
-  `::before` host in `{#key ringAnimateKey}` (heavyweight for a button) or, cheaper, drive the
-  animation from a `data-` attribute change plus `animation: none`/reflow re-trigger inside
-  `selectSwatch`. The first option is the low-risk default; note the flourish is cosmetic, so this
-  is not a functional regression either way. Distinct from issue #164 (tap *registration*
-  reliability).
-
 ### [Architecture] ColorPalette owns the black-ink/theme sync invariant and writes shared state directly from an `$effect`
 
 **File(s):** `web/src/lib/components/ColorPalette.svelte` (`$effect`, lines 36–40) @ cd04c367

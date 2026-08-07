@@ -57,7 +57,7 @@
 
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
-  let ringAnimateKey = $state<string | null>(null);
+  let ringAnimateHex = $state<string | null>(null);
 
   // The selected-state gap (border + seam) is surface-colored, not white, so in
   // dark mode it reads as bar background and the colored ring floats around the
@@ -69,7 +69,7 @@
   function selectSwatch(hex: string, paint: string) {
     selectInkBrush();
     selectPaletteColor(hex, paint);
-    ringAnimateKey = hex + ':' + Date.now();
+    ringAnimateHex = hex;
     releaseAllPointers();
   }
 
@@ -119,7 +119,7 @@
       class="color-swatch"
       class:bonus
       class:active={!erasing && colors.activeSwatch === hex}
-      class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
+      class:ring-animate={ringAnimateHex === hex}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
       style="background-color: {shown}; {!erasing && colors.activeSwatch === hex
