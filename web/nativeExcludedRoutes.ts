@@ -2,19 +2,35 @@ import type { Plugin } from 'vite';
 
 // Routes that must not reach the native bundle at all.
 //
-// A route's own `prerender = !__IS_CAPACITOR__` drops its *HTML* from the static
-// export, but the route module still compiles into the client bundle: its JS
-// chunk ships, `entry/app.*` still lists the route, and adapter-static's
-// `fallback: '200.html'` means a WebView navigated there renders it. So every
-// string in the module — for /android-beta, Play Store URLs, the testers' group
-// link, and the support address — is present in the .ipa and .aab and turns up
-// in a store reviewer's string scan. Google Play references inside an iOS binary
-// are an App Review 2.3.10 rejection on their own.
+// A route's `prerender` flag only decides whether its *HTML* is emitted. The
+// route module still compiles into the client bundle: its JS chunk ships,
+// `entry/app.*` still lists the route, and adapter-static's `fallback:
+// '200.html'` means a WebView navigated there would render whatever the chunk
+// contains. So a route can be absent from the static export and still have
+// every string in it sitting inside the .ipa and .aab, where a store reviewer's
+// string scan finds them.
 //
-// This replaces each excluded route's module source at build time, so the
-// strings never make it into the bundle in the first place. `nativeBundleScan`
-// (scripts/check-native-bundle.mjs) proves it against the built output.
-export const NATIVE_EXCLUDED_ROUTES = ['android-beta'] as const;
+// That gap is why both entries below are here rather than relying on their
+// `prerender` flags:
+//
+//  * `android-beta` — Play Store URLs and the testers' group link. Google Play
+//    references inside an iOS binary are an App Review 2.3.10 rejection.
+//  * `admin` — the token-minting console's markup and copy. A privileged
+//    surface shipped inside a children's app is what Play's Deceptive Behavior
+//    policy and App Review 2.3.1 are written against, and the console is
+//    web-only by design (ADR-0101).
+//
+// This replaces each excluded route's client module source at build time, so
+// the strings never make it into the bundle in the first place.
+// `scripts/check-native-bundle.mjs` scans the built output and fails
+// `build:cap` if a sentinel from either route survives.
+export const NATIVE_EXCLUDED_ROUTES = ['android-beta', 'admin'] as const;
+
+// Only the client-facing route modules are replaced. `+page.server.ts` and
+// friends never reach the client bundle, and they own declarations the build
+// still needs — /admin's `prerender = false` lives there, and stubbing it would
+// pull the route back into the static export it is meant to be absent from.
+const CLIENT_ROUTE_MODULES = /\/\+(page|layout)(\.svelte|\.ts|\.js)$/;
 
 // Enough of a page module to satisfy SvelteKit's route contract while rendering
 // nothing. `prerender = false` keeps the emptied route out of the static export
@@ -42,9 +58,8 @@ export function excludeNativeRoutes(isCapacitor: boolean): Plugin {
     load(id) {
       const path = id.split('?')[0];
       if (!segments.some((segment) => path.includes(segment))) return null;
-      if (path.endsWith('.svelte')) return EMPTY_PAGE_COMPONENT;
-      if (path.endsWith('.ts') || path.endsWith('.js')) return EMPTY_PAGE_MODULE;
-      return null;
+      if (!CLIENT_ROUTE_MODULES.test(path)) return null;
+      return path.endsWith('.svelte') ? EMPTY_PAGE_COMPONENT : EMPTY_PAGE_MODULE;
     },
   };
 }

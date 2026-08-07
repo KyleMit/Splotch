@@ -41,7 +41,7 @@ the **client**, not the server:
 
 | Render                                   | Routes                                                    | Why                                                              |
 | ---------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| **SSG** (prerendered, CDN/bundle-served) | `/`, `/privacy`, `/admin/native`                          | No per-request input; must also work in the native static export |
+| **SSG** (prerendered, CDN/bundle-served) | `/`, `/privacy`                                           | No per-request input; must also work in the native static export |
 | **SSR** (`sveltekit-render` per request) | `/admin` (cookie auth + form actions), `/api/*`, `/dev/*` | Genuinely need request context (cookies, headers, live data)     |
 
 Because `/` renders from defaults, anything whose stored/measured value differs from the default is

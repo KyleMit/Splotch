@@ -36,9 +36,9 @@ for accepted payloads so scanners get no oracle.
 Non-obvious constraints:
 
 * **Netlify custom headers attach only to CDN/static responses.** The prerendered pages (`/`,
-  `/privacy`, `/admin/native`) get the header; function-served SSR responses (`/admin`) ship with no
-  custom headers at all. This predates the flip (the report-only header had the same scope) and is
-  documented beside the header block. (Closed since — see the Update below.)
+  `/privacy`) get the header; function-served SSR responses (`/admin`) ship with no custom headers
+  at all. This predates the flip (the report-only header had the same scope) and is documented
+  beside the header block. (Closed since — see the Update below.)
 * **`'unsafe-inline'` stays, deliberately.** Script nonces via SvelteKit's `kit.csp` were assessed
   and split to a follow-up: the home page is prerendered, so SvelteKit would deliver its policy via
   `<meta>` (which cannot carry `frame-ancestors`/reporting directives), splitting the policy across

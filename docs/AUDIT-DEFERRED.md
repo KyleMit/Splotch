@@ -712,8 +712,6 @@ today, verified at HEAD:
   fallback; a `{ message }` 400 today yields `undefined` and generic copy, so switching it to
   `{ ok, error }` strictly improves what the client can show.
 * report — `ReportForm.svelte` reads `data.error` with a fallback string; same strict improvement.
-* admin 401 — the native admin page (`routes/admin/native/+page.svelte:79`) branches on
-  `response.status === 401` and never reads that body.
 
 No deployed client parses `{ message }`, so no app-store release needs to precede the change.
 
