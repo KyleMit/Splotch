@@ -37,10 +37,7 @@ describe('POST /api/verify-key', () => {
 
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ ok: false, error: 'No API key provided' });
-    expect(rateLimit).toHaveBeenCalledWith(
-      verifyKeyBucket(address),
-      rateLimitPolicy.verifyKey
-    );
+    expect(rateLimit).toHaveBeenCalledWith(verifyKeyBucket(address), rateLimitPolicy.verifyKey);
     expect(verifyKey).not.toHaveBeenCalled();
   });
 
