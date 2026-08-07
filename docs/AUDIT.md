@@ -52,51 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Maintainability] `COLOR_CHANGE_DEBOUNCE_SETTLE_MS` keeps cross-file agreement with the engine by prose, not import
-
-**File(s):** `web/tests/helpers.ts` (lines 29–30) and `web/src/lib/drawing/engine.ts`
-(`COLOR_CHANGE_DEBOUNCE_MS`, line 773) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-`web/tests/helpers.ts:29–30` is a textbook instance of the pattern CLAUDE.md calls a defect ("A
-'keep in sync with X' comment marks a defect, not a mitigation"):
-
-```ts
-// Must remain greater than the engine's COLOR_CHANGE_DEBOUNCE_MS (100).
-export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = 150;
-```
-
-The engine's constant is module-private (`web/src/lib/drawing/engine.ts:773`:
-`const COLOR_CHANGE_DEBOUNCE_MS = 100;`), so the agreement is maintained only by this comment —
-which also restates the mutable value `(100)`, a second convention violation ("no restating mutable
-facts … owned elsewhere"). If the engine debounce is ever raised past 150 ms, every spec that sleeps
-`COLOR_CHANGE_DEBOUNCE_SETTLE_MS` (`flows-magic-brush.spec.ts:649`,
-`flows-palette-brush.spec.ts:77`, `engine-pointer-recovery.spec.ts:61`) starts flaking or silently
-testing inside the debounce window, with nothing failing loudly to point at the drift.
-
-The suite already imports engine constants directly — `engine-pointer-recovery.spec.ts:3-9` imports
-`EDGE_SWIPE_BAND_PX`, `POINTER_RESUME_GAP_MS`, etc. from `$lib/drawing/strokeMath` — so the import
-path is proven.
-
-#### Proposed solution
-
-Export the constant from a side-effect-free module (either export it from `engine.ts` if importing
-it doesn't drag in import-time side effects for the Playwright Node context, or move it to
-`$lib/drawing/strokeMath.ts` beside the other pointer-timing constants and have `engine.ts` import
-it). Then derive the settle value:
-
-```ts
-import { COLOR_CHANGE_DEBOUNCE_MS } from '$lib/drawing/strokeMath';
-export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = COLOR_CHANGE_DEBOUNCE_MS + 50;
-```
-
-Gotcha: `engine.ts` touches DOM at module scope in places — verify it imports cleanly under
-Playwright's Node transform before choosing it as the export home; `strokeMath.ts` is the safe host
-(it is already imported by a spec today).
-
 ### [Maintainability] `generate-image.spec.ts` re-declares server policy values (rate limits, upload cap) instead of importing them
 
 **File(s):** `web/tests/generate-image.spec.ts` (lines 19–22, 43–44) @ cd04c367

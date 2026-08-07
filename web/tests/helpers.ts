@@ -1,10 +1,7 @@
 import { expect, type JSHandle, type Locator, type Page } from '@playwright/test';
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
-import {
-  COLOR_CHANGE_DEBOUNCE_MS,
-  POINTER_RESUME_JUMP_RATIO,
-} from '../src/lib/drawing/strokeMath';
+import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
