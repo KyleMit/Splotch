@@ -382,6 +382,11 @@ export function renderReport(s) {
     )
   );
 
+  if (set.skippedBeats?.length) {
+    out.push('\n## ⚠ Skipped beats\n');
+    out.push(set.skippedBeats.map((b) => `- ${b}`).join('\n'));
+  }
+
   out.push('\n## Frame health\n');
   if (s.frames) {
     out.push(

@@ -44,47 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] `beat()` converts every failure — including harness bugs — into a console-only "skipped", leaving no trace in the artifacts
-
-**File(s):** `scripts/perf/session.mjs` (`beat`, lines 34–42; `runToddlerSession`, lines 118–163) @
-f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-```js
-async function beat(page, label, fn) {
-  process.stdout.write(`  • ${label}… `);
-  try {
-    await markPhase(page, label, fn);
-    console.log('ok');
-  } catch (err) {
-    console.log(`skipped (${err.message})`);
-  }
-}
-```
-
-Two problems. First, the skip is recorded nowhere except transient stdout: `metrics.json`,
-`summary.json`, and `report.md` are written as if the session ran fully. A run where `pickColor`
-broke (the app-driver module "rots silently when app markup … change[s]" per `scripts/CLAUDE.md`)
-yields a report whose `change-colors` phase is simply absent or near-empty — indistinguishable from
-a genuinely fast phase, which invites false "regression fixed!" readings when comparing profiles.
-Second, the catch swallows *all* errors, including programming errors in the harness itself (a typo
-in `multiFingerDraw` reports as `skipped (foo is not defined)` and the run "succeeds"). The scripts
-convention explicitly requires per-item failures to be "report[ed] … at the end without discarding
-completed results".
-
-#### Proposed solution
-
-Have `beat` return `{ label, ok, error? }`, collect the results in `runToddlerSession`, and thread
-them into `driveSession`'s `settings` (e.g. `settings.skippedBeats: ['change-colors: …']`) so they
-land in `metrics.json`/`summary.json`; make `renderReport` print a prominent warning section when
-any beat skipped. Optionally re-throw on a second consecutive skip or when *all* beats fail, which
-is the "driver rotted" signature.
-
----
-
 ### [DX] Unknown `--device` silently profiles the phone viewport while labeling artifacts with the typo
 
 **File(s):** `scripts/perf/devices.mjs` (`resolveDevice`, lines 9–11); `scripts/perf/scenario.mjs`

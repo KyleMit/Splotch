@@ -164,6 +164,23 @@ describe('performance profile analysis', () => {
     expect(report).toContain('| Delta | 0.0 MiB |');
   });
 
+  it('warns about beats the session skipped', () => {
+    const summary = analyze([], {
+      settings: { skippedBeats: ['undo: no #undoButton', 'clear: timeout'] },
+    });
+    const report = renderReport(summary);
+
+    expect(report).toContain('## ⚠ Skipped beats');
+    expect(report).toContain('- undo: no #undoButton');
+    expect(report).toContain('- clear: timeout');
+  });
+
+  it('omits the skipped-beat warning when every beat succeeded', () => {
+    const summary = analyze([], { settings: { target: 'web' } });
+
+    expect(renderReport(summary)).not.toContain('Skipped beats');
+  });
+
   it('reports no heap metrics captured when the after-heap sample is unmeasured', () => {
     const summary = analyze([], { heap: { beforeBytes: 5 * 1024 * 1024, afterBytes: null } });
     const report = renderReport(summary);
