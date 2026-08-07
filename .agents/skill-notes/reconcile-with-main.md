@@ -28,8 +28,33 @@ The two-sweep split in Step 3 (both-sides files vs. upstream-only changes) is th
 sweep A is where an agent naturally looks, sweep B is where the stranded call sites actually are,
 and without naming them separately only sweep A gets done.
 
+## The rename hole (found in review of the first version)
+
+The first `survey.mjs` keyed the both-sides overlap on `git diff --name-only`, one path per change.
+That drops the single most dangerous case: upstream renames `foo.js` → `bar.js`, the branch edits
+`foo.js`, git follows the rename and lands both edits in `bar.js` without a conflict — and the
+survey reported `bar.js` as upstream-only, `foo.js` as local-only, and no overlap at all. The file
+guaranteed to need reading was the one file the report said nothing about.
+
+The fix is to treat a rename as one logical file with two names: every entry contributes both of its
+names to an identity set, and a match on either name counts as an overlap. It is symmetric on
+purpose — the branch renaming a file upstream edited is the same bug in the other direction, and the
+first version would have missed that too.
+
+Worth noting for anyone extending this: the classification is now the only thing standing between
+sweep A and a silent miss, so `classifyChanges` is pure and unit-tested against raw `--name-status`
+output (`scripts/tests/reconcile-survey.test.mjs`) rather than being reachable only through a live
+repo.
+
 ## Rejected
 
+* **An alternate `--base` flag on the survey.** The first version had one. It was incoherent: the
+  skill's other steps name `origin/main` directly — the merge, the ADR log check, the report — so
+  `--base release` would have surveyed one incoming range and then merged and reviewed a different
+  one, producing a confident report about the wrong branch. Threading a base through every step was
+  the alternative; rejected because a skill named `reconcile-with-main` earns its clarity from being
+  main-specific, and a general "reconcile against any base" tool is a different thing with different
+  Step 4 traps.
 * **Rebase instead of merge.** A long-running branch is the case this skill targets, and by
   definition it is pushed and often reviewed. Rebasing rewrites history a reviewer has read. It also
   destroys the legibility the skill depends on — after a rebase there is no incoming set to report

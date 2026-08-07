@@ -30,8 +30,12 @@ node .claude/skills/reconcile-with-main/survey.mjs
 
 It fetches `origin/main`, then prints the incoming commits, the upstream renames and deletions, the
 files **both** sides changed, and the files only upstream changed. `--json` for machine-readable
-output, `--no-fetch` to skip the network on a re-run, `--base <branch>` for a base other than
-`main`.
+output, `--no-fetch` to skip the network on a re-run. The base is fixed at `origin/main` — see
+Notes.
+
+A file renamed on one side and edited on the other is still one file, so it is listed under both
+sides as `new/path  (renamed from old/path)`. Read it at its **new** path; that is where the merge
+put both sets of edits.
 
 Commit or stash any working-tree changes before continuing — the survey warns when the tree is
 dirty. If it reports zero incoming commits, the branch is already current and there is nothing to
@@ -64,7 +68,8 @@ this branch call, extend, duplicate, or assume what this commit changed?** Two s
 
 **Sweep A — files both sides changed.** Read each one *as merged*, whole, not as a diff. Git spliced
 two independent edits together; the question is whether the result is coherent, and a diff cannot
-show you that.
+show you that. A renamed entry is the same file under two names — read it at the new path, and take
+the old name into Sweep B as a string to grep for.
 
 **Sweep B — upstream-only changes the branch depends on.** Take the renames and deletions from the
 survey and grep this branch's own changed files for the old names. A call site added on this branch
@@ -134,6 +139,11 @@ full one is worse than not running the skill.
 
 ## Notes
 
+* **The base is `origin/main` everywhere, deliberately.** Step 2 merges it, Step 4 reads its ADR
+  log, and the report describes it, so a survey-only base flag would analyze one incoming range and
+  then merge and review a different one — a report that reads as authoritative and describes the
+  wrong branch. Reconciling against some other base is a different job than this skill; do it by
+  hand rather than by pointing this one somewhere new.
 * **Merge, don't rebase**, unless the user asks. A long-running branch is usually pushed and
   possibly reviewed; rebasing rewrites the history a reviewer has already read and forces every
   other checkout of it to recover. The merge commit is also what makes the incoming set legible
