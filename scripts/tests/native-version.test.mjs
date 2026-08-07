@@ -9,8 +9,19 @@ import {
 } from '../lib/native-version.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
+const { version: packageVersion } = JSON.parse(
+  readFileSync(join(repoRoot, 'package.json'), 'utf8')
+);
 const realGradle = readFileSync(join(repoRoot, ANDROID_GRADLE_PATH), 'utf8');
 const realPbxproj = readFileSync(join(repoRoot, IOS_PBXPROJ_PATH), 'utf8');
+
+it('keeps the committed package and native versions in agreement', () => {
+  const [, androidVersionCode] = realGradle.match(/^\s*versionCode\s+(\d+)\s*$/m);
+  expect(bumpAndroidGradle(realGradle, packageVersion, Number(androidVersionCode))).toBe(
+    realGradle
+  );
+  expect(bumpIosPbxproj(realPbxproj, packageVersion, Number(androidVersionCode))).toBe(realPbxproj);
+});
 
 describe('bumpAndroidGradle', () => {
   it('rewrites the committed build.gradle version lines, preserving indentation', () => {

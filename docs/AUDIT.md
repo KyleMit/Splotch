@@ -52,47 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Testing] Version numbers must agree across three files but have no at-rest drift guard
-
-**File(s):** `android/app/build.gradle` (lines 28–29) · `ios/App/App.xcodeproj/project.pbxproj`
-(lines 315, 322, 337, 344) · `package.json` (line 3) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-The same release identity lives in three places: `package.json:3` (`"version": "1.4.0"`),
-`android/app/build.gradle:28–29` (`versionCode 6`, `versionName "1.4.0"`), and
-`ios/App/App.xcodeproj/project.pbxproj` (`CURRENT_PROJECT_VERSION = 6;` at 315/337,
-`MARKETING_VERSION = 1.4.0;` at 322/344). `scripts/release.mjs` (`bumpVersions`, lines 119–128)
-writes all three in one transaction, and `android/CLAUDE.md` warns "Don't hand-edit
-versionCode/versionName".
-
-But the repo convention (root `CLAUDE.md`, "Cross-file agreement is never maintained by prose")
-requires a drift-guard test when agreeing sites can't share code — exactly the situation here
-(Groovy, pbxproj, JSON). The existing tests don't cover it: `scripts/tests/native-version.test.mjs`
-reads both real files but only asserts the bump transforms are idempotent per file ("is
-byte-identical when re-applying the committed version", lines 28–32 and 77–81) — it never compares
-Android's committed version to iOS's or to `package.json`'s. A hand edit (or a partially applied
-release script run, e.g. killed between `setAndroidVersion` and `setIosVersion`) desyncs the stores'
-versions and nothing goes red until store submission.
-
-#### Proposed solution
-
-Add an at-rest agreement suite to `scripts/tests/native-version.test.mjs` (the file already loads
-both real sources):
-
-```js
-describe('committed native versions agree', () => {
-  it('android versionName === ios MARKETING_VERSION === package.json version', ...);
-  it('android versionCode === ios CURRENT_PROJECT_VERSION', ...);
-});
-```
-
-Parse with the same strict regexes the bump code uses (export them from
-`scripts/lib/native-version.mjs` rather than duplicating). pbxproj carries each key twice (Debug +
-Release); assert all occurrences are identical, not just the first match.
-
 ### [Testing] The `scripts` ↔ `scripts-info` contract (ADR-0019) has no drift guard
 
 **File(s):** `package.json` (lines 8–166 vs 167–325) @ cd04c367
