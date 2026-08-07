@@ -118,7 +118,7 @@ don't offer.
 | `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup: the theme      |
 |                          | pickers) / `toggle` (`aria-pressed`; deselection and multi-select stay with the caller: the |
 |                          | orientation segment, the controls chips). `variant` = `segment` (raised-thumb track) /      |
-|                          | `chip` (bordered toggle grid); sizes `md` / `sm`; `fill={false}` hugs content               |
+|                          | `chip` (borderless toggle grid); sizes `md` / `sm`; `fill={false}` hugs content             |
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |

@@ -17,7 +17,7 @@
   import { SECTIONS, sectionSubtitle, type SectionId, type SectionMeta } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
-  import { TABLET_MIN_SIDE_PX } from '$lib/platform';
+  import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 
   // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
   // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
@@ -87,9 +87,15 @@
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
   let activeMeta = $derived(SECTION_BY_ID[activeSection]);
 
-  // Each reopen lands on the hub (phone) / first section (tablet).
+  // Each reopen lands on the hub (phone) / first section (tablet). The dialog is
+  // closed, never unmounted, so a nav the parent scrolled stays where they left
+  // it — and since the section resets to the first one, that would reopen with
+  // the selected row above the visible top and no highlight anywhere in view.
+  let navEl = $state<HTMLElement>();
   $effect(() => {
-    if (settingsModal.open) view = 'hub';
+    if (!settingsModal.open) return;
+    view = 'hub';
+    navEl?.scrollTo({ top: 0 });
   });
 
   function openSection(id: SectionId) {
@@ -144,7 +150,7 @@
         <h2>Settings</h2>
       </header>
       <div class="settings-split">
-        <nav class="settings-nav" aria-label="Settings sections">
+        <nav class="settings-nav" aria-label="Settings sections" bind:this={navEl}>
           {#each SECTIONS as section (section.id)}
             <button
               class="settings-nav-item"
@@ -368,20 +374,21 @@
     transform: scale(0.99);
   }
 
+  /* Untiled: the icon takes the space the tile's padding used to. The box stays
+     44px as the optical column that keeps every row's title left-aligned — it is
+     layout, not a hit target (the row itself is the target). */
   .hub-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: var(--radius-md);
-    background: var(--brand-wash);
     flex-shrink: 0;
   }
 
   :global(.hub-icon-svg) {
-    width: 22px;
-    height: 22px;
+    width: 38px;
+    height: 38px;
   }
 
   :global(.hub-icon .hub-icon-svg svg) {
@@ -429,14 +436,32 @@
     padding: 0 24px 24px;
   }
 
-  /* Nav never scrolls — only the pane does. */
+  /* The pane is the scroller; the nav only becomes one where the column can't
+     hold all nine sections. The list is a fixed 466px, and the 85vh card gives
+     it the viewport height minus its own chrome — so it scrolls below ~664px of
+     viewport height and fits at or above it. That band is not just the 600px
+     floor: a landscape iPad in Safari lands in it routinely. Contained, so
+     scrolling past either end never chains out to the pane.
+
+     The edge shades are the affordance for it, since a row clipped at a gap
+     leaves the column looking finished and touch scrollbars don't paint until
+     the flick starts. The two `local` covers scroll with the list and sit over
+     the shade at whichever end is already at rest, so each shade appears only
+     while there is more list that way — the pattern needs no scroll listener. */
   .settings-nav {
     flex-shrink: 0;
     width: 232px;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background:
+      linear-gradient(var(--surface) 40%, transparent) top / 100% 24px no-repeat local,
+      linear-gradient(transparent, var(--surface) 60%) bottom / 100% 24px no-repeat local,
+      linear-gradient(var(--border), transparent) top / 100% 9px no-repeat scroll,
+      linear-gradient(transparent, var(--border)) bottom / 100% 9px no-repeat scroll;
   }
 
   .settings-nav-item {
@@ -444,7 +469,9 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 12px 14px;
+    /* Tighter vertically than the hub rows: the taller icon carries most of the
+       row height on its own. */
+    padding: 8px 14px;
     border: none;
     border-radius: var(--radius-md);
     background: transparent;
@@ -474,8 +501,8 @@
   }
 
   :global(.settings-nav-icon) {
-    width: 20px;
-    height: 20px;
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
   }
 

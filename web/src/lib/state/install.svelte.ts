@@ -32,7 +32,7 @@ export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
 
 export const install = $state({
   mode: 'none' as InstallMode,
-  // Parent tapped "not now" — suppress the floating banner (the Setup Guide
+  // Parent tapped "not now" — suppress the floating banner (the Install section
   // in Settings stays available regardless).
   dismissed: false,
   installed: false,
@@ -53,7 +53,7 @@ function isIosSafari() {
 }
 
 // Single source of truth for "what kind of device is this" — consumers (the
-// Setup Guide in Settings) must not re-sniff the UA themselves.
+// Install section in Settings) must not re-sniff the UA themselves.
 export function installDeviceOs(): InstallDeviceOs {
   if (isIosDevice()) return 'ios';
   if (isAndroidBrowser()) return 'android';

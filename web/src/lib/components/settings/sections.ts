@@ -6,14 +6,14 @@ import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 // phone hub with full-page drill-in and the tablet sidebar + content pane —
 // render from this single ordered list, so the two layouts can never drift.
 export const SECTIONS = [
-  { id: 'appearance', label: 'Appearance & Display', icon: 'appearance' },
+  { id: 'appearance', label: 'Appearance', icon: 'appearance' },
   { id: 'sound', label: 'Sound', icon: 'sound' },
+  { id: 'controls', label: 'Buttons', icon: 'controls' },
   { id: 'saving', label: 'Saving', icon: 'save-picture' },
-  { id: 'controls', label: 'Controls & Buttons', icon: 'controls' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
-  { id: 'setup', label: 'Setup Guide', icon: 'setup' },
+  { id: 'setup', label: 'Install', icon: 'setup' },
+  { id: 'feedback', label: 'Feedback', icon: 'feedback' },
   { id: 'whatsnew', label: "What's New", title: 'Updates', icon: 'whats-new' },
-  { id: 'feedback', label: 'Submit Feedback', icon: 'feedback' },
   { id: 'about', label: 'About', icon: 'splotchy' },
 ] as const satisfies readonly {
   id: string;
