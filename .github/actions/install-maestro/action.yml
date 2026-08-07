@@ -15,7 +15,8 @@ runs:
           echo "Installed Maestro version check failed: $maestro_version_output" >&2
           exit 1
         }
-        if [[ "$maestro_version_output" != *"$MAESTRO_VERSION"* ]]; then
-          echo "Installed Maestro version '$maestro_version_output' does not match requested version '$MAESTRO_VERSION'." >&2
+        maestro_version=$(printf '%s\n' "$maestro_version_output" | sed -nE '/^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/p' | tail -n 1)
+        if [[ "$maestro_version" != "$MAESTRO_VERSION" ]]; then
+          echo "Installed Maestro version '$maestro_version' does not match requested version '$MAESTRO_VERSION'. Output: $maestro_version_output" >&2
           exit 1
         fi
