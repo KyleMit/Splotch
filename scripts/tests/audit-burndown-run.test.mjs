@@ -33,6 +33,8 @@ const COMMENT_STORE = join('.audit-work', 'pending-comments.jsonl');
 const LAUNCH_COMMAND_PATH = join('.audit-work', 'launch-command');
 const DEFERRED_PATH = join('docs', 'AUDIT-DEFERRED.md');
 
+const FULL_SUITE_CMD = 'npm test';
+
 const FIRST_TITLE = '[P1][complexity] First finding';
 const SECOND_TITLE = '[P2][dead-code] Second finding';
 const THIRD_TITLE = '[P3][readability] Third finding';
@@ -161,6 +163,19 @@ function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {})
 
 const audit = () => readFileSync(AUDIT_PATH, 'utf8');
 const eventAt = (events, fragment) => events.findIndex((event) => event.includes(fragment));
+
+// finish() reports a failed final push through process.exitCode, and the driver
+// runs inside vitest's own process — so the run's code is read and then put back.
+const exitCodeOf = async (run) => {
+  const before = process.exitCode;
+  process.exitCode = 0;
+  try {
+    await run.execute();
+    return process.exitCode;
+  } finally {
+    process.exitCode = before;
+  }
+};
 const agentTags = (calls) => calls.map((call) => call.tag);
 
 let originalCwd;
@@ -257,6 +272,46 @@ describe('push cadence', () => {
     expect(events.filter((event) => event === 'PUSH')).toHaveLength(1);
     expect(events.indexOf('PUSH')).toBeGreaterThan(eventAt(events, 'backlog empty'));
     expect(events.indexOf('PUSH')).toBeLessThan(eventAt(events, 'finished:'));
+  });
+
+  it('warns and exits non-zero when the final flush cannot push', async () => {
+    // A finished: line and a zero exit are what a supervising agent reads as a
+    // healthy run, so commits still sitting locally have to say so in both.
+    const { events, run } = createRun({
+      env: { PUSH_EVERY: '3', PUSH_TEST_CMD: FULL_SUITE_CMD },
+      respond: () => ({ ok: false }),
+      shellOk: (command) => command !== FULL_SUITE_CMD,
+    });
+
+    expect(await exitCodeOf(run)).toBe(1);
+    expect(events).not.toContain('PUSH');
+    expect(events).toContain(
+      'WARNING: 2 commit(s) not on origin — push manually before the container is reclaimed'
+    );
+    expect(eventAt(events, 'WARNING:')).toBeLessThan(eventAt(events, 'finished:'));
+    expect(events).toContain('finished: 0 fixed, 0 dropped, 2 deferred, 0 remaining');
+  });
+
+  it('leaves a push failure mid-run non-fatal', async () => {
+    // Only the final flush is terminal: a batch boundary that cannot push says
+    // it will retry, and the retry that lands clears the debt.
+    let suiteRuns = 0;
+    const { events, run } = createRun({
+      env: { PUSH_EVERY: '1', PUSH_TEST_CMD: FULL_SUITE_CMD },
+      respond: () => ({ ok: false }),
+      shellOk: (command) => {
+        if (command !== FULL_SUITE_CMD) return true;
+        suiteRuns += 1;
+        return suiteRuns > 1;
+      },
+    });
+
+    expect(await exitCodeOf(run)).toBe(0);
+    expect(events).toContain(
+      `  ${FULL_SUITE_CMD} red at batch boundary — holding push, will retry next batch`
+    );
+    expect(events.filter((event) => event === 'PUSH')).toHaveLength(1);
+    expect(events.some((event) => event.startsWith('WARNING:'))).toBe(false);
   });
 
   it('halts the run once deferrals go consecutive', async () => {

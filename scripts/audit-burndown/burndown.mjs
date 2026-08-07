@@ -1034,7 +1034,12 @@ export function createBurndownRun({ config, effects }) {
 
   function finish() {
     // Flush anything the last boundary held back (a failed push, or PUSH_EVERY > 1).
-    if (sincePush > 0) pushBatch({ final: true });
+    if (sincePush > 0 && !pushBatch({ final: true })) {
+      logLine(
+        `WARNING: ${sincePush} commit(s) not on origin — push manually before the container is reclaimed`
+      );
+      process.exitCode = 1;
+    }
 
     // Retire the compaction snapshot: nothing else deletes it, and its reader hook
     // would otherwise announce "a burndown was in progress" to every post-compaction
