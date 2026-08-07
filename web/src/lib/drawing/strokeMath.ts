@@ -95,6 +95,11 @@ export function edgeSwipeDirectionDecided(travel: number, renderScale: number): 
 export const POINTER_RESUME_GAP_MS = 100;
 export const POINTER_RESUME_JUMP_RATIO = 0.1;
 
+// After a color/tool change, ignore touch/mouse pointerdowns for a short window
+// so the tap that picked the color doesn't immediately start a stray stroke.
+// Pen input is precise enough to skip the debounce.
+export const COLOR_CHANGE_DEBOUNCE_MS = 100;
+
 // Prevents a zero elapsed span and caps the resulting stroke speed.
 const MIN_SPEED_SPAN_MS = 1;
 
