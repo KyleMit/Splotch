@@ -25,6 +25,7 @@ import {
   nightFillGood,
   nightFillDaytime,
   nightFillDrift,
+  nightFillDriftSubBlob,
   nightFillReinked,
 } from './fixtures/synthetic.mjs';
 
@@ -70,37 +71,73 @@ describe('scoreLineColor — the outlines must stay white', () => {
 
 // Every scorer indexes the FILL's raster with the SOURCE's width/height, so each
 // must resize the fill to the source's exact dimensions rather than to its own
-// aspect ratio — otherwise the reads run off the end of (or short of) the fill,
-// yielding undefined -> NaN lumas that flow into the medians and ratios with no
-// error. bin/audit-golden.mjs is the exposed caller: it scores a committed night
-// raw against the line art with no alignment step of its own.
-const ASPECT_SKEW_PX = 16; // enough off-square to shift the fill a multiple of the gates' 1px slack
-async function skewedNightFill(dy) {
-  const fill = await nightFillGood();
-  const { width, height } = await sharp(fill).metadata();
-  return sharp(fill)
-    .resize(width, height + dy, { fit: 'fill' })
+// aspect ratio. Resized independently, the two rasters end up different heights
+// and the loops read the wrong pixels — misregistered rows, or past the end of
+// the fill entirely — which silently pushes a clean fill over a gate (invented
+// outlines, dark lines, a daytime median) instead of raising anything.
+// bin/audit-golden.mjs is the exposed caller: it scores a committed night raw
+// against the line art with no alignment step of its own.
+//
+// Skewing then scoring is a round trip through the scorers' own resize, so a
+// skewed fill must land where the matched one did, within resampling slack —
+// asserted against the matched score rather than the loose pass thresholds,
+// which a misindexed read can satisfy by accident.
+const ASPECT_SKEW_FACTOR = 2; // 2:1 against the square source dwarfs the gates' 1px registration slack
+const SKEW_BG_LUMA_SLACK = 1;
+const SKEW_DRIFT_RATIO_SLACK = 0.001; // a quarter of DRIFT_THRESHOLD_DEFAULT
+const SKEW_LINE_WHITE_SLACK = 5;
+
+async function skewFill(fillBuf, factor) {
+  const { width, height } = await sharp(fillBuf).metadata();
+  return sharp(fillBuf)
+    .resize(width, Math.round(height * factor), { fit: 'fill' })
     .png()
     .toBuffer();
 }
 
-describe('a fill whose aspect ratio differs from the source scores against the source', () => {
-  for (const dy of [ASPECT_SKEW_PX, -ASPECT_SKEW_PX]) {
-    it(`scores a fill ${dy}px off the source's aspect ratio like the matched fill`, async () => {
-      const source = await nightSource();
-      const fill = await skewedNightFill(dy);
+async function scoreAll(fillBuf, sourceBuf) {
+  return {
+    bgLuma: (await scoreNightness(fillBuf, sourceBuf)).bgLuma,
+    ratio: (await scoreDrift(fillBuf, sourceBuf)).ratio,
+    lineWhite: (await scoreLineColor(fillBuf, sourceBuf)).lineWhite,
+  };
+}
 
-      const night = await scoreNightness(fill, source);
-      const drift = await scoreDrift(fill, source);
-      const line = await scoreLineColor(fill, source);
+describe('a fill whose aspect ratio differs from the source is scored against the source', () => {
+  for (const factor of [ASPECT_SKEW_FACTOR, 1 / ASPECT_SKEW_FACTOR]) {
+    it(`scores a fill ${factor}x the source's height like the matched fill`, async () => {
+      const source = await nightSource();
+      const matched = await nightFillGood();
+      const matchedScores = await scoreAll(matched, source);
+      const skewedScores = await scoreAll(await skewFill(matched, factor), source);
 
       // Soft so a regression reports every scorer that broke, not just the first.
-      expect.soft(Number.isFinite(night.bgLuma)).toBe(true);
-      expect.soft(night.bgLuma).toBeLessThan(NIGHT_BG_LUMA_MAX_DEFAULT);
-      expect.soft(Number.isFinite(drift.ratio)).toBe(true);
-      expect.soft(drift.ratio).toBeLessThanOrEqual(DRIFT_THRESHOLD_DEFAULT);
-      expect.soft(Number.isFinite(line.lineWhite)).toBe(true);
-      expect.soft(line.lineWhite).toBeGreaterThanOrEqual(LINE_WHITE_MIN_DEFAULT);
+      expect
+        .soft(Math.abs(skewedScores.bgLuma - matchedScores.bgLuma))
+        .toBeLessThanOrEqual(SKEW_BG_LUMA_SLACK);
+      expect
+        .soft(Math.abs(skewedScores.ratio - matchedScores.ratio))
+        .toBeLessThanOrEqual(SKEW_DRIFT_RATIO_SLACK);
+      expect
+        .soft(Math.abs(skewedScores.lineWhite - matchedScores.lineWhite))
+        .toBeLessThanOrEqual(SKEW_LINE_WHITE_SLACK);
+    });
+
+    it(`still flags each defect through a ${factor}x skew`, async () => {
+      const source = await nightSource();
+      const day = await skewFill(await nightFillDaytime(), factor);
+      const drifted = await skewFill(await nightFillDriftSubBlob(), factor);
+      const reinked = await skewFill(await nightFillReinked(), factor);
+
+      expect
+        .soft((await scoreNightness(day, source)).bgLuma)
+        .toBeGreaterThan(NIGHT_BG_LUMA_MAX_DEFAULT);
+      expect
+        .soft((await scoreDrift(drifted, source)).ratio)
+        .toBeGreaterThan(DRIFT_THRESHOLD_DEFAULT);
+      expect
+        .soft((await scoreLineColor(reinked, source)).lineWhite)
+        .toBeLessThan(LINE_WHITE_MIN_DEFAULT);
     });
   }
 });

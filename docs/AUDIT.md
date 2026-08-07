@@ -44,45 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] night-scores scorers index the fill raster with the source's dimensions after independent resizes
-
-**File(s):** `tools/asset-gen/lib/night-scores.mjs` (`scoreNightness` lines 51–77, `scoreDrift`
-lines 79–119, `scoreLineColor` lines 138–166) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-All three scorers resize the source and the fill *independently* with `fit: 'inside'` (fixed width,
-height derived from each image's own aspect ratio), then take `w`/`h` from the **source** and index
-into the **fill's** data with them, e.g. `scoreDrift`:
-
-```js
-const t = await sharp(fillBuf).resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })...
-const w = s.info.width;
-const h = s.info.height;
-...
-const r = t.data[i * 3];   // i ranges over the SOURCE's w*h
-```
-
-If the fill's aspect ratio differs from the source's by even a few pixels — a model output that
-wasn't normalized, or a future caller that skips the `resize(width, height, { fit: 'fill' })` step
-`bin/gen-coloring-fills-dark.mjs:243` currently performs — the reads run past `t.data`'s end (or
-stop short), yielding `undefined` → `NaN` lumas that flow into medians and ratios with **no error**:
-the gate returns plausible-looking garbage instead of throwing. `scoreEyeFill`
-(`eye-fill.mjs:335–338`) and `compositeNight` (`night-composite.mjs:18–22`) already show the safe
-pattern: resize the second image to the first's exact raster with `fit: 'fill'`.
-
-#### Proposed solution
-
-In each scorer, resize the fill to the source's decoded dimensions:
-`.resize(s.info.width, s.info.height, { fit: 'fill' })` (requires decoding the source first, which
-the `preparedSource` refactor from the `scoreNightFillGates` finding gives for free). Alternatively,
-a two-line assert `if (t.info.width !== w || t.info.height !== h) throw ...` turns the silent
-failure into a loud one at minimal cost. The `fit: 'fill'` variant is preferable — a sub-pixel
-aspect mismatch is exactly the case the ±slack tolerances are built to absorb, and it keeps the
-scorer usable on un-normalized buffers.
-
 ### [Correctness] judgeNightEyes pairs night and light cores by array index on an undocumented invariant
 
 **File(s):** `tools/asset-gen/lib/eye-fill.mjs` (`judgeNightEyes`, lines 345–360; the
