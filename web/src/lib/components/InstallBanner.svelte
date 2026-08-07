@@ -16,7 +16,7 @@
 
   // The banner sits above the corner controls (the actions toggle and the Settings Button), so
   // it must not linger: once the child has kept drawing past it, clear it and
-  // hand off to the Setup Guide in Settings with a short parting message.
+  // hand off to the Install section in Settings with a short parting message.
   const PARTING_MESSAGE_MS = 4000;
 
   // Shared motion vocabulary for the banner's enter/exit transitions.

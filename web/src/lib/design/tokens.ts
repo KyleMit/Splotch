@@ -193,8 +193,9 @@ export interface ThemeTokens {
   borderWarmStrong: string;
   /**
    * Every inactive track: the toggle-switch off state, slider rails, and
-   * segmented-picker tracks — one recessed gray, so tracks read as the same
-   * kind of thing wherever they appear. Its value is pinned to hold 4.5:1
+   * segmented-picker grounds — the segment variant's track and the chip
+   * variant's unselected fill alike — one recessed gray, so tracks read as the
+   * same kind of thing wherever they appear. Its value is pinned to hold 4.5:1
    * under --text-soft in both themes, because segmented pickers set their
    * unselected labels directly on the track (a11y.spec.ts enforces it).
    */

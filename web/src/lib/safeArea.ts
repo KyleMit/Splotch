@@ -17,7 +17,7 @@ let safeAreaProbe: HTMLDivElement | undefined;
 
 export function measureSafeAreaInsets(): SafeAreaInsets {
   if (typeof document === 'undefined') return { ...ZERO_INSETS };
-  if (!safeAreaProbe) {
+  if (!safeAreaProbe?.isConnected) {
     safeAreaProbe = document.createElement('div');
     safeAreaProbe.style.cssText =
       'position:fixed;top:env(safe-area-inset-top);right:env(safe-area-inset-right);' +

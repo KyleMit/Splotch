@@ -145,4 +145,47 @@ describe('performance profile analysis', () => {
 
     expect(summary.longTasks).toEqual({ count: 0, totalMs: 0, longestMs: 0 });
   });
+
+  it('renders "n/a" and no Delta row for an unmeasured before-heap sample', () => {
+    const summary = analyze([], { heap: { beforeBytes: null, afterBytes: 10 * 1024 * 1024 } });
+    const report = renderReport(summary);
+
+    expect(report).toContain('| JS heap before | n/a |');
+    expect(report).toContain('| JS heap after | 10.0 MiB |');
+    expect(report).not.toContain('Delta');
+  });
+
+  it('renders a real 0-byte heap sample normally, including the Delta row', () => {
+    const summary = analyze([], { heap: { beforeBytes: 0, afterBytes: 0 } });
+    const report = renderReport(summary);
+
+    expect(report).toContain('| JS heap before | 0.0 MiB |');
+    expect(report).toContain('| JS heap after | 0.0 MiB |');
+    expect(report).toContain('| Delta | 0.0 MiB |');
+  });
+
+  it('warns about beats the session skipped', () => {
+    const summary = analyze([], {
+      settings: { skippedBeats: ['undo: no #undoButton', 'clear: timeout'] },
+    });
+    const report = renderReport(summary);
+
+    expect(report).toContain('## ⚠ Skipped beats');
+    expect(report).toContain('- undo: no #undoButton');
+    expect(report).toContain('- clear: timeout');
+  });
+
+  it('omits the skipped-beat warning when every beat succeeded', () => {
+    const summary = analyze([], { settings: { target: 'web' } });
+
+    expect(renderReport(summary)).not.toContain('Skipped beats');
+  });
+
+  it('reports no heap metrics captured when the after-heap sample is unmeasured', () => {
+    const summary = analyze([], { heap: { beforeBytes: 5 * 1024 * 1024, afterBytes: null } });
+    const report = renderReport(summary);
+
+    expect(report).toContain('_No heap metrics captured._');
+    expect(report).not.toContain('JS heap before');
+  });
 });

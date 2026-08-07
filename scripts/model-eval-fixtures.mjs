@@ -24,6 +24,7 @@ import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:f
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
+import { fail } from './lib/proc.mjs';
 
 const OUT = join(ROOT, 'web/tests/model-eval/inputs');
 const COLORING = join(ROOT, 'web/static/coloring');
@@ -74,11 +75,24 @@ function scribbleSet(box, rng, rows, w) {
   return out;
 }
 
-// Resolve a coloring asset to a data URI (or null if it doesn't exist).
-function assetUri(book, page, orientation, kind) {
-  const p = join(COLORING, book, `${page}-${orientation}.${kind}.webp`);
-  if (!existsSync(p)) return null;
-  return `data:image/webp;base64,${readFileSync(p).toString('base64')}`;
+// Resolve a coloring asset, carrying the attempted path alongside the data URI (null
+// if it doesn't exist) so a missing asset can be reported by path, not just by id.
+function resolveAsset(book, page, orientation, kind) {
+  const path = join(COLORING, book, `${page}-${orientation}.${kind}.webp`);
+  const uri = existsSync(path)
+    ? `data:image/webp;base64,${readFileSync(path).toString('base64')}`
+    : null;
+  return { uri, path };
+}
+
+// Picks the first resolved asset among fallback candidates (e.g. chalk-or-outline),
+// keeping every attempted path so a fully-missing chain still reports where it looked.
+// Spread directly into a layer: { op: 'outline', ...pickAsset(resolveAsset(...)) }.
+function pickAsset(...candidates) {
+  return {
+    uri: candidates.find((c) => c.uri !== null)?.uri ?? null,
+    paths: candidates.map((c) => c.path),
+  };
 }
 
 // --- corpus specification -------------------------------------------------------
@@ -121,7 +135,7 @@ const C = Object.fromEntries(PALETTE.map((c) => [c.label.toLowerCase(), c.hex]))
     dim: o,
     layers: [
       ...(light.length ? [{ op: 'strokes', strokes: light, color: C.orange }] : []),
-      { op: 'outline', uri: assetUri(book, page, o, 'outline') },
+      { op: 'outline', ...pickAsset(resolveAsset(book, page, o, 'outline')) },
     ],
   });
 });
@@ -153,7 +167,7 @@ const C = Object.fromEntries(PALETTE.map((c) => [c.label.toLowerCase(), c.hex]))
       strokes: scribbleSet({ x: cx - rx, y: cy - ry, w: rx * 2, h: ry * 2 }, rng, 6, 22),
     });
   }
-  layers.push({ op: 'outline', uri: assetUri(book, page, o, 'outline') });
+  layers.push({ op: 'outline', ...pickAsset(resolveAsset(book, page, o, 'outline')) });
   add({ id: `coloring-manual__${page}`, theme: 'light', dim: o, layers });
 });
 
@@ -174,8 +188,8 @@ const C = Object.fromEntries(PALETTE.map((c) => [c.label.toLowerCase(), c.hex]))
     theme: 'light',
     dim: o,
     layers: [
-      { op: 'reveal', uri: assetUri(book, page, o, 'light'), strokes: reveal },
-      { op: 'outline', uri: assetUri(book, page, o, 'outline') },
+      { op: 'reveal', ...pickAsset(resolveAsset(book, page, o, 'light')), strokes: reveal },
+      { op: 'outline', ...pickAsset(resolveAsset(book, page, o, 'outline')) },
     ],
   });
 });
@@ -192,11 +206,13 @@ const C = Object.fromEntries(PALETTE.map((c) => [c.label.toLowerCase(), c.hex]))
 ].forEach(([book, page, o, mode], i) => {
   const rng = makeRng(401 + i);
   const b = box(o, 0.1);
-  const chalk = assetUri(book, page, o, 'chalk') || assetUri(book, page, o, 'outline');
   const layers = [];
   if (mode === 'reveal') {
-    const night = assetUri(book, page, o, 'night') || assetUri(book, page, o, 'light');
-    layers.push({ op: 'reveal', uri: night, strokes: wanderSet(b, rng, 5, 52) });
+    layers.push({
+      op: 'reveal',
+      ...pickAsset(resolveAsset(book, page, o, 'night'), resolveAsset(book, page, o, 'light')),
+      strokes: wanderSet(b, rng, 5, 52),
+    });
   } else if (mode === 'pen') {
     const cols = [C.teal, C.purple, C.yellow, C.pink];
     for (let k = 0; k < 3; k++) {
@@ -214,7 +230,11 @@ const C = Object.fromEntries(PALETTE.map((c) => [c.label.toLowerCase(), c.hex]))
       });
     }
   }
-  layers.push({ op: 'outline', uri: chalk, invert: true });
+  layers.push({
+    op: 'outline',
+    ...pickAsset(resolveAsset(book, page, o, 'chalk'), resolveAsset(book, page, o, 'outline')),
+    invert: true,
+  });
   add({ id: `night__${page}`, theme: 'night', dim: o, layers });
 });
 
@@ -329,6 +349,17 @@ add({
   dim: 'tall',
   layers: [{ op: 'scene', scene: 'toysword' }],
 });
+
+// Any layer carrying a `uri` (built via pickAsset/resolveAsset above) resolves it from
+// the coloring assets on disk; catch a missing or renamed one here, in one pass across
+// the whole corpus with the path(s) it looked for, rather than letting it render as a
+// silent blank layer.
+const missingAssets = specs.flatMap((spec) =>
+  spec.layers
+    .filter((l) => 'uri' in l && l.uri === null)
+    .map((l) => `${spec.id} (${l.op}): ${l.paths.join(' or ')}`)
+);
+if (missingAssets.length) fail(`Missing coloring assets for: ${missingAssets.join('; ')}`);
 
 // --- in-page renderer -----------------------------------------------------------
 // Lives in its own file so it is real, lintable browser JS rather than a template string.

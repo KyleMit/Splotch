@@ -33,6 +33,8 @@ const COMMENT_STORE = join('.audit-work', 'pending-comments.jsonl');
 const LAUNCH_COMMAND_PATH = join('.audit-work', 'launch-command');
 const DEFERRED_PATH = join('docs', 'AUDIT-DEFERRED.md');
 
+const FULL_SUITE_CMD = 'npm test';
+
 const FIRST_TITLE = '[P1][complexity] First finding';
 const SECOND_TITLE = '[P2][dead-code] Second finding';
 const THIRD_TITLE = '[P3][readability] Third finding';
@@ -72,11 +74,12 @@ const approved = { ok: true, structured: { status: 'APPROVED', findings: [] } };
 
 // Drives one run against a temp repo. `respond` stands in for every agent call,
 // `shellResult` for the deterministic gates, `shellOk` for the tree-is-green
-// checks, and `hasCommand` for preflight's runner-binary probe. Every observable
-// the driver emits in order — its log lines and its pushes — lands in one
-// `events` array, because what distinguishes a push at the cadence from the exit
-// flush is *when* it happens, not what it looks like.
-function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {}) {
+// checks, `gitOk` for the git commands whose exit status the driver branches on
+// (the push above all), and `hasCommand` for preflight's runner-binary probe.
+// Every observable the driver emits in order — its log lines and its pushes —
+// lands in one `events` array, because what distinguishes a push at the cadence
+// from the exit flush is *when* it happens, not what it looks like.
+function createRun({ env = {}, respond, shellResult, shellOk, gitOk, hasCommand } = {}) {
   const config = readConfig({ BUNDLE_SPEC: '', ...env });
   const events = [];
   const gitCalls = [];
@@ -115,8 +118,11 @@ function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {})
     },
     gitOk: (...args) => {
       gitCalls.push(args);
-      if (args[0] === 'push') events.push('PUSH');
-      return true;
+      const ok = gitOk?.(...args) ?? true;
+      // A push the remote rejected is not a push, so only a landed one joins the
+      // event stream the cadence assertions read.
+      if (args[0] === 'push' && ok) events.push('PUSH');
+      return ok;
     },
     gitOut: (...args) => {
       gitCalls.push(args);
@@ -161,6 +167,19 @@ function createRun({ env = {}, respond, shellResult, shellOk, hasCommand } = {})
 
 const audit = () => readFileSync(AUDIT_PATH, 'utf8');
 const eventAt = (events, fragment) => events.findIndex((event) => event.includes(fragment));
+
+// finish() reports a failed final push through process.exitCode, and the driver
+// runs inside vitest's own process — so the run's code is read and then put back.
+const exitCodeOf = async (run) => {
+  const before = process.exitCode;
+  process.exitCode = 0;
+  try {
+    await run.execute();
+    return process.exitCode;
+  } finally {
+    process.exitCode = before;
+  }
+};
 const agentTags = (calls) => calls.map((call) => call.tag);
 
 let originalCwd;
@@ -257,6 +276,69 @@ describe('push cadence', () => {
     expect(events.filter((event) => event === 'PUSH')).toHaveLength(1);
     expect(events.indexOf('PUSH')).toBeGreaterThan(eventAt(events, 'backlog empty'));
     expect(events.indexOf('PUSH')).toBeLessThan(eventAt(events, 'finished:'));
+  });
+
+  it('warns and exits non-zero when the final flush is gated by a red suite', async () => {
+    // A finished: line and a zero exit are what a supervising agent reads as a
+    // healthy run, so commits still sitting locally have to say so in both.
+    const { events, run } = createRun({
+      env: { PUSH_EVERY: '3', PUSH_TEST_CMD: FULL_SUITE_CMD },
+      respond: () => ({ ok: false }),
+      shellOk: (command) => command !== FULL_SUITE_CMD,
+    });
+
+    expect(await exitCodeOf(run)).toBe(1);
+    expect(events).not.toContain('PUSH');
+    expect(events).toContain(
+      `  ${FULL_SUITE_CMD} red on the final batch — commits held locally, not pushed`
+    );
+    expect(events).toContain(
+      'WARNING: 2 commit(s) not on origin — push manually before the container is reclaimed'
+    );
+    expect(eventAt(events, 'WARNING:')).toBeLessThan(eventAt(events, 'finished:'));
+    expect(events).toContain('finished: 0 fixed, 0 dropped, 2 deferred, 0 remaining');
+  });
+
+  it('warns and exits non-zero when the final push itself is rejected', async () => {
+    // The other way the flush ends with commits held locally. There is no next
+    // batch to retry on, so the log has to ask the operator for the push.
+    const { events, run } = createRun({
+      env: { PUSH_EVERY: '3' },
+      respond: () => ({ ok: false }),
+      gitOk: (...args) => args[0] !== 'push',
+    });
+
+    expect(await exitCodeOf(run)).toBe(1);
+    expect(events).toContain(
+      '  push failed on the final batch — commits held locally, push them manually'
+    );
+    expect(events).not.toContain('  push failed — continuing, will retry next batch');
+    expect(events).toContain(
+      'WARNING: 2 commit(s) not on origin — push manually before the container is reclaimed'
+    );
+    expect(events).toContain('finished: 0 fixed, 0 dropped, 2 deferred, 0 remaining');
+  });
+
+  it('leaves a push failure mid-run non-fatal', async () => {
+    // Only the final flush is terminal: a batch boundary that cannot push says
+    // it will retry, and the retry that lands clears the debt.
+    let suiteRuns = 0;
+    const { events, run } = createRun({
+      env: { PUSH_EVERY: '1', PUSH_TEST_CMD: FULL_SUITE_CMD },
+      respond: () => ({ ok: false }),
+      shellOk: (command) => {
+        if (command !== FULL_SUITE_CMD) return true;
+        suiteRuns += 1;
+        return suiteRuns > 1;
+      },
+    });
+
+    expect(await exitCodeOf(run)).toBe(0);
+    expect(events).toContain(
+      `  ${FULL_SUITE_CMD} red at batch boundary — holding push, will retry next batch`
+    );
+    expect(events.filter((event) => event === 'PUSH')).toHaveLength(1);
+    expect(events.some((event) => event.startsWith('WARNING:'))).toBe(false);
   });
 
   it('halts the run once deferrals go consecutive', async () => {
@@ -442,6 +524,35 @@ describe('close-out', () => {
   });
 });
 
+describe('iteration tags', () => {
+  // A drop is an outcome like any other, so the tag has to advance past it. When
+  // it did not, the next finding reused the dropped one's tag: agent-runner.mjs
+  // overwrote the drop's `<tag>.json` verify envelope and appended both
+  // findings' stderr into one `<tag>.err`.
+  it('gives the finding after an invalid drop a tag of its own', async () => {
+    let verified = 0;
+    const { agentCalls, run } = createRun({
+      respond: (options, api) => {
+        if (options.role === 'verify') {
+          verified += 1;
+          return verified === 1 ? invalidVerdict() : verifiedValid(api);
+        }
+        if (options.role === 'implement') return implemented(api);
+        return approved;
+      },
+    });
+
+    await run.execute();
+
+    expect(agentTags(agentCalls)).toEqual([
+      'iter0001.verify',
+      'iter0002.verify',
+      'iter0002.impl',
+      'iter0002.review1',
+    ]);
+  });
+});
+
 describe('review rounds', () => {
   it('resumes the implementer session for a rejected fix and re-reviews it', async () => {
     const { agentCalls, run } = createRun({
@@ -499,6 +610,42 @@ describe('review rounds', () => {
     expect(agentCalls.at(-2).prompt).toContain("does not pass the driver's gates");
     expect(agentCalls.at(-2).prompt).toContain('error TS2339');
     expect(eventAt(events, 'round 1: gates red')).toBeGreaterThan(-1);
+  });
+
+  // A fix round that reports failure has committed nothing, but its envelope can
+  // still carry a well-formed sha left over from the round before. Treating that
+  // as the round's own commit would send the reviewer a range the round did not
+  // write, and an approval would amend it.
+  it('defers a failed fix round that still reports a sha, spending no reviewer on it', async () => {
+    const staleSha = 'f'.repeat(40);
+    const { agentCalls, events, run } = createRun({
+      env: { MAX_ISSUES: '1', MAX_DEFERRALS: '1' },
+      respond: (options, api) => {
+        if (options.role === 'verify') return verifiedValid(api);
+        if (options.role === 'implement')
+          return options.sessionId
+            ? { ok: true, sessionId: 'impl-session', structured: { success: false, sha: staleSha } }
+            : implemented(api);
+        return {
+          ok: true,
+          structured: { status: 'CHANGES_REQUIRED', findings: ['missed a case'] },
+        };
+      },
+    });
+
+    await expect(run.execute()).rejects.toThrow('1 consecutive deferrals');
+
+    expect(agentTags(agentCalls)).toEqual([
+      'iter0001.verify',
+      'iter0001.impl',
+      'iter0001.review1',
+      'iter0001.fix1',
+    ]);
+    expect(events).toContain(
+      `  implementer reported ffffffffffff — git says nothing was committed`
+    );
+    expect(eventAt(events, 'implementer failed to deliver a fix round')).toBeGreaterThan(-1);
+    expect(readFileSync(DEFERRED_PATH, 'utf8')).toContain('implementer failed to deliver a fix');
   });
 
   it('defers an unreviewable fix as unreviewed, not as rejected', async () => {

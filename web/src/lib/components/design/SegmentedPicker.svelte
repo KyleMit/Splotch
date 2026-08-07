@@ -16,8 +16,8 @@
   // Design-system picker primitive: the one owner of the selected-state
   // control pattern Button deliberately excludes — those are pickers, not
   // actions. Two skins share the option machinery: the iOS-style segmented
-  // track whose active option reads as a raised card, and the bordered toggle
-  // chips. Selection *semantics* stay with the caller: onSelect always fires
+  // track whose active option reads as a raised card, and the borderless
+  // toggle chips. Selection *semantics* stay with the caller: onSelect always fires
   // with the clicked value, so a radio caller sets it, while a toggle caller
   // may release it (the orientation segment) or flip it in a set (the chips).
   interface Props {
@@ -32,7 +32,7 @@
     onSelect: (value: T) => void;
     /** radio = choose-one (radiogroup/aria-checked); toggle = pressable options (group/aria-pressed). */
     mode?: 'radio' | 'toggle';
-    /** segment = raised-thumb track; chip = bordered toggle grid. */
+    /** segment = raised-thumb track; chip = borderless toggle grid. */
     variant?: 'segment' | 'chip';
     size?: 'md' | 'sm';
     /** false = the track hugs its content instead of stretching full-width. */
@@ -172,7 +172,11 @@
     flex-shrink: 0;
   }
 
-  /* Bordered toggle chips in a two-column grid — the independent-toggles skin. */
+  /* Borderless toggle chips in a two-column grid — the independent-toggles
+     skin. No hairline: an unselected chip rests on the same recessed
+     --control-track the segment variant's track uses, which reads as its own
+     surface without one and leaves the whole chip box for the icon instead of
+     spending it on the border and its inset. */
   .chip {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -182,22 +186,20 @@
   .chip .option {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 10px;
     min-width: 0;
     padding: 11px 12px;
-    border: var(--border-width) solid var(--border);
     border-radius: var(--radius-md);
-    background: var(--surface-2);
+    background: var(--control-track);
     font-size: var(--font-size-sm);
     transition:
       background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
+      color var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
     .chip .option:not(.active):hover {
-      background: var(--surface-hover);
+      background: var(--control-track-hover);
       color: var(--text-strong);
     }
   }
@@ -206,14 +208,12 @@
      --brand is only 3.4:1 against --on-brand (fails WCAG AA at body size). */
   .chip .option.active {
     background: var(--brand-solid);
-    border-color: var(--brand-solid);
     color: var(--on-brand);
   }
 
   @media (hover: hover) {
     .chip .option.active:hover {
       background: var(--brand-solid-hover);
-      border-color: var(--brand-solid-hover);
     }
   }
 
@@ -227,8 +227,8 @@
   }
 
   .chip :global(.picker-option-icon) {
-    width: 17px;
-    height: 17px;
+    width: 26px;
+    height: 26px;
     flex-shrink: 0;
   }
 

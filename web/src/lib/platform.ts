@@ -1,5 +1,7 @@
 import { browser } from '$app/environment';
 
+import { TABLET_MIN_SIDE_PX } from './breakpoints';
+
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather
 // than importing @capacitor/core here so this module stays safe to evaluate
@@ -73,19 +75,6 @@ export function getPlatform(): Platform {
   const platform = globalThis.Capacitor?.getPlatform?.();
   return platform === 'android' || platform === 'ios' ? platform : 'web';
 }
-
-// The tablet-class floor, shared by every site that classifies a device by size:
-// this module's orientation-lock capability check, settings' default orientation
-// (`defaultForceLandscapeOrientation`), and SettingsModal's compact-shell media
-// query, which derives its max-height from this value. iPad Mini and larger
-// tablets have a smallest side around 744px and Android tablet layouts commonly
-// start at 600dp; phone-class devices stay below this even in landscape.
-//
-// The sites measure different things on purpose — screen size here, viewport
-// size in settings — but they must agree on where the class boundary sits, or
-// default orientation, native lock capability and shell selection disagree on
-// the same device.
-export const TABLET_MIN_SIDE_PX = 600;
 
 /**
  * Whether the app may force its own device orientation.

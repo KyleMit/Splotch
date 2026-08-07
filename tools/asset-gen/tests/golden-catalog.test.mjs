@@ -1,7 +1,15 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { scoreEyeFill } from '../lib/eye-fill.mjs';
-import { diffGoldenPage, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
+import {
+  diffGoldenPage,
+  GOLDEN_METRICS,
+  GOLDEN_VERDICTS,
+  scoreGoldenNightEyes,
+  scoreGoldenPage,
+} from '../lib/golden-catalog.mjs';
 import { loadTrio } from './fixtures/composite-eye/load.mjs';
+
+const get = (obj, path) => path.split('.').reduce((value, key) => value?.[key], obj);
 
 async function scoreFixture(name) {
   const { comp: composite, light, pen } = await loadTrio(name);
@@ -89,5 +97,70 @@ describe('golden catalog blank-orb verdict', () => {
     const out = diff(was, now);
     expect(out.regressions).toContain('fixture/page  night.orbOk ok -> FAIL');
     expect(out.regressions).toContain('fixture/page  night.orbFailed 0 -> 1');
+  });
+});
+
+describe('golden catalog missing-key detection', () => {
+  it('reports a key dropped from the current score shape as a loud regression', () => {
+    const out = diff({ outline: { solidOk: true } }, { outline: {} });
+
+    expect(out.regressions).toContain(
+      'fixture/page  outline.solidOk MISSING from score shape (current side)'
+    );
+  });
+
+  it('reports a key added to the current score shape as a loud regression', () => {
+    const out = diff({ outline: {} }, { outline: { solidOk: true } });
+
+    expect(out.regressions).toContain(
+      'fixture/page  outline.solidOk MISSING from score shape (golden side)'
+    );
+  });
+
+  it('stays silent when a whole section is structurally absent on both sides', () => {
+    const out = diff({}, {});
+
+    expect(out.regressions).toEqual([]);
+  });
+
+  it('reports a page gaining a whole section (a freshly committed raw fill) as informational, not one regression per leaf', () => {
+    const out = diff(
+      { outline: { solidOk: true } },
+      {
+        outline: { solidOk: true },
+        light: {
+          keep: 0.99,
+          localKeep: 0.95,
+          eyeCores: 2,
+          eyeLively: 2,
+          driftOk: true,
+          eyesOk: true,
+        },
+      }
+    );
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  light section added (re-freeze to adopt)');
+  });
+
+  it('reports a page losing a whole section as informational, not one regression per leaf', () => {
+    const out = diff(
+      { outline: { solidOk: true }, night: { orbOk: true, orbFailed: 0, orbMinCoreDark: 0.4 } },
+      { outline: { solidOk: true } }
+    );
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  night section removed (re-freeze to adopt)');
+  });
+});
+
+describe('golden catalog shape drift guard', () => {
+  it('scores a real fixture through the extracted producer and resolves every catalog path', async () => {
+    const { comp: nightRaw, light: lightRaw, pen } = await loadTrio('horse-tall');
+    const entry = await scoreGoldenPage({ pen, lightRaw, nightRaw, chalk: null });
+
+    for (const path of GOLDEN_VERDICTS) expect(get(entry, path), path).not.toBeUndefined();
+    for (const path of Object.keys(GOLDEN_METRICS))
+      expect(get(entry, path), path).not.toBeUndefined();
   });
 });

@@ -11,7 +11,7 @@ import {
 } from '../storage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
-import { TABLET_MIN_SIDE_PX } from '$lib/platform';
+import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { CredentialKind } from '$lib/aiCredential';
 
 // Phone-class devices stay below the shared tablet floor even in landscape, so

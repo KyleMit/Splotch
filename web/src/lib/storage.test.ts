@@ -257,6 +257,81 @@ describe('hydrateDurableStorage', () => {
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBe('stale-plaintext-key');
   });
 
+  it('reconciles the remaining keys when a restoring setItem throws', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.theme, 'lost-theme');
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'recovered');
+    const realSetItem = localStorage.setItem.bind(localStorage);
+    const setItem = vi
+      .spyOn(localStorage, 'setItem')
+      .mockImplementation((key: string, value: string) => {
+        if (key === STORAGE_KEYS.theme) throw new DOMException('quota', 'QuotaExceededError');
+        realSetItem(key, value);
+      });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let restored: boolean;
+    try {
+      restored = await hydrateDurableStorage();
+    } finally {
+      setItem.mockRestore();
+      warn.mockRestore();
+    }
+
+    expect(restored).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.theme)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('recovered');
+  });
+
+  it('reports no restore, and notifies nobody, when every restoring setItem throws', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.theme, 'lost-theme');
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'lost-width');
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('quota', 'QuotaExceededError');
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const notified = vi.fn();
+    const off = onDurableRestore(notified);
+    let restored: boolean;
+    try {
+      restored = await hydrateDurableStorage();
+    } finally {
+      off();
+      setItem.mockRestore();
+      warn.mockRestore();
+    }
+
+    // localStorage changed zero times, so claiming a restore would make every
+    // registered store re-read values that were never written.
+    expect(restored).toBe(false);
+    expect(notified).not.toHaveBeenCalled();
+    expect(localStorage.getItem(STORAGE_KEYS.theme)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBeNull();
+  });
+
+  it('reconciles the remaining keys when a reading getItem throws', async () => {
+    ctrl.native = true;
+    localStorage.setItem(STORAGE_KEYS.drawerOpen, 'keep');
+    prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'recovered');
+    const realGetItem = localStorage.getItem.bind(localStorage);
+    const getItem = vi.spyOn(localStorage, 'getItem').mockImplementation((key: string) => {
+      if (key === STORAGE_KEYS.drawerOpen) throw new DOMException('denied', 'SecurityError');
+      return realGetItem(key);
+    });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let restored: boolean;
+    try {
+      restored = await hydrateDurableStorage();
+    } finally {
+      getItem.mockRestore();
+      warn.mockRestore();
+    }
+
+    expect(restored).toBe(true);
+    expect(localStorage.getItem(STORAGE_KEYS.strokeWidthSize)).toBe('recovered');
+    expect(prefsStore.has(STORAGE_KEYS.drawerOpen)).toBe(false); // read as absent, so nothing to back up
+  });
+
   it('reports a completed restore when a concurrent back-fill fails', async () => {
     ctrl.native = true;
     prefsStore.set(STORAGE_KEYS.strokeWidthSize, 'recovered');

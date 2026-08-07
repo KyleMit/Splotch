@@ -33,27 +33,16 @@ import {
   toPosix,
 } from '../lib/paths.mjs';
 import { fail } from '../lib/cli.mjs';
-import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
-import { scoreSolidity, SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
+import { KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
+import { SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
+import { EYE_RING_DEPTH_MAX } from '../lib/eye-fill.mjs';
 import {
-  scoreEyeRings,
-  EYE_RING_DEPTH_MAX,
-  scoreEyeFill,
-  judgeLightEyes,
-} from '../lib/eye-fill.mjs';
-import { compositeNight } from '../lib/night-composite.mjs';
-import {
-  scoreOutlineFrame,
   FRAME_SIDE_COVERAGE_MIN,
   GHOST_LUMA_MAX,
   GHOST_SIDE_COVERAGE_MIN,
 } from '../lib/outline-frame.mjs';
-import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
-import { diffGoldenPage, GOLDEN_VERDICTS, scoreGoldenNightEyes } from '../lib/golden-catalog.mjs';
+import { GOLDEN_VERDICTS, diffGoldenPage, scoreGoldenPage } from '../lib/golden-catalog.mjs';
 import {
-  scoreDrift,
-  scoreNightness,
-  scoreLineColor,
   DRIFT_THRESHOLD_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
@@ -62,91 +51,25 @@ import {
 export const GOLDEN_PATH = join(ASSET_GEN_DIR, 'golden', 'golden-scores.json');
 const CONCURRENCY = 4;
 
-const round = (v, digits) => {
-  const f = 10 ** digits;
-  return Math.round(v * f) / f;
-};
-
 // Score one page: the pen outline always, the raw fills when committed.
 async function scorePage(outlinePath) {
   const rel = toPosix(relative(COLORING_DIR, outlinePath).replace(/\.outline\.webp$/, ''));
   const pen = await readFile(outlinePath);
-  const analysis = await prepareOutlineAnalysis(pen);
-
-  const [solidity, rings, frame] = await Promise.all([
-    scoreSolidity(analysis),
-    scoreEyeRings(analysis),
-    scoreOutlineFrame(analysis),
-  ]);
-  const outline = {
-    darkPx: solidity.darkPx,
-    interiorPx: solidity.interiorPx,
-    solidPx: solidity.solidPx,
-    biggestBlob: solidity.biggestBlob,
-    strokeWidth: solidity.strokeWidth,
-    ringDepth: rings.maxDepth,
-    frameCoverage: round(frame.sideCoverage, 4),
-    ghostCoverage: round(frame.ghostCoverage, 4),
-    solidOk: solidity.passes,
-    ringsOk: rings.passes,
-    frameOk: frame.passes,
-  };
-
-  const entry = { outline };
 
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
-  let lightRaw = null;
-  let lightEyes = null;
-  if (existsSync(lightPath)) {
-    lightRaw = await readFile(lightPath);
-    const { keep, localKeep, worstTile } = await outlineMatch(pen, lightRaw);
-    lightEyes = await scoreEyeFill(lightRaw, pen);
-    entry.light = {
-      keep: round(keep, 4),
-      localKeep: round(localKeep, 4),
-      worstTile: worstTile ? `${worstTile.x},${worstTile.y}` : null,
-      eyeCores: lightEyes.cores.length,
-      eyeLively: lightEyes.cores.filter((c) => c.lively).length,
-      driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
-      eyesOk: judgeLightEyes(lightEyes).passes,
-    };
-  }
+  const lightRaw = existsSync(lightPath) ? await readFile(lightPath) : null;
 
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
+  let nightRaw = null;
+  let chalk = null;
   if (existsSync(nightPath)) {
-    const nightRaw = await readFile(nightPath);
+    nightRaw = await readFile(nightPath);
     // Score against the line art the fill must sit under: the chalk when the
     // page has forked, else the pen — mirroring gen-coloring-fills-dark.mjs.
-    const { source, chalk } = await resolveNightLineArt(outlinePath, pen);
-    const [drift, night, line] = await Promise.all([
-      scoreDrift(nightRaw, source),
-      scoreNightness(nightRaw, source),
-      scoreLineColor(nightRaw, source),
-    ]);
-    // Eyes judge the simulated final composite when a chalk owns the whites;
-    // the light fill is the reference for which cores are real eyes.
-    let eyes = null;
-    if (lightEyes) {
-      const judged = chalk ? await compositeNight(nightRaw, chalk) : nightRaw;
-      eyes = await scoreGoldenNightEyes(judged, lightRaw, pen, lightEyes, {
-        chalked: !!chalk,
-      });
-    }
-    entry.night = {
-      drift: round(drift.ratio, 5),
-      bgLuma: round(night.bgLuma, 1),
-      lineWhite: round(line.lineWhite, 1),
-      eyesFailed: eyes?.eyesFailed ?? null,
-      orbFailed: eyes?.orbFailed ?? null,
-      orbMinCoreDark: eyes?.orbMinCoreDark ?? null,
-      driftOk: drift.ratio <= DRIFT_THRESHOLD_DEFAULT,
-      moodOk: night.bgLuma <= NIGHT_BG_LUMA_MAX_DEFAULT,
-      lineOk: line.lineWhite >= LINE_WHITE_MIN_DEFAULT,
-      eyesOk: eyes?.eyesOk ?? null,
-      orbOk: eyes?.orbOk ?? null,
-    };
+    ({ chalk } = await resolveNightLineArt(outlinePath, pen));
   }
 
+  const entry = await scoreGoldenPage({ pen, lightRaw, nightRaw, chalk });
   return [rel, entry];
 }
 

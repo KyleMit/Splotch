@@ -250,6 +250,7 @@ function judgeLively(coreLuma, bandDark, bandLight) {
 // by cross-referencing fills, not by anatomy — see judgeNightEyes.
 /**
  * @typedef {object} EyeCoreScore
+ * @property {number} regionId
  * @property {number} x
  * @property {number} y
  * @property {number} coreLuma
@@ -294,6 +295,7 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
     const bandLight = quantile(bandVals, 0.85);
     const lively = judgeLively(measuredCoreLuma, bandDark, bandLight);
     measured.push({
+      regionId: core.id,
       x: Math.round(cx),
       y: Math.round(cy),
       coreLuma: measuredCoreLuma,
@@ -342,12 +344,25 @@ export const BAND_BLIND_INK_FRAC = 0.5;
 // human-reviewed chalk is effectively the per-page eye annotation.
 const CHALK_WHITE_MIN = 245;
 
+// Both scores come from independent scoreEyeFill runs over the SAME source line
+// art, so a core's source region id identifies it on both sides — and unlike its
+// rounded center, two cores can't share one: a concentric catchlight inside a
+// pupil disc (or a hypno-swirl ring stack) rounds to the same x,y but is a
+// distinct labeled region. Pairing positionally would be a silent mispairing the
+// moment scoreEyeFill grew a skip that depends on the fill.
+function nightCoresByRegion(scoredNight) {
+  const byRegion = new Map(scoredNight.cores.map((core) => [core.regionId, core]));
+  if (byRegion.size !== scoredNight.cores.length)
+    throw new Error('judgeNightEyes: night eye cores share a region id — cannot pair them');
+  return byRegion;
+}
+
 export function judgeNightEyes(scoredNight, scoredLight, { chalked = false } = {}) {
   let worst = null;
   let failed = 0;
-  for (let i = 0; i < scoredLight.cores.length; i++) {
-    const lightCore = scoredLight.cores[i];
-    const nightCore = scoredNight.cores[i];
+  const nightByRegion = nightCoresByRegion(scoredNight);
+  for (const lightCore of scoredLight.cores) {
+    const nightCore = nightByRegion.get(lightCore.regionId);
     const isReference =
       lightCore.lively && Math.max(lightCore.coreLuma, lightCore.bandLight) >= STRONG_LIGHT_SIDE;
     if (!isReference || !nightCore || nightCore.lively) continue;

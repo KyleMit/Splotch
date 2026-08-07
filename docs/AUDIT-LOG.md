@@ -18,8 +18,9 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-2)         |
 | 2026-08-07 | [audit-triage](#2026-08-07--audit-triage)                       |
-| 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits)               |
+| 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-1)         |
 | 2026-08-06 | [burn-down-audits](#2026-08-06--burn-down-audits)               |
 | 2026-08-05 | [vet-audits](#2026-08-05--vet-audits)                           |
 | 2026-08-05 | [session-audit](#2026-08-05--session-audit)                     |
@@ -86,6 +87,44 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
 
+## 2026-08-07 · burn-down-audits (run 2)
+
+Bulk burndown on PR [#830](https://github.com/KyleMit/Splotch/pull/830) (branch
+`claude/audit-burn-down-vf4iui`), the first campaign against the triaged backlog rather than the raw
+tail: **29 fixed · 0 dropped · 0 deferred**, backlog 72 → 43, across a 5-finding canary and a
+24-finding unattended run wrapped on request. The *Silent wrong output* group drained completely —
+all 25 findings — and its section was removed. The other 4 fixes came from *App correctness*, which
+went 16 → 12.
+
+**Zero drops and zero deferrals is the result worth recording**, because it is the first campaign
+where that happened and it is a direct measurement of the triage. Previous runs against the
+untriaged backlog produced clusters of stale `INVALID` drops (a consolidation commit orphaning every
+finding that named the moved code) plus roughly one deferral per twenty findings. Here every finding
+the verifier examined was still real at HEAD and every one survived adversarial review. The
+corollary for the next run: with a curated backlog, a drop should be read as the verifier being
+wrong rather than the backlog being stale — the inverse of the old assumption.
+
+The base commit was green, but was verified rather than assumed: all seven `CHECK_CMD` gates and all
+three unit tiers were run **individually** at `main`, not `&&`-chained, so no red gate could hide
+behind an earlier one. That mattered on the previous run, where `main` was silently red.
+
+Quality signals across the 29: **no eslint `max-lines` cap was raised, no ratchet baseline widened,
+and no allowlist touched** — the goalpost-moving that took 3 of 43 findings on the 2026-07-29 run
+did not recur, and one finding explicitly dropped an optional test rather than raise a cap it was
+sitting against. The reviewer rejected the first attempt on roughly a third of findings, twice for
+regression tests that were *vacuous* (passing identically before and after the fix); both were
+rebuilt and verified red-before-green. A cluster of findings improved the burndown harness itself —
+the iteration tag now counts drops so envelopes cannot be clobbered, `resolveImplSha` no longer
+trusts an LLM-authored SHA over git, a failed final push now warns and exits non-zero, and
+`audit:status` stops counting drops as completions.
+
+One blemish, left in place deliberately: 132a7c20ba48 raised `testTimeout` 5s → 20s in
+`drawingSound.test.ts` and `aiImage.test.ts` to clear a red gate. The change is sound in itself
+(named constants, no assertions touched) but is a flake mitigation attributable to no finding, so it
+belongs in its own commit, and its diagnosis was by analogy — the implementer states the exact
+failure was not reproduced. Splitting it would now require rewriting pushed history; it is recorded
+here and on the PR instead.
+
 ## 2026-08-07 · audit-triage
 
 Manual triage pass over the whole of `docs/AUDIT.md`, run on request to decide whether the backlog
@@ -143,7 +182,7 @@ sweep with no scope boundary — it audited the workshop as thoroughly as the pr
 `/code-audit` to shipped `web/src/` plus surfaces that changed since the last run, so the backlog
 never again reaches a size that needs a pass like this one.
 
-## 2026-08-07 · burn-down-audits
+## 2026-08-07 · burn-down-audits (run 1)
 
 Bulk burndown on PR [#821](https://github.com/KyleMit/Splotch/pull/821) (branch
 `claude/audit-burn-down-727egi`), forked fresh from `main` because the previous campaign's PR #805

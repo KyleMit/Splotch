@@ -60,6 +60,60 @@ describe('judgeNightEyes — every strong light structure must survive at night'
   });
 });
 
+// Hand-built scores, because the synthetic fixtures score the same source twice
+// and so hand judgeNightEyes two identically ordered core arrays — under which
+// any pairing rule, right or wrong, agrees. Cores 1 and 2 are a concentric
+// catchlight inside a pupil: one eye, two nested regions, the SAME rounded
+// center. Pairing by array position or by `x,y` mismatches them here.
+const eyeCore = (regionId, over) => ({
+  regionId,
+  x: 40,
+  y: 40,
+  coreLuma: 240,
+  bandDark: 20,
+  bandLight: 240,
+  contrast: 220,
+  lively: true,
+  annulusInkFrac: 0.1,
+  ...over,
+});
+
+describe('judgeNightEyes — core identity', () => {
+  // Core 1 is band-blind, so only its OWN pairing is exempt; core 2 gates. A
+  // positional (or x,y-keyed) lookup hands core 2's verdict core 1's night
+  // score, blaming the wrong eye with the wrong contrast.
+  const light = [eyeCore(1, { annulusInkFrac: 0.9 }), eyeCore(2), eyeCore(3, { x: 90, y: 90 })];
+  const night = [
+    eyeCore(2, { lively: false, contrast: 20, coreLuma: 30, bandLight: 40 }),
+    eyeCore(1, { lively: false, contrast: 5, coreLuma: 30, bandLight: 40, annulusInkFrac: 0.9 }),
+  ];
+
+  it('matches each light core to its own night core, whatever the order', () => {
+    const v = judgeNightEyes(
+      { eyes: night.length, cores: night },
+      { eyes: light.length, cores: light }
+    );
+    expect(v.passes).toBe(false);
+    expect(v.failed).toBe(1);
+    expect(v.worst.regionId).toBe(2);
+    expect(v.worst.contrast).toBe(20);
+  });
+
+  it('skips a light core the night fill never scored', () => {
+    const onlyUnmatched = [eyeCore(3, { x: 90, y: 90 })];
+    const v = judgeNightEyes({ eyes: 0, cores: [] }, { eyes: 1, cores: onlyUnmatched });
+    expect(v.passes).toBe(true);
+    expect(v.failed).toBe(0);
+  });
+
+  it('throws rather than silently dropping night cores that share a region id', () => {
+    const dupes = [eyeCore(1), eyeCore(1)];
+    expect(() => judgeNightEyes({ eyes: 2, cores: dupes }, { eyes: 1, cores: light })).toThrow(
+      /region id/
+    );
+  });
+});
+
 it('the lively/flooded classes straddle the contrast bar with margin', async () => {
   const { lively, flooded } = await scored();
   const bestLively = Math.max(...lively.cores.map((c) => c.contrast));

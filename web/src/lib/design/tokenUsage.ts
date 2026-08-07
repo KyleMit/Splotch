@@ -90,7 +90,7 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   borderWarm: 'Hairline on paper-toned chrome.',
   borderWarmStrong: 'The hovered/emphasized step of --border-warm.',
   controlTrack:
-    'Every inactive track: toggle-off state, slider rails, segmented-picker tracks. Pinned to hold 4.5:1 under --text-soft labels.',
+    "Every inactive picker/track ground: toggle-off state, slider rails, the segment track and a borderless chip's unselected fill. Pinned to hold 4.5:1 under --text-soft labels.",
   controlTrackHover: 'The hovered step of --control-track.',
   sliderNotch: 'The snap-detent tick over a slider track.',
   textStrong: 'Headings and emphasized copy.',

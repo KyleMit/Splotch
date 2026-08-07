@@ -22,6 +22,12 @@ if (!existsSync(file)) {
   process.exit(2);
 }
 
+const MODES = new Set(['print', '--delete', '--count', '--peek']);
+if (!MODES.has(mode)) {
+  console.error(`pop: unknown mode ${mode} (see header for usage)`);
+  process.exit(2);
+}
+
 if (mode === '--count') {
   console.log(countEntries(file));
   process.exit(0);

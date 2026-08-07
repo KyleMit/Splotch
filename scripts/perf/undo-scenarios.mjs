@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { fail, isMain, runMain, sleep } from '../lib/proc.mjs';
-import { parsePerfArgs } from './args.mjs';
+import { parsePerfArgs, requireNumberFlag } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -53,6 +53,8 @@ import {
 } from './undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
 
+const entry = isMain(import.meta.url);
+
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
@@ -72,9 +74,13 @@ const { flag, throttle, port, build } = parsePerfArgs({
     'scenarios',
     'suite',
   ],
-  entry: isMain(import.meta.url),
+  entry,
 });
-const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
+const COLD_TIER_TIMEOUT_MS = requireNumberFlag(
+  'cold-tier-timeout-ms',
+  flag('cold-tier-timeout-ms', '10000'),
+  entry
+);
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
   new URL('./undo-fast-set-history.seed.json', import.meta.url)
 );
@@ -142,17 +148,21 @@ if (!engine) {
 // scribble at 120 Hz; override to explore. This is the data volume the
 // harness MUST reproduce — it's what made the replay era's stroke-end
 // keyframe builds hitch, and what the commit fold now absorbs.
-const HZ = Number(flag('hz', '120'));
+const HZ = requireNumberFlag('hz', flag('hz', '120'), entry);
 // One frame at the target refresh — 8.3 ms on a 120 Hz ProMotion iPad. ADR-0066
 // states the commit gate in these terms ("commit max ≈ one 120 Hz frame").
 const FRAME_BUDGET_MS = 1000 / HZ;
-const LONG_SECONDS = Number(flag('long-seconds', '10'));
-const LONG_OPS = Number(flag('long-ops', String(Math.round(HZ * LONG_SECONDS)))); // ≈1200
+const LONG_SECONDS = requireNumberFlag('long-seconds', flag('long-seconds', '10'), entry);
+const LONG_OPS = requireNumberFlag(
+  'long-ops',
+  flag('long-ops', String(Math.round(HZ * LONG_SECONDS))),
+  entry
+); // ≈1200
 // A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
 // 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the
 // heaviest single commit fold.
 const MULTI_FINGERS = 5;
-const MULTI_SECONDS = Number(flag('multi-seconds', '4'));
+const MULTI_SECONDS = requireNumberFlag('multi-seconds', flag('multi-seconds', '4'), entry);
 const MULTI_OPS_PER_FINGER = Math.round(HZ * MULTI_SECONDS);
 
 const MARGIN = 160; // keep stroke starts away from the edge-swipe guard band
@@ -231,7 +241,7 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 // stack AND exercises the depth-cap shift path.
 const MAX_UNDO_DEPTH = 20;
 const MAX_UNDO_STEPS = 60;
-const STROKES = Number(flag('strokes', String(MAX_UNDO_DEPTH + 2)));
+const STROKES = requireNumberFlag('strokes', flag('strokes', String(MAX_UNDO_DEPTH + 2)), entry);
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));
@@ -457,6 +467,10 @@ export async function runUndoScenario(
   });
   const undoEnd = await now(page);
   const heapAfterUndo = await heapBytes(page);
+  // Drain the sampler this scenario injected, for the same reason it had to be
+  // re-injected: the next scenario's reload wipes window.__perf, so reading
+  // once at the end of the run would describe the final scenario only.
+  const observers = await readObservers(page);
 
   const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
   // Deliberately disjoint from the draw window, not a superset of it: an encode
@@ -543,6 +557,7 @@ export async function runUndoScenario(
       afterUndoMB: heapAfterUndo ? toMiB(heapAfterUndo) : null,
     },
     historyRasterMB,
+    observers,
   };
   console.log(
     `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
@@ -587,6 +602,41 @@ const NAMED_SUITE_KEYS = {
   fast: FAST_UNDO_SCENARIO_KEYS,
   'encode-path': ENCODE_PATH_UNDO_SCENARIO_KEYS,
 };
+
+// Session frame health is the union of the per-scenario sampling windows, so
+// the counts and spans add and the rate is recomputed over the combined span —
+// carrying one scenario's fps forward would label it "whole session" in the
+// report while describing a single scenario.
+function aggregateObservers(results) {
+  const longTasks = [];
+  let count = 0;
+  let durationMs = 0;
+  let longFrames = 0;
+  let heapBytes = null;
+  // Each scenario reloads, so its frame samples are an independent rAF window
+  // contributing count - 1 intervals. Summing the counts and subtracting one
+  // would price the gaps between windows as frames and inflate the fps.
+  let intervals = 0;
+  for (const result of results) {
+    if (!result.observers) continue;
+    longTasks.push(...result.observers.longTasks);
+    count += result.observers.frames.count;
+    intervals += Math.max(result.observers.frames.count - 1, 0);
+    durationMs += result.observers.frames.durationMs;
+    longFrames += result.observers.frames.longFrames;
+    if (result.observers.heapBytes != null) heapBytes = result.observers.heapBytes;
+  }
+  return {
+    longTasks,
+    frames: {
+      count,
+      durationMs,
+      fps: durationMs > 0 ? (intervals / durationMs) * 1000 : null,
+      longFrames,
+    },
+    heapBytes,
+  };
+}
 
 export async function runUndoScenarios() {
   // /dev/engine is gated by PUBLIC_ENABLE_DEV_HARNESS ($env/dynamic/public, read
@@ -683,7 +733,7 @@ export async function runUndoScenarios() {
       }
     }
 
-    const obs = await readObservers(page);
+    const obs = aggregateObservers(results);
     // Without CDP there is no Chrome trace to stop; the stitched user-timing
     // timeline is the minimal trace the shared analyzer needs instead.
     const traceEvents = cdp ? (await stopTrace(cdp), events) : timeline.events;
@@ -695,7 +745,7 @@ export async function runUndoScenarios() {
     const metrics = buildMetrics({
       settings,
       obs,
-      heapBefore: 0,
+      heapBefore: null,
       heapAfter: obs.heapBytes,
     });
     writeProfileArtifacts({
@@ -1173,6 +1223,25 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
     out.push(
       `| ${s.label} | ${s.undo.steps} | ${f1(s.undo.totalMs)} ms | ` +
         `${f1(s.undo.avgMs)} ms | ${f1(s.undo.maxMs)} ms |`
+    );
+  }
+  out.push('\n## Frame health per scenario\n');
+  out.push(
+    'The rAF sampler is re-injected after each reload and drained before the next one, so these ' +
+      'are the per-scenario windows that report.md sums into its session figures. They span the ' +
+      "whole scenario, so the synchronous draw phase's harness artifact (see the note above) " +
+      'dominates the long-frame count.\n'
+  );
+  out.push('| Scenario | Frames | Avg FPS | Long frames | Long tasks |');
+  out.push('| --- | --- | --- | --- | --- |');
+  for (const s of scenarios) {
+    if (!s.observers) {
+      out.push(`| ${s.label} | n/a | n/a | n/a | n/a |`);
+      continue;
+    }
+    out.push(
+      `| ${s.label} | ${s.observers.frames.count} | ${f1(s.observers.frames.fps)} | ` +
+        `${s.observers.frames.longFrames} | ${s.observers.longTasks.length} |`
     );
   }
   const r = settings.raster;

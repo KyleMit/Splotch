@@ -7,5 +7,5 @@ export const DEVICES = {
 export const IPAD_PRO = { ...DEVICES.tablet, label: 'ipad-pro-12.9' };
 
 export function resolveDevice(name) {
-  return DEVICES[name] || DEVICES.phone;
+  return DEVICES[name];
 }

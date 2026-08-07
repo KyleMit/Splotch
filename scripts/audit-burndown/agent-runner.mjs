@@ -88,6 +88,17 @@ export function agentAuthCommand(runnerValue) {
     : { cmd: 'claude', args: ['auth', 'status'], login: 'claude auth login' };
 }
 
+function normalizeClaudeUsage(usage) {
+  const uncachedInput = usage.input_tokens ?? 0;
+  const cacheCreationInput = usage.cache_creation_input_tokens ?? 0;
+  const cachedInput = usage.cache_read_input_tokens ?? 0;
+  return {
+    input_tokens: uncachedInput + cacheCreationInput + cachedInput,
+    cached_input_tokens: cachedInput,
+    output_tokens: usage.output_tokens ?? 0,
+  };
+}
+
 export function parseSavedAgentOutput(raw) {
   try {
     const envelope = JSON.parse(raw);
@@ -103,7 +114,7 @@ export function parseSavedAgentOutput(raw) {
         runner: 'claude',
         structured: envelope.structured_output ?? {},
         sessionId: envelope.session_id ?? '',
-        usage: {},
+        usage: normalizeClaudeUsage(envelope.usage ?? {}),
         envelope,
         error: envelope.is_error === true ? (envelope.subtype ?? 'error') : '',
       };

@@ -9,6 +9,11 @@ const state = vi.hoisted(() => ({
   stop: null,
   launched: [],
   collectMeasures: () => [],
+  readObservers: () => ({
+    longTasks: [],
+    frames: { count: 0, durationMs: 0, fps: null, longFrames: 0 },
+    heapBytes: 0,
+  }),
 }));
 
 // Both engines resolve to the same fake browser; `launched` records which
@@ -42,7 +47,7 @@ vi.mock('../perf/capture.mjs', async (importOriginal) => {
     collectMeasures: async () => state.collectMeasures(),
     createMeasureTimeline: actual.createMeasureTimeline,
     injectObservers: async () => {},
-    readObservers: async () => ({ longTasks: [], frames: [], heapBytes: 0 }),
+    readObservers: async () => state.readObservers(),
     heapBytes: async () => 0,
     markPhase: async (_page, _label, work) => work(),
   };
@@ -57,11 +62,25 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
   return { ...actual, sleep: async () => {} };
 });
 
+// Per-scenario observer readings scale with the scenario index, so a sum is
+// distinguishable from any single scenario's figure.
+const FRAMES_PER_SCENARIO = 10;
+const FRAME_SPAN_MS_PER_SCENARIO = 100;
+const HEAP_BYTES_PER_SCENARIO = 1000;
+
+// A throwing page.evaluate cannot fail a test on its own: runUndoScenarios
+// catches whatever a scenario throws and downgrades it to skipped + a warn, so
+// a test asserting only on the scenarios it does care about stays green through
+// the miss. Every unmatched source is recorded here and asserted after the test
+// body, out of reach of the harness's catch.
+const unmatchedEvaluateSources = [];
+
 let fixtureDir;
 let originalArgv;
 let originalExitCode;
 
 beforeEach(() => {
+  unmatchedEvaluateSources.length = 0;
   fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-undo-scenarios-'));
   state.outDir = fixtureDir;
   state.stop = vi.fn();
@@ -74,6 +93,22 @@ beforeEach(() => {
     return [
       { cat: 'blink.user_timing', name: `engine.scenario${collected}`, ph: 'X', ts: 0, dur: 1000 },
     ];
+  };
+  // The frame sampler is drained once per scenario, so every reading describes
+  // a different window — the aggregation has nothing to prove otherwise.
+  let observed = 0;
+  state.readObservers = () => {
+    observed++;
+    return {
+      longTasks: [{ start: 0, duration: 50 * observed }],
+      frames: {
+        count: FRAMES_PER_SCENARIO * observed,
+        durationMs: FRAME_SPAN_MS_PER_SCENARIO * observed,
+        fps: 60,
+        longFrames: observed,
+      },
+      heapBytes: HEAP_BYTES_PER_SCENARIO * observed,
+    };
   };
   originalArgv = process.argv;
   // The gate signals a breach through process.exitCode, which would otherwise
@@ -93,6 +128,7 @@ afterEach(() => {
   process.exitCode = originalExitCode;
   vi.restoreAllMocks();
   rmSync(fixtureDir, { recursive: true, force: true });
+  expect(unmatchedEvaluateSources).toEqual([]);
 });
 
 // A clock that advances one tick per read, so the harness's phase boundaries
@@ -105,6 +141,23 @@ const mockTickingClock = () =>
   )(0);
 
 const REALISTIC_COMMIT_SAMPLE_COUNT = 22;
+const SETTLED_LIVE_RASTERS = 2;
+
+// page.evaluate routed by a marker string in the evaluated function's source,
+// first match wins. An unmatched call throws instead of resolving undefined,
+// which the harness would otherwise read as a genuine empty reading — and is
+// recorded for the afterEach assertion, which the throw cannot substitute for.
+function stubPageEvaluate(routes) {
+  return vi.fn(async (fn, ...args) => {
+    const source = fn.toString();
+    const route = routes.find(({ marker }) => source.includes(marker));
+    if (!route) {
+      unmatchedEvaluateSources.push(source);
+      throw new Error(`Unmatched page.evaluate:\n${source}`);
+    }
+    return route.result(...args);
+  });
+}
 
 // A page whose engine.* measures are dictated by the caller, so a test can put
 // the run on either side of the commit gate without driving a real browser.
@@ -120,6 +173,9 @@ function fakePage({
   encodeInCommitMaxMs = 0,
   deferredEncodeMaxMs = 0,
   blobBytes = 1,
+  // Only the churning tier's reading, so a skip message quoting it can have
+  // come from no scenario but the one that timed out.
+  churningLiveRasters = SETTLED_LIVE_RASTERS,
   coldTierNeverSettles = false,
   coldTierNeverSettlesOnNavigation = null,
 } = {}) {
@@ -128,62 +184,74 @@ function fakePage({
   let drawEnd = null;
   let coldTierRead = 0;
   let navigations = 0;
+  const coldTierIsChurning = () =>
+    coldTierNeverSettles || navigations === coldTierNeverSettlesOnNavigation;
   return {
     goto: vi.fn(async () => {
       navigations++;
     }),
     waitForSelector: vi.fn(async () => {}),
     waitForFunction: vi.fn(async () => {}),
-    evaluate: vi.fn(async (fn, arg) => {
-      const source = fn.toString();
-      if (source.includes('getUndoDebug')) {
-        const neverSettles =
-          coldTierNeverSettles || navigations === coldTierNeverSettlesOnNavigation;
-        return {
-          snapshots: 22,
-          liveRasters: 2,
-          blobBytes: neverSettles ? coldTierRead++ : blobBytes,
-        };
-      }
-      if (source.includes('document.querySelector')) {
-        return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
-      }
-      if (source.includes("getEntriesByType('measure')")) {
+    evaluate: stubPageEvaluate([
+      {
+        marker: 'getUndoDebug',
+        result: () => {
+          const churning = coldTierIsChurning();
+          return {
+            snapshots: 22,
+            liveRasters: churning ? churningLiveRasters : SETTLED_LIVE_RASTERS,
+            blobBytes: churning ? coldTierRead++ : blobBytes,
+          };
+        },
+      },
+      {
+        marker: 'document.querySelector',
+        result: () => ({ backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 }),
+      },
+      {
+        marker: "getEntriesByType('measure')",
         // The draw window is the one starting at the phase's own start; the
         // deferred window is the one that opens where the draw window closed.
-        const isPostDraw = drawEnd != null && arg?.from === drawEnd;
-        const encodeMs = isPostDraw ? deferredEncodeMaxMs : encodeInCommitMaxMs;
-        return {
-          'engine.draw': { count: 1, total: 1, max: 1 },
-          'engine.commit': {
-            count: commitSamples.length,
-            total: commitSamples.reduce((total, duration) => total + duration, 0),
-            max: Math.max(0, ...commitSamples),
-            durationsMs: commitSamples,
-          },
-          'engine.snapshot': { count: 1, total: 1, max: 1 },
-          'engine.fold': { count: 1, total: 1, max: 1 },
-          // engineMeasuresIn aggregates only names that actually had entries in
-          // the window, so a window with no encode reports no samples at all.
-          // The structural gate reads that count, so a fixture that always
-          // claimed one would make every scenario look like #635.
-          'engine.encode': {
-            count: encodeMs > 0 ? 1 : 0,
-            total: encodeMs,
-            max: encodeMs,
-          },
-          'engine.undo': { count: 1, total: 1, max: 1 },
-        };
-      }
-      if (source.includes('async (maxUndoSteps)')) return 1;
-      if (source.includes('performance.now')) {
-        const t = now();
-        // Second read per scenario is drawEnd (drawStart, drawEnd, settleEnd, …).
-        if (t % 5 === 1) drawEnd = t;
-        return t;
-      }
-      return undefined;
-    }),
+        result: (arg) => {
+          const isPostDraw = drawEnd != null && arg?.from === drawEnd;
+          const encodeMs = isPostDraw ? deferredEncodeMaxMs : encodeInCommitMaxMs;
+          return {
+            'engine.draw': { count: 1, total: 1, max: 1 },
+            'engine.commit': {
+              count: commitSamples.length,
+              total: commitSamples.reduce((total, duration) => total + duration, 0),
+              max: Math.max(0, ...commitSamples),
+              durationsMs: commitSamples,
+            },
+            'engine.snapshot': { count: 1, total: 1, max: 1 },
+            'engine.fold': { count: 1, total: 1, max: 1 },
+            // engineMeasuresIn aggregates only names that actually had entries
+            // in the window, so a window with no encode reports no samples at
+            // all. The structural gate reads that count, so a fixture that
+            // always claimed one would make every scenario look like #635.
+            'engine.encode': {
+              count: encodeMs > 0 ? 1 : 0,
+              total: encodeMs,
+              max: encodeMs,
+            },
+            'engine.undo': { count: 1, total: 1, max: 1 },
+          };
+        },
+      },
+      // undoAll()'s source carries both this marker and 'performance.now', so it
+      // has to be matched here or it would be served the clock instead.
+      { marker: 'async (maxUndoSteps)', result: () => 1 },
+      {
+        marker: 'performance.now',
+        result: () => {
+          const t = now();
+          // Second read per scenario is drawEnd (drawStart, drawEnd, settleEnd, …).
+          if (t % 5 === 1) drawEnd = t;
+          return t;
+        },
+      },
+      { marker: 'resizeTo', result: () => {} },
+    ]),
     screenshot: vi.fn(async () => {}),
   };
 }
@@ -200,53 +268,12 @@ function fakeBrowser(page, { withCdp = true } = {}) {
 
 describe('undo scenario profiling', () => {
   it('writes artifacts and continues after a cold-tier timeout', async () => {
-    let navigations = 0;
-    let churn = 0;
-    const page = {
-      goto: vi.fn(async () => {
-        navigations++;
-      }),
-      waitForSelector: vi.fn(async () => {}),
-      waitForFunction: vi.fn(async () => {}),
-      evaluate: vi.fn(async (fn) => {
-        const source = fn.toString();
-        if (source.includes('getUndoDebug')) {
-          // One scenario's tier never quiesces — blobBytes keeps moving, so the
-          // settle poll never sees two identical samples and the scenario is
-          // skipped. The rest report a stable tier and settle immediately.
-          return navigations === 3
-            ? { snapshots: 22, liveRasters: 3, blobBytes: churn++ }
-            : { snapshots: 22, liveRasters: 2, blobBytes: 1 };
-        }
-        if (source.includes('document.querySelector')) {
-          return { backingW: 20, backingH: 20, side: 20, bytesPerRaster: 1600 };
-        }
-        if (source.includes("getEntriesByType('measure')")) {
-          return {
-            'engine.draw': { count: 1, total: 1, max: 1 },
-            'engine.commit': { count: 1, total: 1, max: 1, durationsMs: [1] },
-            'engine.snapshot': { count: 1, total: 1, max: 1 },
-            'engine.undo': { count: 1, total: 1, max: 1 },
-          };
-        }
-        if (source.includes('async (maxUndoSteps)')) return 1;
-        if (source.includes('performance.now')) return 0;
-        return undefined;
-      }),
-      screenshot: vi.fn(async () => {}),
-    };
-    const cdp = { send: vi.fn(async () => {}) };
-    const context = {
-      newPage: vi.fn(async () => page),
-      newCDPSession: vi.fn(async () => cdp),
-    };
-    const browser = {
-      newContext: vi.fn(async () => context),
-      close: vi.fn(async () => {}),
-    };
-    state.browser = { launch: vi.fn(async () => browser) };
-    let clock = 0;
-    vi.spyOn(Date, 'now').mockImplementation(() => clock++);
+    // One scenario's tier never quiesces — blobBytes keeps moving, so the settle
+    // poll never sees two identical samples and the scenario is skipped. The
+    // rest report a stable tier and settle immediately.
+    const page = fakePage({ churningLiveRasters: 3, coldTierNeverSettlesOnNavigation: 3 });
+    const { browser } = fakeBrowser(page);
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
@@ -335,6 +362,48 @@ describe('engine selection', () => {
     // And they must not all sit on top of each other at ts 0, or the analyzer
     // reads three scenarios as one overlapping instant.
     expect(traceEvents.map((e) => e.ts)).toEqual([0, 1000, 2000]);
+  });
+
+  it('sums every scenario into the frame metrics report.md calls the whole session', async () => {
+    // Same hazard as the trace above: each reload wipes window.__perf, so a
+    // single reading at the end would put one scenario's frame health under the
+    // "Avg FPS (whole session)" heading.
+    process.argv = [
+      ...process.argv,
+      '--engine=webkit',
+      '--scenarios=short-marks,mixed,multi-finger',
+    ];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const metrics = JSON.parse(readFileSync(join(fixtureDir, 'metrics.json'), 'utf8'));
+    const frames = FRAMES_PER_SCENARIO * (1 + 2 + 3);
+    const durationMs = FRAME_SPAN_MS_PER_SCENARIO * (1 + 2 + 3);
+    // Each scenario is its own rAF window, so the combined figure covers
+    // (count - 1) intervals per scenario — not (total count - 1), which would
+    // count the gaps between windows as frames.
+    const intervals = [1, 2, 3].reduce((sum, n) => sum + (FRAMES_PER_SCENARIO * n - 1), 0);
+    expect(metrics.frames).toEqual({
+      count: frames,
+      durationMs,
+      // Recomputed over the combined span, not carried over from a reading.
+      fps: (intervals / durationMs) * 1000,
+      longFrames: 1 + 2 + 3,
+    });
+    expect(metrics.longTasks.map((task) => task.duration)).toEqual([50, 100, 150]);
+    expect(metrics.heap.beforeBytes).toBeNull();
+    expect(metrics.heap.afterBytes).toBe(HEAP_BYTES_PER_SCENARIO * 3);
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.map((scenario) => scenario.observers.frames.count)).toEqual([
+      FRAMES_PER_SCENARIO,
+      FRAMES_PER_SCENARIO * 2,
+      FRAMES_PER_SCENARIO * 3,
+    ]);
   });
 
   it('derives and persists fast-set evidence after a complete WebKit run', async () => {
