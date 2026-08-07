@@ -486,6 +486,7 @@ describe('close-out', () => {
       'tests/../../other.spec.ts',
       'web/tests/flows-undo-persistence.spec.ts',
       'tests/flows-undo-persistence.spec.js',
+      'tests/flows-undo-persistence.spec.ts\n',
       42,
       null,
     ];

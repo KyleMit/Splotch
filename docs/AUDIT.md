@@ -46,40 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Correctness] The E2E spec sanitizer admits leading-dash values and `..` traversal
-
-**File(s):** `scripts/audit-burndown/burndown.mjs` (lines 714–719, 530–537) @ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-```js
-const e2eSpecs = (verify.structured.e2e_specs ?? []).filter(
-  (spec) => typeof spec === 'string' && /^[\w./-]+$/.test(spec),
-);
-```
-
-The comment says "Sanitize hard: these strings are LLM-authored and reach a shell" — and the class
-does block shell metacharacters. But `-` and `.` are in the class unanchored, so `--grep-invert`,
-`-x`, or `../../something.spec.ts` all pass and are joined straight into the shell command at line
-362 (``runGate(`${E2E_CMD} ${specs.join(' ')}` …)``). A verifier that emits a flag-shaped "spec"
-silently changes Playwright's behavior for the gate (e.g. inverting the filter), which corrupts the
-gate's verdict rather than failing loudly. The verifier prompt says specs are "paths relative to
-web/, e.g. `tests/flows-undo-persistence.spec.ts`" (verifier.md lines 63–64) — the sanitizer should
-encode that shape.
-
-#### Proposed solution
-
-Tighten to the documented shape:
-
-```js
-const E2E_SPEC_SHAPE = /^tests\/[\w/-]+\.(spec|test)\.ts$/;
-```
-
-or minimally reject `spec.startsWith('-')` and `spec.split('/').includes('..')`. Log rejected values
-(currently they vanish silently) so a misbehaving verifier is visible in run.log.
-
 ### [Correctness] overnight.mjs neither validates the count argument nor shell-quotes it
 
 **File(s):** `scripts/audit-burndown/overnight.mjs` (lines 24, 51–52) @ cd04c367

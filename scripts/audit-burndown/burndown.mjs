@@ -81,7 +81,7 @@ import { findingProblem } from './comment.mjs';
 const ISSUE_FILE = join(WORK, 'current-issue.md');
 const BRIEF_FILE = join(WORK, 'current-brief.md');
 const STOP_FILE = join(WORK, 'STOP');
-const E2E_SPEC_PATH = /^tests\/[\w/-]+\.(?:spec|test)\.ts$/;
+const E2E_SPEC_PATH = /^tests\/[\w/-]+\.(?:spec|test)\.ts$(?![\s\S])/;
 
 // ---- knobs ------------------------------------------------------------------
 // Every env knob a run reads, resolved once. `env` is a parameter so a test can
