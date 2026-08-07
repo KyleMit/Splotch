@@ -1,7 +1,8 @@
 # Handoff — audit burndown run
 
-> 2026-08-07 · branch `audit/burndown-20260807-2` · PR pending · burn down the staged audit backlog
-> with isolated Codex roles
+> 2026-08-07 · branch `audit/burndown-20260807-2` · PR
+> [#865](https://github.com/KyleMit/Splotch/pull/865) · burn down the staged audit backlog with
+> isolated Codex roles
 
 ## Objective & non-goals
 
@@ -12,7 +13,7 @@ exact-head CI checkpoints, or per-commit PR comments.
 ## State
 
 * Branch: `audit/burndown-20260807-2`
-* PR: pending
+* PR: [#865](https://github.com/KyleMit/Splotch/pull/865)
 * Initial backlog: 40 findings
 * `run.log` baseline: 2853 lines
 * Driver state at campaign start: stopped; `.audit-work/STOP` present
