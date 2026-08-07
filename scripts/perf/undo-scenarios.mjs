@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { fail, isMain, runMain, sleep } from '../lib/proc.mjs';
-import { parsePerfArgs } from './args.mjs';
+import { parsePerfArgs, requireNumberFlag } from './args.mjs';
 import { buildAndPreview } from './preview.mjs';
 import {
   startTrace,
@@ -56,6 +56,7 @@ import { warnIfNoPerfMarks } from './warnings.mjs';
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
 // square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
 // cost on that device (the hot tier holds 2 of them + the paper).
+const entry = isMain(import.meta.url);
 const { flag, throttle, port, build } = parsePerfArgs({
   throttleDefault: 4,
   extra: [
@@ -70,9 +71,13 @@ const { flag, throttle, port, build } = parsePerfArgs({
     'scenarios',
     'suite',
   ],
-  entry: isMain(import.meta.url),
+  entry,
 });
-const COLD_TIER_TIMEOUT_MS = Number(flag('cold-tier-timeout-ms', '10000'));
+const COLD_TIER_TIMEOUT_MS = requireNumberFlag(
+  'cold-tier-timeout-ms',
+  flag('cold-tier-timeout-ms', '10000'),
+  entry
+);
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
   new URL('./undo-fast-set-history.seed.json', import.meta.url)
 );
@@ -140,17 +145,21 @@ if (!engine) {
 // scribble at 120 Hz; override to explore. This is the data volume the
 // harness MUST reproduce — it's what made the replay era's stroke-end
 // keyframe builds hitch, and what the commit fold now absorbs.
-const HZ = Number(flag('hz', '120'));
+const HZ = requireNumberFlag('hz', flag('hz', '120'), entry);
 // One frame at the target refresh — 8.3 ms on a 120 Hz ProMotion iPad. ADR-0066
 // states the commit gate in these terms ("commit max ≈ one 120 Hz frame").
 const FRAME_BUDGET_MS = 1000 / HZ;
-const LONG_SECONDS = Number(flag('long-seconds', '10'));
-const LONG_OPS = Number(flag('long-ops', String(Math.round(HZ * LONG_SECONDS)))); // ≈1200
+const LONG_SECONDS = requireNumberFlag('long-seconds', flag('long-seconds', '10'), entry);
+const LONG_OPS = requireNumberFlag(
+  'long-ops',
+  flag('long-ops', String(Math.round(HZ * LONG_SECONDS))),
+  entry
+); // ≈1200
 // A multi-finger gesture is a SINGLE undo unit accumulating every finger's ops.
 // 5 fingers × a ~4 s drag at 120 Hz ≈ this many ops in one command — the
 // heaviest single commit fold.
 const MULTI_FINGERS = 5;
-const MULTI_SECONDS = Number(flag('multi-seconds', '4'));
+const MULTI_SECONDS = requireNumberFlag('multi-seconds', flag('multi-seconds', '4'), entry);
 const MULTI_OPS_PER_FINGER = Math.round(HZ * MULTI_SECONDS);
 
 const MARGIN = 160; // keep stroke starts away from the edge-swipe guard band
@@ -229,7 +238,7 @@ function multiFingerGesture(gi, width, height, perFinger = MULTI_OPS_PER_FINGER)
 // stack AND exercises the depth-cap shift path.
 const MAX_UNDO_DEPTH = 20;
 const MAX_UNDO_STEPS = 60;
-const STROKES = Number(flag('strokes', String(MAX_UNDO_DEPTH + 2)));
+const STROKES = requireNumberFlag('strokes', flag('strokes', String(MAX_UNDO_DEPTH + 2)), entry);
 
 function buildScenarios(width, height) {
   const longs = Array.from({ length: STROKES }, (_, i) => longSquiggle(i % 6, width, height));

@@ -1,6 +1,17 @@
 import { DEVICES, resolveDevice } from './devices.mjs';
 import { fail } from '../lib/proc.mjs';
 
+// `entry`-gated numeric parsing: an unparsable flag is fatal for a real CLI
+// invocation, but a library import (vitest's own argv) must not exit — mirrors
+// the `--device` fail() below.
+export function requireNumberFlag(name, raw, entry) {
+  const n = Number(raw);
+  if (entry && Number.isNaN(n)) {
+    fail(`--${name} must be a number, got "${raw}"`);
+  }
+  return n;
+}
+
 export const resolveThrottle = (args, defaultRate) => {
   const hit = args.find((arg) => arg.startsWith('--throttle='));
   const rate = args.includes('--no-throttle') ? 1 : Number(hit ? hit.split('=')[1] : defaultRate);
@@ -50,13 +61,19 @@ export function parsePerfArgs(
     fail(`Unknown --device=${deviceName} — known: ${Object.keys(DEVICES).join(', ')}`);
   }
 
+  const throttle =
+    throttleDefault === undefined ? undefined : resolveThrottle(argv, throttleDefault);
+  if (entry && throttle && Number.isNaN(throttle.rate)) {
+    fail(`--throttle must be a number, got "${flag('throttle', String(throttleDefault))}"`);
+  }
+
   return {
     flag,
     has,
     deviceName,
     device,
-    throttle: throttleDefault === undefined ? undefined : resolveThrottle(argv, throttleDefault),
-    port: Number(flag('port', '4173')),
+    throttle,
+    port: requireNumberFlag('port', flag('port', '4173'), entry),
     build: !has('no-build'),
   };
 }
