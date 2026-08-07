@@ -67,7 +67,7 @@
     {
       id: 'eraserToggle',
       label: 'Eraser',
-      icon: 'eraser',
+      icon: 'brush-eraser',
       checked: () => settings.eraserEnabled,
       toggle: setEraser,
     },
@@ -176,7 +176,7 @@
   {#if settings.applePencilSeen}
     <div class="setting pencil-eraser" transition:slide={SECTION_SLIDE}>
       <ToggleRow
-        icon="eraser"
+        icon="brush-eraser"
         label="Apple Pencil double-tap to erase"
         id="pencilEraserToggle"
         checked={settings.pencilEraserEnabled}

@@ -4,7 +4,7 @@
   // Full-color "spot" icons carry their own palette, so callers that tint
   // monochrome icons with a CSS `filter` must leave these alone. We tag them
   // with `icon-color` so those filter rules can opt out (see ActionsPanel).
-  // Some (pen, crayon, line-weight) mix that fixed palette with currentColor
+  // Some (brush-pen, brush-crayon, line-weight) mix that fixed palette with currentColor
   // ink parts that ActionsPanel tints to the active drawing color.
   //
   // Guarded by Icon.svelte.test.ts: every icon the chroma classifier deems
@@ -14,16 +14,16 @@
   // out because they tint via currentColor / theme vars.
   export const COLOR_ICONS = new Set<CommonIconName>([
     'appearance',
+    'brush-crayon',
+    'brush-eraser',
+    'brush-magic',
+    'brush-pen',
     'camera',
     'controls',
-    'crayon',
-    'eraser',
     'feedback',
     'line-weight',
     'line-weight-eraser',
-    'magic-brush',
     'more-colors',
-    'pen',
     'save-picture',
     'setup',
     'shapes',

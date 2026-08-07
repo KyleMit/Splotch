@@ -101,12 +101,12 @@
   --dark-ink-keyline: transparent;
 
   --icon-appearance-night: #212d4c;
+  --icon-brush-magic-handle: #3a2470;
+  --icon-brush-magic-ferrule: #6e7d99;
   --icon-camera-body: #3f68a8;
   --icon-camera-lens: #33487c;
   --icon-camera-flash: #d97b06;
   --icon-controls-track: #3d2570;
-  --icon-magic-brush-handle: #3a2470;
-  --icon-magic-brush-ferrule: #6e7d99;
   --icon-save-picture-photo: #5699cd;
   --icon-setup-chrome: #1c4c78;
   --icon-shapes-car: #007dfe;
@@ -158,12 +158,12 @@
   --dark-ink-keyline: #e9e7f0;
 
   --icon-appearance-night: #93a6d6;
+  --icon-brush-magic-handle: #d5c4f5;
+  --icon-brush-magic-ferrule: #8fa0bd;
   --icon-camera-body: #86aee0;
   --icon-camera-lens: #6b8cc0;
   --icon-camera-flash: #fabb19;
   --icon-controls-track: #8fbdea;
-  --icon-magic-brush-handle: #d5c4f5;
-  --icon-magic-brush-ferrule: #8fa0bd;
   --icon-save-picture-photo: #7db4e0;
   --icon-setup-chrome: #8ab8e4;
   --icon-shapes-car: #5aa8fe;
@@ -216,12 +216,12 @@
     --dark-ink-keyline: #e9e7f0;
 
     --icon-appearance-night: #93a6d6;
+    --icon-brush-magic-handle: #d5c4f5;
+    --icon-brush-magic-ferrule: #8fa0bd;
     --icon-camera-body: #86aee0;
     --icon-camera-lens: #6b8cc0;
     --icon-camera-flash: #fabb19;
     --icon-controls-track: #8fbdea;
-    --icon-magic-brush-handle: #d5c4f5;
-    --icon-magic-brush-ferrule: #8fa0bd;
     --icon-save-picture-photo: #7db4e0;
     --icon-setup-chrome: #8ab8e4;
     --icon-shapes-car: #5aa8fe;

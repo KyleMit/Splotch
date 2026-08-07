@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
 import {
   toolState,
+  BRUSH_OPTIONS,
   BRUSH_TYPES,
   isInkBrush,
   selectBrush,
@@ -95,6 +96,17 @@ describe('tool state', () => {
 
   it('isInkBrush is true only for pen and crayon', () => {
     expect(BRUSH_TYPES.filter(isInkBrush)).toEqual(['pen', 'crayon']);
+  });
+
+  // The icon names are spelled out as literals in BRUSH_OPTIONS on purpose (see
+  // the comment there — icon-orphans.test.ts counts only quoted literals), so
+  // nothing but this asserts that each entry still points at its own icon.
+  // Without it, renaming a BrushType or an SVG leaves the pairing silently
+  // crossed: every name still type-checks against the generated icon union.
+  it('names each brush icon after its BrushType', () => {
+    for (const option of BRUSH_OPTIONS) {
+      expect(option.icon).toBe(`brush-${option.brush}`);
+    }
   });
 });
 

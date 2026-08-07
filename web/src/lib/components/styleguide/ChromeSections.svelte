@@ -9,11 +9,11 @@
   let demoSlider = $state(60);
 
   const demoBrushes = [
-    { icon: 'pen', label: 'Pen' },
-    { icon: 'crayon', label: 'Crayon' },
-    { icon: 'magic-brush', label: 'Magic brush' },
+    { icon: 'brush-pen', label: 'Pen' },
+    { icon: 'brush-crayon', label: 'Crayon' },
+    { icon: 'brush-magic', label: 'Magic brush' },
   ] as const;
-  let demoBrush = $state<(typeof demoBrushes)[number]['icon']>('pen');
+  let demoBrush = $state<(typeof demoBrushes)[number]['icon']>('brush-pen');
 
   interface ChromeEntry {
     name: string;

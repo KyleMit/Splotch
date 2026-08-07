@@ -27,11 +27,18 @@ export interface BrushOption {
 // render. The eraser keeps its long-standing #eraserButton id (and the magic
 // brush #magicBrushButton) from their days as top-level buttons — the
 // data-off-eraser CSS driven by Settings and the E2E suite address them by id.
+//
+// Each icon name is `brush-` + its BrushType, but it stays spelled out as a
+// literal rather than derived from the brush: icon-orphans.test.ts counts an
+// icon as referenced only where a quoted string literal of its name appears in
+// non-test source, so building the name with a template literal would stop
+// these from vouching for their own SVGs. The pairing this spells out twice is
+// held instead by a drift guard in tool.svelte.test.ts.
 export const BRUSH_OPTIONS: readonly BrushOption[] = [
-  { brush: 'pen', icon: 'pen', label: 'Pen', id: 'penBrushButton' },
-  { brush: 'crayon', icon: 'crayon', label: 'Crayon', id: 'crayonBrushButton' },
-  { brush: 'magic', icon: 'magic-brush', label: 'Magic brush', id: 'magicBrushButton' },
-  { brush: 'eraser', icon: 'eraser', label: 'Eraser', id: 'eraserButton' },
+  { brush: 'pen', icon: 'brush-pen', label: 'Pen', id: 'penBrushButton' },
+  { brush: 'crayon', icon: 'brush-crayon', label: 'Crayon', id: 'crayonBrushButton' },
+  { brush: 'magic', icon: 'brush-magic', label: 'Magic brush', id: 'magicBrushButton' },
+  { brush: 'eraser', icon: 'brush-eraser', label: 'Eraser', id: 'eraserButton' },
 ];
 
 // Derived from the Brush Menu's entries, so the two lists can't drift apart.
