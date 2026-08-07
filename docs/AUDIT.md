@@ -46,50 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Correctness] overnight.mjs neither validates the count argument nor shell-quotes it
-
-**File(s):** `scripts/audit-burndown/overnight.mjs` (lines 24, 51–52) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-```js
-const count = process.argv[2] ?? '600';
-…
-const envPrefix = [`MAX_ISSUES=${count}`, ...forwarded].join(' ');
-const cmd = `env ${envPrefix} node scripts/audit-burndown/burndown.mjs`;
-```
-
-Two defects:
-
-1. **No validation.** `npm run audit:burndown:overnight -- 6OO` (typo) launches a detached job whose
-   `Number('6OO')` is `NaN`; burndown's `while (done < MAX_ISSUES)` (line 1138) is instantly false,
-   so the run preflights green, detaches, prints the launch banner… and exits having done nothing,
-   with only a `finished: 0 fixed` line in a log nobody is watching. scripts/CLAUDE.md requires:
-   "validate inputs up front with a path-specific one-line error and a non-zero exit."
-2. **Inconsistent quoting.** Every forwarded knob goes through `shellQuote` (line 48) but `count` is
-   interpolated raw into a `shell: true` spawn (line 55). Operator-supplied, so not a security hole
-   in practice, but an argument containing a space or metachar corrupts the command line silently
-   instead of failing loudly.
-
-The same `Number(...)`-NaN silence applies to `MAX_ISSUES`/`MAX_HANDLED`/etc. inside burndown.mjs
-itself (lines 94–149), but the launcher is where a human types the value.
-
-#### Proposed solution
-
-```js
-const count = process.argv[2] ?? '600';
-if (!/^\d+$/.test(count) || Number(count) < 1) {
-  console.error(
-    `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`,
-  );
-  process.exit(2);
-}
-```
-
-and `MAX_ISSUES=${shellQuote(count)}` in the prefix for symmetry with the forwarded knobs.
-
 ### [Correctness] android-emulator-smoke boot wait can spin forever and crashes opaquely when no serial matches
 
 **File(s):** `scripts/android-emulator-smoke.mjs` (lines 70–73) @ cd04c367

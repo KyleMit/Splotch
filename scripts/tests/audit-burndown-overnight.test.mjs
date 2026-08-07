@@ -18,3 +18,17 @@ describe('an invalid finding count', () => {
     expect(result.stdout).toBe('');
   });
 });
+
+describe('a positive count with leading zeros', () => {
+  it('reaches preflight instead of rejecting the count', () => {
+    const result = spawnSync(process.execPath, [SCRIPT, '01'], {
+      encoding: 'utf8',
+      env: { ...process.env, AGENT_RUNNER: 'unsupported' },
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('unsupported AGENT_RUNNER: unsupported');
+    expect(result.stderr).toContain('preflight failed — not launching');
+    expect(result.stderr).not.toContain('finding count must be a positive integer');
+  });
+});

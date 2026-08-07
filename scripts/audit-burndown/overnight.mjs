@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { chdirRoot, ensureWorkDirs, LAUNCH_KNOBS, LOGS, shellQuote, WORK } from './lib.mjs';
 
 const count = process.argv[2] ?? '600';
-if (!/^[1-9]\d*$/.test(count)) {
+if (!/^\d+$/.test(count) || Number(count) < 1) {
   console.error(
     `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`
   );
