@@ -93,7 +93,8 @@ Bulk burndown on PR [#830](https://github.com/KyleMit/Splotch/pull/830) (branch
 `claude/audit-burn-down-vf4iui`), the first campaign against the triaged backlog rather than the raw
 tail: **29 fixed · 0 dropped · 0 deferred**, backlog 72 → 43, across a 5-finding canary and a
 24-finding unattended run wrapped on request. The *Silent wrong output* group drained completely —
-all 26 findings — and its section was removed.
+all 25 findings — and its section was removed. The other 4 fixes came from *App correctness*, which
+went 16 → 12.
 
 **Zero drops and zero deferrals is the result worth recording**, because it is the first campaign
 where that happened and it is a direct measurement of the triage. Previous runs against the

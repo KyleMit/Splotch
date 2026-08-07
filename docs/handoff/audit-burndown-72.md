@@ -12,9 +12,14 @@ drained, and `capture` reports `skipped 29 already posted` against 29 fixes. The
 against git independently: zero `defer —` and zero `drop invalid finding` commits, 29 backlog
 entries consumed, and `72 − 29 == 43 == pop.mjs --count`.
 
-The *Silent wrong output* group drained completely (all 26) and its section was removed from
-`docs/AUDIT.md`. The four remaining groups hold 43: app correctness 12 · cross-file agreement 12 ·
-safety/resource 10 · docs that misdirect 8 · coverage gaps 1.
+The *Silent wrong output* group drained completely (all 25) and its section was removed from
+`docs/AUDIT.md`; the other 4 fixes came from *App correctness*, which went 16 → 12. Counted at the
+base commit 0ac5e76ae8a0, the launch groups were silent 25 · app 16 · safety 10 · cross-file 12 ·
+docs 8 · coverage 1 = 72 — the triage log's table records 26 for the first group, but the later
+re-pinning dropped one of them.
+
+The five remaining groups hold 43: app correctness 12 · cross-file agreement 12 · safety/resource 10
+· docs that misdirect 8 · coverage gaps 1.
 
 **To continue:** PR #830 is the live PR for this branch. If it has merged by then, fork a fresh
 branch from the new `main` and open a new PR — a merged PR cannot track new work. Otherwise relaunch
