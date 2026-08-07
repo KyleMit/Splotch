@@ -103,8 +103,9 @@ deserve a line in pipeline.md.
   chromium executablePath is hardcoded for this sandbox).
 * Regenerate the historical-versus-current proof sheets with
   `npm run gen:coloring-book-proof-sheet -- farm --source git:46bc770 --out <file>` and
-  `npm run gen:coloring-book-proof-sheet -- creatures/owl-tall --source git:<ref> --out <file>`,
-  using `6e3f14f` or the pre-rename ref `34a606f` for the owl sheet.
+  `npm run gen:coloring-book-proof-sheet -- creatures/owl-tall --source git:6e3f14f --out <file>`.
+  The current CLI cannot faithfully regenerate the deleted pre-rename `34a606f` sheet because that
+  ref predates the modern `.outline.webp` and `.light.webp` paths.
 * `overview-owl-compare.webp` — full-sheet view of the owl-tall compare.
 * `pair-{cat-wide,cow-tall,horse-tall}-{before,after}.webp` — night-tile Combined-view crops from
   the farm compare sheet (before = `git:46bc770` pre-fork fill, after = shipped chalk-fork fill,
