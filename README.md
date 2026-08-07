@@ -125,8 +125,7 @@ ideas-exploration/
     ├── code/            ← working scripts and re-appliable .patch files
     └── *.webp …         ← before/after evidence (≤560 px), plus per-idea extras
                            (idea-24 carries the finished heart-wide/umbrella-tall
-                           assets; idea-21 carries generated comparison sheets;
-                           idea-23/25 carry golden-scores/manifest snapshots)
+                           assets; idea-23/25 carry golden-scores/manifest snapshots)
 ```
 
 Session context: run by 25 sequential Claude subagents on branch
