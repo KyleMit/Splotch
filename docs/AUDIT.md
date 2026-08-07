@@ -58,59 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Docs] architecture skill's "file-by-file source map" and route table have drifted well behind `web/src/`
-
-**File(s):** `.ruler/skills/architecture/SKILL.md` (source map lines 62–135, route table lines
-147–161, tech-stack lines 18–19 and 55–56, `server/rateLimit.ts` row line 133) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-The skill advertises a "file-by-file source map of web/src/" (description, line 3) and is the
-designated navigation reference, but large module families are absent or misdescribed:
-
-* **`lib/drawing/`** — the map (lines 66–90) omits `aiImage.ts`, `aiImageResponse.ts`,
-  `earlyBoot.ts` (the ADR-0072 pre-hydration boot the run-splotch skill leans on), `folderSave.ts`
-  (named at line 81 as if mapped, but has no row), `magicBrush.ts`, and `perf.ts` (named at line 155
-  of the profiling skill as the shared marks flag).
-* **`lib/state/`** — omits `aiGeneration.svelte.ts`, `aiKey.ts`, `modal.svelte.ts`,
-  `saveFolder.svelte.ts`, `ui.svelte.ts`.
-* **`lib/actions/`** — lists only `dragToClear` and `modalDialog` (lines 105–106); missing
-  `launchGuard`, `pinchTextZoom`, `pinchZoom`, `pointerCapture`, `scribbleGuard`, `spreadTracker`.
-* **`lib/server/`** — the rows at lines 127–133 omit `http.ts` (the shared
-  `throttled()`/`readJsonBody` helpers the api skill calls mandatory), `github.ts` (the ADR-0060
-  seam), `config.ts`, `generationAuthorization.ts`, `rateLimitKeys.ts`, `rateLimitPolicy.ts`,
-  `securityHeaders.ts`, `usage.ts`. The `server/rateLimit.ts` row (line 133) still reads "per-token
-  rate limiting for the image generation endpoint" — it is the generic per-key sliding window
-  backing seven endpoint policies in `rateLimitPolicy.ts`.
-* **`lib/` top level** — no rows for `adminFormat.ts`, `aiCredential.ts`, `apiHeaders.ts`,
-  `appVersion.ts`, `devHarness.ts`, `deviceInfo.ts`, `deviceReport.ts`, `errorLog.ts`, `fonts.ts`,
-  `haptics.ts`, `idb.ts`, `idle.ts`, `imagePrefetch.ts`, `inviteLink.ts`, `latestRequest.ts`,
-  `notchBand.ts`, `palette.ts`, `safeArea.ts`, `storageKeys.ts`, or the `plugins/` facades that
-  mobile/native.md describes at length.
-* **Route table** (lines 147–161) — missing `/api/report` and `/api/csp-report`, both live routes
-  (`web/src/routes/api/report/`, `web/src/routes/api/csp-report/`) fully documented in the api
-  skill.
-* **Tech stack** — lines 18–19 say Vite "Injects three compile-time constants: `__APP_VERSION__`,
-  `__BUILD_TIME__`, `__NATIVE_API_BASE__`"; `web/defines.ts` lines 17–22 define six, and the three
-  omitted (`__IS_CAPACITOR__`, `__PERF_MARKS__`, `__DEV_HARNESS__`) include load-bearing gates other
-  skills document (the tree-shaking gate in mobile/native.md lines 58–60 and the marks flag in
-  profiling lines 152–157). Line 55–56 describes Maestro as "Android smoke test" only; the iOS smoke
-  (`npm run test:ios`) has existed since the ios-deploy workflow landed.
-
-An auditor or contributor using this map concludes files don't exist, or places new code where an
-unlisted sibling already lives.
-
-#### Proposed solution
-
-Refresh the map against the actual tree (the listing above is the checklist), add the two missing
-route rows, fix the `rateLimit.ts` description, say "six compile-time constants" (or name the file
-`web/defines.ts` and drop the count per the no-mutable-facts convention), and mention iOS beside
-Android in the Maestro bullet. Consider a drift-guard test comparing `ls web/src/lib` module names
-against the map's cited paths so the next split fails CI instead of silently rotting — the repo's
-own "cross-file agreement is never maintained by prose" convention applied to its own docs.
-
 ### [Docs] architecture route table describes generate-image's retired "base64 PNG" contract, contradicting the api skill
 
 **File(s):** `.ruler/skills/architecture/SKILL.md` (line 150) @ cd04c367
