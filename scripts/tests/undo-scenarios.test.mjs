@@ -387,6 +387,7 @@ describe('engine selection', () => {
       longFrames: 1 + 2 + 3,
     });
     expect(metrics.longTasks.map((task) => task.duration)).toEqual([50, 100, 150]);
+    expect(metrics.heap.beforeBytes).toBeNull();
     expect(metrics.heap.afterBytes).toBe(HEAP_BYTES_PER_SCENARIO * 3);
 
     const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));

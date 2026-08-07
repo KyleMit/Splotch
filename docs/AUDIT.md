@@ -44,45 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] `heapBefore ?? 0` masks "unavailable" as zero, producing a bogus Memory section for `perf:undo` runs
-
-**File(s):** `scripts/perf/profile-artifacts.mjs` (`buildMetrics`, line 10);
-`scripts/perf/undo-scenarios.mjs` (line 682); `scripts/perf/analyze.mjs` (`renderReport`, lines
-514–529) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-```js
-heap: { beforeBytes: heapBefore ?? 0, afterBytes: heapAfter ?? obs.heapBytes ?? 0 },
-```
-
-`heapBytes()` returns `null` on engines without `performance.memory` (WebKit), and
-`undo-scenarios.mjs:494` passes `heapBefore: 0` outright. `renderReport` gates the Memory section
-only on `s.heap.afterBytes` being truthy (line 515), then prints:
-
-```
-| JS heap before | 0.0 MiB |
-| JS heap after  | 87.3 MiB |
-| Delta          | 87.3 MiB |
-```
-
-— a fabricated "the session leaked 87 MiB" reading, when in truth the before-sample was never taken.
-The zero-coalescing erases the distinction the renderer needs between "measured 0" (impossible for a
-live page) and "not measured".
-
-#### Proposed solution
-
-Keep `null` through:
-`heap: { beforeBytes: heapBefore ?? null, afterBytes: heapAfter ?? obs.heapBytes ?? null }`, have
-`renderReport` print `n/a` for a null before-value and skip the Delta row when either side is null,
-and drop the explicit `heapBefore: 0` in `undo-scenarios.mjs` (pass `null`; its own report already
-owns the meaningful per-scenario heap table and explains why `performance.memory` is the wrong lens
-there anyway).
-
----
-
 ### [Correctness] `beat()` converts every failure — including harness bugs — into a console-only "skipped", leaving no trace in the artifacts
 
 **File(s):** `scripts/perf/session.mjs` (`beat`, lines 34–42; `runToddlerSession`, lines 118–163) @
