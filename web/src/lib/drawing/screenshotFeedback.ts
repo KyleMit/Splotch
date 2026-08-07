@@ -2,8 +2,7 @@ import {
   ACTION_UNAVAILABLE_CLASS,
   replayActionUnavailableFeedback,
 } from '$lib/actionUnavailableFeedback';
-
-export const SCREENSHOT_BUTTON_ID = 'screenshotButton';
+import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
 
 const CAPTURE_FEEDBACK_CLASS = 'screenshot-capture-feedback';
 

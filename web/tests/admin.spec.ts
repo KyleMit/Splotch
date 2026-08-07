@@ -1,13 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
-import { playwrightBaseURL } from '../playwright.shared';
 import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
 
-// The admin console has two front doors over one shared core ($lib/server/admin
-// + $lib/server/tokens): the server-rendered /admin (form actions + HTTP-only
-// cookie session) and /admin/native (the static page the native apps bundle,
-// which talks JSON to /api/admin/* with a bearer session). Both are exercised
-// here against the same secret the Playwright web server is started with.
+// The admin console is web-only: the server-rendered /admin (form actions +
+// HTTP-only cookie session) over the shared core ($lib/server/admin +
+// $lib/server/tokens). Nothing in the app links to it and the native bundle has
+// no admin route at all — an in-app door to a privileged console reads as
+// hidden functionality to a store reviewer. The JSON /api/admin/* endpoints
+// remain (scripts/lib/adminClient.mjs drives them) and are covered here too.
 // Token names are unique per test because the preview server's in-memory list
 // is shared across the parallel workers.
 
@@ -34,7 +34,7 @@ test('web /admin rejects a wrong key', async ({ page }) => {
 });
 
 test('web /admin signs in via cookie session, manages tokens, signs out', async ({ page }) => {
-  await signInToAdmin(page, '/admin');
+  await signInToAdmin(page);
   // The preview server has no Netlify Blobs, so the token list is the in-memory
   // env-seeded fallback — the console must warn that edits won't persist.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
@@ -56,7 +56,7 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
 // phone widths. This costs one of the shared rate-limit budget's sign-ins —
 // see the tally in admin-helpers.ts.
 test('web /admin ledger keeps its rows usable across viewport widths', async ({ page }) => {
-  await signInToAdmin(page, '/admin');
+  await signInToAdmin(page);
   const token = `e2e-widths-${Date.now()}`;
   await adminConsole(page).fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
@@ -92,91 +92,8 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
   await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
 });
-
-test('native console /admin/native signs in via the API and manages tokens', async ({ page }) => {
-  await signInToAdmin(page, '/admin/native');
-  // The preview server has no Netlify Blobs, and the API snapshot carries that
-  // fallback status to the native console just as the web page data does.
-  await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
-  await addsAndRemovesToken(page, `e2e-native-${Date.now()}`);
-  // The native door has no usage tracking, so the ledger must drop the usage
-  // columns rather than labelling permanently blank cells.
-  await expect(page.getByRole('columnheader', { name: 'Generations' })).toHaveCount(0);
-
-  // The bearer session persists in secure storage, so a reload stays signed in.
-  await page.reload();
-  await expect(adminConsole(page)).toBeVisible();
-
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-});
-
-test('native console updates persistence status from every API snapshot', async ({ page }) => {
-  const token = `e2e-native-persistent-${Date.now()}`;
-  await page.route('**/api/admin/tokens', async (route) => {
-    const isInitialSnapshot = route.request().method() === 'GET';
-    await route.fulfill({
-      json: {
-        ok: true,
-        tokens: isInitialSnapshot ? [] : [token],
-        invites: isInitialSnapshot
-          ? []
-          : [{ token, url: `${playwrightBaseURL}/?ai_access_token=${token}` }],
-        persistent: isInitialSnapshot,
-      },
-    });
-  });
-
-  await signInToAdmin(page, '/admin/native');
-  await expect(page.getByText('Netlify Blobs is unavailable')).toBeHidden();
-
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
-  await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
-});
-
-// The native console keeps its flash in component state, so a success banner
-// from one session must not greet the next one. Both admin endpoints are stubbed
-// so this spec's two sign-ins stay off the shared adminLogin rate-limit budget
-// tallied in admin-helpers.ts.
-test('native console drops a success flash on sign-out', async ({ page }) => {
-  const token = `e2e-native-flash-${Date.now()}`;
-  let added = false;
-  await page.route('**/api/admin/login', (route) =>
-    route.fulfill({ json: { ok: true, session: 'e2e-native-flash-session' } })
-  );
-  await page.route('**/api/admin/tokens', async (route) => {
-    if (route.request().method() === 'POST') added = true;
-    const tokens = added ? [token] : [];
-    await route.fulfill({
-      json: {
-        ok: true,
-        tokens,
-        invites: tokens.map((name) => ({
-          token: name,
-          url: `${playwrightBaseURL}/?ai_access_token=${name}`,
-        })),
-        persistent: true,
-      },
-    });
-  });
-
-  await signInToAdmin(page, '/admin/native');
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
-  const flash = page.getByText(`Added “${token}”`);
-  await expect(flash).toBeVisible();
-
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
-
-  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
-  await expect(adminConsole(page)).toBeVisible();
-  await expect(flash).toBeHidden();
-});
-
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
-  await signInToAdmin(page, '/admin');
+  await signInToAdmin(page);
   await page.route(
     (url) => url.pathname === '/admin' && url.search === '?/add',
     (route) => route.abort()
@@ -186,22 +103,6 @@ test('web /admin surfaces a network failure instead of failing silently', async 
   // The preview server's Blobs-fallback warning is also role="alert", so pick
   // out the error flash by its text.
   await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
-});
-
-test('native console reports a failed post-login snapshot and recovers on reload', async ({
-  page,
-}) => {
-  await page.goto('/admin/native');
-  // Let the login POST through but kill the follow-up tokens GET: the session
-  // is already saved by then, so the login card must say what went wrong…
-  await page.route('**/api/admin/tokens', (route) => route.abort());
-  await submitAdminKey(page, ADMIN_ACCESS_TOKEN);
-  await expect(page.getByRole('alert')).toContainText('Could not reach the server');
-
-  // …and once the network is back, a reload signs in from the stored session.
-  await page.unroute('**/api/admin/tokens');
-  await page.reload();
-  await expect(adminConsole(page)).toBeVisible();
 });
 
 test('admin API requires a valid bearer session', async ({ request }) => {

@@ -1,0 +1,45 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
+
+const MANIFEST_PATH = 'ios/App/App/PrivacyInfo.xcprivacy';
+const PROJECT_PATH = 'ios/App/App.xcodeproj/project.pbxproj';
+
+// A privacy manifest that exists on disk but isn't in the target's Resources
+// build phase is not in the .ipa, and the upload still fails ITMS-91053 —
+// with a file sitting right there that says otherwise. Xcode owns the pbxproj,
+// so nothing but a test connects the two.
+describe('iOS privacy manifest', () => {
+  const manifest = read(MANIFEST_PATH);
+  const project = read(PROJECT_PATH);
+
+  it('declares the app as non-tracking', () => {
+    expect(manifest).toMatch(/<key>NSPrivacyTracking<\/key>\s*<false\/>/);
+    expect(manifest).toMatch(/<key>NSPrivacyTrackingDomains<\/key>\s*<array\/>/);
+  });
+
+  it('declares a reason for the UserDefaults required-reason API', () => {
+    // @capacitor/preferences writes through UserDefaults.standard and ships no
+    // manifest of its own, so the app target has to carry the declaration.
+    expect(manifest).toContain('NSPrivacyAccessedAPICategoryUserDefaults');
+    expect(manifest).toMatch(/<string>CA92\.1<\/string>/);
+  });
+
+  it('opens and closes a single plist dict', () => {
+    expect(manifest).toContain('<!DOCTYPE plist');
+    expect(manifest.match(/<dict>/g)?.length).toBe(manifest.match(/<\/dict>/g)?.length);
+    expect(manifest.trimEnd().endsWith('</plist>')).toBe(true);
+  });
+
+  it('is referenced by the Xcode project and copied into the bundle', () => {
+    expect(project).toContain('PrivacyInfo.xcprivacy */ = {isa = PBXFileReference');
+    expect(project).toContain('PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile');
+
+    const resourcesPhase = project.slice(
+      project.indexOf('/* Begin PBXResourcesBuildPhase section */'),
+      project.indexOf('/* End PBXResourcesBuildPhase section */')
+    );
+    expect(resourcesPhase).toContain('PrivacyInfo.xcprivacy in Resources');
+  });
+});

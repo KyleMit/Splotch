@@ -1,6 +1,11 @@
 # ADR-0016: Admin Console via Shared Server Core + Bearer-Session API for Native
 
-**Status:** Active **Date:** 2026-06
+**Status:** Superseded by [ADR-0101](0101-admin-console-is-web-only-and-unlinked.md) (2026-08) — the
+native front door (`/admin/native`) is deleted and the console is web-only and unlinked. The
+**shared server core this ADR established is still in force**: `lib/server/admin.ts`,
+`lib/server/tokens.ts`, the derived-HMAC session, and the `/api/admin/*` endpoints all remain, and
+the reasoning below for choosing that core over the rejected alternatives still applies. Only the
+second front door is gone. **Date:** 2026-06
 
 ## Context
 

@@ -96,7 +96,7 @@
     # is the same-origin /api/* calls; fonts are the self-hosted Quicksand.
     # frame-ancestors 'none' is the modern twin of the X-Frame-Options above.
     # SCOPE: Netlify custom headers attach only to CDN/static responses — the
-    # prerendered pages (/, /privacy, /admin/native) get these headers from
+    # prerendered pages (/, /privacy) get these headers from
     # here. Function-served SSR responses (/admin) don't, so
     # web/src/hooks.server.ts stamps the same set — sourced once from
     # web/src/lib/server/securityHeaders.ts — onto them so /admin matches

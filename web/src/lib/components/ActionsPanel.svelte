@@ -9,7 +9,7 @@
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
-  import { ui, coloringBookModal, aiPromptModal } from '$lib/state/ui.svelte';
+  import { ui, coloringBookModal, aiPromptModal, SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
@@ -27,7 +27,6 @@
   } from '$lib/actionButtonLayout';
   import { undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
-  import { SCREENSHOT_BUTTON_ID } from '$lib/drawing/screenshotFeedback';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
 

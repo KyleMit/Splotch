@@ -1,6 +1,6 @@
 import { getViewState } from './engine';
 import type { ExportOptions } from './exportDrawing';
-import { SCREENSHOT_BUTTON_ID } from './screenshotFeedback';
+import { SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
 import { POLAROID_CLEANUP_TIMEOUT_MS } from './screenshotTiming';
 
 const POLAROID_MAX_WIDTH_PX = 480;
