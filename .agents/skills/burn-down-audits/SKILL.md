@@ -391,8 +391,10 @@ abort the batch immediately on a connector error. Confirm success from the conne
 result (`isError: false` when exposed); do not search its serialized text for the word `error`,
 because the success field itself contains that substring.
 
-Iteration filenames restart at `iter0001` and drops can reuse a number within one run. Correlate by
-the timestamped `run.log` line and file mtime, not by the number alone.
+Iteration filenames restart at `iter0001` every run, so a number belongs to as many findings as
+there have been runs; within one run the tag counts every outcome (fix, drop, and deferral alike),
+so it is unique there. Correlate by the timestamped `run.log` line and file mtime, not by the number
+alone.
 
 ## Resume after a crash
 

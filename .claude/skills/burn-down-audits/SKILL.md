@@ -373,11 +373,11 @@ finding text. Idempotent — it dedupes by SHA.
 > envelope it hands you looks exactly like a real one. Always filter by mtime against the run's
 > start line: `find .audit-work/logs -name 'iter*.json' -newermt '<HH:MM>'`.
 >
-> **Names also collide *within* a single run, on every drop.** The tag is
-> `iter${done + deferred + 1}` — `dropped` is not in it — so the finding after a dropped one reuses
-> the same `iterNNNN` and overwrites its envelopes. Two different findings legitimately logging
-> `iter0002` in one run is not a bug, but it means the tag is not a finding identifier: correlate by
-> the `run.log` line and its timestamp, not by iteration number.
+> **Within one run the tag counts outcomes, not fixes.** It is
+> `iter${done + dropped + deferred + 1}`, so a fix, a drop, and a deferral all advance it and no two
+> findings in a run share a tag or overwrite each other's envelopes. Across runs it is still not a
+> finding identifier — the restart above is what breaks that — so correlate by the `run.log` line
+> and its timestamp, not by iteration number.
 
 **Never wrap a SHA in backticks in GitHub-bound text.** GitHub's native linker turns a bare
 plain-text commit SHA into a link to that commit (rendered as a short, hoverable reference); inside
@@ -834,12 +834,12 @@ state in the conversation:
   **`INVALID` is what a drop looks like — the word "dropped" never appears.** The driver logs the
   verdict verbatim (`INVALID: <reason>`) and only reports `dropped` in the closing `finished:`
   tally, so a filter without it stays silent through every drop. That silence is easy to misread as
-  progress, because the only other trace is an `iter` line whose tag *repeats* the previous one (the
-  tag is `done + deferred + 1`, which excludes drops) while the remaining-count still falls. Two or
-  three consecutive `iterNNNN` lines with a falling count is the drop signature, not a bug — but you
-  should be reading the verdict, not inferring it. Worth watching because a drop is the one
-  unrecoverable outcome: it deletes a finding permanently, so a wrong `INVALID` is the only mistake
-  this loop makes that nothing downstream can catch.
+  progress, and the `iter` lines will not break the tie for you: the tag counts every outcome
+  (`done + dropped + deferred + 1`), so a drop advances it exactly like a fix does and the sequence
+  of tags alone never says which one happened. Read the verdict rather than inferring it from the
+  tags or the falling remaining-count. Worth watching because a drop is the one unrecoverable
+  outcome: it deletes a finding permanently, so a wrong `INVALID` is the only mistake this loop
+  makes that nothing downstream can catch.
 
   **Arming it in the same breath as the launch does not work, and fails silently-ish.** A fresh
   container has no `run.log` until the driver's first write, and `tail -f` on a missing file exits

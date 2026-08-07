@@ -44,44 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] Iteration tag omits `dropped`, so a drop makes the next finding reuse the same log-file names
-
-**File(s):** `scripts/audit-burndown/burndown.mjs` (line 1126) @ f5bf8767;
-`scripts/audit-burndown/cost.mjs` (lines 11–31, 57); `scripts/audit-burndown/backfill-comments.mjs`
-(lines 100–112)
-
-**Priority:** P2
-
-#### Problem
-
-```js
-const tag = `iter${String(done + deferred + 1).padStart(4, '0')}`;
-```
-
-Only fixes and deferrals advance the tag. When a finding is dropped as INVALID (`dropped += 1` at
-line 572; `done`/`deferred` unchanged), the *next* finding computes the identical tag. Consequences:
-
-* `runAgentStep` writes envelopes with `writeFileSync(join(logsDir,`${tag}.json`), out)`
-  (agent-runner.mjs line 285), so the next finding's `iterNNNN.verify.json` **overwrites** the
-  dropped finding's verify envelope — the very record that explains *why* it was dropped, which the
-  verifier prompt (verifier.md lines 21–28) goes to great lengths to make auditable ("lets a reader
-  who audits the drop commits later tell 'the audit was wrong' from 'the audit is working as
-  designed' apart"). The reason survives only as one line in the commit message.
-* `${tag}.err` is `appendFileSync`'d (agent-runner.mjs line 286), so stderr from two different
-  findings interleaves in one file.
-* `cost.mjs` counts one `.verify` file where two verify calls were paid (line 57
-  `calls.filter((call) => call.file.includes('.verify')).length`), and the overwritten call's
-  cost/turn/error record disappears from the "any capped or errored calls" table.
-* `backfill-comments.mjs`'s mtime heuristic (lines 100–112) is built to disambiguate same-named
-  files **across runs**; same-named files **within one run** were plainly not anticipated.
-
-#### Proposed solution
-
-Include drops in the counter: `done + dropped + deferred + 1` — i.e. one tag per popped finding,
-which is what "iteration" means everywhere else (run.log, backfill). Verify nothing parses the tag
-number as a fixes-only ordinal (status.mjs and backfill match `iter\d+` opaquely, so they're fine).
-A one-character fix plus a regression test in `scripts/tests/` once the loop is testable.
-
 ### [Correctness] The finish path swallows a failed final push — an unattended run can end "successfully" with unpushed commits
 
 **File(s):** `scripts/audit-burndown/burndown.mjs` (`pushBatch`, lines 335–350; finish, lines

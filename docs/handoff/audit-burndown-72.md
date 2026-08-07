@@ -106,8 +106,9 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
   needs a correction. `git rev-parse --verify` resolves orphans happily, so it is **not** the check;
   use reachability: `git merge-base --is-ancestor "$sha" HEAD`.
 * **The monitor filter must include `INVALID`.** The driver never logs the word "dropped".
-* **Iteration tags repeat on a drop** (`iter${done + deferred + 1}` excludes drops), so two
-  consecutive `iterNNNN` lines with a falling remaining-count is a drop signature, not a bug.
+* **Iteration tags count outcomes, not fixes** (`iter${done + dropped + deferred + 1}`), so a drop
+  advances the tag exactly like a fix and the tag sequence alone never tells you which happened —
+  read the `INVALID` verdict.
 * **Never run `npm run ruler:check`, `gen:tokens`, or `gen:assets:manifest` while the driver is
   live** — they mutate the tree and their writes land in the in-flight fix commit.
 * **`pgrep -f` and `pkill -f` match their own command line.** Anchor on
