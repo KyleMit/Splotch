@@ -207,6 +207,17 @@
         document.dispatchEvent(new Event('visibilitychange'));
       },
 
+      // Apply a new box with no event at all — the layout pass that lands after
+      // a re-entry the engine has already handled. Lets a spec reproduce the
+      // unmeasured-rect resume (resumeTo(0, 0), then the real box arrives here)
+      // without the second visibilitychange that would itself re-sync the
+      // engine and hide the bug. Test-only: nothing in the app resizes the
+      // canvas silently.
+      layoutTo(w: number, h: number) {
+        wrapperEl.style.width = `${w}px`;
+        wrapperEl.style.height = `${h}px`;
+      },
+
       // Synchronous synthetic stroke — used only by the color-change debounce
       // test, where the < 100ms timing must be deterministic (real Playwright
       // input can't reliably hit a sub-100ms window). Goes through the same

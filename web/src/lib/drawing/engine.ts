@@ -22,6 +22,7 @@
 //   emptyScan.ts        cheap blank-canvas detection
 //   penStreamQuirks.ts  WebKit merged-stream pen-contact adoption
 //   engineListeners.ts  DOM listener registration and teardown tracking
+//   canvasMeasure.ts    cached canvas geometry + the unmeasured-rect rule
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { dev } from '$app/environment';
@@ -97,6 +98,7 @@ import {
   resetActiveCommandForClear,
   snapshotCount,
 } from './undoHistory';
+import { createCanvasMeasure, type CanvasRect } from './canvasMeasure';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import type { ExportOptions, ExportSnapshot } from './exportDrawing';
@@ -366,40 +368,12 @@ function notifyViewChange() {
 
 // --- Pointer → paper coordinate mapping ------------------------------------
 
-interface CanvasRect {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
-// Cached canvas geometry so the pointer hot path never calls
-// getBoundingClientRect() (each call forces a synchronous reflow). Recomputed
-// only on resize/scroll/orientation change — see refreshCanvasRect().
-let canvasRect: CanvasRect = { left: 0, top: 0, width: 0, height: 0 };
-let rectScaleX = 1;
-let rectScaleY = 1;
-
-// Snapshot the canvas's client rect and the backing-pixel scale factors. Called
-// only off the hot path (resize/scroll/orientation), so the per-pointermove
-// pointerToScreen() can stay reflow-free.
-function refreshCanvasRect(rect?: DOMRect) {
-  if (!canvas) return;
-  rect ??= canvas.getBoundingClientRect();
-  canvasRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-  rectScaleX = rect.width ? viewport.width / rect.width : 1;
-  rectScaleY = rect.height ? viewport.height / rect.height : 1;
-}
-
-// Backing-store (screen) coordinates of a pointer event — the physical space
-// the edge-swipe gesture geometry runs in (OS gesture bands sit at device
-// edges, which a locked paper's rotation would otherwise move).
-function pointerToScreen(e: PointerEvent) {
-  return {
-    x: (e.clientX - canvasRect.left) * rectScaleX,
-    y: (e.clientY - canvasRect.top) * rectScaleY,
-  };
-}
+const measure = createCanvasMeasure({
+  canvas: () => canvas,
+  viewport: () => viewport,
+});
+const refreshCanvasRect = measure.refresh;
+const pointerToScreen = measure.toScreen;
 
 // Paper coordinates — the space ops are recorded and rendered in. Identity
 // unless a rotation has locked the paper (see resizeCanvas / ADR-0050).
@@ -422,7 +396,7 @@ function sheetBoundsPaper(): { x: number; y: number; width: number; height: numb
 // The cached canvas client rect, so components can position pointer-following
 // UI (e.g. the eraser cursor) without their own per-move getBoundingClientRect.
 export function getCanvasRect(): Readonly<CanvasRect> {
-  return canvasRect;
+  return measure.rect;
 }
 
 // --- Resize and rotation ----------------------------------------------------
@@ -459,7 +433,11 @@ function applyPaperView(presentation: PaperPresentation) {
   applyTiledView(tiledRendererActive() ? IDENTITY_PAPER_VIEW : paperView);
 }
 
+// An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
+// why rebuilding from one is unrecoverable — and the rebuild re-arms for the
+// first layout that gives the canvas a box.
 function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
+  if (!measure.accept(rect, resizeCanvas)) return;
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,
@@ -1315,6 +1293,7 @@ function teardownEngine() {
     clearTimeout(resizeSettleTimer);
     resizeSettleTimer = null;
   }
+  measure.cancel();
   // Pointer-input state must not outlive the mount, unlike the drawing
   // state (see the persistence note in undoHistory.ts): a stale
   // activePointers entry surviving into a remount would let hover moves paint

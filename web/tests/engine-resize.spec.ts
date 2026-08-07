@@ -152,3 +152,66 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
 });
+
+test('a resume that beats the layout pass leaves the canvas drawable', async ({ page }) => {
+  // The visibilitychange a re-entry fires can land before the WebView has
+  // re-laid out, so the canvas reports a client rect with no area. Adopting one
+  // collapsed the paper and every live tile to zero, and nothing re-ran the
+  // rebuild afterwards: the app came back fully responsive — colors switched,
+  // buttons worked — with a canvas that silently ate every stroke until reload.
+  await page.evaluate(() => window.__engine.resumeTo(0, 0));
+
+  // The unmeasured rect is refused outright, so the paper is still the paper.
+  expect((await page.evaluate(() => window.__engine.getViewState())).paperCssWidth).toBe(300);
+
+  // Layout settles at a DIFFERENT size, with no event of its own. Restoring the
+  // original 300×300 would assert nothing: the guard above already preserved
+  // those values, so every check would pass with the deferred re-measure
+  // removed. Only a geometry the engine has not seen can distinguish the two.
+  await page.evaluate(() => window.__engine.layoutTo(500, 400));
+  await expect
+    .poll(async () => (await page.evaluate(() => window.__engine.getViewState())).paperCssWidth)
+    .toBe(500);
+
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 30, y: 30 },
+    { x: 120, y: 30 },
+  ]);
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+});
+
+test('a drawing survives a resume that beats the layout pass', async ({ page }) => {
+  // Same unmeasured rect, but with ink on the canvas: the paper is kept and
+  // presented through the reported viewport, so a zero box scaled the view to
+  // nothing and mapped every later stroke through a degenerate transform.
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 40, y: 100 },
+      { x: 180, y: 100 },
+    ])
+  );
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  await page.evaluate(() => window.__engine.resumeTo(0, 0));
+  await page.evaluate(() => window.__engine.layoutTo(500, 400));
+
+  // The 300×300 paper is kept and contain-fit into the larger box, so the
+  // recovered view scales it up — a value that only the deferred re-measure can
+  // produce, where the collapsed view scaled it to nothing.
+  await expect
+    .poll(async () => (await page.evaluate(() => window.__engine.getViewState())).scale)
+    .toBeGreaterThan(1);
+  expect((await page.evaluate(() => window.__engine.getViewState())).paperCssWidth).toBe(300);
+
+  // The stroke came through the rebuild, and the recovered transform still maps
+  // new input onto the paper.
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+  const box = await page.locator('#engineCanvas').boundingBox();
+  await drawStroke(page, box, [
+    { x: 40, y: 220 },
+    { x: 180, y: 220 },
+  ]);
+  await expect.poll(() => count(page)).toBeGreaterThan(before);
+});
