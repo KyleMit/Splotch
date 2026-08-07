@@ -46,49 +46,6 @@ eventually arrive as a bug report — but the reporter is a two-year-old, so the
 Unbounded work, unvalidated input reaching a shell, unpinned remote code, and files that reach the
 production bundle or the clone weight without being needed there.
 
-### [Correctness] `install-maestro` pipes an unpinned remote script to bash and never verifies the pin took effect
-
-**File(s):** `.github/actions/install-maestro/action.yml` (lines 7–13) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-```yaml
-- name: Install Maestro CLI
-  shell: bash
-  env:
-    MAESTRO_VERSION: 2.4.0
-  run: |
-    curl -fsSL "https://get.maestro.mobile.dev" | bash
-    echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
-```
-
-This is the one place in `.github/` that executes remote code without a pin: every external action
-is SHA-pinned (and `scripts/tests/workflow-hygiene.test.mjs` enforces exactly that, rejecting any
-`uses:` ref not ending in a 40-char SHA), yet whatever `get.maestro.mobile.dev` serves at run time
-executes verbatim on the runner. The `MAESTRO_VERSION` env var pins the CLI *only if* the remote
-script continues to honor that variable — if upstream renames it, the step silently installs latest,
-and the action's own description ("Install the pinned Maestro CLI version") becomes false with no
-failing signal. Both release-tag deploy smokes (`android-deploy.yml` line 55, `ios-deploy.yml`
-line 32) depend on it at the most sensitive moment in the pipeline.
-
-#### Proposed solution
-
-Two independent, cheap hardenings:
-
-1. **Assert the pin took:** after install, fail loudly on drift —
-   ```bash
-   installed="$("$HOME"/.maestro/bin/maestro --version 2>/dev/null | head -1)"
-   [[ "$installed" == *"$MAESTRO_VERSION"* ]] || { echo "::error::Maestro $installed != pinned $MAESTRO_VERSION"; exit 1; }
-   ```
-2. Optionally, fetch the install script from Maestro's GitHub repo at a tagged ref (or vendor the
-   ~30-line script into `.github/actions/install-maestro/`) so the executed bytes are pinned the
-   same way every `uses:` ref already is.
-
-Tradeoff: vendoring means occasionally refreshing the script; the version assertion alone converts
-"silently wrong version" into a red job, which is most of the value.
-
 ### [Correctness] The E2E spec sanitizer admits leading-dash values and `..` traversal
 
 **File(s):** `scripts/audit-burndown/burndown.mjs` (lines 714–719, 530–537) @ cd04c367
