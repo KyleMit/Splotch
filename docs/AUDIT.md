@@ -44,64 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] Mocked lib constants in audit-cli.test.mjs have already drifted from their real values
-
-**File(s):** `tools/asset-gen/tests/audit-cli.test.mjs` (mock factories, lines 58–139),
-`tools/asset-gen/tests/light-fill-cli.test.mjs` (lines 46–48) @ f5bf8767
-
-**Priority:** P2
-
-#### Problem
-
-The audit-CLI plumbing tests replace each scorer module with a `vi.mock` factory that **re-declares
-the module's exported threshold constants as literals**, and four of them no longer match the real
-module:
-
-```js
-// audit-cli.test.mjs:77-79
-vi.mock('../lib/eye-fill.mjs', () => ({
-  EYE_RING_DEPTH_MAX: 5,          // real: lib/eye-fill.mjs:173 → 4
-```
-
-```js
-// audit-cli.test.mjs:105-108
-vi.mock('../lib/night-scores.mjs', () => ({
-  DRIFT_THRESHOLD_DEFAULT: 0.1,   // real: lib/night-scores.mjs:29 → 0.004
-  NIGHT_BG_LUMA_MAX_DEFAULT: 50,  // real: lib/night-scores.mjs:40 → 60
-  LINE_WHITE_MIN_DEFAULT: 200,    // real: lib/night-scores.mjs:136 → 150
-```
-
-The other mocked constants (`KEEP_THRESHOLD: 0.92` / `LOCAL_KEEP_THRESHOLD: 0.8` at lines 45–46,
-`SOLID_BLOB_MAX: 100` / `SOLID_INTERIOR_MAX: 60` at lines 62–63, and the same outline-match pair in
-`light-fill-cli.test.mjs:47-48`) currently match — but that is coincidence, not enforcement; they
-will drift exactly the way the four above already did. The repo convention says cross-file agreement
-is never maintained by prose, and these are cross-file value agreements maintained by copy-paste.
-Today the drifted values are behaviorally harmless (the mocked scorers always return passing
-results, so the thresholds only flow into log formatting), which is precisely why nobody noticed — a
-reader debugging a bin script against these tests sees `EYE_RING_DEPTH_MAX: 5` and is misled, and if
-a bin script ever starts comparing against a mocked threshold the tests will exercise the wrong bar
-silently.
-
-#### Proposed solution
-
-Use the `importOriginal` spread pattern **already used in the same file** for `../lib/cli.mjs`
-(audit-cli.test.mjs:33–38): import the real module, spread it, and override only the scorer
-functions:
-
-```js
-vi.mock('../lib/eye-fill.mjs', async (importOriginal) => ({
-  ...(await importOriginal()),
-  scoreEyeRings: async (buffer) => { assertReadable(buffer); return { maxDepth: 0, passes: true }; },
-  ...
-}));
-```
-
-The scorer libs import `sharp`, so `importOriginal` pays a real module load — acceptable here (sharp
-is already loaded by sibling suites in the same run). If that cost is deemed too high for these two
-files, the alternative is obviously-fake sentinel values (`EYE_RING_DEPTH_MAX: 9999`) so no reader
-can mistake them for the real bars — but the spread fixes drift outright and is the same pattern the
-file already established.
-
 ### [Testing] diffGoldenPage silently ignores metric paths missing from the score shape — a renamed producer key disables its gate
 
 **File(s):** `tools/asset-gen/lib/golden-catalog.mjs` (`diffGoldenPage`, lines 60–82; skip
