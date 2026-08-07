@@ -23,6 +23,7 @@ const PORT = Number(process.env.SMOKE_PORT ?? 5199);
 const BASE = `http://localhost:${PORT}`;
 const ADMIN_SECRET = randomUUID();
 const SEED_TOKENS = 'alpha,beta';
+const OVERSIZED_IMAGE_BYTES = 16 * 1024 * 1024;
 
 const postJson = (base, path, body, headers = {}) =>
   fetch(`${base}${path}`, {
@@ -316,10 +317,24 @@ async function checkGenerateImage(base) {
   );
 
   const noImage = await genRequest({ token: 'alpha' });
+  const noImageBody = await json(noImage);
   check(
-    'generate-image with valid token but no image → 400',
-    noImage.status === 400,
-    `got ${noImage.status}`
+    'generate-image with valid token but no image → 400 {ok:false, error}',
+    noImage.status === 400 && noImageBody?.ok === false && typeof noImageBody?.error === 'string',
+    `got ${noImage.status} ${JSON.stringify(noImageBody)}`
+  );
+
+  const oversizedImage = await genRequest({
+    token: 'alpha',
+    image: Buffer.alloc(OVERSIZED_IMAGE_BYTES),
+  });
+  const oversizedImageBody = await json(oversizedImage);
+  check(
+    'generate-image oversized image → 413 {ok:false, error}',
+    oversizedImage.status === 413 &&
+      oversizedImageBody?.ok === false &&
+      typeof oversizedImageBody?.error === 'string',
+    `got ${oversizedImage.status} ${JSON.stringify(oversizedImageBody)}`
   );
 
   // Legacy multipart contract (token/apiKey/image/style form fields) — still
@@ -345,10 +360,13 @@ async function checkGenerateImage(base) {
   );
 
   const legacyValidToken = await legacyMultipart({ token: 'alpha', mimeType: 'image/gif' });
+  const legacyValidTokenBody = await json(legacyValidToken);
   check(
-    'generate-image legacy multipart valid token, bad type → 415',
-    legacyValidToken.status === 415,
-    `got ${legacyValidToken.status}`
+    'generate-image legacy multipart valid token, bad type → 415 {ok:false, error}',
+    legacyValidToken.status === 415 &&
+      legacyValidTokenBody?.ok === false &&
+      typeof legacyValidTokenBody?.error === 'string',
+    `got ${legacyValidToken.status} ${JSON.stringify(legacyValidTokenBody)}`
   );
 }
 

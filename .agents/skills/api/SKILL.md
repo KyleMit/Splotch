@@ -82,6 +82,15 @@ vendor SDK never appears in route code. The safety vs. empty/error split is deci
 `classifyGeminiResponse` / `isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by
 the manual red-team suite (`npm run redteam`, `tests/redteam/`).
 
+Every deliberate failure, including validation, authorization, safety, server-configuration,
+upstream, and throttling responses, uses the canonical JSON body:
+
+```json
+{ "ok": false, "error": "Image is too large" }
+```
+
+The status distinguishes the cases above; a `429` also carries its required `Retry-After` header.
+
 The Gemini call is hardened to *increase* those refusals (the audience is toddlers): a
 `systemInstruction` tells the model to decline unsafe drawings in plain text rather than "beautify"
 them, and `safetySettings` set every configurable harm category to `BLOCK_LOW_AND_ABOVE` (the
