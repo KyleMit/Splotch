@@ -122,6 +122,36 @@ describe('golden catalog missing-key detection', () => {
 
     expect(out.regressions).toEqual([]);
   });
+
+  it('reports a page gaining a whole section (a freshly committed raw fill) as informational, not one regression per leaf', () => {
+    const out = diff(
+      { outline: { solidOk: true } },
+      {
+        outline: { solidOk: true },
+        light: {
+          keep: 0.99,
+          localKeep: 0.95,
+          eyeCores: 2,
+          eyeLively: 2,
+          driftOk: true,
+          eyesOk: true,
+        },
+      }
+    );
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  light section added (re-freeze to adopt)');
+  });
+
+  it('reports a page losing a whole section as informational, not one regression per leaf', () => {
+    const out = diff(
+      { outline: { solidOk: true }, night: { orbOk: true, orbFailed: 0, orbMinCoreDark: 0.4 } },
+      { outline: { solidOk: true } }
+    );
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  night section removed (re-freeze to adopt)');
+  });
 });
 
 describe('golden catalog shape drift guard', () => {

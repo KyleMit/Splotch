@@ -150,11 +150,13 @@ export const GOLDEN_VERDICTS = [
 
 const get = (obj, path) => path.split('.').reduce((value, key) => value?.[key], obj);
 
-// undefined means the path itself doesn't resolve (a renamed/dropped field
-// in the score shape, or a typo in GOLDEN_METRICS/GOLDEN_VERDICTS); null
-// means the path resolves to an explicit "not scoreable" value (e.g.
-// orbFailed on a non-chalked page). Only one side missing is the shape-drift
-// case; both sides missing means the path structurally doesn't apply here.
+// undefined means the path itself doesn't resolve (a renamed/dropped leaf in
+// the score shape, or a typo in GOLDEN_METRICS/GOLDEN_VERDICTS); null means
+// the path resolves to an explicit "not scoreable" value (e.g. orbFailed on
+// a non-chalked page). Only fires once the leaf's section (e.g. "night")
+// resolves on both sides — a page gaining or losing an entire section (a
+// fresh raw fill, or one removed) is ordinary content drift, not shape
+// drift, and is reported once per section by sectionPresent below instead.
 function missingKeyLine(rel, path, was, now) {
   if (was !== undefined && now !== undefined) return null;
   if (was === undefined && now === undefined) return null;
@@ -162,7 +164,24 @@ function missingKeyLine(rel, path, was, now) {
 }
 
 export function diffGoldenPage(rel, golden, current, out) {
+  const sectionState = new Map();
+  const sectionPresent = (path) => {
+    const section = path.split('.')[0];
+    if (sectionState.has(section)) return sectionState.get(section);
+    const was = golden?.[section];
+    const now = current?.[section];
+    const present = was !== undefined && now !== undefined;
+    if (!present && (was !== undefined || now !== undefined)) {
+      out.info.push(
+        `${rel}  ${section} section ${was === undefined ? 'added' : 'removed'} (re-freeze to adopt)`
+      );
+    }
+    sectionState.set(section, present);
+    return present;
+  };
+
   for (const path of GOLDEN_VERDICTS) {
+    if (!sectionPresent(path)) continue;
     const was = get(golden, path);
     const now = get(current, path);
     const missing = missingKeyLine(rel, path, was, now);
@@ -180,6 +199,7 @@ export function diffGoldenPage(rel, golden, current, out) {
     }
   }
   for (const [path, spec] of Object.entries(GOLDEN_METRICS)) {
+    if (!sectionPresent(path)) continue;
     const was = get(golden, path);
     const now = get(current, path);
     const missing = missingKeyLine(rel, path, was, now);
