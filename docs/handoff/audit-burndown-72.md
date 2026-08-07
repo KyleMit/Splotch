@@ -4,6 +4,25 @@
 > [#830](https://github.com/KyleMit/Splotch/pull/830) · Burn down the post-triage `docs/AUDIT.md`
 > backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
 
+## Current state — wrapped up, resumable
+
+Wrapped on request after **29 fixed · 0 dropped · 0 deferred**; backlog 72 → 43 (canary 5 + full run
+24). Nothing is in flight, `HEAD` == `origin/claude/audit-burn-down-vf4iui`, the comment store is
+drained, and `capture` reports `skipped 29 already posted` against 29 fixes. The counts close
+against git independently: zero `defer —` and zero `drop invalid finding` commits, 29 backlog
+entries consumed, and `72 − 29 == 43 == pop.mjs --count`.
+
+The *Silent wrong output* group drained completely (all 26) and its section was removed from
+`docs/AUDIT.md`. The four remaining groups hold 43: app correctness 12 · cross-file agreement 12 ·
+safety/resource 10 · docs that misdirect 8 · coverage gaps 1.
+
+**To continue:** PR #830 is the live PR for this branch. If it has merged by then, fork a fresh
+branch from the new `main` and open a new PR — a merged PR cannot track new work. Otherwise relaunch
+with the command below and keep posting per-commit comments to #830.
+
+**Still owed:** the inherited follow-ups at the bottom (six campaigns and counting — file them as
+issues), and the judgement call in 132a7c20ba48 recorded under Risks.
+
 ## Objective & non-goals
 
 Clear the **72 findings that survived the 2026-08-07 `audit-triage` pass** (`docs/AUDIT-LOG.md`).
@@ -76,16 +95,15 @@ hide behind an earlier one:
 Preflight OK: deps, auth, clean tree, origin reachable, all three role prompts present, 72 findings
 parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
 
-## Unverified assumptions
+## Resolved during the run (were unverified assumptions)
 
-* **CI health is unknown at launch.** The 2026-08-06 campaign ran an entire session with GitHub
-  Actions not picking up work at all — runs `queued` for hours, no run created for the PR. Check
-  `total_count` on the PR's check runs, not just conclusions: `{"total_count": 0}` after a push is
-  the tell, and it looks exactly like a healthy run to anyone watching for a red tick.
-* **The E2E flake baseline was not re-established for this run.** The full suite was not run at
-  base. If a UI finding trips a spec, classify before believing it — re-run the failing spec alone a
-  few times; green in isolation and red under full parallelism is a load-dependent flake, not a
-  regression.
+* **CI recovered and stayed healthy.** Unlike the 2026-08-06 campaign — where Actions created no
+  runs at all — every push here got a full run created and green: Quality, all three unit tiers, all
+  three E2E shards, WebKit smoke, release build smoke, ADR drift. The cross-finding backstop was
+  real for this campaign. Still check `total_count`, not just conclusions, on the next one.
+* **No E2E flake ever surfaced.** The baseline was never established at base, and in the event no
+  targeted spec failed across 29 findings, so the question stayed moot. It is still unestablished
+  for the next run.
 
 ## Risks
 
@@ -97,7 +115,17 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
   commit.
 * **Drops deserve scrutiny in this campaign specifically.** The backlog is curated, so a high
   `INVALID` rate means the verifier is wrong more often than the backlog is stale — the inverse of
-  the previous runs' assumption.
+  the previous runs' assumption. Borne out: 29 findings produced zero drops.
+* **One unattributed change is on the branch, left in place deliberately.** 132a7c20ba48 raised
+  `testTimeout` 5s → 20s in `web/src/lib/audio/drawingSound.test.ts` and
+  `web/src/lib/drawing/aiImage.test.ts` to clear a red `TEST_CMD` gate. It is well-formed (named
+  constants, explanatory comments, no assertions touched) but is a flake mitigation attributable to
+  no finding, so it belongs in its own commit; and its diagnosis is by analogy — the implementer
+  states the exact failure was not reproduced, and the mechanism it describes includes mock counts
+  bleeding between tests, which a longer timeout makes rarer without fixing. Splitting it now needs
+  a history rewrite of pushed commits. Decide separately: keep, revert into its own commit, or
+  diagnose the isolation defect. If it is reverted, expect the flake to return and cost a fix round
+  on gate-tripping findings, since `TEST_CMD` runs on every one.
 
 ## Supervising traps established by previous runs (do not re-derive)
 

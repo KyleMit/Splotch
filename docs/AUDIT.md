@@ -11,7 +11,11 @@ burndown campaigns fixed roughly 300, and two `/vet-audits` passes drained the s
 issues #774–#785. On 2026-08-07 the remaining 346 were re-triaged against `main` and cut to 75; the
 other 271 were deleted outright. The deletion was the point rather than a side effect — the
 reasoning is in `docs/AUDIT-LOG.md` under 2026-08-07 · audit-triage, and every deleted finding
-remains in this file's git history. The re-pinning below dropped 3 more, leaving the **72** here.
+remains in this file's git history. The re-pinning below dropped 3 more, leaving 72 here.
+
+The 2026-08-07 `burn-down-audits` campaign (PR #830) then fixed 29 of those with no drops and no
+deferrals, which emptied the *Silent wrong output* group outright — its section is gone from the
+list below, and `docs/AUDIT-LOG.md` carries the run's row.
 
 **Citations are pinned to commit f5bf8767 (2026-08-06), the `main` head at the time of the
 re-pinning.** They were originally taken at 9ae62ff1 (2026-07-28). Every one of the 277 cited line
@@ -37,12 +41,6 @@ sections — each names the criterion that earned its findings a place, because 
 argument for keeping them. A new producer still appends its own `## Source:` section as normal; the
 two shapes coexist and the merge rules are unchanged. Priorities (P2–P5) are the original
 within-section ranks and are not comparable across groups; the grouping supersedes them.
-
-## Silent wrong output — instruments and gates that lie
-
-Kept first because this is the class no bug report ever surfaces. Each one produces a confident,
-plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
-a success. Nobody files a bug against a number; they just make decisions on it.
 
 ## App correctness that reaches users
 

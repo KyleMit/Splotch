@@ -373,6 +373,16 @@ finding text. Idempotent — it dedupes by SHA.
 > envelope it hands you looks exactly like a real one. Always filter by mtime against the run's
 > start line: `find .audit-work/logs -name 'iter*.json' -newermt '<HH:MM>'`.
 >
+> **The canary is a separate run, so it is the usual victim of that restart — and `capture` cannot
+> rebuild its comments.** A normal session runs a 5-finding canary and then the full run, which
+> starts again at `iter0001` and overwrites the canary's first five envelopes. `capture` then reads
+> the *full run's* reviewer catches and attributes them to the *canary's* commits. Confirmed on
+> 2026-08-07 by re-capturing into a temp `COMMENT_STORE`: three canary fixes came back carrying the
+> catches of the full run's same-numbered iterations, each individually plausible. The canary's own
+> posted comments are correct because they were drained live, before the overwrite — so **never
+> re-run `capture` to "repair" a canary comment**; it replaces a right record with a wrong one. The
+> closeout `skipped N already posted` check is still sound, since `POSTED` dedupes by sha.
+>
 > **Within one run the tag counts outcomes, not fixes.** It is
 > `iter${done + dropped + deferred + 1}`, so a fix, a drop, and a deferral all advance it and no two
 > findings in a run share a tag or overwrite each other's envelopes. Across runs it is still not a
@@ -511,6 +521,15 @@ this is only about SHAs.)
   because the tree happened to be clean already. These are excluded from `CHECK_CMD` for exactly
   this reason — the exclusion is about the command being mutating, not about where it runs, so it
   applies to you too. CI's Agent-file drift job is the safe place to learn the same thing.
+
+  **This rule binds *you*, not the roles — do not flag an implementer for running it.** The hazard
+  is that a *supervisor's* writes land in a commit the driver is building; a role's writes belong to
+  its own commit, which is the whole point of the commit. An implementer that edits a `.ruler/`
+  source is in fact **required** to run `npm run ruler:apply` and commit the regenerated output (see
+  the `CHECK_CMD` exclusions above). A 2026-08-07 supervisor read the sentence above as universal
+  and flagged two findings for running `ruler:check`, then had to retract it on the PR when a third
+  correctly regenerated both mirrors after editing a Ruler source. Before flagging one, check what
+  the commit actually touched: writes confined to the finding's own files are the system working.
 * **A session hook will nag every turn that the commits are unsigned. It is a false positive —
   ignore it.** Verified 2026-07-25 by reading the commit objects: they *do* carry
   `gpgsig -----BEGIN SSH SIGNATURE-----`. Signing is delegated to `gpg.ssh.program=/tmp/code-sign`
