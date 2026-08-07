@@ -68,11 +68,19 @@ const FRAMES_PER_SCENARIO = 10;
 const FRAME_SPAN_MS_PER_SCENARIO = 100;
 const HEAP_BYTES_PER_SCENARIO = 1000;
 
+// A throwing page.evaluate cannot fail a test on its own: runUndoScenarios
+// catches whatever a scenario throws and downgrades it to skipped + a warn, so
+// a test asserting only on the scenarios it does care about stays green through
+// the miss. Every unmatched source is recorded here and asserted after the test
+// body, out of reach of the harness's catch.
+const unmatchedEvaluateSources = [];
+
 let fixtureDir;
 let originalArgv;
 let originalExitCode;
 
 beforeEach(() => {
+  unmatchedEvaluateSources.length = 0;
   fixtureDir = mkdtempSync(join(tmpdir(), 'splotch-undo-scenarios-'));
   state.outDir = fixtureDir;
   state.stop = vi.fn();
@@ -120,6 +128,7 @@ afterEach(() => {
   process.exitCode = originalExitCode;
   vi.restoreAllMocks();
   rmSync(fixtureDir, { recursive: true, force: true });
+  expect(unmatchedEvaluateSources).toEqual([]);
 });
 
 // A clock that advances one tick per read, so the harness's phase boundaries
@@ -132,15 +141,20 @@ const mockTickingClock = () =>
   )(0);
 
 const REALISTIC_COMMIT_SAMPLE_COUNT = 22;
+const SETTLED_LIVE_RASTERS = 2;
 
 // page.evaluate routed by a marker string in the evaluated function's source,
 // first match wins. An unmatched call throws instead of resolving undefined,
-// which the harness would otherwise read as a genuine empty reading.
+// which the harness would otherwise read as a genuine empty reading — and is
+// recorded for the afterEach assertion, which the throw cannot substitute for.
 function stubPageEvaluate(routes) {
   return vi.fn(async (fn, ...args) => {
     const source = fn.toString();
     const route = routes.find(({ marker }) => source.includes(marker));
-    if (!route) throw new Error(`Unmatched page.evaluate:\n${source}`);
+    if (!route) {
+      unmatchedEvaluateSources.push(source);
+      throw new Error(`Unmatched page.evaluate:\n${source}`);
+    }
     return route.result(...args);
   });
 }
@@ -159,7 +173,9 @@ function fakePage({
   encodeInCommitMaxMs = 0,
   deferredEncodeMaxMs = 0,
   blobBytes = 1,
-  liveRasters = 2,
+  // Only the churning tier's reading, so a skip message quoting it can have
+  // come from no scenario but the one that timed out.
+  churningLiveRasters = SETTLED_LIVE_RASTERS,
   coldTierNeverSettles = false,
   coldTierNeverSettlesOnNavigation = null,
 } = {}) {
@@ -179,11 +195,14 @@ function fakePage({
     evaluate: stubPageEvaluate([
       {
         marker: 'getUndoDebug',
-        result: () => ({
-          snapshots: 22,
-          liveRasters,
-          blobBytes: coldTierIsChurning() ? coldTierRead++ : blobBytes,
-        }),
+        result: () => {
+          const churning = coldTierIsChurning();
+          return {
+            snapshots: 22,
+            liveRasters: churning ? churningLiveRasters : SETTLED_LIVE_RASTERS,
+            blobBytes: churning ? coldTierRead++ : blobBytes,
+          };
+        },
       },
       {
         marker: 'document.querySelector',
@@ -248,7 +267,7 @@ describe('undo scenario profiling', () => {
     // One scenario's tier never quiesces — blobBytes keeps moving, so the settle
     // poll never sees two identical samples and the scenario is skipped. The
     // rest report a stable tier and settle immediately.
-    const page = fakePage({ liveRasters: 3, coldTierNeverSettlesOnNavigation: 3 });
+    const page = fakePage({ churningLiveRasters: 3, coldTierNeverSettlesOnNavigation: 3 });
     const { browser } = fakeBrowser(page);
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
