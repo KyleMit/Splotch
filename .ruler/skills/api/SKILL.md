@@ -98,8 +98,12 @@ valid families behind one NAT never spend it.
 ```json
 // request
 { "code": "sunny-meadow" }
-// response
-{ "ok": true, "accessCode": "sunny-meadow" }   // or { "ok": false, "error": "..." }
+// 200 — recognized code
+{ "ok": true, "accessCode": "sunny-meadow" }
+// 200 — present but unrecognized code
+{ "ok": false, "error": "That access code was not recognized." }
+// 400 — missing, non-string, or blank code
+{ "ok": false, "error": "No access code provided" }
 ```
 
 ### `POST /api/verify-key`
@@ -109,8 +113,12 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 ```json
 // request
 { "apiKey": "..." }
-// response
-{ "ok": true }   // or { "ok": false, "error": "..." }
+// 200 — key verified
+{ "ok": true }
+// 200 — present but rejected key
+{ "ok": false, "error": "That key could not authenticate with Gemini." }
+// 400 — missing, non-string, or blank key
+{ "ok": false, "error": "No API key provided" }
 ```
 
 ---

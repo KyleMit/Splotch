@@ -41,40 +41,6 @@ within-section ranks and are not comparable across groups; the grouping supersed
 Behaviour defects in shipped `web/src/` and native-shell code. These are the ones that would
 eventually arrive as a bug report — but the reporter is a two-year-old, so they won't.
 
-### [Maintainability] Missing-input on the verify endpoints answers 200 while the same class of validation answers 400 on `report`
-
-**File(s):** `web/src/routes/api/verify-access-code/+server.ts` (line 28),
-`web/src/routes/api/verify-key/+server.ts` (line 25), `web/src/lib/server/report.ts` (lines 115–122)
-@ cd04c367
-
-**Priority:** P4
-
-#### Problem
-
-`.claude/rules/server-api.md` draws the line precisely: HTTP 200 + `{ ok: false }` is reserved for
-*failed verification* (so validity isn't disclosed via status); "non-oracle request validation
-retains 4xx responses with the same body shape." An absent/blank input is request validation — it
-discloses nothing about credential validity — yet:
-
-```ts
-if (!code) return json({ ok: false, error: 'No access code provided' });   // 200
-...
-if (!apiKey) return json({ ok: false, error: 'No API key provided' });     // 200
-```
-
-while `report` correctly answers 400 for its equivalent cases (`Please choose bug or feature.`,
-`Please type a short description.`). The inconsistency makes the rule harder to learn from the code,
-and monitoring can't distinguish client bugs (should be 4xx) from ordinary wrong guesses (200).
-
-#### Proposed solution
-
-Return `json({ ok: false, error: … }, { status: 400 })` for the empty-input branches of both verify
-endpoints. The client (`web/src/lib/aiCredential.ts:42`) already computes
-`ok: res.ok && data.ok === true`, so behavior is unchanged there; the api-smoke doesn't pin these
-cases. Cheap, and it re-aligns the code with its own documented rule — if instead the 200 is
-deliberate (keep the oracle surface perfectly uniform), record that in the rule file, which
-currently says the opposite.
-
 ### [Maintainability] Two wire shapes for JSON errors: thrown `error()` produces `{ message }`, handlers produce `{ ok: false, error }`
 
 **File(s):** `web/src/lib/server/http.ts` (`readJsonBody`, line 15; `throttled`, lines 59–64),
