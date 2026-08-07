@@ -86,6 +86,9 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   surface2: 'Inset panels and setting cards sitting on --surface.',
   surfaceHover:
     'The one hover fill for quiet controls — paper-toned chrome (modal close disc, Install Banner) included.',
+  chipSurface:
+    'The unselected fill of a borderless picker chip — a step off --surface-2 so the chip reads without a hairline.',
+  chipSurfaceHover: 'The hovered step of --chip-surface.',
   border: 'The default hairline on surfaces.',
   borderWarm: 'Hairline on paper-toned chrome.',
   borderWarmStrong: 'The hovered/emphasized step of --border-warm.',

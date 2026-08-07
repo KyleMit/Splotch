@@ -35,20 +35,23 @@ test('Settings sidebar switches the content pane (tablet layout)', async ({ page
   // The default Playwright viewport is desktop-width, so the two-pane shell with
   // a persistent sidebar renders and the first section is selected.
   await expect(modal).toHaveClass(/wide/);
-  await expect(page.getByRole('button', { name: 'Appearance & Display' })).toHaveClass(/active/);
+  // Scoped to the nav: the short section labels also read as ordinary words
+  // inside the panes they open ("Install Splotch" in the Setup section).
+  const nav = page.locator('.settings-nav');
+  await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveClass(/active/);
 
   // Selecting a section highlights it in the sidebar and swaps the pane content.
-  await page.getByRole('button', { name: 'Controls & Buttons' }).click();
-  await expect(page.getByRole('button', { name: 'Controls & Buttons' })).toHaveClass(/active/);
+  await nav.getByRole('button', { name: 'Buttons' }).click();
+  await expect(nav.getByRole('button', { name: 'Buttons' })).toHaveClass(/active/);
   await expect(page.locator('#advancedControlsToggle')).toBeVisible();
 
   // The Setup section keeps its own <details> accordions inside the pane.
-  await page.getByRole('button', { name: 'Setup Guide' }).click();
+  await nav.getByRole('button', { name: 'Install' }).click();
   const setupDetails = page.locator('.help-section').first();
   await expect(setupDetails.locator('summary')).toBeVisible();
 
   // About holds the identity block — the mascot renders in full color.
-  await page.getByRole('button', { name: 'About' }).click();
+  await nav.getByRole('button', { name: 'About' }).click();
   const aboutMascot = page.locator('.about-brand [data-icon="splotchy"]');
   const aboutMascotImage = aboutMascot.locator('img');
   await expect(aboutMascotImage).toBeVisible();
@@ -130,7 +133,7 @@ test('Settings hub drills into a section and back (phone layout)', async ({ page
   await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
 
   // Tapping a row opens the full-page section.
-  await page.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await page.getByRole('button', { name: 'Buttons' }).click();
   await expect(page.locator('#advancedControlsToggle')).toBeVisible();
   await expect(page.locator('.hub-list')).toHaveCount(0);
 
@@ -215,12 +218,12 @@ test('quick-toggle changes persist into the full portrait Settings', async ({ pa
   await page.setViewportSize({ width: 390, height: 852 });
   await expect(page.locator('.hub-list')).toBeVisible();
   await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await page.getByRole('button', { name: 'Buttons' }).click();
   await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
 
   // The Appearance section shows the lock we set, now forced to portrait.
   await page.getByRole('button', { name: 'Back' }).click();
-  await page.getByRole('button', { name: 'Appearance & Display' }).click();
+  await page.getByRole('button', { name: 'Appearance' }).click();
   await expect(page.locator('#lockRotationToggle')).toHaveAttribute('aria-checked', 'true');
   await expect(page.locator('#forceLandscapeToggle')).toHaveAttribute('aria-checked', 'false');
 });
@@ -358,7 +361,7 @@ test('Settings sends the collected device info with a bug report', async ({ page
 
   await openSettingsModal(page);
   await retryOpen(page.locator('#reportMessage'), () =>
-    page.getByRole('button', { name: 'Submit Feedback' }).click({ timeout: 3000 })
+    page.getByRole('button', { name: 'Feedback' }).click({ timeout: 3000 })
   );
 
   await page.locator('#reportMessage').fill('The purple crayon draws green');

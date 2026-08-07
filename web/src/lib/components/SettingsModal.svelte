@@ -368,20 +368,21 @@
     transform: scale(0.99);
   }
 
+  /* Untiled: the icon takes the space the tile's padding used to. The box stays
+     44px as the optical column that keeps every row's title left-aligned — it is
+     layout, not a hit target (the row itself is the target). */
   .hub-icon {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: var(--radius-md);
-    background: var(--brand-wash);
     flex-shrink: 0;
   }
 
   :global(.hub-icon-svg) {
-    width: 22px;
-    height: 22px;
+    width: 38px;
+    height: 38px;
   }
 
   :global(.hub-icon .hub-icon-svg svg) {
@@ -444,7 +445,9 @@
     align-items: center;
     gap: 12px;
     width: 100%;
-    padding: 12px 14px;
+    /* Tighter vertically than the hub rows so the taller icon doesn't push the
+       nine-row column past the shortest supported tablet height. */
+    padding: 8px 14px;
     border: none;
     border-radius: var(--radius-md);
     background: transparent;
@@ -457,6 +460,17 @@
     transition:
       background var(--duration-fast) ease,
       color var(--duration-fast) ease;
+  }
+
+  /* The nav never scrolls, so all nine sections have to fit the shortest
+     viewport this shell serves — a 600px-tall landscape tablet, where the 85vh
+     card leaves the column no room for the padded rows above. There the rows
+     give their vertical padding back and the taller icon carries the row
+     height alone; the ninth section would otherwise be clipped away. */
+  @media (max-height: 700px) {
+    .settings-nav-item {
+      padding: 5px 14px;
+    }
   }
 
   @media (hover: hover) {
@@ -474,8 +488,8 @@
   }
 
   :global(.settings-nav-icon) {
-    width: 20px;
-    height: 20px;
+    width: 34px;
+    height: 34px;
     flex-shrink: 0;
   }
 

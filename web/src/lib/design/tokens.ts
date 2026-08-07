@@ -188,6 +188,14 @@ export interface ThemeTokens {
   surface2: string;
   /** hover fill for quiet controls on any surface, paper-toned chrome included */
   surfaceHover: string;
+  /**
+   * The unselected fill of a borderless picker chip. One step off --surface-2
+   * in the direction away from --surface, so a chip reads as its own surface
+   * against the setting card behind it with no hairline to draw it.
+   */
+  chipSurface: string;
+  /** The hovered step of --chip-surface. */
+  chipSurfaceHover: string;
   border: string;
   borderWarm: string;
   borderWarmStrong: string;
@@ -298,6 +306,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     surface: '#ffffff',
     surface2: '#f8f8f8',
     surfaceHover: '#f5f5f5',
+    chipSurface: '#f0eff2',
+    chipSurfaceHover: '#e7e5eb',
     border: '#e0e0e0',
     borderWarm: '#ddd6cc',
     borderWarmStrong: '#c4bbad',
@@ -334,6 +344,8 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     surface: '#23232b',
     surface2: '#2d2d37',
     surfaceHover: '#33333e',
+    chipSurface: '#34343f',
+    chipSurfaceHover: '#3c3c48',
     border: '#3d3d49',
     borderWarm: '#3d3d49',
     borderWarmStrong: '#4d4d5b',
@@ -377,6 +389,8 @@ export const isColorToken: Record<keyof ThemeTokens, boolean> = {
   surface: true,
   surface2: true,
   surfaceHover: true,
+  chipSurface: true,
+  chipSurfaceHover: true,
   border: true,
   borderWarm: true,
   borderWarmStrong: true,

@@ -136,9 +136,9 @@ test('"don\'t ask again" survives a relaunch until Settings resets it', async ({
   await expect(page.locator(AI_PROMPT)).toBeVisible();
   await page.locator(AI_PROMPT).getByRole('button', { name: 'Close' }).click();
 
-  // The Grown-ups check toggle in Controls & Buttons clears the stored unlock.
+  // The Grown-ups check toggle in Buttons clears the stored unlock.
   const settings = await openSettingsModal(page);
-  await settings.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await settings.getByRole('button', { name: 'Buttons' }).click();
   const toggle = page.locator('#parentalGateToggle');
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await toggle.click();
@@ -153,7 +153,7 @@ test('turning the gate check off is itself force-gated', async ({ page }) => {
   // Seeded unlock active — yet weakening the protection must still re-ask.
   await gotoApp(page);
   const settings = await openSettingsModal(page);
-  await settings.getByRole('button', { name: 'Controls & Buttons' }).click();
+  await settings.getByRole('button', { name: 'Buttons' }).click();
 
   const toggle = page.locator('#parentalGateToggle');
   await expect(toggle).toHaveAttribute('aria-checked', 'false');

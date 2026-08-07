@@ -274,7 +274,7 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
   // real compositor touch (not synthetic pointer events) via CDP: a future
   // `touch-action: none` on the pane or an ancestor would block this and fail
   // here, where the `movePrevented` check alone would sail past it.
-  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
   await pinchUntilZoomed(page, 3);
 
   const { pane, box } = await paneBox(page);
@@ -298,7 +298,7 @@ test('a pinch finger that lifts outside the pane still reports its lift to the p
 }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
 
   const { liftedOutside } = await pinchLiftingAFingerOutsideThePane(page);
   const { log, lift, paneTop } = await liftedOutside();
@@ -316,7 +316,7 @@ test('a scroll after a pinch finger lifted outside the pane scrolls instead of z
 }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
 
   const { pane, box, touch, liftedOutside } = await pinchLiftingAFingerOutsideThePane(page);
   await expect.poll(() => paneZoom(page)).toBeGreaterThan(1);
@@ -338,7 +338,7 @@ test('a scroll after a pinch finger lifted outside the pane scrolls instead of z
 test('a tap after a pinch finger lifted outside the pane is not swallowed', async ({ page }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await page.locator('.settings-nav').getByRole('button', { name: 'Setup Guide' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
 
   const { pane, box, touch, liftedOutside } = await pinchLiftingAFingerOutsideThePane(page);
   expect((await liftedOutside()).lift?.type).toBe('pointerup');
@@ -398,7 +398,7 @@ test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoo
   await expect(page.locator('.access-code-input').first()).toBeVisible();
   expect(await fontPx('.access-code-input')).toBeGreaterThanOrEqual(16);
 
-  await page.locator('.settings-nav').getByRole('button', { name: 'Submit Feedback' }).click();
+  await page.locator('.settings-nav').getByRole('button', { name: 'Feedback' }).click();
   await expect(page.locator('.report-textarea')).toBeVisible();
   expect(await fontPx('.report-textarea')).toBeGreaterThanOrEqual(16);
 });

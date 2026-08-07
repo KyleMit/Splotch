@@ -864,7 +864,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     await openSettingsSection(
       'controls',
       `document.querySelector('#advancedControlsToggle') !== null`,
-      'Controls & Buttons section'
+      'Buttons section'
     );
     await recordToggleRoundTrip({
       label: 'advanced controls',

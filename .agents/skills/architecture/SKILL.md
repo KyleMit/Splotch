@@ -98,7 +98,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/layout.svelte.ts`        | Viewport and orientation state.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `state/fullscreen.svelte.ts`    | Immersive-fullscreen support + active state and the toggle action, backing the Fullscreen Toggle button. Android web only; dismisses the mobile URL bar.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `state/network.svelte.ts`       | Online/offline state via `@capacitor/network`. Controls AI button visibility on native.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `state/install.svelte.ts`       | PWA install state (ADR-0039). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and Settings Setup Guide section. Web-only; inert in the native shell.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `state/install.svelte.ts`       | PWA install state (ADR-0039). Captures Chromium's `beforeinstallprompt` for one-tap install, falls back to iOS/Android guided hints; drives the Install Banner and the Settings Install section. Web-only; inert in the native shell.                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `state/coloringBook.svelte.ts`  | Selected coloring book and page.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `state/books.ts`                | Static catalog of available coloring books and pages.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `actions/dragToClear.ts`        | Svelte action that implements the drag-to-clear gesture (pointer tracking, threshold detection, animations). Keeps all gesture logic out of the component.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
@@ -246,28 +246,27 @@ media queries + the head-script stamp in `app.html`).
   regenerate the problem); a remember preference inside the gate (ask every time / skip this session
   / don't ask again) relaxes re-prompting there, but only takes effect after a solve. External
   link-outs in Settings and disabling the gate check gate with `force` — always asked, remember
-  preference hidden. The Grown-ups check toggle in Settings → Controls & Buttons clears a stored
-  unlock.
+  preference hidden. The Grown-ups check toggle in Settings → Buttons clears a stored unlock.
 * **Settings Button** - Floating button that opens Settings
   * **Settings** - Modal for app settings, install guides, and about info. Its body is one flat list
-    of **Sections** (ADR-0061), not tabs: Appearance & Display, Sound, Saving, Controls & Buttons,
-    AI Art, Setup Guide, What's New (drilled-in header: "Updates"), Submit Feedback, About. Both
-    shells render from the same `SECTIONS` list in `settings/sections.ts`, chosen by viewport width
-    (`SettingsModal.svelte`): below ~700px a **Hub** list drills into a full-page section with a
-    back arrow; at/above ~700px a persistent **Sidebar** (nav never scrolls) sits beside a scrolling
-    content **Pane**. Each section component lives in `settings/` (`AppearanceSection`,
-    `SoundSection`, `SavingSection`, `ControlsSection`, `AiKeyManager`, `SetupInstructions`,
-    `WhatsNewSection`, `ReportForm`, `AboutSection`).
-    * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Setup Guide** section,
-      plus the one-tap install button when the browser supports it
-    * **Controls & Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider
-      that rescales the Actions Panel buttons (dragging it melts the rest of Settings away so the
-      buttons resize in full view), and a 2-column **button chip grid** ("Show these buttons") that
-      toggles each Actions Panel button on/off.
+    of **Sections** (ADR-0061), not tabs: Appearance, Sound, Buttons, Saving, AI Art, Install,
+    Feedback, What's New (drilled-in header: "Updates"), About. Both shells render from the same
+    `SECTIONS` list in `settings/sections.ts`, chosen by viewport width (`SettingsModal.svelte`):
+    below ~700px a **Hub** list drills into a full-page section with a back arrow; at/above ~700px a
+    persistent **Sidebar** (nav never scrolls) sits beside a scrolling content **Pane**. Each
+    section component lives in `settings/` (`AppearanceSection`, `SoundSection`, `SavingSection`,
+    `ControlsSection`, `AiKeyManager`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
+    `AboutSection`).
+    * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Install** section, plus
+      the one-tap install button when the browser supports it
+    * **Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider that rescales
+      the Actions Panel buttons (dragging it melts the rest of Settings away so the buttons resize
+      in full view), and a 2-column **button chip grid** ("Show these buttons") that toggles each
+      Actions Panel button on/off.
       * **Appearance Control** - Light / Dark / System segmented control at the top of the
-        **Appearance & Display** section. Dark mode themes the chrome (app background, palette bar,
-        modals, Install Banner), the paper (a near-black warm tone under the same low-alpha
-        texture), and the paper-floating controls (Actions Panel/flyout on `--float-surface` with a
+        **Appearance** section. Dark mode themes the chrome (app background, palette bar, modals,
+        Install Banner), the paper (a near-black warm tone under the same low-alpha texture), and
+        the paper-floating controls (Actions Panel/flyout on `--float-surface` with a
         `--float-border` edge; near-black ink gets a `--dark-ink-keyline` ring) via the tokens in
         `app.css`. **Coloring pages stay on the dark paper** — the line art inverts to white "chalk"
         lines via `--lineart-filter`/`--lineart-blend`, and the magic brush reveals a parallel set
