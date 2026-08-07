@@ -12,6 +12,7 @@
 // an explicit setting change (settings.theme) update it from one reactive path,
 // with no separate matchMedia listener for the meta.
 import { settings, setTheme } from './settings.svelte';
+import { syncInkToTheme } from './colors.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
 
 const systemQuery =
@@ -50,7 +51,9 @@ export function setResolvedTheme(wanted: ResolvedTheme): void {
 if (typeof document !== 'undefined') {
   $effect.root(() => {
     $effect(() => {
-      updateThemeColorMeta(resolvedTheme());
+      const theme = resolvedTheme();
+      updateThemeColorMeta(theme);
+      syncInkToTheme(theme === 'dark');
     });
   });
 }

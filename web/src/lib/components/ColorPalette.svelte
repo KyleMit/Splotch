@@ -3,7 +3,6 @@
     PALETTE_COLORS,
     TRIM_ORDER,
     CUSTOM_SWATCH,
-    BLACK_INK,
     colors,
     selectPaletteColor,
     selectCustomSwatch,
@@ -28,16 +27,6 @@
   // The selection ring hides while erasing (no ink is being laid down) and
   // stays visible for every other brush, matching the pre-brush-menu behavior.
   const erasing = $derived(toolState.brush === 'eraser');
-
-  // A live theme flip (e.g. the OS switching while in system mode) must repaint
-  // the Black swatch's ink — white on dark paper, black on light — even when the
-  // selection doesn't change. The swatch identity (activeSwatch) stays put; only
-  // the drawn color follows the theme.
-  $effect(() => {
-    if (colors.activeSwatch === BLACK_INK) {
-      colors.activeColor = themedSwatchColor(BLACK_INK, dark);
-    }
-  });
 
   // Publish our rendered size so ActionsPanel can offset past our width in
   // landscape (and the action-button sizing math can clear our height in
