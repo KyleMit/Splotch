@@ -13,6 +13,12 @@ export const WORK = '.audit-work';
 export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'scripts/audit-burndown/prompts';
 
+// What separates a dropped finding from a real fix in .audit-work/completed.log.
+// burndown.mjs writes it and status.mjs splits on it, so the two cannot drift:
+// counting drops as fixes overstates the run in the flattering direction, which
+// is the number a supervising agent copies into the AUDIT-LOG closeout row.
+export const INVALID_DROP_MARKER = '  [invalid]  ';
+
 // The backlog every entry helper below reads. `env` is a parameter for the same
 // reason readConfig's is: a run built from a supplied environment must select
 // the backlog that environment names, not the ambient one.

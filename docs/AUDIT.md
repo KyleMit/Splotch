@@ -44,44 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] status.mjs labels invalid drops as "completed", the exact conflation burndown.mjs warns against
-
-**File(s):** `scripts/audit-burndown/status.mjs` (lines 25–40) @ f5bf8767;
-`scripts/audit-burndown/burndown.mjs` (lines 316–318, 721–724)
-
-**Priority:** P3
-
-#### Problem
-
-burndown.mjs appends **two** kinds of lines to `completed.log`: real fixes (`${sha}  ${title}`,
-line 849) and invalid drops (`${sha}  [invalid]  ${title}`, lines 568–571). It keeps `done` and
-`dropped` separate precisely because — its own comment, lines 455–457 — "conflating them in the
-summary makes the closeout AUDIT-LOG row wrong in the flattering direction." status.mjs then commits
-that sin:
-
-```js
-const done = countLines(join(WORK, 'completed.log'));
-…
-console.log(`completed  ${done}`);
-```
-
-Every drop inflates "completed". A supervising agent using `npm run audit:status` to fill the
-AUDIT-LOG closeout row (the documented workflow) copies the flattering number.
-
-#### Proposed solution
-
-Split on the marker burndown already writes:
-
-```js
-const lines = existsSync(f) ? readFileSync(f, 'utf8').split('\n').filter((l) => l.trim()) : [];
-const droppedCount = lines.filter((l) => l.includes('  [invalid]  ')).length;
-const fixedCount = lines.length - droppedCount;
-```
-
-and print `completed`, `dropped`, `deferred` as three rows. The `[invalid]` marker string becomes a
-shared constant in lib.mjs (same drift argument as the other boundary strings; burndown writes it,
-status parses it).
-
 ### [Correctness] `backfill-comments done <sha>` with a short prefix can drop several records while marking only one posted
 
 **File(s):** `scripts/audit-burndown/backfill-comments.mjs` (lines 186–202) @ f5bf8767

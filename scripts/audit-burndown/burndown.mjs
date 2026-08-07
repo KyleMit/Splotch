@@ -56,6 +56,7 @@ import {
   gitOut,
   incompleteAuditCommitPlan,
   implementationCommitMessage,
+  INVALID_DROP_MARKER,
   launchCommand,
   lintablePaths,
   logLine,
@@ -720,7 +721,7 @@ export function createBurndownRun({ config, effects }) {
     );
     appendFileSync(
       join(WORK, 'completed.log'),
-      `${gitOut('rev-parse', 'HEAD')}  [invalid]  ${title}\n`
+      `${gitOut('rev-parse', 'HEAD')}${INVALID_DROP_MARKER}${title}\n`
     );
     dropped += 1;
     consecutive = 0;
