@@ -44,33 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Types] Numeric flag values are never validated — `--throttle=abc`, `--port=abc`, `--hz=abc` all silently produce NaN behavior
-
-**File(s):** `scripts/perf/args.mjs` (`resolveThrottle`, lines 3–14; `parsePerfArgs`, line 52);
-`scripts/perf/undo-scenarios.mjs` (lines 75, 143–148, 153) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-`resolveThrottle` does `Number(hit ? hit.split('=')[1] : defaultRate)`; `--throttle=abc` yields
-`rate: NaN`, `active: false` (NaN > 1 is false), `tag: 'raw'` — the run proceeds unthrottled,
-labeled as a deliberate raw run, with no warning. `--port=abc` (args.mjs:52) yields `NaN`, so
-`buildAndPreview` polls `http://localhost:NaN/` until its 90 s timeout — a slow, opaque failure far
-from the typo. The `undo-scenarios` numeric flags (`--hz`, `--long-seconds`, `--strokes`,
-`--cold-tier-timeout-ms`, lines 56–72) have the same hole; `--strokes=abc` makes every
-`Array.from({ length: NaN })` empty and the run reports empty scenarios as if the engine did
-nothing. The scripts convention requires validating inputs up front with a one-line error.
-
-#### Proposed solution
-
-Add a `numericFlag(name, fallback)` helper to `args.mjs` that parses and `fail()`s on `Number.isNaN`
-(``fail(`--${name} must be a number, got "${raw}"`)``), and use it for throttle/port and the
-`undo-scenarios` flags. Do this after (or with) moving argv parsing into the entry functions, since
-`fail()` at module scope would break library imports under vitest.
-
----
-
 ### [DX] cost.mjs reports zero tokens for Claude runs because `parseSavedAgentOutput` discards the Claude envelope's usage
 
 **File(s):** `scripts/audit-burndown/agent-runner.mjs` (`parseSavedAgentOutput`, lines 102–110),
