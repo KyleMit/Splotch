@@ -52,59 +52,6 @@ CLAUDE.md is explicit that a "keep in sync with X" comment marks a defect rather
 Kept only where the two sides can diverge *silently* and ship — release versions, ESLint's paired
 restricted-import blocks, policy values re-declared in specs. One of these has already drifted.
 
-### [Maintainability] ESLint keeps two `no-restricted-imports` blocks in sync by comment instead of a shared constant
-
-**File(s):** `eslint.config.js` (lines 56–72 and 141–169) @ cd04c367
-
-**Priority:** P3
-
-#### Problem
-
-Because flat-config rule entries replace rather than merge, the repo-wide `playwright` import ban
-must be restated inside the `web/src` runes-convention block. Today that agreement is maintained by
-a pair of warning comments:
-
-```js
-// NOTE (flat-config gotcha): a later block that configures
-// no-restricted-imports REPLACES this entry — the web/src conventions block below must
-// carry the playwright path too.
-```
-
-and (lines 142–143) "this block must restate the repo-wide playwright ban from the root block
-alongside its own paths." The `paths` entry for `playwright` — name plus message string — is
-duplicated verbatim at lines 65–69 and 161–165. CLAUDE.md is explicit that "a 'keep in sync with X'
-comment marks a defect, not a mitigation": whoever edits the ban's message (or adds a second
-repo-wide banned import) must remember to touch both blocks, and nothing fails if they don't — the
-web/src tree silently loses (or diverges from) the repo-wide ban.
-
-The same file has a smaller triplication: the three `rateLimit` `no-restricted-syntax` selectors
-(lines 88–100) differ only in `arguments.0.type` (`Literal` / `TemplateLiteral` /
-`BinaryExpression`) and repeat the identical message three times.
-
-#### Proposed solution
-
-Hoist the shared entries to module scope and spread them:
-
-```js
-const PLAYWRIGHT_IMPORT_BAN = {
-  name: 'playwright',
-  message: 'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
-};
-```
-
-used as `paths: [PLAYWRIGHT_IMPORT_BAN]` in the root block and
-`paths: [ {…svelte/store…}, {…onDestroy…}, PLAYWRIGHT_IMPORT_BAN ]` in the web/src block. The
-flat-config-replaces gotcha comment stays (it explains WHY the constant appears twice), but the
-value itself can no longer fork. For the rateLimit selectors:
-
-```js
-const RATE_LIMIT_KEY_ARG_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
-...RATE_LIMIT_KEY_ARG_TYPES.map((type) => ({
-  selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${type}"]`,
-  message: 'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
-})),
-```
-
 ### [Types] playwright.shared.ts config objects bypass excess-property checking when spread
 
 **File(s):** `web/playwright.shared.ts` (`commonPlaywrightConfig` lines 6–11, `commonWebServer`
