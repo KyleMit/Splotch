@@ -9,6 +9,11 @@ const state = vi.hoisted(() => ({
   stop: null,
   launched: [],
   collectMeasures: () => [],
+  readObservers: () => ({
+    longTasks: [],
+    frames: { count: 0, durationMs: 0, fps: null, longFrames: 0 },
+    heapBytes: 0,
+  }),
 }));
 
 // Both engines resolve to the same fake browser; `launched` records which
@@ -42,7 +47,7 @@ vi.mock('../perf/capture.mjs', async (importOriginal) => {
     collectMeasures: async () => state.collectMeasures(),
     createMeasureTimeline: actual.createMeasureTimeline,
     injectObservers: async () => {},
-    readObservers: async () => ({ longTasks: [], frames: [], heapBytes: 0 }),
+    readObservers: async () => state.readObservers(),
     heapBytes: async () => 0,
     markPhase: async (_page, _label, work) => work(),
   };
@@ -56,6 +61,12 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, sleep: async () => {} };
 });
+
+// Per-scenario observer readings scale with the scenario index, so a sum is
+// distinguishable from any single scenario's figure.
+const FRAMES_PER_SCENARIO = 10;
+const FRAME_SPAN_MS_PER_SCENARIO = 100;
+const HEAP_BYTES_PER_SCENARIO = 1000;
 
 let fixtureDir;
 let originalArgv;
@@ -74,6 +85,22 @@ beforeEach(() => {
     return [
       { cat: 'blink.user_timing', name: `engine.scenario${collected}`, ph: 'X', ts: 0, dur: 1000 },
     ];
+  };
+  // The frame sampler is drained once per scenario, so every reading describes
+  // a different window — the aggregation has nothing to prove otherwise.
+  let observed = 0;
+  state.readObservers = () => {
+    observed++;
+    return {
+      longTasks: [{ start: 0, duration: 50 * observed }],
+      frames: {
+        count: FRAMES_PER_SCENARIO * observed,
+        durationMs: FRAME_SPAN_MS_PER_SCENARIO * observed,
+        fps: 60,
+        longFrames: observed,
+      },
+      heapBytes: HEAP_BYTES_PER_SCENARIO * observed,
+    };
   };
   originalArgv = process.argv;
   // The gate signals a breach through process.exitCode, which would otherwise
@@ -331,6 +358,43 @@ describe('engine selection', () => {
     // And they must not all sit on top of each other at ts 0, or the analyzer
     // reads three scenarios as one overlapping instant.
     expect(traceEvents.map((e) => e.ts)).toEqual([0, 1000, 2000]);
+  });
+
+  it('sums every scenario into the frame metrics report.md calls the whole session', async () => {
+    // Same hazard as the trace above: each reload wipes window.__perf, so a
+    // single reading at the end would put one scenario's frame health under the
+    // "Avg FPS (whole session)" heading.
+    process.argv = [
+      ...process.argv,
+      '--engine=webkit',
+      '--scenarios=short-marks,mixed,multi-finger',
+    ];
+    fakeBrowser(fakePage(), { withCdp: false });
+    vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    const { runUndoScenarios } = await import('../perf/undo-scenarios.mjs');
+    await runUndoScenarios();
+
+    const metrics = JSON.parse(readFileSync(join(fixtureDir, 'metrics.json'), 'utf8'));
+    const frames = FRAMES_PER_SCENARIO * (1 + 2 + 3);
+    const durationMs = FRAME_SPAN_MS_PER_SCENARIO * (1 + 2 + 3);
+    expect(metrics.frames).toEqual({
+      count: frames,
+      durationMs,
+      // Recomputed over the combined span, not carried over from a reading.
+      fps: ((frames - 1) / durationMs) * 1000,
+      longFrames: 1 + 2 + 3,
+    });
+    expect(metrics.longTasks.map((task) => task.duration)).toEqual([50, 100, 150]);
+    expect(metrics.heap.afterBytes).toBe(HEAP_BYTES_PER_SCENARIO * 3);
+
+    const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
+    expect(report.scenarios.map((scenario) => scenario.observers.frames.count)).toEqual([
+      FRAMES_PER_SCENARIO,
+      FRAMES_PER_SCENARIO * 2,
+      FRAMES_PER_SCENARIO * 3,
+    ]);
   });
 
   it('derives and persists fast-set evidence after a complete WebKit run', async () => {

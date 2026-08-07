@@ -44,39 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [Correctness] `perf:undo`'s frame/heap metrics silently cover only the last scenario, but the report presents them as session-wide
-
-**File(s):** `scripts/perf/undo-scenarios.mjs` (`runUndoScenario`, lines 432–436;
-`runUndoScenarios`, lines 670–684) @ f5bf8767
-
-**Priority:** P3
-
-#### Problem
-
-`resetEngine` (line 224–233) does a full `page.goto` before every scenario, wiping `window.__perf`.
-`runUndoScenario` re-injects the observers (line 328–329: "Reload drops the rAF FPS sampler injected
-before the trace; re-inject so frame health still reflects this scenario"), but `readObservers` is
-called exactly once, after the loop (line 484). So `metrics.frames` and `metrics.longTasks` describe
-only the final scenario (`crayon-scribbles`), while `report.md`'s "Frame health" section (rendered
-by the shared `analyze.mjs` `renderReport`, lines 385–412) presents them as "Avg FPS (whole
-session)" with `settings.durationMs` spanning the entire run. Similarly `buildMetrics` is called
-with `heapBefore: 0` (line 494), which produces a misleading Memory section (see the separate heap
-finding). Anyone comparing two `perf:undo` runs' frame health is actually comparing one scenario
-against another run's same scenario at best — or nothing meaningful if `--scenarios` filtered
-differently.
-
-#### Proposed solution
-
-Drain per scenario: call `readObservers(page)` at the end of `runUndoScenario` (before the next
-reset), store the result on the scenario's `result`, and aggregate (sum counts, recompute fps over
-the summed span) into the session-level metrics — or, if per-scenario frame data isn't worth
-keeping, at minimum stamp the frames object with the scenario key it covers so the report can label
-it honestly ("Frame health (last scenario: crayon-scribbles)"). The first option also enriches
-`undo-scenarios.md` with a per-scenario long-frame column, which is the number the ADR-0066 "no
-dropped frames while blobs encode" gate actually wants.
-
----
-
 ### [Correctness] `heapBefore ?? 0` masks "unavailable" as zero, producing a bogus Memory section for `perf:undo` runs
 
 **File(s):** `scripts/perf/profile-artifacts.mjs` (`buildMetrics`, line 10);

@@ -455,6 +455,10 @@ export async function runUndoScenario(
   });
   const undoEnd = await now(page);
   const heapAfterUndo = await heapBytes(page);
+  // Drain the sampler this scenario injected, for the same reason it had to be
+  // re-injected: the next scenario's reload wipes window.__perf, so reading
+  // once at the end of the run would describe the final scenario only.
+  const observers = await readObservers(page);
 
   const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
   // Deliberately disjoint from the draw window, not a superset of it: an encode
@@ -537,6 +541,7 @@ export async function runUndoScenario(
       afterUndoMB: heapAfterUndo ? toMiB(heapAfterUndo) : null,
     },
     historyRasterMB,
+    observers,
   };
   console.log(
     `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
@@ -571,6 +576,36 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
     raster: { ...geom, mbPerRaster: toMiB(geom.bytesPerRaster) },
     startedAt: new Date(t0).toISOString(),
     durationMs: Date.now() - t0,
+  };
+}
+
+// Session frame health is the union of the per-scenario sampling windows, so
+// the counts and spans add and the rate is recomputed over the combined span —
+// carrying one scenario's fps forward would label it "whole session" in the
+// report while describing a single scenario.
+function aggregateObservers(results) {
+  const longTasks = [];
+  let count = 0;
+  let durationMs = 0;
+  let longFrames = 0;
+  let heapBytes = null;
+  for (const result of results) {
+    if (!result.observers) continue;
+    longTasks.push(...result.observers.longTasks);
+    count += result.observers.frames.count;
+    durationMs += result.observers.frames.durationMs;
+    longFrames += result.observers.frames.longFrames;
+    if (result.observers.heapBytes != null) heapBytes = result.observers.heapBytes;
+  }
+  return {
+    longTasks,
+    frames: {
+      count,
+      durationMs,
+      fps: durationMs > 0 ? ((count - 1) / durationMs) * 1000 : null,
+      longFrames,
+    },
+    heapBytes,
   };
 }
 
@@ -667,7 +702,7 @@ export async function runUndoScenarios() {
       }
     }
 
-    const obs = await readObservers(page);
+    const obs = aggregateObservers(results);
     // Without CDP there is no Chrome trace to stop; the stitched user-timing
     // timeline is the minimal trace the shared analyzer needs instead.
     const traceEvents = cdp ? (await stopTrace(cdp), events) : timeline.events;
@@ -1120,6 +1155,25 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
     out.push(
       `| ${s.label} | ${s.undo.steps} | ${f1(s.undo.totalMs)} ms | ` +
         `${f1(s.undo.avgMs)} ms | ${f1(s.undo.maxMs)} ms |`
+    );
+  }
+  out.push('\n## Frame health per scenario\n');
+  out.push(
+    'The rAF sampler is re-injected after each reload and drained before the next one, so these ' +
+      'are the per-scenario windows that report.md sums into its session figures. They span the ' +
+      "whole scenario, so the synchronous draw phase's harness artifact (see the note above) " +
+      'dominates the long-frame count.\n'
+  );
+  out.push('| Scenario | Frames | Avg FPS | Long frames | Long tasks |');
+  out.push('| --- | --- | --- | --- | --- |');
+  for (const s of scenarios) {
+    if (!s.observers) {
+      out.push(`| ${s.label} | n/a | n/a | n/a | n/a |`);
+      continue;
+    }
+    out.push(
+      `| ${s.label} | ${s.observers.frames.count} | ${f1(s.observers.frames.fps)} | ` +
+        `${s.observers.frames.longFrames} | ${s.observers.longTasks.length} |`
     );
   }
   const r = settings.raster;
