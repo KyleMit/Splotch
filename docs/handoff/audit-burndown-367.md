@@ -4,6 +4,17 @@
 > [#821](https://github.com/KyleMit/Splotch/pull/821) · Bulk-burn the `docs/AUDIT.md` backlog with
 > `scripts/audit-burndown/burndown.mjs`, running unattended.
 
+> [!IMPORTANT]
+> **Spent as a relaunch plan — do not run the relaunch command below.** PR #821 merged, and the
+> 2026-08-07 `audit-triage` pass then cut `docs/AUDIT.md` from 346 findings to 75 and regrouped the
+> survivors by keep-criterion (see `docs/AUDIT-LOG.md`). Indiscriminate bulk burndown is the posture
+> that triage deliberately ended, so "relaunch and keep going" is no longer the right next step.
+>
+> This packet is kept only for the **inherited follow-ups** at the bottom, which are still owed and
+> would otherwise be lost. They should be filed as GitHub issues and this file deleted — which is
+> what the packet itself already recommends, and what `docs/handoff/CLAUDE.md` requires of a handoff
+> whose PR has merged.
+
 ## Current state — wrapped up, resumable
 
 Wrapped on request after **20 fixed · 0 dropped · 1 deferred**; backlog 367 → 346 (canary 5 + full

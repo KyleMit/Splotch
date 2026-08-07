@@ -61,12 +61,21 @@ replace the file wholesale.
 
 **The header hierarchy is fixed — every producer and consumer relies on it:**
 
-| Level                                                           | Holds                                           | Rule                                                                                         |
-| --------------------------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `#`                                                             | The file title + blockquote                     | One per file (the header block below).                                                       |
-| `## Source: <audit name>`                                       | One section per audit that contributed findings | Append yours; never touch another audit's. Delete the section once its last finding is gone. |
-| `### [Category] Short title`                                    | One finding                                     | The unit `/fix-audits` and `/vet-audits` act on — added, enriched, or removed whole.         |
-| `#### Problem` / `#### Proposed solution` / `#### Verification` | The three parts of a finding                    | See the canonical format below.                                                              |
+| Level                                                           | Holds                                           | Rule                                                                                            |
+| --------------------------------------------------------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `#`                                                             | The file title + blockquote                     | One per file (the header block below).                                                          |
+| `## Source: <audit name>`                                       | One section per audit that contributed findings | Append yours; never touch another audit's. Delete the section once its last finding is gone.    |
+| `## <criterion>`                                                | A curated group left behind by a triage pass    | Read-only to producers — never append findings to one. Delete it once its last finding is gone. |
+| `### [Category] Short title`                                    | One finding                                     | The unit `/fix-audits` and `/vet-audits` act on — added, enriched, or removed whole.            |
+| `#### Problem` / `#### Proposed solution` / `#### Verification` | The three parts of a finding                    | See the canonical format below.                                                                 |
+
+A **curated group** is what a triage pass leaves behind when it cuts a large backlog down to the
+findings worth keeping: the survivors are regrouped under the criterion that earned them their
+place, because that criterion — not the audit that happened to spot them — is the argument for
+keeping them. The 2026-08-07 pass that cut 346 findings to 75 is the worked example. Consumers need
+no special handling: a group is an ordinary `##` boundary, so entry parsing and counting are
+unaffected. Producers need only one rule — append to your own `## Source:` section as normal and
+leave curated groups alone. The two shapes coexist in one file.
 
 When merging within your own `## Source:` section:
 
