@@ -72,3 +72,5 @@ attribute plugins rewrite — so optimizing it would break that generator.
   bumping SVGO is a deliberate re-normalization, not silent drift.
 * New generator-input SVGs must be added to the script's `IGNORE` set; otherwise the audit will
   optimize them. This is a known, discoverable trade-off of not shipping a separate config file.
+  Moving or renaming an exempted input is caught — each `IGNORE` path is checked for existence, so a
+  stale entry fails the audit instead of silently matching nothing while the file gets optimized.
