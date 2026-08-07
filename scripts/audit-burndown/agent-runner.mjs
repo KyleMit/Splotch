@@ -89,9 +89,12 @@ export function agentAuthCommand(runnerValue) {
 }
 
 function normalizeClaudeUsage(usage) {
+  const uncachedInput = usage.input_tokens ?? 0;
+  const cacheCreationInput = usage.cache_creation_input_tokens ?? 0;
+  const cachedInput = usage.cache_read_input_tokens ?? 0;
   return {
-    input_tokens: usage.input_tokens ?? 0,
-    cached_input_tokens: usage.cache_read_input_tokens ?? 0,
+    input_tokens: uncachedInput + cacheCreationInput + cachedInput,
+    cached_input_tokens: cachedInput,
     output_tokens: usage.output_tokens ?? 0,
   };
 }

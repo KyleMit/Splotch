@@ -44,31 +44,6 @@ Kept first because this is the class no bug report ever surfaces. Each one produ
 plausible, wrong answer — a metric, a gate verdict, a log, a cost figure — or lets a failure pass as
 a success. Nobody files a bug against a number; they just make decisions on it.
 
-### [DX] cost.mjs reports zero tokens for Claude runs because `parseSavedAgentOutput` discards the Claude envelope's usage
-
-**File(s):** `scripts/audit-burndown/agent-runner.mjs` (`parseSavedAgentOutput`, lines 102–110),
-`cost.mjs` (lines 26–28, 62–65) @ f5bf8767
-
-**Priority:** P4
-
-#### Problem
-
-The Claude branch hardcodes `usage: {}` (line 106) even though the `claude -p --output-format json`
-result envelope carries a `usage` object (input/output/cache-read token counts). cost.mjs
-consequently prints `input tokens` / `output tokens` / `(cached)` lines and per-issue token
-projections **only for Codex runs**; a Claude run gets dollars but no token breakdown, and the
-cache-hit ratio — the one number that would confirm the "EFFORT_IMPL must stay identical … discards
-the cached prefix" tuning in burndown.mjs (lines 739–743) is actually working — is invisible.
-
-#### Proposed solution
-
-Map the Claude envelope's usage into the same normalized shape the Codex branch produces
-(`input_tokens`, `cached_input_tokens`, `output_tokens`), e.g.
-`usage: normalizeClaudeUsage(envelope.usage ?? {})` translating Claude's cache-read field name to
-`cached_input_tokens`. Gotcha: verify the exact field names against a real saved envelope in
-`.audit-work/logs/` before wiring — the two CLIs name cache fields differently, which is presumably
-why `{}` was the expedient placeholder.
-
 ### [Correctness] night-scores scorers index the fill raster with the source's dimensions after independent resizes
 
 **File(s):** `tools/asset-gen/lib/night-scores.mjs` (`scoreNightness` lines 51–77, `scoreDrift`

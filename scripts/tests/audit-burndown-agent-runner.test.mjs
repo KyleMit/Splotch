@@ -115,7 +115,7 @@ describe('saved agent output parsing', () => {
     });
   });
 
-  it("normalizes a Claude envelope's usage, including its cache-read count", () => {
+  it("normalizes a Claude envelope's usage, folding cache creation and cache reads into total input", () => {
     const parsed = parseSavedAgentOutput(
       JSON.stringify({
         session_id: 'claude-session',
@@ -130,7 +130,7 @@ describe('saved agent output parsing', () => {
       })
     );
     expect(parsed.usage).toEqual({
-      input_tokens: 96,
+      input_tokens: 96 + 72230 + 2445396,
       cached_input_tokens: 2445396,
       output_tokens: 17563,
     });
