@@ -58,28 +58,6 @@ Not cosmetic doc rot. Each of these is read by an agent or a contributor *as ins
 them somewhere wrong — a source map behind the code it describes, a retired API contract, a dead
 link in every generated tree, prescribed scripts that do not exist.
 
-### [Docs] pr-screenshots links ADR-0046 one directory too shallow — dead link in every generated location
-
-**File(s):** `.ruler/skills/pr-screenshots/SKILL.md` (line 22) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-Line 22 links `[ADR-0046](../../docs/adrs/0046-pr-screenshot-hosting-via-orphan-branch.md)`. From
-the generated `.claude/skills/pr-screenshots/SKILL.md` this resolves to `.claude/docs/adrs/…`, and
-from `.agents/skills/pr-screenshots/` to `.agents/docs/adrs/…` — neither exists. Every other skill
-in the tree that reaches the repo root uses three levels (`mobile/android.md:11` →
-`../../../docs/COMPATIBILITY.md`, `burn-down-backlog:21` → `../../../.github/labels.yml`), so this
-is a one-off typo, but it dead-ends the pointer to the ADR that holds "the full rationale, sources,
-and rejected options" the skill explicitly declines to restate inline.
-
-#### Proposed solution
-
-Change to `../../../docs/adrs/0046-pr-screenshot-hosting-via-orphan-branch.md` and run
-`npm run ruler:apply`. The relative-link drift-guard test proposed in the audit-conventions finding
-would have caught this too.
-
 ### [Maintainability] Audit skills link `audit-conventions.md` with a path that is broken in the `.agents/` tree (and inside `.ruler/` itself)
 
 **File(s):** `.ruler/skills/code-audit/SKILL.md` (line 63), `.ruler/skills/extract-audit/SKILL.md`
