@@ -21,11 +21,19 @@
 // the tiling itself still needs the device. What this pins is the pair of states
 // it alternates between, on demand and without a device.
 //
-// It is a reproduction, so it asserts the defect. A fix that gets the texture in
-// before first paint — inlining it into the prerendered CSS, or shipping it with
-// the document some other way — makes `capturesTheBootTransition` fail on the
-// flat-state assertion. That failure is the fix's proof; retire this spec with it.
-import { expect, test } from '@playwright/test';
+// It is a reproduction, so it asserts the defect — and it is worth being exact
+// about which fixes it can see. Only a fix that ships the texture WITH the
+// document (a data URI in the prerendered CSS, say) trips the flat-state
+// assertion, because that leaves the held route below nothing to hold. A fix
+// that merely issues the request EARLIER does not: the route intercepts the
+// texture whatever prompted the request, so the spec would stay green while the
+// artifact survived. That shape has already been tried and measured — a preload
+// hint moved the request ~15 ms earlier and left the flat window unchanged
+// (797 → 791 ms at 4G, 3632 → 3619 ms on slow 3G) — so rather than let the next
+// one slide past, `noPreloadHint` fails on it and sends the reader here.
+//
+// Retire this spec with the fix that does trip the flat-state assertion.
+import { expect, test, type Page } from '@playwright/test';
 
 // Grain reads as per-pixel luminance spread; a flat fill has effectively none.
 // Sits between the measured pair — untextured 0.0, textured ~1.7.
@@ -45,7 +53,7 @@ const PATCH_HEIGHT_PX = 120;
 type PatchStats = { mean: number; sd: number };
 
 /** Luminance mean + spread over a patch of the paper, away from its edges. */
-async function paperPatch(page: import('@playwright/test').Page): Promise<PatchStats> {
+async function paperPatch(page: Page): Promise<PatchStats> {
   const box = await page.locator('.paper-sheet').boundingBox();
   expect(box, 'the paper sheet has no box to sample').not.toBeNull();
   const png = await page.screenshot({
@@ -78,9 +86,7 @@ async function paperPatch(page: import('@playwright/test').Page): Promise<PatchS
 }
 
 test.describe('the paper texture at boot', () => {
-  test('capturesTheBootTransition: the sheet paints flat before the texture, grained after', async ({
-    page,
-  }) => {
+  test('the sheet paints flat before the texture, grained after', async ({ page }) => {
     // Holding the response makes the pre-arrival state observable on demand
     // instead of only under a network profile that happens to be slow enough.
     let releaseTexture!: () => void;
@@ -100,6 +106,16 @@ test.describe('the paper texture at boot', () => {
     await page.goto('/', { waitUntil: 'commit' });
     await expect(page.locator('#drawingCanvas')).toBeVisible();
 
+    // noPreloadHint: the held route above is blind to what issued the request, so
+    // a preload hint would leave every assertion below green while the flat
+    // window survived. Fail here instead — see the header for the measurements
+    // that say a hint does not close it.
+    await expect(
+      page.locator('link[rel="preload"][href*="handmade-paper"]'),
+      'the document now hints the texture: this reproduction cannot see whether that helped, ' +
+        'and a preload was measured not to close the flat window — re-verify before trusting it'
+    ).toHaveCount(0);
+
     const untextured = await paperPatch(page);
     expect(
       untextured.sd,
@@ -107,12 +123,21 @@ test.describe('the paper texture at boot', () => {
     ).toBeLessThan(FLAT_LUMINANCE_SD);
 
     releaseTexture();
+    // Carried out of the poll so the tone step below describes the very frame
+    // that satisfied the grain threshold, rather than a later re-sample.
+    let grained!: PatchStats;
     await expect
-      .poll(async () => (await paperPatch(page)).sd, { timeout: 10_000 })
+      .poll(
+        async () => {
+          grained = await paperPatch(page);
+          return grained.sd;
+        },
+        { timeout: 10_000 }
+      )
       .toBeGreaterThan(GRAINED_LUMINANCE_SD);
 
     expect(
-      untextured.mean - (await paperPatch(page)).mean,
+      untextured.mean - grained.mean,
       'the two states differ by a visible tone step, not by grain alone'
     ).toBeGreaterThan(MIN_TONE_STEP);
   });
