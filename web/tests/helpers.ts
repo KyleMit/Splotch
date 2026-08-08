@@ -66,8 +66,9 @@ export function touchEventPrevented(
  *  so once it's visible the app has hydrated.
  *
  *  Parent Center controls the Grown-Ups Only gate per protected feature. By
- *  default tests seed every feature to Never so unrelated specs reach their
- *  target directly; gate specs pass `gateUnlocked: false` to exercise the real flow. */
+ *  default tests seed the features that permit Never so unrelated specs reach
+ *  their target directly; external links keep their compliant Every time default.
+ *  Gate specs pass `gateUnlocked: false` to exercise the real flow. */
 export async function gotoApp(
   page: Page,
   path = '/',
@@ -80,7 +81,6 @@ export async function gotoApp(
       },
       [
         STORAGE_KEYS.parentalGateAiImageMode,
-        STORAGE_KEYS.parentalGateExternalLinksMode,
         STORAGE_KEYS.parentalGateFeedbackMode,
         STORAGE_KEYS.parentalGateParentCenterMode,
       ]

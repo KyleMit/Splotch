@@ -2,43 +2,37 @@
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import {
     parentalGatePolicies,
+    PARENTAL_GATE_FEATURES,
+    PARENTAL_GATE_MODES_BY_FEATURE,
     setParentalGateMode,
     type ParentalGateFeature,
     type ParentalGateMode,
   } from '$lib/state/parentalGate.svelte';
 
-  const MODE_OPTIONS: SegmentedPickerOption<ParentalGateMode>[] = [
-    { value: 'always', label: 'Every time' },
-    { value: 'session', label: 'Per session' },
-    { value: 'never', label: 'Never' },
-  ];
+  const MODE_LABELS: Record<ParentalGateMode, string> = {
+    always: 'Every time',
+    session: 'Per session',
+    never: 'Never',
+  };
 
-  const PROTECTED_FEATURES = [
-    {
-      id: 'aiImage',
+  const PROTECTED_FEATURES: Record<ParentalGateFeature, { label: string; help: string }> = {
+    aiImage: {
       label: 'Generating an AI image',
       help: 'Before a drawing is sent to Google for image generation.',
     },
-    {
-      id: 'externalLinks',
+    externalLinks: {
       label: 'Viewing external links',
-      help: 'Before a link opens another website or app.',
+      help: 'Before a link opens another website or app. This check cannot be turned off.',
     },
-    {
-      id: 'feedback',
+    feedback: {
       label: 'Sending feedback',
       help: "Before a report is sent to Splotch's issue tracker.",
     },
-    {
-      id: 'parentCenter',
+    parentCenter: {
       label: 'Opening Parent Center',
       help: 'Before anyone can change these protections.',
     },
-  ] as const satisfies readonly {
-    id: ParentalGateFeature;
-    label: string;
-    help: string;
-  }[];
+  };
 </script>
 
 <section class="setting-group parent-center">
@@ -48,8 +42,9 @@
   </p>
 
   <div class="protection-list">
-    {#each PROTECTED_FEATURES as feature (feature.id)}
-      {@const helpId = `parental-gate-${feature.id}-help`}
+    {#each PARENTAL_GATE_FEATURES as featureId (featureId)}
+      {@const feature = PROTECTED_FEATURES[featureId]}
+      {@const helpId = `parental-gate-${featureId}-help`}
       <div class="setting protection-setting">
         <div class="protection-copy">
           <h3>{feature.label}</h3>
@@ -58,16 +53,22 @@
         <SegmentedPicker
           label={`${feature.label} parental gate frequency`}
           describedBy={helpId}
-          options={MODE_OPTIONS}
-          selected={parentalGatePolicies[feature.id]}
-          onSelect={(mode) => setParentalGateMode(feature.id, mode)}
+          options={PARENTAL_GATE_MODES_BY_FEATURE[featureId].map(
+            (value): SegmentedPickerOption<ParentalGateMode> => ({
+              value,
+              label: MODE_LABELS[value],
+            })
+          )}
+          selected={parentalGatePolicies[featureId]}
+          onSelect={(mode) => setParentalGateMode(featureId, mode)}
         />
       </div>
     {/each}
   </div>
 
   <p class="mode-note">
-    Per session asks once until Splotch is closed. Never skips the check on this device.
+    Per session asks once until Splotch is closed. Never skips the check on this device, except for
+    external links.
   </p>
 </section>
 

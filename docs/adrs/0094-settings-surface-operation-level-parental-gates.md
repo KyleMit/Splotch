@@ -56,13 +56,18 @@ purchases, and other compliance-sensitive actions regardless of how Settings is 
 ## Amendment (2026-08): Parent Center policies
 
 The gate frequency is now an explicit per-feature policy rather than one remember choice shown
-inside every challenge. Settings includes a **Parent Center** section with an independent Every time
-/ Per session / Never radio group for:
+inside every challenge. Settings includes a **Parent Center** section with an independent frequency
+control for:
 
 * generating an AI image;
 * viewing external links;
 * sending feedback;
 * opening Parent Center itself.
+
+AI generation, feedback, and Parent Center can use Every time, Per session, or Never. External links
+can use Every time or Per session, but never expose a permanent bypass: App Store Review Guideline
+1.3 requires Kids Category link-outs to stay behind a parental gate. The default remains Every time
+for every feature.
 
 Opening Settings remains ungated. Opening Parent Center is a protected operation at that section's
 boundary and defaults to Every time; after an adult changes its own policy, future opens follow the
@@ -85,12 +90,16 @@ Alternatives considered:
 * **Always force Parent Center even when its row says Per session or Never.** Rejected: the row
   would be a control that does not control the operation it names. The safe default is Every time;
   relaxing it is an explicit choice made from behind the gate.
+* **Allow Never for external links.** Rejected: a choice made during one adult session would leave
+  future link-outs permanently available to a child, conflicting with the Kids Category's
+  operation-level parental-gate requirement.
 
 Consequences:
 
 * \+ Each sensitive action has an independently reviewable and testable policy.
 * \+ Parents can see and change the complete protection model in one gated section.
 * \+ Feedback submission is protected before any report payload leaves the device.
+* \+ External links cannot be permanently exempted from their parental gate.
 * − Choosing Never for Parent Center means its policy controls subsequently open without a solve on
   that device; this is intentional, visible, and reversible.
 * − Adding another protected operation now requires a feature id, persisted policy key, Parent

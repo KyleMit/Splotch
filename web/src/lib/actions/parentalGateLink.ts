@@ -3,9 +3,9 @@ import { buttonCenter } from '$lib/state/modal.svelte';
 
 // Gate an external link at its operation boundary (ADR-0094): the click is
 // intercepted and the Grown-Ups Only challenge follows Parent Center's
-// external-links policy. On success the original
-// anchor is re-activated, so native anchor semantics (target, rel, the
-// WebView's external-browser handling) stay intact.
+// external-links policy. On success the original anchor is re-activated, so
+// native anchor semantics (target, rel, the WebView's external-browser
+// handling) stay intact.
 export function parentalGateLink(node: HTMLAnchorElement) {
   // One-shot latch: the replayed click after a solve must pass through.
   // Deliberately untracked — nothing renders it.

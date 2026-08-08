@@ -120,6 +120,30 @@ describe('parental gate', () => {
     expect(gate.open).toBe(true);
   });
 
+  it('an every-time solve does not satisfy a later switch to per-session mode', () => {
+    requireParentalGate('parentCenter', vi.fn());
+    typeAnswer(correctAnswer());
+    vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
+
+    setParentalGateMode('parentCenter', 'session');
+
+    expect(gate.sessionSolved.parentCenter).toBe(false);
+    expect(requiresParentalGate('parentCenter')).toBe(true);
+  });
+
+  it('changing a policy re-arms a previously solved per-session gate', () => {
+    setParentalGateMode('feedback', 'session');
+    requireParentalGate('feedback', vi.fn());
+    typeAnswer(correctAnswer());
+    vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
+    expect(requiresParentalGate('feedback')).toBe(false);
+
+    setParentalGateMode('feedback', 'always');
+
+    expect(gate.sessionSolved.feedback).toBe(false);
+    expect(requiresParentalGate('feedback')).toBe(true);
+  });
+
   it('per-session mode skips only the feature already solved this session', () => {
     setParentalGateMode('aiImage', 'session');
     setParentalGateMode('feedback', 'session');
@@ -152,9 +176,15 @@ describe('parental gate', () => {
       feedback: STORAGE_KEYS.parentalGateFeedbackMode,
       parentCenter: STORAGE_KEYS.parentalGateParentCenterMode,
     } as const;
+    const modeByFeature = {
+      aiImage: 'session',
+      externalLinks: 'session',
+      feedback: 'never',
+      parentCenter: 'never',
+    } as const;
 
-    PARENTAL_GATE_FEATURES.forEach((feature, index) => {
-      const mode = index % 2 === 0 ? 'session' : 'never';
+    PARENTAL_GATE_FEATURES.forEach((feature) => {
+      const mode = modeByFeature[feature];
       setParentalGateMode(feature, mode);
       expect(parentalGatePolicies[feature]).toBe(mode);
       expect(localStorage.getItem(storageKeyByFeature[feature])).toBe(mode);
@@ -217,5 +247,18 @@ describe('parental gate', () => {
     localStorage.setItem(STORAGE_KEYS.legacyGateUnlockedForever, 'true');
     reloadParentalGate();
     expect(parentalGatePolicies.aiImage).toBe('never');
+  });
+
+  it('rejects Never for external links from both storage and direct updates', () => {
+    localStorage.setItem(STORAGE_KEYS.parentalGateExternalLinksMode, 'never');
+    reloadParentalGate();
+    expect(parentalGatePolicies.externalLinks).toBe('always');
+
+    localStorage.removeItem(STORAGE_KEYS.parentalGateExternalLinksMode);
+    expect(() => setParentalGateMode('externalLinks', 'never')).toThrow(
+      'Unsupported parental gate mode: externalLinks/never'
+    );
+    expect(parentalGatePolicies.externalLinks).toBe('always');
+    expect(localStorage.getItem(STORAGE_KEYS.parentalGateExternalLinksMode)).toBeNull();
   });
 });

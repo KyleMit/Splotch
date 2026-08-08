@@ -25,6 +25,13 @@ export type ParentalGateFeature = (typeof PARENTAL_GATE_FEATURES)[number];
 const PARENTAL_GATE_MODES = ['always', 'session', 'never'] as const;
 export type ParentalGateMode = (typeof PARENTAL_GATE_MODES)[number];
 
+export const PARENTAL_GATE_MODES_BY_FEATURE = {
+  aiImage: PARENTAL_GATE_MODES,
+  externalLinks: ['always', 'session'],
+  feedback: PARENTAL_GATE_MODES,
+  parentCenter: PARENTAL_GATE_MODES,
+} as const satisfies Record<ParentalGateFeature, readonly ParentalGateMode[]>;
+
 const POLICY_STORAGE_KEYS = {
   aiImage: STORAGE_KEYS.parentalGateAiImageMode,
   externalLinks: STORAGE_KEYS.parentalGateExternalLinksMode,
@@ -36,15 +43,27 @@ function isParentalGateMode(value: string | null): value is ParentalGateMode {
   return (PARENTAL_GATE_MODES as readonly (string | null)[]).includes(value);
 }
 
+function isAllowedParentalGateMode(
+  feature: ParentalGateFeature,
+  value: string | null
+): value is ParentalGateMode {
+  if (!isParentalGateMode(value)) return false;
+  const allowedModes: readonly ParentalGateMode[] = PARENTAL_GATE_MODES_BY_FEATURE[feature];
+  return allowedModes.includes(value);
+}
+
 function legacyAiImageMode(): ParentalGateMode {
   const rememberMode = readString(STORAGE_KEYS.legacyGateRememberMode, 'always');
   if (readBool(STORAGE_KEYS.legacyGateUnlockedForever, false)) return 'never';
   return rememberMode === 'session' ? 'session' : 'always';
 }
 
-function readFeatureMode(feature: ParentalGateFeature, fallback: ParentalGateMode) {
+function readFeatureMode(
+  feature: ParentalGateFeature,
+  fallback: ParentalGateMode
+): ParentalGateMode {
   const stored = readString(POLICY_STORAGE_KEYS[feature], null);
-  if (isParentalGateMode(stored)) return stored;
+  if (isAllowedParentalGateMode(feature, stored)) return stored;
   return feature === 'aiImage' ? legacyAiImageMode() : fallback;
 }
 
@@ -127,6 +146,7 @@ function newChallenge() {
   gate.input = '';
 }
 
+/** Exported so unit tests can assert the policy decision without opening the modal. */
 export function requiresParentalGate(feature: ParentalGateFeature): boolean {
   const mode = parentalGatePolicies[feature];
   return mode === 'always' || (mode === 'session' && !gate.sessionSolved[feature]);
@@ -161,7 +181,7 @@ export function requireParentalGate(
 
 function succeed() {
   const feature = gate.feature;
-  if (feature) gate.sessionSolved[feature] = true;
+  if (feature && parentalGatePolicies[feature] === 'session') gate.sessionSolved[feature] = true;
 
   // External navigations run synchronously inside the solving tap's trusted event, or
   // the popup gets blocked — a deferred replay loses transient user activation,
@@ -221,6 +241,10 @@ export function dismissGate() {
 }
 
 export function setParentalGateMode(feature: ParentalGateFeature, mode: ParentalGateMode) {
+  if (!isAllowedParentalGateMode(feature, mode)) {
+    throw new Error(`Unsupported parental gate mode: ${feature}/${mode}`);
+  }
+  if (parentalGatePolicies[feature] !== mode) gate.sessionSolved[feature] = false;
   parentalGatePolicies[feature] = mode;
   writeString(POLICY_STORAGE_KEYS[feature], mode);
 }

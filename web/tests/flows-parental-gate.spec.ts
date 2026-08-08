@@ -5,10 +5,10 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
 // sits at operation boundaries, never in front of Settings itself (ADR-0094).
-// Parent Center persists an independent Every time / Per session / Never policy
-// for each protected feature. Every other spec seeds Never through gotoApp's
-// default, so this file is the one
-// place the real flow runs — gate tests navigate with `gateUnlocked: false`.
+// Parent Center persists an independent policy for each protected feature.
+// External links offer Every time / Per session; the others also offer Never.
+// Every other spec seeds Never through gotoApp's default, so this file is the
+// one place the real flow runs — gate tests navigate with `gateUnlocked: false`.
 
 const AI_PROMPT = 'dialog.ai-prompt-modal';
 
@@ -128,7 +128,7 @@ test('Parent Center is gated before its controls appear and persists every featu
     .click();
   await settings
     .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
-    .getByRole('radio', { name: 'Never' })
+    .getByRole('radio', { name: 'Per session' })
     .click();
   await settings
     .getByRole('radiogroup', { name: 'Opening Parent Center parental gate frequency' })
@@ -149,7 +149,7 @@ test('Parent Center is gated before its controls appear and persists every featu
   await expect(
     reopened
       .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
-      .getByRole('radio', { name: 'Never' })
+      .getByRole('radio', { name: 'Per session' })
   ).toHaveAttribute('aria-checked', 'true');
 });
 
@@ -191,6 +191,36 @@ test('external links inside Settings follow the Every time policy', async ({ pag
   const popupPage = await popup;
   await expect.poll(() => popupPage.url()).toContain('github.com/KyleMit/Splotch');
   await expect(gate).not.toBeVisible();
+});
+
+test('external links can skip a second gate only within a solved session', async ({
+  page,
+  context,
+}) => {
+  await context.route('https://github.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<html>stub</html>' })
+  );
+  await page.addInitScript(
+    (externalLinksKey) => localStorage.setItem(externalLinksKey, 'session'),
+    STORAGE_KEYS.parentalGateExternalLinksMode
+  );
+  await gotoApp(page, '/', { gateUnlocked: false });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'About' }).click();
+  const link = page.getByRole('link', { name: 'View source on GitHub' });
+
+  await link.click();
+  await expect(page.locator('#parentalGate')).toBeVisible();
+  const firstPopup = context.waitForEvent('page');
+  await solveParentalGate(page);
+  await (await firstPopup).close();
+
+  const secondPopup = context.waitForEvent('page');
+  await link.click();
+  await expect(page.locator('#parentalGate')).not.toBeVisible();
+  const secondPopupPage = await secondPopup;
+  await expect.poll(() => secondPopupPage.url()).toContain('github.com/KyleMit/Splotch');
+  await secondPopupPage.close();
 });
 
 test('sending feedback waits for its parental gate before posting', async ({ page }) => {
