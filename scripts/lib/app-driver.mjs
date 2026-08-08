@@ -31,6 +31,7 @@ const STROKE_MENU_TRANSITION_DELAY_MS = 150;
 const STROKE_COMPLETION_DELAY_MS = 40;
 const MENU_DISMISSAL_DELAY_MS = 200;
 const BRUSH_MENU_TRANSITION_DELAY_MS = 150;
+const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
 
 const isUp = async (url) => {
   try {
@@ -142,11 +143,9 @@ export async function pickBrush(page, brush) {
   await sleep(BRUSH_MENU_TRANSITION_DELAY_MS);
   const option = page.locator(optionSelector);
   await option.click();
-  await page.waitForFunction(
-    (selector) => document.querySelector(selector)?.getAttribute('aria-pressed') === 'true',
-    optionSelector
-  );
-  await sleep(BRUSH_MENU_TRANSITION_DELAY_MS);
+  await page.waitForFunction((expected) => window.__committedBrushMode?.() === expected, brush, {
+    timeout: BRUSH_COMMIT_TIMEOUT_MS,
+  });
 }
 
 export async function setStrokeSize(page, size) {
