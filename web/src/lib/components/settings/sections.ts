@@ -13,7 +13,7 @@ export const SECTIONS = [
   { id: 'saving', label: 'Saving', icon: 'save-picture' },
   { id: 'coloring', label: 'Coloring', icon: 'shapes' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
-  { id: 'parentCenter', label: 'Parent Center', icon: 'lock' },
+  { id: 'parentCenter', label: 'Parent Center', icon: 'parent-center' },
   { id: 'setup', label: 'Install', icon: 'setup' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback' },
   { id: 'whatsnew', label: "What's New", title: 'Updates', icon: 'whats-new' },

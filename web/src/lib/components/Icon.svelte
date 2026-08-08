@@ -25,6 +25,7 @@
     'line-weight-eraser',
     'line-weight-magic',
     'more-colors',
+    'parent-center',
     'save-picture',
     'setup',
     'shapes',
