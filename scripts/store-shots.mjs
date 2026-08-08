@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
 import { ROOT, sleep } from './lib/proc.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
-import { circlePts, arcPts, zigzag } from './lib/stroke-geometry.mjs';
+import { drawHouseTall, drawHouseWide } from './lib/store-drawings.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -46,54 +46,6 @@ const IPAD = { width: 1366, height: 1024, deviceScaleFactor: 2 };
 const C = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label.toLowerCase(), hex]));
 
 const shot = (page, file) => page.screenshot({ path: join(OUT, file) });
-
-// Paint a cheerful child's drawing onto the canvas: a rainbow, sun, grass and a
-// flower. Uses only colors shown in every orientation (the portrait palette
-// hides purple/blue), so the hero shot is full on both phone and tablet.
-async function drawScene(page, box) {
-  const W = box.width,
-    H = box.height;
-  // Keep the arc clear of the action-button column (left in portrait): endpoints
-  // sit above the toolbar and inset from the left edge.
-  const cx = W * 0.56,
-    cy = H * 0.5;
-  const r0 = Math.min(W * 0.38, H * 0.34);
-  const step = Math.max(20, r0 * 0.16); // scale ring spacing to the arc, not the screen
-  // Rainbow arcs (outer -> inner)
-  const arc = [C.red, C.orange, C.yellow, C.green];
-  for (let i = 0; i < arc.length; i++) {
-    if (await pickColor(page, arc[i])) {
-      await drawStroke(page, box, arcPts(cx, cy, r0 - i * step, Math.PI, Math.PI * 2));
-    }
-  }
-  // Sun in the top-left
-  if (await pickColor(page, C.yellow)) {
-    const sx = W * 0.16,
-      sy = H * 0.16,
-      r = Math.min(W, H) * 0.07;
-    await drawStroke(page, box, circlePts(sx, sy, r, 2));
-    for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-      await drawStroke(page, box, [
-        { x: sx + Math.cos(a) * r * 1.5, y: sy + Math.sin(a) * r * 1.5 },
-        { x: sx + Math.cos(a) * r * 2.1, y: sy + Math.sin(a) * r * 2.1 },
-      ]);
-    }
-  }
-  // Grass along the bottom + a flower (red bloom, green stem)
-  if (await pickColor(page, C.green)) {
-    await drawStroke(page, box, zigzag(W * 0.2, H * 0.93, W * 0.96, 14, 26));
-    await drawStroke(page, box, [
-      { x: W * 0.78, y: H * 0.92 },
-      { x: W * 0.78, y: H * 0.74 },
-    ]);
-  }
-  if (await pickColor(page, C.red)) {
-    await drawStroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.05, 2));
-  }
-  if (await pickColor(page, C.yellow)) {
-    await drawStroke(page, box, circlePts(W * 0.78, H * 0.7, Math.min(W, H) * 0.02, 2));
-  }
-}
 
 async function colorInLines(page, box) {
   const W = box.width,
@@ -128,10 +80,8 @@ const SCREENSHOT_SETTLE_MS = 500; // last entrance animation before the capture
 async function sceneFreeDraw(browser, base, device, dir) {
   const { ctx, page } = await openAppPage(browser, base, device);
   await expandDrawer(page);
-  await setStrokeSize(page, 4);
   const box = await canvasBox(page);
-  await drawScene(page, box);
-  await dismissMenu(page);
+  await (box.height > box.width ? drawHouseTall(page, box) : drawHouseWide(page, box));
   await shot(page, `${dir}/01-draw.png`);
   await ctx.close();
 }

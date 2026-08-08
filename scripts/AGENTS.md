@@ -71,11 +71,14 @@
   including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for
   any Ruler-managed exceptional skills. The focused `scripts/tests/ruler-*.test.mjs` files lock both
   seams.
-* The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`) and
-  `gen:large-image` (`gen-large-image.mjs`) — drive the live app by selector through
-  `scripts/lib/app-driver.mjs` and only run on demand, so that module rots silently when app markup,
-  element IDs, or show/hide mechanics change (drawer, palette, dialogs). `test:driver:smoke` (in the
-  CI test job) boots the app and exercises the driver's entry path to catch that — after such a
-  change, run it, and remember the driver has bitten twice before (a dropped `sleep` import;
-  `expandDrawer` broke when the drawer's buttons became always-in-DOM, so its probe checks
-  visibility, not presence).
+* The app-driving `gen:*` generators that stay here — `gen:shots` (`store-shots.mjs`),
+  `gen:store-drawings:evaluate` (`evaluate-store-drawings.mjs`), `gen:store-drawings:review`
+  (`generate-store-drawing-review.mjs`), and `gen:large-image` (`gen-large-image.mjs`) — drive the
+  live app by selector through `scripts/lib/app-driver.mjs` and only run on demand, so that module
+  rots silently when app markup, element IDs, or show/hide mechanics change (drawer, palette,
+  dialogs). `test:driver:smoke` (in the CI test job) boots the app and exercises the driver's entry
+  path to catch that — after such a change, run it, and remember the driver has bitten twice before
+  (a dropped `sleep` import; `expandDrawer` broke when the drawer's buttons became always-in-DOM, so
+  its probe checks visibility, not presence). The related `gen:store-drawings` is offline: it
+  compiles temporary SVG authoring inputs into the static pointer coordinates those app-driving
+  scripts replay.

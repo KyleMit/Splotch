@@ -4,7 +4,7 @@
 // through that module and never run in CI, so a dropped import (e.g. `sleep`) or
 // a stale probe/selector after an app-markup change stays broken until someone
 // hand-runs a generator. This boots the real app once and exercises the driver's
-// entry path — openAppPage + expandDrawer + pickColor + setStrokeSize + drawStroke
+// entry path — openAppPage + expandDrawer + palette/picker colors + pickBrush + setStrokeSize + drawStroke
 // + the coloring-book path (openColoringBook + pickBook + pickPage +
 // waitForColoringOverlay) — asserting
 // each step matches current markup, then tears the server down.
@@ -19,6 +19,8 @@ import {
   canvasBox,
   expandDrawer,
   pickColor,
+  pickDrawingColor,
+  pickBrush,
   setStrokeSize,
   drawStroke,
   hasInk,
@@ -46,6 +48,18 @@ async function run(browser, base) {
   );
 
   check(`pickColor selects the ${GREEN} swatch`, await pickColor(page, GREEN));
+
+  await pickDrawingColor(page, { kind: 'picker', hex: '#2ECC71' });
+  check(
+    'pickDrawingColor selects an exact hex-grid color',
+    (await page.locator('.gradient-swatch').getAttribute('class'))?.includes('active') === true
+  );
+
+  await pickBrush(page, 'crayon');
+  check(
+    'pickBrush selects the crayon',
+    (await page.locator('#crayonBrushButton').getAttribute('aria-pressed')) === 'true'
+  );
 
   await setStrokeSize(page, 5);
   check(
