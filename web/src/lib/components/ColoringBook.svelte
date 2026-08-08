@@ -35,6 +35,7 @@
 
   const platform = isNative() ? 'mobile' : 'web';
   const books = $derived(availableColoringBooks(platform));
+  const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
   let dialogEl: HTMLDialogElement;
@@ -130,6 +131,17 @@
     hoverArmed = false;
   }
 
+  function initialView(): Book | null {
+    return hasBookPicker ? null : (books.at(0) ?? null);
+  }
+
+  $effect(() => {
+    const activeBookStillAvailable = books.some((book) => book.id === activeBook?.id);
+    if ((!activeBook && !hasBookPicker) || (activeBook && !activeBookStillAvailable)) {
+      showView(initialView());
+    }
+  });
+
   // The tap-burst hazard modalDialog guards at launch (launchGuard), one level
   // in. A toddler mashes a cover tile several times before registering that
   // anything happened; the first tap swaps the grid, so the follow-ups land on
@@ -153,7 +165,7 @@
     open: coloringBookModal.open,
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
-    onOpen: () => showView(null),
+    onOpen: () => showView(initialView()),
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
@@ -209,15 +221,32 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button class="coloring-back-button" aria-label="Back" onclick={(e) => swapView(null, e)}>
-            <Icon name="chevron-left" class="coloring-back-icon" />
-          </button>
+          {#if hasBookPicker}
+            <button
+              class="coloring-back-button"
+              aria-label="Back"
+              onclick={(e) => swapView(null, e)}
+            >
+              <Icon name="chevron-left" class="coloring-back-icon" />
+            </button>
+          {/if}
           <h2>{activeBook.name}</h2>
         </div>
         <div
           class="coloring-grid coloring-pages-grid"
           class:portrait-pages={orientation === 'portrait'}
         >
+          {#if !hasBookPicker && overlayActive}
+            <button
+              class="coloring-tile coloring-book-tile"
+              type="button"
+              aria-label="Clear Page"
+              onclick={clearAndClose}
+            >
+              <Icon name="remove-page" class="coloring-remove-icon" />
+              <span class="coloring-book-label">Clear Page</span>
+            </button>
+          {/if}
           {#each activeBook.pages as page (page.id)}
             {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
             <button

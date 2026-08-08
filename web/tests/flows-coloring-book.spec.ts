@@ -1,11 +1,13 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
-import { draw, gotoApp, openSettingsModal, renderedCanvasHandle, settleFlyIn } from './helpers';
+import { draw, gotoApp, openSettingsModal, settleFlyIn } from './helpers';
 import { COLORING_IMAGE_SIZES, coloringBookGridLayout } from '../src/lib/state/books';
 
 import {
   applyFarmPage,
+  gotoAppWithInstalledColoringBook,
+  opaqueCanvasPixelCount,
   openColoringDialog,
   openDrawer,
   openFarmPageGrid,
@@ -24,28 +26,10 @@ const CLEAR_PAGE_GRID_VIEWPORTS = [
   { width: 500, columns: 2 },
 ] as const;
 
-async function opaquePixelCount(page: Page) {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return canvas.evaluate((element) => {
-      const pixels = element
-        .getContext('2d')!
-        .getImageData(0, 0, element.width, element.height).data;
-      let opaque = 0;
-      for (let index = 3; index < pixels.length; index += 4) {
-        if (pixels[index] > 0) opaque++;
-      }
-      return opaque;
-    });
-  } finally {
-    await canvas.dispose();
-  }
-}
-
 // ── coloring book overlay ───────────────────────────────────────────────────
 
 test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
-  await gotoApp(page);
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);
 
   await openColoringDialog(page);
@@ -102,7 +86,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
 
   test('selects the smaller cover, page, and overlay candidates', async ({ page }) => {
-    await gotoApp(page);
+    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
     await openColoringDialog(page);
     const dialog = page.locator('#coloring-book-dialog');
@@ -192,7 +176,7 @@ test.describe('responsive coloring selection at DPR 3', () => {
   test.use({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 3 });
 
   test('keeps the canonical cover, page, and overlay sources', async ({ page }) => {
-    await gotoApp(page);
+    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
     await openColoringDialog(page);
     const dialog = page.locator('#coloring-book-dialog');
@@ -376,9 +360,9 @@ test('a newly applied page cannot paint the previous page fill while its art dec
       { x: 180, y: 160 },
       { x: 420, y: 240 },
     ]);
-    await expect.poll(() => opaquePixelCount(page)).toBeGreaterThan(0);
+    await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
     await page.locator('#undoButton').click();
-    await expect.poll(() => opaquePixelCount(page)).toBe(0);
+    await expect.poll(() => opaqueCanvasPixelCount(page)).toBe(0);
 
     await openColoringDialog(page);
     const dialog = page.locator('#coloring-book-dialog');
@@ -392,14 +376,14 @@ test('a newly applied page cannot paint the previous page fill while its art dec
       { x: 480, y: 260 },
     ]);
     await page.waitForTimeout(PENDING_FILL_SETTLE_MS);
-    expect(await opaquePixelCount(page)).toBe(0);
+    expect(await opaqueCanvasPixelCount(page)).toBe(0);
 
     releaseNextOverlay();
     await expect(page.locator('#coloringOverlay')).toHaveAttribute(
       'src',
       /\/cow-wide\.overlay\.webp$/
     );
-    await expect.poll(() => opaquePixelCount(page), { timeout: 15_000 }).toBeGreaterThan(0);
+    await expect.poll(() => opaqueCanvasPixelCount(page), { timeout: 15_000 }).toBeGreaterThan(0);
   } finally {
     releaseNextOverlay();
   }
@@ -417,8 +401,8 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
     { x: 180, y: 160 },
     { x: 420, y: 240 },
   ]);
-  await expect.poll(() => opaquePixelCount(page)).toBeGreaterThan(0);
-  const pixelsBeforeTheme = await opaquePixelCount(page);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThan(0);
+  const pixelsBeforeTheme = await opaqueCanvasPixelCount(page);
 
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);
@@ -444,7 +428,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);
   await expect(overlay).toHaveAttribute('srcset', /(?<!\.dark)\.overlay\.webp/);
   await expect(overlay).toHaveClass(/overlay-ready/);
-  await expect.poll(() => opaquePixelCount(page)).toBeGreaterThanOrEqual(pixelsBeforeTheme);
+  await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThanOrEqual(pixelsBeforeTheme);
 
   await page.evaluate(() => {
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();
@@ -529,7 +513,7 @@ test('a repeat tap where the launch button sat does not dismiss the just-opened 
 test('a repeat tap on a book cover does not pick the page that lands under it', async ({
   page,
 }) => {
-  await gotoApp(page);
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);
   await openColoringDialog(page);
 
@@ -589,7 +573,7 @@ test.describe('coloring book picker via touch', () => {
   test.use({ hasTouch: true });
 
   test('a touch tap on the launcher opens the picker at the root book list', async ({ page }) => {
-    await gotoApp(page);
+    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
 
     await page.locator('#coloringBookButton').tap();

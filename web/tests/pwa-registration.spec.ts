@@ -34,12 +34,6 @@ async function registerAndControl(page: Page) {
 async function selectFarmImages(page: Page) {
   await openDrawer(page);
   await openColoringDialog(page);
-  const dialog = page.locator('#coloring-book-dialog');
-  const cover = dialog.getByRole('button', { name: 'Farm coloring book' }).locator('img');
-  await expect
-    .poll(() => cover.evaluate((image: HTMLImageElement) => image.naturalWidth))
-    .not.toBe(0);
-  const coverSource = await imageSourceAndDecodedWidth(cover);
   const pages = await openFarmPageGrid(page);
   const pageThumbnail = pages.first().locator('img');
   await expect
@@ -53,7 +47,6 @@ async function selectFarmImages(page: Page) {
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .not.toBe(0);
   return {
-    cover: coverSource,
     pageThumbnail: pageThumbnailSource,
     overlay: await imageSourceAndDecodedWidth(overlay),
   };
@@ -172,10 +165,6 @@ test.describe('responsive coloring offline fallback', () => {
     await gotoApp(page);
 
     const dprOne = await selectFarmImages(page);
-    expect(dprOne.cover).toEqual({
-      currentSrc: '/coloring/max-240px/farm/cover.thumb.webp',
-      decodedWidth: 400,
-    });
     expect(dprOne.pageThumbnail).toEqual({
       currentSrc: '/coloring/max-240px/farm/cat-tall.thumb.webp',
       decodedWidth: 267,
@@ -193,10 +182,6 @@ test.describe('responsive coloring offline fallback', () => {
     });
     await gotoApp(page);
     const dprThree = await selectFarmImages(page);
-    expect(dprThree.cover).toEqual({
-      currentSrc: '/coloring/farm/cover.thumb.webp',
-      decodedWidth: 400,
-    });
     expect(dprThree.pageThumbnail).toEqual({
       currentSrc: '/coloring/farm/cat-tall.thumb.webp',
       decodedWidth: 267,

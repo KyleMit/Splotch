@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-import { retryOpen, settleFlyIn } from './helpers';
+import { gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
@@ -19,6 +19,38 @@ export async function openDrawer(page: Page) {
     () => page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 }),
     { timeout: 20_000 }
   );
+}
+
+export async function gotoAppWithInstalledColoringBook(page: Page, bookId: string) {
+  const manifestResponse = page.waitForResponse(/\/coloring\/manifest-.+\.json$/);
+  await gotoApp(page);
+  const manifest = (await (await manifestResponse).json()) as { appVersion: string };
+  await page.evaluate(
+    async ({ version, id }) => {
+      const cache = await caches.open(`coloring-packs-v1-${version}`);
+      await cache.put(`/coloring/.installed/${version}/${id}`, new Response(id));
+    },
+    { version: manifest.appVersion, id: bookId }
+  );
+  await gotoApp(page);
+}
+
+export async function opaqueCanvasPixelCount(page: Page) {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return canvas.evaluate((element) => {
+      const pixels = element
+        .getContext('2d')!
+        .getImageData(0, 0, element.width, element.height).data;
+      let opaque = 0;
+      for (let index = 3; index < pixels.length; index += 4) {
+        if (pixels[index] > 0) opaque++;
+      }
+      return opaque;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 // Open the Grown-Ups Only gate from the AI button — its Parent Center-managed
