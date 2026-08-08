@@ -6,7 +6,7 @@ import {
   androidColoringPackName,
   PLAY_COLORING_PACK_BOOK_IDS,
 } from './lib/android-coloring-packs.mjs';
-import { GENERIC_RELEASE_AAB, RELEASE_AAB } from './lib/android.mjs';
+import { PLAY_RELEASE_AAB } from './lib/android.mjs';
 import { listZipEntries, readZipEntry } from './lib/artifact-version.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
 
@@ -20,7 +20,7 @@ function sha256(bytes) {
 
 export function checkAndroidColoringPacks({
   root = ROOT,
-  aabPath = RELEASE_AAB,
+  aabPath = PLAY_RELEASE_AAB,
   books = BOOKS,
   bookIds = PLAY_COLORING_PACK_BOOK_IDS,
 } = {}) {
@@ -53,24 +53,10 @@ export function checkAndroidColoringPacks({
   }
 }
 
-export function checkNoAndroidColoringPacks({ aabPath = GENERIC_RELEASE_AAB } = {}) {
-  const assetPackEntries = listZipEntries(aabPath).filter((entry) =>
-    /^coloring_[^/]+\//.test(entry)
-  );
-  if (assetPackEntries.length > 0) {
-    throw new Error('[android-coloring-packs] generic AAB contains a Play asset-pack module');
-  }
-}
-
 if (isMain(import.meta.url)) {
   try {
-    if (process.argv.includes('--absent')) {
-      checkNoAndroidColoringPacks();
-      console.log('Generic Android bundle contains no Play coloring asset packs.');
-    } else {
-      checkAndroidColoringPacks();
-      console.log('Android coloring asset packs verified.');
-    }
+    checkAndroidColoringPacks();
+    console.log('Android coloring asset packs verified.');
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }

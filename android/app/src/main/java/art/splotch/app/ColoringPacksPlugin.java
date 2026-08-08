@@ -105,18 +105,18 @@ public class ColoringPacksPlugin extends Plugin {
                     new ColoringPackSource.Callback() {
                         @Override
                         public void onInstalled(File root) {
-                            getActivity().runOnUiThread(() -> resolveInstalled(call, bookId, root));
+                            getBridge().executeOnMainThread(() -> resolveInstalled(call, bookId, root));
                         }
 
                         @Override
                         public void onFallback() {
-                            getActivity().runOnUiThread(() -> enqueueHttpsInstall(
+                            getBridge().executeOnMainThread(() -> enqueueHttpsInstall(
                                     call, version, baseUrl, bookId, files, allowMetered, directory));
                         }
 
                         @Override
                         public void onCanceled() {
-                            getActivity().runOnUiThread(() ->
+                            getBridge().executeOnMainThread(() ->
                                     call.reject("Coloring-pack download was canceled"));
                         }
                     });
@@ -167,7 +167,7 @@ public class ColoringPacksPlugin extends Plugin {
             OneTimeWorkRequest request,
             String bookId,
             File directory) {
-        getActivity().runOnUiThread(() -> {
+        getBridge().executeOnMainThread(() -> {
             Observer<WorkInfo> observer = new Observer<>() {
                 @Override
                 public void onChanged(WorkInfo info) {
@@ -201,6 +201,12 @@ public class ColoringPacksPlugin extends Plugin {
         } catch (Exception error) {
             call.reject(error.getMessage(), error);
         }
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        distributionSource.close();
+        super.handleOnDestroy();
     }
 
     private static String requiredString(PluginCall call, String key) {

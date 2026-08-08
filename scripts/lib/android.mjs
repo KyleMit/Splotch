@@ -30,17 +30,17 @@ export const RELEASE_BUNDLE_DIR = join(
   'build',
   'outputs',
   'bundle',
-  'playRelease'
+  'genericRelease'
 );
-export const RELEASE_AAB = join(RELEASE_BUNDLE_DIR, 'app-play-release.aab');
+export const RELEASE_AAB = join(RELEASE_BUNDLE_DIR, 'app-generic-release.aab');
 
-export const GENERIC_RELEASE_BUNDLE_DIR = join(
+export const PLAY_RELEASE_BUNDLE_DIR = join(
   ROOT,
   'android',
   'app',
   'build',
   'outputs',
   'bundle',
-  'genericRelease'
+  'playRelease'
 );
-export const GENERIC_RELEASE_AAB = join(GENERIC_RELEASE_BUNDLE_DIR, 'app-generic-release.aab');
+export const PLAY_RELEASE_AAB = join(PLAY_RELEASE_BUNDLE_DIR, 'app-play-release.aab');

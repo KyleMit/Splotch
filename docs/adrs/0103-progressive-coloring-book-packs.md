@@ -84,8 +84,32 @@ Play services availability, or alternate-store compatibility. The initial canary
 non-starter book; moving another book to PAD means adding it to the build-owned pack list and the
 drift-guarded runtime mapping.
 
-`npm run android:bundle` builds the Play AAB and validates the exact Dinosaur file list and bytes in
-the finished artifact. `npm run android:bundle:generic` remains the signed HTTPS-only escape hatch.
+The canary exists to learn Play Asset Delivery's operational shape before considering it for more of
+the catalog: internal-track delivery behavior, update invalidation, failure recovery, Play Console
+workflow, and Families-policy disclosure. It is not justified by current hosting savings. Dinosaur
+is 73 files totaling about 4.57 MiB, and no measured hosted-bandwidth cost presently requires moving
+those bytes to Google's CDN.
+
+The canonical `npm run android:bundle` therefore continues to build the signed generic AAB used by
+release and artifact-publishing automation. `npm run android:bundle:play` builds the explicit
+internal-track canary and validates its exact Dinosaur file list and bytes; the matching
+`android:verify:play` and `android:open:play` commands cannot silently inspect a stale generic or
+Play artifact. Promoting the Play flavor to the canonical release requires a successful
+internal-track install, download, update, offline-restart, removal, and HTTPS-fallback smoke test.
+
+Three narrower Android alternatives were rejected for the canary:
+
+1. **Keep HTTPS only until hosting cost becomes material.** This remains the public-release default,
+   but postponing all PAD work would not answer the operational questions the canary exists to
+   investigate.
+2. **Ship the Play library in one flavor and detect availability at runtime.** The library supports
+   the API 24 floor, but an OS version does not establish Play install provenance or alternate-store
+   asset-module support. A single binary would also add a Play SDK and its disclosure to sideload
+   and alternate-store builds that cannot benefit from the pack module.
+3. **Use `fast-follow` delivery.** Automatic post-install transfer would run outside Splotch's
+   parent-controlled mobile-data policy. On-demand delivery preserves that policy and deliberately
+   exercises fetch, recovery, and HTTPS fallback behavior; a bounded attempt prevents Play from
+   blocking the sequential catalog queue.
 
 The Parent Settings Coloring section can allow automatic downloads over mobile data and can remove
 all downloaded books. Removal cancels/pauses installation for the current app session, clears
@@ -126,6 +150,6 @@ Magic-fill consumers unchanged.
   than accepting a visually plausible stale file.
 * **-** Three storage backends and two native lifecycle integrations replace the former static-only
   model. Web, Android, and iOS builds plus bundle guards cover their shared contract.
-* **-** Android release automation owns two flavors and must build the `play` flavor with its asset
-  pack module enabled; invoking an arbitrary Gradle release task is no longer equivalent to the
-  canonical release command.
+* **-** Android release automation owns a generic public artifact plus an explicit Play canary. The
+  Play build must enable its asset-pack module, and invoking an arbitrary Gradle release task is not
+  equivalent to either canonical command.

@@ -18,6 +18,7 @@ import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 public class ColoringPackWorker extends Worker {
     public static final String JOB_PATH = "jobPath";
@@ -89,7 +90,7 @@ public class ColoringPackWorker extends Worker {
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 throw new IllegalStateException("Coloring download HTTP " + connection.getResponseCode());
             }
-            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             long bytes = 0;
             try (BufferedInputStream input = new BufferedInputStream(connection.getInputStream());
                     BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(partial))) {
@@ -102,7 +103,7 @@ public class ColoringPackWorker extends Worker {
                     bytes += count;
                 }
             }
-            if (bytes != expectedBytes || !hex(digest.digest()).equals(expectedDigest)) {
+            if (bytes != expectedBytes || !ColoringPackFiles.digestHex(digest).equals(expectedDigest)) {
                 throw new IllegalStateException("Coloring asset verification failed");
             }
             if (destination.exists() && !destination.delete()) {
@@ -136,11 +137,5 @@ public class ColoringPackWorker extends Worker {
         try (FileOutputStream output = new FileOutputStream(file)) {
             output.write(text.getBytes(StandardCharsets.UTF_8));
         }
-    }
-
-    private static String hex(byte[] bytes) {
-        StringBuilder result = new StringBuilder(bytes.length * 2);
-        for (byte value : bytes) result.append(String.format("%02x", value));
-        return result.toString();
     }
 }

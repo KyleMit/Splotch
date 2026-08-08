@@ -20,23 +20,57 @@ afterEach(() => {
 
 describe('Android Play coloring-pack configuration', () => {
   it('keeps the canary book and asset-pack name aligned across build and runtime boundaries', () => {
-    expect(PLAY_COLORING_PACK_BOOK_IDS).toEqual(['dinosaur']);
-    const packName = androidColoringPackName(PLAY_COLORING_PACK_BOOK_IDS[0]);
-    expect(packName).toBe('coloring_dinosaur');
-    expect(read('android/settings.gradle')).toContain(`include ':${packName}'`);
-    expect(read('android/app/build.gradle')).toContain(`assetPacks = [":${packName}"]`);
-    expect(read(`android/coloring-packs/${packName}/build.gradle`)).toContain(
-      `packName = "${packName}"`
+    expect(PLAY_COLORING_PACK_BOOK_IDS).toContain('dinosaur');
+    const expectedMappings = PLAY_COLORING_PACK_BOOK_IDS.map((bookId) => [
+      bookId,
+      androidColoringPackName(bookId),
+    ]);
+    const settings = read('android/settings.gradle');
+    const appBuild = read('android/app/build.gradle');
+    const playSource = read(
+      'android/app/src/play/java/art/splotch/app/DistributionColoringPackSource.java'
     );
-    expect(
-      read('android/app/src/play/java/art/splotch/app/DistributionColoringPackSource.java')
-    ).toContain(`DINOSAUR_PACK_NAME = "${packName}"`);
+    const runtimeMappings = [...playSource.matchAll(/packNames\.put\("([^"]+)", "([^"]+)"\)/g)].map(
+      ([, bookId, packName]) => [bookId, packName]
+    );
+
+    expect(runtimeMappings).toEqual(expectedMappings);
+    expect(appBuild).toContain(
+      `assetPacks = [${expectedMappings.map(([, packName]) => `":${packName}"`).join(', ')}]`
+    );
+    for (const [, packName] of expectedMappings) {
+      expect(settings).toContain(`include ':${packName}'`);
+      expect(read(`android/coloring-packs/${packName}/build.gradle`)).toContain(
+        `packName = "${packName}"`
+      );
+    }
+    expect(playSource).toContain('new ArrayList<>(PACK_NAMES.values())');
+    expect(playSource).toContain('for (String packName : PACK_NAMES.values())');
 
     const packageJson = JSON.parse(read('package.json'));
-    expect(packageJson.scripts['android:bundle']).toContain('-PsplotchPlayAssetDelivery=true');
+    expect(packageJson.scripts['android:bundle']).not.toContain('-PsplotchPlayAssetDelivery=true');
     expect(packageJson.scripts['android:bundle:generic']).not.toContain(
       '-PsplotchPlayAssetDelivery=true'
     );
+    expect(packageJson.scripts['android:bundle:play']).toContain('-PsplotchPlayAssetDelivery=true');
+    expect(packageJson.scripts['android:verify']).not.toContain('--play');
+    expect(packageJson.scripts['android:verify:play']).toContain('--play');
+    expect(packageJson.scripts['android:open']).not.toContain('--play');
+    expect(packageJson.scripts['android:open:play']).toContain('--play');
+  });
+
+  it('bounds Play delivery attempts and releases its background executor', () => {
+    const source = read(
+      'android/app/src/play/java/art/splotch/app/DistributionColoringPackSource.java'
+    );
+    const plugin = read('android/app/src/main/java/art/splotch/app/ColoringPacksPlugin.java');
+
+    expect(source).toContain('DOWNLOAD_TIMEOUT_MINUTES');
+    expect(source).toContain('background.schedule(');
+    expect(source).toContain('timeout.cancel(false)');
+    expect(source).toContain('background.shutdownNow()');
+    expect(plugin).toContain('distributionSource.close()');
+    expect(plugin).not.toContain('getActivity().runOnUiThread');
   });
 
   it('copies exactly the catalog assets into the generated asset-pack tree', () => {

@@ -250,10 +250,11 @@ The shared baseline both depend on:
 > **Both uploads are currently manual.** The npm pipeline ends at producing the signed binary;
 > getting it to the store is a hands-on step today.
 
-* **Android** — `npm run android:bundle` → `app-play-release.aab`, then upload it in the **Play
-  Console web UI** (drag the `.aab` into a release on a track). This is the Play flavor with the
-  Dinosaur on-demand asset pack; use `android:bundle:generic` only for a non-Play HTTPS-only build.
-  `npm run android:open` reveals the Play output folder.
+* **Android** — `npm run android:bundle` → `app-generic-release.aab`, then upload it in the **Play
+  Console web UI** (drag the `.aab` into a release on a track). The Play Asset Delivery canary is
+  intentionally separate: build it with `android:bundle:play`, verify it with `android:verify:play`,
+  and upload it only to an internal test track until ADR-0103's validation is complete.
+  `android:open` and `android:open:play` reveal the respective output folders.
 * **iOS** — `npm run ios:ipa` → `App.ipa`, then drag it into the **Transporter** app (free, Mac App
   Store) and hit Deliver. `npm run ios:open` reveals the output folder. (Xcode → Organizer →
   Distribute App is the GUI alternative.)
@@ -281,7 +282,7 @@ When release cadence justifies automating, set it up roughly as:
    * **iOS** — build via the existing `npm run ios:ipa`, then `upload_to_app_store` (deliver) to
      push `App.ipa` **plus** `fastlane/metadata/en-US/`.
    * **Android** — build via `npm run android:bundle`, then `upload_to_play_store` (supply) to push
-     `app-play-release.aab` **plus** `fastlane/metadata/android/en-US/`.
+     `app-generic-release.aab` **plus** `fastlane/metadata/android/en-US/`.
 4. **Credentials** (gitignored, same posture as `ios/local.xcconfig` and
    `android/keystore.properties`):
    * iOS — an **App Store Connect API key** (`.p8` + Key ID + Issuer ID), App Manager role.

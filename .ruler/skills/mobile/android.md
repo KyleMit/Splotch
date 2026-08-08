@@ -82,8 +82,10 @@ Each runs `cap:sync` first (the shared web build — see [native.md](native.md))
 ```bash
 npm run android:apk             # generic debug APK -> outputs/apk/generic/debug/app-generic-debug.apk
 npm run android:run             # build + install generic debug on the connected device/emulator
-npm run android:bundle          # signed Play AAB + Dinosaur on-demand asset pack
-npm run android:bundle:generic  # signed HTTPS-only AAB for non-Play distribution
+npm run android:bundle          # signed generic AAB with HTTPS coloring-pack delivery
+npm run android:bundle:play     # signed Play canary AAB + Dinosaur on-demand asset pack
+npm run android:verify          # verify the generic release signature
+npm run android:verify:play     # verify the Play canary release signature
 npm run android:clean           # gradle clean (no cap:sync)
 ```
 
@@ -98,7 +100,7 @@ floor remains API 24.
 > 1. **Node ≥ 22** active (Capacitor 8 requires it).
 > 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it (set it in your shell profile
 >    per §1; reopen a terminal that was open before you set it).
-> 3. For `android:bundle`, `android/keystore.properties` must exist (see §4).
+> 3. For either `android:bundle` command, `android/keystore.properties` must exist (see §4).
 >
 > These scripts run the Gradle wrapper through `scripts/gradle.mjs`, which resolves the wrapper to
 > an absolute path and runs it from `android/` (ADR-0017), so `npm run android:*` needs no inline
@@ -257,10 +259,12 @@ multi-touch input — the best way to get accurate profiles.
     as literal characters, so a quoted password fails with *"keystore password was incorrect"*.
 * [ ] Enroll in **Play App Signing** (recommended) when creating the app.
 * [x] **Produce a signed release `.aab`:** `npm run android:bundle` →
-      `android/app/build/outputs/bundle/playRelease/app-play-release.aab` (Play requires AAB). The
-      build also verifies the Dinosaur asset pack's exact file set and bytes. Verify the AAB is
-      signed with `npm run android:verify` (expect `jar verified`; the self-signed / no-timestamp
-      warnings are normal for an upload key).
+      `android/app/build/outputs/bundle/genericRelease/app-generic-release.aab` (Play requires AAB).
+      Verify it with `npm run android:verify` (expect `jar verified`; the self-signed / no-timestamp
+      warnings are normal for an upload key). The internal-track Play Asset Delivery canary is
+      `npm run android:bundle:play` →
+      `android/app/build/outputs/bundle/playRelease/app-play-release.aab`; verify it with
+      `npm run android:verify:play`.
 
 ### Google Play Console setup
 

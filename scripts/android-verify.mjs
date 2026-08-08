@@ -13,18 +13,19 @@
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fail } from './lib/proc.mjs';
-import { RELEASE_AAB } from './lib/android.mjs';
+import { PLAY_RELEASE_AAB, RELEASE_AAB } from './lib/android.mjs';
 
 if (!process.env.JAVA_HOME)
   fail('[android-verify] JAVA_HOME is not set — cannot locate jarsigner.');
 const jarsigner = join(process.env.JAVA_HOME, 'bin', 'jarsigner');
+const aabPath = process.argv.includes('--play') ? PLAY_RELEASE_AAB : RELEASE_AAB;
 
 const {
   stdout = '',
   stderr = '',
   status,
   error,
-} = spawnSync(jarsigner, ['-verify', RELEASE_AAB], { encoding: 'utf8' });
+} = spawnSync(jarsigner, ['-verify', aabPath], { encoding: 'utf8' });
 if (error) fail(`[android-verify] failed to run jarsigner: ${error.message}`);
 
 const output = stdout + stderr;

@@ -39,9 +39,10 @@ and skip iOS with a note if it doesn't).
    it from `android/keystore.properties.example`.
 
 3. **Build the signed bundle.** Run `npm run android:bundle`. This syncs the web build into the
-   native project, generates the Dinosaur on-demand asset pack, and runs
-   `gradlew :app:bundlePlayRelease`. It is slow (minutes) — let it finish. If Gradle fails, surface
-   the error and stop.
+   native project and runs `gradlew :app:bundleGenericRelease`. It is slow (minutes) — let it
+   finish. If Gradle fails, surface the error and stop. The Play Asset Delivery canary is a separate
+   internal-track build via `npm run android:bundle:play` until it has completed its release
+   validation (ADR-0103).
 
 4. **Verify the signature.** Run `npm run android:verify`. This wraps `jarsigner` in
    `scripts/android-verify.mjs`, which prints just `jar verified.` and exits 0 on success. On
@@ -56,7 +57,7 @@ and skip iOS with a note if it doesn't).
 
 6. **Report.** Tell the user:
    * the version + versionCode read back out of the built `.aab` and its path
-     (`android/app/build/outputs/bundle/playRelease/app-play-release.aab`),
+     (`android/app/build/outputs/bundle/genericRelease/app-generic-release.aab`),
    * that signature verification passed,
    * that `npm run android:open` will reveal the file in the OS file manager.
 

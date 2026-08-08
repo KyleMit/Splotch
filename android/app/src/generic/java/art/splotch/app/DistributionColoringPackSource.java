@@ -25,4 +25,7 @@ final class DistributionColoringPackSource implements ColoringPackSource {
 
     @Override
     public void remove(Context context) {}
+
+    @Override
+    public void close() {}
 }

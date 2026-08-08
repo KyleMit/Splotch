@@ -26,4 +26,6 @@ interface ColoringPackSource {
             Callback callback);
 
     void remove(Context context);
+
+    void close();
 }

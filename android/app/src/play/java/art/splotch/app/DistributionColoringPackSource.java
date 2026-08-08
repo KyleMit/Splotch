@@ -14,15 +14,20 @@ import com.google.android.play.core.assetpacks.model.AssetPackStorageMethod;
 import org.json.JSONArray;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.ExecutorService;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 final class DistributionColoringPackSource implements ColoringPackSource {
-    private static final String DINOSAUR_BOOK_ID = "dinosaur";
-    private static final String DINOSAUR_PACK_NAME = "coloring_dinosaur";
-    private final ExecutorService verifier = Executors.newSingleThreadExecutor();
+    private static final long DOWNLOAD_TIMEOUT_MINUTES = 10;
+    private static final Map<String, String> PACK_NAMES = createPackNames();
+    private final ScheduledExecutorService background = Executors.newSingleThreadScheduledExecutor();
 
     @Override
     public File installed(Context context, String version, String bookId) {
@@ -61,8 +66,13 @@ final class DistributionColoringPackSource implements ColoringPackSource {
     @Override
     public void remove(Context context) {
         AssetPackManager manager = AssetPackManagerFactory.getInstance(context);
-        manager.cancel(Collections.singletonList(DINOSAUR_PACK_NAME));
-        manager.removePack(DINOSAUR_PACK_NAME);
+        manager.cancel(new ArrayList<>(PACK_NAMES.values()));
+        for (String packName : PACK_NAMES.values()) manager.removePack(packName);
+    }
+
+    @Override
+    public void close() {
+        background.shutdownNow();
     }
 
     private void verify(
@@ -72,7 +82,7 @@ final class DistributionColoringPackSource implements ColoringPackSource {
             JSONArray files,
             File root,
             Callback callback) {
-        verifier.execute(() -> {
+        background.execute(() -> {
             try {
                 ColoringPackFiles.verifyDirectory(root, bookId, files);
                 ColoringPackWorker.writeText(
@@ -96,7 +106,13 @@ final class DistributionColoringPackSource implements ColoringPackSource {
     }
 
     private static String packName(String bookId) {
-        return DINOSAUR_BOOK_ID.equals(bookId) ? DINOSAUR_PACK_NAME : null;
+        return PACK_NAMES.get(bookId);
+    }
+
+    private static Map<String, String> createPackNames() {
+        Map<String, String> packNames = new HashMap<>();
+        packNames.put("dinosaur", "coloring_dinosaur");
+        return Collections.unmodifiableMap(packNames);
     }
 
     private static boolean playDownloadAllowed(Context context, boolean allowMetered) {
@@ -116,6 +132,7 @@ final class DistributionColoringPackSource implements ColoringPackSource {
         private final boolean allowMetered;
         private final Callback callback;
         private final AtomicBoolean settled = new AtomicBoolean();
+        private ScheduledFuture<?> timeout;
 
         private DownloadAttempt(
                 AssetPackManager manager,
@@ -138,6 +155,8 @@ final class DistributionColoringPackSource implements ColoringPackSource {
 
         private void start() {
             manager.registerListener(this);
+            timeout = background.schedule(
+                    this::fallback, DOWNLOAD_TIMEOUT_MINUTES, TimeUnit.MINUTES);
             manager.fetch(Collections.singletonList(packName)).addOnFailureListener(error -> fallback());
         }
 
@@ -164,8 +183,7 @@ final class DistributionColoringPackSource implements ColoringPackSource {
         }
 
         private void complete() {
-            if (!settled.compareAndSet(false, true)) return;
-            manager.unregisterListener(this);
+            if (!settle()) return;
             File root = packRoot(manager, packName, bookId);
             if (root == null) {
                 callback.onFallback();
@@ -175,16 +193,21 @@ final class DistributionColoringPackSource implements ColoringPackSource {
         }
 
         private void fallback() {
-            if (!settled.compareAndSet(false, true)) return;
-            manager.unregisterListener(this);
+            if (!settle()) return;
             manager.cancel(Collections.singletonList(packName));
             callback.onFallback();
         }
 
         private void cancel() {
-            if (!settled.compareAndSet(false, true)) return;
-            manager.unregisterListener(this);
+            if (!settle()) return;
             callback.onCanceled();
+        }
+
+        private boolean settle() {
+            if (!settled.compareAndSet(false, true)) return false;
+            manager.unregisterListener(this);
+            if (timeout != null) timeout.cancel(false);
+            return true;
         }
     }
 }

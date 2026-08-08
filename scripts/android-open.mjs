@@ -3,6 +3,6 @@
 // step with android:bundle/android:verify.
 
 import { openInOS } from './lib/proc.mjs';
-import { RELEASE_BUNDLE_DIR } from './lib/android.mjs';
+import { PLAY_RELEASE_BUNDLE_DIR, RELEASE_BUNDLE_DIR } from './lib/android.mjs';
 
-openInOS(RELEASE_BUNDLE_DIR);
+openInOS(process.argv.includes('--play') ? PLAY_RELEASE_BUNDLE_DIR : RELEASE_BUNDLE_DIR);

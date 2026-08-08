@@ -42,10 +42,11 @@ final class ColoringPackFiles {
             int count;
             while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
         }
-        return hex(digest.digest()).equals(expectedDigest);
+        return digestHex(digest).equals(expectedDigest);
     }
 
-    private static String hex(byte[] bytes) {
+    static String digestHex(MessageDigest digest) {
+        byte[] bytes = digest.digest();
         StringBuilder result = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) result.append(String.format("%02x", value));
         return result.toString();
