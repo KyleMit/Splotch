@@ -132,7 +132,7 @@ npx tsc --noEmit       # TypeScript only
 ## Testing
 
 ```bash
-npm test                   # unit + asset-pipeline + repo-script + E2E (what CI runs on every push)
+npm test                   # unit + asset/store pipelines + repo-script + E2E (what CI runs on every push)
 npm run test:unit:watch    # Vitest watch mode
 npm run test:e2e:headed    # Playwright with browser visible (SLOWMO=500)
 npm run test:e2e:ui        # Playwright UI mode

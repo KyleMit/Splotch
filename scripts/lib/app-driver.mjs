@@ -16,6 +16,13 @@ const COLORING_BOOK_SELECTOR = (name) => `button[aria-label="${name} coloring bo
 const COLORING_PAGE_SELECTOR = (name) => `button[aria-label="${name} coloring page"]`;
 const COLORING_OVERLAY_READY_SELECTOR = '#coloringOverlay.overlay-ready';
 const SETTINGS_BUTTON_SELECTOR = '#settingsButton';
+const COLOR_PICKER_SELECTOR = '#color-picker';
+const BRUSH_BUTTON_SELECTOR = '#brushButton';
+const BRUSH_OPTION_SELECTORS = {
+  pen: '#penBrushButton',
+  crayon: '#crayonBrushButton',
+  magic: '#magicBrushButton',
+};
 
 const APP_STARTUP_SETTLE_DELAY_MS = 400;
 const DRAWER_TRANSITION_DELAY_MS = 350;
@@ -23,6 +30,8 @@ const POST_COLOR_CHANGE_DELAY_MS = 220;
 const STROKE_MENU_TRANSITION_DELAY_MS = 150;
 const STROKE_COMPLETION_DELAY_MS = 40;
 const MENU_DISMISSAL_DELAY_MS = 200;
+const BRUSH_MENU_TRANSITION_DELAY_MS = 150;
+const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
 
 const isUp = async (url) => {
   try {
@@ -96,6 +105,49 @@ export async function pickColor(page, hex) {
   return false;
 }
 
+async function waitForDialogAnimation(page, selector) {
+  const dialog = page.locator(selector);
+  await dialog.waitFor({ state: 'visible' });
+  await dialog.evaluate((element) =>
+    Promise.all(element.getAnimations().map((animation) => animation.finished.catch(() => {})))
+  );
+}
+
+export async function pickDrawingColor(page, color) {
+  if (color.kind === 'palette') {
+    const swatch = page.locator(`.color-swatch[aria-label="${color.label}"]:visible`).first();
+    if (!(await swatch.count())) throw new Error(`Palette color ${color.label} is not visible`);
+    await swatch.click({ force: true });
+    await sleep(POST_COLOR_CHANGE_DELAY_MS);
+    return;
+  }
+  if (color.kind === 'picker') {
+    await page.locator(COLOR_SWATCH_SELECTOR('custom')).click();
+    await waitForDialogAnimation(page, COLOR_PICKER_SELECTOR);
+    const hexagon = page
+      .locator(`${COLOR_PICKER_SELECTOR} .hexagon[data-color="${color.hex}"]:visible`)
+      .first();
+    if (!(await hexagon.count())) throw new Error(`Picker color ${color.hex} is not visible`);
+    await hexagon.click();
+    await page.locator(COLOR_PICKER_SELECTOR).waitFor({ state: 'hidden' });
+    await sleep(POST_COLOR_CHANGE_DELAY_MS);
+    return;
+  }
+  throw new Error(`Unknown drawing color kind ${color.kind}`);
+}
+
+export async function pickBrush(page, brush) {
+  const optionSelector = BRUSH_OPTION_SELECTORS[brush];
+  if (!optionSelector) throw new Error(`Unknown drawing brush ${brush}`);
+  await page.locator(BRUSH_BUTTON_SELECTOR).click();
+  await sleep(BRUSH_MENU_TRANSITION_DELAY_MS);
+  const option = page.locator(optionSelector);
+  await option.click();
+  await page.waitForFunction((expected) => window.__committedBrushMode?.() === expected, brush, {
+    timeout: BRUSH_COMMIT_TIMEOUT_MS,
+  });
+}
+
 export async function setStrokeSize(page, size) {
   const btn = page.locator(STROKE_WIDTH_BUTTON_SELECTOR);
   if (!(await btn.count())) return;
@@ -106,7 +158,7 @@ export async function setStrokeSize(page, size) {
 }
 
 // Draw one freehand stroke through a list of {x,y} canvas-relative points.
-export async function drawStroke(page, box, pts) {
+export async function drawStroke(page, box, pts, { finishEndpoint = false } = {}) {
   if (pts.length === 0) return;
   const abs = pts.map((p) => ({ x: box.x + p.x, y: box.y + p.y }));
   await page.mouse.move(abs[0].x, abs[0].y);
@@ -114,6 +166,9 @@ export async function drawStroke(page, box, pts) {
   for (let i = 1; i < abs.length; i++) {
     await page.mouse.move(abs[i].x, abs[i].y, { steps: 6 });
   }
+  // The engine's live curve ends at the midpoint before the last raw sample.
+  // Holding that endpoint for one more sample lets authored pointer paths reach it.
+  if (finishEndpoint) await page.mouse.move(abs.at(-1).x, abs.at(-1).y);
   await page.mouse.up();
   await sleep(STROKE_COMPLETION_DELAY_MS);
 }
