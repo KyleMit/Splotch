@@ -4,6 +4,14 @@ import svelte from 'eslint-plugin-svelte';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
+const PLAYWRIGHT_IMPORT_RESTRICTION = {
+  name: 'playwright',
+  message: 'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
+};
+const RATE_LIMIT_MESSAGE =
+  'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
+const RATE_LIMIT_ARGUMENT_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
+
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
 // source is under web/. Type checking is owned by `npm run check` (svelte-check); ESLint runs
 // without a TS program so it stays fast and tolerant of the toolchain (e.g. TypeScript majors)
@@ -61,13 +69,7 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: 'playwright',
-              message:
-                'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
-            },
-          ],
+          paths: [PLAYWRIGHT_IMPORT_RESTRICTION],
         },
       ],
     },
@@ -84,21 +86,10 @@ export default tseslint.config(
     rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="Literal"]',
-          message:
-            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
-        },
-        {
-          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="TemplateLiteral"]',
-          message:
-            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
-        },
-        {
-          selector: 'CallExpression[callee.name="rateLimit"][arguments.0.type="BinaryExpression"]',
-          message:
-            'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).',
-        },
+        ...RATE_LIMIT_ARGUMENT_TYPES.map((argumentType) => ({
+          selector: `CallExpression[callee.name="rateLimit"][arguments.0.type="${argumentType}"]`,
+          message: RATE_LIMIT_MESSAGE,
+        })),
       ],
     },
   },
@@ -139,8 +130,8 @@ export default tseslint.config(
   },
   {
     // Project conventions (CLAUDE.md, ADR-0002): Svelte 5 runes only — no legacy stores.
-    // Flat-config rule entries replace (not merge) across blocks, so this block must restate
-    // the repo-wide playwright ban from the root block alongside its own paths.
+    // Flat-config rule entries replace (not merge) across blocks, so this block must include
+    // the shared repo-wide playwright restriction alongside its own paths.
     files: ['web/src/**/*.{ts,svelte}'],
     rules: {
       'no-restricted-imports': [
@@ -158,11 +149,7 @@ export default tseslint.config(
               message:
                 'onDestroy runs during SSR — use an $effect cleanup (.claude/rules/svelte.md).',
             },
-            {
-              name: 'playwright',
-              message:
-                'Import from @playwright/test — bare playwright is an undeclared transitive dependency.',
-            },
+            PLAYWRIGHT_IMPORT_RESTRICTION,
           ],
         },
       ],

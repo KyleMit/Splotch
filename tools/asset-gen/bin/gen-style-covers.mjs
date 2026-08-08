@@ -1,5 +1,5 @@
 // Regenerates the AI style cover thumbnails in web/static/styles/ by running
-// the source drawing (web/static/styles/source.svg) through Gemini once per
+// the source drawing (tools/asset-gen/source.svg) through Gemini once per
 // style per theme, using the same prompt assembly as /api/generate-image.
 // Requires GEMINI_API_KEY in the environment. Run via npm so the TypeScript
 // imports resolve (node --experimental-strip-types):
@@ -21,7 +21,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { STYLES_DIR } from '../lib/paths.mjs';
+import { STYLES_DIR, STYLE_SOURCE_SVG } from '../lib/paths.mjs';
 import { fail, parseTemperature } from '../lib/cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import {
@@ -99,7 +99,7 @@ export async function run(argv = process.argv.slice(2)) {
   const temperature = parseTemperature(values.temperature, '--temperature', undefined);
   const ai = makeClient();
 
-  const sourceSvg = await readFile(join(STYLES_DIR, 'source.svg'));
+  const sourceSvg = await readFile(STYLE_SOURCE_SVG);
   const sourceForTheme = Object.fromEntries(
     await Promise.all(
       themes.map(async (theme) => [

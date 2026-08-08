@@ -18,43 +18,10 @@ import {
   siteFooter,
 } from '../../../scripts/lib/scrapbook-chrome.mjs';
 import { argFlag } from '../../../scripts/lib/proc.mjs';
-import { SAMPLES } from './samples.mjs';
+import { SAMPLES, STAGES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, '../../../scrapbook/crayon-brush-samples');
-
-const STAGES = [
-  [
-    '1-',
-    'Stage 1 · Single lines',
-    'One straight crayon stroke per color — the baseline mark. Note the paper tooth showing through and the waxy buildup at the ends.',
-  ],
-  [
-    '2-',
-    'Stage 2 · Same-color overdraw',
-    'Drawing back over a stroke in the SAME color. The overlap must read visibly darker, denser and more opaque — this is the buildup behavior the brush has to reproduce.',
-  ],
-  [
-    '3-',
-    'Stage 3 · Different-color overdraw',
-    'One color layered over another. Where waxes cross they partially mix (red+blue→purple, yellow+blue→green); away from the crossing each color stays itself.',
-  ],
-  [
-    '4-',
-    'Stage 4 · Scribble types',
-    'The marks a toddler actually makes — back-and-forth fills, circular scribbles, zigzags, hatching, loops, spirals, dots, wild multicolor tangles.',
-  ],
-  [
-    '5-',
-    'Stage 5 · Fills & swatches',
-    'Area coverage: how the texture reads when a shape is filled at different pressures, plus blended gradients.',
-  ],
-  [
-    '6-',
-    'Stage 6 · Macro close-ups',
-    'Deposit physics at tooth scale: wax thickness varies continuously (value follows thickness), grain streaks along the drag direction, and thin deposit goes translucent rather than vanishing.',
-  ],
-];
 
 const MIME = {
   '.jpg': 'image/jpeg',
@@ -71,7 +38,7 @@ const files = new Map(
 
 const cards = [];
 let present = 0;
-for (const [prefix, heading, blurb] of STAGES) {
+for (const { prefix, heading, blurb } of STAGES) {
   const specs = SAMPLES.filter((s) => s.id.startsWith(prefix));
   const items = [];
   for (const spec of specs) {

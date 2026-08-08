@@ -11,3 +11,12 @@ runs:
       run: |
         curl -fsSL "https://get.maestro.mobile.dev" | bash
         echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+        maestro_version_output=$("$HOME/.maestro/bin/maestro" --version 2>&1) || {
+          echo "Installed Maestro version check failed: $maestro_version_output" >&2
+          exit 1
+        }
+        maestro_version=$(printf '%s\n' "$maestro_version_output" | sed -nE '/^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/p' | tail -n 1)
+        if [[ "$maestro_version" != "$MAESTRO_VERSION" ]]; then
+          echo "Installed Maestro version '$maestro_version' does not match requested version '$MAESTRO_VERSION'. Output: $maestro_version_output" >&2
+          exit 1
+        fi

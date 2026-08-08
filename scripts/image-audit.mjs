@@ -20,22 +20,11 @@
 // `removeViewBox` is NOT part of preset-default, so the `viewBox` every icon
 // relies on for CSS scaling (Icon.svelte sizes the <svg> at 100%) is preserved.
 
-import { existsSync, readFileSync, writeFileSync, globSync } from 'node:fs';
+import { readFileSync, writeFileSync, globSync } from 'node:fs';
 import { relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { optimize } from 'svgo';
 import { ROOT } from './lib/proc.mjs';
-
-// Generator-input SVGs live under static/ but are never shipped or inlined —
-// they're consumed by scripts/gen-*.mjs. Optimizing them is at best pointless
-// (no DOM/ship benefit) and at worst breaking: gen-large-image.mjs hand-parses
-// large-image.svg's `M x y L x y` paths and per-<path> stroke attributes, both
-// of which SVGO's convertPathData / attribute plugins rewrite. Skip them.
-//
-// Each entry is checked for existence below: nothing else references these
-// paths, so moving one leaves an exemption that silently matches nothing, and
-// the file gets optimized — breaking a generator that only runs on demand.
-const IGNORE = new Set(['web/static/large-image.svg', 'web/static/styles/source.svg']);
 
 // `cleanupIds` minifies every surviving id to a one-letter name, so two icons
 // inlined into the same document collide (`more-colors.svg` already ships
@@ -57,15 +46,6 @@ const {
   values: { check },
 } = parseArgs({ options: { check: { type: 'boolean' } } });
 
-const stale = [...IGNORE].filter((rel) => !existsSync(`${ROOT}/${rel}`));
-if (stale.length > 0) {
-  console.error(
-    `[image-audit] ignored path(s) no longer exist: ${stale.join(', ')}. ` +
-      `Update the IGNORE set in scripts/image-audit.mjs.`
-  );
-  process.exit(1);
-}
-
 const files = globSync('web/**/*.svg', { cwd: ROOT })
   .map((p) => `${ROOT}/${p}`)
   .filter((p) => {
@@ -74,8 +54,7 @@ const files = globSync('web/**/*.svg', { cwd: ROOT })
       !rel.includes('/node_modules/') &&
       !rel.includes('/.svelte-kit/') &&
       !rel.includes('/build/') &&
-      !rel.includes('/.netlify/') &&
-      !IGNORE.has(rel)
+      !rel.includes('/.netlify/')
     );
   })
   .sort();

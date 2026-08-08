@@ -1,0 +1,401 @@
+diff --git a/web/src/lib/actions/pinchZoom.svelte.ts b/web/src/lib/actions/pinchZoom.svelte.ts
+index d6827763..1fe492a1 100644
+--- a/web/src/lib/actions/pinchZoom.svelte.ts
++++ b/web/src/lib/actions/pinchZoom.svelte.ts
+@@ -51,60 +51,51 @@ export function clampTransform(t: Transform, bounds: Bounds): Transform {
+   };
+ }
+
+-function centroid(points: Point[]): Point {
+-  let x = 0;
+-  let y = 0;
+-  for (const p of points) {
+-    x += p.x;
+-    y += p.y;
+-  }
+-  return { x: x / points.length, y: y / points.length };
+-}
+-
+ // A DOM-free gesture accumulator: feed it pointer positions (in surface-local
+ // coordinates) and read back the clamped transform. The Svelte action wires real
+ // PointerEvents to it; tests drive it with synthetic points.
+ export function createPinchZoom(getBounds: () => Bounds) {
+   const tracker = createSpreadTracker();
+-  let transform: Transform = { ...IDENTITY_TRANSFORM };
++  const transform: Transform = { ...IDENTITY_TRANSFORM };
+   // Snapshot at the start of each gesture segment (whenever a finger lands or
+   // lifts) so scaling and panning stay relative to that instant — no jumps when
+   // the finger count changes mid-gesture.
+-  let base: { transform: Transform; centroid: Point; spread: number; count: number } | null = null;
++  const baseTransform: Transform = { ...IDENTITY_TRANSFORM };
++  const baseCentroid: Point = { x: 0, y: 0 };
++  const currentCentroid: Point = { x: 0, y: 0 };
++  let baseSpread = 0;
++  let baseCount = 0;
+
+   function rebase() {
+-    const pts = tracker.points();
+-    if (pts.length === 0) {
+-      base = null;
++    if (!tracker.centroid(baseCentroid)) {
++      baseCount = 0;
+       return;
+     }
+-    base = {
+-      transform: { ...transform },
+-      centroid: centroid(pts),
+-      spread: tracker.spread(),
+-      count: pts.length,
+-    };
++    baseTransform.scale = transform.scale;
++    baseTransform.x = transform.x;
++    baseTransform.y = transform.y;
++    baseSpread = tracker.spread();
++    baseCount = tracker.pointerCount;
+   }
+
+   function recompute() {
+-    if (!base) return;
+-    const pts = tracker.points();
+-    if (pts.length === 0) return;
+-
+-    const now = centroid(pts);
+-    let scale = base.transform.scale;
+-    if (base.count >= 2 && pts.length >= 2 && base.spread > 0) {
+-      scale = clampScale(base.transform.scale * (tracker.spread() / base.spread));
++    if (baseCount === 0 || !tracker.centroid(currentCentroid)) return;
++
++    let scale = baseTransform.scale;
++    if (baseCount >= 2 && tracker.pointerCount >= 2 && baseSpread > 0) {
++      scale = clampScale(baseTransform.scale * (tracker.spread() / baseSpread));
+     }
+
+     // Hold the content point that sat under the gesture's start centroid beneath
+     // the fingers as they move and scale.
+-    const cx = (base.centroid.x - base.transform.x) / base.transform.scale;
+-    const cy = (base.centroid.y - base.transform.y) / base.transform.scale;
+-    transform = clampTransform(
+-      { scale, x: now.x - scale * cx, y: now.y - scale * cy },
+-      getBounds()
+-    );
++    const cx = (baseCentroid.x - baseTransform.x) / baseTransform.scale;
++    const cy = (baseCentroid.y - baseTransform.y) / baseTransform.scale;
++    const bounds = getBounds();
++    const minX = bounds.width * (1 - scale);
++    const minY = bounds.height * (1 - scale);
++    transform.scale = scale;
++    transform.x = Math.min(0, Math.max(minX, currentCentroid.x - scale * cx));
++    transform.y = Math.min(0, Math.max(minY, currentCentroid.y - scale * cy));
+   }
+
+   return {
+@@ -122,7 +113,11 @@ export function createPinchZoom(getBounds: () => Bounds) {
+       rebase();
+     },
+     move(id: number, p: Point) {
+-      if (!tracker.move(id, p)) return;
++      if (!tracker.moveTo(id, p.x, p.y)) return;
++      recompute();
++    },
++    moveTo(id: number, x: number, y: number) {
++      if (!tracker.moveTo(id, x, y)) return;
+       recompute();
+     },
+     up(id: number) {
+@@ -131,8 +126,10 @@ export function createPinchZoom(getBounds: () => Bounds) {
+     },
+     reset() {
+       tracker.clear();
+-      base = null;
+-      transform = { ...IDENTITY_TRANSFORM };
++      baseCount = 0;
++      transform.scale = IDENTITY_TRANSFORM.scale;
++      transform.x = IDENTITY_TRANSFORM.x;
++      transform.y = IDENTITY_TRANSFORM.y;
+     },
+   };
+ }
+@@ -159,30 +156,62 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
+   // The surface stays at scale 1, so its rect is constant for the length of a
+   // gesture — snapshot it on the first finger down and reuse it for every move,
+   // instead of re-measuring (a layout read) on each pointer event.
+-  let rect: DOMRect | null = null;
++  let rect!: DOMRect;
++  const bounds: Bounds = { width: 0, height: 0 };
++  let target: HTMLElement | undefined;
++  let enabled = false;
++  let translateXAnimation: Animation | undefined;
++  let translateYAnimation: Animation | undefined;
++  let scaleAnimation: Animation | undefined;
+
+-  const zoom = createPinchZoom(() => {
+-    const r = rect ?? node.getBoundingClientRect();
+-    return { width: r.width, height: r.height };
+-  });
++  const zoom = createPinchZoom(() => bounds);
+
+-  function local(e: PointerEvent): Point {
+-    const r = rect ?? node.getBoundingClientRect();
+-    return { x: e.clientX - r.left, y: e.clientY - r.top };
++  function cancelTransformAnimations() {
++    translateXAnimation?.cancel();
++    translateYAnimation?.cancel();
++    scaleAnimation?.cancel();
++    translateXAnimation = undefined;
++    translateYAnimation = undefined;
++    scaleAnimation = undefined;
+   }
+
+-  function apply(target: HTMLElement | undefined) {
++  function prepareTransformAnimations() {
++    cancelTransformAnimations();
++    if (!target) return;
++
++    const maxX = bounds.width * (MAX_SCALE - MIN_SCALE);
++    const maxY = bounds.height * (MAX_SCALE - MIN_SCALE);
++    translateXAnimation = target.animate(
++      [{ transform: 'translateX(0)' }, { transform: `translateX(${-maxX}px)` }],
++      { duration: maxX, fill: 'both', composite: 'add' }
++    );
++    translateYAnimation = target.animate(
++      [{ transform: 'translateY(0)' }, { transform: `translateY(${-maxY}px)` }],
++      { duration: maxY, fill: 'both', composite: 'add' }
++    );
++    scaleAnimation = target.animate(
++      [{ transform: 'scale(1)' }, { transform: `scale(${MAX_SCALE})` }],
++      { duration: MAX_SCALE - MIN_SCALE, fill: 'both', composite: 'add' }
++    );
++    translateXAnimation.pause();
++    translateYAnimation.pause();
++    scaleAnimation.pause();
++    translateXAnimation.currentTime = -zoom.transform.x;
++    translateYAnimation.currentTime = -zoom.transform.y;
++    scaleAnimation.currentTime = zoom.transform.scale - MIN_SCALE;
++  }
++
++  function apply() {
+     const t = zoom.transform;
+-    if (target) {
+-      const identity = t.scale === MIN_SCALE && t.x === 0 && t.y === 0;
+-      target.style.transform = identity ? '' : `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+-    }
++    if (translateXAnimation) translateXAnimation.currentTime = -t.x;
++    if (translateYAnimation) translateYAnimation.currentTime = -t.y;
++    if (scaleAnimation) scaleAnimation.currentTime = t.scale - MIN_SCALE;
+     node.classList.toggle('zoomed', zoom.isZoomed);
+   }
+
+-  function reset(target: HTMLElement | undefined) {
++  function reset() {
+     zoom.reset();
+-    if (target) target.style.transform = '';
++    cancelTransformAnimations();
+     node.classList.remove('zoomed');
+   }
+
+@@ -194,20 +223,24 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
+   }
+
+   function onPointerDown(e: PointerEvent) {
+-    if (!getOptions().enabled) return;
+-    if (zoom.pointerCount === 0) rect = node.getBoundingClientRect();
+-    zoom.down(e.pointerId, local(e));
++    if (!enabled) return;
++    if (zoom.pointerCount === 0) {
++      rect = node.getBoundingClientRect();
++      bounds.width = rect.width;
++      bounds.height = rect.height;
++      prepareTransformAnimations();
++    }
++    zoom.down(e.pointerId, { x: e.clientX - rect.left, y: e.clientY - rect.top });
+     capturePointer(node, e.pointerId);
+     if (engaged()) e.preventDefault();
+   }
+
+   function onPointerMove(e: PointerEvent) {
+-    const o = getOptions();
+-    if (!o.enabled || zoom.pointerCount === 0) return;
++    if (!enabled || zoom.pointerCount === 0) return;
+     const wasEngaged = engaged();
+-    zoom.move(e.pointerId, local(e));
++    zoom.moveTo(e.pointerId, e.clientX - rect.left, e.clientY - rect.top);
+     if (wasEngaged || engaged()) {
+-      apply(o.target);
++      apply();
+       e.preventDefault();
+     }
+   }
+@@ -216,8 +249,7 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
+   function onPointerUp(e: PointerEvent) {
+     zoom.up(e.pointerId);
+     releasePointer(node, e.pointerId);
+-    apply(getOptions().target);
+-    if (zoom.pointerCount === 0) rect = null;
++    apply();
+   }
+
+   node.addEventListener('pointerdown', onPointerDown);
+@@ -230,7 +262,9 @@ export function pinchZoom(node: HTMLElement, getOptions: () => PinchZoomOptions)
+   // un-zoomed, centered state.
+   $effect(() => {
+     const o = getOptions();
+-    reset(o.target);
++    reset();
++    target = o.target;
++    enabled = o.enabled;
+   });
+
+   return {
+diff --git a/web/src/lib/actions/spreadTracker.ts b/web/src/lib/actions/spreadTracker.ts
+index b0dd327a..2a47835b 100644
+--- a/web/src/lib/actions/spreadTracker.ts
++++ b/web/src/lib/actions/spreadTracker.ts
+@@ -12,6 +12,26 @@ export interface Point {
+ // assumptions; only `pointerCount` and a snapshot array are exposed.
+ export function createSpreadTracker() {
+   const pointers = new Map<number, Point>();
++  let xTotal = 0;
++  let yTotal = 0;
++  let firstId: number | undefined;
++  let secondId: number | undefined;
++
++  function refreshFirstTwo() {
++    const ids = pointers.keys();
++    firstId = ids.next().value;
++    secondId = ids.next().value;
++  }
++
++  function moveTo(id: number, x: number, y: number): boolean {
++    const point = pointers.get(id);
++    if (!point) return false;
++    xTotal += x - point.x;
++    yTotal += y - point.y;
++    point.x = x;
++    point.y = y;
++    return true;
++  }
+
+   return {
+     get pointerCount() {
+@@ -20,29 +40,56 @@ export function createSpreadTracker() {
+     points(): Point[] {
+       return [...pointers.values()];
+     },
++    centroid(point: Point): boolean {
++      if (pointers.size === 0) return false;
++      point.x = xTotal / pointers.size;
++      point.y = yTotal / pointers.size;
++      return true;
++    },
+     down(id: number, p: Point) {
++      const existing = pointers.get(id);
++      if (existing) {
++        xTotal += p.x - existing.x;
++        yTotal += p.y - existing.y;
++      } else {
++        xTotal += p.x;
++        yTotal += p.y;
++      }
+       pointers.set(id, p);
++      if (firstId === undefined) firstId = id;
++      else if (secondId === undefined) secondId = id;
+     },
+     // Returns false for a pointer this tracker never saw go down, so a caller can
+     // ignore events from a gesture it isn't part of.
+     move(id: number, p: Point): boolean {
+-      if (!pointers.has(id)) return false;
+-      pointers.set(id, p);
+-      return true;
++      return moveTo(id, p.x, p.y);
++    },
++    moveTo(id: number, x: number, y: number): boolean {
++      return moveTo(id, x, y);
+     },
+     up(id: number): boolean {
+-      return pointers.delete(id);
++      const point = pointers.get(id);
++      if (!point) return false;
++      xTotal -= point.x;
++      yTotal -= point.y;
++      pointers.delete(id);
++      if (id === firstId || id === secondId) refreshFirstTwo();
++      return true;
+     },
+     // Distance between the first two fingers; 0 until a second one lands.
+     spread(): number {
+-      const it = pointers.values();
+-      const a = it.next().value;
+-      const b = it.next().value;
++      if (firstId === undefined || secondId === undefined) return 0;
++      const a = pointers.get(firstId);
++      const b = pointers.get(secondId);
+       if (!a || !b) return 0;
+       return Math.hypot(a.x - b.x, a.y - b.y);
+     },
+     clear() {
+       pointers.clear();
++      xTotal = 0;
++      yTotal = 0;
++      firstId = undefined;
++      secondId = undefined;
+     },
+   };
+ }
+diff --git a/web/tests/ai-timer.spec.ts b/web/tests/ai-timer.spec.ts
+index 412e180a..836ac369 100644
+--- a/web/tests/ai-timer.spec.ts
++++ b/web/tests/ai-timer.spec.ts
+@@ -72,17 +72,18 @@ test.describe('AI render timer', () => {
+       const layer = node.querySelector('.zoom-layer') as HTMLElement;
+
+       // A lone finger on the un-zoomed preview must not be intercepted.
++      const fitWidth = layer.getBoundingClientRect().width;
+       fire('pointerdown', 9, cx, cy);
+       const lonePrevented = fire('pointermove', 9, cx + 6, cy).defaultPrevented;
+       fire('pointerup', 9, cx + 6, cy);
+-      const afterLoneTap = layer.style.transform;
++      const afterLoneWidth = layer.getBoundingClientRect().width;
+
+       // Two fingers spreading apart zoom the picture.
+       fire('pointerdown', 1, cx - 10, cy);
+       fire('pointerdown', 2, cx + 10, cy);
+       fire('pointermove', 1, cx - 50, cy);
+       fire('pointermove', 2, cx + 50, cy);
+-      const transform = layer.style.transform;
++      const zoomedWidth = layer.getBoundingClientRect().width;
+       const zoomed = node.classList.contains('zoomed');
+
+       // Pinching back to the starting spread lands on scale 1 again.
+@@ -90,19 +91,23 @@ test.describe('AI render timer', () => {
+       fire('pointermove', 2, cx + 10, cy);
+       fire('pointerup', 1, cx - 10, cy);
+       fire('pointerup', 2, cx + 10, cy);
+-      const afterPinchBack = layer.style.transform;
+-
+-      return { transform, zoomed, lonePrevented, afterLoneTap, afterPinchBack };
++      const restoredWidth = layer.getBoundingClientRect().width;
++
++      return {
++        fitWidth,
++        afterLoneWidth,
++        zoomedWidth,
++        restoredWidth,
++        zoomed,
++        lonePrevented,
++      };
+     });
+
+     expect(result.lonePrevented).toBe(false);
++    expect(result.afterLoneWidth).toBeCloseTo(result.fitWidth);
+     expect(result.zoomed).toBe(true);
+-    expect(result.transform).toMatch(/scale\(/);
+-    expect(result.transform).not.toMatch(/scale\(1\)/);
+-    // The rest state has one DOM representation — an empty inline transform —
+-    // whether it was never left or was returned to.
+-    expect(result.afterLoneTap).toBe('');
+-    expect(result.afterPinchBack).toBe('');
++    expect(result.zoomedWidth).toBeGreaterThan(result.fitWidth);
++    expect(result.restoredWidth).toBeCloseTo(result.fitWidth);
+   });
+
+   // AiConfetti's fall keyframes read --stage-h off .ai-stage (set by a

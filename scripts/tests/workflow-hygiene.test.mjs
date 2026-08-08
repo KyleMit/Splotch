@@ -1,6 +1,16 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 // Line-oriented on purpose: no YAML parser ships in this repo's dependency
 // tree, and these invariants (top-level keys, job-level keys, uses: refs) sit
@@ -17,6 +27,62 @@ const actions = readdirSync(actionsDir).map((name) => ({
   name: `actions/${name}`,
   lines: readFileSync(join(actionsDir, name, 'action.yml'), 'utf8').split('\n'),
 }));
+const installMaestroAction = actions.find(({ name }) => name === 'actions/install-maestro');
+const installMaestroRunIndex = installMaestroAction.lines.findIndex(
+  (line) => line === '      run: |'
+);
+const installMaestroScript = installMaestroAction.lines
+  .slice(installMaestroRunIndex + 1)
+  .map((line) => line.slice(8))
+  .join('\n');
+const maestroVersion = installMaestroAction.lines
+  .find((line) => /^\s+MAESTRO_VERSION:/.test(line))
+  .split(':', 2)[1]
+  .trim();
+const tempRoots = [];
+
+function writeExecutable(path, body) {
+  writeFileSync(path, `#!/bin/bash\n${body}\n`);
+  chmodSync(path, 0o755);
+}
+
+function runInstallMaestro(versionOutput) {
+  const root = mkdtempSync(join(tmpdir(), 'splotch-install-maestro-'));
+  tempRoots.push(root);
+  const home = join(root, 'home');
+  const stubBin = join(root, 'bin');
+  const maestroStub = join(root, 'maestro');
+  const githubPath = join(root, 'github-path');
+  mkdirSync(stubBin);
+  writeExecutable(
+    join(stubBin, 'curl'),
+    `printf '%s\\n' 'mkdir -p "$HOME/.maestro/bin"' 'cp "$FAKE_MAESTRO_SOURCE" "$HOME/.maestro/bin/maestro"'`
+  );
+  writeExecutable(maestroStub, `printf '%s\\n' "$FAKE_MAESTRO_VERSION_OUTPUT"`);
+
+  const result = spawnSync(
+    '/bin/bash',
+    ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', installMaestroScript],
+    {
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        FAKE_MAESTRO_SOURCE: maestroStub,
+        FAKE_MAESTRO_VERSION_OUTPUT: versionOutput,
+        GITHUB_PATH: githubPath,
+        HOME: home,
+        MAESTRO_VERSION: maestroVersion,
+        PATH: `${stubBin}:/usr/bin:/bin`,
+      },
+    }
+  );
+
+  return { githubPath, home, result };
+}
+
+afterEach(() => {
+  for (const root of tempRoots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
 
 function jobs(lines) {
   const found = [];
@@ -67,6 +133,31 @@ describe('workflow hygiene', () => {
       });
     });
   }
+
+  describe('actions/install-maestro', () => {
+    it('checks the installed binary and exports its directory', () => {
+      const { githubPath, home, result } = runInstallMaestro(maestroVersion);
+
+      expect(result.status).toBe(0);
+      expect(readFileSync(githubPath, 'utf8')).toBe(`${join(home, '.maestro', 'bin')}\n`);
+    });
+
+    it.each([
+      ['substring version', `1${maestroVersion}`],
+      ['prerelease version', `${maestroVersion}-dev.1`],
+      [
+        'update notice containing the pin',
+        `A new version ${maestroVersion} is available\n1${maestroVersion}`,
+      ],
+    ])('rejects a mismatched %s', (_label, versionOutput) => {
+      const { result } = runInstallMaestro(versionOutput);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain(
+        `does not match requested version '${maestroVersion}'. Output: ${versionOutput}`
+      );
+    });
+  });
 
   for (const { name, lines } of [...workflows, ...actions]) {
     it(`${name} pins every external action to a 40-char SHA`, () => {

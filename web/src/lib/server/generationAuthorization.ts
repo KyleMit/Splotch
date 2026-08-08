@@ -1,6 +1,5 @@
-import { error } from '@sveltejs/kit';
 import { config } from './config';
-import { throttled } from './http';
+import { fail, throttled } from './http';
 import { peekRateLimit, rateLimit } from './rateLimit';
 import {
   generateImageBucket,
@@ -11,14 +10,18 @@ import { rateLimitPolicy } from './rateLimitPolicy';
 import { isAllowedToken } from './tokens';
 
 export type GenerationAuthorization =
-  | { usingByok: true; effectiveKey: string; managedToken: null }
-  | { usingByok: false; effectiveKey: string; managedToken: string };
+  | { authorized: true; usingByok: true; effectiveKey: string; managedToken: null }
+  | { authorized: true; usingByok: false; effectiveKey: string; managedToken: string };
+
+export type GenerationAuthorizationResult =
+  | GenerationAuthorization
+  | { authorized: false; response: Response };
 
 export async function authorizeGenerationRequest(input: {
   apiKey: string | null;
   token: string | null;
   clientAddress: string;
-}): Promise<GenerationAuthorization | Response> {
+}): Promise<GenerationAuthorizationResult> {
   const userKey = typeof input.apiKey === 'string' ? input.apiKey.trim() : '';
   const usingByok = userKey.length > 0;
 
@@ -28,18 +31,23 @@ export async function authorizeGenerationRequest(input: {
   if (!usingByok) {
     const guessKey = verifyAccessCodeBucket(input.clientAddress);
     const guess = peekRateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
-    if (guess.limited) return throttled(guess.retryAfter);
+    if (guess.limited) return { authorized: false, response: throttled(guess.retryAfter) };
     if (typeof input.token !== 'string' || !(await isAllowedToken(input.token))) {
       rateLimit(guessKey, rateLimitPolicy.verifyAccessCode);
-      throw error(403, 'Invalid access token');
+      return { authorized: false, response: fail(403, 'Invalid access token') };
     }
 
     // Valid managed traffic is keyed per token to contain a leaked credential.
     const generation = rateLimit(generateImageBucket(input.token), rateLimitPolicy.generateToken);
-    if (generation.limited) return throttled(generation.retryAfter);
+    if (generation.limited) {
+      return { authorized: false, response: throttled(generation.retryAfter) };
+    }
     const effectiveKey = config.geminiApiKey();
-    if (!effectiveKey) throw error(500, 'Server is missing GEMINI_API_KEY');
+    if (!effectiveKey) {
+      return { authorized: false, response: fail(500, 'Server is missing GEMINI_API_KEY') };
+    }
     return {
+      authorized: true,
       usingByok: false,
       effectiveKey,
       managedToken: input.token,
@@ -52,6 +60,8 @@ export async function authorizeGenerationRequest(input: {
     generateImageByokBucket(input.clientAddress),
     rateLimitPolicy.generateByok
   );
-  if (generation.limited) return throttled(generation.retryAfter);
-  return { usingByok: true, effectiveKey: userKey, managedToken: null };
+  if (generation.limited) {
+    return { authorized: false, response: throttled(generation.retryAfter) };
+  }
+  return { authorized: true, usingByok: true, effectiveKey: userKey, managedToken: null };
 }

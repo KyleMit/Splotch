@@ -122,6 +122,9 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
         if (o.origin) {
           node.style.setProperty('--origin-x', `${o.origin.x - window.innerWidth / 2}px`);
           node.style.setProperty('--origin-y', `${o.origin.y - window.innerHeight / 2}px`);
+        } else {
+          node.style.removeProperty('--origin-x');
+          node.style.removeProperty('--origin-y');
         }
         guardLaunchZone(o.origin ?? null);
         o.onOpen?.();

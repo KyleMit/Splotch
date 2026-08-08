@@ -272,7 +272,6 @@ describe('native build script entry points', () => {
 
     writeFixture(join(webBookDir, 'cover.outline.webp'));
     writeFixture(join(buildDir, 'favicon.ico'));
-    writeFixture(join(buildDir, 'styles', 'source.svg'));
     writeFixture(join(mobileDir, 'cover.outline.webp'));
     writeFixture(join(mobileDir, 'page-tall.outline.webp'));
     writeFixture(join(mobileDir, 'page-tall.chalk.webp'));
@@ -289,7 +288,6 @@ describe('native build script entry points', () => {
     expect(exit).not.toHaveBeenCalled();
     expect(existsSync(webBookDir)).toBe(false);
     expect(existsSync(join(buildDir, 'favicon.ico'))).toBe(false);
-    expect(existsSync(join(buildDir, 'styles', 'source.svg'))).toBe(false);
     expect(existsSync(join(mobileDir, 'cover.outline.webp'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.outline.webp'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.chalk.webp'))).toBe(false);

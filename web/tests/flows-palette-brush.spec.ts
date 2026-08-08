@@ -7,6 +7,7 @@ import {
   firstOpaquePixel,
   gotoApp,
   isBlueDominant,
+  openSettingsModal,
   PICKER_GREEN,
   renderedCanvasHandle,
   retryOpen,
@@ -84,6 +85,53 @@ test('selecting a palette color activates it and paints in that color', async ({
   expect(px).not.toBeNull();
   // The selected blue is blue-dominant, so the painted pixel should be more blue than red.
   expect(isBlueDominant(px!)).toBe(true);
+});
+
+test('selected Black ink follows live theme changes without changing swatches', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await gotoApp(page);
+
+  const black = swatch(page, TEST_PALETTE.black);
+  await expect(async () => {
+    await black.click({ timeout: 1000 });
+    await expect(black).toHaveClass(/active/, { timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+
+  let settings = await openSettingsModal(page);
+  await settings.locator('#themeOption-dark').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(black).toHaveClass(/active/);
+  await settings.getByRole('button', { name: 'Close' }).click();
+  await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS);
+
+  await draw(page, [
+    { x: 120, y: 180 },
+    { x: 260, y: 180 },
+  ]);
+  const darkThemeInk = await canvasInkStats(page, { x: 100, y: 150, width: 180, height: 60 });
+  expect(darkThemeInk.count).toBeGreaterThan(0);
+  expect(darkThemeInk.r).toBeGreaterThan(240);
+  expect(darkThemeInk.g).toBeGreaterThan(240);
+  expect(darkThemeInk.b).toBeGreaterThan(240);
+
+  settings = await openSettingsModal(page);
+  await settings.locator('#themeOption-light').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(black).toHaveClass(/active/);
+  await settings.getByRole('button', { name: 'Close' }).click();
+  await page.waitForTimeout(COLOR_CHANGE_DEBOUNCE_SETTLE_MS);
+
+  await draw(page, [
+    { x: 120, y: 300 },
+    { x: 260, y: 300 },
+  ]);
+  const lightThemeInk = await canvasInkStats(page, { x: 100, y: 270, width: 180, height: 60 });
+  expect(lightThemeInk.count).toBeGreaterThan(0);
+  expect(lightThemeInk.r).toBeLessThan(30);
+  expect(lightThemeInk.g).toBeLessThan(30);
+  expect(lightThemeInk.b).toBeLessThan(30);
 });
 
 test('the crayon brush lays textured strokes that build up in the full app', async ({ page }) => {

@@ -18,6 +18,7 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 
 | Date       | Audit                                                           |
 | ---------- | --------------------------------------------------------------- |
+| 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-3)         |
 | 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-2)         |
 | 2026-08-07 | [audit-triage](#2026-08-07--audit-triage)                       |
 | 2026-08-07 | [burn-down-audits](#2026-08-07--burn-down-audits-run-1)         |
@@ -86,6 +87,26 @@ Entries dated before 2026-07-06 were reconstructed from the git history of `docs
 | 2026-07-03 | [code-audit](#2026-07-03--code-audit)                           |
 | 2026-06-25 | [dependency-audit](#2026-06-25--dependency-audit)               |
 | 2026-06-25 | [code-audit](#2026-06-25--code-audit)                           |
+
+## 2026-08-07 · burn-down-audits (run 3)
+
+Bulk burndown on PR [#865](https://github.com/KyleMit/Splotch/pull/865) (branch
+`audit/burndown-20260807-2`): **33 fixed · 1 dropped · 6 deferred**, backlog 40 → 0. The accepted
+work covered user-facing correctness, API validation and policy sharing, native-shell behavior,
+performance and production-asset hygiene, cross-file drift guards, type safety, and generated
+documentation accuracy. `docs/AUDIT.md` was deleted after the zero-count check.
+
+The dropped full-resolution asset finding contradicted the experiment directories' documented
+reproducibility contract and misstated their contents. Four implementation/review deferrals retain
+three reusable patches plus one sandbox-boundary post-mortem; the final two findings were deferred
+without implementation when the isolated verifier repeatedly returned empty envelopes. All six are
+recorded in `docs/AUDIT-DEFERRED.md`.
+
+Every accepted finding passed deterministic local gates and an isolated adversarial review. The
+supervisor checkpointed at most five outcomes per segment, required exact-head GitHub Actions green
+between segments, and posted per-commit explanations on the PR. No stable visible UI changed, so the
+PR does not need screenshot evidence; the native shell change affects only transient prepaint
+backgrounds before the web view renders.
 
 ## 2026-08-07 · burn-down-audits (run 2)
 

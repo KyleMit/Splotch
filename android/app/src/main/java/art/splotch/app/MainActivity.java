@@ -1,8 +1,10 @@
 package art.splotch.app;
 
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.WindowManager;
 
 import androidx.core.view.WindowCompat;
@@ -34,8 +36,21 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(DeviceLockPlugin.class);
         super.onCreate(savedInstanceState);
+        updateWebViewBackground();
         drawUnderDisplayCutout();
         hideNavigationBar();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        updateWebViewBackground();
+    }
+
+    private void updateWebViewBackground() {
+        TypedValue backgroundColor = new TypedValue();
+        getTheme().resolveAttribute(android.R.attr.colorBackground, backgroundColor, true);
+        bridge.getWebView().setBackgroundColor(backgroundColor.data);
     }
 
     private void drawUnderDisplayCutout() {

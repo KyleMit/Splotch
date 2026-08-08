@@ -19,7 +19,7 @@ surface, say so in the PR body rather than silently omitting visuals.
 Markdown image syntax needs a **hosted URL** — GitHub renders `![](…)` by fetching that URL, it does
 not read files out of the PR. The obvious ways to host an image are **not available to a token-only
 agent**, so don't waste a turn on them (the full rationale, sources, and rejected options are in
-[ADR-0046](../../docs/adrs/0046-pr-screenshot-hosting-via-orphan-branch.md)):
+[ADR-0046](../../../docs/adrs/0046-pr-screenshot-hosting-via-orphan-branch.md)):
 
 * **There is no GitHub API to upload an attachment.** The web UI's drag-and-drop
   (`github.com/user-attachments/assets/…`) posts to an undocumented endpoint

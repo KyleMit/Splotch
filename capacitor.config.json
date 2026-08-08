@@ -5,11 +5,7 @@
   "server": {
     "androidScheme": "https"
   },
-  "android": {
-    "backgroundColor": "#ffffff"
-  },
   "ios": {
-    "backgroundColor": "#ffffff",
     "contentInset": "always"
   }
 }

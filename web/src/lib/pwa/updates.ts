@@ -34,6 +34,7 @@
 
 import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
+import { VERSION_JSON_PATH } from '$lib/pwa/versionEndpoint';
 
 const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -68,6 +69,9 @@ export function createPWAUpdates() {
   // fires at stroke end, and kicking off the precache in that same frame could
   // contend with the commit fold of the stroke that tripped it.
   function scheduleRegistration() {
+    // Save-Data users never get the ~35 MB precache forced on them — offline
+    // support waits for a session without the preference set.
+    if (saveDataEnabled()) return;
     if (registrationScheduled) return;
     registrationScheduled = true;
     scheduleIdle(() => {
@@ -83,12 +87,9 @@ export function createPWAUpdates() {
   }
 
   // First-visit registration, called from +page.svelte's stroke-count gate.
-  // Save-Data users never get the ~35 MB precache forced on them — offline
-  // support waits for a session without the preference set.
   function registerDeferredServiceWorker() {
     if (import.meta.env.DEV) return;
     if (!serviceWorkerSupported()) return;
-    if (saveDataEnabled()) return;
     scheduleRegistration();
   }
 
@@ -141,7 +142,7 @@ export function createPWAUpdates() {
 
   async function checkVersionMismatch(attemptedVersion: string | null = null) {
     try {
-      const resp = await fetch('/version.json', { cache: 'no-store' });
+      const resp = await fetch(VERSION_JSON_PATH, { cache: 'no-store' });
       if (!resp.ok) return;
       const { version } = (await resp.json()) as { version?: unknown };
       if (typeof version !== 'string' || version.length === 0) return;

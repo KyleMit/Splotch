@@ -225,6 +225,14 @@ the Actions one), and misconfigurations fail silently rather than loudly. See
 
 ## Release process
 
-See the `/release` slash command in `.claude/skills/release/SKILL.md`. The short version:
-`npm run release` bumps the version, tags, and pushes; the `android-deploy.yml` CI workflow fires on
-the tag.
+See [releases/README.md](../releases/README.md) for the authoritative procedure. Shipping has three
+ordered phases:
+
+1. `/release` (`npm run release <version>`) creates the version bump, tag, notes, and an
+   intentionally artifact-free GitHub Release.
+2. `/build` (`npm run android:bundle` and `npm run ios:ipa`) produces the signed artifacts.
+3. `/publish-artifacts` (`npm run release:publish`) verifies their embedded versions and attaches
+   them to the GitHub Release.
+
+The tag-triggered Android and iOS launch smoke workflows verify that the native apps start; they do
+not build, upload, or deploy release artifacts.

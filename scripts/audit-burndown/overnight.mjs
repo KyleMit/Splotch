@@ -18,10 +18,16 @@ import { openSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { chdirRoot, ensureWorkDirs, LAUNCH_KNOBS, LOGS, shellQuote, WORK } from './lib.mjs';
 
+const count = process.argv[2] ?? '600';
+if (!/^\d+$/.test(count) || Number(count) < 1) {
+  console.error(
+    `overnight: finding count must be a positive integer, got ${JSON.stringify(count)}`
+  );
+  process.exit(2);
+}
+
 chdirRoot();
 ensureWorkDirs();
-
-const count = process.argv[2] ?? '600';
 
 // An unattended launch is resume-capable by design: default RESUME=1 so a relaunch
 // after a crash recovers a dirty tree / stale STOP instead of halting (a first,
@@ -48,7 +54,7 @@ const forwarded = LAUNCH_KNOBS.filter((knob) => process.env[knob] != null).map(
   (knob) => `${knob}=${shellQuote(process.env[knob])}`
 );
 
-const envPrefix = [`MAX_ISSUES=${count}`, ...forwarded].join(' ');
+const envPrefix = [`MAX_ISSUES=${shellQuote(count)}`, ...forwarded].join(' ');
 const cmd = `env ${envPrefix} node scripts/audit-burndown/burndown.mjs`;
 
 const out = openSync(join(LOGS, 'overnight.log'), 'a');

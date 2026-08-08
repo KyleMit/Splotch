@@ -602,7 +602,7 @@ profile the replay or your live drawing on the iPad via Approach A/B).
 
 Use only to confirm the app shell behaves like Safari.
 
-1. **⟨Mac⟩** Build + run the native app with marks on: `PERF_MARKS=true npm run ios` (see the
+1. **⟨Mac⟩** Build + run the native app with marks on: `PERF_MARKS=true npm run ios:run` (see the
    `mobile` skill for the iOS toolchain and Simulator-vs-device specifics).
 2. **⟨iPad⟩** Launch the Splotch app; draw something so the canvas is live.
 3. **⟨Mac⟩** **Develop → ⟨your iPad's name⟩ → ⟨the app's WebView entry⟩** to attach Web Inspector to

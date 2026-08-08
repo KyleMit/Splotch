@@ -149,7 +149,7 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 
 ## Inputs & outputs
 
-* **Inputs** (committed): `web/static/styles/source.svg`, the black-and-white
+* **Inputs** (committed): `tools/asset-gen/source.svg`, the black-and-white
   `web/static/coloring/**/*-{tall,wide}.outline.webp` PEN outlines (the source of every derivation).
 * **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`

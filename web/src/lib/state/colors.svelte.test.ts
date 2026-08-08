@@ -9,6 +9,7 @@ import {
   selectPaletteColor,
   selectCustomSwatch,
   pickCustomColor,
+  syncInkToTheme,
   themedSwatchColor,
   isWhite,
   isDarkInk,
@@ -61,6 +62,29 @@ describe('themedSwatchColor', () => {
       expect(themedSwatchColor(hex, true)).toBe(hex);
       expect(themedSwatchColor(hex, false)).toBe(hex);
     }
+  });
+});
+
+describe('syncInkToTheme', () => {
+  it('switches selected Black ink to white for dark and back to black for light', () => {
+    selectPaletteColor(BLACK_INK);
+
+    syncInkToTheme(true);
+    expect(colors.activeSwatch).toBe(BLACK_INK);
+    expect(colors.activeColor).toBe(WHITE_INK);
+
+    syncInkToTheme(false);
+    expect(colors.activeSwatch).toBe(BLACK_INK);
+    expect(colors.activeColor).toBe(BLACK_INK);
+  });
+
+  it('leaves a non-Black selection unchanged', () => {
+    pickCustomColor('#123456');
+    const before = { ...colors };
+
+    syncInkToTheme(true);
+
+    expect({ ...colors }).toEqual(before);
   });
 });
 

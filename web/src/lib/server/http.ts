@@ -1,18 +1,16 @@
-import { error, json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
 }
 
-/**
- * Parse a JSON request body, turning a malformed payload into a uniform
- * 400 instead of an unhandled 500.
- */
-export async function readJsonBody(request: Request): Promise<unknown> {
+export type JsonBodyResult = { ok: true; body: unknown } | { ok: false; response: Response };
+
+export async function readJsonBody(request: Request): Promise<JsonBodyResult> {
   try {
-    return await request.json();
+    return { ok: true, body: await request.json() };
   } catch {
-    throw error(400, 'Expected a JSON body');
+    return { ok: false, response: fail(400, 'Expected a JSON body') };
   }
 }
 
@@ -49,6 +47,10 @@ export function stringField(body: unknown, name: string): string {
  */
 export function throttledMessage(retryAfter: number): string {
   return `Too many attempts. Please wait ${retryAfter}s.`;
+}
+
+export function fail(status: number, error: string) {
+  return json({ ok: false, error }, { status });
 }
 
 /**

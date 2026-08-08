@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, isHttpError } from '@sveltejs/kit';
 import { STYLE_SUFFIXES } from '$lib/ai/styles';
 import { buildPromptForStyle } from '$lib/ai/prompt';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
@@ -8,7 +8,8 @@ import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
-import { contentTypeOf, readBodyWithinLimit } from '$lib/server/http';
+import { MAX_IMAGE_BYTES } from '$lib/server/generateImagePolicy';
+import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -20,10 +21,13 @@ function safetyRefusal(reason: string): never {
   throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
 }
 
-// A drawing screenshot is well under a megabyte; cap the upload so a valid-token
-// holder can't push us into a memory/DoS situation by base64-ing a huge blob.
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+function assertAllowedImageType(mimeType: string): void {
+  if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+    throw error(415, 'Unsupported image type');
+  }
+}
 
 // The credentials ride in headers, not the query string: the managed access
 // token and (especially) a parent's BYO Gemini key are secrets, and query
@@ -37,7 +41,7 @@ interface GenerationRequest {
   apiKey: string | null;
   style: string | null;
   // Deferred so the ≤15 MB body isn't read or validated until authorization
-  // succeeds — the thunk can throw 400 or 413. (The multipart shape has
+  // succeeds — the thunk can throw 400, 413, or 415. (The multipart shape has
   // already buffered by necessity; only the raw path actually saves the read.)
   readValidatedImage: () => Promise<{ bytes: Buffer; mimeType: string }>;
 }
@@ -66,6 +70,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
       readValidatedImage: async () => {
         if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
         if (imageFile.size > MAX_IMAGE_BYTES) throw error(413, 'Image is too large');
+        assertAllowedImageType(imageFile.type);
         return { bytes: Buffer.from(await imageFile.arrayBuffer()), mimeType: imageFile.type };
       },
     };
@@ -75,11 +80,13 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     apiKey: request.headers.get(API_KEY_HEADER),
     style: url.searchParams.get('style'),
     readValidatedImage: async () => {
+      const mimeType = contentTypeOf(request);
+      assertAllowedImageType(mimeType);
       const body = await readBodyWithinLimit(request, MAX_IMAGE_BYTES);
       if (!body.ok) throw error(413, 'Image is too large');
       const { bytes } = body;
       if (bytes.byteLength === 0) throw error(400, 'Missing image');
-      return { bytes, mimeType: contentTypeOf(request) };
+      return { bytes, mimeType };
     },
   };
 }
@@ -107,7 +114,7 @@ function recordGenerationUsage(
   }
 }
 
-export const POST: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
+const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const source = await readGenerationRequest(request, url);
 
   const authorization = await authorizeGenerationRequest({
@@ -115,14 +122,9 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
     token: source.token,
     clientAddress: getClientAddress(),
   });
-  if (authorization instanceof Response) return authorization;
+  if (!authorization.authorized) return authorization.response;
 
   const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
-  // An empty type is fine (default to PNG below); only reject a type that's
-  // present and not on the allowlist.
-  if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
-    throw error(415, 'Unsupported image type');
-  }
   const style = source.style;
 
   // Pinned to light: the request carries no theme yet, so a player in dark mode
@@ -150,4 +152,13 @@ export const POST: RequestHandler = async ({ request, url, platform, getClientAd
       'Cache-Control': 'no-store',
     },
   });
+};
+
+export const POST: RequestHandler = async (event) => {
+  try {
+    return await generateImage(event);
+  } catch (cause) {
+    if (isHttpError(cause)) return fail(cause.status, cause.body.message);
+    throw cause;
+  }
 };

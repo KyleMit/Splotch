@@ -1,17 +1,18 @@
 // The RESOLVED theme ('light' | 'dark'), reactively: the parent's setting for
 // explicit choices, the live OS preference in system mode. CSS never needs
 // this (the tokens in app.css resolve themselves); it exists for the few JS
-// consumers of the resolved value — the Notch Band's eraser/paper color and
-// the canvas export's paper fill.
+// consumers of the resolved value — the active Black swatch's ink, the Notch
+// Band's eraser/paper color, and the canvas export's paper fill.
 //
 // This module is the SINGLE owner of the prefers-color-scheme subscription and
 // the resolution rule: one media query feeds `systemDark`, and resolveTheme()
 // (from theme.ts) turns preference + systemDark into the concrete theme. The
-// theme-color meta follows the same source — an effect below reads
-// resolvedTheme() and repaints the meta, so both an OS switch (systemDark) and
-// an explicit setting change (settings.theme) update it from one reactive path,
-// with no separate matchMedia listener for the meta.
+// theme-dependent JS state follows the same source — an effect below reads
+// resolvedTheme(), repaints the theme-color meta, and syncs the selected Black
+// swatch's ink, so both an OS switch (systemDark) and an explicit setting change
+// (settings.theme) update them from one reactive path.
 import { settings, setTheme } from './settings.svelte';
+import { syncInkToTheme } from './colors.svelte';
 import { resolveTheme, type ResolvedTheme, updateThemeColorMeta } from '../theme';
 
 const systemQuery =
@@ -42,15 +43,17 @@ export function setResolvedTheme(wanted: ResolvedTheme): void {
   setTheme(resolveTheme('system', appearance.systemDark) === wanted ? 'system' : wanted);
 }
 
-// Keep <meta name="theme-color"> on the resolved theme. A detached effect root
-// (no component host) runs this at module load and re-runs it whenever the
-// setting or the OS preference changes — replacing the old per-module watcher +
-// the applyTheme() meta write. Client-only: matchMedia and the meta are absent
-// server-side, and effects never run during SSR anyway.
+// Keep <meta name="theme-color"> and the selected Black swatch's ink on the
+// resolved theme. A detached effect root (no component host) runs this at module
+// load and re-runs it whenever the setting or the OS preference changes.
+// Client-only: matchMedia and the meta are absent server-side, and effects never
+// run during SSR anyway.
 if (typeof document !== 'undefined') {
   $effect.root(() => {
     $effect(() => {
-      updateThemeColorMeta(resolvedTheme());
+      const theme = resolvedTheme();
+      updateThemeColorMeta(theme);
+      syncInkToTheme(theme === 'dark');
     });
   });
 }

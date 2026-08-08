@@ -52,12 +52,12 @@ scripts (ADR-0019 naming):
 Because idempotency is empirically guaranteed, there is **no state file / log** of processed SVGs —
 the working tree itself is the record, and the CI check is the enforcement.
 
-**Scope exclusions.** Generator-*input* SVGs are skipped via a small documented ignore list in the
-script: `web/static/large-image.svg` and `web/static/styles/source.svg`. These are never shipped or
-inlined — they're consumed by `scripts/gen-*.mjs`. Optimizing them gives no DOM/payload benefit, and
-`gen-large-image.mjs` in particular **hand-parses** `large-image.svg`'s `M x y L x y` path strings
-and per-`<path>` `stroke`/`stroke-width` attributes, both of which SVGO's `convertPathData` and
-attribute plugins rewrite — so optimizing it would break that generator.
+**Scope boundary.** Generator-*input* SVGs live outside `web/`: `scripts/assets/large-image.svg`
+feeds `gen-large-image.mjs`, and `tools/asset-gen/source.svg` feeds `gen-style-covers.mjs`. They are
+never shipped or inlined, so the audit does not scan them. That boundary is also protective:
+`gen-large-image.mjs` **hand-parses** its input's `M x y L x y` path strings and per-`<path>`
+`stroke`/`stroke-width` attributes, both of which SVGO's `convertPathData` and attribute plugins
+rewrite.
 
 ## Consequences
 
@@ -70,7 +70,5 @@ attribute plugins rewrite — so optimizing it would break that generator.
   file until `img:audit` is re-run and the (still visually lossless) result committed. That's the
   intended, visible signal — the fixed point is defined by the installed SVGO + `preset-default`, so
   bumping SVGO is a deliberate re-normalization, not silent drift.
-* New generator-input SVGs must be added to the script's `IGNORE` set; otherwise the audit will
-  optimize them. This is a known, discoverable trade-off of not shipping a separate config file.
-  Moving or renaming an exempted input is caught — each `IGNORE` path is checked for existence, so a
-  stale entry fails the audit instead of silently matching nothing while the file gets optimized.
+* Generator-input SVGs stay outside `web/`, keeping them out of both the public build and the audit
+  without path-specific exemptions.

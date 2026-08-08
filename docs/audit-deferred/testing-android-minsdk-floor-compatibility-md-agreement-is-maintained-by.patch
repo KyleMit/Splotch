@@ -1,0 +1,84 @@
+diff --git a/scripts/tests/android-config.test.mjs b/scripts/tests/android-config.test.mjs
+index bf4052c8..b88acc62 100644
+--- a/scripts/tests/android-config.test.mjs
++++ b/scripts/tests/android-config.test.mjs
+@@ -4,6 +4,12 @@ import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android.mjs';
+
+ const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
+
++const MIN_ANDROID_API_LEVEL = Number(
++  read('android/variables.gradle').match(/^\s*minSdkVersion = (\d+)$/m)[1]
++);
++const ANDROID_RELEASE_BY_API_LEVEL = { 24: '7.0' };
++const MIN_ANDROID_RELEASE = ANDROID_RELEASE_BY_API_LEVEL[MIN_ANDROID_API_LEVEL];
++
+ // Files allowed to carry the emulator API level / AVD name as literals — each
+ // goes red the moment a literal disagrees with ANDROID_API_LEVEL. Deliberately
+ // an allowlist, not a repo-wide grep: historical documents (docs/AUDIT*.md,
+@@ -49,6 +55,66 @@ describe('Android emulator API level single source', () => {
+   }
+ });
+
++describe('Android support floor single source', () => {
++  const SUPPORT_FLOOR_PATTERNS = [
++    [
++      'docs/COMPATIBILITY.md',
++      [
++        /^\| \*\*Native Android app\*\* +\| \*\*Android \d+\.\d+ \/ API (\d+)\+\*\* +\|/m,
++        /^\* \*\*Native Android API (\d+) \(\d+\.\d+\)\*\* is older than the web floor/m,
++        /^\| Native Android min SDK +\| `android\/variables\.gradle` → `minSdkVersion` +\| `(\d+)` +\|$/m,
++      ],
++    ],
++    [
++      '.ruler/skills/mobile/android.md',
++      [
++        /^> Minimum supported OS: \*\*Android \d+\.\d+ \/ API (\d+)\*\* \(`minSdkVersion` in `android\/variables\.gradle`\)\.$/m,
++      ],
++    ],
++    [
++      'web/src/lib/components/androidBeta/androidBeta.ts',
++      [/^export const MIN_ANDROID_API_LEVEL = (\d+);$/m],
++    ],
++  ];
++  const SUPPORT_FLOOR_RELEASE_PATTERNS = [
++    [
++      'docs/COMPATIBILITY.md',
++      [
++        /^\| \*\*Native Android app\*\* +\| \*\*Android (\d+\.\d+) \/ API \d+\+\*\* +\|/m,
++        /^\* \*\*Native Android API \d+ \((\d+\.\d+)\)\*\* is older than the web floor/m,
++      ],
++    ],
++    [
++      '.ruler/skills/mobile/android.md',
++      [
++        /^> Minimum supported OS: \*\*Android (\d+\.\d+) \/ API \d+\*\* \(`minSdkVersion` in `android\/variables\.gradle`\)\.$/m,
++      ],
++    ],
++    [
++      'web/src/lib/components/androidBeta/androidBeta.ts',
++      [/^export const MIN_ANDROID_RELEASE = '(\d+\.\d+)';$/m],
++    ],
++  ];
++
++  for (const [file, patterns] of SUPPORT_FLOOR_PATTERNS) {
++    it(`${file} support floor matches minSdkVersion`, () => {
++      const text = read(file);
++      for (const pattern of patterns) {
++        expect(text.match(pattern)?.[1]).toBe(String(MIN_ANDROID_API_LEVEL));
++      }
++    });
++  }
++
++  for (const [file, patterns] of SUPPORT_FLOOR_RELEASE_PATTERNS) {
++    it(`${file} support floor release matches minSdkVersion`, () => {
++      const text = read(file);
++      for (const pattern of patterns) {
++        expect(text.match(pattern)?.[1]).toBe(MIN_ANDROID_RELEASE);
++      }
++    });
++  }
++});
++
+ describe('Android manifest kids-compliance', () => {
+   it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
+     expect(read('android/app/src/main/AndroidManifest.xml')).toContain(

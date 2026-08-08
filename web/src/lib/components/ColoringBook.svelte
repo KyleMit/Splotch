@@ -225,7 +225,7 @@
             <button
               class="coloring-tile"
               type="button"
-              aria-label="{activeBook.name} coloring page"
+              aria-label="{page.name} coloring page"
               onclick={() => pickPage(page)}
               onpointerenter={() => prefetchPageOverlay(page)}
               onpointerdown={() => prefetchPageOverlay(page)}

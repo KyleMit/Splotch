@@ -39,10 +39,15 @@ describe('authorizeGenerationRequest', () => {
 
     const result = await authorizeGenerationRequest(managedInput);
 
-    expect(result).toBeInstanceOf(Response);
-    const response = result as Response;
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    const { response } = result;
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('12');
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Too many attempts. Please wait 12s.',
+    });
     expect(isAllowedToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });
@@ -50,10 +55,12 @@ describe('authorizeGenerationRequest', () => {
   it('charges only a failed managed guess to the shared verification bucket', async () => {
     isAllowedToken.mockResolvedValue(false);
 
-    await expect(authorizeGenerationRequest(managedInput)).rejects.toMatchObject({
-      status: 403,
-      body: { message: 'Invalid access token' },
-    });
+    const result = await authorizeGenerationRequest(managedInput);
+
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(403);
+    expect(await result.response.json()).toEqual({ ok: false, error: 'Invalid access token' });
 
     expect(peekRateLimit).toHaveBeenCalledWith(
       verifyAccessCodeBucket('203.0.113.5'),
@@ -71,6 +78,7 @@ describe('authorizeGenerationRequest', () => {
     const result = await authorizeGenerationRequest(managedInput);
 
     expect(result).toEqual({
+      authorized: true,
       usingByok: false,
       effectiveKey: 'managed-key',
       managedToken: 'daycare-club',
@@ -87,10 +95,15 @@ describe('authorizeGenerationRequest', () => {
 
     const result = await authorizeGenerationRequest(managedInput);
 
-    expect(result).toBeInstanceOf(Response);
-    const response = result as Response;
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    const { response } = result;
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('9');
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Too many attempts. Please wait 9s.',
+    });
     expect(rateLimit).toHaveBeenCalledWith(generateImageBucket('daycare-club'), {
       limit: 15,
       windowMs: 60_000,
@@ -106,10 +119,15 @@ describe('authorizeGenerationRequest', () => {
       clientAddress: '198.51.100.8',
     });
 
-    expect(result).toBeInstanceOf(Response);
-    const response = result as Response;
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    const { response } = result;
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('7');
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Too many attempts. Please wait 7s.',
+    });
     expect(peekRateLimit).not.toHaveBeenCalled();
     expect(isAllowedToken).not.toHaveBeenCalled();
     expect(rateLimit).toHaveBeenCalledWith(generateImageByokBucket('198.51.100.8'), {
@@ -121,11 +139,14 @@ describe('authorizeGenerationRequest', () => {
   it('rejects a valid managed request when no server key is configured', async () => {
     envState.GEMINI_API_KEY = undefined;
 
-    await expect(authorizeGenerationRequest(managedInput)).rejects.toThrowError(
-      expect.objectContaining({
-        status: 500,
-        body: { message: 'Server is missing GEMINI_API_KEY' },
-      })
-    );
+    const result = await authorizeGenerationRequest(managedInput);
+
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(500);
+    expect(await result.response.json()).toEqual({
+      ok: false,
+      error: 'Server is missing GEMINI_API_KEY',
+    });
   });
 });
