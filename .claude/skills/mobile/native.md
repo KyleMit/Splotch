@@ -28,8 +28,9 @@ server, so they build a **fully static** export instead:
   are written against, and worse in an app declared for a children's audience.
 * Routes that must not reach the bundle at all are listed in `web/nativeExcludedRoutes.ts`, whose
   Vite plugin blanks their module source at build time; `scripts/check-native-bundle.mjs` scans the
-  built output and fails `build:cap` if a forbidden host survives. A route's `prerender` flag alone
-  drops only its HTML — the JS chunk, and every string in it, still ships.
+  built output and fails `build:cap` if a forbidden host or web-only boot-service marker survives. A
+  route's `prerender` flag alone drops only its HTML — the JS chunk, and every string in it, still
+  ships.
 
 ### Offline vs. online
 

@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
   adminConsoleSentinels,
   FORBIDDEN_NATIVE_HOSTS,
   nativeBundleProblems,
+  WEB_ONLY_MODULE_MARKERS,
+  webOnlyMarkerSourceProblems,
 } from '../check-native-bundle.mjs';
 
 // The guard's failure mode is silence: if its sentinels stop matching anything
@@ -56,6 +58,57 @@ describe('native bundle scan', () => {
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it.each(['js', 'html', 'json', 'webmanifest'])(
+    'rejects every web-only boot marker from emitted .%s files',
+    (extension) => {
+      const root = mkdtempSync(join(tmpdir(), 'splotch-native-bundle-'));
+      try {
+        writeFileSync(
+          join(root, `app.${extension}`),
+          WEB_ONLY_MODULE_MARKERS.map(({ marker }) => JSON.stringify(marker)).join(';')
+        );
+        const problems = nativeBundleProblems(root, []);
+        for (const { feature, marker } of WEB_ONLY_MODULE_MARKERS) {
+          expect(problems).toContainEqual(
+            expect.stringContaining(`web-only ${feature} "${marker}" remains`)
+          );
+        }
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    }
+  );
+});
+
+describe('web-only boot markers', () => {
+  it('still identifies executable literals in the owning modules', () => {
+    expect(webOnlyMarkerSourceProblems()).toEqual([]);
+  });
+
+  it('fails loudly when an owning module loses a source needle', () => {
+    const [target] = WEB_ONLY_MODULE_MARKERS;
+    const problems = webOnlyMarkerSourceProblems((sourcePath) => {
+      const source = readFileSync(new URL(`../../${sourcePath}`, import.meta.url), 'utf8');
+      return sourcePath === target.sourcePath ? source.replace(target.sourceNeedle, '') : source;
+    });
+
+    expect(problems).toEqual([
+      expect.stringContaining(
+        `${target.sourcePath} no longer contains the ${target.feature} marker source`
+      ),
+    ]);
+  });
+
+  it('is documented beside the web-only service boundary', () => {
+    const source = readFileSync(
+      new URL('../../web/src/lib/boot/webOnlyServices.ts', import.meta.url),
+      'utf8'
+    );
+    for (const { marker, sourcePath } of WEB_ONLY_MODULE_MARKERS) {
+      expect(source).toContain(`${sourcePath}: ${marker}`);
     }
   });
 });

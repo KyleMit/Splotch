@@ -73,31 +73,35 @@ function fallBackToManualHint() {
   if (install.mode === 'oneTap') install.mode = manualMode();
 }
 
-function markInstalled() {
+// Exported so the native-configured unit suite can drive the production event
+// callbacks without compiling their web-only listener registrations back in.
+export function markInstalled() {
   deferredPrompt = null;
   install.installed = true;
   install.mode = 'none';
   writeBool(STORAGE_KEYS.installCompleted, true);
 }
 
+export function captureInstallPrompt(e: BeforeInstallPromptEvent) {
+  // Stop Chrome's default mini-infobar — we own the timing and presentation.
+  e.preventDefault();
+  deferredPrompt = e;
+  // The browser only fires this when the app is NOT currently installed, so
+  // it outranks a stale persisted flag (installed once, later uninstalled —
+  // localStorage survives a PWA uninstall).
+  if (install.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
+    install.installed = false;
+    writeBool(STORAGE_KEYS.installCompleted, false);
+  }
+  install.mode = 'oneTap';
+}
+
 // beforeinstallprompt is one-shot and can fire before the page component
 // mounts (on a repeat visit the service worker already controls the page, so
 // Chromium's installability check races hydration). Listen from module load,
 // not from initInstallPrompt(), so an early event isn't silently lost.
-if (browser && !(__IS_CAPACITOR__ && isNative())) {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    // Stop Chrome's default mini-infobar — we own the timing and presentation.
-    e.preventDefault();
-    deferredPrompt = e;
-    // The browser only fires this when the app is NOT currently installed, so
-    // it outranks a stale persisted flag (installed once, later uninstalled —
-    // localStorage survives a PWA uninstall).
-    if (install.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
-      install.installed = false;
-      writeBool(STORAGE_KEYS.installCompleted, false);
-    }
-    install.mode = 'oneTap';
-  });
+if (browser && !__IS_CAPACITOR__) {
+  window.addEventListener('beforeinstallprompt', captureInstallPrompt);
 
   // Fires after any install path (our dialog, the browser menu, etc.).
   window.addEventListener('appinstalled', markInstalled);

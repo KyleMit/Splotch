@@ -80,16 +80,16 @@ describe('initInstallPrompt — mode detection', () => {
 
   it('upgrades to one-tap when Chromium fires beforeinstallprompt', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt } = await freshModule();
+    const { captureInstallPrompt, install, initInstallPrompt } = await freshModule();
     initInstallPrompt();
-    window.dispatchEvent(makePromptEvent('accepted'));
+    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     expect(install.mode).toBe('oneTap');
   });
 
-  it('captures a prompt that fires before init — the listener lives at module load', async () => {
+  it('preserves a prompt captured before init', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt } = await freshModule();
-    window.dispatchEvent(makePromptEvent('accepted'));
+    const { captureInstallPrompt, install, initInstallPrompt } = await freshModule();
+    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     initInstallPrompt();
     expect(install.mode).toBe('oneTap');
   });
@@ -130,11 +130,11 @@ describe('initInstallPrompt — already installed', () => {
     // when the app is NOT installed, so the live event wins.
     setUA(ANDROID_UA);
     localStorage.setItem(STORAGE_KEYS.installCompleted, 'true');
-    const { install, initInstallPrompt } = await freshModule();
+    const { captureInstallPrompt, install, initInstallPrompt } = await freshModule();
     initInstallPrompt();
     expect(install.mode).toBe('none');
 
-    window.dispatchEvent(makePromptEvent('accepted'));
+    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     expect(install.mode).toBe('oneTap');
     expect(install.installed).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('false');
@@ -152,9 +152,9 @@ describe('initInstallPrompt — already installed', () => {
 describe('promptInstall', () => {
   it('marks installed and persists when the dialog is accepted', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt, promptInstall } = await freshModule();
+    const { captureInstallPrompt, install, initInstallPrompt, promptInstall } = await freshModule();
     initInstallPrompt();
-    window.dispatchEvent(makePromptEvent('accepted'));
+    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
 
     const outcome = await promptInstall();
     expect(outcome).toBe('accepted');
@@ -165,9 +165,9 @@ describe('promptInstall', () => {
 
   it('falls back to the manual hint and stops nagging when declined', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt, promptInstall } = await freshModule();
+    const { captureInstallPrompt, install, initInstallPrompt, promptInstall } = await freshModule();
     initInstallPrompt();
-    window.dispatchEvent(makePromptEvent('dismissed'));
+    captureInstallPrompt(makePromptEvent('dismissed') as BeforeInstallPromptEvent);
 
     const outcome = await promptInstall();
     expect(outcome).toBe('dismissed');
@@ -186,23 +186,23 @@ describe('promptInstall', () => {
 
   it('cannot be replayed twice from a single event', async () => {
     setUA(ANDROID_UA);
-    const { initInstallPrompt, promptInstall } = await freshModule();
+    const { captureInstallPrompt, initInstallPrompt, promptInstall } = await freshModule();
     initInstallPrompt();
-    window.dispatchEvent(makePromptEvent('accepted'));
+    captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
     expect(await promptInstall()).toBe('accepted');
     expect(await promptInstall()).toBe('unavailable');
   });
 
   it('reports unavailable and drops to the manual hint when the prompt throws', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt, promptInstall } = await freshModule();
+    const { captureInstallPrompt, install, initInstallPrompt, promptInstall } = await freshModule();
     initInstallPrompt();
     const e = new Event('beforeinstallprompt');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (e as any).prompt = vi.fn().mockRejectedValue(new Error('prompt went stale'));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (e as any).userChoice = Promise.resolve({ outcome: 'accepted', platform: 'web' });
-    window.dispatchEvent(e);
+    captureInstallPrompt(e as BeforeInstallPromptEvent);
 
     expect(await promptInstall()).toBe('unavailable');
     expect(install.mode).toBe('android');
@@ -210,14 +210,14 @@ describe('promptInstall', () => {
 
   it('drops a stale oneTap mode to the manual hint when the prompt is already spent', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt, promptInstall } = await freshModule();
+    const { captureInstallPrompt, install, initInstallPrompt, promptInstall } = await freshModule();
     initInstallPrompt();
     const e = new Event('beforeinstallprompt');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (e as any).prompt = vi.fn().mockResolvedValue(undefined);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (e as any).userChoice = new Promise(() => {}); // dialog still open
-    window.dispatchEvent(e);
+    captureInstallPrompt(e as BeforeInstallPromptEvent);
 
     void promptInstall(); // consumes the one-shot event
     expect(await promptInstall()).toBe('unavailable');
@@ -225,12 +225,12 @@ describe('promptInstall', () => {
   });
 });
 
-describe('appinstalled event', () => {
+describe('install completion', () => {
   it('marks installed and persists when the browser installs by any path', async () => {
     setUA(ANDROID_UA);
-    const { install, initInstallPrompt } = await freshModule();
+    const { install, initInstallPrompt, markInstalled } = await freshModule();
     initInstallPrompt();
-    window.dispatchEvent(new Event('appinstalled'));
+    markInstalled();
     expect(install.installed).toBe(true);
     expect(install.mode).toBe('none');
     expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('true');
