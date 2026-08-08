@@ -51,4 +51,12 @@ describe.each(DRIVERS)('run-splotch driver $path', ({ path, source }) => {
     expect(body).toContain('.stop()');
     expect(body).toContain('.release()');
   });
+
+  it('never clears an occupied port', () => {
+    expect(body).not.toMatch(/kill-port|freePort/);
+  });
+
+  it('prints the recorded process group for a kept server', () => {
+    expect(body).toContain('kill -- -${vite.server.pid}');
+  });
 });

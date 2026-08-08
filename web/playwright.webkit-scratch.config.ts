@@ -20,6 +20,6 @@ export default defineConfig({
   webServer: {
     ...commonWebServer,
     command: productionPreviewCommand,
-    reuseExistingServer: true,
+    reuseExistingServer: false,
   },
 });

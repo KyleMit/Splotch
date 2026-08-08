@@ -2,7 +2,25 @@ import type { PlaywrightTestConfig } from '@playwright/test';
 
 import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
 
-export const playwrightPort = 4173;
+const DEFAULT_PLAYWRIGHT_PORT = 4173;
+const MAX_TCP_PORT = 65_535;
+
+function invalidPlaywrightPort(value: string): never {
+  throw new Error(
+    `SPLOTCH_E2E_PORT must be an integer from 1 through ${MAX_TCP_PORT}; received ${JSON.stringify(value)}`
+  );
+}
+
+export function resolvePlaywrightPort(value = process.env.SPLOTCH_E2E_PORT): number {
+  if (value === undefined) return DEFAULT_PLAYWRIGHT_PORT;
+  if (!/^\d+$/.test(value)) invalidPlaywrightPort(value);
+
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 1 || port > MAX_TCP_PORT) invalidPlaywrightPort(value);
+  return port;
+}
+
+export const playwrightPort = resolvePlaywrightPort();
 export const playwrightBaseURL = `http://localhost:${playwrightPort}`;
 
 export const commonPlaywrightConfig = {
@@ -12,7 +30,8 @@ export const commonPlaywrightConfig = {
   use: { baseURL: playwrightBaseURL },
 } satisfies PlaywrightTestConfig;
 
-export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort}`;
+export const developmentServerCommand = `npx vite dev --port ${playwrightPort} --strictPort`;
+export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort} --strictPort`;
 const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS = 180_000;
 
 /** The managed access code tests/generate-image.spec.ts bursts against. */
@@ -66,9 +85,9 @@ export const commonWebServer = {
   // same reason). A blank value is a deliberate "unconfigured", which is the
   // state CI runs in.
   //
-  // It says nothing about a server Playwright *adopted* — reuseExistingServer
-  // hands the suite whatever is already on the port, env and all. That case is
-  // caught at runtime by the probe in tests/global-setup.ts.
+  // Both production configs disable server reuse and every command uses
+  // strictPort. The runtime probe in tests/global-setup.ts remains a defense in
+  // depth for the credentials boundary.
   //
   // ADMIN_ACCESS_TOKEN is the known secret the shared admin test helper
   // provides to tests/admin.spec.ts and tests/a11y.spec.ts. Token mutations

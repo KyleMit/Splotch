@@ -30,6 +30,7 @@ import { parseArgs } from 'node:util';
 import { RELEASABLE_STDIO, spawnViteServer } from '../../../scripts/lib/vite-server.mjs';
 
 const repoRoot = resolve(fileURLToPath(import.meta.url), '../../../..');
+const SERVER_OWNERSHIP_SETTLE_MS = 250;
 
 // Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
 // revision can drift from what playwright-core resolves (e.g. the env installed
@@ -134,17 +135,29 @@ function finishServer(baseURL) {
   }
   vite.release();
   console.log(
-    `server left running: ${baseURL} (pid ${vite.server.pid}) — kill with: npx kill-port ${port}`
+    `server left running: ${baseURL} (process group ${vite.server.pid}) — stop with: kill -- -${vite.server.pid}`
+  );
+}
+
+function serverStartError(baseURL) {
+  return new Error(
+    `dev server could not start on ${baseURL}; select another unused port with --port and retry`
   );
 }
 
 async function waitForServer(baseURL) {
   const deadline = Date.now() + 60_000;
   for (;;) {
+    if (vite?.server.exitCode !== null) throw serverStartError(baseURL);
+    let response;
     try {
-      const r = await fetch(baseURL, { method: 'HEAD' });
-      if (r.ok || r.status === 404) return;
+      response = await fetch(baseURL, { method: 'HEAD' });
     } catch {}
+    if (response?.ok || response?.status === 404) {
+      await new Promise((resolve) => setTimeout(resolve, SERVER_OWNERSHIP_SETTLE_MS));
+      if (vite?.server.exitCode !== null) throw serverStartError(baseURL);
+      return;
+    }
     if (Date.now() > deadline) throw new Error(`server never came up at ${baseURL}`);
     await new Promise((r) => setTimeout(r, 300));
   }

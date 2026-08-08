@@ -6,8 +6,8 @@ import {
   allowedTokensList,
   commonPlaywrightConfig,
   commonWebServer,
+  developmentServerCommand,
   managedAccessTokenForRetry,
-  playwrightPort,
   productionPreviewCommand,
 } from './playwright.shared';
 import { WEBKIT_ONLY } from './tests/tags';
@@ -192,9 +192,7 @@ export default defineConfig({
     // the /dev/* test harnesses in the built app (404 otherwise); it's never set
     // in the Netlify deploy. Set DEV_SERVER=1 for fast local iteration against
     // `vite dev`.
-    command: process.env.DEV_SERVER
-      ? `npx vite dev --port ${playwrightPort}`
-      : productionPreviewCommand,
-    reuseExistingServer: !process.env.CI,
+    command: process.env.DEV_SERVER ? developmentServerCommand : productionPreviewCommand,
+    reuseExistingServer: false,
   },
 });
