@@ -39,8 +39,9 @@
 // version of the line-art page (tools/asset-gen/bin/gen-coloring-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
-// validates and strip-native-assets removes them together. Responsive tiers are
-// web-only; native keeps the canonical runtime width. Thumbnails: ADR-0045.
+// validates them, generates the verified pack manifest, and strips native assets
+// from the correct distribution boundary. Responsive tiers are web-only; native
+// uses the canonical runtime width. Thumbnails: ADR-0045; packs: ADR-0103.
 //
 // `platforms` controls distribution per book:
 //   ['web']            -> web only          (hidden + assets stripped on native)
@@ -48,6 +49,7 @@
 //   ['web', 'mobile']  -> ships everywhere  ("both")
 
 import type { ResolvedTheme } from '../theme';
+import { resolveColoringAssetUrl } from '../coloringPacks/assetResolver.ts';
 
 // Distribution platforms a book may ship on - distinct from the runtime
 // platform in platform.ts (which also has 'ios'/'android').
@@ -346,6 +348,8 @@ export const BOOKS: Book[] = [
   ]),
 ];
 
+export const STARTER_COLORING_BOOK_ID = 'farm';
+
 /** Books allowed on the given platform ('web' | 'mobile'). */
 export function booksForPlatform(platform: BookPlatform): Book[] {
   return BOOKS.filter((book) => book.platforms.includes(platform));
@@ -360,12 +364,13 @@ export function pageCompositionKey(url: string): string {
 }
 
 export function pageColorImage(page: ColoringPage, orientation: BookOrientation): string {
-  return page.colorImages[orientation];
+  return resolveColoringAssetUrl(page.colorImages[orientation]);
 }
 
 /** Night fill path for the orientation, or null when none is generated yet. */
 export function pageNightImage(page: ColoringPage, orientation: BookOrientation): string | null {
-  return page.nightImages[orientation] ?? null;
+  const path = page.nightImages[orientation];
+  return path ? resolveColoringAssetUrl(path) : null;
 }
 
 /** Chalk-outline path for the orientation, or null when none is generated yet
@@ -374,7 +379,7 @@ export function pageChalkImage(page: ColoringPage, orientation: BookOrientation)
   return page.chalkImages[orientation] ?? null;
 }
 
-export function pageOverlayImage(
+function pageOverlayAssetPath(
   page: ColoringPage,
   orientation: BookOrientation,
   theme: ResolvedTheme
@@ -384,15 +389,24 @@ export function pageOverlayImage(
   return source.slice(0, -ASSET_SUFFIXES.outline.length) + suffix;
 }
 
+export function pageOverlayImage(
+  page: ColoringPage,
+  orientation: BookOrientation,
+  theme: ResolvedTheme
+): string {
+  return resolveColoringAssetUrl(pageOverlayAssetPath(page, orientation, theme));
+}
+
 export function pageOverlayImageSource(
   page: ColoringPage,
   orientation: BookOrientation,
   theme: ResolvedTheme
 ): ResponsiveColoringImage {
-  const src = pageOverlayImage(page, orientation, theme);
+  const source = pageOverlayAssetPath(page, orientation, theme);
   const tier = RESPONSIVE_COLORING_TIERS.overlay;
   const widths = tier.widths[orientation];
-  return responsiveImage(src, tier.directory, widths.candidate, widths.source);
+  const image = responsiveImage(source, tier.directory, widths.candidate, widths.source);
+  return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
@@ -424,10 +438,11 @@ export function pageThumb(
 }
 
 export function coverThumbImageSource(book: Book): ResponsiveColoringImage {
-  const src = thumbPath(book.cover);
+  const source = thumbPath(book.cover);
   const tier = RESPONSIVE_COLORING_TIERS.thumbnail;
   const widths = tier.widths.cover;
-  return responsiveImage(src, tier.directory, widths.candidate, widths.source);
+  const image = responsiveImage(source, tier.directory, widths.candidate, widths.source);
+  return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
 export function pageThumbImageSource(
@@ -435,10 +450,11 @@ export function pageThumbImageSource(
   orientation: BookOrientation,
   theme: ResolvedTheme
 ): ResponsiveColoringImage {
-  const src = pageThumb(page, orientation, theme);
+  const source = pageThumb(page, orientation, theme);
   const tier = RESPONSIVE_COLORING_TIERS.thumbnail;
   const widths = tier.widths[orientation];
-  return responsiveImage(src, tier.directory, widths.candidate, widths.source);
+  const image = responsiveImage(source, tier.directory, widths.candidate, widths.source);
+  return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
 export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] {
@@ -448,7 +464,7 @@ export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] 
     ALL_ORIENTATIONS.flatMap((orientation) => {
       const widths = overlayTier.widths[orientation];
       return (['light', 'dark'] as const).map((theme) => {
-        const source = pageOverlayImage(page, orientation, theme);
+        const source = pageOverlayAssetPath(page, orientation, theme);
         return {
           source,
           target: responsiveTierPath(source, overlayTier.directory),
@@ -507,8 +523,8 @@ export function bookAssetPaths(book: Book): string[] {
   );
   const overlays = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.flatMap((orientation) => [
-      pageOverlayImage(page, orientation, 'light'),
-      pageOverlayImage(page, orientation, 'dark'),
+      pageOverlayAssetPath(page, orientation, 'light'),
+      pageOverlayAssetPath(page, orientation, 'dark'),
     ])
   );
   return [
@@ -521,4 +537,32 @@ export function bookAssetPaths(book: Book): string[] {
     ...overlays,
     ...responsiveColoringAssets(book).map((asset) => asset.target),
   ];
+}
+
+export function bookPackAssetPaths(book: Book): string[] {
+  const penThumbs = [
+    thumbPath(book.cover),
+    ...book.pages.flatMap((page) =>
+      ALL_ORIENTATIONS.map((orientation) => thumbPath(page.images[orientation]))
+    ),
+  ];
+  const chalkThumbs = book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.map((orientation) => page.chalkImages[orientation])
+      .filter((path): path is string => !!path)
+      .map(chalkThumbPath)
+  );
+  const fills = book.pages.flatMap((page) => [
+    ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),
+    ...ALL_ORIENTATIONS.map((orientation) => page.nightImages[orientation]).filter(
+      (path): path is string => !!path
+    ),
+  ]);
+  const overlays = book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) => {
+      const source = page.images[orientation];
+      const base = source.slice(0, -ASSET_SUFFIXES.outline.length);
+      return [`${base}${ASSET_SUFFIXES.overlay}`, `${base}${ASSET_SUFFIXES.darkOverlay}`];
+    })
+  );
+  return [...penThumbs, ...chalkThumbs, ...fills, ...overlays];
 }

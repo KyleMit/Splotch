@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { draw, gotoApp } from './helpers';
 import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
 
-// Issue #462: the service worker precaches the full offline bundle (~35 MB of
-// coloring-page variants), so registration no longer happens at load — it
+// Issue #462: service-worker installation does meaningful offline work, so registration no longer
+// happens at load — it
 // waits behind the same "a few strokes drawn" signal the Install Banner uses
 // (SETTLED_IN_STROKES), then lands at idle. This pins both sides of
 // the gate: no sw.js request or registration before the third stroke, and the
@@ -113,7 +113,7 @@ test('the service worker registers only after the stroke-count gate passes', asy
 });
 
 test('a repeat visit is controlled by the service worker with no stroke gate', async ({ page }) => {
-  // The first visit's precache install pulls the full offline bundle from the
+  // The first visit's precache install pulls the app shell and starter book from the
   // local preview server before the SW can activate.
   test.setTimeout(120_000);
   await gotoApp(page);

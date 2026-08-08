@@ -6,6 +6,8 @@
          copied into cloud backups. No child data leaves the device via backup. -->
     <application
         android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -35,7 +37,7 @@
 
     <!-- Permissions -->
 
-    <!-- INTERNET: only the AI button reaches the network; the rest is offline. -->
+    <!-- The AI generator and post-install coloring packs reach the hosted API/site. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Lets @capacitor/network report real connectivity so the AI button is

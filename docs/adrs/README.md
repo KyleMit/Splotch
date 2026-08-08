@@ -85,14 +85,15 @@ The decisions that shape everything else, in rough order of importance. All are 
 
 ## Native (Capacitor / Android / iOS)
 
-| #                                                         | Title                                                                                | Status                                                       |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------ |
-| [0012](0012-android-build-toolchain.md)                   | Android Build Toolchain Requirements (Node 22 + JDK 21 Temurin)                      | Active (amended by [0062](0062-drop-windows-dev-support.md)) |
-| [0013](0013-platform-detection-without-capacitor-core.md) | Platform Detection Without Importing @capacitor/core                                 | Active                                                       |
-| [0020](0020-ios-build-toolchain.md)                       | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)   | Active                                                       |
-| [0027](0027-device-lock-detection-plugin.md)              | A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning         | Active                                                       |
-| [0028](0028-apple-pencil-eraser-plugin.md)                | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap             | Active                                                       |
-| [0037](0037-photo-save-targets-per-platform.md)           | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active                                                       |
+| #                                                         | Title                                                                                | Status                                                                                                                                                                    |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0012](0012-android-build-toolchain.md)                   | Android Build Toolchain Requirements (Node 22 + JDK 21 Temurin)                      | Active (amended by [0062](0062-drop-windows-dev-support.md))                                                                                                              |
+| [0013](0013-platform-detection-without-capacitor-core.md) | Platform Detection Without Importing @capacitor/core                                 | Active                                                                                                                                                                    |
+| [0020](0020-ios-build-toolchain.md)                       | iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)   | Active                                                                                                                                                                    |
+| [0027](0027-device-lock-detection-plugin.md)              | A Custom `DeviceLock` Capacitor Plugin to Detect Guided Access / App Pinning         | Active                                                                                                                                                                    |
+| [0028](0028-apple-pencil-eraser-plugin.md)                | A Custom `PencilEraser` Capacitor Plugin for the Apple Pencil Double-Tap             | Active                                                                                                                                                                    |
+| [0037](0037-photo-save-targets-per-platform.md)           | Photo Save Targets per Platform (Native Gallery, Web Folder Save, Download Fallback) | Active                                                                                                                                                                    |
+| [0103](0103-progressive-coloring-book-packs.md)           | Ship One Starter Coloring Book and Install the Rest as Verified Background Packs     | Active (amends [0022](0022-pwa-service-worker-strategy.md), [0042](0042-static-media-cache-invalidation.md), and [0045](0045-coloring-picker-thumbnails-and-prefetch.md)) |
 
 ## API & server
 

@@ -4,7 +4,8 @@
 end-to-end, 2026-08-02 (issue #621) to keep responsive coloring derivatives out of the precache with
 an explicit canonical offline fallback, and 2026-08-05 (issue #778) to place the version-mismatch
 cache-bust redirect under the same canvas-empty guard as the waiting-worker reload. **Date:**
-2026-06
+2026-06. Amended 2026-08-08 by [ADR-0103](0103-progressive-coloring-book-packs.md) so only the Farm
+starter book is precached and other books use verified runtime pack caches.
 
 ## Context
 
@@ -60,17 +61,17 @@ update-lifecycle and manifest-generation features are explicitly disabled. A cus
 
 ### vite-plugin-pwa configuration (`vite.config.ts`)
 
-| Option                      | Value                                                                             | Reason                                                                                                                      |
-| --------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `registerType`              | `'prompt'`                                                                        | Disables the auto-update injection; `updates.ts` is the sole driver                                                         |
-| `manifest`                  | `false`                                                                           | Web manifest is maintained manually in `static/site.webmanifest`                                                            |
-| `workbox.skipWaiting`       | *(omitted)*                                                                       | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                        |
-| `workbox.clientsClaim`      | `true`                                                                            | New SW claims all clients immediately after activation                                                                      |
-| `workbox.navigateFallback`  | `''`                                                                              | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler |
-| `workbox.globPatterns`      | no `html`                                                                         | HTML is not precached; navigation uses the runtime NetworkFirst cache instead                                               |
-| `workbox.globIgnores`       | social card, source line art, and responsive coloring tiers                       | Avoids caching served assets the app never fetches and duplicate resolutions of the same coloring art                       |
-| `additionalManifestEntries` | `'_app/env.js'`, revisioned by build time                                         | Precaches SvelteKit's runtime-generated public-environment module so an offline navigation can hydrate                      |
-| `workbox.runtimeCaching`    | custom responsive-coloring handler; `NetworkFirst` navigations with a 5 s timeout | Keeps responsive derivatives network-first without runtime caching and makes navigation fall back to cached HTML offline    |
+| Option                      | Value                                                                                               | Reason                                                                                                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `registerType`              | `'prompt'`                                                                                          | Disables the auto-update injection; `updates.ts` is the sole driver                                                            |
+| `manifest`                  | `false`                                                                                             | Web manifest is maintained manually in `static/site.webmanifest`                                                               |
+| `workbox.skipWaiting`       | *(omitted)*                                                                                         | New SW enters the waiting state; `updates.ts` activates it only when canvas is blank                                           |
+| `workbox.clientsClaim`      | `true`                                                                                              | New SW claims all clients immediately after activation                                                                         |
+| `workbox.navigateFallback`  | `''`                                                                                                | Suppresses the default `NavigationRoute(createHandlerBoundToURL('index.html'))` which would shadow the NetworkFirst handler    |
+| `workbox.globPatterns`      | no `html`                                                                                           | HTML is not precached; navigation uses the runtime NetworkFirst cache instead                                                  |
+| `workbox.globIgnores`       | social card, source line art, responsive tiers, and non-starter coloring books                      | Avoids served-only assets, duplicate resolutions, and post-install book packs                                                  |
+| `additionalManifestEntries` | `'_app/env.js'` plus the versioned coloring-pack manifest                                           | Keeps offline hydration and the downloader's integrity/file inventory available                                                |
+| `workbox.runtimeCaching`    | responsive and installed-canonical coloring handlers; `NetworkFirst` navigations with a 5 s timeout | Resolves installed book caches without putting downloads in the precache and makes navigation fall back to cached HTML offline |
 
 ### Responsive coloring and offline fallback
 
@@ -90,6 +91,16 @@ image's `currentSrc` offline; the bytes returned for that request are the canoni
 responsive derivative without a canonical precache entry, a missing `/_app/env.js`, or a precache
 above the named size budget. The production Playwright suite clears the HTTP cache and verifies the
 offline DPR 1 and DPR 3 picker and canvas paths against decoded response dimensions.
+
+### Progressive coloring packs
+
+[ADR-0103](0103-progressive-coloring-book-packs.md) narrows the canonical precache authority from
+the full catalog to Farm. The versioned pack manifest is precached, while all canonical files for
+the other seven books are excluded. A separate Cache Storage namespace receives verified whole-book
+downloads. The canonical runtime route checks all caches before going to the network, so installed
+packs and the Workbox precache share one URL contract without letting ordinary image requests write
+partially downloaded packs. The responsive route can therefore fall back to either Farm's precache
+entry or a downloaded canonical entry.
 
 ### Custom update lifecycle (`src/lib/pwa/updates.ts`)
 
@@ -137,8 +148,9 @@ with their HTTP `Cache-Control`, is documented in
 **+** Manual browser refresh always hits the network for HTML (NetworkFirst), so a user can unstick
 themselves without clearing the SW cache manually.
 
-**+** Offline coloring keeps the canonical catalog while the install omits 11.66 MiB of duplicate
-responsive derivatives. Online responsive requests still receive the smaller candidate.
+**+** Offline coloring begins with one complete canonical Farm book while the initial install omits
+both 11.66 MiB of responsive derivatives and every non-starter book. Installed books become complete
+offline units. Online responsive requests still receive the smaller candidate.
 
 **+** The runtime-generated SvelteKit environment module is explicitly precached, so an offline
 navigation can hydrate rather than stopping after server-rendered markup.

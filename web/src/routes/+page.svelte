@@ -25,6 +25,7 @@
   import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
+  import { installColoringPackDownloads } from '$lib/boot/coloringPacks';
 
   $effect(() => {
     applyDeviceOrientationPreference(
@@ -47,7 +48,7 @@
   });
 
   // First-visit service worker registration waits for the Install Banner's
-  // "a few strokes drawn" signal so the ~35 MB precache never lands on top of
+  // "a few strokes drawn" signal so the offline install never lands on top of
   // boot or the first strokes (issue #462). Repeat visits don't pass through
   // here — initPWAUpdates re-registers an existing registration at idle.
   // The gate waits for the shared settled-in signal (the same one the Install
@@ -93,6 +94,7 @@
       initWebOnlyServices(),
       installDevHarnessSeam(),
       installUndoShortcut(),
+      installColoringPackDownloads(),
     ];
     return () => teardowns.forEach((teardown) => teardown());
   });

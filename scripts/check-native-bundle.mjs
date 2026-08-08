@@ -6,6 +6,7 @@ import {
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
 } from '../web/src/lib/components/androidBeta/androidBeta.ts';
+import { STARTER_COLORING_BOOK_ID } from '../web/src/lib/state/books.ts';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
@@ -60,13 +61,28 @@ function bundleFiles(dir) {
   });
 }
 
-export function nativeBundleProblems(dir, sentinels = adminConsoleSentinels()) {
+export function nativeBundleProblems(
+  dir,
+  sentinels = adminConsoleSentinels(),
+  starterBookId = STARTER_COLORING_BOOK_ID
+) {
   if (!existsSync(dir)) return [`Native build output does not exist: ${dir}`];
   const forbidden = [
     ...FORBIDDEN_NATIVE_HOSTS.map((value) => ({ value, what: 'web-only host' })),
     ...sentinels.map((value) => ({ value, what: 'admin console' })),
   ];
   const problems = [];
+  const coloringDirectory = join(dir, 'coloring');
+  if (existsSync(coloringDirectory)) {
+    const extraBookDirectories = readdirSync(coloringDirectory, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name !== starterBookId)
+      .map((entry) => entry.name);
+    if (extraBookDirectories.length) {
+      problems.push(
+        `Downloadable coloring books remain in the native bundle: ${extraBookDirectories.join(', ')}`
+      );
+    }
+  }
   for (const path of bundleFiles(dir)) {
     const source = readFileSync(path, 'utf8');
     for (const { value, what } of forbidden) {
@@ -84,7 +100,7 @@ export async function checkNativeBundle({ dir = BUILD_DIR, log = console.log } =
   if (problems.length) throw new Error(problems.join('\n'));
   log(
     `[native-bundle] native export references none of: ${FORBIDDEN_NATIVE_HOSTS.join(', ')}; ` +
-      `no admin-console copy (${sentinels.length} sentinel(s))`
+      `no admin-console copy (${sentinels.length} sentinel(s)); only ${STARTER_COLORING_BOOK_ID} is bundled`
   );
 }
 

@@ -33,14 +33,17 @@ server, so they build a **fully static** export instead:
 
 ### Offline vs. online
 
-The **core engine is 100% offline**: canvas, colors, stroke widths, eraser, sounds, coloring books,
-screenshots — all bundled on-device (fonts via `@fontsource-variable/quicksand`, sounds in
-`web/static/sounds`, coloring pages in `web/static/coloring`). No network needed.
+The **core engine is 100% offline**: canvas, colors, stroke widths, eraser, sounds, the Farm starter
+coloring book, and screenshots are bundled on-device. No network is needed to draw or use anything
+already installed.
 
-The **only** online feature is the **AI "magic image" button**. On native it calls the hosted
-endpoint `https://splotch.art/api/generate-image` (`__NATIVE_API_BASE__`, injected at build time in
+Two background features use the network. The **AI "magic image" button** calls the hosted endpoint
+`https://splotch.art/api/generate-image` (`__NATIVE_API_BASE__`, injected at build time in
 `web/vite.config.ts`). When the device is offline the AI button is **hidden** automatically
-(`web/src/lib/state/network.svelte.ts` + `@capacitor/network`).
+(`web/src/lib/state/network.svelte.ts` + `@capacitor/network`). The seven non-starter coloring books
+download automatically, one complete verified book at a time (ADR-0103). Android WorkManager stores
+them under `noBackupFilesDir`; iOS background `URLSession` stores them in Application Support with
+backup exclusion. The picker exposes a book only after its install marker is written.
 
 ### Storage
 
@@ -87,8 +90,7 @@ namespace, never the proxy.
 ### Custom native plugins
 
 When no published plugin exposes a native capability, add a small **local** plugin in the app target
-itself (see `DeviceLock`, ADR-0027 — it reads iOS Guided Access / Android App-Pinning state for the
-Settings' lock-status ✓):
+itself (see `DeviceLock`, ADR-0027, and `ColoringPacks`, ADR-0103):
 
 * iOS — the key gotcha: **Capacitor 8 does not auto-discover plugin classes.**
   `CapacitorBridge.registerPlugins()` only loads its built-ins plus the `packageClassList` that
@@ -151,7 +153,8 @@ register it.
 * **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
 * The only data that ever leaves the device is the **drawing image** the user explicitly sends to
   the AI endpoint (plus an invite token). Nothing is sold or used for tracking. The endpoint logs
-  token usage for abuse prevention only.
+  token usage for abuse prevention only. Coloring-pack requests contain only public static asset
+  paths; they carry no drawing or child data.
 * Photos are saved **locally** to the device gallery (a "Splotch" album).
 
 ## 2. Shared web-asset / sync commands

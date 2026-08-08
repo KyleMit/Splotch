@@ -167,6 +167,13 @@ canonical coloring catalog. Production PWA tests clear the HTTP cache and decode
 selected at DPR 1 and DPR 3, so both the responsive URL path and its canonical fallback bytes are
 exercised.
 
+**Amendment (2026-08-08, issue #200).** [ADR-0103](0103-progressive-coloring-book-packs.md) makes
+that canonical offline authority progressive. Farm's canonical runtime set remains in the initial
+install; each other book's cover, thumbnails, overlays, and fills is verified and published as one
+background pack. Picker prefetch observes only the installed-book list, so it cannot request or
+advertise an incomplete book. Responsive web requests still fall back to the corresponding canonical
+URL, whether that URL is in Farm's Workbox precache or a downloaded pack cache.
+
 ## Consequences
 
 * **+** Grid downloads drop ~85% (thumbnails ~15 KB vs. 84–120 KB); the picker paints fast even on a

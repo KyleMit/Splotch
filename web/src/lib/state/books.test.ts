@@ -5,6 +5,7 @@ import {
   BOOKS,
   COLORING_IMAGE_SIZES,
   bookAssetPaths,
+  bookPackAssetPaths,
   chalkThumbPath,
   coloringBookGridLayout,
   coloringOverlayImageSize,
@@ -19,6 +20,10 @@ import {
   responsiveColoringAssets,
   thumbPath,
 } from './books';
+import {
+  clearLocalColoringBookRoots,
+  setLocalColoringBookRoot,
+} from '../coloringPacks/assetResolver';
 
 const coloringBookComponent = readFileSync(
   new URL('../components/ColoringBook.svelte', import.meta.url),
@@ -250,5 +255,34 @@ describe('bookAssetPaths', () => {
     const responsive = responsiveColoringAssets(farm);
     expect(responsive).toHaveLength(49);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
+  });
+});
+
+describe('downloadable coloring packs', () => {
+  const farm = BOOKS.find((book) => book.id === 'farm')!;
+  const dinosaur = BOOKS.find((book) => book.id === 'dinosaur')!;
+
+  it('contains exactly the canonical runtime files for one complete book', () => {
+    const paths = bookPackAssetPaths(farm);
+    expect(paths).toHaveLength(73);
+    expect(new Set(paths).size).toBe(paths.length);
+    expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
+    expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);
+    expect(paths.some((path) => path.includes('/max-'))).toBe(false);
+  });
+
+  it('redirects every runtime URL to a native book root after installation', () => {
+    setLocalColoringBookRoot('dinosaur', 'https://localhost/_capacitor_file_/packs/dinosaur/');
+    try {
+      const page = dinosaur.pages[0];
+      expect(pageOverlayImage(page, 'portrait', 'light')).toBe(
+        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.overlay.webp'
+      );
+      expect(coverThumbImageSource(dinosaur).src).toBe(
+        'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'
+      );
+    } finally {
+      clearLocalColoringBookRoots();
+    }
   });
 });

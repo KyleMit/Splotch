@@ -1,6 +1,7 @@
 import type { IconName } from '../icon-names';
 import { APP_VERSION } from '$lib/appVersion';
 import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
+import { coloringPackState } from '$lib/state/coloringPacks.svelte';
 
 // Settings is one flat list of sections (ADR-0061). Both shells — the
 // phone hub with full-page drill-in and the tablet sidebar + content pane —
@@ -10,6 +11,7 @@ export const SECTIONS = [
   { id: 'sound', label: 'Sound', icon: 'sound' },
   { id: 'controls', label: 'Buttons', icon: 'controls' },
   { id: 'saving', label: 'Saving', icon: 'save-picture' },
+  { id: 'coloring', label: 'Coloring', icon: 'shapes' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
   { id: 'setup', label: 'Install', icon: 'setup' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback' },
@@ -58,6 +60,8 @@ export function sectionSubtitle(id: SectionId): string {
         : 'Drawing sounds off';
     case 'saving':
       return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
+    case 'coloring':
+      return `${Math.max(0, coloringPackState.installedBookIds.length - 1)} extra books ready`;
     case 'controls':
       return settings.advancedControlsEnabled ? 'Advanced controls on' : 'Standard controls';
     case 'ai': {

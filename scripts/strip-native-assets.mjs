@@ -3,31 +3,33 @@
 // against the freshly produced `build/` output — it never touches the source
 // `static/` tree.
 //
-// Four independent prunes:
+// Five independent prunes:
 //
 //   1. Coloring books whose `platforms` field omits 'mobile' (e.g. licensed IP
 //      like Bluey / Frozen). Source of truth is src/lib/state/books.ts, matching
 //      the runtime filter in ColoringBook.svelte.
-//   2. The web-only static files listed in lib/native-export.mjs (social card,
+//   2. Every mobile coloring book except the starter book. These are installed
+//      as verified background downloads after the app opens.
+//   3. The web-only static files listed in lib/native-export.mjs (social card,
 //      favicons, webmanifest, crawler files, generator inputs) — together with
 //      the head tags that reference them, so the strip can't leave a 404 behind.
-//   3. Full-resolution opaque line-art sources. Runtime presentation uses the
+//   4. Full-resolution opaque line-art sources. Runtime presentation uses the
 //      generated alpha overlays and picker thumbnails; the opaque files remain
 //      committed beside them only as asset-pipeline inputs.
-//   4. Web-responsive image tiers. Native ships the one canonical runtime width
-//      until downloadable asset packs can select a tier (issue #200).
+//   5. Web-responsive image tiers. Native ships one canonical runtime width.
 //
 // books.ts is TypeScript, so this script is launched with Node's
 // --experimental-strip-types (see the build:cap npm script) to import it directly.
 
 import { globSync, readFileSync, rmSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { nativeUnusedLineArt, webOnlyBooks } from './lib/book-assets.mjs';
+import { downloadableMobileBooks, nativeUnusedLineArt, webOnlyBooks } from './lib/book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/native-export.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
 import {
   BOOKS,
   RESPONSIVE_COLORING_TIER_DIRECTORIES,
+  STARTER_COLORING_BOOK_ID,
   bookAssetPaths,
 } from '../web/src/lib/state/books.ts';
 
@@ -110,6 +112,30 @@ function stripWebOnlyFiles(buildDir) {
   );
 }
 
+function stripDownloadableBooks(buildDir, books) {
+  const downloadable = downloadableMobileBooks(books, STARTER_COLORING_BOOK_ID);
+  let freedBytes = 0;
+  let removed = 0;
+  for (const book of downloadable) {
+    const directory = join(buildDir, 'coloring', book.id);
+    if (!existsSync(directory)) {
+      console.warn(`[strip-native-assets] expected but not found: /coloring/${book.id}`);
+      continue;
+    }
+    for (const file of globSync('**/*', { cwd: directory })) {
+      const path = join(directory, file);
+      const stats = statSync(path);
+      if (stats.isFile()) freedBytes += stats.size;
+    }
+    rmSync(directory, { recursive: true, force: true });
+    removed++;
+  }
+  console.log(
+    `[strip-native-assets] stripped ${removed}/${downloadable.length} downloadable coloring book(s), ` +
+      `${(freedBytes / 1048576).toFixed(2)} MB freed.`
+  );
+}
+
 function stripUnusedLineArt(buildDir, books) {
   let freedBytes = 0;
   let removed = 0;
@@ -152,8 +178,12 @@ export function stripNativeAssets(buildDir, books) {
   }
 
   stripWebOnlyBooks(buildDir, books);
+  stripDownloadableBooks(buildDir, books);
   stripWebOnlyFiles(buildDir);
-  stripUnusedLineArt(buildDir, books);
+  stripUnusedLineArt(
+    buildDir,
+    books.filter((book) => book.id === STARTER_COLORING_BOOK_ID)
+  );
   stripResponsiveColoringTiers(buildDir);
 }
 

@@ -24,6 +24,10 @@ const SAVE_MODULE_MARKERS: Record<string, string> = {
   'folderSave.ts': 'Persisting the save folder failed:',
   'screenshotFeedback.ts': 'screenshot-capture-feedback',
 };
+const COLORING_PACK_MODULE_MARKERS: Record<string, string> = {
+  'manager.ts': 'Coloring-pack download paused',
+  'nativeStore.ts': 'ColoringPacks',
+};
 
 test.skip(!!process.env.DEV_SERVER, 'guards the production build output');
 
@@ -51,6 +55,12 @@ test('the save pipeline stays out of the prerendered modulepreload list', () => 
         `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — a static import has pulled the save pipeline onto the startup critical path`
       ).toBe(false);
     }
+    for (const [module, marker] of Object.entries(COLORING_PACK_MODULE_MARKERS)) {
+      expect(
+        chunk.includes(marker),
+        `${module} (marker "${marker}") is back in modulepreloaded chunk ${href} — coloring-pack I/O must stay off the drawing startup path`
+      ).toBe(false);
+    }
   }
   expect(
     scanned,
@@ -70,6 +80,12 @@ test('the save-module markers still identify code in the client build', () => {
     expect(
       chunks.some((chunk) => chunk.includes(marker)),
       `marker "${marker}" for ${module} no longer appears anywhere in the client build — update SAVE_MODULE_MARKERS`
+    ).toBe(true);
+  }
+  for (const [module, marker] of Object.entries(COLORING_PACK_MODULE_MARKERS)) {
+    expect(
+      chunks.some((chunk) => chunk.includes(marker)),
+      `marker "${marker}" for ${module} no longer appears anywhere in the client build — update COLORING_PACK_MODULE_MARKERS`
     ).toBe(true);
   }
 });

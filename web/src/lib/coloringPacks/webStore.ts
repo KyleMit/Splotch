@@ -1,0 +1,107 @@
+import { scheduleIdle } from '$lib/idle';
+import { requestPersistentStorage } from '$lib/idb';
+import type { ColoringPackBookManifest, ColoringPackManifest } from './manifest';
+import type { ColoringPackStore, InstalledColoringPack } from './store';
+
+const CACHE_PREFIX = 'coloring-packs-v1-';
+
+function cacheName(manifest: ColoringPackManifest): string {
+  return `${CACHE_PREFIX}${manifest.appVersion}`;
+}
+
+function markerPath(manifest: ColoringPackManifest, bookId: string): string {
+  return `/coloring/.installed/${manifest.appVersion}/${bookId}`;
+}
+
+async function waitForIdle(signal: AbortSignal): Promise<void> {
+  if (signal.aborted) throw signal.reason;
+  await new Promise<void>((resolve, reject) => {
+    const onAbort = () => {
+      cancel();
+      reject(signal.reason);
+    };
+    const cancel = scheduleIdle(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    });
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function digestHex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifiedResponse(
+  file: ColoringPackBookManifest['files'][number],
+  signal: AbortSignal
+): Promise<Response> {
+  const response = await fetch(file.path, { cache: 'no-store', signal });
+  if (!response.ok)
+    throw new Error(`Coloring asset download failed (${response.status}): ${file.path}`);
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength !== file.bytes) {
+    throw new Error(`Coloring asset byte count mismatch: ${file.path}`);
+  }
+  if ((await digestHex(bytes)) !== file.sha256) {
+    throw new Error(`Coloring asset digest mismatch: ${file.path}`);
+  }
+  return new Response(bytes, {
+    headers: { 'Content-Type': response.headers.get('Content-Type') ?? 'image/webp' },
+  });
+}
+
+async function deleteOldCaches(currentName: string) {
+  const names = await caches.keys();
+  await Promise.all(
+    names
+      .filter((name) => name.startsWith(CACHE_PREFIX) && name !== currentName)
+      .map((name) => caches.delete(name))
+  );
+}
+
+export function createWebColoringPackStore(): ColoringPackStore {
+  return {
+    async installed(manifest): Promise<InstalledColoringPack[]> {
+      const name = cacheName(manifest);
+      await deleteOldCaches(name);
+      const cache = await caches.open(name);
+      const installed = await Promise.all(
+        manifest.books
+          .filter((book) => book.id !== manifest.starterBookId)
+          .map(async (book) =>
+            (await cache.match(markerPath(manifest, book.id))) ? { id: book.id } : null
+          )
+      );
+      return installed.filter((pack): pack is InstalledColoringPack => !!pack);
+    },
+
+    async install(manifest, book, _allowMetered, signal) {
+      await requestPersistentStorage();
+      const cache = await caches.open(cacheName(manifest));
+      for (const file of book.files) {
+        if (signal.aborted) throw signal.reason;
+        if (await cache.match(file.path)) continue;
+        await waitForIdle(signal);
+        await cache.put(file.path, await verifiedResponse(file, signal));
+      }
+      await cache.put(markerPath(manifest, book.id), new Response(book.id));
+      return { id: book.id };
+    },
+
+    async remove(manifest) {
+      await caches.delete(cacheName(manifest));
+    },
+
+    async usage(manifest) {
+      const cache = await caches.open(cacheName(manifest));
+      const installed = await Promise.all(
+        manifest.books.map(async (book) =>
+          (await cache.match(markerPath(manifest, book.id))) ? book.bytes : 0
+        )
+      );
+      return installed.reduce((sum, bytes) => sum + bytes, 0);
+    },
+  };
+}

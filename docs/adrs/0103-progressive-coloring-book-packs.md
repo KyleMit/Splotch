@@ -1,0 +1,100 @@
+# ADR-0103: Ship One Starter Coloring Book and Install the Rest as Verified Background Packs
+
+**Status:** Active — implements issue #200 and amends
+[ADR-0022](0022-pwa-service-worker-strategy.md),
+[ADR-0042](0042-static-media-cache-invalidation.md), and
+[ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md). **Date:** 2026-08
+
+## Context
+
+The eight-book coloring catalog had become most of both offline installs. Native packages bundled
+every canonical runtime image, while the PWA precached every canonical book. That made first install
+pay for pictures a child might never open and tied future catalog growth directly to app-download
+size.
+
+The picker cannot expose an incomplete book. A book needs its cover, all page thumbnails, light and
+dark overlays, and light/night Magic fills before any of its pages can work offline. Downloads also
+must not compete with early engine boot or pointer handling: the drawing route is usable before
+catalog expansion begins, and no asset-store work belongs on the drawing hot path.
+
+We considered three alternatives:
+
+1. Keep every book bundled. This preserves the simplest offline model but does not solve install
+   growth.
+2. Bundle every cover thumbnail, then download a book when selected. This advertises unavailable
+   content, introduces a child-facing wait, and still makes the initial bundle grow with the
+   catalog.
+3. Bundle one complete starter book and install whole additional books in the background. This gives
+   a complete offline picker immediately and lets availability expand only at atomic book
+   boundaries.
+
+## Decision
+
+Choose option 3. **Farm** is the starter book. The initial native export and PWA precache contain
+only Farm's 73 canonical runtime files: its cover thumbnail and, for all six pages and both
+orientations, pen/chalk thumbnails, light/dark alpha overlays, and light/night fills. Authoring
+outlines, responsive web derivatives, and all seven other canonical book directories remain outside
+the initial install. The deployed web origin still serves every catalog file so it can supply packs.
+
+### Versioned integrity manifest
+
+Each build emits `/coloring/manifest-<app-version>.json`. `books.ts` owns the exact runtime-file set
+for every book; the build reads those files and records each path, byte length, and SHA-256 digest.
+The manifest also names the starter book and total bytes per book.
+
+An installer writes each verified file into a version-scoped store, one book and one file at a time.
+It publishes an `.installed` marker only after every file in that book passes both length and digest
+verification. The picker derives its book list from those markers, so a partial or interrupted pack
+is never visible. A new app version gets a new store namespace and old namespaces are removed.
+
+### Storage and background execution
+
+The same TypeScript store contract has platform-specific implementations:
+
+* **Web/PWA:** a versioned Cache Storage cache holds canonical responses and install markers. The
+  service worker checks this cache before the network for canonical coloring requests. Responsive
+  requests retain ADR-0022's network-first route and fall back to the installed canonical response
+  offline.
+* **Android:** a constrained WorkManager job streams into `noBackupFilesDir/coloring`, verifies
+  SHA-256 while writing, atomically renames each `.part` file, and writes the marker last. Work is
+  unmetered by default and pauses under Data Saver.
+* **iOS:** a discretionary background `URLSession` downloads into Application Support. The coloring
+  root is excluded from backup, job progress is persisted, and AppDelegate reconnects background
+  session events after suspension or system termination. Expensive and constrained network access
+  are disabled by default.
+
+The Parent Settings Coloring section can allow automatic downloads over mobile data and can remove
+all downloaded books. Removal cancels/pauses installation for the current app session, clears
+versioned storage, and immediately returns the picker to Farm.
+
+### Scheduling and drawing-path boundary
+
+The route mounts only a tiny idle scheduler. The manifest loader, policy, Cache Storage/Capacitor
+store, hashing, and download loop live behind a dynamic import started at idle. Books install
+strictly sequentially in manifest order. Web starts each file only from an idle callback; Android
+and iOS perform file and hashing work in native background facilities. No drawing engine, pointer,
+stroke, commit, undo, or export module imports the downloader.
+
+Installed native paths are resolved at the `books.ts` URL boundary. Web retains canonical URLs so
+the service worker and export compositor share the same cache authority. This leaves the canvas and
+Magic-fill consumers unchanged.
+
+## Consequences
+
+* **+** A fresh picker is completely usable offline with Farm and all six Farm pages; additional
+  books appear one at a time only when complete.
+* **+** The measured native static export is about 6.5 MB instead of carrying roughly 44 MB of
+  additional runtime books. The web precache is about 6.7 MB and has a 12 MB regression budget that
+  rejects a second bundled book.
+* **+** SHA-256 and byte-length checks make interrupted, stale, or corrupted responses
+  non-publishable. Version namespaces make catalog changes deterministic.
+* **+** Native background facilities can continue useful transfer work while the WebView is not
+  actively executing JavaScript, subject to each operating system's scheduler.
+* **+** Catalog growth increases hosted storage and post-install transfer, not app-store or PWA
+  install size.
+* **-** A fresh offline install exposes only Farm until it has had an online background session.
+* **-** The deployed origin must retain the exact manifest-addressed stable paths for the lifetime
+  of the corresponding app version. Verification deliberately rejects mismatched CDN bytes rather
+  than accepting a visually plausible stale file.
+* **-** Three storage backends and two native lifecycle integrations replace the former static-only
+  model. Web, Android, and iOS builds plus bundle guards cover their shared contract.

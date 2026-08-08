@@ -7,6 +7,7 @@
   import AppearanceSection from './settings/AppearanceSection.svelte';
   import SoundSection from './settings/SoundSection.svelte';
   import SavingSection from './settings/SavingSection.svelte';
+  import ColoringSection from './settings/ColoringSection.svelte';
   import ControlsSection from './settings/ControlsSection.svelte';
   import AiKeyManager from './settings/AiKeyManager.svelte';
   import SetupInstructions from './settings/SetupInstructions.svelte';
@@ -29,6 +30,7 @@
     appearance: AppearanceSection,
     sound: SoundSection,
     saving: SavingSection,
+    coloring: ColoringSection,
     controls: ControlsSection,
     ai: AiKeyManager,
     setup: SetupInstructions,

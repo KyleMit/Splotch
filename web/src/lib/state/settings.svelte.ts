@@ -39,6 +39,7 @@ const BOOL_SETTINGS = {
   // there from its old top-level button; the stored key predates the move).
   eraserEnabled: [STORAGE_KEYS.eraserEnabled, true],
   coloringBookEnabled: [STORAGE_KEYS.coloringBookEnabled, true],
+  coloringPacksAllowMetered: [STORAGE_KEYS.coloringPacksAllowMetered, false],
   aiImageEnabled: [STORAGE_KEYS.aiImageEnabled, true],
   aiCustomizationEnabled: [STORAGE_KEYS.aiCustomizationEnabled, true],
   // When on, a finished AI image is dropped straight into the photo gallery
@@ -162,6 +163,7 @@ export const setUndoButton = makeBoolSetter('undoButtonEnabled');
 export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
 export const setEraser = makeBoolSetter('eraserEnabled');
 export const setColoringBook = makeBoolSetter('coloringBookEnabled');
+export const setColoringPacksAllowMetered = makeBoolSetter('coloringPacksAllowMetered');
 export const setAiImage = makeBoolSetter('aiImageEnabled');
 export const setAiCustomization = makeBoolSetter('aiCustomizationEnabled');
 export const setAutoSaveAi = makeBoolSetter('autoSaveAiEnabled');

@@ -9,8 +9,17 @@ import {
   serveResponsiveColoringWithCanonicalFallback,
 } from './src/lib/pwa/coloringFallback';
 import { VERSION_JSON_FILENAME } from './src/lib/pwa/versionEndpoint';
-import { RESPONSIVE_COLORING_TIER_DIRECTORIES } from './src/lib/state/books';
+import {
+  BOOKS,
+  RESPONSIVE_COLORING_TIER_DIRECTORIES,
+  STARTER_COLORING_BOOK_ID,
+} from './src/lib/state/books';
 import { excludeNativeRoutes } from './nativeExcludedRoutes';
+import { buildColoringPackManifest } from './coloringPackManifest';
+import {
+  COLORING_PACK_ASSET_URL_PATTERN,
+  serveInstalledColoringPackAsset,
+} from './src/lib/pwa/coloringPackRoute';
 
 // The native apps bundle a static export and never use a service worker (the
 // shell and all assets are already on-device), so skip the PWA plugin there.
@@ -35,6 +44,10 @@ const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCap
 // On a native device there is no local server, so the AI button must call the
 // hosted endpoint. On the web this stays empty and the relative path is used.
 const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
+const coloringPackManifest = buildColoringPackManifest(APP_VERSION, isCapacitor ? 'mobile' : 'web');
+const downloadableColoringGlobIgnores = BOOKS.filter(
+  (book) => book.id !== STARTER_COLORING_BOOK_ID
+).map((book) => `coloring/${book.id}/**/*`);
 
 export default defineConfig({
   server: {
@@ -70,12 +83,17 @@ export default defineConfig({
     // Emit a version.json on every build so the running app can detect
     // when the deployed version has moved on and force a fresh fetch.
     {
-      name: 'emit-version-json',
+      name: 'emit-build-manifests',
       generateBundle() {
         this.emitFile({
           type: 'asset',
           fileName: VERSION_JSON_FILENAME,
           source: JSON.stringify({ version: APP_VERSION }),
+        });
+        this.emitFile({
+          type: 'asset',
+          fileName: coloringPackManifest.fileName,
+          source: coloringPackManifest.source,
         });
       },
     },
@@ -87,8 +105,8 @@ export default defineConfig({
             // auto-reload, leaving updates.ts as the sole driver. This preserves
             // the canvas-empty guard (never interrupt a mid-drawing session).
             registerType: 'prompt',
-            // No auto-injected registerSW.js: the precache is ~35 MB (the full
-            // offline coloring-page set), and a window.load registration would
+            // No auto-injected registerSW.js: the precache includes the app shell and
+            // starter coloring book, and a window.load registration would
             // saturate a slow connection right as boot's idle-deferred work runs
             // and the child starts drawing. updates.ts registers the SW itself —
             // deferred behind the stroke-count + idle gate on a first visit,
@@ -102,7 +120,13 @@ export default defineConfig({
             ],
             manifest: false,
             workbox: {
-              additionalManifestEntries: [{ url: '_app/env.js', revision: BUILD_TIME }],
+              additionalManifestEntries: [
+                { url: '_app/env.js', revision: BUILD_TIME },
+                {
+                  url: coloringPackManifest.fileName,
+                  revision: coloringPackManifest.revision,
+                },
+              ],
               // Exclude html — navigation requests use the NetworkFirst runtime
               // cache below so a manual refresh always fetches fresh markup.
               globPatterns: ['**/*.{js,css,ico,png,svg,webp,mp3,woff2,webmanifest}'],
@@ -112,6 +136,7 @@ export default defineConfig({
                 '**/*.outline.webp',
                 '**/*.chalk.webp',
                 ...responsiveColoringGlobIgnores,
+                ...downloadableColoringGlobIgnores,
               ],
               // Do NOT set skipWaiting here. The new SW enters "waiting" state
               // and updates.ts activates it (via SKIP_WAITING message) only when
@@ -125,6 +150,10 @@ export default defineConfig({
                 {
                   urlPattern: RESPONSIVE_COLORING_URL_PATTERN,
                   handler: serveResponsiveColoringWithCanonicalFallback,
+                },
+                {
+                  urlPattern: COLORING_PACK_ASSET_URL_PATTERN,
+                  handler: serveInstalledColoringPackAsset,
                 },
                 {
                   urlPattern: ({ request }) => request.mode === 'navigate',
