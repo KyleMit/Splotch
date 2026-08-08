@@ -1,12 +1,13 @@
 import { expect, test, type Page } from '@playwright/test';
 import { draw, gotoApp, openSettingsModal } from './helpers';
-import { openDrawer, openParentalGate, solveParentalGate } from './flows-harness';
+import { openParentalGate, solveParentalGate } from './flows-harness';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
-// sits at operation boundaries, never in front of Settings itself (ADR-0094):
-// the AI button gates with the remember preference honored, and external
-// link-outs inside Settings gate non-bypassably (force). Every other spec
-// seeds a stored unlock through gotoApp's default, so this file is the one
+// sits at operation boundaries, never in front of Settings itself (ADR-0094).
+// Parent Center persists an independent Every time / Per session / Never policy
+// for each protected feature. Every other spec seeds Never through gotoApp's
+// default, so this file is the one
 // place the real flow runs — gate tests navigate with `gateUnlocked: false`.
 
 const AI_PROMPT = 'dialog.ai-prompt-modal';
@@ -96,104 +97,122 @@ test('closing the gate discards the attempt without unlocking', async ({ page })
   await expect(gate.locator('.gate-dab.filled')).toHaveCount(0);
 });
 
-test('"skip for this session" stops re-asking until the app reopens', async ({ page }) => {
-  await gotoGatedAiButton(page);
-  const gate = await openParentalGate(page);
+test('Parent Center is gated before its controls appear and persists every feature policy', async ({
+  page,
+}) => {
+  await gotoApp(page, '/', { gateUnlocked: false });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
 
-  // The native radio is visually hidden; the label row is the tap target.
-  await gate.getByText('Skip for this session', { exact: true }).click();
-  await expect(gate.getByRole('radio', { name: /Skip for this session/ })).toBeChecked();
+  const gate = page.locator('#parentalGate');
+  await expect(gate).toBeVisible();
+  await expect(settings.getByText(/Parental gates keep actions/)).not.toBeVisible();
   await solveParentalGate(page);
+  await expect(settings.getByText(/Parental gates keep actions/)).toBeVisible({ timeout: 5000 });
+
+  const features = [
+    'Generating an AI image',
+    'Viewing external links',
+    'Sending feedback',
+    'Opening Parent Center',
+  ];
+  for (const feature of features) {
+    await expect(
+      settings.getByRole('radiogroup', { name: `${feature} parental gate frequency` })
+    ).toBeVisible();
+  }
+
+  await settings
+    .getByRole('radiogroup', { name: 'Generating an AI image parental gate frequency' })
+    .getByRole('radio', { name: 'Per session' })
+    .click();
+  await settings
+    .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
+    .getByRole('radio', { name: 'Never' })
+    .click();
+  await settings
+    .getByRole('radiogroup', { name: 'Opening Parent Center parental gate frequency' })
+    .getByRole('radio', { name: 'Never' })
+    .click();
+
+  await settings.getByRole('button', { name: 'Close' }).click();
+  await page.reload();
+  await expect(page.locator('#drawingCanvas')).toBeVisible();
+  const reopened = await openSettingsModal(page);
+  await reopened.getByRole('button', { name: 'Parent Center' }).click();
+  await expect(gate).not.toBeVisible();
+  await expect(
+    reopened
+      .getByRole('radiogroup', { name: 'Generating an AI image parental gate frequency' })
+      .getByRole('radio', { name: 'Per session' })
+  ).toHaveAttribute('aria-checked', 'true');
+  await expect(
+    reopened
+      .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
+      .getByRole('radio', { name: 'Never' })
+  ).toHaveAttribute('aria-checked', 'true');
+});
+
+test('Per session asks once for AI and asks again after a relaunch', async ({ page }) => {
+  await page.addInitScript(
+    ([aiKey]) => localStorage.setItem(aiKey, 'session'),
+    [STORAGE_KEYS.parentalGateAiImageMode]
+  );
+  await gotoGatedAiButton(page);
+  await openParentalGate(page);
+  await solveParentalGate(page);
+
   const prompt = page.locator(AI_PROMPT);
   await expect(prompt).toBeVisible({ timeout: 5000 });
   await prompt.getByRole('button', { name: 'Close' }).click();
-  await expect(prompt).not.toBeVisible();
-
-  // Same session: the AI button goes straight to the prompt.
   await page.locator('#aiImageButton').click();
   await expect(prompt).toBeVisible();
   await expect(page.locator('#parentalGate')).not.toBeVisible();
 
-  // A relaunch (reload) clears the in-memory session unlock and asks again.
   await gotoGatedAiButton(page);
   await openParentalGate(page);
 });
 
-test('"don\'t ask again" survives a relaunch until Settings resets it', async ({ page }) => {
-  await gotoGatedAiButton(page);
-  const gate = await openParentalGate(page);
-
-  // The native radio is visually hidden; the label row is the tap target.
-  await gate.getByText("Don't ask again", { exact: true }).click();
-  await expect(gate.getByRole('radio', { name: /Don't ask again/ })).toBeChecked();
-  await solveParentalGate(page);
-  await expect(page.locator(AI_PROMPT)).toBeVisible({ timeout: 5000 });
-
-  // Relaunch: the stored unlock skips the gate entirely.
-  await gotoGatedAiButton(page);
-  await openDrawer(page);
-  await page.locator('#aiImageButton').click();
-  await expect(page.locator(AI_PROMPT)).toBeVisible();
-  await page.locator(AI_PROMPT).getByRole('button', { name: 'Close' }).click();
-
-  // The Grown-ups check toggle in Buttons clears the stored unlock.
-  const settings = await openSettingsModal(page);
-  await settings.getByRole('button', { name: 'Buttons' }).click();
-  const toggle = page.locator('#parentalGateToggle');
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  await settings.getByRole('button', { name: 'Close' }).click();
-
-  // The AI button is gated again.
-  await openParentalGate(page);
-});
-
-test('turning the gate check off is itself force-gated', async ({ page }) => {
-  // Seeded unlock active — yet weakening the protection must still re-ask.
-  await gotoApp(page);
-  const settings = await openSettingsModal(page);
-  await settings.getByRole('button', { name: 'Buttons' }).click();
-
-  const toggle = page.locator('#parentalGateToggle');
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  // Seeded forever-unlock means the toggle starts off; turn it on first so
-  // there's a protection to weaken.
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-checked', 'true');
-
-  await toggle.click();
-  const gate = page.locator('#parentalGate');
-  await expect(gate).toBeVisible();
-  // Forced attempts hide the remember preference — they never skip.
-  await expect(gate.getByText('After I solve it')).not.toBeVisible();
-  // The toggle hasn't flipped yet; only a solve applies it.
-  await expect(toggle).toHaveAttribute('aria-checked', 'true');
-
-  await solveParentalGate(page);
-  await expect(gate).not.toBeVisible({ timeout: 5000 });
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
-});
-
-test('external links inside Settings gate non-bypassably', async ({ page, context }) => {
+test('external links inside Settings follow the Every time policy', async ({ page, context }) => {
   // Serve the link-out locally so the popup never reaches the real network.
   await context.route('https://github.com/**', (route) =>
     route.fulfill({ status: 200, contentType: 'text/html', body: '<html>stub</html>' })
   );
 
-  // Seeded forever-unlock (gotoApp default) — a link-out must still ask.
-  await gotoApp(page);
+  await gotoApp(page, '/', { gateUnlocked: false });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
 
   await page.getByRole('link', { name: 'View source on GitHub' }).click();
   const gate = page.locator('#parentalGate');
   await expect(gate).toBeVisible();
-  await expect(gate.getByText('After I solve it')).not.toBeVisible();
-
   const popup = context.waitForEvent('page');
   await solveParentalGate(page);
   const popupPage = await popup;
   await expect.poll(() => popupPage.url()).toContain('github.com/KyleMit/Splotch');
   await expect(gate).not.toBeVisible();
+});
+
+test('sending feedback waits for its parental gate before posting', async ({ page }) => {
+  let reportRequests = 0;
+  await page.route('**/api/report', async (route) => {
+    reportRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true }),
+    });
+  });
+  await gotoApp(page, '/', { gateUnlocked: false });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Feedback' }).click();
+  await page.locator('#reportMessage').fill('The purple crayon draws green');
+  await page.getByRole('button', { name: 'Send report' }).click();
+
+  const gate = page.locator('#parentalGate');
+  await expect(gate).toBeVisible();
+  expect(reportRequests).toBe(0);
+  await solveParentalGate(page);
+  await expect(page.getByText('Thanks! Your report was sent.')).toBeVisible({ timeout: 5000 });
+  expect(reportRequests).toBe(1);
 });

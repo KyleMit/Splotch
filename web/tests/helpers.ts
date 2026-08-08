@@ -65,9 +65,9 @@ export function touchEventPrevented(
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
  *  so once it's visible the app has hydrated.
  *
- *  The Grown-Ups Only gate (ParentalGate.svelte) fronts Settings and the AI
- *  flow, so by default a stored unlock is seeded and specs reach those surfaces
- *  directly; gate specs pass `gateUnlocked: false` to exercise the real flow. */
+ *  Parent Center controls the Grown-Ups Only gate per protected feature. By
+ *  default tests seed every feature to Never so unrelated specs reach their
+ *  target directly; gate specs pass `gateUnlocked: false` to exercise the real flow. */
 export async function gotoApp(
   page: Page,
   path = '/',
@@ -75,11 +75,15 @@ export async function gotoApp(
 ) {
   if (gateUnlocked) {
     await page.addInitScript(
-      ([modeKey, unlockKey]) => {
-        localStorage.setItem(modeKey, 'forever');
-        localStorage.setItem(unlockKey, 'true');
+      (modeKeys) => {
+        for (const key of modeKeys) localStorage.setItem(key, 'never');
       },
-      [STORAGE_KEYS.gateRememberMode, STORAGE_KEYS.gateUnlockedForever]
+      [
+        STORAGE_KEYS.parentalGateAiImageMode,
+        STORAGE_KEYS.parentalGateExternalLinksMode,
+        STORAGE_KEYS.parentalGateFeedbackMode,
+        STORAGE_KEYS.parentalGateParentCenterMode,
+      ]
     );
   }
   await page.goto(path);

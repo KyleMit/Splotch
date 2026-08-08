@@ -23,6 +23,8 @@
   interface Props {
     /** Accessible name for the option group. */
     label: string;
+    /** Visible explanatory copy associated with this picker. */
+    describedBy?: string;
     options: SegmentedPickerOption<T>[];
     /**
      * The active value (or null when none is), or — for independent toggles
@@ -41,6 +43,7 @@
 
   let {
     label,
+    describedBy,
     options,
     selected,
     onSelect,
@@ -59,6 +62,7 @@
   class={['picker', variant, size, fill && 'fill']}
   role={mode === 'radio' ? 'radiogroup' : 'group'}
   aria-label={label}
+  aria-describedby={describedBy}
 >
   {#each options as option (option.value)}
     {@const active = isSelected(option.value)}

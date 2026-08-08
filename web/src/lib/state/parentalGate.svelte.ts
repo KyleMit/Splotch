@@ -2,26 +2,57 @@ import {
   STORAGE_KEYS,
   readBool,
   readString,
-  writeBool,
   writeString,
   onDurableRestore,
+  type StorageKey,
 } from '../storage';
 import type { Origin } from './modal.svelte';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
 // multiplication problem on a keypad before a gated operation runs. Gates sit
-// at the operation boundary, never in front of Settings as a whole (ADR-0094 —
-// opening Settings must never be treated as proof of adulthood):
-//
-//  • The AI art flow gates at its button and honors the remember preference.
-//    The preference only takes effect after a successful solve — selecting it
-//    never unlocks anything by itself, which is what keeps the gate compliant.
-//  • External link-outs gate with `force: true` (see parentalGateLink), which
-//    ignores any stored unlock and stores none: links out of the app re-prove
-//    adulthood every time.
+// at the operation boundary, never in front of Settings as a whole (ADR-0094).
+// Parent Center owns a separate persisted frequency for every protected
+// operation; a session solve stays in memory and therefore resets on relaunch.
 
-export const GATE_REMEMBER_MODES = ['always', 'session', 'forever'] as const;
-export type GateRememberMode = (typeof GATE_REMEMBER_MODES)[number];
+export const PARENTAL_GATE_FEATURES = [
+  'aiImage',
+  'externalLinks',
+  'feedback',
+  'parentCenter',
+] as const;
+export type ParentalGateFeature = (typeof PARENTAL_GATE_FEATURES)[number];
+
+const PARENTAL_GATE_MODES = ['always', 'session', 'never'] as const;
+export type ParentalGateMode = (typeof PARENTAL_GATE_MODES)[number];
+
+const POLICY_STORAGE_KEYS = {
+  aiImage: STORAGE_KEYS.parentalGateAiImageMode,
+  externalLinks: STORAGE_KEYS.parentalGateExternalLinksMode,
+  feedback: STORAGE_KEYS.parentalGateFeedbackMode,
+  parentCenter: STORAGE_KEYS.parentalGateParentCenterMode,
+} as const satisfies Record<ParentalGateFeature, StorageKey>;
+
+function isParentalGateMode(value: string | null): value is ParentalGateMode {
+  return (PARENTAL_GATE_MODES as readonly (string | null)[]).includes(value);
+}
+
+function legacyAiImageMode(): ParentalGateMode {
+  const rememberMode = readString(STORAGE_KEYS.legacyGateRememberMode, 'always');
+  if (readBool(STORAGE_KEYS.legacyGateUnlockedForever, false)) return 'never';
+  return rememberMode === 'session' ? 'session' : 'always';
+}
+
+function readFeatureMode(feature: ParentalGateFeature, fallback: ParentalGateMode) {
+  const stored = readString(POLICY_STORAGE_KEYS[feature], null);
+  if (isParentalGateMode(stored)) return stored;
+  return feature === 'aiImage' ? legacyAiImageMode() : fallback;
+}
+
+export const parentalGatePolicies: Record<ParentalGateFeature, ParentalGateMode> = $state(
+  Object.fromEntries(
+    PARENTAL_GATE_FEATURES.map((feature) => [feature, readFeatureMode(feature, 'always')])
+  ) as Record<ParentalGateFeature, ParentalGateMode>
+);
 
 // Operands are single digits but skip 0–2: those make products a young child
 // could guess or count to, and the challenge must stay adult-difficulty.
@@ -37,15 +68,6 @@ export const GATE_SUCCESS_HOLD_MS = 1200;
 
 export const GATE_ERROR_MESSAGE = 'Not quite — try this one';
 
-function isRememberMode(value: string | null): value is GateRememberMode {
-  return (GATE_REMEMBER_MODES as readonly (string | null)[]).includes(value);
-}
-
-function readRememberMode(fallback: GateRememberMode): GateRememberMode {
-  const raw = readString(STORAGE_KEYS.gateRememberMode, fallback);
-  return isRememberMode(raw) ? raw : fallback;
-}
-
 export interface ParentalGateState {
   open: boolean;
   origin: Origin | null;
@@ -58,13 +80,11 @@ export interface ParentalGateState {
   shaking: boolean;
   /** True from a correct answer until the success card hands off. */
   unlocked: boolean;
-  /** Non-bypassable attempt (external links): ignores stored unlocks, hides
-   *  the remember preference, and stores no unlock on success. */
-  force: boolean;
-  rememberMode: GateRememberMode;
-  /** In-memory only, so an app relaunch always re-asks. */
-  sessionUnlocked: boolean;
-  foreverUnlocked: boolean;
+  feature: ParentalGateFeature | null;
+  /** External navigation must run inside the solving tap's user activation. */
+  immediate: boolean;
+  /** In-memory only, so an app relaunch always re-asks for per-session features. */
+  sessionSolved: Record<ParentalGateFeature, boolean>;
 }
 
 export const gate: ParentalGateState = $state({
@@ -76,10 +96,11 @@ export const gate: ParentalGateState = $state({
   error: null,
   shaking: false,
   unlocked: false,
-  force: false,
-  rememberMode: readRememberMode('always'),
-  sessionUnlocked: false,
-  foreverUnlocked: readBool(STORAGE_KEYS.gateUnlockedForever, false),
+  feature: null,
+  immediate: false,
+  sessionSolved: Object.fromEntries(
+    PARENTAL_GATE_FEATURES.map((feature) => [feature, false])
+  ) as Record<ParentalGateFeature, boolean>,
 });
 
 // Per-attempt continuation and timer handles — deliberately untracked: nothing
@@ -106,23 +127,23 @@ function newChallenge() {
   gate.input = '';
 }
 
-export function hasActiveGateUnlock(): boolean {
-  return gate.sessionUnlocked || gate.foreverUnlocked;
+export function requiresParentalGate(feature: ParentalGateFeature): boolean {
+  const mode = parentalGatePolicies[feature];
+  return mode === 'always' || (mode === 'session' && !gate.sessionSolved[feature]);
 }
 
 /**
- * Run `destination` behind the gate: immediately when a session/forever unlock
- * is active, otherwise after the challenge is solved. `origin` is the tapped
- * button's center, for the modal fly-in. `force: true` (purchases, external
- * links) always asks — stored unlocks neither skip the challenge nor accrue
- * from solving it.
+ * Run `destination` behind one feature's configured gate. `origin` is the
+ * tapped control's center for the modal fly-in. External navigation requests
+ * an immediate handoff so the browser retains the solving tap's user activation.
  */
 export function requireParentalGate(
+  feature: ParentalGateFeature,
   destination: () => void,
   origin: Origin | null = null,
-  { force = false }: { force?: boolean } = {}
+  { immediate = false }: { immediate?: boolean } = {}
 ) {
-  if (!force && hasActiveGateUnlock()) {
+  if (!requiresParentalGate(feature)) {
     destination();
     return;
   }
@@ -132,29 +153,27 @@ export function requireParentalGate(
   gate.error = null;
   gate.shaking = false;
   gate.unlocked = false;
-  gate.force = force;
+  gate.feature = feature;
+  gate.immediate = immediate;
   gate.origin = origin;
   gate.open = true;
 }
 
 function succeed() {
-  // Forced destinations are external navigations: the gate closes and the
-  // destination runs synchronously inside the solving tap's trusted event, or
+  const feature = gate.feature;
+  if (feature) gate.sessionSolved[feature] = true;
+
+  // External navigations run synchronously inside the solving tap's trusted event, or
   // the popup gets blocked — a deferred replay loses transient user activation,
   // and while the gate is open the anchor sits in an inert dialog underneath
-  // it. No success card, no stored unlock: the link just opens.
-  if (gate.force) {
+  // it. No success card: the link just opens.
+  if (gate.immediate) {
     const destination = pendingDestination;
     dismissGate();
     destination?.();
     return;
   }
   gate.unlocked = true;
-  if (gate.rememberMode === 'session') gate.sessionUnlocked = true;
-  if (gate.rememberMode === 'forever') {
-    gate.foreverUnlocked = true;
-    writeBool(STORAGE_KEYS.gateUnlockedForever, true);
-  }
   successTimer = setTimeout(() => {
     const destination = pendingDestination;
     dismissGate();
@@ -188,8 +207,7 @@ export function pressGateBackspace() {
   gate.input = gate.input.slice(0, -1);
 }
 
-/** Close without unlocking. Typed digits are discarded; the remember
- *  preference persists (it's a device setting, not per-attempt). */
+/** Close without recording a solve. Typed digits and the destination are discarded. */
 export function dismissGate() {
   clearTimers();
   gate.open = false;
@@ -197,38 +215,22 @@ export function dismissGate() {
   gate.error = null;
   gate.shaking = false;
   gate.unlocked = false;
-  gate.force = false;
+  gate.feature = null;
+  gate.immediate = false;
   pendingDestination = null;
 }
 
-/** Selecting is instant; the choice only takes effect on a successful solve. */
-export function setGateRememberMode(mode: GateRememberMode) {
-  gate.rememberMode = mode;
-  writeString(STORAGE_KEYS.gateRememberMode, mode);
-}
-
-/** Settings → Controls "on": clear every stored unlock and re-ask every time. */
-export function resetParentalGate() {
-  gate.sessionUnlocked = false;
-  gate.foreverUnlocked = false;
-  writeBool(STORAGE_KEYS.gateUnlockedForever, false);
-  setGateRememberMode('always');
-}
-
-/** Settings → Controls "off": stop asking on this device. Settings itself is
- *  ungated (ADR-0094), so callers must run this through a `force: true` gate —
- *  disabling the protection is itself a protected operation. */
-export function disableParentalGate() {
-  gate.foreverUnlocked = true;
-  writeBool(STORAGE_KEYS.gateUnlockedForever, true);
-  setGateRememberMode('forever');
+export function setParentalGateMode(feature: ParentalGateFeature, mode: ParentalGateMode) {
+  parentalGatePolicies[feature] = mode;
+  writeString(POLICY_STORAGE_KEYS[feature], mode);
 }
 
 // Re-read persisted gate state after the native durable layer restores values
 // the WebView evicted (see hydrateDurableStorage).
 export function reloadParentalGate() {
-  gate.rememberMode = readRememberMode(gate.rememberMode);
-  gate.foreverUnlocked = readBool(STORAGE_KEYS.gateUnlockedForever, gate.foreverUnlocked);
+  for (const feature of PARENTAL_GATE_FEATURES) {
+    parentalGatePolicies[feature] = readFeatureMode(feature, parentalGatePolicies[feature]);
+  }
 }
 
 onDurableRestore(reloadParentalGate);

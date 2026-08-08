@@ -136,11 +136,10 @@ shades (paired `background-attachment: local`/`scroll` layers, so no scroll list
 affordance — a row clipped at a gap leaves the column looking finished, and touch overlay scrollbars
 don't paint until the flick starts.
 
-**The second scroller is not rare.** The list is a fixed 466px and the 85vh card gives the column
-the viewport height minus its own chrome, so it scrolls below **~664px of viewport height** — 54px
-of overflow at the 600px floor, 20px at 640px, none from 664px up. A landscape iPad in Safari
-(744–834 CSS px tall, less ~70–95 of browser chrome) lands in that band routinely, so "one scroller"
-now describes desktop and portrait tablets rather than every tablet.
+**The second scroller is not rare.** The 85vh card gives the column the viewport height minus its
+own chrome, while the section list grows with each destination. A landscape iPad in Safari loses
+roughly 70–95 CSS px to browser chrome and routinely cannot show the complete list, so "one
+scroller" describes roomy desktop and portrait-tablet layouts rather than every tablet.
 
 Because the dialog is closed rather than unmounted, the nav also has to be scrolled back to the top
 whenever Settings reopens: the section resets to the first one, so a nav left scrolled would reopen
@@ -148,6 +147,8 @@ with the selected row above the visible top and no highlight in view. `flows-set
 both invariants at the 600px floor — the column either fits or scrolls, and a reopen leaves the
 active row inside the column.
 
-The section labels and their order also changed (Appearance, Sound, Buttons, Saving, AI Art,
-Install, Feedback, What's New, About) — a wording and ordering change within the same structure,
-listed here because the Decision names the original order.
+The section labels and their order also changed (Appearance, Sound, Buttons, Saving, Coloring, AI
+Art, Parent Center, Install, Feedback, What's New, About) — additions and wording/order changes
+within the same structure, listed here because the Decision names the original order. Parent Center
+uses the same section navigation but gates entry at its own operation boundary under ADR-0094;
+Settings and the other sections remain directly accessible.

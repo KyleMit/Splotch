@@ -52,3 +52,46 @@ purchases, and other compliance-sensitive actions regardless of how Settings is 
   there is no blanket wrapper that covers future additions automatically.
 * − Store-review checklists must audit actions inside Settings individually rather than describing
   the modal itself as protected.
+
+## Amendment (2026-08): Parent Center policies
+
+The gate frequency is now an explicit per-feature policy rather than one remember choice shown
+inside every challenge. Settings includes a **Parent Center** section with an independent Every time
+/ Per session / Never radio group for:
+
+* generating an AI image;
+* viewing external links;
+* sending feedback;
+* opening Parent Center itself.
+
+Opening Settings remains ungated. Opening Parent Center is a protected operation at that section's
+boundary and defaults to Every time; after an adult changes its own policy, future opens follow the
+selected mode just like the other three features. The section is the only policy editor, so the old
+Buttons toggle and the challenge modal's inline remember choice are removed.
+
+The selections persist through `storage.ts`. A Per session solve is recorded independently for that
+feature in memory and resets when the app reloads; Never bypasses only that feature. Every protected
+operation calls `requireParentalGate(feature, …)` at its action boundary. External links request an
+immediate handoff after the solve because delaying the replay would lose the trusted tap's browser
+user activation and trigger popup blocking.
+
+Alternatives considered:
+
+* **One global frequency for every protected action.** Rejected: a family may be comfortable
+  generating repeatedly in one session while still requiring every external link or feedback send to
+  be checked.
+* **Keep the frequency choices inside the challenge.** Rejected: that exposes policy changes at
+  every protected action and gives no overview of which behavior applies where.
+* **Always force Parent Center even when its row says Per session or Never.** Rejected: the row
+  would be a control that does not control the operation it names. The safe default is Every time;
+  relaxing it is an explicit choice made from behind the gate.
+
+Consequences:
+
+* \+ Each sensitive action has an independently reviewable and testable policy.
+* \+ Parents can see and change the complete protection model in one gated section.
+* \+ Feedback submission is protected before any report payload leaves the device.
+* − Choosing Never for Parent Center means its policy controls subsequently open without a solve on
+  that device; this is intentional, visible, and reversible.
+* − Adding another protected operation now requires a feature id, persisted policy key, Parent
+  Center row, boundary call, and tests.
