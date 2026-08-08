@@ -47,6 +47,11 @@ jobs:
       - name: Build without profiling seams
         run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build
 
+      # The native build's postbuild scan rejects web-only routes, boot services,
+      # and downloadable coloring books from the embedded app bundle.
+      - name: Build native bundle boundary
+        run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build:cap
+
   quality:
     name: Quality
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}

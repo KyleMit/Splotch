@@ -22,6 +22,32 @@ import { STARTER_COLORING_BOOK_ID } from '../web/src/lib/state/books.ts';
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
 const ADMIN_CONSOLE_PATH = 'web/src/lib/components/admin/AdminConsole.svelte';
 
+// These literals survive minification and uniquely identify the web-only boot
+// behavior that initWebOnlyServices() must keep out of the native JavaScript.
+// web/src/lib/boot/webOnlyServices.ts documents the same boundary at the import
+// site; sourceNeedle makes a renamed runtime literal fail loudly instead of
+// leaving this scan to pass vacuously.
+export const WEB_ONLY_MODULE_MARKERS = [
+  {
+    feature: 'install prompt',
+    marker: 'beforeinstallprompt',
+    sourcePath: 'web/src/lib/state/install.svelte.ts',
+    sourceNeedle: "addEventListener('beforeinstallprompt'",
+  },
+  {
+    feature: 'PWA update lifecycle',
+    marker: 'controllerchange',
+    sourcePath: 'web/src/lib/pwa/updates.ts',
+    sourceNeedle: "addEventListener('controllerchange'",
+  },
+  {
+    feature: 'service-worker registration',
+    marker: '/sw.js',
+    sourcePath: 'web/src/lib/pwa/updates.ts',
+    sourceNeedle: ".register('/sw.js')",
+  },
+];
+
 // Scanning by **host** rather than whole URL is deliberate. The route's
 // constants are template literals that interpolate PLAY_STORE_APP_ID, and the
 // bundler keeps them that way — the built chunk carries
@@ -61,6 +87,19 @@ function bundleFiles(dir) {
   });
 }
 
+export function webOnlyMarkerSourceProblems(
+  readSource = (path) => readFileSync(join(ROOT, path), 'utf8')
+) {
+  return WEB_ONLY_MODULE_MARKERS.flatMap(({ feature, sourcePath, sourceNeedle }) =>
+    readSource(sourcePath).includes(sourceNeedle)
+      ? []
+      : [
+          `${sourcePath} no longer contains the ${feature} marker source ${JSON.stringify(sourceNeedle)}; ` +
+            'update WEB_ONLY_MODULE_MARKERS before the native scan can run.',
+        ]
+  );
+}
+
 export function nativeBundleProblems(
   dir,
   sentinels = adminConsoleSentinels(),
@@ -86,7 +125,16 @@ export function nativeBundleProblems(
   }
   for (const path of bundleFiles(dir)) {
     const source = readFileSync(path, 'utf8');
-    for (const { value, what } of forbidden) {
+    const pathForbidden = path.endsWith('.js')
+      ? [
+          ...forbidden,
+          ...WEB_ONLY_MODULE_MARKERS.map(({ feature, marker }) => ({
+            value: marker,
+            what: `web-only ${feature}`,
+          })),
+        ]
+      : forbidden;
+    for (const { value, what } of pathForbidden) {
       if (source.includes(value)) {
         problems.push(`${what} "${value}" remains in ${relative(ROOT, path)}`);
       }
@@ -97,11 +145,13 @@ export function nativeBundleProblems(
 
 export async function checkNativeBundle({ dir = BUILD_DIR, log = console.log } = {}) {
   const sentinels = adminConsoleSentinels();
-  const problems = nativeBundleProblems(dir, sentinels);
+  const problems = [...webOnlyMarkerSourceProblems(), ...nativeBundleProblems(dir, sentinels)];
   if (problems.length) throw new Error(problems.join('\n'));
   log(
     `[native-bundle] native export references none of: ${FORBIDDEN_NATIVE_HOSTS.join(', ')}; ` +
-      `no admin-console copy (${sentinels.length} sentinel(s)); only ${STARTER_COLORING_BOOK_ID} is bundled`
+      `no admin-console copy (${sentinels.length} sentinel(s)); ` +
+      `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
+      `only ${STARTER_COLORING_BOOK_ID} is bundled`
   );
 }
 
