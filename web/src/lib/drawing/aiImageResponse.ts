@@ -22,7 +22,7 @@ async function readErrorDetail(response: Response): Promise<string> {
       if (typeof error === 'string') return error;
     }
   } catch {
-    return text;
+    // The raw body below is the fallback for non-JSON error responses.
   }
   return text;
 }
