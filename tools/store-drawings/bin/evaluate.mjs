@@ -69,12 +69,16 @@ async function renderSvg(source, width, height) {
     .toBuffer();
 }
 
-async function alphaPlane(png) {
+async function rgbaPlane(png) {
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-  const alpha = new Uint8Array(info.width * info.height);
-  for (let source = 3, target = 0; source < data.length; source += 4, target++)
-    alpha[target] = data[source];
-  return { alpha, width: info.width, height: info.height };
+  return { rgba: data, width: info.width, height: info.height };
+}
+
+function alphaPlane({ rgba, width, height }) {
+  const alpha = new Uint8Array(width * height);
+  for (let source = 3, target = 0; source < rgba.length; source += 4, target++)
+    alpha[target] = rgba[source];
+  return { alpha, width, height };
 }
 
 function softMaskMetrics(reference, actual) {
@@ -92,6 +96,36 @@ function softMaskMetrics(reference, actual) {
     union += Math.max(expected, observed);
     referenceMass += expected;
     actualMass += observed;
+  }
+  return {
+    iou: union === 0 ? 1 : intersection / union,
+    recall: referenceMass === 0 ? 1 : intersection / referenceMass,
+    precision: actualMass === 0 ? 1 : intersection / actualMass,
+  };
+}
+
+export function softColorMetrics(reference, actual) {
+  if (reference.width !== actual.width || reference.height !== actual.height) {
+    throw new Error('Compared images have different dimensions');
+  }
+  let intersection = 0;
+  let union = 0;
+  let referenceMass = 0;
+  let actualMass = 0;
+  for (let index = 0; index < reference.rgba.length; index += 4) {
+    const expectedAlpha = reference.rgba[index + 3] / 255;
+    const observedAlpha = actual.rgba[index + 3] / 255;
+    const overlap = Math.min(expectedAlpha, observedAlpha);
+    const largestChannelDifference = Math.max(
+      Math.abs(reference.rgba[index] - actual.rgba[index]),
+      Math.abs(reference.rgba[index + 1] - actual.rgba[index + 1]),
+      Math.abs(reference.rgba[index + 2] - actual.rgba[index + 2])
+    );
+    const colorSimilarity = 1 - largestChannelDifference / 255;
+    intersection += overlap * colorSimilarity;
+    union += Math.max(expectedAlpha, observedAlpha);
+    referenceMass += expectedAlpha;
+    actualMass += observedAlpha;
   }
   return {
     iou: union === 0 ? 1 : intersection / union,
@@ -168,15 +202,17 @@ async function evaluateDrawing(browser, base, input, output, key) {
   const instructionPng = await renderSvg(instructionSvg(scene, box), width, height);
   const instructionGeometryPng = await renderSvg(instructionSvg(scene, box, true), width, height);
 
-  const sourceGeometry = await alphaPlane(sourceGeometryPng);
-  const instructionGeometry = await alphaPlane(instructionGeometryPng);
-  const instructionMask = await alphaPlane(instructionPng);
-  const actualMask = await alphaPlane(actualPng);
-  const originalMask = await alphaPlane(originalPng);
+  const sourceGeometry = alphaPlane(await rgbaPlane(sourceGeometryPng));
+  const instructionGeometry = alphaPlane(await rgbaPlane(instructionGeometryPng));
+  const instructionPixels = await rgbaPlane(instructionPng);
+  const actualPixels = await rgbaPlane(actualPng);
+  const originalPixels = await rgbaPlane(originalPng);
+  const instructionMask = alphaPlane(instructionPixels);
+  const actualMask = alphaPlane(actualPixels);
   const metrics = {
     geometry: softMaskMetrics(sourceGeometry, instructionGeometry),
-    runtime: softMaskMetrics(instructionMask, actualMask),
-    sourceVisual: softMaskMetrics(originalMask, actualMask),
+    runtime: softColorMetrics(instructionPixels, actualPixels),
+    sourceVisual: softColorMetrics(originalPixels, actualPixels),
   };
   const drawingOutput = join(output, key);
   await mkdir(drawingOutput, { recursive: true });
@@ -221,11 +257,11 @@ export async function evaluateStoreDrawings({
     const report = [
       '# Store drawing instruction fidelity',
       '',
-      '| Drawing | SVG→points geometry IoU | Points→app runtime IoU | SVG→app visual IoU |',
+      '| Drawing | SVG→points geometry IoU | Points→app color-aware IoU | SVG→app color-aware IoU |',
       '| --- | ---: | ---: | ---: |',
       ...rows,
       '',
-      `Geometry compares ${GEOMETRY_STROKE_PX}-pixel centerlines. Runtime compares the selected discrete widths and colors. Red-only pixels in overlays belong to the reference, blue-only pixels belong to the generated or runtime result, and overlap is purple-white.`,
+      `Geometry compares ${GEOMETRY_STROKE_PX}-pixel centerlines. Runtime and visual scores compare both coverage and RGB color, so equal silhouettes with different colors do not match. Red-only pixels in the occupancy overlays belong to the reference, blue-only pixels belong to the generated or runtime result, and overlap is purple-white.`,
       '',
     ].join('\n');
     await writeFile(join(output, 'report.md'), report);

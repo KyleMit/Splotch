@@ -7,6 +7,7 @@ import {
   generateModule,
   generateStoreDrawings,
 } from '../bin/generate.mjs';
+import { softColorMetrics } from '../bin/evaluate.mjs';
 import { fitInstructionScene, sceneStrokePoints } from '../lib/drawing-instructions.mjs';
 import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
 
@@ -28,6 +29,21 @@ describe('store drawing conversion', () => {
     const source = '<svg viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
 
     expect(() => convertSvg(source, 'square-wide.svg')).toThrow('unsupported tags rect');
+  });
+
+  it.each([
+    '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round" transform="translate(5 0)">',
+    '<path d="M0,0C0,0 1,0 1,0" stroke-width="1" transform="translate(5 0)"/>',
+  ])('rejects transforms instead of compiling changed geometry: %s', (element) => {
+    const path = '<path d="M0,0C0,0 1,0 1,0" stroke-width="1"/>';
+    const group = '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">';
+    const source = `<svg viewBox="0 0 10 10">${
+      element.startsWith('<g') ? `${element}${path}</g>` : `${group}${element}</g>`
+    }</svg>`;
+
+    expect(() => convertSvg(source, 'transform-wide.svg')).toThrow(
+      'unsupported attribute transform'
+    );
   });
 
   it('generates all seven named drawings as finite static instructions', () => {
@@ -87,5 +103,17 @@ describe('instruction scene fitting', () => {
       { x: 0, y: 75 },
       { x: 300, y: 225 },
     ]);
+  });
+});
+
+describe('fidelity metrics', () => {
+  const pixel = (rgba) => ({ rgba: Uint8Array.from(rgba), width: 1, height: 1 });
+
+  it('rejects a color swap even when the silhouettes are identical', () => {
+    const red = pixel([255, 0, 0, 255]);
+    const blue = pixel([0, 0, 255, 255]);
+
+    expect(softColorMetrics(red, red).iou).toBe(1);
+    expect(softColorMetrics(red, blue).iou).toBe(0);
   });
 });

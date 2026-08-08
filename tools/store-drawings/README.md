@@ -59,18 +59,19 @@ npm run gen:store-drawings:evaluate -- house-wide balloon-tall
 
 Output goes to the gitignored `screenshots/store-drawing-eval/` directory. Each drawing gets the
 source raster, the static-instruction raster, the pixels captured from Splotch's live tile canvases,
-two difference overlays, and `metrics.json`. The root `report.md` summarizes three soft-mask IoU
-scores:
+two difference overlays, and `metrics.json`. The root `report.md` summarizes one soft-mask geometry
+score and two color-aware coverage scores:
 
 * **SVG→points geometry** compares equal-width centerlines, isolating Bézier flattening and
   coordinate quantization.
 * **Points→app runtime** compares the static polylines with the pixels produced through genuine
-  Playwright down/move/up input, isolating engine smoothing and pointer delivery.
-* **SVG→app visual** compares the original SVG silhouette with the final app pixels, including the
-  discrete stroke-width choices.
+  Playwright down/move/up input, including their selected RGB colors and isolating engine smoothing
+  and pointer delivery.
+* **SVG→app visual** compares the original SVG pixels with the final app pixels, including the
+  discrete stroke-width and color choices.
 
-In the overlays, red-only pixels belong to the reference, blue-only pixels belong to the converted
-or runtime image, and overlapping pixels are purple-white.
+The overlays visualize occupancy separately: red-only pixels belong to the reference, blue-only
+pixels belong to the converted or runtime image, and overlapping pixels are purple-white.
 
 After reviewing the report and images, `npm run gen:shots` uses the named static drawing functions
 for the real store captures.

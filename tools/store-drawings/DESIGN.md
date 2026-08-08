@@ -43,8 +43,8 @@ owns its rendered color. `tools/store-drawings/bin/generate-review.mjs` exercise
 into a review-only gallery outside `store-assets/`.
 
 `tools/store-drawings/bin/evaluate.mjs` keeps conversion measurable. It compares equal-width source
-and generated centerlines, then captures the live tiled canvas after replay and compares those
-pixels with the static instructions and original SVG silhouette. The workflow and overlay
+and generated centerlines, then captures the live tiled canvas after replay and compares both pixel
+coverage and RGB color with the static instructions and original SVG. The workflow and overlay
 interpretation are documented in `tools/store-drawings/README.md`.
 
 ## Tradeoffs

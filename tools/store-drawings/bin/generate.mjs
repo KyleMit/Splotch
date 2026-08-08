@@ -33,11 +33,28 @@ const LANDSCAPE_PALETTE_LABELS = new Set([
   'Pink',
   'Black',
 ]);
+const XML_ATTRIBUTES = new Set(['version', 'encoding', 'standalone']);
+const SVG_ATTRIBUTES = new Set(['xmlns', 'version', 'viewBox']);
+const GROUP_ATTRIBUTES = new Set(['fill', 'stroke', 'stroke-linecap', 'stroke-linejoin']);
+const PATH_ATTRIBUTES = new Set(['d', 'stroke-width']);
 
-function parseAttributes(source) {
-  return Object.fromEntries(
-    [...source.matchAll(/([:\w-]+)="([^"]*)"/g)].map((match) => [match[1], match[2]])
-  );
+function parseAttributes(source, accepted, filename, element) {
+  const attributes = {};
+  let index = 0;
+  while (source.slice(index).trim()) {
+    const match = source.slice(index).match(/^\s+([:\w-]+)\s*=\s*"([^"]*)"/);
+    if (!match) throw new Error(`${filename}: malformed ${element} attributes`);
+    const [, name, value] = match;
+    if (!accepted.has(name)) {
+      throw new Error(`${filename}: unsupported attribute ${name} on ${element}`);
+    }
+    if (Object.hasOwn(attributes, name)) {
+      throw new Error(`${filename}: duplicate attribute ${name} on ${element}`);
+    }
+    attributes[name] = value;
+    index += match[0].length;
+  }
+  return attributes;
 }
 
 function parseNumberList(source) {
@@ -230,9 +247,16 @@ export function convertSvg(source, filename) {
   const unsupportedTags = [...new Set(tags.filter((tag) => !['svg', 'g', 'path'].includes(tag)))];
   if (unsupportedTags.length > 0)
     throw new Error(`${filename}: unsupported tags ${unsupportedTags}`);
-  const svgMatch = source.match(/<svg\b([^>]*)>/);
-  if (!svgMatch) throw new Error(`${filename}: missing svg root`);
-  const viewBox = parseNumberList(parseAttributes(svgMatch[1]).viewBox ?? '');
+  let document = source.trim();
+  const declarationMatch = document.match(/^<\?xml\b([^?]*)\?>/);
+  if (declarationMatch) {
+    parseAttributes(declarationMatch[1], XML_ATTRIBUTES, filename, 'XML declaration');
+    document = document.slice(declarationMatch[0].length).trim();
+  }
+  const svgMatch = document.match(/^<svg\b([^>]*)>([\s\S]*)<\/svg>$/);
+  if (!svgMatch) throw new Error(`${filename}: expected one svg root`);
+  const svg = parseAttributes(svgMatch[1], SVG_ATTRIBUTES, filename, 'svg');
+  const viewBox = parseNumberList(svg.viewBox ?? '');
   if (viewBox.length !== 4 || viewBox[0] !== 0 || viewBox[1] !== 0) {
     throw new Error(`${filename}: expected a zero-origin four-number viewBox`);
   }
@@ -242,14 +266,22 @@ export function convertSvg(source, filename) {
   const colorIndexes = new Map();
   const strokes = [];
   const scale = canonicalScale(width, height, names.orientation);
-  for (const groupMatch of source.matchAll(/<g\b([^>]*)>([\s\S]*?)<\/g>/g)) {
-    const group = parseAttributes(groupMatch[1]);
+  const groupPattern = /<g\b([^>]*)>([\s\S]*?)<\/g>/g;
+  const groupMatches = [...svgMatch[2].matchAll(groupPattern)];
+  if (svgMatch[2].replace(groupPattern, '').trim()) {
+    throw new Error(`${filename}: svg root may contain only groups`);
+  }
+  for (const groupMatch of groupMatches) {
+    const group = parseAttributes(groupMatch[1], GROUP_ATTRIBUTES, filename, 'g');
     if (
       group.fill !== 'none' ||
+      !/^#[0-9a-fA-F]{6}$/.test(group.stroke ?? '') ||
       group['stroke-linecap'] !== 'round' ||
       group['stroke-linejoin'] !== 'round'
     ) {
-      throw new Error(`${filename}: every group must be unfilled with round stroke caps and joins`);
+      throw new Error(
+        `${filename}: every group must have a hex stroke and be unfilled with round caps and joins`
+      );
     }
     const selectedColor = closestColor(group.stroke, names.orientation);
     const colorKey = JSON.stringify(selectedColor);
@@ -257,15 +289,25 @@ export function convertSvg(source, filename) {
       colorIndexes.set(colorKey, colors.length);
       colors.push(selectedColor);
     }
-    for (const pathMatch of groupMatch[2].matchAll(/<path\b([^>]*)\/>/g)) {
-      const path = parseAttributes(pathMatch[1]);
+    const pathPattern = /<path\b([^>]*)\/>/g;
+    const pathMatches = [...groupMatch[2].matchAll(pathPattern)];
+    if (groupMatch[2].replace(pathPattern, '').trim()) {
+      throw new Error(`${filename}: groups may contain only self-closing paths`);
+    }
+    if (pathMatches.length === 0) throw new Error(`${filename}: group contains no paths`);
+    for (const pathMatch of pathMatches) {
+      const path = parseAttributes(pathMatch[1], PATH_ATTRIBUTES, filename, 'path');
       if (!path.d || !path['stroke-width'])
         throw new Error(`${filename}: path is missing d or stroke-width`);
+      const strokeWidth = Number(path['stroke-width']);
+      if (!Number.isFinite(strokeWidth) || strokeWidth <= 0) {
+        throw new Error(`${filename}: path stroke-width must be a positive number`);
+      }
       const points = quantizePoints(flattenSvgPath(path.d));
       if (points.length < 2) throw new Error(`${filename}: path produced no pointer coordinates`);
       strokes.push({
         color: colorIndexes.get(colorKey),
-        size: closestStrokeSize(Number(path['stroke-width']), scale),
+        size: closestStrokeSize(strokeWidth, scale),
         points,
       });
     }
