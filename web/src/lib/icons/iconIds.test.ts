@@ -23,11 +23,29 @@ const svgs = import.meta.glob<string>('./*.svg', {
 
 const ID_RE = /\bid="([^"]+)"/g;
 const REFERENCE_RE = /(?:url\(#([^)]+)\)|href="#([^"]+)")/g;
+const STOP_RE = /<stop\b[^>]*\/?>/g;
+const STOP_ATTRIBUTE_RE = /\b(offset|stop-color)="([^"]+)"/g;
+
+const MAGIC_GRADIENT_ICON_PATHS = [
+  './line-weight-magic.svg',
+  './size-magic-1.svg',
+  './size-magic-2.svg',
+  './size-magic-3.svg',
+  './size-magic-4.svg',
+  './size-magic-5.svg',
+] as const;
 
 const ids = (src: string) => [...src.matchAll(ID_RE)].map(([, id]) => id);
 
 const references = (src: string) =>
   [...src.matchAll(REFERENCE_RE)].map(([, urlId, hrefId]) => urlId ?? hrefId);
+
+const gradientStops = (src: string) =>
+  [...src.matchAll(STOP_RE)].map(([stop]) =>
+    Object.fromEntries(
+      [...stop.matchAll(STOP_ATTRIBUTE_RE)].map(([, attribute, value]) => [attribute, value])
+    )
+  );
 
 describe('icon ids', () => {
   it('are unique across every icon', () => {
@@ -48,6 +66,20 @@ describe('icon ids', () => {
     const declared = new Set(ids(src));
     for (const ref of references(src)) {
       expect(declared.has(ref), `#${ref} is referenced but never declared`).toBe(true);
+    }
+  });
+});
+
+describe('magic brush icon gradients', () => {
+  it('share the same ordered stops', () => {
+    const [referencePath, ...comparedPaths] = MAGIC_GRADIENT_ICON_PATHS;
+    const referenceStops = gradientStops(svgs[referencePath]);
+    expect(referenceStops, `${referencePath} should define gradient stops`).not.toEqual([]);
+
+    for (const path of comparedPaths) {
+      expect(gradientStops(svgs[path]), `${path} should match ${referencePath}`).toEqual(
+        referenceStops
+      );
     }
   });
 });
