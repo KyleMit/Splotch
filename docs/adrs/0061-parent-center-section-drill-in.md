@@ -136,10 +136,12 @@ shades (paired `background-attachment: local`/`scroll` layers, so no scroll list
 affordance — a row clipped at a gap leaves the column looking finished, and touch overlay scrollbars
 don't paint until the flick starts.
 
-**The second scroller is not rare.** The 85vh card gives the column the viewport height minus its
-own chrome, while the section list grows with each destination. A landscape iPad in Safari loses
-roughly 70–95 CSS px to browser chrome and routinely cannot show the complete list, so "one
-scroller" describes roomy desktop and portrait-tablet layouts rather than every tablet.
+**The second scroller is not rare.** The eleven 50px rows and ten 2px gaps make the list exactly
+570px. The 85vh card gives the nav 412px at the 600px viewport floor (158px overflow), 446px at
+640px (124px), 534px at 744px (36px), and 555px at 768px (15px); the full list first fits at a 787px
+viewport. A landscape iPad in Safari starts from 744–834 CSS px of device height and loses roughly
+70–95px to browser chrome, so it routinely lands below that threshold. "One scroller" therefore
+describes roomy desktop and portrait-tablet layouts rather than every tablet.
 
 Because the dialog is closed rather than unmounted, the nav also has to be scrolled back to the top
 whenever Settings reopens: the section resets to the first one, so a nav left scrolled would reopen
