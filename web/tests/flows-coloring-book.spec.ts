@@ -6,6 +6,7 @@ import { COLORING_IMAGE_SIZES, coloringBookGridLayout } from '../src/lib/state/b
 
 import {
   applyFarmPage,
+  gotoAppWithAllColoringBooksInstalled,
   gotoAppWithInstalledColoringBook,
   opaqueCanvasPixelCount,
   openColoringDialog,
@@ -207,7 +208,7 @@ test('the Clear Page book grid stays responsive and fits a standard laptop modal
     width: CLEAR_PAGE_GRID_VIEWPORTS[0].width,
     height: STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX,
   });
-  await gotoApp(page);
+  await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
   await applyFarmPage(page);
   await openColoringDialog(page);
@@ -248,7 +249,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
   });
 
   try {
-    await gotoApp(page);
+    await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
     await openColoringDialog(page);
     const dialog = page.locator('#coloring-book-dialog');

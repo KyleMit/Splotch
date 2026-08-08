@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 
 import { gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
+import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -21,18 +22,33 @@ export async function openDrawer(page: Page) {
   );
 }
 
-export async function gotoAppWithInstalledColoringBook(page: Page, bookId: string) {
+async function gotoAppWithInstalledColoringBooks(
+  page: Page,
+  installedBookIds: (manifest: ColoringPackManifest) => string[]
+) {
   const manifestResponse = page.waitForResponse(/\/coloring\/manifest-.+\.json$/);
   await gotoApp(page);
-  const manifest = (await (await manifestResponse).json()) as { appVersion: string };
+  const manifest = (await (await manifestResponse).json()) as ColoringPackManifest;
   await page.evaluate(
-    async ({ version, id }) => {
+    async ({ version, ids }) => {
       const cache = await caches.open(`coloring-packs-v1-${version}`);
-      await cache.put(`/coloring/.installed/${version}/${id}`, new Response(id));
+      await Promise.all(
+        ids.map((id) => cache.put(`/coloring/.installed/${version}/${id}`, new Response(id)))
+      );
     },
-    { version: manifest.appVersion, id: bookId }
+    { version: manifest.appVersion, ids: installedBookIds(manifest) }
   );
   await gotoApp(page);
+}
+
+export async function gotoAppWithInstalledColoringBook(page: Page, bookId: string) {
+  await gotoAppWithInstalledColoringBooks(page, () => [bookId]);
+}
+
+export async function gotoAppWithAllColoringBooksInstalled(page: Page) {
+  await gotoAppWithInstalledColoringBooks(page, (manifest) =>
+    manifest.books.filter((book) => book.id !== manifest.starterBookId).map((book) => book.id)
+  );
 }
 
 export async function opaqueCanvasPixelCount(page: Page) {
