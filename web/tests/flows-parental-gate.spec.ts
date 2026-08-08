@@ -6,7 +6,8 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
 // sits at operation boundaries, never in front of Settings itself (ADR-0094).
 // Parent Center persists an independent policy for each protected feature.
-// External links offer Every time / Per session; the others also offer Never.
+// External links offer all three modes on web and Android; native iOS keeps
+// Never visible but unavailable, with its App Store rationale disclosed inline.
 // Every other spec seeds Never through gotoApp's default, so this file is the
 // one place the real flow runs — gate tests navigate with `gateUnlocked: false`.
 
@@ -106,9 +107,9 @@ test('Parent Center is gated before its controls appear and persists every featu
 
   const gate = page.locator('#parentalGate');
   await expect(gate).toBeVisible();
-  await expect(settings.getByText(/Parental gates keep actions/)).not.toBeVisible();
+  await expect(settings.getByText(/Choose when Splotch should ask/)).not.toBeVisible();
   await solveParentalGate(page);
-  await expect(settings.getByText(/Parental gates keep actions/)).toBeVisible({ timeout: 5000 });
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
 
   const features = [
     'Generating an AI image',
@@ -128,7 +129,7 @@ test('Parent Center is gated before its controls appear and persists every featu
     .click();
   await settings
     .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
-    .getByRole('radio', { name: 'Per session' })
+    .getByRole('radio', { name: 'Never' })
     .click();
   await settings
     .getByRole('radiogroup', { name: 'Opening Parent Center parental gate frequency' })
@@ -149,8 +150,39 @@ test('Parent Center is gated before its controls appear and persists every featu
   await expect(
     reopened
       .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
-      .getByRole('radio', { name: 'Per session' })
+      .getByRole('radio', { name: 'Never' })
   ).toHaveAttribute('aria-checked', 'true');
+});
+
+test('iOS explains why external links cannot use Never without changing the policy', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    globalThis.Capacitor = {
+      isNativePlatform: () => true,
+      getPlatform: () => 'ios',
+    };
+  });
+  await gotoApp(page, '/', { gateUnlocked: false });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
+  await solveParentalGate(page);
+
+  const externalLinks = settings.getByRole('radiogroup', {
+    name: 'Viewing external links parental gate frequency',
+  });
+  const never = externalLinks.getByRole('button', { name: 'Never' });
+  await expect(never).toHaveAttribute('aria-disabled', 'true');
+  await expect(never.locator('.unavailable-mark')).toHaveText('*');
+
+  await never.click({ force: true });
+
+  await expect(settings.getByText('Why Never is unavailable on iOS')).toBeVisible();
+  await expect(never).toHaveAttribute('aria-expanded', 'true');
+  await expect(externalLinks.getByRole('radio', { name: 'Every time' })).toHaveAttribute(
+    'aria-checked',
+    'true'
+  );
 });
 
 test('Per session asks once for AI and asks again after a relaunch', async ({ page }) => {

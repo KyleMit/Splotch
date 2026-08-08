@@ -6,6 +6,7 @@ import {
   onDurableRestore,
   type StorageKey,
 } from '../storage';
+import { getPlatform, type Platform } from '../platform';
 import type { Origin } from './modal.svelte';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
@@ -22,15 +23,8 @@ export const PARENTAL_GATE_FEATURES = [
 ] as const;
 export type ParentalGateFeature = (typeof PARENTAL_GATE_FEATURES)[number];
 
-const PARENTAL_GATE_MODES = ['always', 'session', 'never'] as const;
+export const PARENTAL_GATE_MODES = ['always', 'session', 'never'] as const;
 export type ParentalGateMode = (typeof PARENTAL_GATE_MODES)[number];
-
-export const PARENTAL_GATE_MODES_BY_FEATURE = {
-  aiImage: PARENTAL_GATE_MODES,
-  externalLinks: ['always', 'session'],
-  feedback: PARENTAL_GATE_MODES,
-  parentCenter: PARENTAL_GATE_MODES,
-} as const satisfies Record<ParentalGateFeature, readonly ParentalGateMode[]>;
 
 const POLICY_STORAGE_KEYS = {
   aiImage: STORAGE_KEYS.parentalGateAiImageMode,
@@ -43,13 +37,19 @@ function isParentalGateMode(value: string | null): value is ParentalGateMode {
   return (PARENTAL_GATE_MODES as readonly (string | null)[]).includes(value);
 }
 
+export function isParentalGateModeAvailable(
+  feature: ParentalGateFeature,
+  mode: ParentalGateMode,
+  platform: Platform
+): boolean {
+  return !(feature === 'externalLinks' && mode === 'never' && platform === 'ios');
+}
+
 function isAllowedParentalGateMode(
   feature: ParentalGateFeature,
   value: string | null
 ): value is ParentalGateMode {
-  if (!isParentalGateMode(value)) return false;
-  const allowedModes: readonly ParentalGateMode[] = PARENTAL_GATE_MODES_BY_FEATURE[feature];
-  return allowedModes.includes(value);
+  return isParentalGateMode(value) && isParentalGateModeAvailable(feature, value, getPlatform());
 }
 
 function legacyAiImageMode(): ParentalGateMode {
@@ -64,7 +64,8 @@ function readFeatureMode(
 ): ParentalGateMode {
   const stored = readString(POLICY_STORAGE_KEYS[feature], null);
   if (isAllowedParentalGateMode(feature, stored)) return stored;
-  return feature === 'aiImage' ? legacyAiImageMode() : fallback;
+  if (feature === 'aiImage') return legacyAiImageMode();
+  return isAllowedParentalGateMode(feature, fallback) ? fallback : 'always';
 }
 
 export const parentalGatePolicies: Record<ParentalGateFeature, ParentalGateMode> = $state(

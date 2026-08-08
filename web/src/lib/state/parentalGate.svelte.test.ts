@@ -10,6 +10,7 @@ import {
   dismissGate,
   setParentalGateMode,
   reloadParentalGate,
+  isParentalGateModeAvailable,
   PARENTAL_GATE_FEATURES,
   GATE_OPERAND_MIN,
   GATE_OPERAND_MAX,
@@ -18,6 +19,8 @@ import {
   GATE_SHAKE_MS,
   GATE_SUCCESS_HOLD_MS,
 } from './parentalGate.svelte';
+
+const originalCapacitor = globalThis.Capacitor;
 
 function typeAnswer(value: string) {
   for (const digit of value) pressGateDigit(Number(digit));
@@ -39,6 +42,7 @@ describe('parental gate', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     localStorage.clear();
+    globalThis.Capacitor = undefined;
     dismissGate();
     for (const feature of PARENTAL_GATE_FEATURES) {
       parentalGatePolicies[feature] = 'always';
@@ -47,6 +51,7 @@ describe('parental gate', () => {
   });
 
   afterEach(() => {
+    globalThis.Capacitor = originalCapacitor;
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -249,7 +254,18 @@ describe('parental gate', () => {
     expect(parentalGatePolicies.aiImage).toBe('never');
   });
 
-  it('rejects Never for external links from both storage and direct updates', () => {
+  it.each(['web', 'android'] as const)('allows Never for external links on %s', (platform) => {
+    globalThis.Capacitor = platform === 'android' ? { getPlatform: () => platform } : undefined;
+    expect(isParentalGateModeAvailable('externalLinks', 'never', platform)).toBe(true);
+
+    setParentalGateMode('externalLinks', 'never');
+    expect(parentalGatePolicies.externalLinks).toBe('never');
+    expect(localStorage.getItem(STORAGE_KEYS.parentalGateExternalLinksMode)).toBe('never');
+  });
+
+  it('rejects Never for external links from both storage and direct updates on iOS', () => {
+    globalThis.Capacitor = { getPlatform: () => 'ios' };
+    expect(isParentalGateModeAvailable('externalLinks', 'never', 'ios')).toBe(false);
     localStorage.setItem(STORAGE_KEYS.parentalGateExternalLinksMode, 'never');
     reloadParentalGate();
     expect(parentalGatePolicies.externalLinks).toBe('always');

@@ -298,8 +298,10 @@ media queries + the head-script stamp in `app.html`).
   single-digit multiplication problem on its keypad (wrong answers regenerate the problem). The
   protected operations are AI image launch, external-link activation, feedback submission, and
   Parent Center entry; Parent Center gives each an independent Every time / Per session / Never
-  policy. Policy selections persist, while per-session solves are in-memory. External-link handoff
-  runs immediately inside the solving tap so browser user activation survives.
+  policy. Native iOS keeps external links' Never choice visible but unavailable and explains the
+  Kids Category constraint inline; web and Android allow it. Policy selections persist, while
+  per-session solves are in-memory. External-link handoff runs immediately inside the solving tap so
+  browser user activation survives.
 * **Settings Button** - Floating button that opens Settings
   * **Settings** - Modal for app settings, install guides, and about info. Its body is one flat list
     of **Sections** (ADR-0061), not tabs: Appearance, Sound, Buttons, Saving, Coloring, AI Art,

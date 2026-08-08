@@ -64,10 +64,10 @@ control for:
 * sending feedback;
 * opening Parent Center itself.
 
-AI generation, feedback, and Parent Center can use Every time, Per session, or Never. External links
-can use Every time or Per session, but never expose a permanent bypass: App Store Review Guideline
-1.3 requires Kids Category link-outs to stay behind a parental gate. The default remains Every time
-for every feature.
+Every feature can use Every time, Per session, or Never on web and Android. Native iOS keeps Never
+visible for external links but unavailable: App Store Review Guideline 1.3 requires Kids Category
+link-outs to stay behind a parental gate. Activating that unavailable choice expands an inline
+explanation instead of changing the policy. The default remains Every time for every feature.
 
 Opening Settings remains ungated. Opening Parent Center is a protected operation at that section's
 boundary and defaults to Every time; after an adult changes its own policy, future opens follow the
@@ -90,16 +90,19 @@ Alternatives considered:
 * **Always force Parent Center even when its row says Per session or Never.** Rejected: the row
   would be a control that does not control the operation it names. The safe default is Every time;
   relaxing it is an explicit choice made from behind the gate.
-* **Allow Never for external links.** Rejected: a choice made during one adult session would leave
-  future link-outs permanently available to a child, conflicting with the Kids Category's
-  operation-level parental-gate requirement.
+* **Disable Never for external links on every platform.** Rejected: the Kids Category constraint is
+  specific to the iOS distribution; applying it to web and Android would remove a permissible parent
+  choice without a policy reason.
+* **Hide Never on iOS.** Rejected: keeping the shared table structure stable and explaining the
+  unavailable choice makes the platform difference visible instead of silently omitting it.
 
 Consequences:
 
 * \+ Each sensitive action has an independently reviewable and testable policy.
 * \+ Parents can see and change the complete protection model in one gated section.
 * \+ Feedback submission is protected before any report payload leaves the device.
-* \+ External links cannot be permanently exempted from their parental gate.
+* \+ Native iOS external links cannot be permanently exempted from their parental gate.
+* \+ Web and Android retain the complete frequency choice where that restriction does not apply.
 * − Choosing Never for Parent Center means its policy controls subsequently open without a solve on
   that device; this is intentional, visible, and reversible.
 * − Adding another protected operation now requires a feature id, persisted policy key, Parent
