@@ -45,8 +45,8 @@
   // Being copied and pasted is this page's whole purpose, and the post-submit
   // URL is the one a reporter has in front of them when they go to pass the
   // link on — so drop the query once the confirmation is on screen. Left alone,
-  // /feedback?sent=1&issue=1234 hands the next person a thank-you for someone
-  // else's report with no form anywhere on the page.
+  // /feedback?sent=1 hands the next person a thank-you for someone else's
+  // report with no form anywhere on the page.
   //
   // Plain history.replaceState, like the ?v= strip in pwa/updates.ts: nothing
   // here reads page.url (the view comes from `data`, resolved before this runs),
@@ -79,7 +79,7 @@
   <aside class="aside">
     <h2>What happens next</h2>
     <ol>
-      <li>Your note opens an issue on our public GitHub tracker.</li>
+      <li>Your note opens a private support issue that only the Splotch maintainer can read.</li>
       <li>We read it, and it joins the list of things to fix or build.</li>
       <li>Nothing else is collected — see the <a href="/privacy">privacy policy</a>.</li>
     </ol>
@@ -90,10 +90,10 @@
   {#snippet lede()}
     {#if sent}
       A real person reads every one of these. There's no account attached to it, so we can't write
-      back directly — the issue itself is where any follow-up questions will appear.
+      back directly, but every report is reviewed.
     {:else}
-      Found a bug or have an idea? Tell us here — it goes straight to our issue tracker. No account,
-      no sign-up, and nothing to install.
+      Found a bug or have an idea? Tell us here — it opens a private support issue that only the
+      Splotch maintainer can read. No account, no sign-up, and nothing to install.
     {/if}
   {/snippet}
 
@@ -101,11 +101,6 @@
     <div class="done">
       <StatusMessage status="success">Your report was sent.</StatusMessage>
       <div class="done-actions">
-        {#if data.sentIssueUrl}
-          <a class="done-link" href={data.sentIssueUrl} target="_blank" rel="noopener noreferrer">
-            View your report ↗
-          </a>
-        {/if}
         <a class="done-again" href="/feedback">Send another</a>
       </div>
       {@render nextSteps()}
@@ -174,7 +169,7 @@
     color: var(--page-ink);
   }
 
-  .card :global(.report-public-note) {
+  .card :global(.report-privacy-note) {
     font-size: var(--font-size-sm);
   }
 
@@ -282,26 +277,6 @@
     margin: 24px 0 32px;
   }
 
-  /* The same solid affordance the beta page's step buttons wear, so the two
-     standalone pages offer one button shape between them. */
-  .done-link {
-    display: inline-block;
-    padding: 15px 24px;
-    border-radius: var(--radius-md);
-    background: var(--page-accent);
-    color: var(--page-on-accent);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-bold);
-    text-decoration: none;
-    transition:
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .done-link:active {
-    transform: scale(0.97);
-  }
-
   .done-again,
   .aside a {
     color: var(--page-link);
@@ -313,8 +288,7 @@
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
      keep it stuck until the next tap elsewhere. */
   @media (hover: hover) {
-    .submit:hover:not(:disabled),
-    .done-link:hover {
+    .submit:hover:not(:disabled) {
       background: var(--page-accent-hover);
     }
 
@@ -349,12 +323,6 @@
       gap: 12px;
     }
 
-    .done-link {
-      flex: 1 0 100%;
-      text-align: center;
-    }
-
-    .done-link,
     .submit {
       width: 100%;
       min-height: 48px;

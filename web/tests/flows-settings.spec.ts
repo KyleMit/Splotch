@@ -417,7 +417,7 @@ test('Settings sends the collected device info with a bug report', async ({ page
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true, url: 'https://github.com/example/example/issues/1' }),
+      body: JSON.stringify({ ok: true }),
     });
   });
   await gotoApp(page);
@@ -440,6 +440,6 @@ test('Settings sends the collected device info with a bug report', async ({ page
 
   await page.getByRole('button', { name: 'Send report' }).click();
 
-  await expect(page.getByText('Thanks! Your report was sent.')).toBeVisible();
+  await expect(page.getByText('Thanks for your feedback.')).toBeVisible();
   expect(reportBody?.device).toMatchObject({ platform: 'Web' });
 });

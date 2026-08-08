@@ -17,6 +17,7 @@ import type { Origin } from './modal.svelte';
 
 export const PARENTAL_GATE_FEATURES = [
   'aiImage',
+  'imageReport',
   'externalLinks',
   'feedback',
   'parentCenter',
@@ -28,6 +29,7 @@ export type ParentalGateMode = (typeof PARENTAL_GATE_MODES)[number];
 
 const POLICY_STORAGE_KEYS = {
   aiImage: STORAGE_KEYS.parentalGateAiImageMode,
+  imageReport: STORAGE_KEYS.parentalGateImageReportMode,
   externalLinks: STORAGE_KEYS.parentalGateExternalLinksMode,
   feedback: STORAGE_KEYS.parentalGateFeedbackMode,
   parentCenter: STORAGE_KEYS.parentalGateParentCenterMode,

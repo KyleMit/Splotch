@@ -1,6 +1,4 @@
 import { error, isHttpError } from '@sveltejs/kit';
-import { STYLE_SUFFIXES } from '$lib/ai/styles';
-import { buildPromptForStyle } from '$lib/ai/prompt';
 import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
@@ -8,7 +6,11 @@ import {
   authorizeGenerationRequest,
   type GenerationAuthorization,
 } from '$lib/server/generationAuthorization';
-import { MAX_IMAGE_BYTES } from '$lib/server/generateImagePolicy';
+import {
+  isAllowedImageType,
+  MAX_IMAGE_BYTES,
+  resolveGenerationPrompt,
+} from '$lib/server/generateImagePolicy';
 import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
@@ -21,10 +23,8 @@ function safetyRefusal(reason: string): never {
   throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
 }
 
-const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
-
 function assertAllowedImageType(mimeType: string): void {
-  if (mimeType && !ALLOWED_IMAGE_TYPES.includes(mimeType)) {
+  if (mimeType && !isAllowedImageType(mimeType)) {
     throw error(415, 'Unsupported image type');
   }
 }
@@ -127,11 +127,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
   const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
   const style = source.style;
 
-  // Pinned to light: the request carries no theme yet, so a player in dark mode
-  // still gets a daylight picture. The dark half of the prompt exists and is
-  // exercised by the cover generator — wiring it here is a product decision
-  // about what the button produces, not a rendering one.
-  const finalPrompt = buildPromptForStyle(style, STYLE_SUFFIXES, 'light');
+  const finalPrompt = resolveGenerationPrompt(style);
 
   recordGenerationUsage(authorization, style, finalPrompt, platform);
 

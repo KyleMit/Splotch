@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { draw, gotoApp, openSettingsModal } from './helpers';
-import { openParentalGate, solveParentalGate } from './flows-harness';
+import { openDrawer, openParentalGate, solveParentalGate } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
@@ -12,6 +13,9 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 // one place the real flow runs — gate tests navigate with `gateUnlocked: false`.
 
 const AI_PROMPT = 'dialog.ai-prompt-modal';
+const AI_RESULT_WEBP = readFileSync(
+  new URL('../static/icons/handmade-paper.webp', import.meta.url)
+);
 
 // A couple of strokes so the AI button is enabled (it's disabled on a blank
 // canvas), then the gate opens from it. The access-code param reveals the AI
@@ -113,6 +117,7 @@ test('Parent Center is gated before its controls appear and persists every featu
 
   const features = [
     'Generating an AI image',
+    'Reporting an AI picture',
     'Viewing external links',
     'Sending feedback',
     'Opening Parent Center',
@@ -275,6 +280,46 @@ test('sending feedback waits for its parental gate before posting', async ({ pag
   await expect(gate).toBeVisible();
   expect(reportRequests).toBe(0);
   await solveParentalGate(page);
-  await expect(page.getByText('Thanks! Your report was sent.')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText('Thanks for your feedback.')).toBeVisible({ timeout: 5000 });
+  expect(reportRequests).toBe(1);
+});
+
+test('reporting an AI picture waits for its own parental gate before posting', async ({ page }) => {
+  let reportRequests = 0;
+  await page.addInitScript(
+    (aiImageModeKey) => localStorage.setItem(aiImageModeKey, 'never'),
+    STORAGE_KEYS.parentalGateAiImageMode
+  );
+  await page.route('**/api/generate-image?style=Magical', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/webp', body: AI_RESULT_WEBP })
+  );
+  await page.route('**/api/report-image', async (route) => {
+    reportRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, reportId: 'test-report-id' }),
+    });
+  });
+  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await openDrawer(page);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+  await page.locator('#aiImageButton').click();
+  await page.getByRole('button', { name: 'Magical' }).click();
+  await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+
+  await page.getByRole('button', { name: 'Report this picture' }).click();
+  await page.getByRole('button', { name: 'Send report' }).click();
+
+  const gate = page.locator('#parentalGate');
+  await expect(gate).toBeVisible();
+  expect(reportRequests).toBe(0);
+  await solveParentalGate(page);
+  await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible({
+    timeout: 5000,
+  });
   expect(reportRequests).toBe(1);
 });

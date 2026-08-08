@@ -7,10 +7,13 @@ import { submitReport } from '$lib/server/report';
 import { REPORT_HONEYPOT_FIELD } from '$lib/report';
 import type { RequestHandler } from './$types';
 
+export type ReportResponse = { ok: true } | { ok: false; error: string };
+
 /**
  * Receive an in-app "report a bug / suggest a feature" submission and open a
  * labelled GitHub issue for it. Body: { kind, message, device?, hp? }. Returns
- * { ok: true, url } with the issue URL on success.
+ * { ok: true } on success. The issue lands in the private feedback repository,
+ * so no inaccessible URL is returned to the reporter.
  *
  * Validation and issue creation live in $lib/server/report so the `/feedback`
  * page's form action shares them; this route only adds the wire shape.
@@ -40,6 +43,8 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   });
 
   return result.ok
-    ? json({ ok: true, url: result.url })
-    : json({ ok: false, error: result.error }, { status: result.status });
+    ? json({ ok: true } satisfies ReportResponse)
+    : json({ ok: false, error: result.error } satisfies ReportResponse, {
+        status: result.status,
+      });
 };

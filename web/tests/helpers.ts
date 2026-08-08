@@ -81,6 +81,7 @@ export async function gotoApp(
       },
       [
         STORAGE_KEYS.parentalGateAiImageMode,
+        STORAGE_KEYS.parentalGateImageReportMode,
         STORAGE_KEYS.parentalGateFeedbackMode,
         STORAGE_KEYS.parentalGateParentCenterMode,
       ]

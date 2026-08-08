@@ -109,6 +109,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0064](0064-generate-image-raw-body-header-credentials.md) | generate-image Takes a Raw Image Body; Credentials in Headers, Not the Query String | Active                                                                         |
 | [0073](0073-enforcing-csp-first-party-reporting.md)        | Enforcing CSP with a First-Party Violation Receiver                                 | Active                                                                         |
 | [0101](0101-admin-console-is-web-only-and-unlinked.md)     | The Admin Console Is Web-Only and Unlinked                                          | Active                                                                         |
+| [0104](0104-retain-reported-ai-images-for-thirty-days.md)  | Retain Reported AI Images for Thirty Days                                           | Active                                                                         |
 
 ## Web platform & PWA
 

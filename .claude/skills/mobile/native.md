@@ -152,10 +152,13 @@ register it.
 ### Data & privacy posture (important for store forms)
 
 * **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
-* The only data that ever leaves the device is the **drawing image** the user explicitly sends to
-  the AI endpoint (plus an invite token). Nothing is sold or used for tracking. The endpoint logs
-  token usage for abuse prevention only. Coloring-pack requests contain only public static asset
-  paths; they carry no drawing or child data.
+* Data leaves the device only through an explicit feature: a **drawing image** sent to the AI
+  endpoint, a confirmed AI-picture report, or private feedback (plus an invite token). Nothing is
+  sold or used for tracking. Ordinary AI requests are not retained by Splotch. A confirmed picture
+  report retains the input, server-resolved prompt, output, style, and timestamp privately for at
+  most 30 days; a daily scheduled function purges it. Optional feedback device details are private.
+  Coloring-pack requests contain only public static asset paths; they carry no drawing or child
+  data.
 * Photos are saved **locally** to the device gallery (a "Splotch" album).
 
 ## 2. Shared web-asset / sync commands
@@ -199,9 +202,9 @@ generated from the real app where possible:
 
 ## 4. Kids / Families compliance (shared posture)
 
-Because the audience is children, **both** stores apply stricter rules. Even though Splotch collects
-nothing, you must still *prove* it. The per-store attestations live with each platform's release
-checklist:
+Because the audience is children, **both** stores apply stricter rules. Splotch does not collect in
+the background, but its deliberate AI and support flows still need exact disclosure. The per-store
+attestations live with each platform's release checklist:
 
 * Google Play — Families policy → **[android.md](android.md)**
 * Apple App Store — Kids Category → **[ios.md](ios.md)**
@@ -209,17 +212,18 @@ checklist:
 The shared baseline both depend on:
 
 * **No ad SDKs / no analytics SDKs** ship (Splotch has none — keep it that way).
-* **COPPA / GDPR-K**: no personal info from under-13s is collected, so compliance is
-  straightforward, but both consoles ask you to attest.
+* **COPPA / GDPR-K**: Splotch requests no child's name, account, email, or location. The consoles
+  still require exact disclosure of the optional drawings, feedback, report evidence, and device
+  snapshot described above.
 * Don't request permissions you don't use.
 
 ### Legal / privacy artifacts (required by both stores)
 
 * [x] **Privacy Policy** page — created at `/privacy` (`web/src/routes/privacy/+page.svelte`), live
       at `https://splotch.art/privacy`. ← required by both stores. Contact is via GitHub issues (no
-      email). It must state: no personal data collected, no ads, no tracking, no third-party
-      analytics; explain the optional AI feature (drawing sent to the AI service only when the
-      child/parent taps the button) and that it isn't used to identify anyone.
+      email). It must state: no background collection, ads, tracking, or third-party analytics;
+      explain ordinary ephemeral AI processing, private feedback, and the confirmed-report-only
+      30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
       `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` ("Splotch can save a

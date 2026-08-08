@@ -131,27 +131,17 @@ test('the support address reaches no document a crawler could fetch', async ({ r
   expect(html).not.toContain(supportEmail());
 });
 
-test('the thank-you page is a GET, so reloading it cannot file a second issue', async ({
-  page,
-}) => {
+test('the private-report thank-you is a GET with no issue link', async ({ page }) => {
   // Post/Redirect/Get: the success view is reached by redirect and driven by the
   // query string, never by re-rendering the POST response.
-  await page.goto('/feedback?sent=1&issue=1234');
+  await page.goto('/feedback?sent=1');
 
   await expect(
     page.getByRole('heading', { name: 'Thank you — your report is in.', level: 1 })
   ).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View your report ↗' })).toHaveAttribute(
-    'href',
-    /\/issues\/1234$/
-  );
+  await expect(page.getByRole('link', { name: 'View your report ↗' })).toHaveCount(0);
 
   // The URL is what a reporter passes on next, so the confirmation strips the
-  // query it arrived with rather than leaving a stranger's issue number in it.
+  // query it arrived with rather than handing the next visitor a stale thank-you.
   await expect.poll(() => new URL(page.url()).search).toBe('');
-
-  // The param is visitor-controlled, so anything but a plain number links nowhere.
-  await page.goto('/feedback?sent=1&issue=javascript:alert(1)');
-  await expect(page.getByRole('heading', { name: 'Thank you — your report is in.' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'View your report ↗' })).toHaveCount(0);
 });

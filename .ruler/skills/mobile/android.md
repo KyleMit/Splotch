@@ -263,13 +263,16 @@ multi-touch input — the best way to get accurate profiles.
       requirement. ~99% of apps were auto-registered, but confirm `art.splotch.app` shows as
       registered on the Play Console Home page — an unregistered app faces **global removal from
       Play**.
-* [ ] Complete **Data safety** form. The `/api/generate-image` upload means "no data collected" is
-      the **wrong** answer: declare **Photos and videos** → collected (not shared), purpose **App
-      functionality** only, **not** for tracking or advertising, **processed ephemerally** at the
-      user's request (the server keeps no copy — `lib/server/usage.ts` records only a per-token
-      tally). Be precise — this is legally binding.
-* [ ] Complete **Content rating** questionnaire (IARC) → should land at *Everyone*. Play does **not
-      allow unrated apps**, so this gates release rather than merely decorating it.
+* [ ] Complete **Data safety** from the exact declarations in
+      `store-assets/STORE-LISTING-ANDROID.md`. “No data collected” is wrong: declare the deliberate
+      AI images, private feedback, optional diagnostics, and the confirmed-report-only 30-day
+      retention. Be precise — this is legally binding.
+* [ ] Complete **AI-generated content**: Yes (image-to-image), in-app reporting: Yes, free-form
+      prompts: No. Every output is labelled, a gated confirmation sends an actionable private
+      report, and humans review within 24 hours.
+* [ ] Complete **Content rating** questionnaire (IARC) from the documented facts and accept its
+      calculated result. Play does **not allow unrated apps**, so this gates release rather than
+      merely decorating it.
 * [ ] **Target audience & content**: select **Children** age bands → this opts you into the
       **Families policy** (below).
 * [x] Privacy Policy URL → `https://splotch.art/privacy` (see [native.md](native.md)).
@@ -283,11 +286,11 @@ policy). Google Play adds:
 
 * [ ] Opt into **Designed for Families** / declare a child audience in *Target audience & content*.
 * [ ] **Privacy Policy is mandatory** even with zero data collection. Host one at a stable URL
-      (`https://splotch.art/privacy`). It must state: no personal data collected, no ads, no
-      tracking, no third-party analytics; explain the optional AI feature (drawing sent to the AI
-      service only when the child/parent taps the button) and that it isn't used to identify anyone.
-* [ ] **COPPA / GDPR-K**: confirm compliance. No personal info from under-13s is collected, so this
-      is straightforward, but the Console will ask you to attest.
+      (`https://splotch.art/privacy`). It must disclose ordinary ephemeral AI processing, private
+      feedback, and the confirmed-report-only 30-day evidence retention; no ads, tracking, or
+      third-party analytics.
+* [ ] **COPPA / GDPR-K**: confirm the exact shipped flows. Splotch asks for no child's name,
+      account, email, or location, but deliberate AI/support content still needs disclosure.
 * [ ] If you want the **"Teacher Approved"** badge, you can opt into review (optional).
 * [ ] Account/permission hygiene: don't request permissions you don't use (we only request network
       state + legacy storage).
@@ -319,17 +322,18 @@ re-verify if that flow changes:
 
   Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
   grown-up chose to supply breaks the consent story.
-* **Limited use** — the drawing is passed through to Gemini and the result returned; nothing is
-  persisted. `lib/server/usage.ts` stores only a per-token tally (count, timestamps, last style, and
-  the *static* style prompt from `lib/ai/prompt.ts` — never the image or any user-typed text), and
-  `deleteUsage` drops it when the token is revoked. If a request or response image ever starts being
-  stored, the privacy policy and Data safety form both have to change.
-* **Disclosure** — `/privacy` names Gemini, states we keep no copy, and distinguishes the managed
-  key from a parent's BYO key. Two things there are easy to get wrong and must stay right: BYOK
-  changes the **billing and data controller, not the routing** (the drawing still passes through
-  `/api/generate-image` with the parent's key — `aiImage.ts:158`), and a **free** Gemini key runs on
-  terms that let Google use the content to improve its products, unlike our paid managed quota
-  (ADR-0064).
+* **Limited use** — ordinary generation passes the drawing to Gemini and returns the result without
+  Splotch persistence. Only a grown-up's separate, gated “Report this picture” confirmation retains
+  the input, server-resolved prompt, output, style, and timestamp in the private report store; a
+  daily purge deletes it after 30 days. `lib/server/usage.ts` separately stores only a per-token
+  tally and `deleteUsage` drops that tally when the token is revoked.
+* **Disclosure** — `/privacy` names Gemini, states the ordinary request is ephemeral, and
+  distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
+  must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing
+  still passes through `/api/generate-image` with the parent's key — `aiImage.ts:158`), and a
+  **free** Gemini key runs on terms that let Google use the content to improve its products, unlike
+  our paid managed quota (ADR-0064). The exact Data safety and AI-content answers live in
+  `store-assets/STORE-LISTING-ANDROID.md`.
 
 ### Policies that don't apply (verified — don't re-derive)
 

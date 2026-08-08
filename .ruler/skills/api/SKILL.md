@@ -1,6 +1,6 @@
 ---
 name: api
-description: HTTP API reference for the /api/* endpoints — generate-image, verify-access-code, verify-key, report, csp-report, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
+description: HTTP API reference for the /api/* endpoints — generate-image, report-image, verify-access-code, verify-key, report, csp-report, and the admin bearer-session endpoints, plus the CORS, rate-limiting, and auth model. Use before adding, changing, or calling any /api endpoint.
 ---
 
 # Splotch HTTP API
@@ -15,9 +15,9 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 `X-Access-Token` / `X-Api-Key` headers allowed, plus `Access-Control-Max-Age: 86400` so native
 clients cache the preflight instead of paying an OPTIONS round trip per request. The wildcard is
 safe because every endpoint is either gated by a credential the caller must already hold (access
-token, Gemini key, or admin session) or — for the credential-less telemetry receivers `report` and
-`csp-report` — rate-limited, size-capped, and side-effect-bounded to log lines; nothing under `/api`
-uses cookies. See ADR-0007.
+token, Gemini key, or admin session) or rate-limited and bounded. The credential-less `report`
+endpoint creates a sanitized private support issue; `csp-report` is size-capped and bounded to log
+lines. Nothing under `/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -136,10 +136,10 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 
 ### `POST /api/report`
 
-Opens a GitHub issue from the in-app "report a bug / suggest a feature" form (Settings → About →
-Send Feedback). Unauthenticated and a *write*, so it is rate-limited per IP with a deliberately
-tight budget (5/min, vs the oracles' 10). Every issue is labelled `user-report` plus `type:bug` /
-`type:feature` (`docs/ISSUE-WORKFLOW.md`; both labels also live in `.github/labels.yml`).
+Opens a private GitHub support issue from the in-app "report a bug / suggest a feature" form
+(Settings → About → Send Feedback). Unauthenticated and a *write*, so it is rate-limited per IP with
+a deliberately tight budget (5/min, vs the oracles' 10). Every issue is labelled `user-report` plus
+`type:bug` / `type:feature`.
 
 This endpoint is one of **two** front doors onto the same core. Validation, the honeypot, the issue
 Markdown, and the error wording all live in `$lib/server/report.ts`; the `/feedback` page's form
@@ -158,8 +158,8 @@ a 303 redirect, neither of which a JSON endpoint needs.
   },
   "hp": ""                       // honeypot — a filled value is quietly accepted with no issue
 }
-// 200
-{ "ok": true, "url": "https://github.com/KyleMit/Splotch/issues/123" }
+// 200 — no private issue URL is exposed to the reporter
+{ "ok": true }
 // 400 — missing/invalid kind or empty message
 { "ok": false, "error": "Please type a short description." }
 // 503 — GITHUB_ISSUE_TOKEN not configured on this instance
@@ -171,14 +171,58 @@ a 303 redirect, neither of which a JSON endpoint needs.
 The GitHub REST call is isolated behind a server seam, `web/src/lib/server/github.ts` (mirroring the
 AI provider seam, ADR-0047) — route code never touches the token or the REST shape. Auth is a
 fine-grained PAT in `GITHUB_ISSUE_TOKEN` (scope: *Issues: Read and write* on the target repo), read
-via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default `KyleMit/Splotch`. The
-optional `device` payload is shaped by the shared, dependency-free `web/src/lib/deviceReport.ts`
-(also used client-side to preview exactly what will be sent) and re-sanitized server-side (known
-keys only, single-line, length-capped) before it reaches the issue body. Because the endpoint is an
-unauthenticated public write and the message + device values are attacker-controlled, both are run
-through `escapeIssueMarkdown()` (same seam) before they are embedded in the Markdown body — it
-backslash-escapes `@`-mentions, `#`-references, image embeds (`![…]`), and raw `<` HTML so a
-submitter can't make the issue notify people or load remote content. See ADR-0060.
+via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default private repository
+`KyleMit/splotch-feedback`. The optional `device` payload is shaped by the shared, dependency-free
+`web/src/lib/deviceReport.ts` (also used client-side to preview exactly what will be sent) and
+re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the issue
+body. Because the endpoint is an unauthenticated public write and the message + device values are
+attacker-controlled, both are run through `escapeIssueMarkdown()` (same seam) before they are
+embedded in the Markdown body — it backslash-escapes `@`-mentions, `#`-references, image embeds
+(`![…]`), and raw `<` HTML so a submitter can't make the issue notify people or load remote content.
+See ADR-0060.
+
+### `POST /api/report-image`
+
+Privately reports the AI result currently visible in `AiImageResult`. This is a separate,
+credentialed endpoint because its multipart body carries child-created image content. It accepts the
+same `X-Access-Token` or `X-Api-Key` header as generation. A managed token must still be active; a
+BYO key is verified against the provider. Valid reports are limited to 3/hour per managed token or
+3/hour per BYO caller IP. Authorization runs before multipart parsing.
+
+```text
+Content-Type: multipart/form-data
+X-Access-Token: <active token>  # or X-Api-Key
+
+drawing=<png|jpeg|webp Blob>
+output=<png|jpeg|webp Blob>
+style=<StyleName or empty>
+```
+
+The two images must be non-empty and total no more than 4 MiB. `style` is a closed server-side enum:
+an arbitrary value is rejected with 400, and no client-supplied prompt is accepted. The server
+rebuilds the exact light-theme generation prompt from the shared base prompt and selected style.
+
+After the client disclosure is confirmed through the dedicated image-report policy configured in
+Parent Center, the server writes four objects to the site-wide `ai-image-reports` Netlify Blobs
+store under one opaque report-id prefix: the input drawing, output image, resolved `prompt.txt`, and
+`metadata.json` (report time, deletion time, style, and MIME types). It then creates a private
+support issue carrying the blob prefix. If notification fails, the bundle is deleted and the request
+fails rather than leaving unreachable evidence.
+
+A scheduled `netlify/functions/purge-image-reports.ts` function scans every paginated store page
+daily and deletes report objects older than 30 days. Humans commit to reviewing reports within 24
+hours. See ADR-0104.
+
+```json
+// 200 — the opaque id supports a private early-deletion request; it grants no blob access
+{ "ok": true, "reportId": "1723123456789-550e8400-e29b-41d4-a716-446655440000" }
+// 400 — invalid body, images, size, or style
+{ "ok": false, "error": "That picture could not be reported." }
+// 403 — invalid or expired generation credential
+{ "ok": false, "error": "Invalid access token" }
+// 503 — private reporting or evidence storage unavailable
+{ "ok": false, "error": "Picture reporting is not available right now. Please try again later." }
+```
 
 ---
 

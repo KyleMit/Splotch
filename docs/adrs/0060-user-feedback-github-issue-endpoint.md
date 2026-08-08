@@ -13,8 +13,8 @@ info, submit — that lands as a real, labelled issue.
 The blocker is auth: creating an issue needs a GitHub credential, and a static/native client can't
 hold one. GitHub write access must live server-side. Splotch already has a web-only server tier
 (`web/src/lib/server/*`) reached from native via `apiUrl()`, and a strong "no tracking, no
-analytics, no data collection" privacy stance (`/privacy`, `hooks.client.ts`) that any new data path
-has to respect.
+analytics, no background collection" privacy stance (`/privacy`, `hooks.client.ts`) that any new
+data path has to respect.
 
 Decisions to make: how the server authenticates to GitHub, where the integration lives, how the
 endpoint is protected (it's an unauthenticated public write), and what device info — if any — is
@@ -23,13 +23,14 @@ attachable without breaking the privacy promise.
 ## Decision
 
 A new `POST /api/report` endpoint (`web/src/routes/api/report/+server.ts`) receives
-`{ kind, message, device?, hp? }` and opens a GitHub issue, returning `{ ok, url }`.
+`{ kind, message, device?, hp? }` and opens a GitHub issue, returning `{ ok }`.
 
 * **Auth: a fine-grained PAT**, `GITHUB_ISSUE_TOKEN`, scoped to *Issues: Read and write* on the
   target repo only, read via `$env/dynamic/private` and set in Netlify — never shipped to the
   client. A fine-grained PAT was chosen over a GitHub App: for a single personal repo it is far less
   setup (no app registration, install, or private-key management) at the cost of periodic rotation
-  (max 1-year expiry). `GITHUB_ISSUE_REPO` overrides the default `KyleMit/Splotch`.
+  (max 1-year expiry). `GITHUB_ISSUE_REPO` overrides the default private repository
+  `KyleMit/splotch-feedback`.
 * **A server seam**, `web/src/lib/server/github.ts`, owns the REST call and the token, mirroring the
   AI provider seam (ADR-0047) — route code never touches either. `isReportingConfigured()` lets the
   endpoint answer a graceful `503` when no token is set (local dev, the smoke test) instead of
@@ -60,6 +61,12 @@ The form is a section in Settings' About tab (`ReportForm.svelte`), not a new ta
 bar uncluttered. The privacy page gained a "Sending feedback" section describing the opt-in path
 honestly.
 
+**2026-08 privacy amendment.** Reports now default to the private `KyleMit/splotch-feedback`
+repository (still overrideable with `GITHUB_ISSUE_REPO`). The response deliberately contains no
+issue number or URL, and both feedback surfaces say the destination is private. A maintainer can
+later transfer or restate an actionable, sanitized product issue in the public repository. This also
+supplies the private human-notification channel used by reported AI images in ADR-0104.
+
 Alternatives considered:
 
 * **Keep the external GitHub link** — the status quo; rejected because it's exactly the barrier
@@ -74,14 +81,16 @@ Alternatives considered:
 
 ## Consequences
 
-* \+ Anyone can file a real, labelled, well-formed issue without a GitHub account or leaving the
-  app; the returned URL lets them follow it if they want.
+* \+ Anyone can file a real, labelled, well-formed private support issue without a GitHub account or
+  leaving the app.
 * \+ GitHub credentials stay server-side behind a seam; the same endpoint serves web and native via
   `apiUrl()`, and the CORS/rate-limit model (ADR-0007/0014) already covers it.
 * \+ Device info is opt-in, previewed before sending, non-identifying, and single-destination —
   consistent with the privacy stance, which the `/privacy` page now documents.
-* − A public unauthenticated write is a spam vector; mitigated (rate limit + honeypot + validation),
-  not eliminated. If abuse appears, tighten the budget or add a stronger challenge.
+* − An unauthenticated write is a spam vector; mitigated (rate limit + honeypot + validation), not
+  eliminated. If abuse appears, tighten the budget or add a stronger challenge.
+* − The reporter cannot follow a private issue directly. That is the cost of keeping feedback and
+  optional diagnostics out of a public tracker.
 * − The PAT expires and must be rotated (≤ 1 year); a lapse degrades to a graceful `503`, not a
   crash. A GitHub App is the escape hatch if rotation becomes a burden.
 * − `@capacitor/device` is a new native dependency; its richer fields only reach devices after a new

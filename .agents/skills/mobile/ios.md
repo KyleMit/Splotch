@@ -168,8 +168,9 @@ npx @capacitor/assets generate --ios
       `store-assets/screenshots/iphone69/` and `ipad13/`.
 * [ ] **App Privacy** nutrition label (declarations written out in `STORE-LISTING-IOS.md`); privacy
       policy URL `https://splotch.art/privacy`.
-* [ ] **Age rating** questionnaire → 4+; opt into **Kids Category, 5 & Under** (see Kids Category
-      below for the extra rules this triggers).
+* [ ] **Age rating** questionnaire: enter the exact answers in `store-assets/STORE-LISTING-IOS.md`,
+      confirm App Store Connect calculates 4+, then opt into **Kids Category, 5 & Under** while
+      eligible.
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke the production build
       on hardware.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
@@ -183,13 +184,14 @@ policy). The Apple Kids Category adds:
 * [ ] Use the **Kids Category** (optional but fitting; age band **5 & Under**). Kids Category apps
       **must not** include third-party analytics/advertising and must gate any external links /
       purchases behind a **parental gate**.
-* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare data types. The AI
-      image upload = "User Content" used for app functionality, not linked to identity, not for
-      tracking. Exact declarations are written out in `store-assets/STORE-LISTING-IOS.md`.
+* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content
+      and optional Other Diagnostic Data exactly as written in `store-assets/STORE-LISTING-IOS.md`.
+      Both are app functionality, not linked, and not tracking; confirmed AI-picture reports alone
+      retain image evidence for up to 30 days.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
-* [ ] Note: the AI button is an external network feature — confirm it doesn't need a parental gate
-      (it sends the child's own drawing for processing; no external browsing/links). Re-check
-      against current Kids Category rules.
+* [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
+      generation is already disabled until a parent supplies a credential and contains no browsing,
+      chat, or sharing.
 * [ ] Audit outbound links (About section / Settings → GitHub, privacy policy): Kids Category
       requires external links to sit behind a parental gate. Opening Settings is not proof of
       adulthood; gate each affected action at the point where it leaves the app, then verify the

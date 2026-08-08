@@ -17,11 +17,12 @@
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # consumes — docs, ADRs, ruler-generated agent files, scrapbook/, native trees,
   # asset-gen internals. The watched paths are everything the build reads: the
-  # app (web/), the build+prebuild scripts (scripts/), gen:releases input
-  # (releases/), the toolchain (package.json + lockfile), and this config.
+  # app (web/), custom functions (netlify/), the build+prebuild scripts
+  # (scripts/), gen:releases input (releases/), the toolchain (package.json +
+  # lockfile), and this config.
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts releases package.json package-lock.json netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify scripts releases package.json package-lock.json netlify.toml"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.

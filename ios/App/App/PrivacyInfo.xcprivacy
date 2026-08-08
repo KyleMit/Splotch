@@ -19,7 +19,11 @@
 
   NSPrivacyCollectedDataTypes must stay consistent with the App Store Connect
   nutrition label and with web/src/routes/privacy — see store-assets for the
-  declared answers.
+  declared answers. OtherUserContent covers deliberate AI generation, the
+  private feedback form, and a confirmed AI-image report. Normal generation is
+  ephemeral; a confirmed image report retains its input, resolved prompt,
+  output, style, and timestamp for at most 30 days. OtherDiagnosticData covers
+  the optional device snapshot attached to a feedback report.
 -->
 <plist version="1.0">
 <dict>

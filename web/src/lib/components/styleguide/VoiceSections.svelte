@@ -37,7 +37,7 @@
           Your key is stored only on your device. We never keep a copy.
         </blockquote>
         <blockquote class="parent">
-          Splotch collects nothing. No ads. No tracking. No analytics.
+          Splotch collects nothing in the background. No ads. No tracking. No analytics.
         </blockquote>
       </div>
     </div>

@@ -164,9 +164,9 @@
   <!-- Last, so it sits directly above whichever submit button the host renders:
        it is the one line a reporter must not miss, and mid-form it read as
        fine print between two controls. -->
-  <p class="report-public-note">
-    Heads up: your report is posted <strong>publicly</strong> on our GitHub issue tracker, so please don't
-    include personal details like names or email addresses.
+  <p class="report-privacy-note">
+    Your report goes to our private support tracker. Please don't include personal details like
+    names or email addresses.
   </p>
 
   <!-- Honeypot: off-screen and aria-hidden, so a person never sees it but a
@@ -293,17 +293,13 @@
     outline-offset: 2px;
   }
 
-  .report-public-note {
+  .report-privacy-note {
     margin: -2px 0 0 0;
     font-size: var(--font-size-xs);
     line-height: 1.45;
     /* --text-soft, deliberately: this note is fine print, but fine print
        still owes 4.5:1, which the soft step is pinned to hold. */
     color: var(--text-soft);
-  }
-
-  .report-public-note strong {
-    color: var(--text);
   }
 
   .report-device {

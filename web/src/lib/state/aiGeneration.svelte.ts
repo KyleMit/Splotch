@@ -1,3 +1,5 @@
+import type { StyleName } from '$lib/ai/styles';
+
 export type AiErrorKind = 'generic' | 'safety' | 'retry';
 
 export interface AiResultState {
@@ -6,6 +8,7 @@ export interface AiResultState {
   resultUrl: string | null;
   resultType: string | null;
   previewUrl: string | null;
+  style: StyleName | null;
   // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
   // 'retry'   — a transient failure (timeout, server); the same drawing may work.
   // 'generic' — anything else.
@@ -18,6 +21,7 @@ export const aiResult: AiResultState = $state({
   resultUrl: null,
   resultType: null,
   previewUrl: null,
+  style: null,
   error: null,
 });
 
@@ -50,12 +54,14 @@ export function createAiGenerationMachine(resultState: AiResultState) {
   // AI image is being generated.
   function startAiGeneration(
     previewUrl: string | null,
-    controller = new AbortController()
+    controller = new AbortController(),
+    style: StyleName | null = null
   ): number {
     activeAiGeneration?.controller.abort();
     const id = ++nextAiGenerationId;
     activeAiGeneration = { id, controller };
     resetAiRunUi(previewUrl);
+    resultState.style = style;
     resultState.generating = true;
     resultState.open = true;
     return id;
@@ -104,6 +110,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     activeAiGeneration = null;
     resultState.open = false;
     resultState.generating = false;
+    resultState.style = null;
     resetAiRunUi(null);
   }
 

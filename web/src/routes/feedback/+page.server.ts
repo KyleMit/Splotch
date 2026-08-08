@@ -3,7 +3,6 @@ import { rateLimit } from '$lib/server/rateLimit';
 import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { throttledMessage } from '$lib/server/http';
-import { issueUrl } from '$lib/server/github';
 import { parseDeviceField, submitReport } from '$lib/server/report';
 import { REPORT_HONEYPOT_FIELD, REPORT_KINDS, type ReportKind } from '$lib/report';
 import type { Actions, PageServerLoad } from './$types';
@@ -18,10 +17,8 @@ import type { Actions, PageServerLoad } from './$types';
 export const prerender = false;
 export const ssr = true;
 
-// Presence marks a completed submission; the issue number is separate because
-// the honeypot's quiet accept produces one without the other.
+// Presence marks a completed submission.
 const SENT_PARAM = 'sent';
-const ISSUE_PARAM = 'issue';
 
 function kindFrom(raw: FormDataEntryValue | null): ReportKind {
   return REPORT_KINDS.find((option) => option.value === raw)?.value ?? 'bug';
@@ -29,17 +26,9 @@ function kindFrom(raw: FormDataEntryValue | null): ReportKind {
 
 /**
  * The success view is reached by redirect, not by rendering the POST response
- * (see the action), so it is driven by the URL. Anything but a plain number is
- * treated as no issue to link to — the param is visitor-controlled.
+ * (see the action), so it is driven by the URL.
  */
-export const load: PageServerLoad = ({ url }) => {
-  const raw = url.searchParams.get(ISSUE_PARAM);
-  const number = raw && /^\d+$/.test(raw) ? Number(raw) : null;
-  return {
-    sent: url.searchParams.has(SENT_PARAM),
-    sentIssueUrl: number ? issueUrl(number) : null,
-  };
-};
+export const load: PageServerLoad = ({ url }) => ({ sent: url.searchParams.has(SENT_PARAM) });
 
 export const actions: Actions = {
   default: async ({ request, getClientAddress, setHeaders }) => {
@@ -77,11 +66,8 @@ export const actions: Actions = {
 
     // Post/Redirect/Get: rendering the thank-you at the POST URL means a reload
     // or a Back-then-Forward re-submits the body and opens a second issue. The
-    // issue number rides in the query so the redirected page can still link to
-    // it; the honeypot's quiet accept has no number and lands on a bare
-    // confirmation.
+    // private issue is deliberately not exposed to the reporter.
     const query = new URLSearchParams({ [SENT_PARAM]: '1' });
-    if (result.number) query.set(ISSUE_PARAM, String(result.number));
     redirect(303, `/feedback?${query}`);
   },
 };

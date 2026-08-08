@@ -28,6 +28,7 @@ export const STORAGE_KEYS = {
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
   saveFolderChosen: 'splotch-save-folder-chosen',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
+  parentalGateImageReportMode: 'splotch-parental-gate-image-report-mode',
   parentalGateExternalLinksMode: 'splotch-parental-gate-external-links-mode',
   parentalGateFeedbackMode: 'splotch-parental-gate-feedback-mode',
   parentalGateParentCenterMode: 'splotch-parental-gate-parent-center-mode',

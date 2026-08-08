@@ -1,0 +1,1 @@
+export const IMAGE_REPORT_RETENTION_DAYS = 30;

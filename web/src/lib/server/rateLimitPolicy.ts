@@ -3,6 +3,8 @@ type EndpointRateLimitPolicy = Record<
   | 'verifyKey'
   | 'adminLogin'
   | 'report'
+  | 'reportImageToken'
+  | 'reportImageByok'
   | 'cspReport'
   | 'generateToken'
   | 'generateByok',
@@ -16,6 +18,8 @@ export const rateLimitPolicy = {
   verifyKey: { limit: 10, windowMs: WINDOW_MS },
   adminLogin: { limit: 10, windowMs: WINDOW_MS },
   report: { limit: 5, windowMs: WINDOW_MS },
+  reportImageToken: { limit: 3, windowMs: 60 * WINDOW_MS },
+  reportImageByok: { limit: 3, windowMs: 60 * WINDOW_MS },
   cspReport: { limit: 10, windowMs: WINDOW_MS },
   generateToken: { limit: 15, windowMs: WINDOW_MS },
   generateByok: { limit: 30, windowMs: WINDOW_MS },
