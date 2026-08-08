@@ -56,6 +56,12 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(cover).toHaveAttribute('srcset', /\/coloring\/max-240px\/farm\/cover\.thumb\.webp/);
   await expect(cover).toHaveAttribute('sizes', coloringBookGridLayout(8).imageSizes);
   const pageTiles = await openFarmPageGrid(page);
+  await expect(
+    dialog.getByRole('button', { name: 'Cat coloring page', exact: true })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole('button', { name: 'Cow coloring page', exact: true })
+  ).toBeVisible();
   const pageImages = dialog.locator('.coloring-pages-grid img');
   const pageThumb = pageTiles.first().locator('img');
   await expect(pageThumb).toHaveAttribute('srcset', /\/coloring\/max-240px\/farm\/.+\.thumb\.webp/);

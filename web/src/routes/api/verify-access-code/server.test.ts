@@ -28,6 +28,17 @@ function post(body: unknown) {
   >[0]);
 }
 
+function postRaw(body: string) {
+  const request = new Request('http://localhost/api/verify-access-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body,
+  });
+  return POST({ request, getClientAddress: () => address } as unknown as Parameters<
+    typeof POST
+  >[0]);
+}
+
 beforeEach(() => {
   isAllowedToken.mockReset().mockResolvedValue(true);
   peekRateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
@@ -75,7 +86,20 @@ describe('POST /api/verify-access-code', () => {
   it('never charges the bucket or reads the allowlist for an empty code', async () => {
     const response = await post({ code: '   ' });
 
+    expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ ok: false, error: 'No access code provided' });
+    expect(isAllowedToken).not.toHaveBeenCalled();
+    expect(rateLimit).not.toHaveBeenCalled();
+  });
+
+  it('returns the malformed JSON explanation in the canonical failure body', async () => {
+    const response = await postRaw('not json');
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      ok: false,
+      error: 'Expected a JSON body',
+    });
     expect(isAllowedToken).not.toHaveBeenCalled();
     expect(rateLimit).not.toHaveBeenCalled();
   });

@@ -82,6 +82,15 @@ vendor SDK never appears in route code. The safety vs. empty/error split is deci
 `classifyGeminiResponse` / `isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by
 the manual red-team suite (`npm run redteam`, `tests/redteam/`).
 
+Every deliberate failure, including validation, authorization, safety, server-configuration,
+upstream, and throttling responses, uses the canonical JSON body:
+
+```json
+{ "ok": false, "error": "Image is too large" }
+```
+
+The status distinguishes the cases above; a `429` also carries its required `Retry-After` header.
+
 The Gemini call is hardened to *increase* those refusals (the audience is toddlers): a
 `systemInstruction` tells the model to decline unsafe drawings in plain text rather than "beautify"
 them, and `safetySettings` set every configurable harm category to `BLOCK_LOW_AND_ABOVE` (the
@@ -98,8 +107,12 @@ valid families behind one NAT never spend it.
 ```json
 // request
 { "code": "sunny-meadow" }
-// response
-{ "ok": true, "accessCode": "sunny-meadow" }   // or { "ok": false, "error": "..." }
+// 200 — recognized code
+{ "ok": true, "accessCode": "sunny-meadow" }
+// 200 — present but unrecognized code
+{ "ok": false, "error": "That access code was not recognized." }
+// 400 — missing, non-string, or blank code
+{ "ok": false, "error": "No access code provided" }
 ```
 
 ### `POST /api/verify-key`
@@ -109,8 +122,12 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 ```json
 // request
 { "apiKey": "..." }
-// response
-{ "ok": true }   // or { "ok": false, "error": "..." }
+// 200 — key verified
+{ "ok": true }
+// 200 — present but rejected key
+{ "ok": false, "error": "That key could not authenticate with Gemini." }
+// 400 — missing, non-string, or blank key
+{ "ok": false, "error": "No API key provided" }
 ```
 
 ---

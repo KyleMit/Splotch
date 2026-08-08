@@ -81,6 +81,7 @@ import { findingProblem } from './comment.mjs';
 const ISSUE_FILE = join(WORK, 'current-issue.md');
 const BRIEF_FILE = join(WORK, 'current-brief.md');
 const STOP_FILE = join(WORK, 'STOP');
+const E2E_SPEC_PATH = /^tests\/[\w/-]+\.(?:spec|test)\.ts$(?![\s\S])/;
 
 // ---- knobs ------------------------------------------------------------------
 // Every env knob a run reads, resolved once. `env` is a parameter so a test can
@@ -714,9 +715,11 @@ export function createBurndownRun({ config, effects }) {
     // Targeted E2E for a UI-touching finding (see the per-finding E2E gate in
     // close-out). Sanitize hard: these strings are LLM-authored and reach a
     // shell, so keep only spec-path-shaped values and drop anything else.
-    const e2eSpecs = (verify.structured.e2e_specs ?? []).filter(
-      (spec) => typeof spec === 'string' && /^[\w./-]+$/.test(spec)
-    );
+    const e2eSpecs = [];
+    for (const spec of verify.structured.e2e_specs ?? []) {
+      if (typeof spec === 'string' && E2E_SPEC_PATH.test(spec)) e2eSpecs.push(spec);
+      else logLine(`  rejected E2E spec: ${JSON.stringify(spec)}`);
+    }
     if (e2eSpecs.length) logLine(`  E2E gate: ${e2eSpecs.join(' ')}`);
     return { outcome: 'valid', e2eSpecs };
   }

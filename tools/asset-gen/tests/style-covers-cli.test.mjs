@@ -1,14 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
 
-const state = vi.hoisted(() => ({ stylesDir: null, render: null }));
+const state = vi.hoisted(() => ({
+  root: null,
+  stylesDir: null,
+  styleSourceSvg: null,
+  render: null,
+}));
 
 vi.mock('../lib/paths.mjs', () => ({
   get STYLES_DIR() {
     return state.stylesDir;
+  },
+  get STYLE_SOURCE_SVG() {
+    return state.styleSourceSvg;
   },
 }));
 vi.mock('../lib/gemini.mjs', () => ({
@@ -52,9 +60,12 @@ async function fieldWithSubject(side) {
 const covers = () => readdir(state.stylesDir);
 
 beforeEach(async () => {
-  state.stylesDir = await mkdtemp(join(tmpdir(), 'style-covers-'));
+  state.root = await mkdtemp(join(tmpdir(), 'style-covers-'));
+  state.stylesDir = join(state.root, 'styles');
+  state.styleSourceSvg = join(state.root, 'source.svg');
+  await mkdir(state.stylesDir);
   await writeFile(
-    join(state.stylesDir, 'source.svg'),
+    state.styleSourceSvg,
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#8CC864"/></svg>'
   );
   vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -63,7 +74,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.restoreAllMocks();
-  await rm(state.stylesDir, { recursive: true, force: true });
+  await rm(state.root, { recursive: true, force: true });
 });
 
 describe('gen-style-covers cutout guard', () => {

@@ -47,9 +47,10 @@ floor has no way to share one declaration block between an attribute selector an
 the duplication is the accepted cost; keep the blocks in sync.
 
 * Setting: `settings.theme` in `web/src/lib/state/settings.svelte.ts` (`splotch-theme`, covered by
-  `reloadSettings()` / the native durable mirror). `web/src/lib/theme.ts` owns the runtime side:
-  `applyTheme()` stamps the attribute, keeps `<meta name="theme-color">` on the *resolved* theme,
-  and watches OS switches while in system mode. The pre-paint head script in `web/src/app.html`
+  `reloadSettings()` / the native durable mirror). `web/src/lib/theme.ts` owns the preference
+  helpers and `applyTheme()` stamps the attribute. `web/src/lib/state/appearance.svelte.ts` owns the
+  live OS subscription and one detached effect that keeps `<meta name="theme-color">` and the
+  selected Black swatch's ink on the resolved theme. The pre-paint head script in `web/src/app.html`
   stamps `data-theme` before first paint, following the existing "attribute only on deviation from
   default" convention.
 * UI: the **Appearance Control** (Light / Dark / System segmented control) at the top of the former
@@ -88,14 +89,17 @@ the duplication is the accepted cost; keep the blocks in sync.
   bright background jarred on dark — and the light-sheet approach that reverted the whole page to
   light paper via a now-removed `:root[data-coloring]` override.)*
 * **Pen coloring on the dark sheet** uses the same palette as dark free-draw (night fills power only
-  the magic brush); dark palette colors on dark paper carry the same low-contrast tradeoff as
-  free-hand dark drawing, accepted rather than adding a second palette.
+  the magic brush). The Black swatch keeps its identity but paints white on dark paper; other dark
+  palette colors retain the same low-contrast tradeoff as free-hand dark drawing.
 * **JS consumers of the resolved theme.** `PAPER_COLORS` in `theme.ts` mirrors `--paper` (keep in
   sync); `lib/state/appearance.svelte.ts` exposes a reactive `resolvedTheme()` (setting + live OS
-  preference). The **Notch Band** eraser clears the band to the resolved theme's paper
-  (`NotchBand.svelte`), and the **export path** (`exportDrawing.ts`) follows the resolved theme for
-  coloring pages too: a dark-mode save is the night version — dark paper, the transparent white
-  presentation overlay, and the night-fill reveals already baked into the replayed strokes.
+  preference) and uses its detached effect to call `syncInkToTheme()` in `colors.svelte.ts`. That
+  setter updates only `activeColor` when the stable `activeSwatch` identity is Black, making it
+  white on dark paper and black on light paper. The **Notch Band** eraser clears the band to the
+  resolved theme's paper (`NotchBand.svelte`), and the **export path** (`exportDrawing.ts`) follows
+  the resolved theme for coloring pages too: a dark-mode save is the night version — dark paper, the
+  transparent white presentation overlay, and the night-fill reveals already baked into the replayed
+  strokes.
 * **Catalog.** `books.ts` carries a `nightImages: Partial<Record<orientation, url>>` per page (only
   the orientations that have a generated fill) with a `pageNightImage()` helper;
   `coloringBook.svelte.ts` stores only the selected page and orientation, deriving the transparent
@@ -117,8 +121,9 @@ the duplication is the accepted cost; keep the blocks in sync.
 
 ## Consequences
 
-* \+ System mode is pure CSS — an OS theme switch recolors the app (paper included) live with no JS
-  listener; the only JS followers are the `theme-color` meta and the Notch Band.
+* \+ System mode's themed CSS surfaces follow an OS switch without JS. One appearance listener keeps
+  the resolved-theme JS followers aligned: the `theme-color` meta, selected Black ink, Notch Band,
+  coloring fills, and exports.
 * \+ Prerendered HTML with no attribute renders the system default correctly even if the head script
   never runs; explicit choices restore before first paint (no flash).
 * \+ One paper texture serves both themes; coloring pages stay on the same dark chalkboard as
@@ -126,10 +131,10 @@ the duplication is the accepted cost; keep the blocks in sync.
   what the child saw. The later pen/chalk and alpha-overlay amendments add theme-specific line art.
 * \+ The night fills turn dark mode into a distinct experience rather than a compromise — a parallel
   set of cozy-night pictures under the same brush — while light mode is untouched.
-* − Black/dark strokes are nearly invisible on the dark paper (free-draw AND pen-coloring) — the
-  mirror image of white crayon on light paper today. A free-hand drawing made in one theme can look
-  different (or partly vanish) when viewed in the other; the strokes themselves are never lost.
-  Magic-brush reveals are unaffected (they carry the fill's colors).
+* − The Black swatch paints white on dark paper while retaining its stable Black identity, then
+  returns to black ink on light paper. Other dark palette and custom strokes can remain low contrast
+  on dark paper. Committed strokes keep the color they were drawn with, so a drawing made across a
+  live theme change can contain both colors; magic-brush reveals carry the fill's colors.
 * − Night fills are a second asset set to generate and ship (~8 categories × 6 pages × 2
   orientations), rolled out category by category; until an orientation/page has one, dark mode falls
   back to revealing the light fill under the brush.

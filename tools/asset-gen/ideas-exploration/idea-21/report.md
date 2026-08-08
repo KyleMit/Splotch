@@ -101,9 +101,11 @@ deserve a line in pipeline.md.
 * `code/tmp-shoot-sheet.mjs`, `code/tmp-rects.mjs` — throwaway Playwright verification helpers used
   during the run (were placed in tools/asset-gen/ for import resolution, then deleted from the repo;
   chromium executablePath is hardcoded for this sandbox).
-* `farm-compare-46bc770.html` (6.9 MB), `owl-tall-compare-6e3f14f.html`,
-  `owl-tall-compare-34a606f-prerename.html`, `farm-git-46bc770.html` — real generated sheets,
-  self-contained, openable/publishable directly.
+* Regenerate the historical-versus-current proof sheets with
+  `npm run gen:coloring-book-proof-sheet -- farm --source git:46bc770 --out <file>` and
+  `npm run gen:coloring-book-proof-sheet -- creatures/owl-tall --source git:6e3f14f --out <file>`.
+  The current CLI cannot faithfully regenerate the deleted pre-rename `34a606f` sheet because that
+  ref predates the modern `.outline.webp` and `.light.webp` paths.
 * `overview-owl-compare.webp` — full-sheet view of the owl-tall compare.
 * `pair-{cat-wide,cow-tall,horse-tall}-{before,after}.webp` — night-tile Combined-view crops from
   the farm compare sheet (before = `git:46bc770` pre-fork fill, after = shipped chalk-fork fill,

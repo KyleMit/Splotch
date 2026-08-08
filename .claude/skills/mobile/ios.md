@@ -61,9 +61,9 @@ device:
 
 Then run it:
 
-* `npm run cap:ios`, pick the device in Xcode's target dropdown, **Run ▶** — or
-  `npm run ios:run:choose` and choose the device at the prompt. Native logs stream to the Xcode
-  console (or Console.app).
+* `npm run cap:ios`, pick the device in Xcode's target dropdown, **Run ▶** — or `npm run ios:run`
+  and choose the connected device at the target prompt. Native logs stream to the Xcode console (or
+  Console.app).
 * **Live reload**: `npm run ios:live` paired with `dev:cap` points the app at the laptop's dev
   server (device and Mac on the same network).
 * **Inspect the web layer**: with the app running, Safari → **Develop → \<device\> → Splotch** for
@@ -140,9 +140,10 @@ npx @capacitor/assets generate --ios
    ```
 
    `ios/debug.xcconfig` pulls it in via `#include? "local.xcconfig"` (covers all Debug builds —
-   `ios:run`, `ios:run:ipad`, `cap:ios` Run), and `ios:archive` passes it with
-   `-xcconfig ../local.xcconfig` for the Release/IPA path. Find your Team ID in Xcode → Settings →
-   Accounts (or developer.apple.com → Membership). One-time per clone; `cap sync` never clobbers it.
+   `ios:run`, `ios:run:emulator`, `ios:run:device`, and Xcode's `cap:ios` Run), and `ios:archive`
+   passes it with `-xcconfig ../local.xcconfig` for the Release/IPA path. Find your Team ID in Xcode
+   → Settings → Accounts (or developer.apple.com → Membership). One-time per clone; `cap sync` never
+   clobbers it.
 4. Accept the agreements in App Store Connect (<https://appstoreconnect.apple.com> → Business) —
    uploads fail with a cryptic error until the Paid/Free Apps agreement is accepted.
 

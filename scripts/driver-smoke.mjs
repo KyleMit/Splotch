@@ -65,10 +65,10 @@ async function run(browser, base) {
   await sleep(450);
   await pickBook(page, 'Farm');
   await sleep(400);
-  await pickPage(page, 'Farm');
+  await pickPage(page, 'Cat');
   await waitForColoringOverlay(page);
   check(
-    'openColoringBook + pickBook + pickPage apply a Farm page overlay',
+    'openColoringBook + pickBook + pickPage apply a Cat page overlay',
     await page.locator('#coloringOverlay').isVisible()
   );
 

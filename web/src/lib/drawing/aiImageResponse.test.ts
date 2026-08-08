@@ -33,6 +33,14 @@ describe('readAiImageResponse', () => {
     ).resolves.toEqual({ kind: 'error', status: 502, detail: 'Upstream unavailable' });
   });
 
+  it('reads the error from a canonical JSON failure response', async () => {
+    await expect(
+      readAiImageResponse(
+        new Response(JSON.stringify({ ok: false, error: 'Upstream unavailable' }), { status: 502 })
+      )
+    ).resolves.toEqual({ kind: 'error', status: 502, detail: 'Upstream unavailable' });
+  });
+
   it('keeps the response classification when its diagnostic body is unreadable', async () => {
     const response = new Response('unreadable', { status: 503 });
     vi.spyOn(response, 'text').mockRejectedValue(new Error('body stream failed'));

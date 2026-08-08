@@ -19,8 +19,9 @@ paths:
   `lib/server/**` and pure-logic modules — opt out with a `// @vitest-environment node` first line
   (per-file happy-dom setup is the suite's biggest fixed cost); a file whose module (or imports)
   touches `localStorage`/`document`/`window` must stay on the happy-dom default.
-* `npm test` = `test:unit` + `test:asset-gen` + `test:e2e`; the native smoke tests (`test:android`,
-  `test:ios`) are deliberately excluded (need an emulator/simulator + native toolchain).
+* `npm test` runs the CI test tiers described by the `test` entry in `package.json` and its
+  `scripts-info` description; the native smoke tests (`test:android`, `test:ios`) are deliberately
+  excluded because they require an emulator/simulator and native tooling.
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
   `DEV_SERVER=1` to iterate against `vite dev` instead.
 * The Playwright web server **declares** every private env var `web/src` reads, never inherits it —

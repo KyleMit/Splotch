@@ -138,12 +138,13 @@ export async function settleTapGuard(page: Page) {
 
 export async function openFarmPageGrid(page: Page) {
   const dialog = page.locator('#coloring-book-dialog');
-  const pages = dialog.getByRole('button', { name: /Farm coloring page/i });
+  const pages = dialog.getByRole('button', { name: / coloring page$/i });
   await retryOpen(
     pages.first(),
     () => dialog.getByRole('button', { name: /Farm coloring book/i }).click({ timeout: 1000 }),
     { settle: 1000 }
   );
+  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
   // The cover tap that opened this grid armed a dead zone at its own point
   // (ColoringBook's double-tap guard) and a page tile now sits there, so an
   // immediate click on one is swallowed by design. Callers click straight after

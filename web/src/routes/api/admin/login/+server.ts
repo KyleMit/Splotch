@@ -18,8 +18,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   const attempt = beginAdminLogin(getClientAddress());
   if (!attempt.ok) return throttled(attempt.retryAfter);
 
-  const body = await readJsonBody(request);
-  const key = stringField(body, 'key');
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  const key = stringField(parsed.body, 'key');
   const result = attempt.verify(key);
   if (!result.ok) {
     return json({ ok: false, error: 'Incorrect access key.' } satisfies LoginResponse, {

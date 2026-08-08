@@ -42,6 +42,11 @@ export const colors = $state({
   customColorSelected: false,
 });
 
+export function syncInkToTheme(dark: boolean) {
+  if (colors.activeSwatch !== BLACK_INK) return;
+  colors.activeColor = themedSwatchColor(BLACK_INK, dark);
+}
+
 // `hex` is the swatch's stable identity (what activeSwatch/trim/keys compare
 // against); `paintColor` is what actually gets drawn, which differs only for the
 // Black swatch in dark mode (it paints white). Defaults to painting the identity.

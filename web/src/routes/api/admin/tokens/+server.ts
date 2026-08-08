@@ -82,8 +82,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 export const POST: RequestHandler = async ({ request, url }) => {
   requireSession(request);
 
-  const body = await readJsonBody(request);
-  const result = await addToken(stringField(body, 'token'));
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  const result = await addToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
   return snapshot(url.origin, result.tokens);
 };
@@ -92,8 +93,9 @@ export const POST: RequestHandler = async ({ request, url }) => {
 export const DELETE: RequestHandler = async ({ request, url }) => {
   requireSession(request);
 
-  const body = await readJsonBody(request);
-  const result = await removeToken(stringField(body, 'token'));
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  const result = await removeToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
   return snapshot(url.origin, result.tokens);
 };

@@ -155,9 +155,8 @@ export async function pickBook(page, name) {
   await page.locator(COLORING_BOOK_SELECTOR(name)).click();
 }
 
-// Every page tile in a book shares one aria-label, so open the first of them.
-export async function pickPage(page, name) {
-  await page.locator(COLORING_PAGE_SELECTOR(name)).first().click();
+export async function pickPage(page, pageName) {
+  await page.locator(COLORING_PAGE_SELECTOR(pageName)).click();
 }
 
 // The overlay <img> only gets .overlay-ready once the page art has decoded, so

@@ -23,9 +23,11 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   const guess = peekRateLimit(key, rateLimitPolicy.verifyAccessCode);
   if (guess.limited) return throttled(guess.retryAfter);
 
-  const body = asRecord(await readJsonBody(request));
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  const body = asRecord(parsed.body);
   const code = typeof body?.code === 'string' ? body.code.trim() : '';
-  if (!code) return json({ ok: false, error: 'No access code provided' });
+  if (!code) return json({ ok: false, error: 'No access code provided' }, { status: 400 });
 
   if (!(await isAllowedToken(code))) {
     rateLimit(key, rateLimitPolicy.verifyAccessCode);

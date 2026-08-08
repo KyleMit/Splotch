@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { themes } from '../../web/src/lib/design/tokens.ts';
 import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android.mjs';
 
 const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
@@ -53,6 +54,31 @@ describe('Android manifest kids-compliance', () => {
   it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
     expect(read('android/app/src/main/AndroidManifest.xml')).toContain(
       'android:allowBackup="false"'
+    );
+  });
+});
+
+describe('Android native theme backgrounds', () => {
+  const colorValue = (path) => {
+    const match = read(path).match(/<color name="app_background">(#[0-9a-f]+)<\/color>/i);
+    expect(match).not.toBeNull();
+    return match[1].toLowerCase();
+  };
+
+  it('sets the AppCompat background used before the web view paints', () => {
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    expect(styles).toMatch(
+      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<\/style>/
+    );
+    expect(styles).not.toMatch(/<style name="AppTheme\.NoActionBar"\b/);
+  });
+
+  it('matches the web app background in both themes', () => {
+    expect(colorValue('android/app/src/main/res/values/colors.xml')).toBe(
+      themes.light.appBg.toLowerCase()
+    );
+    expect(colorValue('android/app/src/main/res/values-night/colors.xml')).toBe(
+      themes.dark.appBg.toLowerCase()
     );
   });
 });

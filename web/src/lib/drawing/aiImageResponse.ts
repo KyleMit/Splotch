@@ -8,11 +8,23 @@ const SAFETY_REFUSAL_STATUS = 422;
 const THROTTLED_STATUS = 429;
 
 async function readErrorDetail(response: Response): Promise<string> {
+  let text: string;
   try {
-    return await response.text();
+    text = await response.text();
   } catch {
     return '';
   }
+
+  try {
+    const body: unknown = JSON.parse(text);
+    if (typeof body === 'object' && body !== null && !Array.isArray(body) && 'error' in body) {
+      const error = body.error;
+      if (typeof error === 'string') return error;
+    }
+  } catch {
+    // The raw body below is the fallback for non-JSON error responses.
+  }
+  return text;
 }
 
 export async function readAiImageResponse(response: Response): Promise<AiImageResponse> {

@@ -35,6 +35,7 @@ import {
 } from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
+  COLOR_CHANGE_DEBOUNCE_MS,
   edgeSwipeIsOsGesture,
   edgeSwipeDirectionDecided,
   guardedEdgeAt,
@@ -766,11 +767,6 @@ function resetSpeedWindow(ps: PointerState, now: number): void {
   ps.speedSamples = [{ t: now, distance: 0 }];
   ps.lastTime = now;
 }
-
-// After a color/tool change, ignore touch/mouse pointerdowns for a short window
-// so the tap that picked the color doesn't immediately start a stray stroke.
-// Pen input is precise enough to skip the debounce.
-const COLOR_CHANGE_DEBOUNCE_MS = 100;
 
 // OS safe-area insets in CSS px, pushed from the canvas's owner component. Used
 // only to additionally guard a tablet's long bottom edge in landscape (see the

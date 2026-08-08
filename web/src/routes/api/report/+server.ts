@@ -29,7 +29,9 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   );
   if (limited) return throttled(retryAfter);
 
-  const body = asRecord(await readJsonBody(request));
+  const parsed = await readJsonBody(request);
+  if (!parsed.ok) return parsed.response;
+  const body = asRecord(parsed.body);
   const result = await submitReport({
     kind: body?.kind,
     message: body?.message,

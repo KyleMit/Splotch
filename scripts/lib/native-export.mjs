@@ -5,15 +5,12 @@
 // referenced by absolute `https://splotch.art` URL, the favicons + webmanifest
 // exist for a browser tab and the PWA install prompt (both web-only services —
 // see lib/boot/webOnlyServices.ts), `robots.txt`/`sitemap.xml` are for crawlers,
-// and `deny.html` is the target of netlify.toml's edge deny-rules. Two files are
-// generator INPUT that was never meant to ship at all (`large-image.svg` feeds
-// gen-large-image.mjs, `styles/source.svg` feeds gen-style-covers.mjs).
+// and `deny.html` is the target of netlify.toml's edge deny-rules.
 //
 // Paths are build-relative (the same shape as the coloring-catalog paths, minus
 // the leading slash) so the strip and the tag rewrite agree by construction.
 export const WEB_ONLY_STATIC_FILES = [
   'large-image.png',
-  'large-image.svg',
   'favicon.ico',
   'favicon-96x96.png',
   'apple-touch-icon.png',
@@ -23,7 +20,6 @@ export const WEB_ONLY_STATIC_FILES = [
   'robots.txt',
   'sitemap.xml',
   'deny.html',
-  'styles/source.svg',
 ];
 
 // `<link>`/`<meta>` are void elements, so a non-greedy attribute scan is enough

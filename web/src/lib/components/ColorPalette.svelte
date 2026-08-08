@@ -3,7 +3,6 @@
     PALETTE_COLORS,
     TRIM_ORDER,
     CUSTOM_SWATCH,
-    BLACK_INK,
     colors,
     selectPaletteColor,
     selectCustomSwatch,
@@ -29,16 +28,6 @@
   // stays visible for every other brush, matching the pre-brush-menu behavior.
   const erasing = $derived(toolState.brush === 'eraser');
 
-  // A live theme flip (e.g. the OS switching while in system mode) must repaint
-  // the Black swatch's ink — white on dark paper, black on light — even when the
-  // selection doesn't change. The swatch identity (activeSwatch) stays put; only
-  // the drawn color follows the theme.
-  $effect(() => {
-    if (colors.activeSwatch === BLACK_INK) {
-      colors.activeColor = themedSwatchColor(BLACK_INK, dark);
-    }
-  });
-
   // Publish our rendered size so ActionsPanel can offset past our width in
   // landscape (and the action-button sizing math can clear our height in
   // portrait) without reaching in via querySelector. A ResizeObserver keeps it
@@ -57,7 +46,7 @@
 
   // Track the most recent click so we can fire the confirmation ring animation
   // only on the actual selection (not on every reactivity change).
-  let ringAnimateKey = $state<string | null>(null);
+  let ringAnimateHex = $state<string | null>(null);
 
   // The selected-state gap (border + seam) is surface-colored, not white, so in
   // dark mode it reads as bar background and the colored ring floats around the
@@ -69,7 +58,7 @@
   function selectSwatch(hex: string, paint: string) {
     selectInkBrush();
     selectPaletteColor(hex, paint);
-    ringAnimateKey = hex + ':' + Date.now();
+    ringAnimateHex = hex;
     releaseAllPointers();
   }
 
@@ -119,7 +108,7 @@
       class="color-swatch"
       class:bonus
       class:active={!erasing && colors.activeSwatch === hex}
-      class:ring-animate={ringAnimateKey?.startsWith(hex + ':')}
+      class:ring-animate={ringAnimateHex === hex}
       data-color={hex}
       data-trim-rank={trimRank.get(hex)}
       style="background-color: {shown}; {!erasing && colors.activeSwatch === hex
