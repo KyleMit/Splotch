@@ -14,4 +14,5 @@ pointer instructions and evaluates their replay through the production Splotch c
   this folder's `vitest.config.mjs`.
 * The browser-driving entries deliberately reuse `scripts/lib/app-driver.mjs`, the shared production
   UI/pointer driver also covered by `npm run test:driver:smoke`.
-* Read `README.md` for conversion constraints, fidelity evaluation, and review-capture workflows.
+* Read `README.md` for conversion and review workflows and `DESIGN.md` for the tool-local rationale
+  and tradeoffs.

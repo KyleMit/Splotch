@@ -13,6 +13,9 @@ coordinates and exports one named function per scene, including `drawHouseTall` 
 * `samples/` contains the SVG authoring inputs used only by the offline converter and evaluator.
 * `tests/` contains the pipeline and generated-drift tests.
 
+See [DESIGN.md](DESIGN.md) for why the pipeline compiles static instructions instead of rendering or
+parsing SVGs during screenshot capture, plus the accepted fidelity and runtime tradeoffs.
+
 ## Conversion pipeline
 
 Source SVGs are authoring inputs under `samples/`. Each filename ends in `-tall.svg` or `-wide.svg`;

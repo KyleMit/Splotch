@@ -1,8 +1,6 @@
-# ADR-0103: Compile Store Screenshot SVGs into Static Pointer Instructions
+# Store drawing pointer-instruction design
 
-**Status:** Active **Date:** 2026-08
-
-## Context
+## Why static pointer instructions
 
 Store screenshots need polished example drawings, but the screenshots are supposed to show the real
 Splotch canvas after ordinary drawing input. The authored examples arrived as centerline SVGs. Three
@@ -19,7 +17,7 @@ Hand-authoring thousands of pointer coordinates was also possible, but it would 
 future iteration impractical. The source set contains cubic curves, varying widths, and colors that
 need deterministic mapping onto the controls Splotch actually offers.
 
-## Decision
+## Approach
 
 `tools/store-drawings/bin/generate.mjs` is an offline compiler. It accepts a deliberately narrow
 centerline SVG subset (`M`, cubic `C`, and `Z`; round unfilled strokes), adaptively flattens the
@@ -33,11 +31,11 @@ are limited to swatches visible on both store targets for the drawing's orientat
 maps each source path to one of the five real app levels after scaling against the measured portrait
 or landscape store canvases.
 
-`tools/store-drawings/lib/drawing-instructions.mjs` contain-fits the static coordinates and
-delegates every stroke to `scripts/lib/app-driver.mjs`. The driver changes colors and widths through
-visible controls and sends Playwright mouse down/move/up input to `#drawingCanvas`; it does not call
-the engine or paint a canvas directly. An extra held endpoint sample compensates for the engine's
-intentional midpoint smoothing so an authored path reaches its final coordinate.
+`tools/store-drawings/lib/drawing-instructions.mjs` fits the static coordinates within the canvas
+and delegates every stroke to `scripts/lib/app-driver.mjs`. The driver changes colors and widths
+through visible controls and sends Playwright mouse down/move/up input to `#drawingCanvas`; it does
+not call the engine or paint a canvas directly. An extra held endpoint sample compensates for the
+engine's intentional midpoint smoothing so an authored path reaches its final coordinate.
 
 Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
 replaying their shared pointer instructions. Magic skips stored color selections because the brush
@@ -49,7 +47,7 @@ and generated centerlines, then captures the live tiled canvas after replay and 
 pixels with the static instructions and original SVG silhouette. The workflow and overlay
 interpretation are documented in `tools/store-drawings/README.md`.
 
-## Consequences
+## Tradeoffs
 
 * \+ Store screenshots exercise the production palette, width controls, pointer listeners, renderer,
   and tiled canvas instead of presenting imported art as if it had been drawn.
