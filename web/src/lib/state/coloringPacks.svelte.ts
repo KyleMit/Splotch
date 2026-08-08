@@ -4,7 +4,6 @@ interface ColoringPackState {
   installedBookIds: string[];
   downloadingBookId: string | null;
   downloadedBytes: number;
-  downloadableBytes: number;
   totalBookCount: number;
   initialized: boolean;
 }
@@ -13,7 +12,6 @@ export const coloringPackState: ColoringPackState = $state({
   installedBookIds: [STARTER_COLORING_BOOK_ID],
   downloadingBookId: null,
   downloadedBytes: 0,
-  downloadableBytes: 0,
   totalBookCount: 1,
   initialized: false,
 });

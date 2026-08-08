@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   MAX_PWA_PRECACHE_BYTES,
@@ -9,6 +10,16 @@ const coloringManifest = {
   starterBookId: 'farm',
   books: [{ id: 'farm', files: [] }],
 };
+
+it('registers the responsive coloring route before the canonical pack route', () => {
+  const viteConfig = readFileSync(new URL('../../web/vite.config.ts', import.meta.url), 'utf8');
+  const runtimeCaching = viteConfig.slice(viteConfig.indexOf('runtimeCaching:'));
+  const responsiveRoute = runtimeCaching.indexOf('urlPattern: RESPONSIVE_COLORING_URL_PATTERN');
+  const canonicalRoute = runtimeCaching.indexOf('urlPattern: COLORING_PACK_ASSET_URL_PATTERN');
+  expect(responsiveRoute).toBeGreaterThanOrEqual(0);
+  expect(canonicalRoute).toBeGreaterThanOrEqual(0);
+  expect(responsiveRoute).toBeLessThan(canonicalRoute);
+});
 
 it('reads Workbox manifest URLs without confusing the runtime route', () => {
   const source =

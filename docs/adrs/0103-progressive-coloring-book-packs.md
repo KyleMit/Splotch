@@ -54,7 +54,8 @@ The same TypeScript store contract has platform-specific implementations:
 * **Web/PWA:** a versioned Cache Storage cache holds canonical responses and install markers. The
   service worker checks this cache before the network for canonical coloring requests. Responsive
   requests retain ADR-0022's network-first route and fall back to the installed canonical response
-  offline.
+  offline. The responsive runtime route must remain before the canonical pack route because Workbox
+  uses the first matching route.
 * **Android:** a constrained WorkManager job streams into `noBackupFilesDir/coloring`, verifies
   SHA-256 while writing, atomically renames each `.part` file, and writes the marker last. Work is
   unmetered by default and pauses under Data Saver.

@@ -56,15 +56,17 @@
       <Icon name="shapes" class="setting-icon" />
       <div>
         <span class="pack-title">Downloaded pictures</span>
-        <p>
-          {downloadedBookCount} of {coloringPackState.totalBookCount - 1} extra books · {megabytes(
-            coloringPackState.downloadedBytes
-          )}
-        </p>
-        {#if downloadingBookName}
-          <p>Downloading {downloadingBookName} in the background</p>
-        {:else if downloadedBookCount === coloringPackState.totalBookCount - 1}
-          <p>Every coloring book is ready offline</p>
+        {#if coloringPackState.initialized}
+          <p>
+            {downloadedBookCount} of {coloringPackState.totalBookCount - 1} extra books · {megabytes(
+              coloringPackState.downloadedBytes
+            )}
+          </p>
+          {#if downloadingBookName}
+            <p>Downloading {downloadingBookName} in the background</p>
+          {:else if downloadedBookCount === coloringPackState.totalBookCount - 1}
+            <p>Every coloring book is ready offline</p>
+          {/if}
         {/if}
       </div>
     </div>

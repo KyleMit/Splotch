@@ -64,15 +64,13 @@ async function initializeState(
   setInstalledColoringBooks(
     manifest.books.filter((book) => installed.has(book.id)).map((book) => book.id)
   );
-  coloringPackState.downloadableBytes = manifest.books
-    .filter((book) => book.id !== manifest.starterBookId)
-    .reduce((sum, book) => sum + book.bytes, 0);
   coloringPackState.totalBookCount = manifest.books.length;
   coloringPackState.downloadedBytes = await store.usage(manifest);
   return installed;
 }
 
-export function createColoringPackDownloader() {
+// The predicate parameter is a test seam for policy changes between sequential book installs.
+export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
   let paused = false;
   let runPromise: Promise<void> | null = null;
@@ -83,11 +81,12 @@ export function createColoringPackDownloader() {
     const manifest = await loadManifest(controller.signal);
     const store = await createStore();
     const installed = await initializeState(store, manifest);
-    if (!automaticDownloadAllowed()) return;
+    if (!downloadAllowed()) return;
 
     for (const book of manifest.books) {
       if (stopped || paused || controller.signal.aborted) return;
       if (book.id === manifest.starterBookId || installed.has(book.id)) continue;
+      if (!downloadAllowed()) return;
       coloringPackState.downloadingBookId = book.id;
       const pack = await store.install(
         manifest,
@@ -122,13 +121,17 @@ export function createColoringPackDownloader() {
     paused = true;
     if (!__IS_CAPACITOR__) controller?.abort();
   };
+  const resumeForPolicyChange = () => {
+    paused = false;
+    requestRun();
+  };
 
   return {
     start() {
       requestRun();
       window.addEventListener('online', requestRun);
       document.addEventListener('visibilitychange', requestWhenVisible);
-      window.addEventListener(COLORING_PACK_POLICY_EVENT, requestRun);
+      window.addEventListener(COLORING_PACK_POLICY_EVENT, resumeForPolicyChange);
       window.addEventListener(COLORING_PACK_REMOVE_EVENT, pause);
       network?.addEventListener('change', requestRun);
     },
@@ -137,7 +140,7 @@ export function createColoringPackDownloader() {
       if (!__IS_CAPACITOR__) controller?.abort();
       window.removeEventListener('online', requestRun);
       document.removeEventListener('visibilitychange', requestWhenVisible);
-      window.removeEventListener(COLORING_PACK_POLICY_EVENT, requestRun);
+      window.removeEventListener(COLORING_PACK_POLICY_EVENT, resumeForPolicyChange);
       window.removeEventListener(COLORING_PACK_REMOVE_EVENT, pause);
       network?.removeEventListener('change', requestRun);
     },

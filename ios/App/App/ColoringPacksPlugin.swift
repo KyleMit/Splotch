@@ -55,6 +55,10 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
                     self.completion = completion
                     return
                 }
+                if self.currentJob != nil {
+                    completion(.failure(ColoringPackError.downloadInProgress))
+                    return
+                }
                 self.currentJob = job
                 self.completion = completion
                 try self.persist(job)
@@ -265,7 +269,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         rootDirectory.appendingPathComponent(version, isDirectory: true)
     }
 
-    static var rootDirectory: URL {
+    static let rootDirectory: URL = {
         let applicationSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let root = applicationSupport.appendingPathComponent("coloring", isDirectory: true)
         try? FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -274,7 +278,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         var mutableRoot = root
         try? mutableRoot.setResourceValues(resourceValues)
         return root
-    }
+    }()
 
     static var jobURL: URL {
         rootDirectory.appendingPathComponent("jobs/current.json")
@@ -282,6 +286,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 }
 
 private enum ColoringPackError: Error {
+    case downloadInProgress
     case invalidURL
     case invalidPath
     case verificationFailed

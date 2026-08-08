@@ -115,7 +115,13 @@ public class ColoringPacksPlugin extends Plugin {
             Observer<WorkInfo> observer = new Observer<>() {
                 @Override
                 public void onChanged(WorkInfo info) {
-                    if (info == null || !info.getState().isFinished()) return;
+                    if (info == null) return;
+                    boolean deferredAfterAttempt = info.getState() == WorkInfo.State.ENQUEUED
+                            && info.getRunAttemptCount() > 0;
+                    if (!info.getState().isFinished()
+                            && !deferredAfterAttempt) {
+                        return;
+                    }
                     manager.getWorkInfoByIdLiveData(request.getId()).removeObserver(this);
                     if (info.getState() == WorkInfo.State.SUCCEEDED && markerFile(directory).isFile()) {
                         resolveInstalled(call, bookId, directory);
@@ -169,8 +175,17 @@ public class ColoringPacksPlugin extends Plugin {
             if (child.isDirectory()
                     && !child.getName().equals(currentVersion)
                     && !child.getName().equals("jobs")) {
-                deleteRecursively(child);
+                tryDeleteRecursively(child);
             }
+        }
+    }
+
+    private static boolean tryDeleteRecursively(File file) {
+        try {
+            deleteRecursively(file);
+            return true;
+        } catch (RuntimeException ignored) {
+            return false;
         }
     }
 

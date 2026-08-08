@@ -64,6 +64,7 @@ function bundleFiles(dir) {
 export function nativeBundleProblems(
   dir,
   sentinels = adminConsoleSentinels(),
+  // This override exists only so the bundle-guard test can exercise a non-production starter id.
   starterBookId = STARTER_COLORING_BOOK_ID
 ) {
   if (!existsSync(dir)) return [`Native build output does not exist: ${dir}`];
