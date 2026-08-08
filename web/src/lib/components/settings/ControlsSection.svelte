@@ -19,12 +19,6 @@
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { clearOverlay } from '$lib/state/coloringBook.svelte';
-  import {
-    gate,
-    resetParentalGate,
-    disableParentalGate,
-    requireParentalGate,
-  } from '$lib/state/parentalGate.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
 
@@ -116,17 +110,6 @@
   function onScaleActive(active: boolean) {
     setResizingActionButtons(active);
   }
-
-  // On = the Grown-Ups Only gate will ask next time (no stored unlock).
-  // Turning it on clears any session/forever unlock. Turning it OFF weakens a
-  // protection, and Settings itself is ungated (ADR-0094) — so the off
-  // direction runs through a non-bypassable gate before it takes effect.
-  const gateAsking = $derived(!(gate.sessionUnlocked || gate.foreverUnlocked));
-
-  function toggleParentalGate(next: boolean) {
-    if (next) resetParentalGate();
-    else requireParentalGate(disableParentalGate, null, { force: true });
-  }
 </script>
 
 <section class="setting-group">
@@ -185,17 +168,6 @@
       />
     </div>
   {/if}
-
-  <div class="setting gate-setting">
-    <ToggleRow
-      icon="lock"
-      label="Grown-ups check"
-      id="parentalGateToggle"
-      checked={gateAsking}
-      onToggle={toggleParentalGate}
-      help="Ask for a quick math problem before the grown-ups areas open"
-    />
-  </div>
 </section>
 
 <style>
@@ -221,10 +193,6 @@
   }
 
   .pencil-eraser {
-    margin-top: 16px;
-  }
-
-  .gate-setting {
     margin-top: 16px;
   }
 </style>

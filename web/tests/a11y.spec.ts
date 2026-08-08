@@ -107,6 +107,15 @@ test('Settings has no serious accessibility violations', async ({ page }) => {
   await expectNoSeriousViolations(page, '#settingsModal');
 });
 
+test('Parent Center has no serious accessibility violations', async ({ page }) => {
+  await gotoApp(page);
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
+  await expect(settings.getByRole('heading', { name: 'Parent Center', exact: true })).toBeVisible();
+
+  await expectNoSeriousViolations(page, '#settingsModal');
+});
+
 test('the parental gate has no serious accessibility violations', async ({ page }) => {
   // The access-code param reveals the AI button, the gate's opener.
   await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });

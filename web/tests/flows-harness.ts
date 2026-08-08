@@ -21,7 +21,7 @@ export async function openDrawer(page: Page) {
   );
 }
 
-// Open the Grown-Ups Only gate from the AI button — its remember-honoring
+// Open the Grown-Ups Only gate from the AI button — its Parent Center-managed
 // operation boundary (ADR-0094: Settings entry itself is ungated). Requires a
 // gotoApp with `gateUnlocked: false` and a non-empty canvas (the caller draws
 // first); the AI button lives in the collapsed drawer, so open that first.
@@ -53,7 +53,7 @@ export async function solveParentalGate(page: Page) {
         await expect(page.locator('.gate-dab.filled')).toHaveCount(i + 1, { timeout: 1000 });
       } else {
         // The last digit auto-submits: the keypad leaves the DOM for the
-        // success card, or the gate closes outright (forced attempts).
+        // success card, or the gate closes outright (immediate link handoffs).
         await expect(keypad).not.toBeVisible({ timeout: 1500 });
       }
     }).toPass({ timeout: 15_000 });

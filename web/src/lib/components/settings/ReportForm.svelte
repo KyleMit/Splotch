@@ -4,6 +4,8 @@
   import ReportFields from '../report/ReportFields.svelte';
   import { apiUrl } from '$lib/api';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
+  import { buttonCenter } from '$lib/state/modal.svelte';
   import {
     createLatestRequest,
     NETWORK_ERROR_MESSAGE,
@@ -49,7 +51,7 @@
     if (open) reset();
   });
 
-  async function submit() {
+  async function sendReport() {
     const text = message.trim();
     if (!text || submitting) return;
 
@@ -89,6 +91,10 @@
       status = 'error';
       feedback = NETWORK_ERROR_MESSAGE;
     }
+  }
+
+  function submit(event: MouseEvent & { currentTarget: HTMLElement }) {
+    requireParentalGate('feedback', () => void sendReport(), buttonCenter(event.currentTarget));
   }
 </script>
 
