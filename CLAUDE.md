@@ -181,6 +181,11 @@ Codex-managed worktrees share host ports and machine capacity.
 
 ## Writing on GitHub
 
+For every GitHub task, **use the native GitHub skill and its MCP/app tools first**. Only attempt the
+`gh` CLI after that native path fails to perform the required operation. The sandbox cannot use the
+host's macOS Keychain-backed `gh` credentials, so `gh` authentication failures there are expected;
+never try to repair them by re-authenticating from the sandbox.
+
 GitHub auto-links a `#` followed by digits (`#12`) into a reference to the issue or pull request
 with that number. So a plain list like "#1 done, #2 pass" in a PR body or comment silently turns
 into links to unrelated issues/PRs.
