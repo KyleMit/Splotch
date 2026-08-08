@@ -13,9 +13,10 @@ export default defineConfig({
     appVersion: '1.0.0-test',
     buildTime: '2026-01-01T00:00:00Z',
     nativeApiBase: '',
-    // `true` keeps the native branches compiled in (they're guarded as
-    // `__IS_CAPACITOR__ && isNative()`), so tests stay in control of the
-    // web/native split through their runtime isNative() mocks.
+    // `true` keeps runtime native branches compiled in when they pair
+    // `__IS_CAPACITOR__` with `isNative()`, so tests control those branches
+    // through their isNative() mocks. Pure compile-time branches intentionally
+    // dead-code-eliminate here and need source/build boundary coverage instead.
     isCapacitor: true,
     perfMarks: false,
     devHarness: false,

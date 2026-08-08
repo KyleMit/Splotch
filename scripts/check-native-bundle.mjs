@@ -32,7 +32,14 @@ export const WEB_ONLY_MODULE_MARKERS = [
     feature: 'install prompt',
     marker: 'beforeinstallprompt',
     sourcePath: 'web/src/lib/state/install.svelte.ts',
-    sourceNeedle: "addEventListener('beforeinstallprompt'",
+    sourceNeedle:
+      "if (browser && !__IS_CAPACITOR__) {\n  window.addEventListener('beforeinstallprompt'",
+  },
+  {
+    feature: 'install completion',
+    marker: 'appinstalled',
+    sourcePath: 'web/src/lib/state/install.svelte.ts',
+    sourceNeedle: "addEventListener('appinstalled'",
   },
   {
     feature: 'PWA update lifecycle',
@@ -110,6 +117,10 @@ export function nativeBundleProblems(
   const forbidden = [
     ...FORBIDDEN_NATIVE_HOSTS.map((value) => ({ value, what: 'web-only host' })),
     ...sentinels.map((value) => ({ value, what: 'admin console' })),
+    ...WEB_ONLY_MODULE_MARKERS.map(({ feature, marker }) => ({
+      value: marker,
+      what: `web-only ${feature}`,
+    })),
   ];
   const problems = [];
   const coloringDirectory = join(dir, 'coloring');
@@ -125,16 +136,7 @@ export function nativeBundleProblems(
   }
   for (const path of bundleFiles(dir)) {
     const source = readFileSync(path, 'utf8');
-    const pathForbidden = path.endsWith('.js')
-      ? [
-          ...forbidden,
-          ...WEB_ONLY_MODULE_MARKERS.map(({ feature, marker }) => ({
-            value: marker,
-            what: `web-only ${feature}`,
-          })),
-        ]
-      : forbidden;
-    for (const { value, what } of pathForbidden) {
+    for (const { value, what } of forbidden) {
       if (source.includes(value)) {
         problems.push(`${what} "${value}" remains in ${relative(ROOT, path)}`);
       }

@@ -225,7 +225,7 @@ describe('promptInstall', () => {
   });
 });
 
-describe('appinstalled event', () => {
+describe('install completion', () => {
   it('marks installed and persists when the browser installs by any path', async () => {
     setUA(ANDROID_UA);
     const { install, initInstallPrompt, markInstalled } = await freshModule();

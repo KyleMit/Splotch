@@ -61,28 +61,45 @@ describe('native bundle scan', () => {
     }
   });
 
-  it('rejects every web-only boot marker from emitted JavaScript', () => {
-    const root = mkdtempSync(join(tmpdir(), 'splotch-native-bundle-'));
-    try {
-      writeFileSync(
-        join(root, 'app.js'),
-        WEB_ONLY_MODULE_MARKERS.map(({ marker }) => JSON.stringify(marker)).join(';')
-      );
-      const problems = nativeBundleProblems(root, []);
-      for (const { feature, marker } of WEB_ONLY_MODULE_MARKERS) {
-        expect(problems).toContainEqual(
-          expect.stringContaining(`web-only ${feature} "${marker}" remains`)
+  it.each(['js', 'html', 'json', 'webmanifest'])(
+    'rejects every web-only boot marker from emitted .%s files',
+    (extension) => {
+      const root = mkdtempSync(join(tmpdir(), 'splotch-native-bundle-'));
+      try {
+        writeFileSync(
+          join(root, `app.${extension}`),
+          WEB_ONLY_MODULE_MARKERS.map(({ marker }) => JSON.stringify(marker)).join(';')
         );
+        const problems = nativeBundleProblems(root, []);
+        for (const { feature, marker } of WEB_ONLY_MODULE_MARKERS) {
+          expect(problems).toContainEqual(
+            expect.stringContaining(`web-only ${feature} "${marker}" remains`)
+          );
+        }
+      } finally {
+        rmSync(root, { recursive: true, force: true });
       }
-    } finally {
-      rmSync(root, { recursive: true, force: true });
     }
-  });
+  );
 });
 
 describe('web-only boot markers', () => {
   it('still identifies executable literals in the owning modules', () => {
     expect(webOnlyMarkerSourceProblems()).toEqual([]);
+  });
+
+  it('fails loudly when an owning module loses a source needle', () => {
+    const [target] = WEB_ONLY_MODULE_MARKERS;
+    const problems = webOnlyMarkerSourceProblems((sourcePath) => {
+      const source = readFileSync(new URL(`../../${sourcePath}`, import.meta.url), 'utf8');
+      return sourcePath === target.sourcePath ? source.replace(target.sourceNeedle, '') : source;
+    });
+
+    expect(problems).toEqual([
+      expect.stringContaining(
+        `${target.sourcePath} no longer contains the ${target.feature} marker source`
+      ),
+    ]);
   });
 
   it('is documented beside the web-only service boundary', () => {
