@@ -1,0 +1,10 @@
+plugins {
+    id 'com.android.asset-pack'
+}
+
+assetPack {
+    packName = "coloring_dinosaur"
+    dynamicDelivery {
+        deliveryType = "on-demand"
+    }
+}

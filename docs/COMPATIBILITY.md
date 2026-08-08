@@ -35,7 +35,9 @@ won't hold back a feature for it.
 * **Native Android API 24 (7.0)** is older than the web floor *on purpose and safely*: the Android
   System WebView updates through the Play Store independently of the OS, so any maintained device —
   even on Android 7 — runs a current Chromium (≥ 111). The OS floor only governs native-shell APIs,
-  not the web content.
+  not the web content. Play Asset Delivery also does not raise this floor: the Play distribution
+  flavor feature-detects its on-demand Dinosaur pack and falls back to the API-24-compatible
+  WorkManager/HTTPS installer, while generic and alternate-store builds omit the Play dependency.
 
 ### Why the Android floor is not raised to API 29
 

@@ -93,7 +93,7 @@ try {
 
   // 4. Build + install, run the flow, and always tear the emulator down.
   await sh('npm run cap:sync');
-  await sh(`"${GRADLEW}" :app:installDebug`, ANDROID_DIR);
+  await sh(`"${GRADLEW}" :app:installGenericDebug`, ANDROID_DIR);
   await runMaestroSmoke();
 } finally {
   if (serial) {

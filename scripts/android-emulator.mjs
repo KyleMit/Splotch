@@ -9,10 +9,20 @@ switch (operation) {
     break;
   case 'emulator':
     run('npm', ['run', 'cap:sync']);
-    run('cap', ['run', 'android', '--target', AVD_NAME]);
+    run('cap', ['run', 'android', '--flavor', 'generic', '--target', AVD_NAME]);
     break;
   case 'live':
-    run('cap', ['run', 'android', '--target', AVD_NAME, '--live-reload', '--port', '5173']);
+    run('cap', [
+      'run',
+      'android',
+      '--flavor',
+      'generic',
+      '--target',
+      AVD_NAME,
+      '--live-reload',
+      '--port',
+      '5173',
+    ]);
     break;
   default:
     fail(`Unknown Android emulator operation: ${operation}`);

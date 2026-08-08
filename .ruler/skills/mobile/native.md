@@ -150,11 +150,16 @@ register it.
 
 ### Data & privacy posture (important for store forms)
 
-* **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
+* **No analytics, no tracking, no ads, no accounts, and no advertising or analytics SDKs.** The
+  Android Play flavor uses Google's Play Asset Delivery SDK solely to deliver coloring assets.
 * The only data that ever leaves the device is the **drawing image** the user explicitly sends to
   the AI endpoint (plus an invite token). Nothing is sold or used for tracking. The endpoint logs
   token usage for abuse prevention only. Coloring-pack requests contain only public static asset
   paths; they carry no drawing or child data.
+* The Android Play Asset Delivery SDK processes device metadata and app version to serve the right
+  pack. Google documents that this data is encrypted, is not transferred to third parties, and is
+  deleted after a fixed retention period. Splotch does not receive it. Keep the privacy page and
+  Play Data safety answers aligned with Google's current disclosure.
 * Photos are saved **locally** to the device gallery (a "Splotch" album).
 
 ## 2. Shared web-asset / sync commands
@@ -245,9 +250,10 @@ The shared baseline both depend on:
 > **Both uploads are currently manual.** The npm pipeline ends at producing the signed binary;
 > getting it to the store is a hands-on step today.
 
-* **Android** — `npm run android:bundle` → `app-release.aab`, then upload it in the **Play Console
-  web UI** (drag the `.aab` into a release on a track). `npm run android:open` reveals the output
-  folder.
+* **Android** — `npm run android:bundle` → `app-play-release.aab`, then upload it in the **Play
+  Console web UI** (drag the `.aab` into a release on a track). This is the Play flavor with the
+  Dinosaur on-demand asset pack; use `android:bundle:generic` only for a non-Play HTTPS-only build.
+  `npm run android:open` reveals the Play output folder.
 * **iOS** — `npm run ios:ipa` → `App.ipa`, then drag it into the **Transporter** app (free, Mac App
   Store) and hit Deliver. `npm run ios:open` reveals the output folder. (Xcode → Organizer →
   Distribute App is the GUI alternative.)
@@ -275,7 +281,7 @@ When release cadence justifies automating, set it up roughly as:
    * **iOS** — build via the existing `npm run ios:ipa`, then `upload_to_app_store` (deliver) to
      push `App.ipa` **plus** `fastlane/metadata/en-US/`.
    * **Android** — build via `npm run android:bundle`, then `upload_to_play_store` (supply) to push
-     `app-release.aab` **plus** `fastlane/metadata/android/en-US/`.
+     `app-play-release.aab` **plus** `fastlane/metadata/android/en-US/`.
 4. **Credentials** (gitignored, same posture as `ios/local.xcconfig` and
    `android/keystore.properties`):
    * iOS — an **App Store Connect API key** (`.p8` + Key ID + Issuer ID), App Manager role.

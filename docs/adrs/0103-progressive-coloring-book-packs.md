@@ -64,6 +64,29 @@ The same TypeScript store contract has platform-specific implementations:
   session events after suspension or system termination. Expensive and constrained network access
   are disabled by default.
 
+#### Android Play Asset Delivery canary
+
+Android has two distribution flavors over that shared store contract:
+
+* `generic` contains only the WorkManager/HTTPS implementation. It is the debug, emulator, sideload,
+  and non-Play build, so the Android API 24 support floor and ordinary local tooling do not depend
+  on Google Play delivery services.
+* `play` adds the official Play Asset Delivery library. Its AAB carries Dinosaur as an on-demand
+  `coloring_dinosaur` asset pack. The native store asks Play for that pack first on the default
+  unmetered policy, verifies the delivered files against the same manifest SHA-256/length contract,
+  and publishes the same installed-book result. Unsupported, failed, or confirmation-requiring Play
+  requests fall back to the WorkManager/HTTPS path.
+
+Distribution capability, not Android version, selects the source. Product flavors decide whether the
+Play API exists in the binary; the `play` runtime then checks whether the requested pack has a
+usable file-backed location. This avoids treating an OS release as a proxy for Play Store install,
+Play services availability, or alternate-store compatibility. The initial canary is deliberately one
+non-starter book; moving another book to PAD means adding it to the build-owned pack list and the
+drift-guarded runtime mapping.
+
+`npm run android:bundle` builds the Play AAB and validates the exact Dinosaur file list and bytes in
+the finished artifact. `npm run android:bundle:generic` remains the signed HTTPS-only escape hatch.
+
 The Parent Settings Coloring section can allow automatic downloads over mobile data and can remove
 all downloaded books. Removal cancels/pauses installation for the current app session, clears
 versioned storage, and immediately returns the picker to Farm.
@@ -93,9 +116,16 @@ Magic-fill consumers unchanged.
   actively executing JavaScript, subject to each operating system's scheduler.
 * **+** Catalog growth increases hosted storage and post-install transfer, not app-store or PWA
   install size.
+* **+** Play installs can adopt store-native delivery one book at a time without raising the OS
+  floor or removing the already-shipped HTTPS fallback.
+* **+** Alternate stores, sideloads, emulators, and development builds remain independent of Play
+  Asset Delivery.
 * **-** A fresh offline install exposes only Farm until it has had an online background session.
 * **-** The deployed origin must retain the exact manifest-addressed stable paths for the lifetime
   of the corresponding app version. Verification deliberately rejects mismatched CDN bytes rather
   than accepting a visually plausible stale file.
 * **-** Three storage backends and two native lifecycle integrations replace the former static-only
   model. Web, Android, and iOS builds plus bundle guards cover their shared contract.
+* **-** Android release automation owns two flavors and must build the `play` flavor with its asset
+  pack module enabled; invoking an arbitrary Gradle release task is no longer equivalent to the
+  canonical release command.

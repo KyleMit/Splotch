@@ -1,8 +1,7 @@
 <script lang="ts">
-  // Friendly, plain-language privacy policy. Splotch collects nothing
-  // automatically — the only data it ever receives is what a grown-up
-  // deliberately turns on or sends: a magic-image request (see "When the
-  // internet is used") or the optional feedback form (see "Sending feedback").
+  // Friendly, plain-language privacy policy. Splotch receives data only when a
+  // grown-up deliberately sends a magic-image request or feedback. Google Play
+  // separately processes limited delivery metadata for Android asset packs.
   // This page exists mostly to *prove* that. It's required by the app stores
   // (see the `mobile` skill's store-release checklist). Keep the tone simple
   // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
@@ -14,7 +13,7 @@
   // Splotch has no email; questions/concerns go through GitHub issues.
   import { GITHUB_NEW_ISSUE_URL as CONTACT_URL } from '$lib/githubRepo';
 
-  const LAST_UPDATED = 'July 28, 2026';
+  const LAST_UPDATED = 'August 8, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -22,7 +21,7 @@
     { label: 'Red', lead: 'No ads.', body: 'Ever. None.' },
     { label: 'Orange', lead: 'No tracking.', body: "We don't follow you around the internet." },
     { label: 'Yellow', lead: 'No accounts.', body: 'No sign-up, no login, no passwords.' },
-    { label: 'Green', lead: 'No analytics.', body: 'No third-party trackers or SDKs.' },
+    { label: 'Green', lead: 'No analytics.', body: 'No advertising or analytics SDKs.' },
     {
       label: 'Blue',
       lead: 'No background collection.',
@@ -73,6 +72,18 @@
     </p>
 
     <h3>When the internet is used</h3>
+    <p>
+      On Android installs from Google Play, Google Play can download extra coloring-book pictures
+      for Splotch. Google says this delivery service processes device metadata and the app version
+      to send the right files. That data is encrypted, isn't transferred to third parties, and is
+      deleted after a fixed retention period. We don't receive it, and it never includes a drawing
+      or information about your child. You can read
+      <a
+        href="https://developer.android.com/guide/playcore/asset-delivery#terms-and-data-safety"
+        target="_blank"
+        rel="noopener noreferrer">Google's Play Asset Delivery disclosure</a
+      >.
+    </p>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
       illustration. A grown-up has to switch it on first — the button stays hidden until an access
@@ -146,11 +157,11 @@
     <h3>Children's privacy</h3>
     <p>
       Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and
-      gathers nothing on its own. The one place any information is sent is the grown-ups' feedback
-      form above, which a child can't reach — so we collect no personal information from children,
-      and we comply with children's privacy laws such as the Children's Online Privacy Protection
-      Act (COPPA) and the GDPR's protections for children. There are no social features, comments,
-      links out, or in-app purchases.
+      collects no personal information on its own. Information reaches us only through the
+      grown-ups' choices described above, which a child can't reach — so we collect no personal
+      information from children, and we comply with children's privacy laws such as the Children's
+      Online Privacy Protection Act (COPPA) and the GDPR's protections for children. There are no
+      social features, comments, links out, or in-app purchases.
     </p>
 
     <h3>Changes to this policy</h3>

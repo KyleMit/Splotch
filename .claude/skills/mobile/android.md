@@ -57,7 +57,8 @@ the Google Play release checklist. For the general build model and shared assets
      device" below.
    * **Native debug build**: `npm run android:run` (cap:sync + build + install) — the `android:*`
      scripts go through `scripts/gradle.mjs`, which resolves the Gradle wrapper and runs it from
-     `android/` (ADR-0017). You can also use Capacitor's runner: `npx cap run android`.
+     `android/` (ADR-0017). You can also use Capacitor's runner:
+     `npx cap run android --flavor generic`.
 
 6. **Debug with Chrome DevTools**: on desktop Chrome open `chrome://inspect/#devices` and click
    **Inspect** on the phone's tab — see "Performance profiling with Chrome DevTools" below for the
@@ -79,11 +80,18 @@ the Google Play release checklist. For the general build model and shared assets
 Each runs `cap:sync` first (the shared web build — see [native.md](native.md)), then Gradle:
 
 ```bash
-npm run android:apk     # debug APK  -> android/app/build/outputs/apk/debug/app-debug.apk
-npm run android:run     # build + install the debug app onto the connected device/emulator
-npm run android:bundle  # SIGNED release AAB (see §4 Signing for the prerequisite)
-npm run android:clean   # gradle clean (no cap:sync)
+npm run android:apk             # generic debug APK -> outputs/apk/generic/debug/app-generic-debug.apk
+npm run android:run             # build + install generic debug on the connected device/emulator
+npm run android:bundle          # signed Play AAB + Dinosaur on-demand asset pack
+npm run android:bundle:generic  # signed HTTPS-only AAB for non-Play distribution
+npm run android:clean           # gradle clean (no cap:sync)
 ```
+
+The `generic` flavor is the compatibility baseline: WorkManager downloads coloring packs over HTTPS
+and has no Play Asset Delivery dependency. The `play` flavor tries the on-demand Dinosaur asset pack
+first and falls back to the same HTTPS path when Play delivery is unavailable. Flavor selection is a
+distribution decision; runtime availability checks handle Play capability, so the Android-version
+floor remains API 24.
 
 > **Prerequisites for the `android:*` scripts** (one-time, see §1):
 >
@@ -235,7 +243,7 @@ multi-touch input — the best way to get accurate profiles.
 * [x] **Signing is wired up:** `android/app/build.gradle` reads creds from
       `android/keystore.properties` (git-ignored; `.gitignore` updated, template at
       `android/keystore.properties.example`). Without that file, release builds are unsigned; with
-      it, `bundleRelease` is signed automatically.
+      it, release variants are signed automatically.
 * [x] **Upload keystore created** at `android/upload-keystore.jks` (alias `upload`, RSA 2048, ~valid
       to 2053), and `android/keystore.properties` is filled in. Both are git-ignored. **Store the
       `.jks` + passwords in a password manager — losing them means you can't update the app.**
@@ -249,7 +257,8 @@ multi-touch input — the best way to get accurate profiles.
     as literal characters, so a quoted password fails with *"keystore password was incorrect"*.
 * [ ] Enroll in **Play App Signing** (recommended) when creating the app.
 * [x] **Produce a signed release `.aab`:** `npm run android:bundle` →
-      `android/app/build/outputs/bundle/release/app-release.aab` (Play requires AAB). Verify it's
+      `android/app/build/outputs/bundle/playRelease/app-play-release.aab` (Play requires AAB). The
+      build also verifies the Dinosaur asset pack's exact file set and bytes. Verify the AAB is
       signed with `npm run android:verify` (expect `jar verified`; the self-signed / no-timestamp
       warnings are normal for an upload key).
 
@@ -267,7 +276,9 @@ multi-touch input — the best way to get accurate profiles.
       the **wrong** answer: declare **Photos and videos** → collected (not shared), purpose **App
       functionality** only, **not** for tracking or advertising, **processed ephemerally** at the
       user's request (the server keeps no copy — `lib/server/usage.ts` records only a per-token
-      tally). Be precise — this is legally binding.
+      tally). The Play flavor also uses Play Asset Delivery; reconcile the form with Google's
+      current SDK disclosure that it processes device metadata and app version for delivery. Be
+      precise — this is legally binding.
 * [ ] Complete **Content rating** questionnaire (IARC) → should land at *Everyone*. Play does **not
       allow unrated apps**, so this gates release rather than merely decorating it.
 * [ ] **Target audience & content**: select **Children** age bands → this opts you into the
@@ -342,7 +353,7 @@ assumption breaks:
 | SMS & Call Log Permissions (`READ_CALL_LOG`)    | Manifest declares only `INTERNET`, `ACCESS_NETWORK_STATE`, `WRITE_EXTERNAL_STORAGE` (maxSdk 28). No accounts, no phone verification. |
 | Location disclosures                            | No location permission and no Geolocation use; `securityHeaders.ts` denies `geolocation=()` outright.                                |
 | Personal Loans / Earned Wage Access             | Not a financial app.                                                                                                                 |
-| Ads, analytics, advertising ID                  | No ad/analytics/attribution SDKs — Android deps are appcompat, splashscreen, and Capacitor plugins only.                             |
+| Ads, analytics, advertising ID                  | No ad/analytics/attribution SDKs. The Play Asset Delivery SDK serves coloring files and is not used for advertising or analytics.    |
 
 ## 5. Known follow-ups (Android-specific)
 

@@ -29,6 +29,7 @@ import java.util.List;
 public class ColoringPacksPlugin extends Plugin {
     private static final String WORK_NAME = "splotch-coloring-pack";
     private static final String MARKER_NAME = ".installed";
+    private final ColoringPackSource distributionSource = new DistributionColoringPackSource();
 
     static File bookDirectory(Context context, String version, String bookId) {
         return new File(new File(new File(context.getNoBackupFilesDir(), "coloring"), version), bookId);
@@ -36,6 +37,11 @@ public class ColoringPacksPlugin extends Plugin {
 
     static File markerFile(File bookDirectory) {
         return new File(bookDirectory, MARKER_NAME);
+    }
+
+    static File padMarkerFile(Context context, String version, String bookId) {
+        return new File(new File(new File(context.getNoBackupFilesDir(), "coloring"), version),
+                ".pad/" + bookId + MARKER_NAME);
     }
 
     @PluginMethod
@@ -52,6 +58,14 @@ public class ColoringPacksPlugin extends Plugin {
                     JSObject pack = new JSObject();
                     pack.put("id", id);
                     pack.put("rootPath", Uri.fromFile(directory).toString());
+                    installed.put(pack);
+                    continue;
+                }
+                File distributionDirectory = distributionSource.installed(getContext(), version, id);
+                if (distributionDirectory != null) {
+                    JSObject pack = new JSObject();
+                    pack.put("id", id);
+                    pack.put("rootPath", Uri.fromFile(distributionDirectory).toString());
                     installed.put(pack);
                 }
             }
@@ -81,12 +95,54 @@ public class ColoringPacksPlugin extends Plugin {
                 return;
             }
 
+            JSONArray files = new JSONArray(book.getJSONArray("files").toString());
+            boolean handled = distributionSource.install(
+                    getContext(),
+                    version,
+                    bookId,
+                    files,
+                    allowMetered,
+                    new ColoringPackSource.Callback() {
+                        @Override
+                        public void onInstalled(File root) {
+                            getActivity().runOnUiThread(() -> resolveInstalled(call, bookId, root));
+                        }
+
+                        @Override
+                        public void onFallback() {
+                            getActivity().runOnUiThread(() -> enqueueHttpsInstall(
+                                    call, version, baseUrl, bookId, files, allowMetered, directory));
+                        }
+
+                        @Override
+                        public void onCanceled() {
+                            getActivity().runOnUiThread(() ->
+                                    call.reject("Coloring-pack download was canceled"));
+                        }
+                    });
+            if (handled) return;
+
+            enqueueHttpsInstall(call, version, baseUrl, bookId, files, allowMetered, directory);
+        } catch (Exception error) {
+            call.reject(error.getMessage(), error);
+        }
+    }
+
+    private void enqueueHttpsInstall(
+            PluginCall call,
+            String version,
+            String baseUrl,
+            String bookId,
+            JSONArray files,
+            boolean allowMetered,
+            File directory) {
+        try {
             JSONObject job = new JSONObject();
             job.put("version", version);
             job.put("baseUrl", baseUrl);
             job.put("bookId", bookId);
             job.put("allowMetered", allowMetered);
-            job.put("files", new JSONArray(book.getJSONArray("files").toString()));
+            job.put("files", files);
             File jobFile = new File(new File(getContext().getNoBackupFilesDir(), "coloring/jobs"), bookId + ".json");
             ColoringPackWorker.writeText(jobFile, job.toString());
 
@@ -139,6 +195,7 @@ public class ColoringPacksPlugin extends Plugin {
         try {
             String version = requiredComponent(call, "version");
             WorkManager.getInstance(getContext()).cancelUniqueWork(WORK_NAME);
+            distributionSource.remove(getContext());
             deleteRecursively(new File(new File(getContext().getNoBackupFilesDir(), "coloring"), version));
             call.resolve();
         } catch (Exception error) {

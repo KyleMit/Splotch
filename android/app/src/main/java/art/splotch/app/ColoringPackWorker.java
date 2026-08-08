@@ -18,7 +18,6 @@ import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 
 public class ColoringPackWorker extends Worker {
     public static final String JOB_PATH = "jobPath";
@@ -70,13 +69,10 @@ public class ColoringPackWorker extends Worker {
         if (!path.startsWith(bookPrefix)) throw new IllegalArgumentException("Invalid coloring path");
 
         String relativePath = path.substring(bookPrefix.length());
-        File destination = new File(bookDirectory, relativePath);
-        if (!destination.getCanonicalPath().startsWith(bookDirectory.getCanonicalPath() + File.separator)) {
-            throw new IllegalArgumentException("Coloring path escaped its book directory");
-        }
+        File destination = ColoringPackFiles.resolvedFile(bookDirectory, relativePath);
         long expectedBytes = entry.getLong("bytes");
         String expectedDigest = entry.getString("sha256");
-        if (matches(destination, expectedBytes, expectedDigest)) return;
+        if (ColoringPackFiles.matches(destination, expectedBytes, expectedDigest)) return;
 
         File parent = destination.getParentFile();
         if (parent != null && !parent.exists() && !parent.mkdirs()) {
@@ -93,7 +89,7 @@ public class ColoringPackWorker extends Worker {
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 throw new IllegalStateException("Coloring download HTTP " + connection.getResponseCode());
             }
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
             long bytes = 0;
             try (BufferedInputStream input = new BufferedInputStream(connection.getInputStream());
                     BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(partial))) {
@@ -117,17 +113,6 @@ public class ColoringPackWorker extends Worker {
             connection.disconnect();
             if (partial.exists() && !partial.delete()) partial.deleteOnExit();
         }
-    }
-
-    private boolean matches(File file, long expectedBytes, String expectedDigest) throws Exception {
-        if (!file.isFile() || file.length() != expectedBytes) return false;
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(file))) {
-            byte[] buffer = new byte[64 * 1024];
-            int count;
-            while ((count = input.read(buffer)) != -1) digest.update(buffer, 0, count);
-        }
-        return hex(digest.digest()).equals(expectedDigest);
     }
 
     private static String readText(File file) throws Exception {

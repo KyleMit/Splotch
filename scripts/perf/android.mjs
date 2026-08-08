@@ -83,7 +83,7 @@ export async function runAndroidProfile() {
 
   if (build) {
     warnIfNoPerfMarks('npm run perf:android');
-    // cap:sync (build:cap, inheriting PERF_MARKS) + gradle installDebug.
+    // cap:sync (build:cap, inheriting PERF_MARKS) + Gradle's generic debug install.
     run('npm', ['run', 'android:run']);
   }
 

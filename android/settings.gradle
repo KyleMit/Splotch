@@ -2,4 +2,9 @@ include ':app'
 include ':capacitor-cordova-android-plugins'
 project(':capacitor-cordova-android-plugins').projectDir = new File('./capacitor-cordova-android-plugins/')
 
+if (gradle.startParameter.projectProperties.get('splotchPlayAssetDelivery') == 'true') {
+    include ':coloring_dinosaur'
+    project(':coloring_dinosaur').projectDir = new File('./coloring-packs/coloring_dinosaur/')
+}
+
 apply from: 'capacitor.settings.gradle'

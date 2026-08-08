@@ -70,7 +70,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            adb install -r -t android/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r -t android/app/build/outputs/apk/generic/debug/app-generic-debug.apk
             # :device runs Maestro against the emulator this action already booted.
             # (Plain `test:android` boots + tears down its own emulator — for local use.)
             npm run test:android:device

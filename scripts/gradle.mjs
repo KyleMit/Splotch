@@ -9,6 +9,6 @@ import { ANDROID_DIR, GRADLEW } from './lib/android.mjs';
 
 const tasks = process.argv.slice(2);
 if (tasks.length === 0)
-  fail('[gradle] no Gradle task given — e.g. node scripts/gradle.mjs :app:bundleRelease');
+  fail('[gradle] no Gradle task given — e.g. node scripts/gradle.mjs :app:bundlePlayRelease');
 
 run(GRADLEW, tasks, { cwd: ANDROID_DIR });

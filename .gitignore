@@ -179,6 +179,7 @@ deno.lock
 
 # android studio
 android/.idea
+/android/coloring-packs/*/src/main/assets/
 
 # iOS personal signing (DEVELOPMENT_TEAM) — included by ios/debug.xcconfig, passed to ios:archive
 ios/local.xcconfig
