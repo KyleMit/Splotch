@@ -10,6 +10,7 @@
   import ColoringSection from './settings/ColoringSection.svelte';
   import ControlsSection from './settings/ControlsSection.svelte';
   import AiKeyManager from './settings/AiKeyManager.svelte';
+  import ParentCenterSection from './settings/ParentCenterSection.svelte';
   import SetupInstructions from './settings/SetupInstructions.svelte';
   import WhatsNewSection from './settings/WhatsNewSection.svelte';
   import ReportForm from './settings/ReportForm.svelte';
@@ -19,6 +20,8 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
+  import { buttonCenter } from '$lib/state/modal.svelte';
 
   // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
   // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
@@ -33,6 +36,7 @@
     coloring: ColoringSection,
     controls: ControlsSection,
     ai: AiKeyManager,
+    parentCenter: ParentCenterSection,
     setup: SetupInstructions,
     whatsnew: WhatsNewSection,
     feedback: ReportForm,
@@ -100,8 +104,12 @@
     navEl?.scrollTo({ top: 0 });
   });
 
-  function openSection(id: SectionId) {
-    view = id;
+  function openSection(id: SectionId, trigger: HTMLElement) {
+    if (id !== 'parentCenter') {
+      view = id;
+      return;
+    }
+    requireParentalGate('parentCenter', () => (view = id), buttonCenter(trigger));
   }
 
   function backToHub() {
@@ -159,7 +167,7 @@
               data-section={section.id}
               class:active={section.id === activeSection}
               aria-current={section.id === activeSection ? 'page' : undefined}
-              onclick={() => openSection(section.id)}
+              onclick={(event) => openSection(section.id, event.currentTarget)}
             >
               <SectionIcon icon={section.icon} class="settings-nav-icon" />
               <span>{section.label}</span>
@@ -186,7 +194,7 @@
                 <button
                   class="hub-row"
                   data-section={section.id}
-                  onclick={() => openSection(section.id)}
+                  onclick={(event) => openSection(section.id, event.currentTarget)}
                 >
                   <span class="hub-icon">
                     <SectionIcon icon={section.icon} class="hub-icon-svg" />
@@ -438,12 +446,10 @@
     padding: 0 24px 24px;
   }
 
-  /* The pane is the scroller; the nav only becomes one where the column can't
-     hold all nine sections. The list is a fixed 466px, and the 85vh card gives
-     it the viewport height minus its own chrome — so it scrolls below ~664px of
-     viewport height and fits at or above it. That band is not just the 600px
-     floor: a landscape iPad in Safari lands in it routinely. Contained, so
-     scrolling past either end never chains out to the pane.
+  /* The pane is the primary scroller; the nav becomes one wherever the column
+     cannot hold the full section list. That includes landscape iPad Safari once
+     browser chrome reduces the available height. Contained, so scrolling past
+     either end never chains out to the pane.
 
      The edge shades are the affordance for it, since a row clipped at a gap
      leaves the column looking finished and touch scrollbars don't paint until

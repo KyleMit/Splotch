@@ -254,14 +254,18 @@
     if (aiResult.generating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     const origin = buttonCenter(aiBtnEl);
-    requireParentalGate(() => {
-      if (settings.aiCustomizationEnabled) {
-        aiPromptModal.show(origin);
-        return;
-      }
+    requireParentalGate(
+      'aiImage',
+      () => {
+        if (settings.aiCustomizationEnabled) {
+          aiPromptModal.show(origin);
+          return;
+        }
 
-      generateAiImage();
-    }, origin);
+        generateAiImage();
+      },
+      origin
+    );
   }
 </script>
 

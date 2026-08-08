@@ -40,6 +40,9 @@ test('Settings sidebar switches the content pane (tablet layout)', async ({ page
   // inside the panes they open ("Install Splotch" in the Setup section).
   const nav = page.locator('.settings-nav');
   await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveClass(/active/);
+  await expect(
+    nav.getByRole('button', { name: 'Parent Center' }).locator('[data-icon="parent-center"]')
+  ).toHaveClass(/icon-color/);
 
   // Selecting a section highlights it in the sidebar and swaps the pane content.
   await nav.getByRole('button', { name: 'Buttons' }).click();

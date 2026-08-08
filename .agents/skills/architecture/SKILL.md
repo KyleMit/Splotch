@@ -103,7 +103,7 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 | `state/strokeWidth.svelte.ts`       | Stroke width levels and eraser size multiplier.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `state/tool.svelte.ts`              | The active brush — one four-way axis (`pen \| crayon \| magic \| eraser`, ADR-0067), persisted as `splotch-brush-type` (default pen; the eraser is never persisted). Pen and crayon are the "ink brushes" that lay the active palette color; `selectInkBrush()` returns to the last one when a color pick or clear leaves the eraser/magic.                                                                                                                                                                                                                                                                                                                                                         |
 | `state/settings.svelte.ts`          | User-configurable toggles (sounds, save-on-delete, screenshot button, coloring books, etc.) plus the appearance setting (light/dark/system), persisted via `storage.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `state/parentalGate.svelte.ts`      | The Grown-Ups Only parental gate (App Store 5.1.4, ADR-0094): the multiplication challenge, the remember preference (`always`/`session`/`forever`), and `requireParentalGate()`. Gates sit at operation boundaries — the AI button (remember-honored) and, via the `parentalGateLink` action, every external link-out in Settings (`force: true`, never skipped). Session unlocks are in-memory; the forever unlock persists via `storage.ts`.                                                                                                                                                                                                                                                      |
+| `state/parentalGate.svelte.ts`      | The Grown-Ups Only parental gate (App Store 5.1.4, ADR-0094): the multiplication challenge, Parent Center's independent `always`/`session`/`never` policies, and `requireParentalGate()`. Gates sit at operation boundaries — AI image launch, external-link activation, feedback submission, and Parent Center entry. Policies persist via `storage.ts`; per-session solves stay in memory.                                                                                                                                                                                                                                                                                                        |
 | `state/appearance.svelte.ts`        | Reactive *resolved* theme ('light' \| 'dark'): the appearance setting combined with the live OS preference. For the few JS consumers of the resolved value (Notch Band paper color, export paper fill); CSS reads the `app.css` tokens instead.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `state/layout.svelte.ts`            | Viewport and orientation state.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `state/fullscreen.svelte.ts`        | Immersive-fullscreen support + active state and the toggle action, backing the Fullscreen Toggle button. Android web only; dismisses the mobile URL bar.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -294,23 +294,25 @@ media queries + the head-script stamp in `app.html`).
   shown on web after the child has drawn a few strokes. One-tap native install on Chromium/Android;
   guided Share-sheet hint on iOS. Dismissible and remembered. See ADR-0039.
 * **Parental Gate** - "Grown-Ups Only" modal (`ParentalGate.svelte`) guarding individual sensitive
-  operations at their boundary — never Settings entry itself (ADR-0094). The AI button opens it
-  until an adult solves a random single-digit multiplication problem on its keypad (wrong answers
-  regenerate the problem); a remember preference inside the gate (ask every time / skip this session
-  / don't ask again) relaxes re-prompting there, but only takes effect after a solve. External
-  link-outs in Settings and disabling the gate check gate with `force` — always asked, remember
-  preference hidden. The Grown-ups check toggle in Settings → Buttons clears a stored unlock.
+  operations at their boundary — never Settings entry itself (ADR-0094). An adult solves a random
+  single-digit multiplication problem on its keypad (wrong answers regenerate the problem). The
+  protected operations are AI image launch, external-link activation, feedback submission, and
+  Parent Center entry; Parent Center gives each an independent Every time / Per session / Never
+  policy. Native iOS keeps external links' Never choice visible but unavailable and explains the
+  Kids Category constraint inline; web and Android allow it. Policy selections persist, while
+  per-session solves are in-memory. External-link handoff runs immediately inside the solving tap so
+  browser user activation survives.
 * **Settings Button** - Floating button that opens Settings
   * **Settings** - Modal for app settings, install guides, and about info. Its body is one flat list
-    of **Sections** (ADR-0061), not tabs: Appearance, Sound, Buttons, Saving, AI Art, Install,
-    Feedback, What's New (drilled-in header: "Updates"), About. Both shells render from the same
-    `SECTIONS` list in `settings/sections.ts`, chosen by viewport width (`SettingsModal.svelte`):
-    below ~700px a **Hub** list drills into a full-page section with a back arrow; at/above ~700px a
-    persistent **Sidebar** (its own scroller below ~664px of viewport height, where the fixed 466px
-    section list outgrows the column — landscape iPad Safari lands there; scroll-position edge
-    shades mark it, and a reopen resets its scroll) sits beside a scrolling content **Pane**. Each
-    section component lives in `settings/` (`AppearanceSection`, `SoundSection`, `SavingSection`,
-    `ControlsSection`, `AiKeyManager`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
+    of **Sections** (ADR-0061), not tabs: Appearance, Sound, Buttons, Saving, Coloring, AI Art,
+    Parent Center, Install, Feedback, What's New (drilled-in header: "Updates"), About. Both shells
+    render from the same `SECTIONS` list in `settings/sections.ts`, chosen by viewport width
+    (`SettingsModal.svelte`): below ~700px a **Hub** list drills into a full-page section with a
+    back arrow; at/above ~700px a persistent **Sidebar** (its own scroller whenever the section list
+    outgrows the column; scroll-position edge shades mark it, and a reopen resets its scroll) sits
+    beside a scrolling content **Pane**. Each section component lives in `settings/`
+    (`AppearanceSection`, `SoundSection`, `SavingSection`, `ColoringSection`, `ControlsSection`,
+    `AiKeyManager`, `ParentCenterSection`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
     `AboutSection`).
     * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Install** section, plus
       the one-tap install button when the browser supports it

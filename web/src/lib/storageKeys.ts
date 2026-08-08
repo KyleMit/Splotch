@@ -27,8 +27,12 @@ export const STORAGE_KEYS = {
   installCompleted: 'splotch-install-completed',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
   saveFolderChosen: 'splotch-save-folder-chosen',
-  gateRememberMode: 'splotch-gate-remember-mode',
-  gateUnlockedForever: 'splotch-gate-unlocked',
+  parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',
+  parentalGateExternalLinksMode: 'splotch-parental-gate-external-links-mode',
+  parentalGateFeedbackMode: 'splotch-parental-gate-feedback-mode',
+  parentalGateParentCenterMode: 'splotch-parental-gate-parent-center-mode',
+  legacyGateRememberMode: 'splotch-gate-remember-mode',
+  legacyGateUnlockedForever: 'splotch-gate-unlocked',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

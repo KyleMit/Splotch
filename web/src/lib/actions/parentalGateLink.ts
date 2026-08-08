@@ -2,11 +2,10 @@ import { requireParentalGate } from '$lib/state/parentalGate.svelte';
 import { buttonCenter } from '$lib/state/modal.svelte';
 
 // Gate an external link at its operation boundary (ADR-0094): the click is
-// intercepted and the Grown-Ups Only challenge opens with `force: true` —
-// links out of the app re-prove adulthood on every activation, regardless of
-// any remembered unlock (App Store Guideline 5.1.4). On success the original
-// anchor is re-activated, so native anchor semantics (target, rel, the
-// WebView's external-browser handling) stay intact.
+// intercepted and the Grown-Ups Only challenge follows Parent Center's
+// external-links policy. On success the original anchor is re-activated, so
+// native anchor semantics (target, rel, the WebView's external-browser
+// handling) stay intact.
 export function parentalGateLink(node: HTMLAnchorElement) {
   // One-shot latch: the replayed click after a solve must pass through.
   // Deliberately untracked — nothing renders it.
@@ -20,12 +19,13 @@ export function parentalGateLink(node: HTMLAnchorElement) {
     event.preventDefault();
     event.stopPropagation();
     requireParentalGate(
+      'externalLinks',
       () => {
         approved = true;
         node.click();
       },
       buttonCenter(node),
-      { force: true }
+      { immediate: true }
     );
   }
 
