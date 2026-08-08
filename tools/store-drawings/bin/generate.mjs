@@ -3,12 +3,12 @@
 import { parseArgs } from 'node:util';
 import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
-import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
-import { COLOR_FAMILIES } from '../web/src/lib/hexPickerLayout.ts';
-import { isMain, ROOT } from './lib/proc.mjs';
+import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
+import { COLOR_FAMILIES } from '../../../web/src/lib/hexPickerLayout.ts';
+import { isMain, ROOT } from '../../../scripts/lib/proc.mjs';
 
-const DEFAULT_INPUT = join(ROOT, 'scrapbook/drawings');
-const DEFAULT_OUTPUT = join(ROOT, 'scripts/lib/store-drawings.mjs');
+const DEFAULT_INPUT = join(ROOT, 'tools/store-drawings/samples');
+const DEFAULT_OUTPUT = join(ROOT, 'tools/store-drawings/generated/store-drawings.mjs');
 const FLATTEN_TOLERANCE = 0.25;
 const MAX_FLATTEN_DEPTH = 12;
 const POINT_PRECISION = 0.25;
@@ -292,7 +292,7 @@ function formatValue(value, indent = 0) {
 }
 
 export function generateModule(drawings) {
-  const blocks = ["import { drawInstructionScene } from './drawing-instructions.mjs';", ''];
+  const blocks = ["import { drawInstructionScene } from '../lib/drawing-instructions.mjs';", ''];
   for (const drawing of drawings) {
     const constant = drawing.functionName
       .replace(/^draw/, '')

@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
 import { ROOT, sleep } from './lib/proc.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
-import { drawHouseTall, drawHouseWide } from './lib/store-drawings.mjs';
+import { drawHouseTall, drawHouseWide } from '../tools/store-drawings/generated/store-drawings.mjs';
 import {
   ensureDevServer,
   openAppPage,

@@ -138,6 +138,9 @@ jobs:
       - name: Run asset-pipeline tests
         run: npm run test:asset-gen
 
+      - name: Run store-drawing pipeline tests
+        run: npm run test:store-drawings
+
       - name: Run repo-script tests
         run: npm run test:scripts
 

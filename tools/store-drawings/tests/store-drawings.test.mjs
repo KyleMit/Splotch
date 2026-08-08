@@ -6,13 +6,13 @@ import {
   flattenSvgPath,
   generateModule,
   generateStoreDrawings,
-} from '../generate-store-drawings.mjs';
+} from '../bin/generate.mjs';
 import { fitInstructionScene, sceneStrokePoints } from '../lib/drawing-instructions.mjs';
-import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../lib/store-drawings.mjs';
+import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
 
-const repoRoot = join(import.meta.dirname, '..', '..');
-const drawingsRoot = join(repoRoot, 'scrapbook/drawings');
-const generatedPath = join(repoRoot, 'scripts/lib/store-drawings.mjs');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
+const drawingsRoot = join(repoRoot, 'tools/store-drawings/samples');
+const generatedPath = join(repoRoot, 'tools/store-drawings/generated/store-drawings.mjs');
 
 describe('store drawing conversion', () => {
   it('flattens cubic paths and closes them into pointer coordinates', () => {

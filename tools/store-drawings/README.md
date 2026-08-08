@@ -2,15 +2,21 @@
 
 The free-draw store screenshot is recreated through ordinary palette, stroke-width, and pointer
 interactions in the live app. Runtime drawing never parses or renders SVG. The generated
-[`scripts/lib/store-drawings.mjs`](../scripts/lib/store-drawings.mjs) contains static numeric
-pointer coordinates and exports one named function per scene, including `drawHouseTall` and
-`drawHouseWide`.
+[`generated/store-drawings.mjs`](generated/store-drawings.mjs) contains static numeric pointer
+coordinates and exports one named function per scene, including `drawHouseTall` and `drawHouseWide`.
+
+## Layout
+
+* `bin/` contains the conversion, evaluation, and brush-review entry points.
+* `lib/` contains the static-scene fitting and replay helper.
+* `generated/` contains the committed pointer instructions consumed by store screenshots.
+* `samples/` contains the SVG authoring inputs used only by the offline converter and evaluator.
+* `tests/` contains the pipeline and generated-drift tests.
 
 ## Conversion pipeline
 
-Source SVGs are authoring inputs under `scrapbook/drawings/`. Each filename ends in `-tall.svg` or
-`-wide.svg`; that suffix selects the store orientation used for color availability and width
-calibration.
+Source SVGs are authoring inputs under `samples/`. Each filename ends in `-tall.svg` or `-wide.svg`;
+that suffix selects the store orientation used for color availability and width calibration.
 
 ```bash
 npm run gen:store-drawings

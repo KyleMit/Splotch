@@ -5,14 +5,19 @@ import sharp from 'sharp';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { join, resolve } from 'node:path';
-import { PALETTE_COLORS } from '../web/src/lib/palette.ts';
-import { ROOT, isMain } from './lib/proc.mjs';
-import { chromiumExecutablePath } from './lib/playwright.mjs';
-import { ensureDevServer, openAppPage, canvasBox, expandDrawer } from './lib/app-driver.mjs';
-import { fitInstructionScene, sceneStrokePoints } from './lib/drawing-instructions.mjs';
-import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from './lib/store-drawings.mjs';
+import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
+import { ROOT, isMain } from '../../../scripts/lib/proc.mjs';
+import { chromiumExecutablePath } from '../../../scripts/lib/playwright.mjs';
+import {
+  ensureDevServer,
+  openAppPage,
+  canvasBox,
+  expandDrawer,
+} from '../../../scripts/lib/app-driver.mjs';
+import { fitInstructionScene, sceneStrokePoints } from '../lib/drawing-instructions.mjs';
+import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
 
-const DEFAULT_INPUT = join(ROOT, 'scrapbook/drawings');
+const DEFAULT_INPUT = join(ROOT, 'tools/store-drawings/samples');
 const DEFAULT_OUTPUT = join(ROOT, 'screenshots/store-drawing-eval');
 const PORT = 4173;
 const GEOMETRY_STROKE_PX = 8;

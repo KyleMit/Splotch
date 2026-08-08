@@ -7,17 +7,18 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 
 # Splotch — Testing Guide
 
-Splotch's automated suites span three test layers. The app-unit, asset-pipeline, repo-script, and
-E2E suites run on every push/PR, alongside the WebKit smoke job and a structural commit-path guard
-on Chromium. The two-scenario WebKit *timing* gate that guard complements runs post-merge, on pushes
-to `main`, because its verdict is a millisecond P95 that needs WebKit and a quiet host; its full
-seven-scenario form and the real-device launch tests run only on tagged releases. That split is
-ADR-0100 — see the commit-gate section under Continuous integration.
+Splotch's automated suites span three test layers. The app-unit, asset-pipeline, store-drawing,
+repo-script, and E2E suites run on every push/PR, alongside the WebKit smoke job and a structural
+commit-path guard on Chromium. The two-scenario WebKit *timing* gate that guard complements runs
+post-merge, on pushes to `main`, because its verdict is a millisecond P95 that needs WebKit and a
+quiet host; its full seven-scenario form and the real-device launch tests run only on tagged
+releases. That split is ADR-0100 — see the commit-gate section under Continuous integration.
 
 | Layer                    | Tool                | Command                         | Runs in CI                                   |
 | ------------------------ | ------------------- | ------------------------------- | -------------------------------------------- |
 | Unit (app)               | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                              |
 | Unit (asset pipeline)    | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                              |
+| Unit (store drawings)    | Vitest (Node)       | `npm run test:store-drawings`   | every push / PR                              |
 | Unit (repo scripts)      | Vitest (Node)       | `npm run test:scripts`          | every push / PR                              |
 | E2E (web)                | Playwright          | `npm run test:e2e`              | every push / PR                              |
 | Smoke (WebKit)           | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)               |
@@ -31,9 +32,9 @@ A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 integration below. Two additional server-contract smoke tests, `test:api:smoke` and
 `test:blobs:smoke`, run on demand rather than on every push.
 
-`npm test` runs the first four (`test:unit` + `test:asset-gen` + `test:scripts` + `test:e2e`). The
-native smoke tests are intentionally **not** part of `npm test` — they need an emulator/simulator
-and the native toolchains.
+`npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
+`test:scripts` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
+they need an emulator/simulator and the native toolchains.
 
 ## Deploy smoke tests — `test:api:smoke`, `test:blobs:smoke`
 
@@ -83,6 +84,16 @@ Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against com
 mocked generator workflows, with no Gemini calls or network access. CI runs them in the browser-free
 `unit` job, after the app-unit suite and alongside the repo-script suite, in parallel with the e2e
 shards.
+
+## Store-drawing pipeline unit tests — Vitest
+
+```bash
+npm run test:store-drawings
+```
+
+Configured in `tools/store-drawings/vitest.config.mjs`. These run in Node against the committed SVG
+samples and static instruction module. They cover the supported SVG subset, coordinate fitting,
+closed width/color vocabularies, and exact generator drift without launching a browser.
 
 ## Repo-script unit tests — Vitest
 
@@ -422,15 +433,15 @@ npm run test:android:device     # re-run as often as you like
 | `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                                                                                          |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
-public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` + `test:scripts`)
-run in a browser-free `unit` job, and the Playwright e2e suite runs as a three-way `--shard=N/3`
-matrix in `Tests` — each shard builds the app itself (a shared build artifact was measured slower:
-it serializes shards behind `needs:`), and each uploads its own `playwright-report-shard-N`
-artifact. The app-driver smoke rides shard 1 only. With `fullyParallel` on, `--shard` deals out
-individual tests (not files) in a deterministic order, balanced by count and blind to duration — so
-the longest shard is bounded by the slowest single test, which lives among the deliberately heavy
-stress tests of `tests/flows-tile-history.spec.ts` (the header comment there explains why their cost
-is intrinsic).
+public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` +
+`test:store-drawings` + `test:scripts`) run in a browser-free `unit` job, and the Playwright e2e
+suite runs as a three-way `--shard=N/3` matrix in `Tests` — each shard builds the app itself (a
+shared build artifact was measured slower: it serializes shards behind `needs:`), and each uploads
+its own `playwright-report-shard-N` artifact. The app-driver smoke rides shard 1 only. With
+`fullyParallel` on, `--shard` deals out individual tests (not files) in a deterministic order,
+balanced by count and blind to duration — so the longest shard is bounded by the slowest single
+test, which lives among the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts`
+(the header comment there explains why their cost is intrinsic).
 
 The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the deploy's admin
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a

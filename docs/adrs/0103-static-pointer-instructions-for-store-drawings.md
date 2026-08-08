@@ -21,33 +21,33 @@ need deterministic mapping onto the controls Splotch actually offers.
 
 ## Decision
 
-`scripts/generate-store-drawings.mjs` is an offline compiler. It accepts a deliberately narrow
+`tools/store-drawings/bin/generate.mjs` is an offline compiler. It accepts a deliberately narrow
 centerline SVG subset (`M`, cubic `C`, and `Z`; round unfilled strokes), adaptively flattens the
-curves, and emits `scripts/lib/store-drawings.mjs`. The generated module contains only static
-numeric pointer coordinates, selected Splotch width levels, and selectable color tokens. It exports
-named functions such as `drawHouseTall` and `drawHouseWide`; no generated drawing reads an SVG at
-runtime.
+curves, and emits `tools/store-drawings/generated/store-drawings.mjs`. The generated module contains
+only static numeric pointer coordinates, selected Splotch width levels, and selectable color tokens.
+It exports named functions such as `drawHouseTall` and `drawHouseWide`; no generated drawing reads
+an SVG at runtime.
 
 Color selection considers both the main palette and the hex-grid colors in OKLab space. Candidates
 are limited to swatches visible on both store targets for the drawing's orientation. Width selection
 maps each source path to one of the five real app levels after scaling against the measured portrait
 or landscape store canvases.
 
-`scripts/lib/drawing-instructions.mjs` contain-fits the static coordinates and delegates every
-stroke to `scripts/lib/app-driver.mjs`. The driver changes colors and widths through visible
-controls and sends Playwright mouse down/move/up input to `#drawingCanvas`; it does not call the
-engine or paint a canvas directly. An extra held endpoint sample compensates for the engine's
+`tools/store-drawings/lib/drawing-instructions.mjs` contain-fits the static coordinates and
+delegates every stroke to `scripts/lib/app-driver.mjs`. The driver changes colors and widths through
+visible controls and sends Playwright mouse down/move/up input to `#drawingCanvas`; it does not call
+the engine or paint a canvas directly. An extra held endpoint sample compensates for the engine's
 intentional midpoint smoothing so an authored path reaches its final coordinate.
 
 Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
 replaying their shared pointer instructions. Magic skips stored color selections because the brush
-owns its rendered color. `scripts/generate-store-drawing-review.mjs` exercises those variants into a
-review-only gallery outside `store-assets/`.
+owns its rendered color. `tools/store-drawings/bin/generate-review.mjs` exercises those variants
+into a review-only gallery outside `store-assets/`.
 
-`scripts/evaluate-store-drawings.mjs` keeps conversion measurable. It compares equal-width source
+`tools/store-drawings/bin/evaluate.mjs` keeps conversion measurable. It compares equal-width source
 and generated centerlines, then captures the live tiled canvas after replay and compares those
 pixels with the static instructions and original SVG silhouette. The workflow and overlay
-interpretation are documented in `docs/STORE-DRAWINGS.md`.
+interpretation are documented in `tools/store-drawings/README.md`.
 
 ## Consequences
 

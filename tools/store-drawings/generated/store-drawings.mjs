@@ -1,4 +1,4 @@
-import { drawInstructionScene } from './drawing-instructions.mjs';
+import { drawInstructionScene } from '../lib/drawing-instructions.mjs';
 
 const BALLOON_TALL = {
   width: 1087,

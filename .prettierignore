@@ -12,7 +12,7 @@ package-lock.json
 web/src/lib/components/icon-names.d.ts
 web/src/lib/releases.json
 web/src/tokens.css
-scripts/lib/store-drawings.mjs
+tools/store-drawings/generated/store-drawings.mjs
 web/tests/**/*-snapshots/
 *.svg
 # Frozen empirical run output; live pipeline configuration remains formatted.

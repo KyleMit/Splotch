@@ -1,4 +1,9 @@
-import { pickDrawingColor, pickBrush, setStrokeSize, drawStroke } from './app-driver.mjs';
+import {
+  pickDrawingColor,
+  pickBrush,
+  setStrokeSize,
+  drawStroke,
+} from '../../../scripts/lib/app-driver.mjs';
 
 export function fitInstructionScene(scene, box) {
   const scale = Math.min(box.width / scene.width, box.height / scene.height);
