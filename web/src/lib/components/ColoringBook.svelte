@@ -2,7 +2,6 @@
   import Icon from './Icon.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import {
-    booksForPlatform,
     setOverlayPage,
     setOverlayOrientation,
     overlayUrl,
@@ -25,6 +24,7 @@
   import { guardTapZone } from '$lib/actions/launchGuard';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
+  import { availableColoringBooks } from '$lib/state/coloringPacks.svelte';
   import {
     cancelImageRequest,
     cancelImagePrefetchesExcept,
@@ -33,10 +33,8 @@
   } from '$lib/imagePrefetch';
   import { scheduleIdle } from '$lib/idle';
 
-  // Only show books licensed for this platform. Native builds also strip the
-  // web-only books' assets at build time (scripts/strip-native-assets.mjs), so
-  // this filter and that strip must agree — both read the same `platforms`.
-  const books = booksForPlatform(isNative() ? 'mobile' : 'web');
+  const platform = isNative() ? 'mobile' : 'web';
+  const books = $derived(availableColoringBooks(platform));
 
   let activeBook = $state<Book | null>(null);
   let dialogEl: HTMLDialogElement;

@@ -53,6 +53,7 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
 
 vi.mock('../../web/src/lib/state/books.ts', () => ({
   BOOKS: state.books,
+  STARTER_COLORING_BOOK_ID: 'mobile',
   RESPONSIVE_COLORING_TIER_DIRECTORIES: ['/coloring/max-1152px', '/coloring/max-240px'],
   booksForPlatform: () => state.mobileEligibleBooks,
   bookAssetPaths: (book) => [
@@ -242,6 +243,7 @@ describe('native build script entry points', () => {
     writeFixture(
       join(fixtureRoot, 'web', 'src', 'lib', 'state', 'books.ts'),
       'export const BOOKS = [];\n' +
+        'export const STARTER_COLORING_BOOK_ID = "farm";\n' +
         'export const RESPONSIVE_COLORING_TIER_DIRECTORIES = [];\n' +
         'export const bookAssetPaths = () => [];\n'
     );
@@ -266,15 +268,18 @@ describe('native build script entry points', () => {
   it('strips a temporary native build including directories, files, and HTML references', () => {
     const buildDir = join(state.root, 'orchestration-build');
     const mobileBook = fixtureBook('mobile', ['mobile']);
+    const downloadableBook = fixtureBook('downloadable', ['mobile']);
     const webBook = fixtureBook('web-only', ['web']);
     const webBookDir = join(buildDir, 'coloring', webBook.id);
     const mobileDir = join(buildDir, 'coloring', mobileBook.id);
+    const downloadableDir = join(buildDir, 'coloring', downloadableBook.id);
 
     writeFixture(join(webBookDir, 'cover.outline.webp'));
     writeFixture(join(buildDir, 'favicon.ico'));
     writeFixture(join(mobileDir, 'cover.outline.webp'));
     writeFixture(join(mobileDir, 'page-tall.outline.webp'));
     writeFixture(join(mobileDir, 'page-tall.chalk.webp'));
+    writeFixture(join(downloadableDir, 'cover.outline.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-1152px', 'mobile', 'page-tall.overlay.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-240px', 'mobile', 'page-tall.thumb.webp'));
     writeFixture(join(buildDir, 'index.html'), fixtureHtml);
@@ -283,7 +288,7 @@ describe('native build script entry points', () => {
     log.mockClear();
     warn.mockClear();
 
-    stripNativeAssets(buildDir, [mobileBook, webBook]);
+    stripNativeAssets(buildDir, [mobileBook, downloadableBook, webBook]);
 
     expect(exit).not.toHaveBeenCalled();
     expect(existsSync(webBookDir)).toBe(false);
@@ -291,6 +296,7 @@ describe('native build script entry points', () => {
     expect(existsSync(join(mobileDir, 'cover.outline.webp'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.outline.webp'))).toBe(false);
     expect(existsSync(join(mobileDir, 'page-tall.chalk.webp'))).toBe(false);
+    expect(existsSync(downloadableDir)).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).not.toContain('favicon.ico');
@@ -303,6 +309,9 @@ describe('native build script entry points', () => {
       '[strip-native-assets] expected but not found: /coloring/mobile/page-wide.outline.webp'
     );
     expect(log).toHaveBeenCalledWith('[strip-native-assets] removed /coloring/web-only');
+    expect(log).toHaveBeenCalledWith(
+      '[strip-native-assets] stripped 1/1 downloadable coloring book(s), 0.00 MB freed.'
+    );
     expect(log).toHaveBeenCalledWith(
       '[strip-native-assets] stripped 1/1 canonical folder(s) for 1 web-only book(s): web-only'
     );

@@ -12,8 +12,6 @@ import {
 } from './books';
 import type { ResolvedTheme } from '../theme';
 
-export { booksForPlatform } from './books';
-
 interface ColoringBookState {
   overlayPage: ColoringPage | null;
   orientation: BookOrientation;

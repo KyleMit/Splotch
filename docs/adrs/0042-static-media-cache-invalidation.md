@@ -1,7 +1,8 @@
 # ADR-0042: Cache Invalidation for Stable-Filename Static Media
 
 **Status:** Active — amended 2026-08-02 by issue #621 for the responsive-coloring runtime-cache
-exception. **Date:** 2026-07
+exception and 2026-08-08 by [ADR-0103](0103-progressive-coloring-book-packs.md) for verified
+coloring-pack caches. **Date:** 2026-07
 
 ## Context
 
@@ -53,6 +54,13 @@ those duplicate resolutions from the precache. Their service-worker route uses t
 is available and maps a failed request to the corresponding revisioned canonical
 `/coloring/<book>/*` entry. The exact responsive URL therefore follows ordinary HTTP-cache behavior
 online; the canonical asset remains the content-revisioned offline and export authority.
+
+Non-starter canonical coloring assets are a second deliberate exception. They keep stable hosted
+paths and the one-week `/coloring/*` HTTP lifetime, but do not enter the Workbox precache. A
+version-named manifest records SHA-256 and byte length for every runtime file. Pack fetches bypass
+the browser HTTP cache, verify those values, and publish a whole-book install marker last into a
+separate versioned Cache Storage namespace. On native the same manifest verifies files in OS-managed
+app storage. A manifest mismatch fails closed; it never promotes stale bytes.
 
 ## Decision
 

@@ -19,6 +19,7 @@ class MainViewController: CAPBridgeViewController {
         }
 
         bridge.registerPluginInstance(DeviceLockPlugin())
+        bridge.registerPluginInstance(ColoringPacksPlugin())
         bridge.registerPluginInstance(pencilEraser)
 
         guard let webView = bridge.webView else {

@@ -35,7 +35,7 @@
 
     <!-- Permissions -->
 
-    <!-- INTERNET: only the AI button reaches the network; the rest is offline. -->
+    <!-- The AI generator and post-install coloring packs reach the hosted API/site. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!-- Lets @capacitor/network report real connectivity so the AI button is

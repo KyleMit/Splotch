@@ -8,8 +8,8 @@ const STATIC_COLORING_DIR = join(ROOT, 'web/static/coloring');
 const RESPONSIVE_TIER_PATTERN = /^max-\d+px$/;
 const RUNTIME_GENERATED_PRECACHE_URLS = new Set(['_app/env.js']);
 const SERVED_ONLY_ASSET_URLS = new Set(['large-image.png']);
-// Leaves room for ordinary app growth while rejecting another duplicated coloring tier.
-export const MAX_PWA_PRECACHE_BYTES = 38_000_000;
+// Leaves room for ordinary app growth while rejecting a second bundled coloring book.
+export const MAX_PWA_PRECACHE_BYTES = 12_000_000;
 
 export function precacheUrlsFromSource(source) {
   return [...source.matchAll(/\{url:("(?:\\.|[^"\\])*"),revision:/g)].map((match) =>
@@ -28,6 +28,7 @@ export function pwaPrecacheProblems({
   precacheUrls,
   precacheBytes,
   responsiveAssetUrls,
+  coloringManifest,
   maxPrecacheBytes = MAX_PWA_PRECACHE_BYTES,
 }) {
   const problems = [];
@@ -48,8 +49,34 @@ export function pwaPrecacheProblems({
   }
 
   const precached = new Set(precacheUrls);
+  const starterBookId = coloringManifest?.starterBookId;
+  if (!starterBookId) {
+    problems.push('Coloring-pack manifest is missing from the PWA precache');
+  }
+  const unexpectedColoringUrls = starterBookId
+    ? precacheUrls.filter((url) => {
+        const match = /^coloring\/([^/]+)\/.+\.webp$/.exec(url);
+        return !!match && !RESPONSIVE_TIER_PATTERN.test(match[1]) && match[1] !== starterBookId;
+      })
+    : [];
+  if (unexpectedColoringUrls.length) {
+    problems.push(
+      `${unexpectedColoringUrls.length} downloadable coloring assets remain in the PWA precache`
+    );
+  }
+  const starterFiles =
+    coloringManifest?.books.find((book) => book.id === starterBookId)?.files ?? [];
+  const missingStarterFiles = starterFiles
+    .map((file) => file.path.slice(1))
+    .filter((url) => !precached.has(url));
+  if (missingStarterFiles.length) {
+    problems.push(
+      `${missingStarterFiles.length} starter coloring assets are missing from the PWA precache: ${missingStarterFiles[0]}`
+    );
+  }
   const missingCanonicalUrls = responsiveAssetUrls
     .map((url) => url.replace(/^coloring\/max-\d+px\//, 'coloring/'))
+    .filter((url) => !starterBookId || url.startsWith(`coloring/${starterBookId}/`))
     .filter((url) => !precached.has(url));
   if (missingCanonicalUrls.length) {
     problems.push(
@@ -90,10 +117,15 @@ export async function checkPwaPrecache({
     }
     return total + statSync(path).size;
   }, 0);
+  const manifestUrl = precacheUrls.find((url) => /^coloring\/manifest-.+\.json$/.test(url));
+  const coloringManifest = manifestUrl
+    ? JSON.parse(readFileSync(join(clientDir, manifestUrl), 'utf8'))
+    : undefined;
   const problems = pwaPrecacheProblems({
     precacheUrls,
     precacheBytes,
     responsiveAssetUrls,
+    coloringManifest,
   });
   if (problems.length) throw new Error(problems.join('\n'));
   log(

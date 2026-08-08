@@ -1,9 +1,8 @@
 // PWA service worker registration + auto-update lifecycle.
 //
-// Registration is manual and deferred (issue #462): the workbox precache is
-// ~35 MB (the full offline coloring-page set), so registering at window.load
-// would saturate a slow connection right as boot's idle-deferred work runs and
-// the child starts drawing. Instead:
+// Registration is manual and deferred (issue #462): installing the offline app
+// shell and starter book at window.load would compete with boot's idle-deferred
+// work and the child's first strokes. Instead:
 //   • First visit: +page.svelte's stroke-count gate calls
 //     registerDeferredServiceWorker() once the child has drawn a few strokes
 //     (the Install Banner's "earned it" signal), and the actual register()
@@ -69,7 +68,7 @@ export function createPWAUpdates() {
   // fires at stroke end, and kicking off the precache in that same frame could
   // contend with the commit fold of the stroke that tripped it.
   function scheduleRegistration() {
-    // Save-Data users never get the ~35 MB precache forced on them — offline
+    // Save-Data users never get the offline install forced on them — offline
     // support waits for a session without the preference set.
     if (saveDataEnabled()) return;
     if (registrationScheduled) return;

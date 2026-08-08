@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   strokeWidthControl: 'splotch-stroke-width-control',
   eraserEnabled: 'splotch-eraser-enabled',
   coloringBookEnabled: 'splotch-coloring-book-enabled',
+  coloringPacksAllowMetered: 'splotch-coloring-packs-allow-metered',
   aiImageEnabled: 'splotch-ai-image-enabled',
   aiCustomizationEnabled: 'splotch-ai-customization-enabled',
   autoSaveAi: 'splotch-auto-save-ai',

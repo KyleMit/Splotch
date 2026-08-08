@@ -1,4 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   adminConsoleSentinels,
   FORBIDDEN_NATIVE_HOSTS,
@@ -41,5 +44,18 @@ describe('native bundle scan', () => {
     // app id interpolated, so a whole-URL match would miss the real regression.
     expect(FORBIDDEN_NATIVE_HOSTS).toContain('play.google.com');
     for (const host of FORBIDDEN_NATIVE_HOSTS) expect(host).not.toContain('/');
+  });
+
+  it('rejects a second bundled coloring book directory', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-bundle-'));
+    try {
+      mkdirSync(join(root, 'coloring', 'farm'), { recursive: true });
+      mkdirSync(join(root, 'coloring', 'dinosaur'), { recursive: true });
+      expect(nativeBundleProblems(root, [], 'farm')).toEqual([
+        'Downloadable coloring books remain in the native bundle: dinosaur',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
