@@ -93,8 +93,7 @@
     }
   }
 
-  function submit(event: MouseEvent) {
-    if (!message.trim() || submitting || !(event.currentTarget instanceof HTMLElement)) return;
+  function submit(event: MouseEvent & { currentTarget: HTMLElement }) {
     requireParentalGate('feedback', () => void sendReport(), buttonCenter(event.currentTarget));
   }
 </script>
