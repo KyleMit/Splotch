@@ -147,7 +147,7 @@
            untouched sign-up page. -->
       <a class="btn" href="/feedback">Send feedback</a>
       <p class="fine">
-        No account, nothing to install; your note opens an issue on our public tracker.
+        No account, nothing to install; your note goes to our private support tracker.
       </p>
     </div>
     {#if support}

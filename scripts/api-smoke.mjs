@@ -222,6 +222,20 @@ async function checkReport(base) {
   );
 }
 
+async function checkImageReport(base) {
+  const form = new FormData();
+  form.set('drawing', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'drawing.png');
+  form.set('output', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'output.png');
+  form.set('style', 'Magical');
+  const response = await fetch(`${base}/api/report-image`, { method: 'POST', body: form });
+  const body = await json(response);
+  check(
+    'report-image with private reporting unconfigured → 503 {ok:false, error}',
+    response.status === 503 && body?.ok === false && typeof body?.error === 'string',
+    `got ${response.status} ${JSON.stringify(body)}`
+  );
+}
+
 // --- csp-report: both browser payload formats, caps, and its own bucket ---
 async function checkCspReport(base) {
   const cspReport = (body, contentType) =>
@@ -416,6 +430,7 @@ async function run() {
   await checkTokensCrud(admin, auth);
   await checkVerifyAccessCode(BASE);
   await checkReport(BASE);
+  await checkImageReport(BASE);
   await checkCspReport(BASE);
   await checkGenerateImage(BASE);
   await checkThrottling(BASE);

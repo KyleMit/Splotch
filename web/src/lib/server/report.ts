@@ -75,9 +75,7 @@ export interface ReportInput {
  * `status` is the HTTP status the JSON endpoint returns and the status the form
  * action fails with, so the two front doors agree on more than the wording.
  */
-export type ReportResult =
-  | { ok: true; url?: string; number?: number }
-  | { ok: false; status: 400 | 502 | 503; error: string };
+export type ReportResult = { ok: true } | { ok: false; status: 400 | 502 | 503; error: string };
 
 /**
  * A form post reaches a front door as strings; `device` rides along as the JSON
@@ -136,12 +134,12 @@ export async function submitReport({
   }
 
   try {
-    const { url, number } = await createIssue({
+    await createIssue({
       title: titleFor(reportKind, text),
       body: bodyFor(reportKind, text, hasDevice, Boolean(wantsDevice) && !hasDevice),
       labels: [REPORT_LABEL, KIND_LABEL[reportKind]],
     });
-    return { ok: true, url, number };
+    return { ok: true };
   } catch (err) {
     console.error('[report] issue creation failed', err);
     return {

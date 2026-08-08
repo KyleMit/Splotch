@@ -8,6 +8,7 @@ function createAiResultState(): AiResultState {
     resultUrl: null,
     resultType: null,
     previewUrl: null,
+    style: null,
     error: null,
   };
 }
@@ -35,11 +36,11 @@ describe('createAiGenerationMachine', () => {
     const resultState = createAiResultState();
     const machine = createAiGenerationMachine(resultState);
     const firstController = new AbortController();
-    const firstRun = machine.startAiGeneration('blob:first-preview', firstController);
+    const firstRun = machine.startAiGeneration('blob:first-preview', firstController, 'Crayon');
     machine.finishAiGeneration(firstRun, 'blob:first-result', 'image/png');
     machine.failAiGeneration(firstRun, 'Try again', 'retry');
 
-    const secondRun = machine.startAiGeneration('blob:second-preview');
+    const secondRun = machine.startAiGeneration('blob:second-preview', undefined, 'Watercolor');
     machine.endAiGeneration(firstRun);
 
     expect(firstController.signal.aborted).toBe(true);
@@ -51,6 +52,7 @@ describe('createAiGenerationMachine', () => {
       resultUrl: null,
       resultType: null,
       previewUrl: 'blob:second-preview',
+      style: 'Watercolor',
       error: null,
     });
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:first-result');
@@ -61,7 +63,7 @@ describe('createAiGenerationMachine', () => {
     const resultState = createAiResultState();
     const machine = createAiGenerationMachine(resultState);
     const controller = new AbortController();
-    const firstRun = machine.startAiGeneration('blob:preview', controller);
+    const firstRun = machine.startAiGeneration('blob:preview', controller, 'Paper');
     machine.finishAiGeneration(firstRun, 'blob:result', 'image/webp');
     machine.closeAiResult();
 
@@ -73,6 +75,7 @@ describe('createAiGenerationMachine', () => {
       resultUrl: null,
       resultType: null,
       previewUrl: null,
+      style: null,
       error: null,
     });
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:result');
@@ -107,11 +110,12 @@ describe('createAiGenerationMachine', () => {
   it('commits the active result as a successful terminal state', () => {
     const resultState = createAiResultState();
     const machine = createAiGenerationMachine(resultState);
-    const run = machine.startAiGeneration(null);
+    const run = machine.startAiGeneration(null, undefined, 'Felt');
 
     expect(machine.finishAiGeneration(run, 'blob:result', 'image/jpeg')).toBe(true);
     expect(resultState.resultUrl).toBe('blob:result');
     expect(resultState.resultType).toBe('image/jpeg');
+    expect(resultState.style).toBe('Felt');
     expect(resultState.generating).toBe(false);
     expect(resultState.error).toBeNull();
   });

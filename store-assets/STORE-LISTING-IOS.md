@@ -52,13 +52,13 @@ Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Read quick tips for locking the app to one screen using your device's built-in Guided Access, so playtime stays in Splotch.
 
 OPTIONAL AI "MAGIC IMAGE"
-For families who want it, Splotch can turn a child's drawing into a piece of AI art using Google's Gemini. This feature is off until a parent enables it, and it works on a bring-your-own-key basis: you paste your own Google AI key, it's stored only on your device, and any usage is billed to your own Google account. We never keep a copy of your key. A child's drawing is only ever sent for processing when the button is tapped — and the whole feature can stay switched off.
+For families who want it, Splotch can turn a child's drawing into a piece of AI art using Google's Gemini. This feature is off until a parent enables it with an access code or their own Google AI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
 
 WORKS OFFLINE
 The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
 
 PRIVACY YOU CAN TRUST
-Splotch collects nothing. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. We don't know who's using the app, and we'd like to keep it that way. Read the full policy at https://splotch.art/privacy.
+Splotch collects nothing in the background. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. Ordinary drawings stay on the device; optional AI and support features send only what a grown-up deliberately chooses. A confirmed AI-picture report is kept privately for no more than 30 days. Read the full policy at https://splotch.art/privacy.
 
 Splotch is also free and open source. If you spot a problem or have an idea, you can reach us through the project on GitHub.
 
@@ -87,21 +87,55 @@ Generated per release — `fastlane/metadata/en-US/release_notes.txt` (written b
 
 ## Categories & age
 
-| Field                         | Value                                                              |
-| ----------------------------- | ------------------------------------------------------------------ |
-| Primary category              | Education                                                          |
-| Secondary category (optional) | Entertainment                                                      |
-| Kids Category                 | Yes — age band **5 & Under**                                       |
-| Age rating questionnaire      | Should land at **4+** (no violence, no UGC sharing, no web access) |
+| Field                         | Value                                                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Primary category              | Education                                                                                                |
+| Secondary category (optional) | Entertainment                                                                                            |
+| Kids Category                 | Yes — age band **5 & Under**                                                                             |
+| Age rating questionnaire      | Use the exact answers below; confirm App Store Connect calculates **4+** before selecting Kids 5 & Under |
 
 ## App Privacy (nutrition label)
 
-Declare exactly this — it must match the Play Data safety form and the privacy policy:
+Declare exactly this — it must match `ios/App/App/PrivacyInfo.xcprivacy`, Play Data safety, and the
+privacy policy:
 
-* **Data not collected** for everything, with one carve-out if the reviewer presses on the AI
-  feature: **User Content (drawings)** — used for **App Functionality** only, **not linked to
-  identity**, **not used for tracking**, sent only when the user taps the button.
-* No third-party SDKs, no analytics, no ads, no accounts.
+* **User Content → Other User Content**: collected, used for **App Functionality**, **not linked to
+  identity**, and **not used for tracking**. It covers drawings sent for AI processing, typed
+  private feedback, and confirmed AI-picture reports. Ordinary generation is ephemeral; a confirmed
+  report retains the input drawing, server-resolved prompt, output, style, and timestamp privately
+  for up to 30 days.
+* **Diagnostics → Other Diagnostic Data**: collected only when a grown-up opts to attach the
+  feedback form's app/device snapshot, used for **App Functionality**, **not linked to identity**,
+  and **not used for tracking**.
+* No contact information, location, identifiers, purchases, usage analytics, advertising data, or
+  tracking. No ad or analytics SDKs and no accounts.
+
+## Age rating answers
+
+Enter the current questionnaire from the shipped behavior:
+
+* In-app parental controls: **Yes** — protected sends and external actions use Splotch's parental
+  gate.
+* User-generated content distributed to other users: **No**. AI results are shown only to the person
+  using the device; reports go privately to the developer.
+* Messaging/chat, social networking, advertising, unrestricted web access, gambling, contests, loot
+  boxes, in-app purchases, and public sharing: **No**.
+* Violence, sexual content or nudity, profanity, horror/fear, drugs, alcohol/tobacco, medical
+  content, and other objectionable-content descriptors: **None** for expected app content. The AI
+  feature uses a closed server-side style enum and safety controls, labels every result, and offers
+  private in-app reporting.
+* Confirm the calculated result in App Store Connect. Select **Kids Category, 5 & Under** only while
+  that calculated rating remains eligible; do not override a different calculated result.
+
+## App Review notes — AI safety
+
+Splotch's optional image-to-image Gemini feature is disabled until a parent supplies an access code
+or API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum
+and constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up
+can tap “Report this picture,” review a confirmation, pass the parental gate, and privately send the
+input drawing, resolved prompt, output, style, and timestamp. A human reviews reports within 24
+hours; evidence is automatically deleted after 30 days. There is no browsing, chat, public sharing,
+or user-to-user distribution.
 
 ## Screenshots (this folder)
 
@@ -121,5 +155,5 @@ Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
   About section (GitHub, privacy policy); opening Settings is not proof of adulthood, so verify each
   link and gate the affected action before submission.
 * The AI feature sends the child's own drawing for processing at an explicit tap, requires a parent
-  to enable it in Settings first, and involves no browsing, chat, or sharing — document this in the
-  review notes field.
+  to enable it first, allows no free-form prompt, visibly labels its output, and provides gated
+  private reporting — use the review-note text above.

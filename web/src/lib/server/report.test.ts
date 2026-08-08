@@ -3,10 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseDeviceField, submitReport } from './report';
 import type { CreateIssueInput } from './github';
 
-const createIssue = vi.fn(async (_input: CreateIssueInput) => ({
-  url: 'https://example.test/issues/1',
-  number: 1,
-}));
+const createIssue = vi.fn(async (_input: CreateIssueInput) => {});
 vi.mock('./github', async (original) => ({
   ...(await original<typeof import('./github')>()),
   isReportingConfigured: () => true,

@@ -40,15 +40,51 @@ Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Read quick tips for locking the app to one screen using your device's built-in screen pinning, so playtime stays in Splotch.
 
 OPTIONAL AI "MAGIC IMAGE"
-For families who want it, Splotch can turn a child's drawing into a piece of AI art using Google's Gemini. This feature is off until a parent enables it, and it works on a bring-your-own-key basis: you paste your own Google AI key, it's stored only on your device, and any usage is billed to your own Google account. We never keep a copy of your key. A child's drawing is only ever sent for processing when the button is tapped — and the whole feature can stay switched off.
+For families who want it, Splotch can turn a child's drawing into a piece of AI art using Google's Gemini. This feature is off until a parent enables it with an access code or their own Google AI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
 
 WORKS OFFLINE
 The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
 
 PRIVACY YOU CAN TRUST
-Splotch collects nothing. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. We don't know who's using the app, and we'd like to keep it that way. Read the full policy at https://splotch.art/privacy.
+Splotch collects nothing in the background. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. Ordinary drawings stay on the device; optional AI and support features send only what a grown-up deliberately chooses. A confirmed AI-picture report is kept privately for no more than 30 days. Read the full policy at https://splotch.art/privacy.
 
 Splotch is also free and open source. If you spot a problem or have an idea, you can reach us through the project on GitHub.
 
 Open it up, hand over the device, and let them make a mess. That's the whole idea.
 ```
+
+## Play Console declarations
+
+Use these answers for the shipped behavior. If Play renames a field, preserve the substance rather
+than selecting a more favorable-sounding category.
+
+### Data safety
+
+* Data collected: **Yes**. Data shared: **No** under Play's service-provider/user-initiated transfer
+  rules. The drawing is nevertheless sent through Splotch to Google Gemini when the user requests
+  generation, exactly as disclosed in the privacy policy. It is not sold, used for advertising, or
+  used for tracking by Splotch.
+* **Photos and videos**: collected, optional, not linked to identity, purpose **App functionality**.
+  Ordinary AI requests are processed ephemerally by Splotch. If a grown-up confirms “Report this
+  picture,” the input drawing and generated output are retained privately for up to 30 days.
+* **Other user-generated content**: collected, optional, not linked to identity, purpose **App
+  functionality / developer communications**. This covers typed feedback and the server-resolved
+  prompt, style, and timestamp retained with a confirmed picture report.
+* **Device or other IDs / diagnostics**: the feedback form can optionally attach app version,
+  platform, OS, browser/device description, and screen size. Declare the nearest current Play
+  diagnostic/device category as collected, optional, not linked to identity, purpose **App
+  functionality / developer communications**.
+* Data is encrypted in transit. A parent can request deletion through the privacy-policy contact;
+  reported-image evidence is also purged automatically after 30 days.
+
+### AI-generated content and content rating
+
+* App contains AI-generated content: **Yes** — image-to-image generation.
+* In-app AI-content reporting: **Yes** — every result is labelled “AI-generated picture,” and
+  “Report this picture” opens a confirmation before sending the input and output for private human
+  review. Reports are reviewed within 24 hours.
+* User-to-user sharing, social features, chat, or public user-generated content: **No**.
+* Free-form AI prompts: **No**. The server accepts only its closed art-style enum and builds the
+  complete prompt itself; a user cannot enter prompt text.
+* Complete the IARC questionnaire from these facts and use the rating it calculates. Do not select
+  “Everyone” by assumption or leave the app unrated.

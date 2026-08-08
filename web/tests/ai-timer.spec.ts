@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Exercises the AI render timer animation via the dev-only debug harness at
 // /dev/ai-timer, which feeds AiImageResult.svelte the sample artifacts through
@@ -29,9 +30,41 @@ test.describe('AI render timer', () => {
     // cross-fades in and the download button pops in.
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /download/i })).toBeVisible();
+    await expect(page.getByText('AI-generated picture')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Report this picture' })).toBeVisible();
 
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
+  });
+
+  test('confirms and sends an AI picture report from the result', async ({ page }) => {
+    let reportRequests = 0;
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateFeedbackMode
+    );
+    await page.route('**/api/report-image', async (route) => {
+      reportRequests += 1;
+      expect(route.request().headers()['content-type']).toContain('multipart/form-data');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
+    });
+    await page.goto('/dev/ai-timer');
+    await trigger(page, /fast/i);
+    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+
+    await page.getByRole('button', { name: 'Report this picture' }).click();
+    await expect(page.locator('.ai-report-confirmation')).toContainText(
+      'The report is deleted after 30 days.'
+    );
+    expect(reportRequests).toBe(0);
+
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByText("Thanks. We'll review it within 24 hours.")).toBeVisible();
+    expect(reportRequests).toBe(1);
   });
 
   test('shows the error state', async ({ page }) => {

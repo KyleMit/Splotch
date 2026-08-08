@@ -42,14 +42,14 @@
   function play(ms = delayMs) {
     clearPending();
     closeAiResult();
-    runId = startAiGeneration(drawingInputUrl);
+    runId = startAiGeneration(drawingInputUrl, undefined, 'Magical');
     pending = setTimeout(() => finishAiGeneration(runId, aiOutputUrl, 'image/jpeg'), ms);
   }
 
   // Skip the wait and reveal immediately.
   function finishNow() {
     clearPending();
-    if (!aiResult.open) runId = startAiGeneration(drawingInputUrl);
+    if (!aiResult.open) runId = startAiGeneration(drawingInputUrl, undefined, 'Magical');
     finishAiGeneration(runId, aiOutputUrl, 'image/jpeg');
   }
 
@@ -58,7 +58,7 @@
   // failAiGeneration() for a 422 safety refusal, a timeout, and a server error.
   function fail(message: string | undefined, kind: 'safety' | 'retry' | 'generic') {
     clearPending();
-    if (!aiResult.open) runId = startAiGeneration(drawingInputUrl);
+    if (!aiResult.open) runId = startAiGeneration(drawingInputUrl, undefined, 'Magical');
     failAiGeneration(runId, message, kind);
   }
   const triggerSafety = () => fail(AI_SAFETY_REFUSAL_MESSAGE, 'safety');

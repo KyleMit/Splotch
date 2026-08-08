@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Friendly, plain-language privacy policy. Splotch collects nothing
-  // automatically — the only data it ever receives is what a grown-up
-  // deliberately turns on or sends: a magic-image request (see "When the
-  // internet is used") or the optional feedback form (see "Sending feedback").
+  // Friendly, plain-language privacy policy. Splotch collects nothing in the
+  // background — the only data it receives is what a grown-up deliberately
+  // turns on or sends: a magic-image request, a confirmed picture report, or
+  // the optional feedback form.
   // This page exists mostly to *prove* that. It's required by the app stores
   // (see the `mobile` skill's store-release checklist). Keep the tone simple
   // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
@@ -14,7 +14,7 @@
   // Splotch has no email; questions/concerns go through GitHub issues.
   import { GITHUB_NEW_ISSUE_URL as CONTACT_URL } from '$lib/githubRepo';
 
-  const LAST_UPDATED = 'July 28, 2026';
+  const LAST_UPDATED = 'August 8, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -26,7 +26,7 @@
     {
       label: 'Blue',
       lead: 'No background collection.',
-      body: 'The only info we ever receive is what a grown-up turns on or sends us — a magic-image request, or a bug report.',
+      body: 'The only info we receive is what a grown-up turns on or sends us — a magic-image request, a picture report, or feedback.',
     },
     { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
   ];
@@ -68,8 +68,9 @@
 
     <h3>The simple truth</h3>
     <p>
-      Everything you draw stays on your device. Splotch does not create a profile about you or your
-      child, does not sell or share any information, and does not show advertising of any kind.
+      Ordinary drawing stays on your device. Splotch does not create a profile about you or your
+      child, does not sell information, and does not show advertising of any kind. The optional
+      internet features below send only what you deliberately choose to send.
     </p>
 
     <h3>When the internet is used</h3>
@@ -84,9 +85,9 @@
         AI) to generate a new picture, which is sent right back.
       </li>
       <li>
-        <strong>We don't keep the drawing.</strong> It passes straight through our service on its way
-        to Google and back. Neither the drawing your child sent nor the picture that comes back is saved
-        on our servers.
+        <strong>We don't keep an ordinary magic-image request.</strong> It passes straight through our
+        service on its way to Google and back. Neither the drawing nor the picture that comes back is
+        saved on our servers unless a grown-up separately confirms “Report this picture.”
       </li>
       <li>
         Google generates the picture on its own systems, under the
@@ -116,12 +117,27 @@
       </li>
     </ul>
 
+    <h3>Reporting an AI-generated picture</h3>
+    <p>
+      Every finished magic image is labelled “AI-generated picture.” If one is inappropriate or
+      otherwise wrong, a grown-up can choose “Report this picture,” review a confirmation, and send
+      it for human review. Nothing is retained until that final confirmation.
+    </p>
+    <p>
+      A confirmed picture report stores the drawing that was sent, the exact server-generated
+      instruction used for the selected art style, the AI-generated picture, the selected style, and
+      the report time. It goes into our private support system so we can investigate and respond
+      within 24 hours. The report bundle is automatically deleted after
+      <strong>30 days</strong> by a daily cleanup job. You can also use the contact link below to ask
+      us to delete a report sooner.
+    </p>
+
     <h3>Sending feedback</h3>
     <p>
       Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send report”,
-      only what you type is sent, so we can post it as an issue on our
-      <strong>public</strong> issue tracker on GitHub, where anyone can read it. Please don't type personal
-      details (like a name or email address) into a report — the form reminds you of this too.
+      only what you type is sent to our <strong>private</strong> support tracker on GitHub. Please don't
+      type personal details (like a name or email address) into a report — the form reminds you of this
+      too.
     </p>
     <p>
       For a bug, you can <em>optionally</em> tick a box to include basic device details (like your app
@@ -146,11 +162,10 @@
     <h3>Children's privacy</h3>
     <p>
       Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and
-      gathers nothing on its own. The one place any information is sent is the grown-ups' feedback
-      form above, which a child can't reach — so we collect no personal information from children,
-      and we comply with children's privacy laws such as the Children's Online Privacy Protection
-      Act (COPPA) and the GDPR's protections for children. There are no social features, comments,
-      links out, or in-app purchases.
+      gathers nothing in the background. Sending feedback or reporting an AI-generated picture
+      requires a parental check at the point of sending. Splotch does not ask for a child's name,
+      email address, account, or location, and the submitted content is not used to identify a
+      child. There are no social features, comments, chat, advertising, or in-app purchases.
     </p>
 
     <h3>Changes to this policy</h3>

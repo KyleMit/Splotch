@@ -275,6 +275,6 @@ test('sending feedback waits for its parental gate before posting', async ({ pag
   await expect(gate).toBeVisible();
   expect(reportRequests).toBe(0);
   await solveParentalGate(page);
-  await expect(page.getByText('Thanks! Your report was sent.')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText('Thanks for your feedback.')).toBeVisible({ timeout: 5000 });
   expect(reportRequests).toBe(1);
 });

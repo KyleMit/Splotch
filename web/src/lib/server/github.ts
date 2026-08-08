@@ -45,15 +45,6 @@ export function escapeIssueMarkdown(text: string): string {
     .replace(/!(?=\[)/g, '\\!');
 }
 
-/**
- * The web URL of an issue by number. The /feedback page redirects with the
- * number rather than the full URL (a URL in a query string is both ugly and an
- * open-redirect shape), and rebuilds the link from it here.
- */
-export function issueUrl(number: number): string {
-  return `https://github.com/${targetRepo()}/issues/${number}`;
-}
-
 export interface CreateIssueInput {
   title: string;
   body: string;
@@ -61,13 +52,11 @@ export interface CreateIssueInput {
 }
 
 /**
- * Create an issue in the target repo and return its web URL and number. Throws
- * if the token is missing or GitHub returns anything but 201 — the caller maps
- * that to a friendly 5xx so a child's parent never sees a raw error.
+ * Create an issue in the target repo. Throws if the token is missing or GitHub
+ * returns anything but 201 — the caller maps that to a friendly 5xx so a
+ * child's parent never sees a raw error.
  */
-export async function createIssue(
-  input: CreateIssueInput
-): Promise<{ url: string; number: number }> {
+export async function createIssue(input: CreateIssueInput): Promise<void> {
   const token = config.githubIssueToken();
   if (!token) throw new Error('GITHUB_ISSUE_TOKEN is not configured');
 
@@ -90,10 +79,4 @@ export async function createIssue(
       `GitHub issue creation failed (${res.status}): ${detail.slice(0, ERROR_DETAIL_MAX_CHARS)}`
     );
   }
-
-  const data = (await res.json()) as { html_url?: string; number?: number };
-  if (!data.html_url || typeof data.number !== 'number') {
-    throw new Error('GitHub issue creation returned an unexpected payload');
-  }
-  return { url: data.html_url, number: data.number };
 }

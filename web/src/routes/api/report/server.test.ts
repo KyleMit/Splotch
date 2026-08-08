@@ -62,7 +62,7 @@ function postUnreadableBody() {
 
 beforeEach(() => {
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
-  createIssue.mockReset().mockResolvedValue({ url: 'https://example.test/issues/1', number: 1 });
+  createIssue.mockReset().mockResolvedValue(undefined);
 });
 
 describe('POST /api/report', () => {
@@ -70,7 +70,7 @@ describe('POST /api/report', () => {
     const response = await post({ kind: 'bug', message: 'the crayon is stuck' });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true, url: 'https://example.test/issues/1' });
+    expect(await response.json()).toEqual({ ok: true });
     expect(rateLimit).toHaveBeenCalledWith(key, rateLimitPolicy.report);
   });
 

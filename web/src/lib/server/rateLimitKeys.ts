@@ -25,6 +25,14 @@ export function reportBucket(address: string): string {
   return `report:${address}`;
 }
 
+export function reportImageTokenBucket(token: string): string {
+  return `report-image-token:${token}`;
+}
+
+export function reportImageByokBucket(address: string): string {
+  return `report-image-byok:${address}`;
+}
+
 export function cspReportBucket(address: string): string {
   return `csp-report:${address}`;
 }

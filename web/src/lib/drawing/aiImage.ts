@@ -229,7 +229,11 @@ export async function generateAiImage({
   // behind the dial straight away; otherwise open with the dial alone and slot
   // the preview in once the canvas export finishes — so the spinner never waits
   // on the export, even when customization is off and we skip the picker.
-  const runId = startAiGeneration(drawing ? URL.createObjectURL(drawing) : null, controller);
+  const runId = startAiGeneration(
+    drawing ? URL.createObjectURL(drawing) : null,
+    controller,
+    style || null
+  );
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {

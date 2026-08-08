@@ -165,8 +165,8 @@
        it is the one line a reporter must not miss, and mid-form it read as
        fine print between two controls. -->
   <p class="report-public-note">
-    Heads up: your report is posted <strong>publicly</strong> on our GitHub issue tracker, so please don't
-    include personal details like names or email addresses.
+    Your report goes to our private support tracker. Please don't include personal details like
+    names or email addresses.
   </p>
 
   <!-- Honeypot: off-screen and aria-hidden, so a person never sees it but a
@@ -300,10 +300,6 @@
     /* --text-soft, deliberately: this note is fine print, but fine print
        still owes 4.5:1, which the soft step is pinned to hold. */
     color: var(--text-soft);
-  }
-
-  .report-public-note strong {
-    color: var(--text);
   }
 
   .report-device {

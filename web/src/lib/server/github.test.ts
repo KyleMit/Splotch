@@ -59,19 +59,17 @@ describe('createIssue', () => {
     vi.unstubAllGlobals();
   });
 
-  it('POSTs the issue with the full header/body contract and returns url + number', async () => {
+  it('POSTs the issue with the full header/body contract', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       status: 201,
-      json: async () => ({ html_url: 'https://github.com/KyleMit/Splotch/issues/42', number: 42 }),
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await createIssue(input);
+    await createIssue(input);
 
-    expect(result).toEqual({ url: 'https://github.com/KyleMit/Splotch/issues/42', number: 42 });
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://api.github.com/repos/KyleMit/Splotch/issues');
+    expect(url).toBe('https://api.github.com/repos/KyleMit/splotch-feedback/issues');
     expect(init.method).toBe('POST');
     expect(init.headers).toEqual({
       Authorization: 'Bearer test-token',
@@ -112,14 +110,6 @@ describe('createIssue', () => {
     );
 
     await expect(createIssue(input)).rejects.toThrow('GitHub issue creation failed (500): ');
-  });
-
-  it('rejects when a 201 response is missing html_url/number', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 201, json: async () => ({}) }));
-
-    await expect(createIssue(input)).rejects.toThrow(
-      'GitHub issue creation returned an unexpected payload'
-    );
   });
 
   it('rejects without calling fetch when no token is configured', async () => {
