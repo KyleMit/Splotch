@@ -22,6 +22,14 @@ export const SIZE_ICON: Record<StrokeSize, CommonIconName> = {
   5: 'size-brush-5',
 };
 
+export const MAGIC_SIZE_ICON: Record<StrokeSize, CommonIconName> = {
+  1: 'size-magic-1',
+  2: 'size-magic-2',
+  3: 'size-magic-3',
+  4: 'size-magic-4',
+  5: 'size-magic-5',
+};
+
 export const ERASER_SIZE_ICON: Record<StrokeSize, CommonIconName> = {
   1: 'size-eraser-1',
   2: 'size-eraser-2',

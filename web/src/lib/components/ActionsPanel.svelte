@@ -3,6 +3,7 @@
   import Icon from './Icon.svelte';
   import BrushButtonFaces from './BrushButtonFaces.svelte';
   import BrushMenu from './BrushMenu.svelte';
+  import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
@@ -323,7 +324,11 @@
           use:scribbleTap={handleStrokeBtnClick}
           style:color={colors.activeColor}
         >
-          <Icon name={erasing ? 'line-weight-eraser' : 'line-weight-brush'} class="action-icon" />
+          {#if erasing}
+            <Icon name="line-weight-eraser" class="action-icon" />
+          {:else}
+            <InkOrMagicIcon ink="line-weight-brush" magic="line-weight-magic" class="action-icon" />
+          {/if}
         </button>
         <StrokeWidthMenu
           open={openFlyout === 'stroke'}
