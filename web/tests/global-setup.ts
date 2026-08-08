@@ -3,12 +3,11 @@ import { HARNESS_PROBE_CODE } from '../playwright.shared';
 
 // Prove the server answering the port is the one this harness started.
 //
-// `reuseExistingServer` (playwright.config.ts) hands the suite whatever is
-// already listening on the port — a `npm run preview` or `npm run perf:serve` a
-// developer left up, loaded from their real web/.env. That server has none of
-// commonWebServer.env, which is the state that filed live issues from the
-// /feedback spec (issue #646) and the state a spec can silently pass in on a
-// credential CI doesn't have.
+// The production configs refuse server reuse and use Vite strictPort, so an
+// occupied port fails before this hook. This probe remains defense in depth: a
+// future harness change cannot silently run the report specs against a server
+// loaded from a developer's real web/.env, the state that filed live issues
+// from the /feedback spec (issue #646).
 //
 // The managed-code allowlist is declared by that same env, so asking whether a
 // code only this harness sets is on it identifies the server in one request.
@@ -32,8 +31,8 @@ async function assertHarnessServer(baseURL: string) {
     throw new Error(
       `globalSetup: whatever is serving ${baseURL} was not started by this run — it does not know ` +
         `the harness access code (it answered ${answer}), so it carries your web/.env rather than ` +
-        "the suite's test credentials, and a report spec would file a real issue. Stop the server " +
-        'holding the port (an already-running one is reused) and rerun.'
+        "the suite's test credentials, and a report spec would file a real issue. Select another " +
+        'unused SPLOTCH_E2E_PORT and rerun.'
     );
   }
 }

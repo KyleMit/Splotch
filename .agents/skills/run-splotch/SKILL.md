@@ -29,13 +29,16 @@ required on macOS, where this was verified.)
 Launch the app, draw a stroke on the canvas, and screenshot the home route:
 
 ```bash
-node .claude/skills/run-splotch/driver.mjs --route / --draw --out screenshots/splotch-home.png
+node .claude/skills/run-splotch/driver.mjs --port 5199 --route / --draw --out screenshots/splotch-home.png
 ```
+
+Verify that `5199` is unused first, or replace it with another explicit unused port. Worktrees share
+the host network.
 
 Screenshot another route (no `--draw`):
 
 ```bash
-node .claude/skills/run-splotch/driver.mjs --route /admin --out screenshots/splotch-admin.png
+node .claude/skills/run-splotch/driver.mjs --port 5199 --route /admin --out screenshots/splotch-admin.png
 ```
 
 The driver starts its own server, waits for the route to become interactive, writes the PNG, then
@@ -67,7 +70,7 @@ and copy its three non-obvious pieces:
 
 ```bash
 # 1. Leave the driver's dev server running and note the URL it prints.
-node .claude/skills/run-splotch/driver.mjs --route / --keep
+node .claude/skills/run-splotch/driver.mjs --port 5199 --route / --keep
 ```
 
 ```js
@@ -145,35 +148,37 @@ and wait for `#coloringOverlay` to be visible. A full worked example (all these 
 > because its stdout is piped to your script the Node event loop never drains — the script hangs on
 > exit and leaves an **orphaned `vite dev` holding the port for hours**. Instead, pick one:
 >
-> * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, connect your own Playwright
->   script with `--url`/`page.goto`, and when done free the port with `npx kill-port <n>` (default
->   5199). Your script should only manage the *browser*, never the server.
+> * **Reuse the driver's server** (preferred): `driver.mjs … --keep`, record the process-group PID
+>   it prints, and connect your own Playwright script with `--url`/`page.goto`. Your script should
+>   only manage the *browser*, never the server. When done, stop only that recorded process group
+>   with the printed `kill -- -<pid>` command.
 > * **If you truly must spawn one**, use `spawnViteServer(port, { env, stdout, stderr })` from
 >   `scripts/lib/vite-server.mjs` — it launches vite in a **detached process group** and its
->   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `freePort(port)`
->   clears a stale listener first, and `release()` hands a still-running server to the OS (what
->   `--keep` does) so your script can exit without killing it. **A server you intend to release
->   needs a durable OS sink on *both* streams — `'ignore'` or a file descriptor**, because the
->   alternatives fail in opposite directions: `'inherit'` hands the survivor a dup of your own fd,
->   so it holds your caller's pipe open and the command that ran you never returns, while `'pipe'`
->   is a handle `release()` must drop, and the survivor's next log line then dies of EPIPE — a few
->   HMR reloads on stdout, a single filesystem-allowlist 403 on stderr. `release()` throws rather
->   than accept anything else. `driver.mjs`'s `startServer` / `finishServer` are the worked example
->   — copy those, not a fresh `spawn`.
+>   `stop()` kills the whole group (`process.kill(-pid)`), so nothing is orphaned. `release()` hands
+>   a still-running server to the OS (what `--keep` does) so your script can exit without killing
+>   it. If its strict-port start collides, choose another port; do not call `freePort`. **A server
+>   you intend to release needs a durable OS sink on *both* streams — `'ignore'` or a file
+>   descriptor**, because the alternatives fail in opposite directions: `'inherit'` hands the
+>   survivor a dup of your own fd, so it holds your caller's pipe open and the command that ran you
+>   never returns, while `'pipe'` is a handle `release()` must drop, and the survivor's next log
+>   line then dies of EPIPE — a few HMR reloads on stdout, a single filesystem-allowlist 403 on
+>   stderr. `release()` throws rather than accept anything else. `driver.mjs`'s `startServer` /
+>   `finishServer` are the worked example — copy those, not a fresh `spawn`.
 >
-> Either way, **reap what you spawned before ending**: kill the script/browser, run
-> `npx kill-port <n>`, and confirm with `ps`/`ss -ltnp` that no `vite dev` or headless Chromium is
-> left behind. A leaked server reads as a "task running for hours".
+> Either way, **reap only what this invocation spawned before ending**: close its browser and call
+> its recorded server handle's `stop()`, or stop the process group recorded by `--keep`. Never use
+> `npm run dev:kill`, `kill-port`, or another port-wide cleanup command. A leaked server reads as a
+> "task running for hours".
 
 ## Run (human path)
 
 ```bash
-npm run dev
+npm run dev -- --port 5199 --strictPort
 ```
 
-Serves `localhost:5173` — but **no `/api/*` functions** (image generation, admin auth). For those,
-`npm run dev:netlify` runs the Netlify serverless functions too. Useless headless — it just waits
-for a browser.
+Replace `5199` with an explicit unused port. This serves no `/api/*` functions (image generation,
+admin auth). For those, `npm run dev:netlify` runs the fixed-port Netlify serverless workflow and is
+host-exclusive. Useless headless — it just waits for a browser.
 
 ## Test / direct invocation
 
@@ -197,8 +202,9 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
   auto-reloading. The driver *polls* for readiness instead of re-navigating (same trick as
   `web/tests/global-setup.ts`); a plain `goto` + immediate screenshot can catch the transient error
   page.
-* **`--port` defaults to 5199**, not the usual 5173, to avoid clashing with a dev server you already
-  have running. Pass `--port 5173` to reuse one, or `--keep` to leave the driver's own server up.
+* **Pass an explicit unused `--port`.** The fallback is 5199, but concurrent worktrees share the
+  host network. Use `--url` to drive a server you intentionally started elsewhere; a collision on
+  `--port` means choose another port and retry.
 * **The action drawer is collapsed by default**, so the tool buttons (brush menu, undo, coloring,
   screenshot) aren't visible until you click `button[aria-label="Expand controls"]`. The eraser and
   magic brush are entries in the Brush Menu flyout, another level down — a custom script that goes
@@ -217,7 +223,7 @@ The `/dev/engine` route is an in-app harness for the drawing engine (gated behin
 | -------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Executable doesn't exist … playwright` (local)                                                          | `npm run test:e2e:install`                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `Executable doesn't exist … playwright` (Claude Code Cloud session)                                      | The env's cached Chromium revision drifted from the one this Playwright version wants. `driver.mjs` now self-heals — it falls back to any Chromium under `PLAYWRIGHT_BROWSERS_PATH` (default `/opt/pw-browsers`). Override with `PLAYWRIGHT_CHROMIUM=/path/to/chrome`. Never run `npx playwright install` in Claude Code Cloud. See `docs/CLOUD/Claude.md`.                                                                                                                        |
-| `server never came up at http://localhost:5199`                                                          | Port in use — pass `--port <n>` or `npx kill-port 5199`                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `server never came up` / `dev server could not start`                                                    | Port collision or startup failure — select another explicit unused `--port` and retry; do not stop the existing listener                                                                                                                                                                                                                                                                                                                                                           |
 | `<route> never became interactive`                                                                       | Route 404s or crashes — check it loads at `npm run dev` first                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Blank canvas in the `--draw` screenshot                                                                  | Drawing engine regressed; reproduce at `npm run dev`                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Want one E2E spec, not the whole suite / `Cannot navigate to invalid URL` from raw `npx playwright test` | The config + `baseURL` live in `web/`, and raw `npx` from the repo root also loses the Chromium fallback. Filter through the npm script instead: `npm run test:e2e -- flows-undo-persistence.spec.ts -g "<title>"` — `scripts/web.mjs` sets the `web/` cwd and Chromium path and forwards the args to Playwright. The positional arg is a path *pattern*, so a filename that no longer exists matches nothing and Playwright exits with `No tests found`. See the `testing` skill. |
