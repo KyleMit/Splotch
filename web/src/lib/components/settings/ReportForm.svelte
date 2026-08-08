@@ -97,8 +97,8 @@
 <section class="setting-group">
   <h3 class="report-heading">Send Feedback</h3>
   <p class="report-intro">
-    Found a bug or have an idea? Tell us here — it goes straight to our issue tracker. No account
-    needed.
+    Found a bug or have an idea? Tell us here — it opens a private support issue that only the
+    Splotch maintainer can read. No account needed.
   </p>
 
   <div class="setting report-card">

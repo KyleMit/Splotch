@@ -189,8 +189,9 @@ policy). The Apple Kids Category adds:
       Both are app functionality, not linked, and not tracking; confirmed AI-picture reports alone
       retain image evidence for up to 30 days.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
-* [x] AI-result reporting uses a parental gate at the send action. Ordinary generation is already
-      disabled until a parent supplies a credential and contains no browsing, chat, or sharing.
+* [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
+      generation is already disabled until a parent supplies a credential and contains no browsing,
+      chat, or sharing.
 * [ ] Audit outbound links (About section / Settings → GitHub, privacy policy): Kids Category
       requires external links to sit behind a parental gate. Opening Settings is not proof of
       adulthood; gate each affected action at the point where it leaves the app, then verify the

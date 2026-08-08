@@ -128,8 +128,9 @@
       instruction used for the selected art style, the AI-generated picture, the selected style, and
       the report time. It goes into our private support system so we can investigate and respond
       within 24 hours. The report bundle is automatically deleted after
-      <strong>30 days</strong> by a daily cleanup job. You can also use the contact link below to ask
-      us to delete a report sooner.
+      <strong>30 days</strong> by a daily cleanup job. To ask us to delete one sooner, use the
+      <a href="/feedback">private feedback form</a> and include the report reference shown after it was
+      sent.
     </p>
 
     <h3>Sending feedback</h3>
@@ -162,10 +163,12 @@
     <h3>Children's privacy</h3>
     <p>
       Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and
-      gathers nothing in the background. Sending feedback or reporting an AI-generated picture
-      requires a parental check at the point of sending. Splotch does not ask for a child's name,
-      email address, account, or location, and the submitted content is not used to identify a
-      child. There are no social features, comments, chat, advertising, or in-app purchases.
+      gathers nothing in the background. Sending feedback and reporting an AI-generated picture each
+      has its own grown-up-check policy in Parent Center, defaulting to Every time. Splotch does not
+      ask for a child's name, email address, account, or location, and the submitted content is not
+      used to identify a child. We handle these deliberate flows in line with children's privacy
+      laws, including COPPA and the GDPR's protections for children. There are no social features,
+      comments, chat, advertising, or in-app purchases.
     </p>
 
     <h3>Changes to this policy</h3>

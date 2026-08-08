@@ -78,7 +78,7 @@
       if (requestController.signal.aborted) return;
       if (response.ok && result.ok) {
         status = 'success';
-        message = "Thanks. We'll review it within 24 hours.";
+        message = `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${result.reportId}`;
       } else {
         status = 'error';
         message = result.ok ? 'Could not send your picture report.' : result.error;
@@ -93,7 +93,7 @@
   }
 
   function confirm(event: MouseEvent & { currentTarget: HTMLElement }) {
-    requireParentalGate('feedback', () => void send(), buttonCenter(event.currentTarget));
+    requireParentalGate('imageReport', () => void send(), buttonCenter(event.currentTarget));
   }
 </script>
 
@@ -163,7 +163,7 @@
     line-height: 1.45;
   }
 
-  :global(.status-message) {
+  .ai-image-report :global(p.status-message) {
     margin-top: 0;
   }
 </style>

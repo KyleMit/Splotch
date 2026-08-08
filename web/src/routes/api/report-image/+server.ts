@@ -5,7 +5,7 @@ import { submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
 import type { RequestHandler } from './$types';
 
-export type ImageReportResponse = { ok: true } | { ok: false; error: string };
+export type ImageReportResponse = { ok: true; reportId: string } | { ok: false; error: string };
 
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
   if (!isReportingConfigured()) {
@@ -40,7 +40,7 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     style: form.get('style'),
   });
   return result.ok
-    ? json({ ok: true } satisfies ImageReportResponse)
+    ? json({ ok: true, reportId: result.reportId } satisfies ImageReportResponse)
     : json({ ok: false, error: result.error } satisfies ImageReportResponse, {
         status: result.status,
       });

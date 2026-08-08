@@ -43,7 +43,7 @@ describe('submitImageReport', () => {
       style: 'Felt',
     });
 
-    expect(result).toEqual({ ok: true });
+    expect(result).toEqual({ ok: true, reportId: 'report-id' });
     expect(saveImageReport).toHaveBeenCalledWith(
       expect.objectContaining({
         style: 'Felt',

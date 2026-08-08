@@ -202,20 +202,20 @@ The two images must be non-empty and total no more than 4 MiB. `style` is a clos
 an arbitrary value is rejected with 400, and no client-supplied prompt is accepted. The server
 rebuilds the exact light-theme generation prompt from the shared base prompt and selected style.
 
-After a grown-up confirms the client disclosure and passes the parental gate, the server writes four
-objects to the site-wide `ai-image-reports` Netlify Blobs store under one opaque report-id prefix:
-the input drawing, output image, resolved `prompt.txt`, and `metadata.json` (report time, deletion
-time, style, and MIME types). It then creates a private support issue carrying the blob prefix. If
-notification fails, the bundle is deleted and the request fails rather than leaving unreachable
-evidence.
+After the client disclosure is confirmed through the dedicated image-report policy configured in
+Parent Center, the server writes four objects to the site-wide `ai-image-reports` Netlify Blobs
+store under one opaque report-id prefix: the input drawing, output image, resolved `prompt.txt`, and
+`metadata.json` (report time, deletion time, style, and MIME types). It then creates a private
+support issue carrying the blob prefix. If notification fails, the bundle is deleted and the request
+fails rather than leaving unreachable evidence.
 
 A scheduled `netlify/functions/purge-image-reports.ts` function scans every paginated store page
 daily and deletes report objects older than 30 days. Humans commit to reviewing reports within 24
 hours. See ADR-0104.
 
 ```json
-// 200
-{ "ok": true }
+// 200 — the opaque id supports a private early-deletion request; it grants no blob access
+{ "ok": true, "reportId": "1723123456789-550e8400-e29b-41d4-a716-446655440000" }
 // 400 — invalid body, images, size, or style
 { "ok": false, "error": "That picture could not be reported." }
 // 403 — invalid or expired generation credential

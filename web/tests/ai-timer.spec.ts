@@ -9,7 +9,7 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 // Playwright waits for elements but not for Svelte to hydrate, so a click fired
 // right after navigation can hit the SSR'd button before its handler is wired.
 // Retry the trigger until the modal actually opens.
-async function trigger(page: Page, name: RegExp) {
+async function triggerAiTimer(page: Page, name: RegExp) {
   await expect(async () => {
     await page.getByRole('button', { name }).click({ timeout: 1000 });
     await expect(page.locator('dialog.ai-result-modal')).toBeVisible({ timeout: 1000 });
@@ -20,7 +20,7 @@ test.describe('AI render timer', () => {
   test('plays the dial and reveals the result image', async ({ page }) => {
     await page.goto('/dev/ai-timer');
 
-    await trigger(page, /fast/i);
+    await triggerAiTimer(page, /fast/i);
 
     // Loading state: the progress dial sits over the blurred drawing preview.
     await expect(page.locator('.dial')).toBeVisible();
@@ -41,7 +41,7 @@ test.describe('AI render timer', () => {
     let reportRequests = 0;
     await page.addInitScript(
       (key) => localStorage.setItem(key, 'never'),
-      STORAGE_KEYS.parentalGateFeedbackMode
+      STORAGE_KEYS.parentalGateImageReportMode
     );
     await page.route('**/api/report-image', async (route) => {
       reportRequests += 1;
@@ -49,11 +49,11 @@ test.describe('AI render timer', () => {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ ok: true }),
+        body: JSON.stringify({ ok: true, reportId: 'test-report-id' }),
       });
     });
     await page.goto('/dev/ai-timer');
-    await trigger(page, /fast/i);
+    await triggerAiTimer(page, /fast/i);
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
     await page.getByRole('button', { name: 'Report this picture' }).click();
@@ -63,14 +63,14 @@ test.describe('AI render timer', () => {
     expect(reportRequests).toBe(0);
 
     await page.getByRole('button', { name: 'Send report' }).click();
-    await expect(page.getByText("Thanks. We'll review it within 24 hours.")).toBeVisible();
+    await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
     expect(reportRequests).toBe(1);
   });
 
   test('shows the error state', async ({ page }) => {
     await page.goto('/dev/ai-timer');
 
-    await trigger(page, /error/i);
+    await triggerAiTimer(page, /error/i);
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
@@ -82,7 +82,7 @@ test.describe('AI render timer', () => {
   // finger on the un-zoomed preview passes straight through (ADR-0076).
   test('the revealed result pinch-zooms, and a lone finger passes through', async ({ page }) => {
     await page.goto('/dev/ai-timer');
-    await trigger(page, /fast/i);
+    await triggerAiTimer(page, /fast/i);
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
     const result = await page.locator('.ai-stage').evaluate((node) => {
@@ -149,7 +149,7 @@ test.describe('AI render timer', () => {
 
     test('reflects the stage element’s real rendered height', async ({ page }) => {
       await page.goto('/dev/ai-timer');
-      await trigger(page, /fast/i);
+      await triggerAiTimer(page, /fast/i);
 
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
 
@@ -165,12 +165,12 @@ test.describe('AI render timer', () => {
     // now-detached element instead of following aiStageEl to the new one.
     test('re-observes a fresh .ai-stage after an error-then-retry', async ({ page }) => {
       await page.goto('/dev/ai-timer');
-      await trigger(page, /fast/i);
+      await triggerAiTimer(page, /fast/i);
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
 
       // The open <dialog> is modal, so the button row below it is inert —
       // drive the error + retry via the harness's global hotkeys instead
-      // (same reason `trigger()` above only works before the dialog opens).
+      // (same reason `triggerAiTimer()` above only works before the dialog opens).
       await page.keyboard.press('e');
       await expect(page.getByText(/didn't work/i)).toBeVisible();
 

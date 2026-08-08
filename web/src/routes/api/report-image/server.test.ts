@@ -24,7 +24,7 @@ function post(body: BodyInit, headers: HeadersInit = {}) {
 beforeEach(() => {
   isReportingConfigured.mockReset().mockReturnValue(true);
   authorizeImageReport.mockReset().mockResolvedValue({ authorized: true });
-  submitImageReport.mockReset().mockResolvedValue({ ok: true });
+  submitImageReport.mockReset().mockResolvedValue({ ok: true, reportId: 'report-id' });
 });
 
 describe('POST /api/report-image', () => {
@@ -37,7 +37,7 @@ describe('POST /api/report-image', () => {
     const response = await post(body, { [ACCESS_TOKEN_HEADER]: 'sunny-meadow' });
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
+    expect(await response.json()).toEqual({ ok: true, reportId: 'report-id' });
     expect(authorizeImageReport).toHaveBeenCalledWith({
       apiKey: null,
       token: 'sunny-meadow',

@@ -60,6 +60,7 @@ inside every challenge. Settings includes a **Parent Center** section with an in
 control for:
 
 * generating an AI image;
+* reporting an AI picture;
 * viewing external links;
 * sending feedback;
 * opening Parent Center itself.
@@ -105,5 +106,5 @@ Consequences:
 * \+ Web and Android retain the complete frequency choice where that restriction does not apply.
 * − Choosing Never for Parent Center means its policy controls subsequently open without a solve on
   that device; this is intentional, visible, and reversible.
-* − Adding another protected operation now requires a feature id, persisted policy key, Parent
-  Center row, boundary call, and tests.
+* − Adding another protected operation requires a feature id, persisted policy key, Parent Center
+  row, boundary call, and tests.

@@ -92,8 +92,8 @@
       A real person reads every one of these. There's no account attached to it, so we can't write
       back directly, but every report is reviewed.
     {:else}
-      Found a bug or have an idea? Tell us here — it goes straight to our issue tracker. No account,
-      no sign-up, and nothing to install.
+      Found a bug or have an idea? Tell us here — it opens a private support issue that only the
+      Splotch maintainer can read. No account, no sign-up, and nothing to install.
     {/if}
   {/snippet}
 
@@ -169,7 +169,7 @@
     color: var(--page-ink);
   }
 
-  .card :global(.report-public-note) {
+  .card :global(.report-privacy-note) {
     font-size: var(--font-size-sm);
   }
 

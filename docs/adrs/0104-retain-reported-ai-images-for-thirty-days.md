@@ -17,9 +17,10 @@ evidence has a narrow support purpose and includes child-created content.
 
 ## Decision
 
-Normal AI generation remains ephemeral. Only after a grown-up taps “Report this picture,” sees the
-evidence disclosure, passes the parental gate, and confirms the send does Splotch retain a bundle.
-Every AI result is visibly labelled “AI-generated picture.”
+Normal AI generation remains ephemeral. Only after someone taps “Report this picture,” sees the
+evidence disclosure, follows the dedicated image-report policy configured in Parent Center, and
+confirms the send does Splotch retain a bundle. That policy defaults to a grown-up check every time
+and is independent from text feedback. Every AI result is visibly labelled “AI-generated picture.”
 
 `POST /api/report-image` accepts the input and output image plus a style. It requires the same
 active managed token or verified BYO Gemini key as generation and has separate report-specific
@@ -38,7 +39,9 @@ shared base prompt and style suffix, preventing a client from forging report con
 After the complete bundle is saved, the server creates a private support issue through the channel
 established by ADR-0060. Its body carries the blob store and key prefix, not the images themselves,
 plus the style and deletion time. If notification fails, the bundle is deleted so inaccessible
-evidence is not orphaned. A human reviews reports within 24 hours.
+evidence is not orphaned. A successful response returns the opaque report id so a parent can include
+it in a private early-deletion request; it grants no access to the stored bundle. A human reviews
+reports within 24 hours.
 
 The retention window is 30 days. `netlify/functions/purge-image-reports.ts` runs daily, iterates all
 paginated store results, and deletes every object whose report-id timestamp is older than the shared
@@ -50,7 +53,7 @@ Play declarations, App Store declarations, and iOS privacy manifest all describe
 * \+ A reviewer gets the exact input, server-owned prompt, output, style, and time needed to assess
   and escalate an unsafe result.
 * \+ Collection remains deliberate and exceptional: viewing or generating an image retains nothing;
-  the disclosure, gate, and confirmation precede the upload.
+  the disclosure, dedicated Parent Center policy, and confirmation precede the upload.
 * \+ The closed style enum prevents the report endpoint from becoming a free-text prompt or
   arbitrary evidence-ingestion surface.
 * \+ Daily deletion gives the 30-day policy an executable enforcement mechanism rather than relying

@@ -164,7 +164,7 @@
   <!-- Last, so it sits directly above whichever submit button the host renders:
        it is the one line a reporter must not miss, and mid-form it read as
        fine print between two controls. -->
-  <p class="report-public-note">
+  <p class="report-privacy-note">
     Your report goes to our private support tracker. Please don't include personal details like
     names or email addresses.
   </p>
@@ -293,7 +293,7 @@
     outline-offset: 2px;
   }
 
-  .report-public-note {
+  .report-privacy-note {
     margin: -2px 0 0 0;
     font-size: var(--font-size-xs);
     line-height: 1.45;

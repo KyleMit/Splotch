@@ -21,6 +21,10 @@
       label: 'Generating an AI image',
       help: 'Before a drawing is sent to Google for image generation.',
     },
+    imageReport: {
+      label: 'Reporting an AI picture',
+      help: 'Before a drawing and generated picture are sent to Splotch for review.',
+    },
     externalLinks: {
       label: 'Viewing external links',
       help: 'Before a link opens another website or app.',

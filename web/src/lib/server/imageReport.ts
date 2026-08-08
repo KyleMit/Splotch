@@ -1,6 +1,6 @@
 import { STYLE_SUFFIXES, type StyleName } from '$lib/ai/styles';
-import { buildPromptForStyle } from '$lib/ai/prompt';
 import { createIssue } from './github';
+import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
 import {
   deleteImageReport,
   IMAGE_REPORT_RETENTION_DAYS,
@@ -9,7 +9,6 @@ import {
   type SavedImageReport,
 } from './imageReportStore';
 
-const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
 const MAX_REPORT_BUNDLE_BYTES = 4 * 1024 * 1024;
 const IMAGE_REPORT_LABELS = ['user-report', 'area:ai-art', 'type:bug'];
 
@@ -20,7 +19,7 @@ export interface ImageReportInput {
 }
 
 export type ImageReportResult =
-  | { ok: true }
+  | { ok: true; reportId: string }
   | { ok: false; status: 400 | 502 | 503; error: string };
 
 function readStyle(raw: unknown): StyleName | null | undefined {
@@ -31,7 +30,7 @@ function readStyle(raw: unknown): StyleName | null | undefined {
 }
 
 function validImage(value: unknown): value is Blob {
-  return value instanceof Blob && value.size > 0 && ALLOWED_IMAGE_TYPES.includes(value.type);
+  return value instanceof Blob && value.size > 0 && isAllowedImageType(value.type);
 }
 
 export async function submitImageReport({
@@ -47,7 +46,7 @@ export async function submitImageReport({
     return { ok: false, status: 400, error: 'That picture is too large to report.' };
   }
 
-  const prompt = buildPromptForStyle(style, STYLE_SUFFIXES, 'light');
+  const prompt = resolveGenerationPrompt(style);
   let report: SavedImageReport;
   try {
     report = await saveImageReport({ input: drawing, output, prompt, style });
@@ -89,5 +88,5 @@ export async function submitImageReport({
     };
   }
 
-  return { ok: true };
+  return { ok: true, reportId: report.reportId };
 }

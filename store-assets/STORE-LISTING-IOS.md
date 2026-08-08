@@ -132,10 +132,10 @@ Enter the current questionnaire from the shipped behavior:
 Splotch's optional image-to-image Gemini feature is disabled until a parent supplies an access code
 or API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum
 and constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up
-can tap “Report this picture,” review a confirmation, pass the parental gate, and privately send the
-input drawing, resolved prompt, output, style, and timestamp. A human reviews reports within 24
-hours; evidence is automatically deleted after 30 days. There is no browsing, chat, public sharing,
-or user-to-user distribution.
+can tap “Report this picture,” review a confirmation, follow its dedicated parental-gate policy, and
+privately send the input drawing, resolved prompt, output, style, and timestamp. A human reviews
+reports within 24 hours; evidence is automatically deleted after 30 days. There is no browsing,
+chat, public sharing, or user-to-user distribution.
 
 ## Screenshots (this folder)
 
