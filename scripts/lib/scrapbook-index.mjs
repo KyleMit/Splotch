@@ -121,6 +121,16 @@ const REGISTRY = {
     kind: 'Reference sheet',
     count: () => null,
   },
+  'page-inventory': {
+    icon: 'appearance',
+    hue: 'purple',
+    title: 'App page inventory',
+    blurb:
+      'Every route, Settings section, modal, and notable transient view captured side by side at four canonical iPhone and iPad logical viewports.',
+    entry: 'page-inventory/index.html',
+    kind: 'Responsive UI reference',
+    count: () => null,
+  },
 };
 
 // YYYY-MM-DD — locale-independent so the index is byte-stable across machines
