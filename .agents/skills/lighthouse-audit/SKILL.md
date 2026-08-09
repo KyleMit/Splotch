@@ -109,7 +109,7 @@ value into an app finding — use `npm run perf:mount` for an independent startu
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
 This is an audit skill; it follows the shared conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md). Turn opportunities into
+[`.claude/audit-conventions.md`](../../../.claude/audit-conventions.md). Turn opportunities into
 `docs/AUDIT.md` findings under a `## Source: Lighthouse page-load audit` section, using the
 canonical finding format documented there. **Merge into that section — do not clobber it (§1):**
 

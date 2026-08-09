@@ -226,8 +226,8 @@ per package (`not deprecated (npm, checked …)`) so each entry shows the check 
 ## Shared audit conventions
 
 This is an audit skill. It writes to its own report (`docs/DEPENDENCIES.md`), not `docs/AUDIT.md`,
-but the run-tracking conventions in [`.claude/audit-conventions.md`](../../audit-conventions.md)
-still apply:
+but the run-tracking conventions in
+[`.claude/audit-conventions.md`](../../../.claude/audit-conventions.md) still apply:
 
 * **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md`: how many packages reviewed, the
   verdict split, and any replace/investigate calls.

@@ -222,46 +222,6 @@ The rolled-back draft is kept at
 (1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/p4-consistency-no-editorconfig-indent-width-2-and-print-width-100-are-re.patch`.
 
-### [Tooling] Make the session-audit conventions link resolve for Codex
-
-**File(s):** `.ruler/skills/session-audit/SKILL.md` (shared conventions link),
-`.agents/skills/session-audit/SKILL.md`
-
-#### Problem
-
-**Cost:** minor
-
-The generated Codex skill links to `[.claude/audit-conventions.md](../../audit-conventions.md)`.
-From `.agents/skills/session-audit/SKILL.md`, that relative target resolves to
-`.agents/audit-conventions.md`, which does not exist. During this session the prescribed
-`sed -n '1,320p' .agents/audit-conventions.md` read failed, and repository orientation had to be
-used to recover the real `.claude/audit-conventions.md` path. Every Codex session that runs this
-skill encounters the same broken reference.
-
-#### Proposed solution
-
-Change the shared source link in `.ruler/skills/session-audit/SKILL.md` to the provider-neutral
-`../../../.claude/audit-conventions.md`, then run `npm run ruler:apply`. From both generated skill
-locations, that path resolves to the repository's one directly maintained conventions file.
-
-#### Verification
-
-Run `npm run ruler:check`, then resolve the link from both `.agents/skills/session-audit/SKILL.md`
-and `.claude/skills/session-audit/SKILL.md`; each should identify the existing
-`.claude/audit-conventions.md` without a fallback lookup.
-
----
-
-#### Why it was deferred
-
-implementation failed
-
-#### What was tried
-
-Updated the shared source and generated Claude copy, but `npm run ruler:apply` could not write the
-protected `.agents` tree in this nested sandbox. The Codex generated copy therefore remains stale,
-so the full brief cannot be delivered here.
-
 ### [P1][duplication] Extract a shared segmented-control primitive — it now exists three times with drift
 
 **File(s):** `web/src/lib/components/settings/AppearanceSection.svelte:32-47,92-138` ·
@@ -2199,47 +2159,6 @@ The rolled-back draft is kept at
 `docs/audit-deferred/testing-android-minsdk-floor-compatibility-md-agreement-is-maintained-by.patch`
 (3 commits). It was not accepted, so it is a starting point rather than scrap. Apply with
 `git apply docs/audit-deferred/testing-android-minsdk-floor-compatibility-md-agreement-is-maintained-by.patch`.
-
-### [Maintainability] Audit skills link `audit-conventions.md` with a path that is broken in the `.agents/` tree (and inside `.ruler/` itself)
-
-**File(s):** `.ruler/skills/code-audit/SKILL.md` (line 63), `.ruler/skills/extract-audit/SKILL.md`
-(line 53), `.ruler/skills/lighthouse-audit/SKILL.md` (line 112),
-`.ruler/skills/session-audit/SKILL.md` (line 175), `.ruler/skills/dependency-health-audit/SKILL.md`
-(line 229), `.ruler/skills/dependency-update-audit/SKILL.md` (lines 28 vs 125),
-`.ruler/skills/workflow-audit/SKILL.md` (line 118) @ cd04c367
-
-**Priority:** P2
-
-#### Problem
-
-Skills are copied verbatim into **both** `.claude/skills/<name>/` and `.agents/skills/<name>/`
-(agent-files.md lines 10–11). Six audit skills link the shared conventions as
-`[`.claude/audit-conventions.md`](../../audit-conventions.md)`. That relative path only resolves
-from `.claude/skills/<name>/`; from `.agents/skills/<name>/` it points at
-`.agents/audit-conventions.md`, which does not exist (`.agents/` contains only `skills/` and
-`skill-notes/`), and from the `.ruler/` source itself it points at a nonexistent
-`.ruler/audit-conventions.md`. A Codex session following the link (the explicitly supported consumer
-per ADR-0058 and knowledge-map.md lines 3–5) hits a dead path for the conventions that define the
-finding format, the AUDIT-LOG entry, and the self-heal rule.
-
-The correct form already exists in the same tree — `dependency-update-audit/SKILL.md:28` uses
-`(../../../.claude/audit-conventions.md)`, which resolves to the repo-root
-`.claude/audit-conventions.md` from **both** generated locations — but the same file then uses the
-broken `(../../audit-conventions.md)` form at line 125, so even one skill is internally
-inconsistent.
-
-#### Proposed solution
-
-Normalize every audit-conventions link in `.ruler/skills/**` to the
-`../../../.claude/audit-conventions.md` form (or drop the hyperlink and keep the plain backticked
-path, which several skills — `vet-audits`, `fix-audits`, `skills-guide` — already do successfully).
-A cheap drift-guard in `scripts/tests/` that resolves every relative markdown link in the generated
-`.claude/skills/**` and `.agents/skills/**` and fails on a missing target would catch this whole
-class (see also the pr-screenshots and knowledge-map findings below).
-
-#### Why it was deferred
-
-verifier unavailable
 
 ### [Testing] Run the self-contained API-contract smoke (`test:api:smoke`) in CI
 
