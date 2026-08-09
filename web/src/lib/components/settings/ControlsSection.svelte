@@ -12,6 +12,8 @@
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
+    setCrayon,
+    setMagicBrush,
     setEraser,
     setColoringBook,
     setAdvancedControls,
@@ -53,10 +55,24 @@
   const buttonChips = [
     {
       id: 'strokeWidthToggle',
-      label: 'Stroke Width',
+      label: 'Stroke width',
       icon: 'line-weight-brush',
       checked: () => settings.strokeWidthControlEnabled,
       toggle: setStrokeWidthControl,
+    },
+    {
+      id: 'crayonToggle',
+      label: 'Crayon',
+      icon: 'brush-crayon',
+      checked: () => settings.crayonEnabled,
+      toggle: setCrayon,
+    },
+    {
+      id: 'magicBrushToggle',
+      label: 'Magic brush',
+      icon: 'brush-magic',
+      checked: () => settings.magicBrushEnabled,
+      toggle: setMagicBrush,
     },
     {
       id: 'eraserToggle',
@@ -67,7 +83,7 @@
     },
     {
       id: 'coloringBookToggle',
-      label: 'Coloring Book',
+      label: 'Coloring book',
       icon: 'shapes',
       checked: () => settings.coloringBookEnabled,
       toggle: toggleColoringBook,

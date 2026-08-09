@@ -7,6 +7,7 @@ import {
   isInkBrush,
   selectBrush,
   selectInkBrush,
+  fallBackFromBrush,
   toggleEraser,
   resetToolAfterClear,
   reloadBrushType,
@@ -73,6 +74,16 @@ describe('tool state', () => {
     selectBrush('magic');
     selectInkBrush();
     expect(toolState.brush).toBe('crayon');
+  });
+
+  it('forgetting Crayon also removes it as the remembered ink brush', () => {
+    selectBrush('crayon');
+    selectBrush('magic');
+
+    fallBackFromBrush('crayon');
+    selectInkBrush();
+
+    expect(toolState.brush).toBe('pen');
   });
 
   it('resetToolAfterClear switches back to the ink brush when erasing', () => {

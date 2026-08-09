@@ -13,6 +13,11 @@ import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } fr
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { CredentialKind } from '$lib/aiCredential';
+import {
+  OPTIONAL_BRUSH_TYPES,
+  fallBackFromBrush,
+  type OptionalBrushType,
+} from '$lib/state/tool.svelte';
 
 // Phone-class devices stay below the shared tablet floor even in landscape, so
 // they default to portrait. The threshold itself is owned by platform.ts, which
@@ -35,8 +40,8 @@ const BOOL_SETTINGS = {
   screenshotEnabled: [STORAGE_KEYS.screenshotEnabled, true],
   undoButtonEnabled: [STORAGE_KEYS.undoButtonEnabled, true],
   strokeWidthControlEnabled: [STORAGE_KEYS.strokeWidthControl, true],
-  // Hides the eraser entry in the Actions Panel's Brush Menu (the eraser moved
-  // there from its old top-level button; the stored key predates the move).
+  crayonEnabled: [STORAGE_KEYS.crayonEnabled, true],
+  magicBrushEnabled: [STORAGE_KEYS.magicBrushEnabled, true],
   eraserEnabled: [STORAGE_KEYS.eraserEnabled, true],
   coloringBookEnabled: [STORAGE_KEYS.coloringBookEnabled, true],
   coloringPacksAllowMetered: [STORAGE_KEYS.coloringPacksAllowMetered, false],
@@ -156,12 +161,49 @@ function makeBoolSetter(prop: BoolSettingKey) {
   };
 }
 
+const OPTIONAL_BRUSH_SETTING = {
+  crayon: 'crayonEnabled',
+  magic: 'magicBrushEnabled',
+  eraser: 'eraserEnabled',
+} as const satisfies Record<OptionalBrushType, BoolSettingKey>;
+
+export function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
+  return settings[OPTIONAL_BRUSH_SETTING[brush]];
+}
+
+export function enabledOptionalBrushes(): OptionalBrushType[] {
+  return OPTIONAL_BRUSH_TYPES.filter(isOptionalBrushEnabled);
+}
+
+function normalizeDisabledBrushes() {
+  for (const brush of OPTIONAL_BRUSH_TYPES) {
+    if (!isOptionalBrushEnabled(brush)) fallBackFromBrush(brush);
+  }
+}
+
 export const setSound = makeBoolSetter('soundEnabled');
 export const setSaveOnDelete = makeBoolSetter('saveOnDeleteEnabled');
 export const setScreenshot = makeBoolSetter('screenshotEnabled');
 export const setUndoButton = makeBoolSetter('undoButtonEnabled');
 export const setStrokeWidthControl = makeBoolSetter('strokeWidthControlEnabled');
-export const setEraser = makeBoolSetter('eraserEnabled');
+const setCrayonSetting = makeBoolSetter('crayonEnabled');
+const setMagicBrushSetting = makeBoolSetter('magicBrushEnabled');
+const setEraserSetting = makeBoolSetter('eraserEnabled');
+
+export function setCrayon(v: boolean) {
+  setCrayonSetting(v);
+  if (!v) fallBackFromBrush('crayon');
+}
+
+export function setMagicBrush(v: boolean) {
+  setMagicBrushSetting(v);
+  if (!v) fallBackFromBrush('magic');
+}
+
+export function setEraser(v: boolean) {
+  setEraserSetting(v);
+  if (!v) fallBackFromBrush('eraser');
+}
 export const setColoringBook = makeBoolSetter('coloringBookEnabled');
 export const setColoringPacksAllowMetered = makeBoolSetter('coloringPacksAllowMetered');
 export const setAiImage = makeBoolSetter('aiImageEnabled');
@@ -225,7 +267,10 @@ export function reloadSettings() {
   settings.aiAccessToken = readString(STORAGE_KEYS.aiAccessToken, settings.aiAccessToken);
   settings.theme = readTheme(settings.theme);
   applyTheme(settings.theme);
+  normalizeDisabledBrushes();
 }
+
+normalizeDisabledBrushes();
 
 onDurableRestore(reloadSettings);
 

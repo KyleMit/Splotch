@@ -6,6 +6,8 @@ export const STORAGE_KEYS = {
   screenshotEnabled: 'splotch-screenshot-enabled',
   undoButtonEnabled: 'splotch-undo-button-enabled',
   strokeWidthControl: 'splotch-stroke-width-control',
+  crayonEnabled: 'splotch-crayon-enabled',
+  magicBrushEnabled: 'splotch-magic-brush-enabled',
   eraserEnabled: 'splotch-eraser-enabled',
   coloringBookEnabled: 'splotch-coloring-book-enabled',
   coloringPacksAllowMetered: 'splotch-coloring-packs-allow-metered',

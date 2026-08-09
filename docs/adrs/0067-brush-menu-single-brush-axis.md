@@ -1,4 +1,4 @@
-# ADR-0067: Brush Types as One Selectable Axis Behind a Brush Menu
+# ADR-0067: Brush Types as One Selectable Axis with Adaptive Controls
 
 **Status:** Active — amends ADR-0043 (magic brush selection) and ADR-0065 (crayon as the only
 free-draw mode). **Date:** 2026-07
@@ -28,13 +28,22 @@ eraser and magic brush are peer brush types, not modifiers. The engine bridges s
 booleans (`setEraserMode`, `setMagicMode`, `setCrayonMode`), each derived from the one axis in
 `DrawingCanvas.svelte`.
 
-**One Brush Menu.** The four brushes live in a new Actions Panel flyout (pen, crayon, magic, eraser,
-in that order) behind a single **Brush Button** whose face is the active brush's icon. The old
-top-level Eraser and Magic Brush buttons are gone, shrinking the worst-case row from 7 to 6 buttons.
-The flyout reuses the Stroke Width flyout's pattern, now generalized into shared `.flyout-wrapper` /
-`.flyout-menu` / `.flyout-option` classes with one open-flyout slot (opening one closes the other).
-Brush selection is idempotent like the eraser was (issue #276) — you leave a brush by picking
-another one or a color, never by re-tapping it.
+**One adaptive Brush control.** Pen remains the always-available baseline; Crayon, Magic Brush, and
+Eraser each have an independent persisted availability setting. The Actions Panel presents the
+smallest useful control for the enabled optional set:
+
+* none — no Brush control;
+* one — that tool's icon is a direct button that toggles between the tool and Pen;
+* two or three — the Brush Button opens the flyout, which contains Pen followed by only the enabled
+  optional tools in the established order.
+
+The old top-level Eraser and Magic Brush buttons remain gone, keeping the worst-case row at six
+buttons. The flyout reuses the Stroke Width flyout's shared `.flyout-wrapper` / `.flyout-menu` /
+`.flyout-option` classes and one open-flyout slot. Menu selection stays idempotent (issue #276); the
+single-tool direct button is deliberately a toggle because its only two states are that tool and
+Pen. Disabling the active optional tool immediately selects and persists Pen, so hidden tools can
+never remain active. Disabling Crayon also resets the remembered last ink brush to Pen, preventing a
+later color pick from reviving a hidden Crayon indirectly.
 
 **Pen is the default; the choice persists — except the eraser.** The brush is stored under
 `splotch-brush-type` (read through the durable-storage layer like every setting). Selecting the
@@ -49,9 +58,9 @@ keeps its independent level.
 
 **First paint.** The Brush Button's face can't swap its `{@html}` icon on client-only state
 (hydration caveat in `.claude/rules/svelte.md`), so all four icons are in the DOM and CSS shows the
-one matching `data-brush` — on `<html>` for the app.html pre-paint seed (absent = pen), then on the
-panel after its hydration marker appears (ADR-0040). Settings' existing Eraser toggle
-(`data-off-eraser`) hides the eraser's menu entry instead of a top-level button.
+one matching `data-brush` or `data-single-brush` — on `<html>` for the app.html pre-paint seed, then
+on the panel after its hydration marker appears (ADR-0040). The three `data-off-*` availability
+attributes hide disabled entries and, when all three are present, the Brush control itself.
 
 ## Alternatives considered
 
@@ -69,5 +78,11 @@ panel after its hydration marker appears (ADR-0040). Settings' existing Eraser t
   the work was state, UI, and persistence.
 * E2E specs and perf scripts that clicked `#eraserButton` / `#magicBrushButton` directly must open
   the Brush Menu first (`pickBrush` helper in `flows-harness.ts`); the entry ids are preserved.
-* A future brush type is one `BRUSH_OPTIONS` entry (icon + id + label) plus its engine mode — no
-  layout math changes, since the menu absorbs it.
+* A future optional brush type needs one `BRUSH_OPTIONS` entry (icon + id + label), an availability
+  setting, and its engine mode. Layout still counts the adaptive control as at most one button.
+
+## Amendment (2026-08): configurable optional brushes
+
+Issue #881 added the per-tool availability settings and adaptive zero/one/many presentation above.
+It does not change the four-way brush axis: availability and presentation wrap that axis rather than
+introducing crossed tool state.

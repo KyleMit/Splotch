@@ -10,6 +10,8 @@ import {
   BRUSH_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
   DRAWER_OPEN_ATTRIBUTE,
+  NO_ACTIONS_ATTRIBUTE,
+  SINGLE_BRUSH_ATTRIBUTE,
 } from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { STORAGE_KEYS } from './lib/storage';
@@ -153,6 +155,11 @@ describe("app.html's boot script mirrors the state modules", () => {
   // which the boot script re-types as its own literal.
   it('seeds the brush face under BRUSH_ATTRIBUTE', () => {
     expect(bootStringLiteral(/setAttribute\('([\w-]+)', brush\)/)).toBe(BRUSH_ATTRIBUTE);
+  });
+
+  it('seeds the single-brush and empty-panel presentation attributes', () => {
+    expect(bootScript).toContain(`setAttribute('${SINGLE_BRUSH_ATTRIBUTE}'`);
+    expect(bootScript).toContain(`toggleAttribute('${NO_ACTIONS_ATTRIBUTE}'`);
   });
 
   it('stamps data-theme for every resolved theme', () => {

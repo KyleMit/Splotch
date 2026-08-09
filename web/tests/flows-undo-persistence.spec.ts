@@ -429,6 +429,83 @@ test('a corrupt default-on setting stays enabled before and after hydration', as
   await expect(page.locator('#eraserButton')).toBeVisible();
 });
 
+test('a single optional brush has its direct-button face at first paint', async ({ page }) => {
+  await page.addInitScript(
+    ({ drawerOpen, crayon, magic }) => {
+      localStorage.setItem(drawerOpen, 'true');
+      localStorage.setItem(crayon, 'false');
+      localStorage.setItem(magic, 'false');
+    },
+    {
+      drawerOpen: STORAGE_KEYS.drawerOpen,
+      crayon: STORAGE_KEYS.crayonEnabled,
+      magic: STORAGE_KEYS.magicBrushEnabled,
+    }
+  );
+  await gotoApp(page);
+
+  await expect(page.locator('html')).toHaveAttribute('data-single-brush', 'eraser');
+  await expect(page.locator('.actions-panel')).toHaveAttribute('data-single-brush', 'eraser');
+  await expect(page.locator('#brushButton [data-brush-face="eraser"]')).toBeVisible();
+  await expect(page.locator('.brush-menu')).toBeHidden();
+});
+
+test('first-paint sizing excludes the brush control when no optional brush is enabled', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ drawerOpen, crayon, magic, eraser }) => {
+      localStorage.setItem(drawerOpen, 'true');
+      localStorage.setItem(crayon, 'false');
+      localStorage.setItem(magic, 'false');
+      localStorage.setItem(eraser, 'false');
+    },
+    {
+      drawerOpen: STORAGE_KEYS.drawerOpen,
+      crayon: STORAGE_KEYS.crayonEnabled,
+      magic: STORAGE_KEYS.magicBrushEnabled,
+      eraser: STORAGE_KEYS.eraserEnabled,
+    }
+  );
+  await gotoApp(page);
+
+  await expect(page.locator('html')).toHaveCSS('--action-btn-first-paint-count', '4');
+  await expect(page.locator('#brushButton')).toBeHidden();
+  await expect(page.locator('#undoButton')).toBeVisible();
+});
+
+test('an Actions Panel with no enabled actions is absent from first paint onward', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ drawerOpen, crayon, magic, eraser, stroke, coloring, screenshot, undo, ai }) => {
+      localStorage.setItem(drawerOpen, 'true');
+      for (const key of [crayon, magic, eraser, stroke, coloring, screenshot, undo, ai]) {
+        localStorage.setItem(key, 'false');
+      }
+    },
+    {
+      drawerOpen: STORAGE_KEYS.drawerOpen,
+      crayon: STORAGE_KEYS.crayonEnabled,
+      magic: STORAGE_KEYS.magicBrushEnabled,
+      eraser: STORAGE_KEYS.eraserEnabled,
+      stroke: STORAGE_KEYS.strokeWidthControl,
+      coloring: STORAGE_KEYS.coloringBookEnabled,
+      screenshot: STORAGE_KEYS.screenshotEnabled,
+      undo: STORAGE_KEYS.undoButtonEnabled,
+      ai: STORAGE_KEYS.aiImageEnabled,
+    }
+  );
+  await gotoApp(page);
+
+  const panel = page.locator('.actions-panel');
+  await expect(page.locator('html')).toHaveAttribute('data-no-actions', '');
+  await expect(panel).toHaveAttribute('data-action-panel-live', '');
+  await expect(panel).toHaveAttribute('data-no-actions', '');
+  await expect(panel).toBeHidden();
+  await expect(panel.locator('.drawer-toggle')).toBeHidden();
+});
+
 // The brush choice is a persisted user setting (default pen; the eraser is
 // deliberately excluded). The head script in app.html stamps [data-brush] on
 // <html> before paint so the Brush Button wears the right face with no flash.

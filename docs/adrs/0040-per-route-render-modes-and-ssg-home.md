@@ -62,15 +62,15 @@ that are already correct in the prerendered HTML:
    Palette's one- or two-column width as `--palette-landscape-width` at the same media-query
    breakpoint that selects its layout, and both components consume it. The landscape button cap
    likewise budgets for the one to five buttons the boot script leaves visible after reading the
-   persisted control toggles; the raw HTML defaults to five, and hydrated sizing uses the live
-   one-to-six-button count once client-only AI visibility resolves. The palette's `ResizeObserver`
-   measurement remains the post-hydration correction for browser rounding, tagged with the
-   orientation it measured. Landscape width and portrait height resolvers reject a measurement from
-   the other orientation during rotation and use the same deterministic CSS fallback geometry until
-   the matching measurement arrives. JS selects the landscape fallback through the same media query
-   rather than the visible viewport height. Drift-guard tests derive the CSS literals from
-   `design/trimGeometry.ts` and the Actions Panel constants, so this shared non-importable geometry
-   cannot silently diverge.
+   persisted control toggles (an empty row hides the whole panel); the raw HTML defaults to five,
+   and hydrated sizing uses the live one-to-six-button count once client-only AI visibility
+   resolves. The palette's `ResizeObserver` measurement remains the post-hydration correction for
+   browser rounding, tagged with the orientation it measured. Landscape width and portrait height
+   resolvers reject a measurement from the other orientation during rotation and use the same
+   deterministic CSS fallback geometry until the matching measurement arrives. JS selects the
+   landscape fallback through the same media query rather than the visible viewport height.
+   Drift-guard tests derive the CSS literals from `design/trimGeometry.ts` and the Actions Panel
+   constants, so this shared non-importable geometry cannot silently diverge.
 2. **Pre-paint head-script stamp** (`web/src/app.html`) + CSS. A tiny synchronous inline script runs
    before first paint and stamps `<html>` from `localStorage`, and the Action-center panel's CSS
    reads those stamps so the state is correct at render. During hydration, a publish `$effect` in
@@ -91,6 +91,10 @@ that are already correct in the prerendered HTML:
    * `data-drawer-open` — present only when the drawer is open (default: closed).
    * `data-off-adv` / `data-off-<control>` — present only when advanced controls, or that Settings
      control, is switched **off** (default: on/shown).
+   * `data-single-brush` — present when exactly one optional brush is enabled, selecting the direct
+     button's fixed face independently of the active brush.
+   * `data-no-actions` — present when every first-paint action is disabled, hiding both the panel
+     and its drawer control.
    * `--action-btn-first-paint-count` / `--action-btn-first-paint-gap-total` — set only when those
      persisted off-states reduce the default five-button row. They are derived from the same
      booleans that stamp `data-off-<control>`, so first-paint sizing matches the visible controls.
@@ -159,10 +163,10 @@ surfaces.
   button-scale clamp, and the default count/gap literals from the typed modules (it runs in `<head>`
   before `<body>` exists, so it can only stamp `<html>` — it can't import the source of truth or
   touch the buttons directly). Both files call this out; mechanical drift guards cover the
-  duplicated literals, and E2E tests compare first-paint and hydrated geometry for default,
-  three-button, and brush-only rows. The root attributes and variables intentionally remain the
-  first-paint snapshot and are not a live-state inspection API. The wider bootstrap/panel handoff is
-  covered by `flows-undo-persistence.spec.ts` ("persisted-open drawer … at first paint").
+  duplicated literals, and E2E tests compare first-paint and hydrated geometry for default, reduced,
+  single-brush, brushless, and empty-panel rows. The root attributes and variables intentionally
+  remain the first-paint snapshot and are not a live-state inspection API. The wider bootstrap/panel
+  handoff is covered by `flows-undo-persistence.spec.ts` ("persisted-open drawer … at first paint").
 * **−** The drawer moved from a Svelte `{#if}` + `slide` to always-rendered markup gated by CSS
   (grid accordion + delayed `visibility`). More CSS mechanism, and the buttons are always in the DOM
   — but inert when closed, so no a11y/interaction cost.

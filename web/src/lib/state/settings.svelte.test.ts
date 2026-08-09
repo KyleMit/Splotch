@@ -9,6 +9,8 @@ import {
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
   ACTION_BUTTON_SCALE_DEFAULT,
+  setCrayon,
+  setMagicBrush,
   setEraser,
   setDrawerOpen,
   setAiAccessToken,
@@ -17,9 +19,14 @@ import {
   aiCredentialKind,
   captureAiAccessTokenFromUrl,
 } from './settings.svelte';
+import { selectBrush, toolState } from './tool.svelte';
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 beforeEach(() => {
+  setCrayon(true);
+  setMagicBrush(true);
+  setEraser(true);
+  selectBrush('pen');
   localStorage.clear();
 });
 
@@ -39,6 +46,26 @@ describe('boolean setters', () => {
     expect(settings.eraserEnabled).toBe(false);
     expect(localStorage.getItem(STORAGE_KEYS.eraserEnabled)).toBe('false');
     expect(localStorage.getItem(STORAGE_KEYS.soundEnabled)).toBeNull();
+  });
+
+  it.each([
+    ['crayon', setCrayon, STORAGE_KEYS.crayonEnabled],
+    ['magic', setMagicBrush, STORAGE_KEYS.magicBrushEnabled],
+    ['eraser', setEraser, STORAGE_KEYS.eraserEnabled],
+  ] as const)('persists the %s availability setting', (_brush, setter, key) => {
+    setter(false);
+    expect(localStorage.getItem(key)).toBe('false');
+  });
+
+  it.each([
+    ['crayon', setCrayon],
+    ['magic', setMagicBrush],
+    ['eraser', setEraser],
+  ] as const)('returns an active %s brush to Pen when disabled', (brush, setter) => {
+    selectBrush(brush);
+    setter(false);
+    expect(toolState.brush).toBe('pen');
+    expect(localStorage.getItem(STORAGE_KEYS.brushType)).toBe('pen');
   });
 });
 

@@ -24,7 +24,7 @@ export const PencilEraser = registerPlugin<PencilEraserPlugin>('PencilEraser', {
 // the toggle stays available for re-enabling.
 export function handleDoubleTap(): void {
   if (!settings.applePencilSeen) setApplePencilSeen(true);
-  if (!settings.pencilEraserEnabled) return;
+  if (!settings.pencilEraserEnabled || !settings.eraserEnabled) return;
   toggleEraser();
   impactThreshold();
 }

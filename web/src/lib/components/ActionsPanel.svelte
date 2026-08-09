@@ -1,15 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
-  import BrushButtonFaces from './BrushButtonFaces.svelte';
-  import BrushMenu from './BrushMenu.svelte';
+  import BrushControl from './BrushControl.svelte';
   import InkOrMagicIcon from './InkOrMagicIcon.svelte';
   import StrokeWidthMenu from './StrokeWidthMenu.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
   import { colors, isWhite, isDarkInk } from '$lib/state/colors.svelte';
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
-  import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
+  import { toolState } from '$lib/state/tool.svelte';
   import {
     ui,
     coloringBookModal,
@@ -110,6 +109,7 @@
   // resize listener, which fires on URL-bar show/hide), so the render cap and
   // the ceiling can't disagree.
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
+  const layoutButtonCount = $derived(Math.max(1, buttonCount));
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
 
   const buttonSize = $derived(
@@ -119,11 +119,15 @@
           isPortrait
             ? {
                 orientation: 'portrait',
-                buttonCount,
+                buttonCount: layoutButtonCount,
                 paletteHeight: portraitPaletteHeight,
                 viewportHeight: layout.viewportHeight,
               }
-            : { orientation: 'landscape', buttonCount, paletteWidth: landscapePaletteWidth }
+            : {
+                orientation: 'landscape',
+                buttonCount: layoutButtonCount,
+                paletteWidth: landscapePaletteWidth,
+              }
         )
   );
 
@@ -236,21 +240,12 @@
     }
   }
 
-  function handleBrushBtnClick() {
-    openFlyout = openFlyout === 'brush' ? null : 'brush';
-  }
-
   function handleStrokeBtnClick() {
     openFlyout = openFlyout === 'stroke' ? null : 'stroke';
   }
 
-  // Picking a brush keeps it selected rather than toggling off (issue #276):
-  // repeated taps are idempotent. The child leaves the eraser or magic brush by
-  // picking another brush here or a color (ColorPalette calls selectInkBrush),
-  // which resumes drawing with that color.
-  function handleBrushTypeClick(brush: BrushType) {
-    selectBrush(brush);
-    openFlyout = null;
+  function setBrushFlyout(open: boolean) {
+    openFlyout = open ? 'brush' : null;
   }
 
   function handleStrokeSizeClick(size: StrokeSize) {
@@ -310,36 +305,14 @@
        first paint; the panel-local publish effect owns hydrated changes. -->
   <div class="actions-drawer" ontransitionend={finishDrawerMotion}>
     <div class="actions-drawer-inner">
-      <!-- Brush Menu: the four brush types (pen, crayon, magic, eraser) behind
-           one trigger whose face is the active brush's icon. All four trigger
-           icons stay in the DOM and CSS shows the one matching [data-brush]
-           from the pre-paint seed or live panel — an {@html} icon swapped on
-           client-only state would keep the
-           server-rendered SVG through hydration (.claude/rules/svelte.md). -->
-      <div class="flyout-wrapper brush-wrapper" bind:this={brushWrapperEl}>
-        <!-- The pen and crayon icons draw their ink parts in currentColor, so
-             the trigger and menu carry the active color the way the stroke-width
-             control does (the magic/eraser icons ignore it — no currentColor). -->
-        <button
-          class="action-button"
-          class:white-stroke={inkWhite}
-          class:dark-stroke={inkDark}
-          id="brushButton"
-          aria-label="Brushes"
-          aria-expanded={openFlyout === 'brush'}
-          use:scribbleTap={handleBrushBtnClick}
-          style:color={colors.activeColor}
-        >
-          <BrushButtonFaces />
-        </button>
-        <BrushMenu
-          open={openFlyout === 'brush'}
-          activeColor={colors.activeColor}
-          {inkWhite}
-          {inkDark}
-          onpick={handleBrushTypeClick}
-        />
-      </div>
+      <BrushControl
+        bind:wrapperEl={brushWrapperEl}
+        open={openFlyout === 'brush'}
+        activeColor={colors.activeColor}
+        {inkWhite}
+        {inkDark}
+        onOpenChange={setBrushFlyout}
+      />
 
       <div class="flyout-wrapper stroke-width-wrapper" bind:this={strokeWrapperEl}>
         <button
@@ -453,6 +426,11 @@
     flex-direction: row;
     align-items: center;
     z-index: var(--z-panel);
+  }
+
+  :global(html[data-no-actions]) .actions-panel:not([data-action-panel-live]),
+  :global(.actions-panel[data-action-panel-live][data-no-actions]) {
+    display: none;
   }
 
   .free-count {
@@ -582,8 +560,6 @@
   :global(.actions-panel[data-action-panel-live][data-off-stroke]) .stroke-width-wrapper {
     display: none;
   }
-  /* The eraser's toggle in Settings hides its Brush Menu entry — that rule
-     moved into BrushMenu.svelte with the #eraserButton element it targets. */
   :global(html[data-off-coloring]) .actions-panel:not([data-action-panel-live]) #coloringBookButton,
   :global(.actions-panel[data-action-panel-live][data-off-coloring]) #coloringBookButton {
     display: none;
@@ -644,147 +620,6 @@
     :global(.drawer-toggle-icon) {
       --drawer-axis-rot: -90deg;
     }
-  }
-
-  /* Sized to roughly match the Color Swatch touch target (60px landscape /
-     55px portrait) so the action buttons feel like equal-weight tap targets
-     for small hands. The parent can rescale them in Settings with
-     --action-btn-scale (defaults to 1 when unset). */
-  .action-button {
-    position: relative;
-    /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
-       once hydrated, so the row clears the Settings Button (landscape) / the
-       palette bar (portrait). Until then it's unset and --action-btn-fallback
-       owns first paint: the landscape formula budgets for the 1–5 buttons the
-       boot script leaves visible (the AI button requires client-only state), while
-       the media query picks the right orientation. The old inline SSR bake was
-       always the landscape formula, so portrait phones painted tiny buttons that
-       jumped to full size (issue #317).
-       Square via width = height so a capped button shrinks like a smaller scale
-       instead of squishing. Landscape 100vw (unaffected by the URL bar); the
-       --palette-landscape-width reserves the Color Palette before it can be
-       measured. 128px = SETTINGS_BUTTON_RESERVE (64) + PANEL_FIXED_CHROME
-       (64); the inherited count and gap total default to the five-button raw
-       HTML state and app.html overrides them for persisted hidden controls.
-       These literals mirror the actionButtonLayout constants and are drift-guarded by
-       actionButtonLayout.fallback.test.ts — update both together. */
-    --action-btn-fallback: min(
-      calc(60px * var(--action-btn-scale, 1)),
-      calc(
-        (
-            100vw - var(--palette-landscape-width) - 128px -
-              var(--action-btn-first-paint-gap-total) - env(safe-area-inset-left) -
-              env(safe-area-inset-right)
-          ) /
-          var(--action-btn-first-paint-count)
-      )
-    );
-    width: var(--action-btn-size, var(--action-btn-fallback));
-    height: var(--action-btn-size, var(--action-btn-fallback));
-    background: var(--float-surface);
-    border: 2px solid var(--float-border);
-    border-radius: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: var(--float-shadow);
-    /* Animate interaction feedback only. Width/height/padding change when the
-       panel re-measures on load or the parent drags the Button Size slider;
-       those must snap, never animate (issue #317). */
-    transition:
-      background-color var(--duration-base) ease,
-      border-color var(--duration-base) ease,
-      box-shadow var(--duration-base) ease,
-      transform var(--duration-base) ease,
-      opacity var(--duration-base) ease;
-    touch-action: manipulation;
-    padding: calc(10px * var(--action-btn-scale, 1));
-  }
-
-  @media (orientation: portrait) {
-    .action-button {
-      /* Portrait first-paint cap: the column stops short of the palette bar.
-         100vh is the large viewport (overestimates while the URL bar shows), but
-         this is only the pre-hydration fallback — --action-btn-size swaps in the
-         exact visible height right after hydration. 208px = PALETTE_CLEARANCE
-         (8) + WORST_CASE_CHROME (124) + PALETTE_BAR_RESERVE (76). The hydrated
-         formula subtracts the measured palette height; reserving the same ~76px
-         here (a stable bar height across portrait widths) keeps the column off
-         the palette on short screens instead of relying on the slack from the
-         worst-case /6 divisor. Drift-guarded by
-         actionButtonLayout.fallback.test.ts — update both together. */
-      --action-btn-fallback: min(
-        calc(55px * var(--action-btn-scale, 1)),
-        calc((100vh - 208px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 6)
-      );
-      padding: calc(9px * var(--action-btn-scale, 1));
-    }
-  }
-
-  /* Author display:flex above outranks the UA [hidden] rule, so restore it. */
-  .action-button[hidden] {
-    display: none;
-  }
-
-  /* Guard hover behind a real pointer: iOS WebKit applies :hover on tap and
-     keeps it sticky until the user taps elsewhere, which left the eraser
-     looking active (purple border) after deselecting. The .disabled exclusion
-     mirrors :disabled for the undo button, which stays interactive
-     (aria-disabled) so it can play the end-of-history shake. */
-  @media (hover: hover) {
-    .action-button:hover:not(:disabled):not(.disabled) {
-      background: var(--float-surface-hover);
-      border-color: var(--brand);
-      box-shadow: 0 4px 12px rgba(var(--brand-rgb), 0.3);
-      box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 30%, transparent);
-    }
-  }
-
-  .action-button:active:not(:disabled):not(.disabled) {
-    transform: scale(0.95);
-    background: var(--brand-wash);
-  }
-
-  /* The exhausted undo button keeps press feedback (it's aria-disabled, not
-     disabled, so :active still matches): the tap that triggers the
-     end-of-history cue should also feel like a tap, not a dead surface. */
-  #undoButton.disabled:active {
-    transform: scale(0.95);
-    background: var(--brand-wash);
-  }
-
-  .action-button:disabled,
-  .action-button.disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    background: var(--float-surface-hover);
-  }
-
-  :global(.action-icon) {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  /* Tint the monochrome icons to match the UI — via `fill` (which beats the
-     SVGs' baked fill attribute) so the ink tracks the theme tokens. Full-color
-     spot icons (tagged .icon-color in Icon.svelte) opt out so they show their
-     own palette; the button's opacity already conveys the disabled state for
-     those. */
-  :global(.action-icon:not(.icon-color) svg) {
-    fill: var(--icon-ink);
-  }
-
-  .action-button:disabled :global(.action-icon:not(.icon-color) svg),
-  .action-button.disabled :global(.action-icon:not(.icon-color) svg) {
-    fill: var(--icon-muted);
-  }
-
-  /* Spin the loading icon while AI generation is running.
-     aiSpin keyframe lives in app.css since it's shared with AiImagePrompt. */
-  .action-button.loading :global(.action-icon) {
-    animation: aiSpin 1s linear infinite;
   }
 
   /* Flyouts (Brush Menu, Stroke Width): a relative trigger wrapper the parent
