@@ -75,7 +75,8 @@
   });
 
   function handleImgLoad(e: Event) {
-    const { naturalWidth: w, naturalHeight: h } = e.target as HTMLImageElement;
+    if (!(e.currentTarget instanceof HTMLImageElement)) return;
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
     if (w > 0 && h > 0) imgAspect = w / h;
   }
 
