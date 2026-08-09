@@ -622,12 +622,9 @@
     }
   }
 
-  /* Flyouts (Brush Menu, Stroke Width): a relative trigger wrapper the parent
-     owns; each menu popover (BrushMenu.svelte / StrokeWidthMenu.svelte) renders
-     as a direct child of it and positions itself absolutely against this
-     wrapper (a Svelte component adds no wrapper DOM). Visibility of the whole
-     stroke-width wrapper is gated by the [data-off-stroke] rule above (the
-     toggle in Settings). */
+  /* Stroke Width uses a relative trigger wrapper so StrokeWidthMenu can
+     position itself absolutely. The [data-off-stroke] rule above gates the
+     whole wrapper. */
   .flyout-wrapper {
     position: relative;
   }

@@ -343,6 +343,13 @@ body {
   background: var(--brand-wash);
 }
 
+.actions-panel .action-button.active {
+  border-color: var(--brand);
+  background: var(--brand-wash);
+  box-shadow: 0 0 0 2px rgba(var(--brand-rgb), 0.35);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 35%, transparent);
+}
+
 .actions-panel #undoButton.disabled:active {
   transform: scale(0.95);
   background: var(--brand-wash);

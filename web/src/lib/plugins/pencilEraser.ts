@@ -20,8 +20,8 @@ export const PencilEraser = registerPlugin<PencilEraserPlugin>('PencilEraser', {
 
 // Runs on every Apple Pencil double-tap. It always records that a pencil exists on this
 // device — which is what reveals the parent's on/off toggle — then toggles the eraser only
-// when the parent hasn't disabled the gesture. Detection is recorded even while disabled so
-// the toggle stays available for re-enabling.
+// while both the gesture and Eraser itself are available. Detection is recorded even while
+// disabled so the toggle stays available for re-enabling when Eraser is available again.
 export function handleDoubleTap(): void {
   if (!settings.applePencilSeen) setApplePencilSeen(true);
   if (!settings.pencilEraserEnabled || !settings.eraserEnabled) return;

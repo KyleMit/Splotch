@@ -34,11 +34,13 @@ test('one optional brush becomes a direct button that toggles against Pen', asyn
   await brushButton.click();
   await expectCommittedBrush(page, 'eraser');
   await expect(brushButton).toHaveAttribute('aria-pressed', 'true');
+  await expect(brushButton).toHaveClass(/active/);
   await expect(page.locator('.brush-menu')).toBeHidden();
 
   await brushButton.click();
   await expectCommittedBrush(page, 'pen');
   await expect(brushButton).toHaveAttribute('aria-pressed', 'false');
+  await expect(brushButton).not.toHaveClass(/active/);
 });
 
 test('the brush flyout contains Pen and only enabled optional brushes', async ({ page }) => {
@@ -86,4 +88,19 @@ test('disabling the active optional brush in Settings returns to Pen', async ({ 
 
   await expectCommittedBrush(page, 'pen');
   await expect(page.locator('.actions-panel')).not.toHaveAttribute('data-brush');
+});
+
+test('disabling Eraser hides its Apple Pencil gesture setting', async ({ page }) => {
+  await page.addInitScript(
+    ({ applePencilSeen }) => {
+      localStorage.setItem(applePencilSeen, 'true');
+    },
+    { applePencilSeen: STORAGE_KEYS.applePencilSeen }
+  );
+  await gotoApp(page);
+  await openButtonsSettings(page);
+
+  await expect(page.locator('#pencilEraserToggle')).toBeVisible();
+  await page.locator('#eraserToggle').click();
+  await expect(page.locator('#pencilEraserToggle')).toHaveCount(0);
 });

@@ -41,9 +41,9 @@ The old top-level Eraser and Magic Brush buttons remain gone, keeping the worst-
 buttons. The flyout reuses the Stroke Width flyout's shared `.flyout-wrapper` / `.flyout-menu` /
 `.flyout-option` classes and one open-flyout slot. Menu selection stays idempotent (issue #276); the
 single-tool direct button is deliberately a toggle because its only two states are that tool and
-Pen. Disabling the active optional tool immediately selects and persists Pen, so hidden tools can
-never remain active. Disabling Crayon also resets the remembered last ink brush to Pen, preventing a
-later color pick from reviving a hidden Crayon indirectly.
+Pen. Disabling the active optional tool immediately resumes and persists the remembered ink brush,
+so hidden tools can never remain active. Disabling Crayon also resets that remembered brush to Pen,
+preventing a later color pick from reviving a hidden Crayon indirectly.
 
 **Pen is the default; the choice persists — except the eraser.** The brush is stored under
 `splotch-brush-type` (read through the durable-storage layer like every setting). Selecting the
@@ -79,7 +79,8 @@ attributes hide disabled entries and, when all three are present, the Brush cont
 * E2E specs and perf scripts that clicked `#eraserButton` / `#magicBrushButton` directly must open
   the Brush Menu first (`pickBrush` helper in `flows-harness.ts`); the entry ids are preserved.
 * A future optional brush type needs one `BRUSH_OPTIONS` entry (icon + id + label), an availability
-  setting, and its engine mode. Layout still counts the adaptive control as at most one button.
+  setting, its engine mode, and matching first-paint handling in `web/src/app.html`. Layout still
+  counts the adaptive control as at most one button.
 
 ## Amendment (2026-08): configurable optional brushes
 

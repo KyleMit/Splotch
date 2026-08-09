@@ -49,6 +49,7 @@
 <div class="flyout-wrapper brush-wrapper" bind:this={wrapperEl}>
   <button
     class="action-button"
+    class:active={singleOptionalBrush && toolState.brush === singleOptionalBrush}
     class:white-stroke={inkWhite}
     class:dark-stroke={inkDark}
     id="brushButton"
@@ -71,6 +72,8 @@
 </div>
 
 <style>
+  /* BrushMenu positions absolutely against this wrapper. This duplicate belongs
+     here because ActionsPanel's scoped styles cannot reach child component DOM. */
   .flyout-wrapper {
     position: relative;
   }
