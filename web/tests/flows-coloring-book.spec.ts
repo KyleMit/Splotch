@@ -2,7 +2,11 @@ import { expect, test, type Locator } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
 import { draw, gotoApp, openSettingsModal, settleFlyIn } from './helpers';
-import { COLORING_IMAGE_SIZES, coloringBookGridLayout } from '../src/lib/state/books';
+import {
+  COLORING_IMAGE_SIZES,
+  booksForPlatform,
+  coloringBookGridLayout,
+} from '../src/lib/state/books';
 
 import {
   applyFarmPage,
@@ -29,6 +33,7 @@ const BOOK_GRID_VIEWPORTS = [
 const SMALL_VIEWPORT = { width: 320, height: 568 };
 const MINIMUM_TOUCH_TARGET_PX = 44;
 const MAX_CHIP_CLOSE_GAP_PX = 8;
+const WEB_COLORING_BOOK_COUNT = booksForPlatform('web').length;
 
 async function tileGeometry(grid: Locator) {
   return grid.locator(':scope > .coloring-tile').evaluateAll((tiles) =>
@@ -231,8 +236,10 @@ test('an active page leaves the book grid geometry unchanged', async ({ page }) 
   const dialog = page.locator('#coloring-book-dialog');
   await settleFlyIn(dialog);
   const grid = dialog.locator('.coloring-books-grid');
+  await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(WEB_COLORING_BOOK_COUNT, {
+    timeout: 30_000,
+  });
   const geometryBefore = await tileGeometry(grid);
-  const bookCount = geometryBefore.length;
   await expect(dialog.locator('.active-page-chip')).toHaveCount(0);
 
   await (await openFarmPageGrid(page)).first().click();
@@ -240,11 +247,11 @@ test('an active page leaves the book grid geometry unchanged', async ({ page }) 
   await openColoringDialog(page);
   await settleFlyIn(dialog);
 
-  await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(bookCount, { timeout: 30_000 });
+  await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(WEB_COLORING_BOOK_COUNT);
   expect(await tileGeometry(grid)).toEqual(geometryBefore);
   await expect(grid.locator('img').first()).toHaveAttribute(
     'sizes',
-    coloringBookGridLayout(bookCount).imageSizes
+    coloringBookGridLayout(WEB_COLORING_BOOK_COUNT).imageSizes
   );
   await expect
     .poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight))
@@ -277,7 +284,10 @@ test('the active-page chip identifies the page in both picker views', async ({ p
   await expect(chip).toContainText('Cat');
   await expect(chip.locator('[data-icon="close"]')).toBeVisible();
   await expect(chip.locator('img')).toHaveAttribute('src', /\/farm\/cat-wide\.thumb\.webp$/);
-  await expect(chip.locator('img')).toHaveAttribute('sizes', '36px');
+  await expect(chip.locator('img')).toHaveAttribute(
+    'sizes',
+    COLORING_IMAGE_SIZES.activePageThumbnail
+  );
 
   await openFarmPageGrid(page);
   await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
@@ -287,6 +297,30 @@ test('the active-page chip identifies the page in both picker views', async ({ p
 
 test.describe('active-page chip on a small viewport', () => {
   test.use({ viewport: SMALL_VIEWPORT });
+
+  test('keeps book-picker and page-grid headings readable', async ({ page }) => {
+    await gotoAppWithAllColoringBooksInstalled(page);
+    await openDrawer(page);
+    await applyFarmPage(page);
+    await openColoringDialog(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await settleFlyIn(dialog);
+    const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
+    await expect(chip.locator('.active-page-name')).toBeHidden();
+
+    const booksHeading = dialog.getByRole('heading', { name: 'Coloring Books' });
+    await expect
+      .poll(() => booksHeading.evaluate((heading) => heading.scrollWidth <= heading.clientWidth))
+      .toBe(true);
+
+    await dialog.getByRole('button', { name: 'Dinosaurs coloring book' }).click();
+    const pagesHeading = dialog.getByRole('heading', { name: 'Dinosaurs' });
+    await expect(pagesHeading).toBeVisible();
+    await expect
+      .poll(() => pagesHeading.evaluate((heading) => heading.scrollWidth <= heading.clientWidth))
+      .toBe(true);
+  });
 
   test('is a full-size right-aligned keyboard action before the close button', async ({ page }) => {
     await gotoApp(page);

@@ -129,7 +129,6 @@ describe('responsive image sources', () => {
     for (const ownedCssValue of [
       'max-width: min(920px, calc(100vw - 32px))',
       '--book-grid-max-width: 856px',
-      '--book-grid-roomy-max-width: 639px',
       '--book-cols: 4',
       '@media (max-width: 740px)',
       '@media (max-width: 520px)',
@@ -137,25 +136,20 @@ describe('responsive image sources', () => {
       expect(coloringBookComponent).toContain(ownedCssValue);
     }
     expect(coloringBookGridLayout(8)).toEqual({
-      hasNineTiles: false,
       hasOrphan: false,
       imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.standard,
     });
-    expect(coloringBookGridLayout(9)).toEqual({
-      hasNineTiles: true,
-      hasOrphan: true,
-      imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.nineTiles,
-    });
     expect(coloringBookGridLayout(13)).toEqual({
-      hasNineTiles: false,
       hasOrphan: true,
       imageSizes: COLORING_IMAGE_SIZES.coverThumbnail.orphan,
     });
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
-    expect(COLORING_IMAGE_SIZES.coverThumbnail.nineTiles).toContain('205px');
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
     expect(COLORING_IMAGE_SIZES.pageThumbnail.portrait).toContain('(90vw - 88px) / 3');
     expect(COLORING_IMAGE_SIZES.pageThumbnail.landscape).toContain('(90vw - 76px) / 2');
+    expect(coloringBookComponent).toContain(
+      `--active-page-thumbnail-size: ${COLORING_IMAGE_SIZES.activePageThumbnail}`
+    );
   });
 
   it('uses the adopted paper width for overlay selection', () => {

@@ -182,7 +182,7 @@
         class="active-page-thumbnail"
         src={activePageThumbnail.src}
         srcset={__IS_CAPACITOR__ ? undefined : activePageThumbnail.srcset}
-        sizes={__IS_CAPACITOR__ ? undefined : '36px'}
+        sizes={__IS_CAPACITOR__ ? undefined : COLORING_IMAGE_SIZES.activePageThumbnail}
         alt=""
       />
       <span class="active-page-name">{activePage.name}</span>
@@ -225,7 +225,6 @@
         <div
           class="coloring-grid coloring-books-grid"
           class:book-grid-has-orphan={bookGridLayout.hasOrphan}
-          class:book-grid-has-nine-tiles={bookGridLayout.hasNineTiles}
         >
           {#each books as book (book.id)}
             {@const coverImage = coverThumbImageSource(book)}
@@ -318,6 +317,8 @@
   }
 
   .coloring-book-close {
+    /* The chip and close disc share this header row, so this modal opts out of
+       the global close button's absolute corner positioning. */
     position: static;
     flex: 0 0 var(--modal-close-size);
     transition: opacity var(--duration-base) ease;
@@ -336,6 +337,9 @@
     margin: 0;
     min-width: 0;
     margin-right: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* The raw dimensions are control sizing: the pill keeps the platform's 44px
@@ -474,16 +478,6 @@
     }
   }
 
-  .coloring-books-grid.book-grid-has-nine-tiles {
-    --book-grid-roomy-max-width: 639px;
-    /* Reserve the non-grid content and whole-pixel rounding inside the modal cap. */
-    --book-grid-height-reserve: 115px;
-    --book-grid-max-width: min(
-      var(--book-grid-roomy-max-width),
-      calc(var(--coloring-book-modal-max-height) - var(--book-grid-height-reserve))
-    );
-  }
-
   .coloring-pages-grid {
     --page-cols: 2;
     grid-template-columns: repeat(var(--page-cols), minmax(0, 1fr));
@@ -579,12 +573,16 @@
   }
 
   @media (max-width: 360px) {
+    .coloring-book-header {
+      gap: var(--space-1);
+    }
+
     .coloring-book-header h2 {
-      font-size: var(--font-size-lg);
+      font-size: var(--font-size-md);
     }
 
     .active-page-name {
-      max-width: 4ch;
+      display: none;
     }
   }
 
