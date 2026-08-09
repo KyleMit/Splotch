@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test';
 
 import { gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
+import { coloringPackCacheName, coloringPackMarkerPath } from '../src/lib/coloringPacks/cacheKeys';
 import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
@@ -29,14 +30,16 @@ async function gotoAppWithInstalledColoringBooks(
   const manifestResponse = page.waitForResponse(/\/coloring\/manifest-.+\.json$/);
   await gotoApp(page);
   const manifest = (await (await manifestResponse).json()) as ColoringPackManifest;
+  const markers = installedBookIds(manifest).map((id) => ({
+    id,
+    path: coloringPackMarkerPath(manifest, id),
+  }));
   await page.evaluate(
-    async ({ version, ids }) => {
-      const cache = await caches.open(`coloring-packs-v1-${version}`);
-      await Promise.all(
-        ids.map((id) => cache.put(`/coloring/.installed/${version}/${id}`, new Response(id)))
-      );
+    async ({ cacheName, markers }) => {
+      const cache = await caches.open(cacheName);
+      await Promise.all(markers.map(({ id, path }) => cache.put(path, new Response(id))));
     },
-    { version: manifest.appVersion, ids: installedBookIds(manifest) }
+    { cacheName: coloringPackCacheName(manifest), markers }
   );
   await gotoApp(page);
 }

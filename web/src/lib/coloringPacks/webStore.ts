@@ -1,17 +1,12 @@
 import { scheduleIdle } from '$lib/idle';
 import { requestPersistentStorage } from '$lib/idb';
-import type { ColoringPackBookManifest, ColoringPackManifest } from './manifest';
+import type { ColoringPackBookManifest } from './manifest';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
-
-const CACHE_PREFIX = 'coloring-packs-v1-';
-
-function cacheName(manifest: ColoringPackManifest): string {
-  return `${CACHE_PREFIX}${manifest.appVersion}`;
-}
-
-function markerPath(manifest: ColoringPackManifest, bookId: string): string {
-  return `/coloring/.installed/${manifest.appVersion}/${bookId}`;
-}
+import {
+  COLORING_PACK_CACHE_PREFIX,
+  coloringPackCacheName,
+  coloringPackMarkerPath,
+} from './cacheKeys';
 
 async function waitForIdle(signal: AbortSignal): Promise<void> {
   if (signal.aborted) throw signal.reason;
@@ -56,7 +51,7 @@ async function deleteOldCaches(currentName: string) {
   const names = await caches.keys();
   await Promise.all(
     names
-      .filter((name) => name.startsWith(CACHE_PREFIX) && name !== currentName)
+      .filter((name) => name.startsWith(COLORING_PACK_CACHE_PREFIX) && name !== currentName)
       .map((name) => caches.delete(name))
   );
 }
@@ -64,14 +59,14 @@ async function deleteOldCaches(currentName: string) {
 export function createWebColoringPackStore(): ColoringPackStore {
   return {
     async installed(manifest): Promise<InstalledColoringPack[]> {
-      const name = cacheName(manifest);
+      const name = coloringPackCacheName(manifest);
       await deleteOldCaches(name);
       const cache = await caches.open(name);
       const installed = await Promise.all(
         manifest.books
           .filter((book) => book.id !== manifest.starterBookId)
           .map(async (book) =>
-            (await cache.match(markerPath(manifest, book.id))) ? { id: book.id } : null
+            (await cache.match(coloringPackMarkerPath(manifest, book.id))) ? { id: book.id } : null
           )
       );
       return installed.filter((pack): pack is InstalledColoringPack => !!pack);
@@ -79,26 +74,26 @@ export function createWebColoringPackStore(): ColoringPackStore {
 
     async install(manifest, book, _allowMetered, signal) {
       await requestPersistentStorage();
-      const cache = await caches.open(cacheName(manifest));
+      const cache = await caches.open(coloringPackCacheName(manifest));
       for (const file of book.files) {
         if (signal.aborted) throw signal.reason;
         if (await cache.match(file.path)) continue;
         await waitForIdle(signal);
         await cache.put(file.path, await verifiedResponse(file, signal));
       }
-      await cache.put(markerPath(manifest, book.id), new Response(book.id));
+      await cache.put(coloringPackMarkerPath(manifest, book.id), new Response(book.id));
       return { id: book.id };
     },
 
     async remove(manifest) {
-      await caches.delete(cacheName(manifest));
+      await caches.delete(coloringPackCacheName(manifest));
     },
 
     async usage(manifest) {
-      const cache = await caches.open(cacheName(manifest));
+      const cache = await caches.open(coloringPackCacheName(manifest));
       const installed = await Promise.all(
         manifest.books.map(async (book) =>
-          (await cache.match(markerPath(manifest, book.id))) ? book.bytes : 0
+          (await cache.match(coloringPackMarkerPath(manifest, book.id))) ? book.bytes : 0
         )
       );
       return installed.reduce((sum, bytes) => sum + bytes, 0);
