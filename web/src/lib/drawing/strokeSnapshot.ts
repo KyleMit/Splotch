@@ -7,13 +7,12 @@ export function captureTiledSnapshot(
   snapshotScale: number,
   renderScale: number
 ): TiledExportSnapshot | null {
-  if (
-    snapshotScale !== renderScale ||
-    typeof Worker === 'undefined' ||
-    typeof OffscreenCanvas === 'undefined'
-  ) {
-    return null;
-  }
+  if (snapshotScale !== renderScale) return null;
+  return captureLiveTileSnapshot(renderScale);
+}
+
+export function captureLiveTileSnapshot(renderScale: number): TiledExportSnapshot | null {
+  if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') return null;
   const source = captureTiledCanvasSnapshot();
   return source ? { source, sourceScale: renderScale } : null;
 }

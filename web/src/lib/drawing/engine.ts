@@ -102,10 +102,14 @@ import {
 import { createCanvasMeasure, type CanvasRect } from './canvasMeasure';
 import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
-import type { ExportOptions, ExportSnapshot } from './exportDrawing';
+import type { ExportOptions, ExportSnapshot, TiledExportSnapshot } from './exportDrawing';
 import { getActiveOverlayExportSource } from './overlay';
 import { currentExportScale } from './exportScale';
-import { captureTiledSnapshot, createStrokeSnapshot } from './strokeSnapshot';
+import {
+  captureLiveTileSnapshot,
+  captureTiledSnapshot,
+  createStrokeSnapshot,
+} from './strokeSnapshot';
 import { registerDrawingEngineListeners } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
@@ -1485,19 +1489,25 @@ export function setSafeAreaInsets(insets: {
 // in-flight stroke) rather than copying the visible canvas: under a
 // rotation-locked view the visible canvas is the letterboxed presentation, and
 // the export should be the full upright page.
-function snapshotStrokes(snapshotScale: number): ExportSnapshot {
+type StrokeSnapshots = { export: ExportSnapshot; preview: TiledExportSnapshot | null };
+
+function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
   const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
-  if (tiledSnapshot) return tiledSnapshot;
-  return createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
-    if (tiledRendererActive()) renderTiledSnapshot(target);
-    else repaintAll(target);
-    // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
-    // (its flush is only recorded at pass close); an export is terminal for this
-    // snapshot, so stamp it now rather than dropping that ink.
-    flushCrayonBuffer(target);
-  });
+  if (tiledSnapshot) return { export: tiledSnapshot, preview: null };
+  const preview = capturePreview ? captureLiveTileSnapshot(renderScale) : null;
+  return {
+    export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
+      if (tiledRendererActive()) renderTiledSnapshot(target);
+      else repaintAll(target);
+      // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
+      // (its flush is only recorded at pass close); an export is terminal for this
+      // snapshot, so stamp it now rather than dropping that ink.
+      flushCrayonBuffer(target);
+    }),
+    preview,
+  };
 }
 
 // The compositor is save-time-only, so it loads on demand and stays out of the
@@ -1509,7 +1519,11 @@ export async function exportCanvasBlob(options: ExportOptions = {}): Promise<Blo
   const scale = currentExportScale();
   // The snapshot MUST stay before the import await: save-on-delete fire-and-forgets
   // this call and clears the live engine synchronously (the E2E spec pins the race).
-  const snapshot = snapshotStrokes(scale);
+  const snapshots = snapshotStrokes(scale, !!options.preview);
   const { composeExportPng } = await import('./exportDrawing');
-  return composeExportPng(snapshot, scale, overlaySource, options);
+  const exportOptions =
+    snapshots.preview && options.preview
+      ? { ...options, preview: { ...options.preview, source: snapshots.preview } }
+      : options;
+  return composeExportPng(snapshots.export, scale, overlaySource, exportOptions);
 }

@@ -36,6 +36,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -295,6 +296,141 @@ describe('composeExportPng overlay', () => {
     expect(toBlob).not.toHaveBeenCalled();
   });
 
+  it('delivers a bounded live-tile preview for a compatibility export', async () => {
+    setupExportContexts(null);
+    const tileBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const previewBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const onReady = vi.fn();
+    const previewContext = {
+      globalCompositeOperation: 'source-over',
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low',
+      fillStyle: '',
+      setTransform: vi.fn(),
+      resetTransform: vi.fn(),
+      fillRect: vi.fn(),
+      createPattern: vi.fn(() => null),
+      drawImage: vi.fn(),
+    } as unknown as OffscreenCanvasRenderingContext2D;
+    const previewCanvases: Array<{ width: number; height: number }> = [];
+    class PreviewCanvas {
+      constructor(
+        public width: number,
+        public height: number
+      ) {
+        previewCanvases.push(this);
+      }
+
+      getContext() {
+        return previewContext;
+      }
+
+      transferToImageBitmap() {
+        return previewBitmap;
+      }
+    }
+    vi.stubGlobal('OffscreenCanvas', PreviewCanvas);
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await composeExportPng(createSnapshot(), 2, null, {
+      includePaperTexture: false,
+      preview: {
+        width: 100,
+        onReady,
+        source: {
+          source: {
+            width: 200,
+            height: 100,
+            tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
+          },
+          sourceScale: 1,
+        },
+      },
+    });
+
+    expect(previewCanvases).toEqual([{ width: 100, height: 50 }]);
+    expect(previewContext.imageSmoothingEnabled).toBe(true);
+    expect(previewContext.imageSmoothingQuality).toBe('high');
+    expect(previewContext.drawImage).toHaveBeenCalledWith(tileBitmap, 0, 0);
+    expect(onReady).toHaveBeenCalledWith(previewBitmap);
+    expect(tileBitmap.close).toHaveBeenCalledOnce();
+    expect(previewBitmap.close).not.toHaveBeenCalled();
+  });
+
+  it('continues the compatibility export when a preview tile stalls', async () => {
+    vi.useFakeTimers();
+    setupExportContexts(null);
+    const settledBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const lateBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    let resolveLate!: (bitmap: ImageBitmap) => void;
+    const lateTile = new Promise<ImageBitmap>((resolve) => {
+      resolveLate = resolve;
+    });
+    const onReady = vi.fn();
+    const { composeExportPng } = await import('./exportDrawing');
+
+    const exported = composeExportPng(createSnapshot(), 2, null, {
+      includePaperTexture: false,
+      preview: {
+        width: 100,
+        onReady,
+        source: {
+          source: {
+            width: 200,
+            height: 100,
+            tiles: [
+              { bitmap: Promise.resolve(settledBitmap), x: 0, y: 0 },
+              { bitmap: lateTile, x: 100, y: 0 },
+            ],
+          },
+          sourceScale: 1,
+        },
+      },
+    });
+
+    await vi.runAllTimersAsync();
+    await expect(exported).resolves.toBeInstanceOf(Blob);
+    expect(onReady).not.toHaveBeenCalled();
+    expect(settledBitmap.close).toHaveBeenCalledOnce();
+
+    resolveLate(lateBitmap);
+    await vi.waitFor(() => expect(lateBitmap.close).toHaveBeenCalledOnce());
+  });
+
+  it('closes preview tiles when bounded canvas allocation throws', async () => {
+    setupExportContexts(null);
+    const tileBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const onReady = vi.fn();
+    class FailingPreviewCanvas {
+      constructor() {
+        throw new Error('preview allocation failed');
+      }
+    }
+    vi.stubGlobal('OffscreenCanvas', FailingPreviewCanvas);
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await expect(
+      composeExportPng(createSnapshot(), 2, null, {
+        includePaperTexture: false,
+        preview: {
+          width: 100,
+          onReady,
+          source: {
+            source: {
+              width: 200,
+              height: 100,
+              tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
+            },
+            sourceScale: 1,
+          },
+        },
+      })
+    ).resolves.toBeInstanceOf(Blob);
+
+    expect(onReady).not.toHaveBeenCalled();
+    expect(tileBitmap.close).toHaveBeenCalledOnce();
+  });
+
   it('draws the transparent light overlay source-over', async () => {
     const contexts = setupExportContexts(null);
     const overlay = createOverlayImage();
@@ -330,14 +466,28 @@ describe('composeExportPng overlay', () => {
 
   it('rejects instead of exporting without an unavailable canonical overlay', async () => {
     const contexts = setupExportContexts(null);
+    const previewTile = { close: vi.fn() } as unknown as ImageBitmap;
     const { composeExportPng } = await import('./exportDrawing');
 
     const exported = composeExportPng(createSnapshot(), 1, createOverlaySource(null), {
       includePaperTexture: false,
+      preview: {
+        width: 100,
+        onReady: vi.fn(),
+        source: {
+          source: {
+            width: 200,
+            height: 100,
+            tiles: [{ bitmap: Promise.resolve(previewTile), x: 0, y: 0 }],
+          },
+          sourceScale: 1,
+        },
+      },
     });
     requested[0].onerror!();
 
     await expect(exported).rejects.toThrow('Failed to load canonical coloring overlay');
     expect(contexts.outputContext.fillRect).not.toHaveBeenCalled();
+    expect(previewTile.close).toHaveBeenCalledOnce();
   });
 });
