@@ -1,13 +1,31 @@
-import { readFileSync } from 'node:fs';
 import { esc } from './html.mjs';
+import { PAGE_INVENTORY_SEVERITIES } from './page-inventory-data.mjs';
 import { chromeStyle, masthead, siteFooter } from './scrapbook-chrome.mjs';
 
+const PAGE_INVENTORY_DEVICES = [
+  ['iphone-13-mini', 'Small iPhone', 'iPhone 13 mini', 'phone', 375, 812],
+  ['iphone-16-pro-max', 'Large iPhone', 'iPhone 16 Pro Max', 'phone', 440, 956],
+  ['ipad-mini-7', 'iPad mini', 'iPad mini 7th Gen (2024)', 'tablet', 744, 1133],
+  ['ipad-pro-13-m4', 'Large iPad Pro', 'iPad Pro 13-inch (M4)', 'tablet', 1032, 1376],
+].map(([id, category, device, formFactor, width, height]) => ({
+  id,
+  category,
+  device,
+  formFactor,
+  width,
+  height,
+}));
+
 export const PAGE_INVENTORY_VIEWPORTS = [
-  ['iphone-13-mini', 'Small iPhone', 'iPhone 13 mini', 375, 812],
-  ['iphone-16-pro-max', 'Large iPhone', 'iPhone 16 Pro Max', 440, 956],
-  ['ipad-mini-7', 'iPad mini', 'iPad mini 7th Gen (2024)', 744, 1133],
-  ['ipad-pro-13-m4', 'Large iPad Pro', 'iPad Pro 13-inch (M4)', 1032, 1376],
-].map(([id, category, device, width, height]) => ({ id, category, device, width, height }));
+  ...PAGE_INVENTORY_DEVICES.map((device) => ({ ...device, orientation: 'portrait' })),
+  ...PAGE_INVENTORY_DEVICES.map((device) => ({
+    ...device,
+    id: `${device.id}-landscape`,
+    width: device.height,
+    height: device.width,
+    orientation: 'landscape',
+  })),
+];
 
 const PAGE_INVENTORY_GROUPS = {
   routes: [
@@ -23,7 +41,6 @@ const PAGE_INVENTORY_GROUPS = {
   admin: ['Admin', 'Authenticated ledger views and responsive row actions.'],
 };
 
-const SEVERITIES = ['pass', 'low', 'medium', 'high'];
 const SEVERITY_LABELS = {
   pass: 'Pass',
   low: 'Low',
@@ -91,47 +108,6 @@ export function attachExpectedCapturePaths(items) {
   return items;
 }
 
-export function readDesignCritique(path, expectedImages) {
-  if (!path) return new Map();
-  let document;
-  try {
-    document = JSON.parse(readFileSync(path, 'utf8'));
-  } catch (error) {
-    throw new Error(`Could not read design critique at ${path}: ${error.message}`, {
-      cause: error,
-    });
-  }
-  if (!document || typeof document !== 'object' || !Array.isArray(document.entries)) {
-    throw new Error(`Design critique at ${path} must contain an entries array`);
-  }
-  const expected = expectedImages ? new Set(expectedImages) : undefined;
-  const entries = new Map();
-  for (const [index, entry] of document.entries.entries()) {
-    const location = `Design critique entry ${index + 1}`;
-    if (!entry || typeof entry !== 'object') throw new Error(`${location} must be an object`);
-    if (typeof entry.image !== 'string' || !entry.image) {
-      throw new Error(`${location} must name an image`);
-    }
-    if (!SEVERITIES.includes(entry.severity)) {
-      throw new Error(`${location} has invalid severity: ${entry.severity}`);
-    }
-    if (typeof entry.critique !== 'string' || !entry.critique.trim()) {
-      throw new Error(`${location} must contain critique text`);
-    }
-    if (entry.recommendation != null && typeof entry.recommendation !== 'string') {
-      throw new Error(`${location} recommendation must be a string or null`);
-    }
-    if (expected && !expected.has(entry.image)) {
-      throw new Error(`${location} references an unknown image: ${entry.image}`);
-    }
-    if (entries.has(entry.image)) {
-      throw new Error(`${location} duplicates image: ${entry.image}`);
-    }
-    entries.set(entry.image, entry);
-  }
-  return entries;
-}
-
 function critiqueNote(entry) {
   if (!entry) return '';
   const recommendation = entry.recommendation?.trim()
@@ -142,7 +118,7 @@ function critiqueNote(entry) {
 
 function severityFilter(critique, snapshotCount) {
   if (!critique.size) return '';
-  const options = SEVERITIES.map(
+  const options = PAGE_INVENTORY_SEVERITIES.map(
     (severity) =>
       `<label class="severity-${severity}"><input type="radio" name="severity" value="${severity}"/>${esc(SEVERITY_LABELS[severity])}</label>`
   ).join('');
@@ -150,22 +126,24 @@ function severityFilter(critique, snapshotCount) {
 }
 
 export function renderPageInventoryReport(items, critique = new Map()) {
-  const severityCounts = Object.fromEntries(SEVERITIES.map((severity) => [severity, 0]));
+  const severityCounts = Object.fromEntries(
+    PAGE_INVENTORY_SEVERITIES.map((severity) => [severity, 0])
+  );
   for (const entry of critique.values()) severityCounts[entry.severity] += 1;
   const critiqueStats = critique.size
-    ? SEVERITIES.map(
+    ? PAGE_INVENTORY_SEVERITIES.map(
         (severity) =>
           `<span class="chip"><b>${severityCounts[severity]}</b> ${esc(SEVERITY_LABELS[severity].toLowerCase())}</span>`
       ).join('')
     : '';
-  const stats = `<span class="chip accent"><b>${items.length}</b> surfaces</span><span class="chip"><b>${items.length * PAGE_INVENTORY_VIEWPORTS.length}</b> snapshots</span><span class="chip"><b>4</b> logical viewports</span>${critiqueStats}`;
+  const stats = `<span class="chip accent"><b>${items.length}</b> surfaces</span><span class="chip"><b>${items.length * PAGE_INVENTORY_VIEWPORTS.length}</b> snapshots</span><span class="chip"><b>${PAGE_INVENTORY_VIEWPORTS.length}</b> logical viewports</span>${critiqueStats}`;
   const nav = Object.entries(PAGE_INVENTORY_GROUPS)
     .map(([id, [title]]) => `<a href="#${id}">${esc(title)}</a>`)
     .join('');
-  const key = PAGE_INVENTORY_VIEWPORTS.map(
-    (view) =>
-      `<article><strong>${esc(view.category)}</strong><span>${esc(view.device)}</span><span>${view.width} × ${view.height} pt</span></article>`
-  ).join('');
+  const key = PAGE_INVENTORY_VIEWPORTS.map((view) => {
+    const orientation = `${view.orientation[0].toUpperCase()}${view.orientation.slice(1)}`;
+    return `<article><strong>${esc(view.category)}</strong><span>${esc(view.device)}</span><span>${orientation} · ${view.width} × ${view.height} pt</span></article>`;
+  }).join('');
   const groups = Object.entries(PAGE_INVENTORY_GROUPS)
     .map(([groupId, [title, description]]) => {
       const cards = items
@@ -178,7 +156,8 @@ export function renderPageInventoryReport(items, critique = new Map()) {
             const severityData = critique.size
               ? ` data-severity="${feedback?.severity ?? 'unreviewed'}"`
               : '';
-            return `<figure class="shot${severityClass}"${severityData}><figcaption><strong>${esc(view.category)}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} at ${view.device}`)}"/></a>${critiqueNote(feedback)}</figure>`;
+            const orientation = `${view.orientation[0].toUpperCase()}${view.orientation.slice(1)}`;
+            return `<figure class="shot${severityClass}" data-orientation="${view.orientation}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback)}</figure>`;
           }).join('');
           return `<article class="surface" id="${esc(item.id)}"><header class="surface-head"><div><h3>${esc(item.title)}</h3><p>${esc(item.description)}</p></div><span class="surface-source">${esc(item.source)}</span></header><div class="shots">${shots}</div></article>`;
         })
@@ -190,7 +169,7 @@ export function renderPageInventoryReport(items, critique = new Map()) {
   const body = `${masthead({
     title: 'App page inventory',
     tagline:
-      'A static, source-discovered inventory of every route, every Settings section, every modal, and the app’s most useful transient views. Each row comes from the same Playwright run at four Apple logical viewports.',
+      'A static, source-discovered inventory of every route, every Settings section, every modal, and the app’s most useful transient views. Each row comes from the same Playwright run across four Apple devices in portrait and landscape.',
     home: '../index.html',
     crumbs: [{ label: 'App page inventory' }],
     stats,

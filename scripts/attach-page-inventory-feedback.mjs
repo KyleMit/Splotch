@@ -2,9 +2,9 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { allSurfaces } from './gen-page-inventory.mjs';
+import { readCaptureManifest, readDesignCritique, sha256File } from './lib/page-inventory-data.mjs';
 import {
   attachExpectedCapturePaths,
-  readDesignCritique,
   renderPageInventoryReport,
 } from './lib/page-inventory-report.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
@@ -36,21 +36,42 @@ function options(argv) {
 export async function attachPageInventoryFeedback(argv = process.argv.slice(2)) {
   const { out, critique: critiquePath } = options(argv);
   const items = attachExpectedCapturePaths(allSurfaces());
-  const critiqueCount = writePageInventoryFeedback(out, critiquePath, items);
+  const critiqueCount = await writePageInventoryFeedback(out, critiquePath, items);
   console.log(
     `Attached ${critiqueCount} feedback entr${critiqueCount === 1 ? 'y' : 'ies'} to ${relative(ROOT, join(out, 'index.html'))}`
   );
 }
 
-export function writePageInventoryFeedback(out, critiquePath, items) {
+export async function writePageInventoryFeedback(out, critiquePath, items) {
+  const manifestPath = join(out, 'capture-manifest.json');
+  if (!existsSync(manifestPath)) {
+    throw new Error('Page inventory has no capture-manifest.json; run npm run gen:page-inventory');
+  }
+  const manifest = readCaptureManifest(manifestPath);
   const expectedImages = items.flatMap((item) => Object.values(item.captures));
-  const missingImages = expectedImages.filter((image) => !existsSync(join(out, image)));
+  const manifestImages = new Set(manifest.captures.map((capture) => capture.image));
+  const missingManifestEntries = expectedImages.filter((image) => !manifestImages.has(image));
+  const unknownManifestEntries = manifest.captures.filter(
+    (capture) => !expectedImages.includes(capture.image)
+  );
+  if (missingManifestEntries.length || unknownManifestEntries.length) {
+    const mismatch = missingManifestEntries[0] ?? unknownManifestEntries[0].image;
+    throw new Error(`Capture manifest disagrees with the current inventory: ${mismatch}`);
+  }
+  const missingImages = manifest.captures.filter(
+    (capture) => !existsSync(join(out, capture.image))
+  );
   if (missingImages.length) {
     throw new Error(
-      `Page inventory is missing ${missingImages.length} expected image${missingImages.length === 1 ? '' : 's'}; run npm run gen:page-inventory first: ${missingImages[0]}`
+      `Page inventory is missing ${missingImages.length} expected image${missingImages.length === 1 ? '' : 's'}; run npm run gen:page-inventory first: ${missingImages[0].image}`
     );
   }
-  const critique = readDesignCritique(critiquePath, expectedImages);
+  for (const capture of manifest.captures) {
+    if (sha256File(join(out, capture.image)) !== capture.sha256) {
+      throw new Error(`Capture manifest has a stale image hash for ${capture.image}`);
+    }
+  }
+  const critique = readDesignCritique(critiquePath, manifest);
   const index = join(out, 'index.html');
   writeFileSync(index, renderPageInventoryReport(items, critique));
   return critique.size;

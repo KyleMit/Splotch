@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Critique page inventory'
+  short_description: 'Review every inventory capture completely'
+  default_prompt: 'Use $critique-page-inventory to review and finalize every current page-inventory capture.'

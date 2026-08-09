@@ -15,6 +15,12 @@ import {
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
+import {
+  captureRecord,
+  createCaptureManifest,
+  readDesignCritique,
+  sha256File,
+} from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
 import { waitForUrl } from './lib/net.mjs';
@@ -22,7 +28,6 @@ import {
   PAGE_INVENTORY_VIEWPORTS,
   attachExpectedCapturePaths,
   inventoryCapturePath,
-  readDesignCritique,
   renderPageInventoryReport,
 } from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
@@ -33,6 +38,8 @@ const SERVER_BOOT_MS = 120_000;
 const ACTION_MS = 15_000;
 const TAP_GUARD_MS = 750;
 const WEBP_QUALITY = 84;
+const SUSPICIOUS_BLANK_ENTROPY = 0.01;
+const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
 
 const PHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -184,8 +191,8 @@ async function openDrawer(page) {
   }
 }
 
-async function draw(page, yFraction = 0.5) {
-  const box = await page.locator('#drawingCanvas').boundingBox();
+async function draw(page, yFraction = 0.5, selector = '#drawingCanvas') {
+  const box = await page.locator(selector).boundingBox();
   if (!box) throw new Error('Drawing canvas has no bounds');
   const y = box.y + box.height * yFraction;
   await page.mouse.move(box.x + box.width * 0.24, y);
@@ -226,7 +233,10 @@ function routeSurfaces() {
       title,
       description,
       route,
-      (page) => navigate(page, route)
+      async (page) => {
+        await navigate(page, route);
+        if (route === '/dev/engine') await draw(page, 0.5, '#engineCanvas');
+      }
     );
   });
   return [
@@ -270,11 +280,12 @@ function settingsSurfaces() {
         'settings',
         `settings-${section.id}`,
         `Settings · ${section.title ?? section.label}`,
-        `The ${section.label} section in the phone drill-in and tablet split-pane shells.`,
+        `The ${section.label} section where full settings fit; compact phone landscapes show the quick-toggle shell that replaces it.`,
         `Settings/${section.id}`,
         async (page, viewport) => {
           await freshHome(page);
           const modal = await openSettings(page);
+          if (await modal.locator('.quick-toggles').isVisible()) return;
           const row = modal.locator(`[data-section="${section.id}"]`);
           await row.evaluate((element) => element.click());
           if (viewport.width < 700) {
@@ -650,16 +661,52 @@ async function settle(page) {
   });
 }
 
+async function assertSurfaceReady(page, item) {
+  await page.waitForFunction(() => document.readyState === 'complete');
+  const hasVisibleContent = await page.evaluate(() => {
+    const candidates = document.querySelectorAll(
+      'canvas, dialog, h1, button, img, input, [role="alert"], [role="main"]'
+    );
+    return [...candidates].some((element) => {
+      const box = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return box.width > 0 && box.height > 0 && style.visibility !== 'hidden';
+    });
+  });
+  if (!hasVisibleContent) throw new Error(`${item.id} reached no visible ready content`);
+}
+
+async function validateCaptureFile(target, item, viewport) {
+  const metadata = await sharp(target).metadata();
+  if (
+    metadata.format !== 'webp' ||
+    metadata.width !== viewport.width ||
+    metadata.height !== viewport.height
+  ) {
+    throw new Error(
+      `${item.id} at ${viewport.id} produced ${metadata.format} ${metadata.width}×${metadata.height}; expected WebP ${viewport.width}×${viewport.height}`
+    );
+  }
+  const stats = await sharp(target).stats();
+  if (stats.entropy < SUSPICIOUS_BLANK_ENTROPY) {
+    throw new Error(
+      `${item.id} at ${viewport.id} looks blank (entropy ${stats.entropy.toFixed(4)})`
+    );
+  }
+}
+
 async function capture(page, item, viewport, out) {
   await item.prepare(page, viewport);
   await settle(page);
+  await assertSurfaceReady(page, item);
   const path = inventoryCapturePath(item, viewport);
   const target = join(out, path);
   mkdirSync(resolve(target, '..'), { recursive: true });
   const png = await page.screenshot({ type: 'png' });
   await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
+  await validateCaptureFile(target, item, viewport);
   await item.cleanup?.(page);
-  return path;
+  return captureRecord(item, viewport, path, sha256File(target));
 }
 
 function options(argv) {
@@ -717,8 +764,6 @@ export async function generateOutputAtomically(out, generate) {
 export async function generatePageInventory(argv = process.argv.slice(2)) {
   const { out, port, critique: critiquePath } = options(argv);
   const items = attachExpectedCapturePaths(allSurfaces());
-  const expectedImages = items.flatMap((item) => Object.values(item.captures));
-  const critique = readDesignCritique(critiquePath, expectedImages);
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: ROOT,
     env: { ...process.env, ...SERVER_ENV },
@@ -737,13 +782,14 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
     try {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
+      const captures = [];
       for (const view of PAGE_INVENTORY_VIEWPORTS) {
         const context = await browser.newContext({
           baseURL: `http://localhost:${port}`,
           viewport: { width: view.width, height: view.height },
           deviceScaleFactor: 1,
           hasTouch: true,
-          userAgent: view.width < 700 ? PHONE_UA : TABLET_UA,
+          userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
           colorScheme: 'light',
           reducedMotion: 'reduce',
         });
@@ -755,15 +801,24 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
         const page = await context.newPage();
         for (const item of items) {
           console.log(`${view.id.padEnd(21)} ${item.id}`);
-          item.captures ??= {};
-          item.captures[view.id] = await capture(page, item, view, staging);
+          captures.push(await capture(page, item, view, staging));
         }
         await context.close();
       }
+      const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
+      writeFileSync(join(staging, CAPTURE_MANIFEST_NAME), `${JSON.stringify(manifest, null, 2)}\n`);
+      let critique = new Map();
+      if (critiquePath) {
+        copyFileSync(critiquePath, join(staging, 'design-critique.json'));
+        try {
+          critique = readDesignCritique(critiquePath, manifest);
+        } catch (error) {
+          console.warn(`Preserved but detached stale design critique: ${error.message}`);
+        }
+      }
       writeFileSync(join(staging, 'index.html'), renderPageInventoryReport(items, critique));
-      if (critiquePath) copyFileSync(critiquePath, join(staging, 'design-critique.json'));
       return {
-        snapshots: items.length * PAGE_INVENTORY_VIEWPORTS.length,
+        snapshots: captures.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
       };
     } finally {
