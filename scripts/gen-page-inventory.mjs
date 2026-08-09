@@ -1,7 +1,17 @@
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
 import { esc } from './lib/html.mjs';
@@ -643,6 +653,11 @@ async function settle(page) {
     await new Promise((resolveFrame) =>
       requestAnimationFrame(() => requestAnimationFrame(resolveFrame))
     );
+    const finiteAnimations = document.getAnimations().filter((animation) => {
+      const endTime = animation.effect?.getComputedTiming().endTime;
+      return typeof endTime === 'number' && Number.isFinite(endTime);
+    });
+    await Promise.all(finiteAnimations.map((animation) => animation.finished.catch(() => {})));
   });
   await page.addStyleTag({
     content:
@@ -737,11 +752,34 @@ function options(argv) {
   return { out, port };
 }
 
+export async function generateOutputAtomically(out, generate) {
+  const parent = dirname(out);
+  mkdirSync(parent, { recursive: true });
+  const staging = mkdtempSync(join(parent, `.${basename(out)}-staging-`));
+  const previous = `${staging}-previous`;
+  let previousMoved = false;
+  try {
+    const result = await generate(staging);
+    if (existsSync(out)) {
+      renameSync(out, previous);
+      previousMoved = true;
+    }
+    try {
+      renameSync(staging, out);
+    } catch (error) {
+      if (previousMoved) renameSync(previous, out);
+      throw error;
+    }
+    if (previousMoved) rmSync(previous, { recursive: true, force: true });
+    return result;
+  } catch (error) {
+    rmSync(staging, { recursive: true, force: true });
+    throw error;
+  }
+}
+
 export async function generatePageInventory(argv = process.argv.slice(2)) {
   const { out, port } = options(argv);
-  const assets = join(out, 'assets');
-  rmSync(assets, { recursive: true, force: true });
-  mkdirSync(assets, { recursive: true });
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: ROOT,
     env: { ...process.env, ...SERVER_ENV },
@@ -749,47 +787,54 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
   });
   if (build.error) throw build.error;
   if (build.status !== 0) throw new Error(`Production build exited ${build.status}`);
-  const server = spawnViteServer(port, {
-    command: 'preview',
-    env: SERVER_ENV,
-  });
-  let browser;
-  try {
-    await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
-    browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
-    const items = allSurfaces();
-    for (const view of VIEWPORTS) {
-      const context = await browser.newContext({
-        baseURL: `http://localhost:${port}`,
-        viewport: { width: view.width, height: view.height },
-        deviceScaleFactor: 1,
-        hasTouch: true,
-        userAgent: view.width < 700 ? PHONE_UA : TABLET_UA,
-        colorScheme: 'light',
-        reducedMotion: 'reduce',
-      });
-      await context.addInitScript((defaults) => {
-        for (const [key, value] of Object.entries(defaults)) {
-          if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+  const { snapshots, bytes } = await generateOutputAtomically(out, async (staging) => {
+    const assets = join(staging, 'assets');
+    mkdirSync(assets, { recursive: true });
+    const server = spawnViteServer(port, {
+      command: 'preview',
+      env: SERVER_ENV,
+    });
+    let browser;
+    try {
+      await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
+      browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
+      const items = allSurfaces();
+      for (const view of VIEWPORTS) {
+        const context = await browser.newContext({
+          baseURL: `http://localhost:${port}`,
+          viewport: { width: view.width, height: view.height },
+          deviceScaleFactor: 1,
+          hasTouch: true,
+          userAgent: view.width < 700 ? PHONE_UA : TABLET_UA,
+          colorScheme: 'light',
+          reducedMotion: 'reduce',
+        });
+        await context.addInitScript((defaults) => {
+          for (const [key, value] of Object.entries(defaults)) {
+            if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+          }
+        }, STORAGE);
+        const page = await context.newPage();
+        for (const item of items) {
+          console.log(`${view.id.padEnd(21)} ${item.id}`);
+          item.captures ??= {};
+          item.captures[view.id] = await capture(page, item, view, staging);
         }
-      }, STORAGE);
-      const page = await context.newPage();
-      for (const item of items) {
-        console.log(`${view.id.padEnd(21)} ${item.id}`);
-        item.captures ??= {};
-        item.captures[view.id] = await capture(page, item, view, out);
+        await context.close();
       }
-      await context.close();
+      writeFileSync(join(staging, 'index.html'), report(items));
+      return {
+        snapshots: items.length * VIEWPORTS.length,
+        bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
+      };
+    } finally {
+      await browser?.close();
+      server.stop();
     }
-    writeFileSync(join(out, 'index.html'), report(items));
-    const bytes = filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0);
-    console.log(
-      `Wrote ${items.length * VIEWPORTS.length} snapshots and ${relative(ROOT, join(out, 'index.html'))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
-    );
-  } finally {
-    await browser?.close();
-    server.stop();
-  }
+  });
+  console.log(
+    `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, 'index.html'))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
+  );
 }
 
 if (isMain(import.meta.url)) runMain(generatePageInventory);
