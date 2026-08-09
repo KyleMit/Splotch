@@ -5,7 +5,11 @@
         <item name="android:colorBackground">@color/app_background</item>
     </style>
 
+    <!-- Capacitor's BridgeActivity applies this library-named theme before it creates the WebView. -->
+    <style name="AppTheme.NoActionBar" parent="AppTheme" />
+
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>

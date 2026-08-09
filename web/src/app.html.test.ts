@@ -77,6 +77,10 @@ describe("app.html's prerendered head mirrors the theme module", () => {
     expect(match, 'app.html has a theme-color meta').not.toBeNull();
     expect(match![1]).toBe(THEME_COLORS.light);
   });
+
+  it('advertises both authored schemes so Android WebView honors prefers-color-scheme', () => {
+    expect(html).toContain('<meta name="color-scheme" content="light dark" />');
+  });
 });
 
 describe("app.html's boot script mirrors the state modules", () => {

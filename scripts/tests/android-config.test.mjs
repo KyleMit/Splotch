@@ -71,7 +71,21 @@ describe('Android native theme backgrounds', () => {
     expect(styles).toMatch(
       /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<\/style>/
     );
-    expect(styles).not.toMatch(/<style name="AppTheme\.NoActionBar"\b/);
+  });
+
+  it('keeps Capacitor BridgeActivity and the post-splash handoff on the DayNight app theme', () => {
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    expect(styles).toMatch(/<style name="AppTheme\.NoActionBar" parent="AppTheme"\s*\/>/);
+    expect(styles).toMatch(
+      /<style name="AppTheme\.NoActionBarLaunch"[^>]*>[\s\S]*?<item name="postSplashScreenTheme">@style\/AppTheme\.NoActionBar<\/item>[\s\S]*?<\/style>/
+    );
+  });
+
+  it('marks the Android night theme as dark for WebView media queries', () => {
+    const nightStyles = read('android/app/src/main/res/values-night/styles.xml');
+    expect(nightStyles).toMatch(
+      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<item name="android:isLightTheme">false<\/item>[\s\S]*?<\/style>/
+    );
   });
 
   it('matches the web app background in both themes', () => {
