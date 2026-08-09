@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import ActivePageChip from './ActivePageChip.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import {
     coloringBookState,
@@ -172,24 +173,12 @@
 
 {#snippet activePageChip()}
   {#if activePage && activePageThumbnail}
-    <button
-      class="active-page-chip"
-      type="button"
-      aria-label="Clear active coloring page: {activePage.name}"
-      onclick={clearAndClose}
-    >
-      <img
-        class="active-page-thumbnail"
-        src={activePageThumbnail.src}
-        srcset={__IS_CAPACITOR__ ? undefined : activePageThumbnail.srcset}
-        sizes={__IS_CAPACITOR__ ? undefined : COLORING_IMAGE_SIZES.activePageThumbnail}
-        alt=""
-      />
-      <span class="active-page-name">{activePage.name}</span>
-      <span class="active-page-clear" aria-hidden="true">
-        <Icon name="close" class="active-page-clear-icon" />
-      </span>
-    </button>
+    <ActivePageChip
+      page={activePage}
+      thumbnail={activePageThumbnail}
+      {hoverArmed}
+      onclear={clearAndClose}
+    />
   {/if}
 {/snippet}
 
@@ -342,76 +331,6 @@
     white-space: nowrap;
   }
 
-  /* The raw dimensions are control sizing: the pill keeps the platform's 44px
-     touch-target floor while the thumbnail and clear mark stay visibly nested. */
-  .active-page-chip {
-    --active-page-thumbnail-size: 36px;
-    --active-page-clear-size: 28px;
-    height: var(--modal-close-size);
-    flex: 0 0 auto;
-    overflow: hidden;
-    padding: var(--space-1);
-    background: var(--surface-2);
-    border: var(--border-width) solid var(--border-warm);
-    border-radius: var(--radius-pill);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    touch-action: manipulation;
-    transition:
-      border-color var(--duration-base) ease,
-      background var(--duration-base) ease,
-      transform var(--duration-fast) ease;
-  }
-
-  .active-page-chip:active {
-    transform: scale(0.92);
-  }
-
-  .active-page-thumbnail {
-    width: var(--active-page-thumbnail-size);
-    height: var(--active-page-thumbnail-size);
-    flex: 0 0 var(--active-page-thumbnail-size);
-    display: block;
-    object-fit: contain;
-    pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
-    filter: var(--lineart-filter);
-  }
-
-  .active-page-name {
-    max-width: 12ch;
-    overflow: hidden;
-    color: var(--text);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .active-page-clear {
-    width: var(--active-page-clear-size);
-    height: var(--active-page-clear-size);
-    flex: 0 0 var(--active-page-clear-size);
-    padding: var(--space-1);
-    border-radius: 50%;
-    background: var(--danger-wash);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  :global(.active-page-clear-icon) {
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  :global(.active-page-clear-icon svg) {
-    fill: var(--danger-text);
-  }
-
   /* 36px is control sizing, not spacing — the repo has no size ramp (the 44px
      modal close disc and 48px corner buttons in app.css are raw for the same
      reason). */
@@ -443,11 +362,6 @@
   }
 
   @media (hover: hover) {
-    .hover-armed .active-page-chip:hover {
-      background: var(--brand-wash);
-      border-color: var(--brand);
-    }
-
     .hover-armed .coloring-back-button:hover {
       background: var(--brand-wash);
     }
@@ -579,10 +493,6 @@
 
     .coloring-book-header h2 {
       font-size: var(--font-size-md);
-    }
-
-    .active-page-name {
-      display: none;
     }
   }
 

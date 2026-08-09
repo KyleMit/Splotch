@@ -29,6 +29,10 @@ const coloringBookComponent = readFileSync(
   new URL('../components/ColoringBook.svelte', import.meta.url),
   'utf8'
 );
+const activePageChipComponent = readFileSync(
+  new URL('../components/ActivePageChip.svelte', import.meta.url),
+  'utf8'
+);
 
 describe('page defaults', () => {
   it('every page still ships night + chalk for both orientations', () => {
@@ -147,7 +151,7 @@ describe('responsive image sources', () => {
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
     expect(COLORING_IMAGE_SIZES.pageThumbnail.portrait).toContain('(90vw - 88px) / 3');
     expect(COLORING_IMAGE_SIZES.pageThumbnail.landscape).toContain('(90vw - 76px) / 2');
-    expect(coloringBookComponent).toContain(
+    expect(activePageChipComponent).toContain(
       `--active-page-thumbnail-size: ${COLORING_IMAGE_SIZES.activePageThumbnail}`
     );
   });
