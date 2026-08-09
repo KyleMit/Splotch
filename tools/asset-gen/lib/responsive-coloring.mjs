@@ -1,4 +1,4 @@
-import { mkdir, stat } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 import {
@@ -8,6 +8,7 @@ import {
 } from './overlay-alpha.mjs';
 
 const WEBP_EFFORT = 6;
+const FILL_QUALITY = 85;
 const THUMBNAIL_QUALITY = 80;
 export const RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION = 0.2;
 
@@ -15,12 +16,7 @@ function staticAssetPath(staticDir, url) {
   return join(staticDir, url);
 }
 
-async function generateResponsiveColoringAsset(staticDir, asset) {
-  const sourcePath = staticAssetPath(staticDir, asset.source);
-  const targetPath = staticAssetPath(staticDir, asset.target);
-  const sourceMetadata = await sharp(sourcePath).metadata();
-  await mkdir(dirname(targetPath), { recursive: true });
-
+export async function renderResponsiveColoringAsset(sourcePath, asset) {
   if (asset.encoding === 'overlay') {
     const { data, info } = await sharp(sourcePath)
       .resize(asset.maxEdgePx, asset.maxEdgePx, {
@@ -32,12 +28,12 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
       .raw()
       .toBuffer({ resolveWithObject: true });
     const quantized = quantizeOverlayRgba(data);
-    await sharp(quantized, {
+    const encoded = await sharp(quantized, {
       raw: { width: info.width, height: info.height, channels: 4 },
     })
       .webp({ lossless: true, effort: WEBP_EFFORT })
-      .toFile(targetPath);
-    const decoded = await sharp(targetPath).ensureAlpha().raw().toBuffer();
+      .toBuffer();
+    const decoded = await sharp(encoded).ensureAlpha().raw().toBuffer();
     const error = maxOverlayAlphaError(data, decoded);
     if (error > OVERLAY_MAX_CHANNEL_ERROR) {
       throw new Error(
@@ -45,16 +41,28 @@ async function generateResponsiveColoringAsset(staticDir, asset) {
           `(limit ${OVERLAY_MAX_CHANNEL_ERROR}/255).`
       );
     }
-  } else {
-    await sharp(sourcePath)
-      .resize(asset.maxEdgePx, asset.maxEdgePx, {
-        fit: 'inside',
-        kernel: 'lanczos3',
-        withoutEnlargement: true,
-      })
-      .webp({ quality: THUMBNAIL_QUALITY, effort: WEBP_EFFORT })
-      .toFile(targetPath);
+    return encoded;
   }
+
+  return sharp(sourcePath)
+    .resize(asset.maxEdgePx, asset.maxEdgePx, {
+      fit: 'inside',
+      kernel: 'lanczos3',
+      withoutEnlargement: true,
+    })
+    .webp({
+      quality: asset.encoding === 'fill' ? FILL_QUALITY : THUMBNAIL_QUALITY,
+      effort: WEBP_EFFORT,
+    })
+    .toBuffer();
+}
+
+async function generateResponsiveColoringAsset(staticDir, asset) {
+  const sourcePath = staticAssetPath(staticDir, asset.source);
+  const targetPath = staticAssetPath(staticDir, asset.target);
+  const sourceMetadata = await sharp(sourcePath).metadata();
+  await mkdir(dirname(targetPath), { recursive: true });
+  await writeFile(targetPath, await renderResponsiveColoringAsset(sourcePath, asset));
 
   const metadata = await sharp(targetPath).metadata();
   const actualMaxEdgePx = Math.max(metadata.width ?? 0, metadata.height ?? 0);

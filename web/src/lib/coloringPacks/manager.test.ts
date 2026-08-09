@@ -30,13 +30,31 @@ import { createColoringPackDownloader } from './manager';
 import { coloringPackState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
 
 const manifest = {
-  formatVersion: 1,
+  formatVersion: 2,
   appVersion: '1.0.0-test',
   starterBookId: 'farm',
   books: ['farm', 'dinosaur', 'space'].map((id) => ({
     id,
-    bytes: 1,
-    files: [{ path: `/coloring/${id}/cover.webp`, bytes: 1, sha256: 'a'.repeat(64) }],
+    variants: Object.fromEntries(
+      ['compact', 'full'].map((resolution) => {
+        const path = `/coloring/${id}/cover.webp`;
+        return [
+          resolution,
+          {
+            bytes: 1,
+            files: [
+              {
+                path,
+                downloadPath:
+                  resolution === 'compact' ? `/coloring/max-240px/${id}/cover.webp` : path,
+                bytes: 1,
+                sha256: 'a'.repeat(64),
+              },
+            ],
+          },
+        ];
+      })
+    ),
   })),
 };
 

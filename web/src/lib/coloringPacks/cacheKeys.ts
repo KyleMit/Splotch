@@ -1,14 +1,16 @@
-import type { ColoringPackManifest } from './manifest';
+import type { ResolvedColoringPackManifest } from './manifest';
 
 export const COLORING_PACK_CACHE_PREFIX = 'coloring-packs-v1-';
 
-export function coloringPackCacheName(manifest: Pick<ColoringPackManifest, 'appVersion'>): string {
-  return `${COLORING_PACK_CACHE_PREFIX}${manifest.appVersion}`;
+export function coloringPackCacheName(
+  manifest: Pick<ResolvedColoringPackManifest, 'appVersion' | 'resolution'>
+): string {
+  return `${COLORING_PACK_CACHE_PREFIX}${manifest.appVersion}-${manifest.resolution}`;
 }
 
 export function coloringPackMarkerPath(
-  manifest: Pick<ColoringPackManifest, 'appVersion'>,
+  manifest: Pick<ResolvedColoringPackManifest, 'appVersion' | 'resolution'>,
   bookId: string
 ): string {
-  return `/coloring/.installed/${manifest.appVersion}/${bookId}`;
+  return `/coloring/.installed/${manifest.appVersion}/${manifest.resolution}/${bookId}`;
 }

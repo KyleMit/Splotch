@@ -1,4 +1,4 @@
-import type { ColoringPackBookManifest, ColoringPackManifest } from './manifest';
+import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
 
 export interface InstalledColoringPack {
   id: string;
@@ -6,13 +6,13 @@ export interface InstalledColoringPack {
 }
 
 export interface ColoringPackStore {
-  installed(manifest: ColoringPackManifest): Promise<InstalledColoringPack[]>;
+  installed(manifest: ResolvedColoringPackManifest): Promise<InstalledColoringPack[]>;
   install(
-    manifest: ColoringPackManifest,
-    book: ColoringPackBookManifest,
+    manifest: ResolvedColoringPackManifest,
+    book: ResolvedColoringPackBookManifest,
     allowMetered: boolean,
     signal: AbortSignal
   ): Promise<InstalledColoringPack>;
-  remove(manifest: ColoringPackManifest): Promise<void>;
-  usage(manifest: ColoringPackManifest): Promise<number>;
+  remove(manifest: ResolvedColoringPackManifest): Promise<void>;
+  usage(manifest: ResolvedColoringPackManifest): Promise<number>;
 }

@@ -10,9 +10,11 @@ import { clearLocalColoringBookRoots, setLocalColoringBookRoot } from './assetRe
 import {
   coloringPackManifestPath,
   parseColoringPackManifest,
-  type ColoringPackManifest,
+  resolveColoringPackManifest,
+  type ResolvedColoringPackManifest,
 } from './manifest';
 import { COLORING_PACK_POLICY_EVENT, COLORING_PACK_REMOVE_EVENT } from './policy';
+import { currentColoringPackResolution } from './resolution';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 
 interface NetworkInformationLike extends EventTarget {
@@ -21,13 +23,16 @@ interface NetworkInformationLike extends EventTarget {
   type?: string;
 }
 
-async function loadManifest(signal?: AbortSignal): Promise<ColoringPackManifest> {
+async function loadManifest(signal?: AbortSignal): Promise<ResolvedColoringPackManifest> {
   const response = await fetch(coloringPackManifestPath(__APP_VERSION__), {
     cache: 'no-store',
     signal,
   });
   if (!response.ok) throw new Error(`Coloring-pack manifest unavailable (${response.status})`);
-  return parseColoringPackManifest(await response.json(), __APP_VERSION__);
+  return resolveColoringPackManifest(
+    parseColoringPackManifest(await response.json(), __APP_VERSION__),
+    currentColoringPackResolution()
+  );
 }
 
 async function createStore(): Promise<ColoringPackStore> {
@@ -56,7 +61,7 @@ function applyLocalRoots(packs: InstalledColoringPack[]) {
 
 async function initializeState(
   store: ColoringPackStore,
-  manifest: ColoringPackManifest
+  manifest: ResolvedColoringPackManifest
 ): Promise<Set<string>> {
   const installedPacks = await store.installed(manifest);
   applyLocalRoots(installedPacks);

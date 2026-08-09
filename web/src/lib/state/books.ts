@@ -40,8 +40,9 @@
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
 // validates them, generates the verified pack manifest, and strips native assets
-// from the correct distribution boundary. Responsive tiers are web-only; native
-// uses the canonical runtime width. Thumbnails: ADR-0045; packs: ADR-0103.
+// from the correct distribution boundary. The compact responsive inventory is
+// also the smaller pack variant downloaded by compact web and native screens.
+// Thumbnails: ADR-0045; packs: ADR-0103.
 //
 // `platforms` controls distribution per book:
 //   ['web']            -> web only          (hidden + assets stripped on native)
@@ -66,7 +67,7 @@ export interface ResponsiveColoringAsset {
   target: string;
   maxEdgePx: number;
   widthPx: number;
-  encoding: 'overlay' | 'thumbnail';
+  encoding: 'fill' | 'overlay' | 'thumbnail';
 }
 
 interface ColoringBookGridLayout {
@@ -120,6 +121,7 @@ const RESPONSIVE_COLORING_TIERS = {
     },
   },
 } as const;
+export const COMPACT_COLORING_PACK_MAX_EDGE_PX = RESPONSIVE_COLORING_TIERS.overlay.maxEdgePx;
 export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COLORING_TIERS).map(
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );
@@ -496,7 +498,21 @@ export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] 
       encoding: 'thumbnail' as const,
     };
   });
-  return [...overlayAssets, ...thumbnailAssets];
+  const fillAssets = book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.flatMap((orientation) => {
+      const widths = overlayTier.widths[orientation];
+      return [page.colorImages[orientation], page.nightImages[orientation]]
+        .filter((source): source is string => !!source)
+        .map((source) => ({
+          source,
+          target: responsiveTierPath(source, overlayTier.directory),
+          maxEdgePx: overlayTier.maxEdgePx,
+          widthPx: widths.candidate,
+          encoding: 'fill' as const,
+        }));
+    })
+  );
+  return [...overlayAssets, ...thumbnailAssets, ...fillAssets];
 }
 
 export function bookAssetPaths(book: Book): string[] {

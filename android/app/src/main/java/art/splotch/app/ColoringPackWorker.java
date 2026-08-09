@@ -85,7 +85,11 @@ public class ColoringPackWorker extends Worker {
         File partial = new File(destination.getPath() + ".part");
         if (partial.exists() && !partial.delete()) throw new IllegalStateException("Stale partial file");
 
-        HttpURLConnection connection = (HttpURLConnection) new URL(baseUrl + path).openConnection();
+        String downloadPath = entry.getString("downloadPath");
+        if (!downloadPath.startsWith("/coloring/") || downloadPath.contains("..")) {
+            throw new IllegalArgumentException("Invalid coloring download path");
+        }
+        HttpURLConnection connection = (HttpURLConnection) new URL(baseUrl + downloadPath).openConnection();
         connection.setConnectTimeout(30_000);
         connection.setReadTimeout(30_000);
         connection.setUseCaches(false);

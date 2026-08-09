@@ -1,6 +1,6 @@
 import { scheduleIdle } from '$lib/idle';
 import { requestPersistentStorage } from '$lib/idb';
-import type { ColoringPackBookManifest } from './manifest';
+import type { ResolvedColoringPackBookManifest } from './manifest';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 import {
   COLORING_PACK_CACHE_PREFIX,
@@ -29,12 +29,12 @@ async function digestHex(bytes: ArrayBuffer): Promise<string> {
 }
 
 async function verifiedResponse(
-  file: ColoringPackBookManifest['files'][number],
+  file: ResolvedColoringPackBookManifest['files'][number],
   signal: AbortSignal
 ): Promise<Response> {
-  const response = await fetch(file.path, { cache: 'no-store', signal });
+  const response = await fetch(file.downloadPath, { cache: 'no-store', signal });
   if (!response.ok)
-    throw new Error(`Coloring asset download failed (${response.status}): ${file.path}`);
+    throw new Error(`Coloring asset download failed (${response.status}): ${file.downloadPath}`);
   const bytes = await response.arrayBuffer();
   if (bytes.byteLength !== file.bytes) {
     throw new Error(`Coloring asset byte count mismatch: ${file.path}`);

@@ -65,7 +65,7 @@ export function pwaPrecacheProblems({
     );
   }
   const starterFiles =
-    coloringManifest?.books.find((book) => book.id === starterBookId)?.files ?? [];
+    coloringManifest?.books.find((book) => book.id === starterBookId)?.variants?.full?.files ?? [];
   const missingStarterFiles = starterFiles
     .map((file) => file.path.slice(1))
     .filter((url) => !precached.has(url));

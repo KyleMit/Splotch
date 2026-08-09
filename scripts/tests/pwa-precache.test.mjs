@@ -8,7 +8,7 @@ import {
 
 const coloringManifest = {
   starterBookId: 'farm',
-  books: [{ id: 'farm', files: [] }],
+  books: [{ id: 'farm', variants: { full: { files: [] } } }],
 };
 
 it('registers the responsive coloring route before the canonical pack route', () => {
@@ -91,8 +91,14 @@ it('requires every starter asset and rejects downloadable books in the precache'
       coloringManifest: {
         starterBookId: 'farm',
         books: [
-          { id: 'farm', files: [{ path: '/coloring/farm/cover.thumb.webp' }] },
-          { id: 'dinosaur', files: [{ path: '/coloring/dinosaur/cover.thumb.webp' }] },
+          {
+            id: 'farm',
+            variants: { full: { files: [{ path: '/coloring/farm/cover.thumb.webp' }] } },
+          },
+          {
+            id: 'dinosaur',
+            variants: { full: { files: [{ path: '/coloring/dinosaur/cover.thumb.webp' }] } },
+          },
         ],
       },
     })

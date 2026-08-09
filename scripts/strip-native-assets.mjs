@@ -16,7 +16,7 @@
 //   4. Full-resolution opaque line-art sources. Runtime presentation uses the
 //      generated alpha overlays and picker thumbnails; the opaque files remain
 //      committed beside them only as asset-pipeline inputs.
-//   5. Web-responsive image tiers. Native ships one canonical runtime width.
+//   5. Hosted responsive tiers. Native downloads its selected pack tier after install.
 //
 // books.ts is TypeScript, so this script is launched with Node's
 // --experimental-strip-types (see the build:cap npm script) to import it directly.

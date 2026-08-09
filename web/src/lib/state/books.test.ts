@@ -253,8 +253,14 @@ describe('bookAssetPaths', () => {
   it('lists every generated responsive candidate', () => {
     const paths = new Set(bookAssetPaths(farm));
     const responsive = responsiveColoringAssets(farm);
-    expect(responsive).toHaveLength(49);
+    expect(responsive).toHaveLength(73);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
+    for (const canonical of bookPackAssetPaths(farm)) {
+      expect(
+        responsive.some((asset) => asset.source === canonical),
+        canonical
+      ).toBe(true);
+    }
   });
 });
 
