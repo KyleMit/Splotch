@@ -1,7 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
-import { gotoApp } from './helpers';
+import {
+  gotoAppWithInstalledColoringBook,
+  openColoringDialog,
+  openDrawer,
+  openFarmPageGrid,
+} from './flows-harness';
+import { gotoApp, openSettingsModal } from './helpers';
 import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
 
 async function holdDinosaurDownload(page: Page): Promise<() => void> {
@@ -66,6 +71,52 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
   await dialog.getByRole('button', { name: 'Clear Page' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toBeHidden();
+});
+
+test('removing downloaded books restores single-book page thumbnails', async ({ page }) => {
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await openDrawer(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  const pages = await openFarmPageGrid(page);
+  await expect
+    .poll(() =>
+      pages
+        .first()
+        .locator('img')
+        .evaluate((image: HTMLImageElement) => image.naturalWidth)
+    )
+    .toBeGreaterThan(0);
+  await pages.first().click();
+  await expect(dialog).toBeHidden();
+  await expect
+    .poll(() =>
+      pages
+        .locator('img')
+        .evaluateAll((images) =>
+          images.every((image) => !image.hasAttribute('src') && !image.hasAttribute('srcset'))
+        )
+    )
+    .toBe(true);
+
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Coloring', exact: true }).click();
+  await settings.getByRole('button', { name: 'Remove downloaded pictures' }).click();
+  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeDisabled();
+  await settings.getByRole('button', { name: 'Close' }).click();
+
+  await openColoringDialog(page);
+  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+  await expect
+    .poll(() =>
+      dialog
+        .locator('.coloring-pages-grid img')
+        .first()
+        .evaluate((image: HTMLImageElement) => image.naturalWidth)
+    )
+    .toBeGreaterThan(0);
 });
 
 test('finishing a download keeps the open page grid stable', async ({ page }) => {

@@ -39,6 +39,7 @@
 
   let activeBook = $state<Book | null>(null);
   let clearPageInPagesGrid = $state(false);
+  let pagesGridToken = $state(0);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -104,9 +105,9 @@
   function pickPage(page: ColoringPage) {
     const selectedOverlayUrl = pageOverlayImageSource(page, orientation, resolvedTheme()).src;
     cancelImagePrefetchesExcept(selectedOverlayUrl);
-    if (hasBookPicker) {
-      for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
-    }
+    // Cancelling live thumbnail requests removes their source attributes, so the keyed page grid
+    // remounts them on every dialog open instead of relying on a book-picker branch transition.
+    for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
     setOverlayPage(page, orientation);
     coloringBookModal.hide();
   }
@@ -141,6 +142,7 @@
 
   function showInitialView() {
     clearPageInPagesGrid = !hasBookPicker;
+    pagesGridToken += 1;
     showView(initialView());
   }
 
@@ -245,33 +247,35 @@
           {/if}
           <h2>{activeBook.name}</h2>
         </div>
-        <div
-          class="coloring-grid coloring-pages-grid"
-          class:portrait-pages={orientation === 'portrait'}
-        >
-          {#each activeBook.pages as page (page.id)}
-            {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
-            <button
-              class="coloring-tile"
-              type="button"
-              aria-label="{page.name} coloring page"
-              onclick={() => pickPage(page)}
-              onpointerenter={() => prefetchPageOverlay(page)}
-              onpointerdown={() => prefetchPageOverlay(page)}
-            >
-              <img
-                src={pageImage.src}
-                srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
-                sizes={__IS_CAPACITOR__ ? undefined : pageThumbnailSizes}
-                alt=""
-                loading="lazy"
-              />
-            </button>
-          {/each}
-          {#if clearPageInPagesGrid && overlayActive}
-            {@render clearPageTile()}
-          {/if}
-        </div>
+        {#key pagesGridToken}
+          <div
+            class="coloring-grid coloring-pages-grid"
+            class:portrait-pages={orientation === 'portrait'}
+          >
+            {#each activeBook.pages as page (page.id)}
+              {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
+              <button
+                class="coloring-tile"
+                type="button"
+                aria-label="{page.name} coloring page"
+                onclick={() => pickPage(page)}
+                onpointerenter={() => prefetchPageOverlay(page)}
+                onpointerdown={() => prefetchPageOverlay(page)}
+              >
+                <img
+                  src={pageImage.src}
+                  srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
+                  sizes={__IS_CAPACITOR__ ? undefined : pageThumbnailSizes}
+                  alt=""
+                  loading="lazy"
+                />
+              </button>
+            {/each}
+            {#if clearPageInPagesGrid && overlayActive}
+              {@render clearPageTile()}
+            {/if}
+          </div>
+        {/key}
       </div>
     {/if}
   </div>
