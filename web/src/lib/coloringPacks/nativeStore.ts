@@ -4,6 +4,7 @@ import {
   type NativeColoringPack,
 } from '$lib/plugins/coloringPacks';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
+import { COLORING_PACK_RESOLUTIONS } from './resolution';
 
 function storageVersion(manifest: Parameters<ColoringPackStore['installed']>[0]): string {
   return `${manifest.appVersion}-${manifest.resolution}`;
@@ -35,7 +36,9 @@ export function createNativeColoringPackStore(): ColoringPackStore {
     },
 
     async remove(manifest) {
-      await ColoringPacks.remove({ version: storageVersion(manifest) });
+      for (const resolution of COLORING_PACK_RESOLUTIONS) {
+        await ColoringPacks.remove({ version: storageVersion({ ...manifest, resolution }) });
+      }
     },
 
     async usage(manifest) {

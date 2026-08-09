@@ -32,9 +32,10 @@ public class ColoringPackWorker extends Worker {
     public Result doWork() {
         String jobPath = getInputData().getString(JOB_PATH);
         if (jobPath == null) return Result.failure();
+        File jobFile = new File(jobPath);
 
         try {
-            JSONObject job = new JSONObject(readText(new File(jobPath)));
+            JSONObject job = new JSONObject(readText(jobFile));
             if (job.getBoolean("allowMetered") && dataSaverEnabled()) return Result.retry();
 
             File bookDirectory = ColoringPacksPlugin.bookDirectory(
@@ -50,6 +51,9 @@ public class ColoringPackWorker extends Worker {
 
             writeText(ColoringPacksPlugin.markerFile(bookDirectory), job.getString("bookId"));
             return Result.success();
+        } catch (StaleJobException error) {
+            if (jobFile.exists() && !jobFile.delete()) jobFile.deleteOnExit();
+            return Result.failure();
         } catch (Exception error) {
             return Result.retry();
         }
@@ -85,7 +89,8 @@ public class ColoringPackWorker extends Worker {
         File partial = new File(destination.getPath() + ".part");
         if (partial.exists() && !partial.delete()) throw new IllegalStateException("Stale partial file");
 
-        String downloadPath = entry.getString("downloadPath");
+        String downloadPath = entry.optString("downloadPath", null);
+        if (downloadPath == null) throw new StaleJobException();
         if (!downloadPath.startsWith("/coloring/") || downloadPath.contains("..")) {
             throw new IllegalArgumentException("Invalid coloring download path");
         }
@@ -162,4 +167,6 @@ public class ColoringPackWorker extends Worker {
         for (byte value : bytes) result.append(String.format("%02x", value));
         return result.toString();
     }
+
+    private static final class StaleJobException extends Exception {}
 }

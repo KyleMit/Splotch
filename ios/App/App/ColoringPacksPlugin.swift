@@ -74,6 +74,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
     func resumePendingDownload() {
         queue.async {
             guard self.currentJob == nil else { return }
+            guard FileManager.default.fileExists(atPath: Self.jobURL.path) else { return }
             let job: ColoringPackJob
             do {
                 job = try self.loadJob()

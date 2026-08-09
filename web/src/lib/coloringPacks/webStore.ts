@@ -2,6 +2,7 @@ import { scheduleIdle } from '$lib/idle';
 import { requestPersistentStorage } from '$lib/idb';
 import type { ResolvedColoringPackBookManifest } from './manifest';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
+import { COLORING_PACK_RESOLUTIONS } from './resolution';
 import {
   COLORING_PACK_CACHE_PREFIX,
   coloringPackCacheName,
@@ -86,7 +87,11 @@ export function createWebColoringPackStore(): ColoringPackStore {
     },
 
     async remove(manifest) {
-      await caches.delete(coloringPackCacheName(manifest));
+      await Promise.all(
+        COLORING_PACK_RESOLUTIONS.map((resolution) =>
+          caches.delete(coloringPackCacheName({ ...manifest, resolution }))
+        )
+      );
     },
 
     async usage(manifest) {
