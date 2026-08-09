@@ -1,10 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import ActivePageChip from './ActivePageChip.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import {
+    coloringBookState,
     setOverlayPage,
     setOverlayOrientation,
-    overlayUrl,
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -38,7 +39,6 @@
   const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
-  let clearPageInPagesGrid = $state(false);
   let pagesGridToken = $state(0);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
@@ -47,9 +47,13 @@
   // mid-lock must match that same locked space. The viewport-driven
   // layout.orientation is only a fallback until the engine mounts.
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
-  const overlayActive = $derived(!!overlayUrl());
-  const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
-  const bookGridLayout = $derived(coloringBookGridLayout(visibleBookTileCount));
+  const activePage = $derived(coloringBookState.overlayPage);
+  const activePageThumbnail = $derived(
+    activePage
+      ? pageThumbImageSource(activePage, coloringBookState.orientation, resolvedTheme())
+      : null
+  );
+  const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
   const pageThumbnailSizes = $derived(COLORING_IMAGE_SIZES.pageThumbnail[orientation]);
 
@@ -141,7 +145,6 @@
   }
 
   function showInitialView() {
-    clearPageInPagesGrid = !hasBookPicker;
     pagesGridToken += 1;
     showView(initialView());
   }
@@ -168,15 +171,24 @@
   }
 </script>
 
-{#snippet clearPageTile()}
+{#snippet activePageChip()}
+  {#if activePage && activePageThumbnail}
+    <ActivePageChip
+      page={activePage}
+      thumbnail={activePageThumbnail}
+      {hoverArmed}
+      onclear={clearAndClose}
+    />
+  {/if}
+{/snippet}
+
+{#snippet closeButton()}
   <button
-    class="coloring-tile coloring-book-tile"
-    type="button"
-    aria-label="Clear Page"
-    onclick={clearAndClose}
+    class="coloring-book-close modal-close-btn"
+    aria-label="Close"
+    onclick={coloringBookModal.hide}
   >
-    <Icon name="remove-page" class="coloring-remove-icon" />
-    <span class="coloring-book-label">Clear Page</span>
+    <Icon name="close" class="modal-close-icon" />
   </button>
 {/snippet}
 
@@ -192,25 +204,17 @@
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
-    <button
-      class="coloring-book-close modal-close-btn"
-      aria-label="Close"
-      onclick={coloringBookModal.hide}
-    >
-      <Icon name="close" class="modal-close-icon" />
-    </button>
-
     {#if !activeBook}
       <div class="coloring-book-view">
-        <h2>Coloring Books</h2>
+        <div class="coloring-book-header">
+          <h2>Coloring Books</h2>
+          {@render activePageChip()}
+          {@render closeButton()}
+        </div>
         <div
           class="coloring-grid coloring-books-grid"
           class:book-grid-has-orphan={bookGridLayout.hasOrphan}
-          class:book-grid-has-nine-tiles={bookGridLayout.hasNineTiles}
         >
-          {#if overlayActive}
-            {@render clearPageTile()}
-          {/if}
           {#each books as book (book.id)}
             {@const coverImage = coverThumbImageSource(book)}
             <button
@@ -246,6 +250,8 @@
             </button>
           {/if}
           <h2>{activeBook.name}</h2>
+          {@render activePageChip()}
+          {@render closeButton()}
         </div>
         {#key pagesGridToken}
           <div
@@ -271,9 +277,6 @@
                 />
               </button>
             {/each}
-            {#if clearPageInPagesGrid && overlayActive}
-              {@render clearPageTile()}
-            {/if}
           </div>
         {/key}
       </div>
@@ -303,6 +306,10 @@
   }
 
   .coloring-book-close {
+    /* The chip and close disc share this header row, so this modal opts out of
+       the global close button's absolute corner positioning. */
+    position: static;
+    flex: 0 0 var(--modal-close-size);
     transition: opacity var(--duration-base) ease;
     z-index: 1;
   }
@@ -310,12 +317,18 @@
   .coloring-book-header {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
+    min-height: var(--modal-close-size);
     margin-bottom: var(--space-5);
   }
 
   .coloring-book-header h2 {
     margin: 0;
+    min-width: 0;
+    margin-right: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   /* 36px is control sizing, not spacing — the repo has no size ramp (the 44px
@@ -373,20 +386,10 @@
 
   @media (min-width: 741px) {
     /* A last row of one reads as accidental, so catalog sizes that would leave
-       that orphan use the next-lower column count. This also covers Clear Page. */
+       that orphan use the next-lower column count. */
     .coloring-books-grid.book-grid-has-orphan {
       --book-cols: 3;
     }
-  }
-
-  .coloring-books-grid.book-grid-has-nine-tiles {
-    --book-grid-roomy-max-width: 639px;
-    /* Reserve the non-grid content and whole-pixel rounding inside the modal cap. */
-    --book-grid-height-reserve: 115px;
-    --book-grid-max-width: min(
-      var(--book-grid-roomy-max-width),
-      calc(var(--coloring-book-modal-max-height) - var(--book-grid-height-reserve))
-    );
   }
 
   .coloring-pages-grid {
@@ -446,16 +449,6 @@
     filter: var(--lineart-filter);
   }
 
-  /* No --lineart-filter here: the modal's icon re-ink already flips this
-     monochrome icon's fill per theme, so only the blend needs to follow. */
-  :global(.coloring-remove-icon) {
-    width: 100%;
-    height: 75%;
-    padding: var(--space-2);
-    pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
-  }
-
   /* The 28px bottom band reserves the overlaid .coloring-book-label's height:
      snapping down risks the caption covering the art, snapping up opens a gap.
      Functional, not scale drift. */
@@ -490,6 +483,16 @@
 
     .coloring-pages-grid.portrait-pages {
       --page-cols: 2;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .coloring-book-header {
+      gap: var(--space-1);
+    }
+
+    .coloring-book-header h2 {
+      font-size: var(--font-size-md);
     }
   }
 

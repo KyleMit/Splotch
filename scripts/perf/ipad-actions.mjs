@@ -953,7 +953,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         sessionId,
         execute,
         label: 'clear coloring page',
-        selector: '#coloring-book-dialog button[aria-label="Clear Page"]',
+        selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
         ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
         activation: 'webdriver',

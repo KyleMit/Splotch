@@ -71,7 +71,6 @@ export interface ResponsiveColoringAsset {
 }
 
 interface ColoringBookGridLayout {
-  hasNineTiles: boolean;
   hasOrphan: boolean;
   imageSizes: string;
 }
@@ -128,16 +127,14 @@ export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COL
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );
 const BOOK_GRID_DEFAULT_COLUMNS = 4;
-const BOOK_GRID_NINE_TILE_COUNT = 9;
 export const COLORING_IMAGE_SIZES = {
   overlay: '100vw',
+  activePageThumbnail: '36px',
   coverThumbnail: {
     standard:
       '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px',
     orphan:
       '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
-    nineTiles:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), 205px',
   },
   pageThumbnail: {
     portrait:
@@ -148,14 +145,11 @@ export const COLORING_IMAGE_SIZES = {
 } as const;
 
 export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGridLayout {
-  const hasNineTiles = visibleTileCount === BOOK_GRID_NINE_TILE_COUNT;
   const hasOrphan = visibleTileCount > 1 && visibleTileCount % BOOK_GRID_DEFAULT_COLUMNS === 1;
-  const imageSizes = hasNineTiles
-    ? COLORING_IMAGE_SIZES.coverThumbnail.nineTiles
-    : hasOrphan
-      ? COLORING_IMAGE_SIZES.coverThumbnail.orphan
-      : COLORING_IMAGE_SIZES.coverThumbnail.standard;
-  return { hasNineTiles, hasOrphan, imageSizes };
+  const imageSizes = hasOrphan
+    ? COLORING_IMAGE_SIZES.coverThumbnail.orphan
+    : COLORING_IMAGE_SIZES.coverThumbnail.standard;
+  return { hasOrphan, imageSizes };
 }
 
 export function coloringOverlayImageSize(paperCssWidth: number): string {

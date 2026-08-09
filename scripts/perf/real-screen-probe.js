@@ -74,7 +74,7 @@
   const PAPER_VIEW_SELECTOR = '.paper-view';
   const HALO_SELECTORS = '.brush-ring, .eraser-bubble';
   const COLORING_BOOK_BUTTON = '#coloringBookButton';
-  const CLEAR_PAGE_BUTTON = '[aria-label="Clear Page"]';
+  const ACTIVE_PAGE_CLEAR_BUTTON = '[aria-label^="Clear active coloring page:"]';
   // The picker shows books first and a book's pages only after one is picked, so
   // loading a page unattended is two taps. Matched on the aria-label suffix the
   // component builds per book/page rather than on a nth-child position.
@@ -509,7 +509,7 @@
       }
       await settle(UI_SETTLE_MS);
       if (need === 'blank') {
-        clickSelector(CLEAR_PAGE_BUTTON);
+        clickSelector(ACTIVE_PAGE_CLEAR_BUTTON);
       } else if (clickSelector(BOOK_TILE)) {
         await settle(UI_SETTLE_MS);
         clickSelector(PAGE_TILE);
@@ -684,7 +684,7 @@
   const paperInstruction = () =>
     phase.paper === 'page'
       ? 'Open the coloring book → tap any page'
-      : 'Open the coloring book → Clear Page';
+      : 'Open the coloring book → clear the active page';
 
   // Carries enough to diagnose a stalled run from the driver's heartbeat alone:
   // the first device run showed "0.0/15s" for four minutes, which could equally

@@ -40,7 +40,6 @@ export type IconName =
   | 'more-horiz'
   | 'parent-center'
   | 'photo-size-select-small'
-  | 'remove-page'
   | 'save-picture'
   | 'settings'
   | 'setup'

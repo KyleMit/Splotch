@@ -946,9 +946,9 @@ describe('probe selectors still match the app', () => {
     ['.eraser-bubble', () => component('PointerHalos.svelte'), 'class="eraser-bubble"'],
     ['#coloringBookButton', () => component('ActionsPanel.svelte'), 'id="coloringBookButton"'],
     [
-      '[aria-label="Clear Page"]',
-      () => component('ColoringBook.svelte'),
-      'aria-label="Clear Page"',
+      '[aria-label^="Clear active coloring page:"]',
+      () => component('ActivePageChip.svelte'),
+      'aria-label="Clear active coloring page:',
     ],
     [
       'button[aria-label$="coloring book"]',
