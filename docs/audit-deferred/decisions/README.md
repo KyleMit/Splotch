@@ -17,10 +17,11 @@
 
 ## Status
 
-| #  | Finding                                                       | Priority | Decision doc                                             | Verdict |
-| -- | ------------------------------------------------------------- | -------- | -------------------------------------------------------- | ------- |
-| 15 | `--experimental-strip-types` flag pair repeated 10× and stale | P2       | [strip-types-flags.md](strip-types-flags.md)             | FIX     |
-| —  | Personal device identifiers hard-coded into committed scripts | P3       | [personal-device-scripts.md](personal-device-scripts.md) | DROP    |
+| #  | Finding                                                                        | Priority | Decision doc                                             | Verdict |
+| -- | ------------------------------------------------------------------------------ | -------- | -------------------------------------------------------- | ------- |
+| 15 | `--experimental-strip-types` flag pair repeated 10× and stale                  | P2       | [strip-types-flags.md](strip-types-flags.md)             | FIX     |
+| —  | Personal device identifiers hard-coded into committed scripts                  | P3       | [personal-device-scripts.md](personal-device-scripts.md) | DROP    |
+| —  | Dev/preview port numbers are magic values scattered across scripts and configs | P3       | [dev-port-magic-values.md](dev-port-magic-values.md)     | DROP    |
 
 Findings 1–14 from this pass are dispatched. Each decision doc was deleted by the commit that
 resolved it, so the doc and its implementation sit in the same changeset — recover any of them with:
