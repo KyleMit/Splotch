@@ -16,6 +16,20 @@ async function triggerAiTimer(page: Page, name: RegExp) {
   }).toPass({ timeout: 10000 });
 }
 
+async function resultBoxes(page: Page) {
+  const [card, content, report] = await Promise.all([
+    page.locator('dialog.ai-result-modal').boundingBox(),
+    page.locator('.ai-result-content').boundingBox(),
+    page.getByRole('button', { name: 'Report this picture' }).boundingBox(),
+  ]);
+  if (!card || !content || !report) throw new Error('AI result geometry was not measurable');
+  return { card, content, report };
+}
+
+function boxesOverlap(a: { x: number; y: number; width: number; height: number }, b: typeof a) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 test.describe('AI render timer', () => {
   test('plays the dial and reveals the result image', async ({ page }) => {
     await page.goto('/dev/ai-timer');
@@ -31,7 +45,12 @@ test.describe('AI render timer', () => {
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /download/i })).toBeVisible();
     await expect(page.getByText('AI-generated picture')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Report this picture' })).toBeVisible();
+    const footer = page.locator('.ai-result-footer');
+    await expect(footer.getByRole('button')).toHaveCount(1);
+    const report = page.getByRole('button', { name: 'Report this picture' });
+    await expect(report).toBeVisible();
+    await expect(report).toContainText('Report');
+    await expect(report.locator('[data-icon="flag"]')).toBeVisible();
 
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
@@ -39,6 +58,8 @@ test.describe('AI render timer', () => {
 
   test('confirms and sends an AI picture report from the result', async ({ page }) => {
     let reportRequests = 0;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.addInitScript(
       (key) => localStorage.setItem(key, 'never'),
       STORAGE_KEYS.parentalGateImageReportMode
@@ -56,7 +77,29 @@ test.describe('AI render timer', () => {
     await triggerAiTimer(page, /fast/i);
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole('button', { name: 'Report this picture' }).click();
+    const report = page.getByRole('button', { name: 'Report this picture' });
+    const { report: reportBox } = await resultBoxes(page);
+    expect(reportBox.width).toBeGreaterThanOrEqual(44);
+    expect(reportBox.height).toBeGreaterThanOrEqual(44);
+    const chrome = await report.evaluate((button) => {
+      const icon = button.querySelector('svg');
+      const dangerProbe = document.createElement('span');
+      dangerProbe.style.backgroundColor = 'var(--danger-text)';
+      button.append(dangerProbe);
+      const dangerFill = getComputedStyle(dangerProbe).backgroundColor;
+      dangerProbe.remove();
+      return {
+        background: getComputedStyle(button).backgroundColor,
+        iconFill: icon ? getComputedStyle(icon).fill : '',
+        dangerFill,
+      };
+    });
+    expect(chrome.background).toBe(chrome.dangerFill);
+    expect(chrome.iconFill).not.toBe('');
+
+    await report.focus();
+    await expect(report).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect(page.locator('.ai-report-confirmation')).toContainText(
       'The report is deleted after 30 days.'
     );
@@ -66,6 +109,33 @@ test.describe('AI render timer', () => {
     await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
     expect(reportRequests).toBe(1);
   });
+
+  test('keeps the report flag clear of the result card on iPad portrait', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto('/dev/ai-timer');
+    await triggerAiTimer(page, /fast/i);
+    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+
+    const { card, report } = await resultBoxes(page);
+    expect(boxesOverlap(card, report)).toBe(false);
+  });
+
+  for (const viewport of [
+    { width: 740, height: 360 },
+    { width: 700, height: 420 },
+  ]) {
+    test(`keeps result content inside the card at ${viewport.width}×${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/dev/ai-timer');
+      await triggerAiTimer(page, /fast/i);
+      await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+
+      const { card, content } = await resultBoxes(page);
+      expect(content.y + content.height).toBeLessThanOrEqual(card.y + card.height + 1);
+    });
+  }
 
   test('shows the error state', async ({ page }) => {
     await page.goto('/dev/ai-timer');

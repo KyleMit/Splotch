@@ -1,5 +1,8 @@
+<script module lang="ts">
+  export type ImageReportStatus = 'idle' | 'confirm' | 'busy' | 'success' | 'error';
+</script>
+
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
@@ -16,21 +19,18 @@
     drawingUrl: string | null;
     outputUrl: string;
     style: StyleName | null;
-    disabled?: boolean;
     expanded?: boolean;
-    primaryAction: Snippet;
+    status?: ImageReportStatus;
   }
 
   let {
     drawingUrl,
     outputUrl,
     style,
-    disabled = false,
     expanded = $bindable(false),
-    primaryAction,
+    status = $bindable('idle'),
   }: Props = $props();
 
-  let status = $state<'idle' | 'confirm' | 'busy' | 'success' | 'error'>('idle');
   let message = $state('');
   let controller: AbortController | null = null;
 
@@ -41,6 +41,7 @@
   $effect(() => {
     return () => {
       controller?.abort();
+      status = 'idle';
       expanded = false;
     };
   });
@@ -97,38 +98,31 @@
   }
 </script>
 
-<div class="ai-image-report">
-  <div class="ai-result-actions">
-    {@render primaryAction()}
-    {#if status === 'idle'}
-      <Button size="sm" onclick={() => (status = 'confirm')} disabled={disabled || !drawingUrl}>
-        Report this picture
-      </Button>
+{#if status !== 'idle'}
+  <div class="ai-image-report">
+    {#if status === 'confirm' || status === 'busy'}
+      <div class="ai-report-confirmation">
+        <p>
+          Send this picture and the drawing behind it for review? The report is deleted after
+          {IMAGE_REPORT_RETENTION_DAYS} days.
+        </p>
+        <div class="ai-report-confirm-actions">
+          <Button size="sm" onclick={() => (status = 'idle')} disabled={status === 'busy'}>
+            Cancel
+          </Button>
+          <Button variant="brand" size="sm" onclick={confirm} disabled={status === 'busy'}>
+            {status === 'busy' ? 'Sending…' : 'Send report'}
+          </Button>
+        </div>
+      </div>
+    {:else if status === 'success' || status === 'error'}
+      <StatusMessage {status}>{message}</StatusMessage>
+      {#if status === 'error'}
+        <Button size="sm" onclick={() => (status = 'confirm')}>Try again</Button>
+      {/if}
     {/if}
   </div>
-
-  {#if status === 'confirm' || status === 'busy'}
-    <div class="ai-report-confirmation">
-      <p>
-        Send this picture and the drawing behind it for review? The report is deleted after
-        {IMAGE_REPORT_RETENTION_DAYS} days.
-      </p>
-      <div class="ai-report-confirm-actions">
-        <Button size="sm" onclick={() => (status = 'idle')} disabled={status === 'busy'}>
-          Cancel
-        </Button>
-        <Button variant="brand" size="sm" onclick={confirm} disabled={status === 'busy'}>
-          {status === 'busy' ? 'Sending…' : 'Send report'}
-        </Button>
-      </div>
-    </div>
-  {:else if status === 'success' || status === 'error'}
-    <StatusMessage {status}>{message}</StatusMessage>
-    {#if status === 'error'}
-      <Button size="sm" onclick={() => (status = 'confirm')}>Try again</Button>
-    {/if}
-  {/if}
-</div>
+{/if}
 
 <style>
   .ai-image-report {
@@ -139,7 +133,6 @@
     gap: var(--space-2);
   }
 
-  .ai-result-actions,
   .ai-report-confirm-actions {
     display: flex;
     flex-wrap: wrap;

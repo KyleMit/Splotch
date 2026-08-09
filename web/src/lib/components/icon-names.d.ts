@@ -21,6 +21,7 @@ export type IconName =
   | 'dashboard-customize'
   | 'download'
   | 'feedback'
+  | 'flag'
   | 'folder'
   | 'fullscreen'
   | 'fullscreen-exit'

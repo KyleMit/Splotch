@@ -177,6 +177,17 @@ body {
   --modal-close-clearance-y: calc(var(--modal-close-inset) + var(--modal-close-size) + 6px);
 }
 
+/* The report flag owns its target size and viewport inset; the AI result card
+   consumes the clearance so its responsive height budget follows that geometry. */
+:root {
+  --report-flag-size: 44px;
+  --report-flag-inset: var(--space-3);
+  --report-flag-gap: var(--space-3);
+  --report-flag-clearance: calc(
+    var(--report-flag-size) + var(--report-flag-inset) + var(--report-flag-gap)
+  );
+}
+
 /* Absolute-positioned close button (top-right corner) and its icon, shared
    across all icon-style modal close buttons. An outlined white disc sized to
    --modal-close-size, deliberately chunky so small fingers can spot and hit it;
