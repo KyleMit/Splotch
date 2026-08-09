@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+
+import { expect, test, type Download, type Page } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import {
@@ -15,6 +17,12 @@ import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 // window the button applies to a rapid tap burst, so it is an idle-past — the
 // one job a fixed sleep is right for.
 const SECOND_SAVE_WINDOW_MS = 500;
+
+async function downloadedPngWidth(download: Download) {
+  const path = await download.path();
+  if (!path) throw new Error('Downloaded screenshot has no local path');
+  return (await readFile(path)).readUInt32BE(16);
+}
 
 // Open the stroke-width flyout robustly. Its sentinel is present whenever the
 // menu is open — the label is tool-aware (issue #286).
@@ -305,10 +313,18 @@ test.describe('compatibility screenshot export', () => {
     ]);
 
     expect(await page.evaluate(() => window.devicePixelRatio)).toBe(1);
+    const canvasBox = await page.locator('#drawingCanvas').boundingBox();
+    expect(canvasBox).not.toBeNull();
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#screenshotButton').click();
-    await expect(page.locator('.polaroid-frame')).toBeVisible();
-    await downloadPromise;
+    const polaroid = page.locator('.polaroid-frame');
+    await expect(polaroid).toBeVisible();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/^splotch-.+\.png$/);
+    expect(await download.failure()).toBeNull();
+    expect(await downloadedPngWidth(download)).toBe(Math.round(canvasBox!.width * 2));
+    await expect(polaroid).toHaveCount(0, { timeout: POLAROID_OBSERVATION_MS });
   });
 });
 
