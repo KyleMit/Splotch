@@ -13,6 +13,7 @@ const COLOR_SWATCH_SELECTOR = (color) => `.color-swatch[data-color="${color}"]`;
 const STROKE_WIDTH_BUTTON_SELECTOR = '#strokeWidthButton';
 const STROKE_SIZE_BUTTON_SELECTOR = (size) => `button[aria-label="Size ${size}"]`;
 const COLORING_BOOK_SELECTOR = (name) => `button[aria-label="${name} coloring book"]`;
+const COLORING_BOOK_HEADING_SELECTOR = '#coloring-book-dialog h2';
 const COLORING_PAGE_SELECTOR = (name) => `button[aria-label="${name} coloring page"]`;
 const COLORING_OVERLAY_READY_SELECTOR = '#coloringOverlay.overlay-ready';
 const SETTINGS_BUTTON_SELECTOR = '#settingsButton';
@@ -207,7 +208,15 @@ export async function openColoringBook(page) {
 }
 
 export async function pickBook(page, name) {
-  await page.locator(COLORING_BOOK_SELECTOR(name)).click();
+  const book = page.locator(COLORING_BOOK_SELECTOR(name));
+  await page.locator(COLORING_BOOK_HEADING_SELECTOR).waitFor();
+  if (await book.isVisible()) {
+    await book.click();
+    return;
+  }
+
+  const activeBookName = (await page.locator(COLORING_BOOK_HEADING_SELECTOR).textContent())?.trim();
+  if (activeBookName !== name) throw new Error(`Coloring book ${name} is not available`);
 }
 
 export async function pickPage(page, pageName) {

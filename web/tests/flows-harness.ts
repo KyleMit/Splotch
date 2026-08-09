@@ -1,7 +1,9 @@
 import { expect, type Page } from '@playwright/test';
 
-import { retryOpen, settleFlyIn } from './helpers';
+import { gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
+import { coloringPackCacheName, coloringPackMarkerPath } from '../src/lib/coloringPacks/cacheKeys';
+import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -19,6 +21,55 @@ export async function openDrawer(page: Page) {
     () => page.locator('button[aria-label="Expand controls"]').click({ timeout: 3000 }),
     { timeout: 20_000 }
   );
+}
+
+async function gotoAppWithInstalledColoringBooks(
+  page: Page,
+  installedBookIds: (manifest: ColoringPackManifest) => string[]
+) {
+  const manifestResponse = page.waitForResponse(/\/coloring\/manifest-.+\.json$/);
+  await gotoApp(page);
+  const manifest = (await (await manifestResponse).json()) as ColoringPackManifest;
+  const markers = installedBookIds(manifest).map((id) => ({
+    id,
+    path: coloringPackMarkerPath(manifest, id),
+  }));
+  await page.evaluate(
+    async ({ cacheName, markers }) => {
+      const cache = await caches.open(cacheName);
+      await Promise.all(markers.map(({ id, path }) => cache.put(path, new Response(id))));
+    },
+    { cacheName: coloringPackCacheName(manifest), markers }
+  );
+  await gotoApp(page);
+}
+
+export async function gotoAppWithInstalledColoringBook(page: Page, bookId: string) {
+  await gotoAppWithInstalledColoringBooks(page, () => [bookId]);
+}
+
+export async function gotoAppWithAllColoringBooksInstalled(page: Page) {
+  await gotoAppWithInstalledColoringBooks(page, (manifest) =>
+    manifest.books.filter((book) => book.id !== manifest.starterBookId).map((book) => book.id)
+  );
+}
+
+export async function opaqueCanvasPixelCount(page: Page) {
+  const canvas = await renderedCanvasHandle(page);
+  try {
+    return canvas.evaluate((element) => {
+      const pixels = element
+        .getContext('2d')!
+        .getImageData(0, 0, element.width, element.height).data;
+      let opaque = 0;
+      for (let index = 3; index < pixels.length; index += 4) {
+        if (pixels[index] > 0) opaque++;
+      }
+      return opaque;
+    });
+  } finally {
+    await canvas.dispose();
+  }
 }
 
 // Open the Grown-Ups Only gate from the AI button — its Parent Center-managed

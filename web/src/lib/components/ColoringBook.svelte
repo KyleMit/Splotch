@@ -35,8 +35,11 @@
 
   const platform = isNative() ? 'mobile' : 'web';
   const books = $derived(availableColoringBooks(platform));
+  const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
+  let clearPageInPagesGrid = $state(false);
+  let pagesGridToken = $state(0);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -63,13 +66,14 @@
     return coloringOverlayImageSize(canvasState.paperCssWidth);
   }
 
-  $effect(() =>
-    scheduleIdle(() =>
+  $effect(() => {
+    if (!hasBookPicker) return;
+    return scheduleIdle(() =>
       prefetchImages(
         books.map((book) => imageRequest(coverThumbImageSource(book), coverThumbnailSizes))
       )
-    )
-  );
+    );
+  });
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
   // sub-grid renders; hovering a page tile warms its selected overlay candidate
@@ -101,6 +105,8 @@
   function pickPage(page: ColoringPage) {
     const selectedOverlayUrl = pageOverlayImageSource(page, orientation, resolvedTheme()).src;
     cancelImagePrefetchesExcept(selectedOverlayUrl);
+    // Cancelling live thumbnail requests removes their source attributes, so the keyed page grid
+    // remounts them on every dialog open instead of relying on a book-picker branch transition.
     for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
     setOverlayPage(page, orientation);
     coloringBookModal.hide();
@@ -130,6 +136,23 @@
     hoverArmed = false;
   }
 
+  function initialView(): Book | null {
+    return hasBookPicker ? null : (books.at(0) ?? null);
+  }
+
+  function showInitialView() {
+    clearPageInPagesGrid = !hasBookPicker;
+    pagesGridToken += 1;
+    showView(initialView());
+  }
+
+  $effect(() => {
+    const activeBookStillAvailable = books.some((book) => book.id === activeBook?.id);
+    if ((!activeBook && !hasBookPicker) || (activeBook && !activeBookStillAvailable)) {
+      showView(initialView());
+    }
+  });
+
   // The tap-burst hazard modalDialog guards at launch (launchGuard), one level
   // in. A toddler mashes a cover tile several times before registering that
   // anything happened; the first tap swaps the grid, so the follow-ups land on
@@ -145,6 +168,18 @@
   }
 </script>
 
+{#snippet clearPageTile()}
+  <button
+    class="coloring-tile coloring-book-tile"
+    type="button"
+    aria-label="Clear Page"
+    onclick={clearAndClose}
+  >
+    <Icon name="remove-page" class="coloring-remove-icon" />
+    <span class="coloring-book-label">Clear Page</span>
+  </button>
+{/snippet}
+
 <dialog
   bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
@@ -153,7 +188,7 @@
     open: coloringBookModal.open,
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
-    onOpen: () => showView(null),
+    onOpen: showInitialView,
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
@@ -174,15 +209,7 @@
           class:book-grid-has-nine-tiles={bookGridLayout.hasNineTiles}
         >
           {#if overlayActive}
-            <button
-              class="coloring-tile coloring-book-tile"
-              type="button"
-              aria-label="Clear Page"
-              onclick={clearAndClose}
-            >
-              <Icon name="remove-page" class="coloring-remove-icon" />
-              <span class="coloring-book-label">Clear Page</span>
-            </button>
+            {@render clearPageTile()}
           {/if}
           {#each books as book (book.id)}
             {@const coverImage = coverThumbImageSource(book)}
@@ -209,35 +236,46 @@
     {:else}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
-          <button class="coloring-back-button" aria-label="Back" onclick={(e) => swapView(null, e)}>
-            <Icon name="chevron-left" class="coloring-back-icon" />
-          </button>
+          {#if hasBookPicker}
+            <button
+              class="coloring-back-button"
+              aria-label="Back"
+              onclick={(e) => swapView(null, e)}
+            >
+              <Icon name="chevron-left" class="coloring-back-icon" />
+            </button>
+          {/if}
           <h2>{activeBook.name}</h2>
         </div>
-        <div
-          class="coloring-grid coloring-pages-grid"
-          class:portrait-pages={orientation === 'portrait'}
-        >
-          {#each activeBook.pages as page (page.id)}
-            {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
-            <button
-              class="coloring-tile"
-              type="button"
-              aria-label="{page.name} coloring page"
-              onclick={() => pickPage(page)}
-              onpointerenter={() => prefetchPageOverlay(page)}
-              onpointerdown={() => prefetchPageOverlay(page)}
-            >
-              <img
-                src={pageImage.src}
-                srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
-                sizes={__IS_CAPACITOR__ ? undefined : pageThumbnailSizes}
-                alt=""
-                loading="lazy"
-              />
-            </button>
-          {/each}
-        </div>
+        {#key pagesGridToken}
+          <div
+            class="coloring-grid coloring-pages-grid"
+            class:portrait-pages={orientation === 'portrait'}
+          >
+            {#each activeBook.pages as page (page.id)}
+              {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
+              <button
+                class="coloring-tile"
+                type="button"
+                aria-label="{page.name} coloring page"
+                onclick={() => pickPage(page)}
+                onpointerenter={() => prefetchPageOverlay(page)}
+                onpointerdown={() => prefetchPageOverlay(page)}
+              >
+                <img
+                  src={pageImage.src}
+                  srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
+                  sizes={__IS_CAPACITOR__ ? undefined : pageThumbnailSizes}
+                  alt=""
+                  loading="lazy"
+                />
+              </button>
+            {/each}
+            {#if clearPageInPagesGrid && overlayActive}
+              {@render clearPageTile()}
+            {/if}
+          </div>
+        {/key}
       </div>
     {/if}
   </div>
