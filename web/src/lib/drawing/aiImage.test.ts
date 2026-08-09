@@ -32,6 +32,8 @@ beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   mocks.settings.autoSaveAiEnabled = false;
+  mocks.settings.aiUserApiKey = '';
+  mocks.settings.aiAccessToken = 'test-token';
 
   let objectUrlId = 0;
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:test-${++objectUrlId}`);
@@ -251,6 +253,34 @@ describe('generateAiImage response handling', () => {
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
+  it('routes an exhausted daily free limit to BYOK setup without marking the grant spent', async () => {
+    mocks.settings.aiAccessToken = '';
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json(
+          {
+            ok: false,
+            code: 'FREE_DAILY_LIMIT_EXHAUSTED',
+            error: 'Free creations are unavailable today.',
+          },
+          { status: 503 }
+        )
+      )
+    );
+
+    const { generateAiImage } = await import('./aiImage');
+    const { freeGenerations } = await import('$lib/state/freeGenerations.svelte');
+    const { settingsModal, ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(freeGenerations).toMatchObject({ available: false, remaining: 10 });
+    expect(ui.requestedSettingsSection).toBe('ai');
+    expect(settingsModal.open).toBe(true);
+  });
+
   it('saves the child drawing once across re-rolls of the same unchanged drawing', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     // Same drawing bytes on every roll → the signature matches, so the drawing
@@ -377,6 +407,43 @@ describe('generateAiImage upload format', () => {
 
     expect(uploadedImage().type).toBe('image/webp');
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the installation pseudonym instead of a credential for a free generation', async () => {
+    mocks.settings.aiAccessToken = '';
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(new Blob(['result']), {
+          status: 200,
+          headers: { 'X-Free-Generations-Remaining': '9' },
+        })
+      )
+    );
+
+    const { generateAiImage } = await import('./aiImage');
+    const { freeGenerations } = await import('$lib/state/freeGenerations.svelte');
+    await generateAiImage();
+
+    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers['X-Installation-Id']).toMatch(/^[a-f0-9]{64}$/);
+    expect(headers['X-Access-Token']).toBeUndefined();
+    expect(freeGenerations.remaining).toBe(9);
+  });
+
+  it('does not interpret an absent free-balance response header as zero', async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { freeGenerations } = await import('$lib/state/freeGenerations.svelte');
+    await generateAiImage();
+
+    expect(freeGenerations.remaining).toBe(10);
+    expect(freeGenerations.available).toBe(false);
   });
 });
 

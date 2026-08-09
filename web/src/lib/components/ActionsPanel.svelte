@@ -10,9 +10,20 @@
   import { settings, setDrawerOpen } from '$lib/state/settings.svelte';
   import { setStrokeSize, activeStrokeSize, type StrokeSize } from '$lib/state/strokeWidth.svelte';
   import { toolState, selectBrush, type BrushType } from '$lib/state/tool.svelte';
-  import { ui, coloringBookModal, aiPromptModal, SCREENSHOT_BUTTON_ID } from '$lib/state/ui.svelte';
+  import {
+    ui,
+    coloringBookModal,
+    aiPromptModal,
+    openAiSettings,
+    SCREENSHOT_BUTTON_ID,
+  } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import {
+    freeGenerations,
+    createFreeGenerationGrantRefreshGate,
+    refreshFreeGenerationGrant,
+  } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
@@ -41,6 +52,7 @@
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
+  const shouldRefreshFreeGenerationGrant = createFreeGenerationGrantRefreshGate();
 
   // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
   // opening one closes the other and the outside-click handler below only ever
@@ -144,6 +156,10 @@
   $effect(() => {
     if (!panelEl) return;
     publishActionPanelState(panelEl, drawerExpanded, buttonScale);
+  });
+
+  $effect(() => {
+    if (shouldRefreshFreeGenerationGrant()) void refreshFreeGenerationGrant();
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
@@ -257,6 +273,14 @@
     requireParentalGate(
       'aiImage',
       () => {
+        if (
+          !settings.aiUserApiKey &&
+          !settings.aiAccessToken &&
+          (!freeGenerations.available || freeGenerations.remaining === 0)
+        ) {
+          openAiSettings(origin);
+          return;
+        }
         if (settings.aiCustomizationEnabled) {
           aiPromptModal.show(origin);
           return;
@@ -366,16 +390,21 @@
         <Icon name="camera" class="action-icon" />
       </button>
 
-      <!-- AI button keeps its reactive `hidden`: its visibility also depends on a
-           runtime, non-persisted signal (network.online) the head script can't
-           know pre-paint, and it defaults hidden (no credential) so there's no
-           first-paint flash to seed away. -->
+      <!-- AI button keeps its reactive `hidden`: its visibility also depends on
+           runtime credential, grant-availability, and network signals the head
+           script can't know pre-paint, so there's no first-paint value to seed. -->
       <button
         class="action-button"
         class:disabled={canvasState.canvasEmpty || aiResult.generating}
         class:loading={aiResult.generating}
         id="aiImageButton"
-        aria-label="Create AI image"
+        aria-label={settings.aiUserApiKey || settings.aiAccessToken
+          ? 'Create AI image'
+          : freeGenerations.available && freeGenerations.remaining > 0
+            ? `Create AI image, ${freeGenerations.remaining} free left`
+            : freeGenerations.available
+              ? 'Set up AI image'
+              : 'Create AI image'}
         aria-busy={aiResult.generating}
         disabled={canvasState.canvasEmpty || aiResult.generating}
         hidden={!aiImageButtonVisible}
@@ -383,6 +412,9 @@
         bind:this={aiBtnEl}
       >
         <Icon name={aiResult.generating ? 'loading' : 'wand-stars'} class="action-icon" />
+        {#if !settings.aiUserApiKey && !settings.aiAccessToken && freeGenerations.available}
+          <span class="free-count" aria-hidden="true">{freeGenerations.remaining}</span>
+        {/if}
       </button>
 
       <!-- aria-disabled (not the disabled attribute) so the button still
@@ -421,6 +453,24 @@
     flex-direction: row;
     align-items: center;
     z-index: var(--z-panel);
+  }
+
+  .free-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-pill);
+    background: var(--brand-solid);
+    color: var(--on-brand);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+    box-shadow: var(--shadow-control);
   }
 
   @media (orientation: portrait) {
@@ -601,6 +651,7 @@
      for small hands. The parent can rescale them in Settings with
      --action-btn-scale (defaults to 1 when unset). */
   .action-button {
+    position: relative;
     /* --action-btn-size (inline) is the precise measured cap ActionsPanel sets
        once hydrated, so the row clears the Settings Button (landscape) / the
        palette bar (portrait). Until then it's unset and --action-btn-fallback

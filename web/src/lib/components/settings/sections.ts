@@ -2,6 +2,7 @@ import type { IconName } from '../icon-names';
 import { APP_VERSION } from '$lib/appVersion';
 import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 import { coloringPackState } from '$lib/state/coloringPacks.svelte';
+import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 
 // Settings is one flat list of sections (ADR-0061). Both shells — the
 // phone hub with full-page drill-in and the tablet sidebar + content pane —
@@ -67,7 +68,11 @@ export function sectionSubtitle(id: SectionId): string {
       return settings.advancedControlsEnabled ? 'Advanced controls on' : 'Standard controls';
     case 'ai': {
       const kind = aiCredentialKind();
-      if (kind === 'none') return 'Not set up';
+      if (kind === 'none') {
+        return freeGenerations.available
+          ? `${freeGenerations.remaining} free ${freeGenerations.remaining === 1 ? 'creation' : 'creations'} left`
+          : 'Free allowance unavailable';
+      }
       if (!settings.aiImageEnabled) return 'Turned off';
       return kind === 'apiKey' ? 'Your Gemini key' : 'Access code';
     }

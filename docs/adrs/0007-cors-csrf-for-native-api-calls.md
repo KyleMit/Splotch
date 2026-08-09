@@ -1,6 +1,7 @@
 # ADR-0007: CORS and CSRF Strategy for Native-to-Web API Calls
 
-**Status:** Active (amended by [ADR-0064](0064-generate-image-raw-body-header-credentials.md))\
+**Status:** Active (amended by [ADR-0064](0064-generate-image-raw-body-header-credentials.md) and
+[ADR-0105](0105-server-authoritative-free-ai-grants.md))\
 **Date:** 2026-06-01 (committed in 4370205)
 
 > **Amendment (ADR-0064):** the current `/api/generate-image` contract posts a raw `image/*` body
@@ -38,7 +39,9 @@ csrf: {
 
 This is safe because:
 
-* The AI endpoint is **token-gated** (no ambient auth that CSRF could abuse).
+* Credentialed AI requests are explicitly authenticated. The unauthenticated free path carries no
+  ambient authority and is bounded by ADR-0105's durable global daily provider-start ceiling plus a
+  per-IP request limit.
 * The `/admin` route uses a cookie, but it is `SameSite=Strict` and therefore not sent on the
   cross-site requests these origins make.
 * The `/api/admin/*` endpoints (ADR-0016) use JSON bodies, which SvelteKit's CSRF guard doesn't
@@ -46,8 +49,9 @@ This is safe because:
 
 **CORS:** `hooks.server.ts` adds `Access-Control-Allow-Origin: *` and handles `OPTIONS` preflights
 for all `/api/*` routes, allowing `GET, POST, DELETE` plus the `Content-Type` and `Authorization`
-headers (the bearer session for `/api/admin/*`). Wildcard is safe because every endpoint carries its
-own credential gate and none relies on cookies — a wildcard origin can't be combined with
+headers (the bearer session for `/api/admin/*`). Wildcard is safe because credentialed endpoints
+authenticate explicitly, unauthenticated writes and provider-funded calls have their own durable or
+rate-limited abuse boundaries, and none relies on cookies — a wildcard origin can't be combined with
 credentialed (cookie) requests in any case.
 
 ## Consequences

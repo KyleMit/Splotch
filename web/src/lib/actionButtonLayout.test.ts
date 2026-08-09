@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
+import { freeGenerations } from './state/freeGenerations.svelte';
 import {
   settings,
   setAdvancedControls,
@@ -63,6 +64,7 @@ function resetState() {
   setAiAccessToken('');
   settings.aiUserApiKey = '';
   network.online = true;
+  freeGenerations.available = true;
 
   layout.orientation = 'landscape';
   layout.viewportWidth = 1280;
@@ -83,18 +85,18 @@ afterAll(() => {
 
 describe('visibleActionButtonCount', () => {
   it.each([
-    { credentialState: 'neither credential', apiKey: '', accessCode: '', visible: false },
-    { credentialState: 'a BYO key only', apiKey: 'key', accessCode: '', visible: true },
-    { credentialState: 'an access code only', apiKey: '', accessCode: 'code', visible: true },
-    { credentialState: 'both credentials', apiKey: 'key', accessCode: 'code', visible: true },
+    { credentialState: 'neither credential', apiKey: '', accessCode: '' },
+    { credentialState: 'a BYO key only', apiKey: 'key', accessCode: '' },
+    { credentialState: 'an access code only', apiKey: '', accessCode: 'code' },
+    { credentialState: 'both credentials', apiKey: 'key', accessCode: 'code' },
   ])(
     'keeps layout counting in sync with visibility for $credentialState',
-    ({ apiKey, accessCode, visible }) => {
+    ({ apiKey, accessCode }) => {
       settings.aiUserApiKey = apiKey;
       setAiAccessToken(accessCode);
 
-      expect(isAiImageButtonVisible()).toBe(visible);
-      expect(visibleActionButtonCount()).toBe(visible ? 6 : 5);
+      expect(isAiImageButtonVisible()).toBe(true);
+      expect(visibleActionButtonCount()).toBe(6);
     }
   );
 
@@ -112,15 +114,25 @@ describe('visibleActionButtonCount', () => {
     expect(visibleActionButtonCount()).toBe(5);
   });
 
+  it('requires a usable free-generation path when no credential is saved', () => {
+    freeGenerations.available = false;
+    expect(isAiImageButtonVisible()).toBe(false);
+    expect(visibleActionButtonCount()).toBe(5);
+
+    setAiAccessToken('code');
+    expect(isAiImageButtonVisible()).toBe(true);
+    expect(visibleActionButtonCount()).toBe(6);
+  });
+
   it('drops buttons the parent switched off', () => {
     setStrokeWidthControl(false);
     setUndoButton(false);
-    expect(visibleActionButtonCount()).toBe(3);
+    expect(visibleActionButtonCount()).toBe(4);
   });
 
   it('the eraser toggle hides a Brush Menu entry, not a button', () => {
     setEraser(false);
-    expect(visibleActionButtonCount()).toBe(5);
+    expect(visibleActionButtonCount()).toBe(6);
   });
 
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
@@ -179,8 +191,8 @@ describe('maxActionButtonScale', () => {
   it('caps below 100% on a small landscape phone', () => {
     layout.viewportWidth = 600;
     layout.viewportHeight = 375;
-    // (600 − 156 − 64 − 112) / 5 = 53.6px per button → 89% of the 60px base.
-    expect(maxActionButtonScale()).toBe(89);
+    // (600 − 156 − 64 − 124) / 6 = 42.67px per button → 71% of the 60px base.
+    expect(maxActionButtonScale()).toBe(71);
   });
 
   it('never drops below the slider minimum', () => {
@@ -194,8 +206,8 @@ describe('maxActionButtonScale', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 360;
     layout.viewportHeight = 440;
-    // (440 − 76 − 8 − 112) / 5 = 48.8px per button → 88% of the 55px base.
-    expect(maxActionButtonScale()).toBe(88);
+    // (440 − 76 − 8 − 124) / 6 = 38.67px per button → below the slider minimum.
+    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 
   it('portrait tall screens clear the static max', () => {
@@ -225,14 +237,13 @@ describe('maxActionButtonScale', () => {
     layout.viewportHeight = 375;
     setScreenshot(false);
     setUndoButton(false);
-    // n=3: (600 − 156 − 64 − 88) / 3 = 97.33px per button → over the max.
-    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MAX);
+    // n=4: (600 − 156 − 64 − 100) / 4 = 70px per button → 116%.
+    expect(maxActionButtonScale()).toBe(116);
   });
 
-  it('loses headroom when the AI button joins the row', () => {
+  it('budgets for the free AI button without a credential', () => {
     layout.viewportWidth = 680;
     layout.viewportHeight = 360;
-    setAiAccessToken('tok');
     // n=6: (680 − 156 − 64 − 124) / 6 = 56px per button → 93%.
     expect(maxActionButtonScale()).toBe(93);
   });
@@ -241,8 +252,8 @@ describe('maxActionButtonScale', () => {
     layout.viewportWidth = 667;
     layout.viewportHeight = 375;
     Object.assign(layout.safeArea, { left: 30, right: 30 });
-    // 60px of insets off the 335px budget: 275 / 5 = 55px → 91%.
-    expect(maxActionButtonScale()).toBe(91);
+    // 60px of insets off the 323px budget: 263 / 6 = 43.83px → 73%.
+    expect(maxActionButtonScale()).toBe(73);
   });
 });
 

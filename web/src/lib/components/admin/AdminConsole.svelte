@@ -36,6 +36,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
   import RuleLabel from '../page/RuleLabel.svelte';
   import InviteLedger from './InviteLedger.svelte';
@@ -45,6 +46,7 @@
     authed,
     invites,
     persistent,
+    freeGrantStats = null,
     flash = null,
     loginError = null,
     onlogin,
@@ -57,6 +59,7 @@
     // `false` = Netlify Blobs is unavailable, so this list is the per-instance
     // in-memory copy seeded from env vars and edits won't survive a restart.
     persistent: boolean;
+    freeGrantStats?: FreeGenerationGrantAdminStats | null;
     flash?: Flash | null;
     loginError?: string | null;
     onlogin: (key: string) => Promise<boolean>;
@@ -229,6 +232,75 @@
       onremove={(token) => run(() => onremove(token))}
       onmore={openMenu}
     />
+
+    {#if freeGrantStats}
+      <RuleLabel>Free generation grants · sample {freeGrantStats.sampledGrantCount}</RuleLabel>
+      {#if !freeGrantStats.persistent}
+        <div class="flash flash-warning" role="alert">
+          Free grant monitoring is using local memory and will reset with this server instance.
+        </div>
+      {/if}
+      {#if freeGrantStats.grantSamplePartial}
+        <div class="flash flash-warning" role="status">
+          Grant metrics and activity are sampled from the first {freeGrantStats.grantSampleLimit}
+          records. Today's provider-start count is complete.
+        </div>
+      {/if}
+      <dl class="grant-metrics">
+        <div>
+          <dt>Provider starts today</dt>
+          <dd>{freeGrantStats.dailyProviderStarts}/{freeGrantStats.dailyProviderStartLimit}</dd>
+        </div>
+        <div>
+          <dt>Sampled successes</dt>
+          <dd>{freeGrantStats.sampledSuccessful}</dd>
+        </div>
+        <div>
+          <dt>Sampled attempts</dt>
+          <dd>{freeGrantStats.sampledAttempts}</dd>
+        </div>
+        <div>
+          <dt>Sampled failures</dt>
+          <dd>{freeGrantStats.sampledFailures}</dd>
+        </div>
+        <div>
+          <dt>Sampled active</dt>
+          <dd>{freeGrantStats.sampledActiveGrants}</dd>
+        </div>
+        <div>
+          <dt>Sampled exhausted</dt>
+          <dd>{freeGrantStats.sampledExhaustedGrants}</dd>
+        </div>
+        <div>
+          <dt>Sampled in flight</dt>
+          <dd>{freeGrantStats.sampledActiveReservations}</dd>
+        </div>
+      </dl>
+      {#if freeGrantStats.recent.length > 0}
+        <div class="grant-table-wrap">
+          <table class="grant-table">
+            <thead>
+              <tr>
+                <th>Installation</th><th>Used</th><th>Attempts</th><th>Failures</th><th
+                  >Last failure</th
+                >
+              </tr>
+            </thead>
+            <tbody>
+              {#each freeGrantStats.recent as grant (grant.installation)}
+                <tr>
+                  <td><code>{grant.installation}…</code></td>
+                  <td>{grant.successful}/{FREE_GENERATION_LIMIT}</td>
+                  <td>{grant.attempts}</td>
+                  <td>{grant.failures}</td>
+                  <td>{grant.lastFailureKind ?? '—'}</td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {/if}
+    {/if}
   {/if}
 </PageShell>
 
@@ -242,6 +314,62 @@
 />
 
 <style>
+  .grant-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-3);
+    margin: 0 0 var(--space-5);
+  }
+
+  .grant-metrics div {
+    padding: var(--space-3);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+
+  .grant-metrics dt {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .grant-metrics dd {
+    margin: var(--space-1) 0 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+  }
+
+  .grant-table-wrap {
+    overflow-x: auto;
+    margin-bottom: var(--space-6);
+  }
+
+  .grant-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+  }
+
+  .grant-table th,
+  .grant-table td {
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--border-width) solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .grant-table th {
+    color: var(--text-soft);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .grant-table code {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+  }
+
   /* Flash messages */
   .flash {
     padding: var(--space-3) var(--space-4);

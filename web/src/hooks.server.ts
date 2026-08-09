@@ -1,24 +1,30 @@
 import { building } from '$app/environment';
 import type { Handle, HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
-import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import {
+  ACCESS_TOKEN_HEADER,
+  API_KEY_HEADER,
+  FREE_GENERATIONS_REMAINING_HEADER,
+  INSTALLATION_ID_HEADER,
+} from '$lib/apiHeaders';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { securityHeadersFor } from '$lib/server/securityHeaders';
 
 // The native apps load from a WebView origin (https://localhost on Android,
 // capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
-// cross-origin requests, so the endpoints need permissive CORS. Every route is
-// already gated server-side (access token for generate-image, bearer session
-// for /api/admin/*), so allowing any origin here is safe — nothing under /api
-// can be abused without a valid credential, and none of it relies on cookies
-// (the wildcard origin is incompatible with credentialed requests anyway).
+// cross-origin requests, so the endpoints need permissive CORS. Credentialed
+// routes authenticate each request; the unauthenticated free-generation path
+// is bounded by its durable daily provider-start ceiling and per-IP rate limit.
+// None of the APIs relies on cookies (the wildcard origin is incompatible with
+// credentialed requests anyway).
 // Only /api/* is opened up; the rest of the site stays same-origin.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
   // generate-image credentials (secrets kept out of the query string).
-  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}`,
+  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${INSTALLATION_ID_HEADER}`,
+  'Access-Control-Expose-Headers': FREE_GENERATIONS_REMAINING_HEADER,
   // Let native clients cache the preflight for a day instead of paying an
   // extra OPTIONS round trip on every cross-origin JSON request.
   'Access-Control-Max-Age': '86400',

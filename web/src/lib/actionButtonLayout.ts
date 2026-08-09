@@ -4,12 +4,12 @@
 // the screen (portrait), and the Button Size slider in Settings caps its
 // range so a parent can't even pick a size the current screen can't fit.
 import {
-  aiCredentialKind,
   settings,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
+import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 import { layout, type Orientation } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
@@ -41,9 +41,10 @@ export const PALETTE_CLEARANCE = 8;
 // book, screenshot, AI image, undo.
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
-// The AI button is always hidden in the prerendered HTML because its visibility
-// depends on client-only credential and network state. app.html corrects this
-// default count before first paint when persisted settings hide other buttons.
+// The AI button is hidden in the prerendered HTML because its visibility depends
+// on client-only credential, grant-availability, and network state. app.html
+// corrects this default count before first paint when persisted settings hide
+// other buttons.
 export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
 export const FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT =
   (FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT - 1) * ACTION_BUTTON_GAP;
@@ -64,7 +65,8 @@ export const WORST_CASE_CHROME =
 export const PALETTE_BAR_RESERVE = 76;
 
 export function isAiImageButtonVisible(): boolean {
-  return aiCredentialKind() !== 'none' && settings.aiImageEnabled && network.online;
+  const hasCredential = Boolean(settings.aiUserApiKey || settings.aiAccessToken);
+  return settings.aiImageEnabled && network.online && (hasCredential || freeGenerations.available);
 }
 
 export function visibleActionButtonCount(): number {

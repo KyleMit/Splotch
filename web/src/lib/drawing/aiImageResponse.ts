@@ -1,36 +1,43 @@
+import { FREE_DAILY_LIMIT_EXHAUSTED_CODE, FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
+
 export type AiImageResponse =
   | { kind: 'image'; blob: Blob }
   | { kind: 'safety' }
   | { kind: 'throttled'; retryAfter: string | null; detail: string }
+  | { kind: 'free-exhausted' }
+  | { kind: 'free-unavailable' }
   | { kind: 'error'; status: number; detail: string };
 
 const SAFETY_REFUSAL_STATUS = 422;
 const THROTTLED_STATUS = 429;
 
-async function readErrorDetail(response: Response): Promise<string> {
+async function readError(response: Response): Promise<{ detail: string; code: string | null }> {
   let text: string;
   try {
     text = await response.text();
   } catch {
-    return '';
+    return { detail: '', code: null };
   }
 
   try {
     const body: unknown = JSON.parse(text);
     if (typeof body === 'object' && body !== null && !Array.isArray(body) && 'error' in body) {
       const error = body.error;
-      if (typeof error === 'string') return error;
+      const code = 'code' in body && typeof body.code === 'string' ? body.code : null;
+      if (typeof error === 'string') return { detail: error, code };
     }
   } catch {
     // The raw body below is the fallback for non-JSON error responses.
   }
-  return text;
+  return { detail: text, code: null };
 }
 
 export async function readAiImageResponse(response: Response): Promise<AiImageResponse> {
   if (response.ok) return { kind: 'image', blob: await response.blob() };
 
-  const detail = await readErrorDetail(response);
+  const { detail, code } = await readError(response);
+  if (code === FREE_GRANT_EXHAUSTED_CODE) return { kind: 'free-exhausted' };
+  if (code === FREE_DAILY_LIMIT_EXHAUSTED_CODE) return { kind: 'free-unavailable' };
   if (response.status === SAFETY_REFUSAL_STATUS) return { kind: 'safety' };
   if (response.status === THROTTLED_STATUS) {
     return {
