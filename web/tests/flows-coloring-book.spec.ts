@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
 import { draw, gotoApp, openSettingsModal, settleFlyIn } from './helpers';
@@ -21,11 +21,28 @@ import {
 const PENDING_FILL_SETTLE_MS = 500;
 const WHOLE_PIXEL_TOLERANCE_PX = 1;
 const STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX = 800;
-const CLEAR_PAGE_GRID_VIEWPORTS = [
-  { width: 1200, columns: 3 },
+const BOOK_GRID_VIEWPORTS = [
+  { width: 1200, columns: 4 },
   { width: 700, columns: 3 },
   { width: 500, columns: 2 },
 ] as const;
+const SMALL_VIEWPORT = { width: 320, height: 568 };
+const MINIMUM_TOUCH_TARGET_PX = 44;
+
+async function tileGeometry(grid: Locator) {
+  return grid.locator(':scope > .coloring-tile').evaluateAll((tiles) =>
+    tiles.map((tile) => {
+      const { left, top, width, height } = tile.getBoundingClientRect();
+      return {
+        label: tile.getAttribute('aria-label'),
+        left: Math.round(left),
+        top: Math.round(top),
+        width: Math.round(width),
+        height: Math.round(height),
+      };
+    })
+  );
+}
 
 // ── coloring book overlay ───────────────────────────────────────────────────
 
@@ -201,30 +218,38 @@ test.describe('responsive coloring selection at DPR 3', () => {
   });
 });
 
-test('the Clear Page book grid stays responsive and fits a standard laptop modal', async ({
-  page,
-}) => {
+test('an active page leaves the book grid geometry unchanged', async ({ page }) => {
   await page.setViewportSize({
-    width: CLEAR_PAGE_GRID_VIEWPORTS[0].width,
+    width: BOOK_GRID_VIEWPORTS[0].width,
     height: STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX,
   });
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await applyFarmPage(page);
   await openColoringDialog(page);
 
   const dialog = page.locator('#coloring-book-dialog');
+  await settleFlyIn(dialog);
   const grid = dialog.locator('.coloring-books-grid');
-  await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(9, { timeout: 30_000 });
+  const geometryBefore = await tileGeometry(grid);
+  const bookCount = geometryBefore.length;
+  await expect(dialog.locator('.active-page-chip')).toHaveCount(0);
+
+  await (await openFarmPageGrid(page)).first().click();
+  await expect(dialog).toBeHidden();
+  await openColoringDialog(page);
+  await settleFlyIn(dialog);
+
+  await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(bookCount, { timeout: 30_000 });
+  expect(await tileGeometry(grid)).toEqual(geometryBefore);
   await expect(grid.locator('img').first()).toHaveAttribute(
     'sizes',
-    coloringBookGridLayout(9).imageSizes
+    coloringBookGridLayout(bookCount).imageSizes
   );
   await expect
     .poll(() => dialog.evaluate((element) => element.scrollHeight - element.clientHeight))
     .toBeLessThanOrEqual(WHOLE_PIXEL_TOLERANCE_PX);
 
-  for (const { width, columns } of CLEAR_PAGE_GRID_VIEWPORTS) {
+  for (const { width, columns } of BOOK_GRID_VIEWPORTS) {
     await page.setViewportSize({ width, height: STANDARD_LAPTOP_VIEWPORT_HEIGHT_PX });
     await expect
       .poll(() =>
@@ -235,6 +260,53 @@ test('the Clear Page book grid stays responsive and fits a standard laptop modal
       )
       .toBe(columns);
   }
+});
+
+test('the active-page chip identifies the page in both picker views', async ({ page }) => {
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await openDrawer(page);
+  await applyFarmPage(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
+  await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Clear Page' })).toHaveCount(0);
+  await expect(chip).toBeVisible();
+  await expect(chip.locator('img')).toHaveAttribute('src', /\/farm\/cat-wide\.thumb\.webp$/);
+  await expect(chip.locator('img')).toHaveAttribute('sizes', '44px');
+
+  await openFarmPageGrid(page);
+  await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
+  await expect(chip).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Clear Page' })).toHaveCount(0);
+});
+
+test.describe('active-page chip on a small viewport', () => {
+  test.use({ viewport: SMALL_VIEWPORT });
+
+  test('is a full-size keyboard action after the close button', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await applyFarmPage(page);
+    await openColoringDialog(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await settleFlyIn(dialog);
+    const close = dialog.getByRole('button', { name: 'Close' });
+    const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
+    const box = await chip.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
+    expect(box?.height).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
+
+    await close.focus();
+    await page.keyboard.press('Tab');
+    await expect(chip).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#coloringOverlay')).toBeHidden();
+  });
 });
 
 test('a selected page stays hidden while browser-selected art decodes', async ({ page }) => {

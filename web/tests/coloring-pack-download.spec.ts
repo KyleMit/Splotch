@@ -71,11 +71,9 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
         .evaluate((image: HTMLImageElement) => image.naturalWidth)
     )
     .toBeGreaterThan(0);
-  await expect(dialog.locator('.coloring-pages-grid > .coloring-tile').last()).toHaveAttribute(
-    'aria-label',
-    'Clear Page'
-  );
-  await dialog.getByRole('button', { name: 'Clear Page' }).click();
+  await expect(dialog.locator('.coloring-pages-grid > .coloring-tile')).toHaveCount(6);
+  await expect(dialog.getByRole('button', { name: 'Clear Page' })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Clear active coloring page: Cat' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toBeHidden();
 });
@@ -141,7 +139,7 @@ test('finishing a download keeps the open page grid stable', async ({ page }) =>
 
     await openColoringDialog(page);
     const gridTiles = dialog.locator('.coloring-pages-grid > .coloring-tile');
-    await expect(gridTiles).toHaveCount(7);
+    await expect(gridTiles).toHaveCount(6);
     const labelsBeforeDownload = await gridTiles.evaluateAll((tiles) =>
       tiles.map((tile) => tile.getAttribute('aria-label'))
     );

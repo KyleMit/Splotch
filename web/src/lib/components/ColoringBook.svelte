@@ -2,9 +2,9 @@
   import Icon from './Icon.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
   import {
+    coloringBookState,
     setOverlayPage,
     setOverlayOrientation,
-    overlayUrl,
     clearOverlay,
   } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
@@ -38,7 +38,6 @@
   const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
-  let clearPageInPagesGrid = $state(false);
   let pagesGridToken = $state(0);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
@@ -47,9 +46,13 @@
   // mid-lock must match that same locked space. The viewport-driven
   // layout.orientation is only a fallback until the engine mounts.
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
-  const overlayActive = $derived(!!overlayUrl());
-  const visibleBookTileCount: number = $derived(books.length + (overlayActive ? 1 : 0));
-  const bookGridLayout = $derived(coloringBookGridLayout(visibleBookTileCount));
+  const activePage = $derived(coloringBookState.overlayPage);
+  const activePageThumbnail = $derived(
+    activePage
+      ? pageThumbImageSource(activePage, coloringBookState.orientation, resolvedTheme())
+      : null
+  );
+  const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
   const pageThumbnailSizes = $derived(COLORING_IMAGE_SIZES.pageThumbnail[orientation]);
 
@@ -141,7 +144,6 @@
   }
 
   function showInitialView() {
-    clearPageInPagesGrid = !hasBookPicker;
     pagesGridToken += 1;
     showView(initialView());
   }
@@ -168,16 +170,22 @@
   }
 </script>
 
-{#snippet clearPageTile()}
-  <button
-    class="coloring-tile coloring-book-tile"
-    type="button"
-    aria-label="Clear Page"
-    onclick={clearAndClose}
-  >
-    <Icon name="remove-page" class="coloring-remove-icon" />
-    <span class="coloring-book-label">Clear Page</span>
-  </button>
+{#snippet activePageChip()}
+  {#if activePage && activePageThumbnail}
+    <button
+      class="active-page-chip"
+      type="button"
+      aria-label="Clear active coloring page: {activePage.name}"
+      onclick={clearAndClose}
+    >
+      <img
+        src={activePageThumbnail.src}
+        srcset={__IS_CAPACITOR__ ? undefined : activePageThumbnail.srcset}
+        sizes={__IS_CAPACITOR__ ? undefined : '44px'}
+        alt=""
+      />
+    </button>
+  {/if}
 {/snippet}
 
 <dialog
@@ -202,15 +210,15 @@
 
     {#if !activeBook}
       <div class="coloring-book-view">
-        <h2>Coloring Books</h2>
+        <div class="coloring-book-header">
+          <h2>Coloring Books</h2>
+          {@render activePageChip()}
+        </div>
         <div
           class="coloring-grid coloring-books-grid"
           class:book-grid-has-orphan={bookGridLayout.hasOrphan}
           class:book-grid-has-nine-tiles={bookGridLayout.hasNineTiles}
         >
-          {#if overlayActive}
-            {@render clearPageTile()}
-          {/if}
           {#each books as book (book.id)}
             {@const coverImage = coverThumbImageSource(book)}
             <button
@@ -246,6 +254,7 @@
             </button>
           {/if}
           <h2>{activeBook.name}</h2>
+          {@render activePageChip()}
         </div>
         {#key pagesGridToken}
           <div
@@ -271,9 +280,6 @@
                 />
               </button>
             {/each}
-            {#if clearPageInPagesGrid && overlayActive}
-              {@render clearPageTile()}
-            {/if}
           </div>
         {/key}
       </div>
@@ -310,12 +316,47 @@
   .coloring-book-header {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
+    min-height: 44px;
     margin-bottom: var(--space-5);
+    padding-right: var(--modal-close-clearance-x);
   }
 
   .coloring-book-header h2 {
     margin: 0;
+    min-width: 0;
+  }
+
+  /* The raw dimension is the platform touch-target floor, not a spacing value. */
+  .active-page-chip {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    overflow: hidden;
+    padding: var(--space-1);
+    background: var(--surface-2);
+    border: var(--border-width) solid var(--border-warm);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      border-color var(--duration-base) ease,
+      background var(--duration-base) ease,
+      transform var(--duration-fast) ease;
+  }
+
+  .active-page-chip:active {
+    transform: scale(0.92);
+  }
+
+  .active-page-chip img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    pointer-events: none;
+    mix-blend-mode: var(--lineart-blend);
+    filter: var(--lineart-filter);
   }
 
   /* 36px is control sizing, not spacing — the repo has no size ramp (the 44px
@@ -349,6 +390,11 @@
   }
 
   @media (hover: hover) {
+    .hover-armed .active-page-chip:hover {
+      background: var(--brand-wash);
+      border-color: var(--brand);
+    }
+
     .hover-armed .coloring-back-button:hover {
       background: var(--brand-wash);
     }
@@ -373,7 +419,7 @@
 
   @media (min-width: 741px) {
     /* A last row of one reads as accidental, so catalog sizes that would leave
-       that orphan use the next-lower column count. This also covers Clear Page. */
+       that orphan use the next-lower column count. */
     .coloring-books-grid.book-grid-has-orphan {
       --book-cols: 3;
     }
@@ -444,16 +490,6 @@
     pointer-events: none;
     mix-blend-mode: var(--lineart-blend);
     filter: var(--lineart-filter);
-  }
-
-  /* No --lineart-filter here: the modal's icon re-ink already flips this
-     monochrome icon's fill per theme, so only the blend needs to follow. */
-  :global(.coloring-remove-icon) {
-    width: 100%;
-    height: 75%;
-    padding: var(--space-2);
-    pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
   }
 
   /* The 28px bottom band reserves the overlaid .coloring-book-label's height:
