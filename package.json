@@ -13,7 +13,7 @@
     "dev:host": "node scripts/web.mjs vite dev --host",
     "dev:cap": "CAPACITOR=true node scripts/web.mjs vite dev --host",
     "dev:tunnel": "node scripts/cloud-tunnel.mjs",
-    "dev:kill": "npx kill-port 5173 8888",
+    "dev:kill": "node scripts/dev-kill.mjs",
     "prebuild": "node scripts/web.mjs svelte-kit sync && npm run gen:icons && npm run gen:releases",
     "build": "node scripts/web.mjs vite build",
     "postbuild": "node scripts/check-release-seams.mjs && node scripts/check-pwa-precache.mjs",

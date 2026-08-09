@@ -165,8 +165,8 @@ not `npm view`. Three kinds:
   floats.
 
 Assign the same verdicts (keep/monitor/investigate/replace). Typical monitor triggers here: unpinned
-`npx`/`curl | bash` installs (Maestro, kill-port), a third-party action a major behind, an unpinned
-Xcode. A version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to
+`npx`/`curl | bash` installs (Maestro), a third-party action a major behind, an unpinned Xcode. A
+version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to
 `/dependency-update-audit`, same as an npm minor.
 
 ## Phase 5 — Write the report
