@@ -9,7 +9,7 @@ export const PAGE_INVENTORY_VIEWPORTS = [
   ['ipad-pro-13-m4', 'Large iPad Pro', 'iPad Pro 13-inch (M4)', 1032, 1376],
 ].map(([id, category, device, width, height]) => ({ id, category, device, width, height }));
 
-export const PAGE_INVENTORY_GROUPS = {
+const PAGE_INVENTORY_GROUPS = {
   routes: [
     'Routes',
     'Every SvelteKit page route with a visual surface. API endpoints are omitted.',
