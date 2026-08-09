@@ -167,7 +167,7 @@ const OPTIONAL_BRUSH_SETTING = {
   eraser: 'eraserEnabled',
 } as const satisfies Record<OptionalBrushType, BoolSettingKey>;
 
-export function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
+function isOptionalBrushEnabled(brush: OptionalBrushType): boolean {
   return settings[OPTIONAL_BRUSH_SETTING[brush]];
 }
 
