@@ -149,14 +149,19 @@ maximum 23 ms, and raw maximum 28 ms across 1,153 scored and 1,745 raw frames.
 
 The first retained implementation attached the polaroid only to that matched-scale worker export.
 Scale-mismatch compatibility exports — notably a 1× desktop display saving at the 2× export floor —
-therefore kept only the camera-button pulse, even though the already-measured local-tile candidate
-had passed the physical-iPad frame gate. The 2026-08-09 amendment uses that candidate as the
-fallback: before replay allocates the full export snapshot, the engine requests image bitmaps from
-the settled live tiles at their existing scale. `exportDrawing.ts` composites those bitmaps into
-only the bounded preview surface, adds the same paper, texture, theme, and overlay treatment, and
-hands that bitmap to the unchanged polaroid animation. The saved PNG still takes the compatibility
-replay path at the full export scale. Active pointers and platforms missing the transferable canvas
-APIs continue to receive only camera-button feedback.
+therefore kept only the camera-button pulse. The 2026-08-09 amendment adopts the same bounded
+local-tile technique for that fallback: before replay allocates the full export snapshot, the engine
+requests image bitmaps from the settled live tiles at their existing scale. `exportDrawing.ts`
+composites those bitmaps into only the bounded preview surface, adds the same paper, texture, theme,
+and overlay treatment, and hands that bitmap to the unchanged polaroid animation. The saved PNG
+still takes the compatibility replay path at the full export scale. Active pointers and platforms
+missing the transferable canvas APIs continue to receive only camera-button feedback.
+
+The isolated 17 ms frame P95 and 26 ms raw maximum for the local-tile candidate motivated this
+choice but do not measure the integrated fallback. That trial did not include the subsequent
+main-thread compatibility replay and composition, and the measured iPad itself takes the
+matched-scale worker path. The combined fallback has Chromium and WebKit correctness coverage at a
+simulated 1× device scale; it remains unmeasured on physical scale-mismatch hardware.
 
 ## Decision
 
@@ -184,11 +189,13 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
    most 2× backing scale, and transfers the resulting `ImageBitmap`. On a scale-mismatch
    compatibility export, the engine separately snapshots the settled live tiles before replay and
    `exportDrawing.ts` composites them directly into the same bounded preview dimensions on the main
-   thread — the local-tile candidate already measured at a 17 ms frame P95 and 26 ms raw maximum.
-   The main thread copies the resulting bounded bitmap into a decorative canvas, closes it, and runs
-   the 1.9-second polaroid flight with transform and opacity. Preview creation or delivery failure
-   does not cancel the save; an active pointer or missing transferable-canvas APIs retain the
-   camera-icon feedback without a polaroid.
+   thread. A one-second deadline bounds that optional preview wait; on expiry the save proceeds,
+   already-resolved and late-arriving tile bitmaps close, and feedback remains the camera-icon
+   pulse. The main thread copies a completed bounded bitmap into a decorative canvas, closes it, and
+   runs the 1.9-second polaroid flight with transform and opacity. Preview creation or delivery
+   failure does not cancel the save; an active pointer or missing transferable-canvas APIs retain
+   the camera-icon feedback without a polaroid. The isolated local-tile measurements above are
+   candidate evidence, not an integrated-path result.
 6. `screenshot.ts` continues coalescing concurrent Screenshot Button taps into one active save.
 7. After a successful save finishes, `screenshot.ts` suppresses further Screenshot Button taps for
    the four-second interval exported by `screenshotTiming.ts`. A failed save remains immediately
@@ -228,9 +235,9 @@ because the tiled path requires the full set of transferable canvas APIs.
 * \+ The worker and compositor stay out of the initial drawing-route preload graph.
 * \+ The celebratory polaroid is restored without decoding the saved PNG or constructing another
   full-page surface. Its bounded worker preview passed the physical-iPad action gate at 17 ms frame
-  P95, 23 ms post-action maximum, and 28 ms raw maximum in the final ten-activation run; the
-  scale-mismatch fallback reuses the measured local-tile candidate that held a 17 ms frame P95 and
-  26 ms raw maximum.
+  P95, 23 ms post-action maximum, and 28 ms raw maximum in the final ten-activation run. The
+  scale-mismatch fallback uses the same bounded local-tile mechanism without inheriting that
+  isolated candidate's measurements.
 * \+ The affected 2× iPad path no longer creates a full-resolution drawing surface on the main
   thread. Only the worker owns the full composed output.
 * − Active pointers and devices whose live and export scales differ retain the replay fallback. They
@@ -241,6 +248,9 @@ because the tiled path requires the full set of transferable canvas APIs.
 * − The compatibility fallback can still block on engines whose main-thread canvas encoder is slow.
   A tiled-worker failure rejects that save instead of reconstructing another full-page surface on
   the UI thread; the next user tap creates a fresh worker.
+* − The integrated compatibility preview plus full-resolution replay has browser correctness
+  coverage but no physical scale-mismatch frame-budget result. The measured physical iPad takes the
+  matched-scale worker path.
 * − Completion time is intentionally not a hard gate. A save can finish slowly under device pressure
   as long as UI frames remain below the 33.5 ms interaction threshold.
 
