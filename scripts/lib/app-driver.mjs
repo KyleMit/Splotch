@@ -209,6 +209,7 @@ export async function openColoringBook(page) {
 
 export async function pickBook(page, name) {
   const book = page.locator(COLORING_BOOK_SELECTOR(name));
+  await page.locator(COLORING_BOOK_HEADING_SELECTOR).waitFor();
   if (await book.isVisible()) {
     await book.click();
     return;
