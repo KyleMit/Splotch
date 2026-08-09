@@ -17,7 +17,12 @@ vi.mock('$lib/platform', async (importOriginal) => ({
 
 import { PencilEraser, initPencilEraser, handleDoubleTap } from './pencilEraser';
 import { toolState, selectBrush } from '$lib/state/tool.svelte';
-import { settings, setPencilEraserEnabled, setApplePencilSeen } from '$lib/state/settings.svelte';
+import {
+  settings,
+  setEraser,
+  setPencilEraserEnabled,
+  setApplePencilSeen,
+} from '$lib/state/settings.svelte';
 
 describe('PencilEraser web fallback', () => {
   it('addListener returns a removable, no-op handle', async () => {
@@ -58,6 +63,7 @@ describe('initPencilEraser on iOS-native', () => {
 describe('handleDoubleTap', () => {
   beforeEach(() => {
     selectBrush('pen');
+    setEraser(true);
     setPencilEraserEnabled(true);
     setApplePencilSeen(false);
   });
@@ -72,6 +78,13 @@ describe('handleDoubleTap', () => {
 
   it('still records the pencil but does not toggle when disabled', () => {
     setPencilEraserEnabled(false);
+    handleDoubleTap();
+    expect(settings.applePencilSeen).toBe(true);
+    expect(toolState.brush).toBe('pen');
+  });
+
+  it('does not select an unavailable eraser', () => {
+    setEraser(false);
     handleDoubleTap();
     expect(settings.applePencilSeen).toBe(true);
     expect(toolState.brush).toBe('pen');

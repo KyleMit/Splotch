@@ -27,7 +27,7 @@ import {
 const appCssSource = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
 const appHtmlSource = readFileSync(resolve(process.cwd(), 'src/app.html'), 'utf8');
 
-// The CSS `--action-btn-fallback` in ActionsPanel.svelte owns the action-button
+// The CSS `--action-btn-fallback` in app.css owns the action-button
 // size at first paint (before any TS loads — ADR-0040), so it bakes the sizing
 // constants as literals rather than reading them. That is the one copy of the
 // button-size formula that can't share the TS constants directly. This guard
@@ -35,7 +35,7 @@ const appHtmlSource = readFileSync(resolve(process.cwd(), 'src/app.html'), 'utf8
 // `min(...)` fallback blocks still match, so a change to a constant can't
 // silently leave the CSS stale (issue #518).
 const fallbackBlocks = [
-  ...actionsPanelSource.matchAll(/--action-btn-fallback:\s*min\(([\s\S]*?)\);/g),
+  ...appCssSource.matchAll(/--action-btn-fallback:\s*min\(([\s\S]*?)\);/g),
 ].map((m) => m[1]);
 
 describe('action-button CSS fallback mirrors the layout constants', () => {

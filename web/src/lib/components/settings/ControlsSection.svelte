@@ -12,6 +12,8 @@
     setScreenshot,
     setUndoButton,
     setStrokeWidthControl,
+    setCrayon,
+    setMagicBrush,
     setEraser,
     setColoringBook,
     setAdvancedControls,
@@ -46,29 +48,49 @@
     id: string;
     label: string;
     icon: CommonIconName;
+    section: 'button' | 'brush';
     checked: () => boolean;
     toggle: (next: boolean) => void;
   }
 
-  const buttonChips = [
+  const controlChips = [
     {
       id: 'strokeWidthToggle',
-      label: 'Stroke Width',
+      label: 'Stroke width',
       icon: 'line-weight-brush',
+      section: 'button',
       checked: () => settings.strokeWidthControlEnabled,
       toggle: setStrokeWidthControl,
+    },
+    {
+      id: 'crayonToggle',
+      label: 'Crayon',
+      icon: 'brush-crayon',
+      section: 'brush',
+      checked: () => settings.crayonEnabled,
+      toggle: setCrayon,
+    },
+    {
+      id: 'magicBrushToggle',
+      label: 'Magic brush',
+      icon: 'brush-magic',
+      section: 'brush',
+      checked: () => settings.magicBrushEnabled,
+      toggle: setMagicBrush,
     },
     {
       id: 'eraserToggle',
       label: 'Eraser',
       icon: 'brush-eraser',
+      section: 'brush',
       checked: () => settings.eraserEnabled,
       toggle: setEraser,
     },
     {
       id: 'coloringBookToggle',
-      label: 'Coloring Book',
+      label: 'Coloring book',
       icon: 'shapes',
+      section: 'button',
       checked: () => settings.coloringBookEnabled,
       toggle: toggleColoringBook,
     },
@@ -76,6 +98,7 @@
       id: 'screenshotToggle',
       label: 'Screenshot',
       icon: 'camera',
+      section: 'button',
       checked: () => settings.screenshotEnabled,
       toggle: setScreenshot,
     },
@@ -83,24 +106,33 @@
       id: 'undoToggle',
       label: 'Undo',
       icon: 'undo',
+      section: 'button',
       checked: () => settings.undoButtonEnabled,
       toggle: setUndoButton,
     },
   ] as const satisfies readonly SettingChip[];
 
-  type ChipId = (typeof buttonChips)[number]['id'];
+  type ControlChip = (typeof controlChips)[number];
+  type ChipId = ControlChip['id'];
 
-  const chipOptions: SegmentedPickerOption<ChipId>[] = buttonChips.map(({ id, label, icon }) => ({
-    value: id,
-    label,
-    icon,
-    id,
-  }));
+  const buttonChips = controlChips.filter((chip) => chip.section === 'button');
+  const brushChips = controlChips.filter((chip) => chip.section === 'brush');
 
-  const activeChips = $derived(buttonChips.filter((chip) => chip.checked()).map((chip) => chip.id));
+  function optionsFor(chips: readonly ControlChip[]): SegmentedPickerOption<ChipId>[] {
+    return chips.map(({ id, label, icon }) => ({ value: id, label, icon, id }));
+  }
+
+  function activeFor(chips: readonly ControlChip[]): ChipId[] {
+    return chips.filter((chip) => chip.checked()).map((chip) => chip.id);
+  }
+
+  const buttonOptions = optionsFor(buttonChips);
+  const brushOptions = optionsFor(brushChips);
+  const activeButtons = $derived(activeFor(buttonChips));
+  const activeBrushes = $derived(activeFor(brushChips));
 
   function toggleChip(id: ChipId) {
-    const chip = buttonChips.find((entry) => entry.id === id);
+    const chip = controlChips.find((entry) => entry.id === id);
     chip?.toggle(!chip.checked());
   }
 
@@ -148,15 +180,27 @@
           variant="chip"
           mode="toggle"
           label="Show these buttons"
-          options={chipOptions}
-          selected={activeChips}
+          options={buttonOptions}
+          selected={activeButtons}
+          onSelect={toggleChip}
+        />
+      </div>
+
+      <div class="chip-block">
+        <h4 class="chip-heading">Brushes</h4>
+        <SegmentedPicker
+          variant="chip"
+          mode="toggle"
+          label="Brushes"
+          options={brushOptions}
+          selected={activeBrushes}
           onSelect={toggleChip}
         />
       </div>
     </div>
   {/if}
 
-  {#if settings.applePencilSeen}
+  {#if settings.applePencilSeen && settings.eraserEnabled}
     <div class="setting pencil-eraser" transition:slide={SECTION_SLIDE}>
       <ToggleRow
         icon="brush-eraser"

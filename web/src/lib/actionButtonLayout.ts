@@ -7,6 +7,7 @@ import {
   settings,
   ACTION_BUTTON_SCALE_MIN,
   ACTION_BUTTON_SCALE_MAX,
+  enabledOptionalBrushes,
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
@@ -71,7 +72,7 @@ export function isAiImageButtonVisible(): boolean {
 
 export function visibleActionButtonCount(): number {
   return (
-    1 + // brush menu, always shown (the eraser toggle hides a menu entry, not a button)
+    (enabledOptionalBrushes().length > 0 ? 1 : 0) +
     (settings.strokeWidthControlEnabled ? 1 : 0) +
     (settings.coloringBookEnabled ? 1 : 0) +
     (settings.screenshotEnabled ? 1 : 0) +
@@ -203,6 +204,8 @@ type BooleanSettingKey = {
 export const CONTROL_OFF_ATTRIBUTES = {
   advancedControlsEnabled: 'data-off-adv',
   strokeWidthControlEnabled: 'data-off-stroke',
+  crayonEnabled: 'data-off-crayon',
+  magicBrushEnabled: 'data-off-magic',
   eraserEnabled: 'data-off-eraser',
   coloringBookEnabled: 'data-off-coloring',
   screenshotEnabled: 'data-off-screenshot',
@@ -218,6 +221,8 @@ const controlOffEntries = Object.entries(CONTROL_OFF_ATTRIBUTES) as [
 // drawer's open state, and the brush the Brush Button wears.
 export const DRAWER_OPEN_ATTRIBUTE = 'data-drawer-open';
 export const BRUSH_ATTRIBUTE = 'data-brush';
+export const SINGLE_BRUSH_ATTRIBUTE = 'data-single-brush';
+export const NO_ACTIONS_ATTRIBUTE = 'data-no-actions';
 
 // Publish the Actions Panel's hydrated UI state onto its own root so CSS can
 // drive each control's visibility, the drawer's open state, and the Brush
@@ -246,6 +251,13 @@ export function publishActionPanelState(
   for (const [key, attribute] of controlOffEntries) {
     el.toggleAttribute(attribute, !settings[key]);
   }
+  const optionalBrushes = enabledOptionalBrushes();
+  if (optionalBrushes.length === 1) {
+    el.setAttribute(SINGLE_BRUSH_ATTRIBUTE, optionalBrushes[0]);
+  } else {
+    el.removeAttribute(SINGLE_BRUSH_ATTRIBUTE);
+  }
+  el.toggleAttribute(NO_ACTIONS_ATTRIBUTE, visibleActionButtonCount() === 0);
   // The Brush Button's face is the active brush's icon. All four icons are in
   // the DOM and CSS shows the one matching this attribute ({@html} icons can't
   // swap during hydration — see .claude/rules/svelte.md), absent for the

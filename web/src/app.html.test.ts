@@ -10,6 +10,8 @@ import {
   BRUSH_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
   DRAWER_OPEN_ATTRIBUTE,
+  NO_ACTIONS_ATTRIBUTE,
+  SINGLE_BRUSH_ATTRIBUTE,
 } from './lib/actionButtonLayout';
 import { DRAWING_ROUTE } from './lib/boot/appSurfaceRoute';
 import { STORAGE_KEYS } from './lib/storage';
@@ -19,7 +21,7 @@ import {
   ACTION_BUTTON_SCALE_MAX,
   ACTION_BUTTON_SCALE_MIN,
 } from './lib/state/settings.svelte';
-import { BRUSH_TYPES } from './lib/state/tool.svelte';
+import { BRUSH_TYPES, OPTIONAL_BRUSH_TYPES } from './lib/state/tool.svelte';
 
 // app.html's pre-hydration boot IIFE is vanilla JS in a template file, so it
 // can't import anything — it re-types every localStorage key, every boolean
@@ -153,6 +155,23 @@ describe("app.html's boot script mirrors the state modules", () => {
   // which the boot script re-types as its own literal.
   it('seeds the brush face under BRUSH_ATTRIBUTE', () => {
     expect(bootStringLiteral(/setAttribute\('([\w-]+)', brush\)/)).toBe(BRUSH_ATTRIBUTE);
+  });
+
+  it('seeds the single-brush and empty-panel presentation attributes', () => {
+    expect(bootScript).toContain(`setAttribute('${SINGLE_BRUSH_ATTRIBUTE}'`);
+    expect(bootScript).toContain(`toggleAttribute('${NO_ACTIONS_ATTRIBUTE}'`);
+  });
+
+  it('counts and names every optional brush for the single-brush presentation', () => {
+    const countExpression = bootStringLiteral(/var optionalBrushCount = ([^;]+);/);
+    const countedBrushes = [...countExpression.matchAll(/\b(\w+)\b/g)].map((match) => match[1]);
+    expect(countedBrushes).toEqual(OPTIONAL_BRUSH_TYPES);
+
+    const singleBrushExpression = bootStringLiteral(
+      /setAttribute\('data-single-brush', ([^;]+)\);/
+    );
+    const namedBrushes = [...singleBrushExpression.matchAll(/'(\w+)'/g)].map((match) => match[1]);
+    expect(namedBrushes).toEqual(OPTIONAL_BRUSH_TYPES);
   });
 
   it('stamps data-theme for every resolved theme', () => {

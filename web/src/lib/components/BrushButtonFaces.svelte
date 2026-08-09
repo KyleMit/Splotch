@@ -18,32 +18,53 @@
     display: none;
   }
 
-  :global(html:not([data-brush]))
-    :global(.actions-panel:not([data-action-panel-live]))
-    .brush-button-faces
-    :global(.action-icon[data-brush-face='pen']),
-  :global(html[data-brush='crayon'])
+  :global(html[data-single-brush='crayon'])
     :global(.actions-panel:not([data-action-panel-live]))
     .brush-button-faces
     :global(.action-icon[data-brush-face='crayon']),
-  :global(html[data-brush='magic'])
+  :global(html[data-single-brush='magic'])
     :global(.actions-panel:not([data-action-panel-live]))
     .brush-button-faces
     :global(.action-icon[data-brush-face='magic']),
-  :global(html[data-brush='eraser'])
+  :global(html[data-single-brush='eraser'])
     :global(.actions-panel:not([data-action-panel-live]))
     .brush-button-faces
     :global(.action-icon[data-brush-face='eraser']),
-  :global(.actions-panel[data-action-panel-live]:not([data-brush]))
+  :global(html:not([data-single-brush]):not([data-brush]))
+    :global(.actions-panel:not([data-action-panel-live]))
     .brush-button-faces
     :global(.action-icon[data-brush-face='pen']),
-  :global(.actions-panel[data-action-panel-live][data-brush='crayon'])
+  :global(html:not([data-single-brush])[data-brush='crayon'])
+    :global(.actions-panel:not([data-action-panel-live]))
     .brush-button-faces
     :global(.action-icon[data-brush-face='crayon']),
-  :global(.actions-panel[data-action-panel-live][data-brush='magic'])
+  :global(html:not([data-single-brush])[data-brush='magic'])
+    :global(.actions-panel:not([data-action-panel-live]))
     .brush-button-faces
     :global(.action-icon[data-brush-face='magic']),
-  :global(.actions-panel[data-action-panel-live][data-brush='eraser'])
+  :global(html:not([data-single-brush])[data-brush='eraser'])
+    :global(.actions-panel:not([data-action-panel-live]))
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='eraser']),
+  :global(.actions-panel[data-action-panel-live][data-single-brush='crayon'])
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='crayon']),
+  :global(.actions-panel[data-action-panel-live][data-single-brush='magic'])
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='magic']),
+  :global(.actions-panel[data-action-panel-live][data-single-brush='eraser'])
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='eraser']),
+  :global(.actions-panel[data-action-panel-live]:not([data-single-brush]):not([data-brush]))
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='pen']),
+  :global(.actions-panel[data-action-panel-live]:not([data-single-brush])[data-brush='crayon'])
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='crayon']),
+  :global(.actions-panel[data-action-panel-live]:not([data-single-brush])[data-brush='magic'])
+    .brush-button-faces
+    :global(.action-icon[data-brush-face='magic']),
+  :global(.actions-panel[data-action-panel-live]:not([data-single-brush])[data-brush='eraser'])
     .brush-button-faces
     :global(.action-icon[data-brush-face='eraser']) {
     display: inline-flex;

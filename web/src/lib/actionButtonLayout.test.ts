@@ -8,7 +8,9 @@ import {
   setAiAccessToken,
   setAiImage,
   setColoringBook,
+  setCrayon,
   setEraser,
+  setMagicBrush,
   setScreenshot,
   setStrokeWidthControl,
   setUndoButton,
@@ -25,6 +27,8 @@ import {
   ACTION_BUTTON_BASE_PORTRAIT,
   ACTION_PANEL_LIVE_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
+  NO_ACTIONS_ATTRIBUTE,
+  SINGLE_BRUSH_ATTRIBUTE,
   PALETTE_BAR_RESERVE,
   availablePerButton,
   buttonSizeCssExpr,
@@ -56,6 +60,8 @@ function mediaQueryList(query: string, matches: boolean): MediaQueryList {
 function resetState() {
   setAdvancedControls(true);
   setStrokeWidthControl(true);
+  setCrayon(true);
+  setMagicBrush(true);
   setEraser(true);
   setColoringBook(true);
   setScreenshot(true);
@@ -130,9 +136,29 @@ describe('visibleActionButtonCount', () => {
     expect(visibleActionButtonCount()).toBe(4);
   });
 
-  it('the eraser toggle hides a Brush Menu entry, not a button', () => {
-    setEraser(false);
+  it('keeps the brush control while any optional brush remains enabled', () => {
+    setCrayon(false);
+    setMagicBrush(false);
     expect(visibleActionButtonCount()).toBe(6);
+  });
+
+  it('drops the brush control when every optional brush is disabled', () => {
+    setCrayon(false);
+    setMagicBrush(false);
+    setEraser(false);
+    expect(visibleActionButtonCount()).toBe(5);
+  });
+
+  it('reaches zero when every first-paint action is disabled', () => {
+    freeGenerations.available = false;
+    setCrayon(false);
+    setMagicBrush(false);
+    setEraser(false);
+    setStrokeWidthControl(false);
+    setColoringBook(false);
+    setScreenshot(false);
+    setUndoButton(false);
+    expect(visibleActionButtonCount()).toBe(0);
   });
 
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
@@ -429,6 +455,8 @@ describe('publishActionPanelState', () => {
     expect(el.style.getPropertyValue('--action-btn-scale')).toBe('1');
     expect(el.hasAttribute(ACTION_PANEL_LIVE_ATTRIBUTE)).toBe(true);
     expect(el.hasAttribute('data-drawer-open')).toBe(false);
+    expect(el.hasAttribute(SINGLE_BRUSH_ATTRIBUTE)).toBe(false);
+    expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(false);
     for (const attr of Object.values(CONTROL_OFF_ATTRIBUTES)) {
       expect(el.hasAttribute(attr)).toBe(false);
     }
@@ -452,9 +480,11 @@ describe('publishActionPanelState', () => {
     expect(el.hasAttribute('data-off-coloring')).toBe(false);
   });
 
-  it('stamps every data-off-<control> when all six controls are switched off', () => {
+  it('stamps every data-off-<control> when all controls are switched off', () => {
     setAdvancedControls(false);
     setStrokeWidthControl(false);
+    setCrayon(false);
+    setMagicBrush(false);
     setEraser(false);
     setColoringBook(false);
     setScreenshot(false);
@@ -464,6 +494,28 @@ describe('publishActionPanelState', () => {
     for (const attr of Object.values(CONTROL_OFF_ATTRIBUTES)) {
       expect(el.hasAttribute(attr)).toBe(true);
     }
+  });
+
+  it('publishes a single optional brush for the direct-button presentation', () => {
+    setCrayon(false);
+    setMagicBrush(false);
+    const el = document.createElement('div');
+    publishActionPanelState(el, false, 1);
+    expect(el.getAttribute(SINGLE_BRUSH_ATTRIBUTE)).toBe('eraser');
+  });
+
+  it('hides the whole panel when no action is visible', () => {
+    freeGenerations.available = false;
+    setCrayon(false);
+    setMagicBrush(false);
+    setEraser(false);
+    setStrokeWidthControl(false);
+    setColoringBook(false);
+    setScreenshot(false);
+    setUndoButton(false);
+    const el = document.createElement('div');
+    publishActionPanelState(el, false, 1);
+    expect(el.hasAttribute(NO_ACTIONS_ATTRIBUTE)).toBe(true);
   });
 
   it('reflects each non-pen brush in data-brush', () => {

@@ -11,6 +11,7 @@ import type { CommonIconName } from '../components/iconTypes';
 //   eraser — removes pixels; shares the stroke-width setting at a multiplier.
 // Pen and crayon are the "ink brushes": both lay down the active palette color.
 export type BrushType = 'pen' | 'crayon' | 'magic' | 'eraser';
+export type OptionalBrushType = Exclude<BrushType, 'pen'>;
 
 // Fields are readonly, not just the array slots: BRUSH_TYPES is derived from
 // this list once at module load, so a mutable `brush` would let a consumer
@@ -43,6 +44,9 @@ export const BRUSH_OPTIONS: readonly BrushOption[] = [
 
 // Derived from the Brush Menu's entries, so the two lists can't drift apart.
 export const BRUSH_TYPES: readonly BrushType[] = BRUSH_OPTIONS.map((o) => o.brush);
+export const OPTIONAL_BRUSH_TYPES: readonly OptionalBrushType[] = BRUSH_TYPES.filter(
+  (brush): brush is OptionalBrushType => brush !== 'pen'
+);
 
 const DEFAULT_BRUSH: BrushType = 'pen';
 
@@ -85,6 +89,11 @@ export function selectBrush(brush: BrushType) {
 // the palette when a color is picked while the eraser or magic brush is held.
 export function selectInkBrush() {
   selectBrush(inkBrush);
+}
+
+export function fallBackFromBrush(brush: OptionalBrushType) {
+  if (brush === 'crayon' && inkBrush === 'crayon') inkBrush = 'pen';
+  if (toolState.brush === brush) selectInkBrush();
 }
 
 // Flip between the ink brush and the eraser. Shared by the Brush Menu's eraser
