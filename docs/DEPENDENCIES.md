@@ -26,7 +26,6 @@ Non-`keep` rows first.
 | @capacitor/cli                      | prod     | keep                               |
 | @capacitor/core                     | prod     | keep                               |
 | @capacitor/device                   | prod     | keep                               |
-| @capacitor/filesystem               | prod     | keep                               |
 | @capacitor/haptics                  | prod     | keep                               |
 | @capacitor/ios                      | prod     | keep                               |
 | @capacitor/network                  | prod     | keep                               |
@@ -106,7 +105,8 @@ Non-`keep` rows first.
   latest 9.1.0 on 2026-03-27 · last push 2026-03-27 · 6 open issues · tracks Capacitor 9 line
 * **Maintenance:** active — community-org backed, broad maintainer list
 * **Concerns:** community plugin (best-effort), but low open-issue count and current with Capacitor
-* **Alternatives:** `@capacitor/filesystem` + share sheet (already a dep) if this stalls
+* **Alternatives:** `@capacitor/filesystem` + share sheet (would need re-adding — it was removed as
+  unused) if this stalls
 * **Verdict:** keep — the standard gallery-save plugin; healthy
 
 ### @capacitor/android
@@ -168,23 +168,6 @@ Non-`keep` rows first.
   [670 stars](https://github.com/ionic-team/capacitor-plugins) · latest 8.0.3 on 2026-07-15 · last
   push 2026-07-16 · official plugins monorepo
 * **Maintenance:** active
-* **Concerns:** none
-* **Alternatives:** none needed
-* **Verdict:** keep — official plugin; healthy
-
-### @capacitor/filesystem
-
-* **Version:** `^8.1.2` declared · 8.1.2 locked · prod
-* **Used for:** Reading/writing files on native (drawing export/import). Used in
-  `web/src/lib/drawing/folderSave.ts` and related.
-* **Source:** npm ·
-  [github.com/ionic-team/capacitor-filesystem](https://github.com/ionic-team/capacitor-filesystem) ·
-  published by Ionic / OutSystems
-* **License:** MIT
-* **Health** (checked 2026-07-17): [6 stars](https://github.com/ionic-team/capacitor-filesystem)
-  (its own split-out repo; org backing, not community traction) · latest 8.1.2 on 2026-02-13 · last
-  push 2026-07-13 · 30 open issues
-* **Maintenance:** active — org-backed official plugin
 * **Concerns:** none
 * **Alternatives:** none needed
 * **Verdict:** keep — official plugin; healthy
