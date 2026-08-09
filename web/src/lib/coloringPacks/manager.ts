@@ -165,6 +165,8 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
     },
     stop() {
       stopped = true;
+      // Route teardown leaves native background work running; only an explicit
+      // policy or removal pause cancels it.
       if (!__IS_CAPACITOR__) controller?.abort();
       window.removeEventListener('online', requestRun);
       document.removeEventListener('visibilitychange', requestWhenVisible);
