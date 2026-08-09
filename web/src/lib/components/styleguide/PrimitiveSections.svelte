@@ -14,9 +14,9 @@
   const demoThemeOptions: SegmentedPickerOption<DemoTheme>[] = [
     { value: 'light', label: 'Light', icon: 'theme-light' },
     { value: 'dark', label: 'Dark', icon: 'theme-dark' },
-    { value: 'system', label: 'System', icon: 'theme-auto' },
+    { value: 'system', label: 'System', icon: 'theme-auto', disabled: true },
   ];
-  let demoTheme = $state<DemoTheme>('system');
+  let demoTheme = $state<DemoTheme>('light');
 
   type DemoOrientation = 'portrait' | 'landscape';
   const demoOrientationOptions: SegmentedPickerOption<DemoOrientation>[] = [

@@ -174,8 +174,13 @@ test('Parent Center card toggles fit a small mobile screen without horizontal sc
   await expect
     .poll(() =>
       settings
-        .locator('.settings-scroll')
-        .evaluate((scroller) => scroller.scrollWidth - scroller.clientWidth)
+        .locator('.parent-center')
+        .evaluate((root) =>
+          [root, ...root.querySelectorAll<HTMLElement>('*')].reduce(
+            (worst, element) => Math.max(worst, element.scrollWidth - element.clientWidth),
+            0
+          )
+        )
     )
     .toBeLessThanOrEqual(1);
 });
@@ -199,6 +204,7 @@ test('iOS explains why external links cannot use Never without changing the poli
   });
   const never = externalLinks.getByRole('radio', { name: 'Never' });
   await expect(never).toBeDisabled();
+  await never.click({ force: true });
 
   await expect(settings.getByText('Why Never is unavailable on iOS')).toBeVisible();
   await expect(externalLinks.getByRole('radio', { name: 'Every time' })).toHaveAttribute(

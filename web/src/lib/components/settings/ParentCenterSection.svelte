@@ -64,10 +64,9 @@
     {#each PARENTAL_GATE_FEATURES as featureId (featureId)}
       {@const feature = PROTECTED_FEATURES[featureId]}
       {@const helpId = `parental-gate-${featureId}-help`}
-      {@const unavailableHelpId =
-        featureId === 'externalLinks' && platform === 'ios'
-          ? 'external-links-never-explanation'
-          : undefined}
+      {@const unavailableHelpId = isParentalGateModeAvailable(featureId, 'never', platform)
+        ? undefined
+        : `parental-gate-${featureId}-unavailable`}
       <article class="setting policy-card">
         <div class="protection-copy">
           <h3>{feature.label}</h3>
@@ -146,11 +145,6 @@
 
   .policy-card {
     min-width: 0;
-  }
-
-  .policy-card :global(.segment .option) {
-    min-height: 44px;
-    line-height: 1.2;
   }
 
   .unavailable-explanation {

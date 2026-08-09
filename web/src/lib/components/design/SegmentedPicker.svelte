@@ -143,8 +143,10 @@
   }
 
   .segment.md .option {
+    min-height: 44px;
     padding: var(--space-2) var(--space-1);
     font-size: var(--font-size-sm);
+    line-height: 1.2;
   }
 
   /* A hugging track's options carry their own horizontal room instead of flexing. */
