@@ -79,8 +79,12 @@ then `npm run scrapbook:index`.
 The responsive app inventory lives at `https://kylemit.github.io/Splotch/page-inventory/`. It is
 built from a real Playwright session at the four canonical Apple logical viewports. The generator
 discovers routes and Settings sections from source, then captures the app's dialogs, flyouts, and
-other notable transient states. Regenerate it in place with `npm run gen:page-inventory`, then run
-`npm run scrapbook:index`.
+other notable transient states. Regenerate its images in place with `npm run gen:page-inventory`.
+When `scrapbook/page-inventory/design-critique.json` is present, that command also attaches its
+feedback to the matching images; pass `-- --critique FILE` to use a different critique. To update
+feedback without recapturing any images, run `npm run gen:page-inventory:feedback` (with the same
+optional `-- --critique FILE` argument). Both commands produce a plain inventory when no critique is
+present. Then run `npm run scrapbook:index`.
 
 > HTML reports render because they're served by Pages. `raw.githubusercontent.com` would serve them
 > as `text/plain` (source, not a page) — that's why Pages, not a raw URL, is the mechanism here.
