@@ -52,13 +52,11 @@ the duplication is the accepted cost; keep the blocks in sync.
   live OS subscription and one detached effect that keeps `<meta name="theme-color">` and the
   selected Black swatch's ink on the resolved theme. The pre-paint head script in `web/src/app.html`
   stamps `data-theme` before first paint, following the existing "attribute only on deviation from
-  default" convention. The head also declares `<meta name="color-scheme" content="light dark">` so
-  Android WebView honors the authored `prefers-color-scheme` rules instead of applying its own
-  darkening strategy. On Android, Capacitor's `BridgeActivity` programmatically applies the
-  indirectly referenced `AppTheme.NoActionBar`; that style inherits Splotch's DayNight `AppTheme`,
-  and the splash theme hands off to it through `postSplashScreenTheme`. The night resource
-  explicitly sets Android's `isLightTheme` false because WebView derives `prefers-color-scheme` from
-  that framework attribute.
+  default" convention. The generated theme tokens set CSS `color-scheme` for each resolved theme. On
+  Android, Capacitor's `BridgeActivity` programmatically applies the indirectly referenced
+  `AppTheme.NoActionBar`; the app-owned style inherits Splotch's DayNight `AppTheme`, whose
+  day/night boolean resource sets Android's `isLightTheme` because WebView derives
+  `prefers-color-scheme` from that framework attribute.
 * UI: the **Appearance Control** (Light / Dark / System segmented control) at the top of the former
   Settings tab in the Settings modal (`SettingsToggles.svelte`).
 * **The paper darkens with the theme.** `--paper` (dark: a warm near-black, not pure black) sits

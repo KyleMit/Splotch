@@ -73,18 +73,21 @@ describe('Android native theme backgrounds', () => {
     );
   });
 
-  it('keeps Capacitor BridgeActivity and the post-splash handoff on the DayNight app theme', () => {
+  it('keeps Capacitor BridgeActivity on the DayNight app theme', () => {
     const styles = read('android/app/src/main/res/values/styles.xml');
     expect(styles).toMatch(/<style name="AppTheme\.NoActionBar" parent="AppTheme"\s*\/>/);
-    expect(styles).toMatch(
-      /<style name="AppTheme\.NoActionBarLaunch"[^>]*>[\s\S]*?<item name="postSplashScreenTheme">@style\/AppTheme\.NoActionBar<\/item>[\s\S]*?<\/style>/
-    );
   });
 
-  it('marks the Android night theme as dark for WebView media queries', () => {
-    const nightStyles = read('android/app/src/main/res/values-night/styles.xml');
-    expect(nightStyles).toMatch(
-      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<item name="android:isLightTheme">false<\/item>[\s\S]*?<\/style>/
+  it('varies WebView theme detection through one day/night boolean resource', () => {
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    expect(styles).toMatch(
+      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:isLightTheme">@bool\/app_theme_is_light<\/item>[\s\S]*?<\/style>/
+    );
+    expect(read('android/app/src/main/res/values/bools.xml')).toContain(
+      '<bool name="app_theme_is_light">true</bool>'
+    );
+    expect(read('android/app/src/main/res/values-night/bools.xml')).toContain(
+      '<bool name="app_theme_is_light">false</bool>'
     );
   });
 
