@@ -16,7 +16,11 @@ import {
   FREE_GENERATIONS_REMAINING_HEADER,
   INSTALLATION_ID_HEADER,
 } from '$lib/apiHeaders';
-import { installationId, setFreeGenerationsRemaining } from '$lib/state/freeGenerations.svelte';
+import {
+  installationId,
+  setFreeGenerationsRemaining,
+  setFreeGenerationsUnavailable,
+} from '$lib/state/freeGenerations.svelte';
 import { openAiSettings } from '$lib/state/ui.svelte';
 import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
@@ -208,6 +212,11 @@ function applyResponse(runId: number, response: AiImageResponse): { committedBlo
       return null;
     case 'free-exhausted':
       setFreeGenerationsRemaining(0);
+      closeAiResult();
+      openAiSettings(null);
+      return null;
+    case 'free-unavailable':
+      setFreeGenerationsUnavailable();
       closeAiResult();
       openAiSettings(null);
       return null;

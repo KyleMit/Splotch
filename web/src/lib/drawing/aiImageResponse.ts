@@ -1,10 +1,11 @@
-import { FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
+import { FREE_DAILY_LIMIT_EXHAUSTED_CODE, FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
 
 export type AiImageResponse =
   | { kind: 'image'; blob: Blob }
   | { kind: 'safety' }
   | { kind: 'throttled'; retryAfter: string | null; detail: string }
   | { kind: 'free-exhausted' }
+  | { kind: 'free-unavailable' }
   | { kind: 'error'; status: number; detail: string };
 
 const SAFETY_REFUSAL_STATUS = 422;
@@ -36,6 +37,7 @@ export async function readAiImageResponse(response: Response): Promise<AiImageRe
 
   const { detail, code } = await readError(response);
   if (code === FREE_GRANT_EXHAUSTED_CODE) return { kind: 'free-exhausted' };
+  if (code === FREE_DAILY_LIMIT_EXHAUSTED_CODE) return { kind: 'free-unavailable' };
   if (response.status === SAFETY_REFUSAL_STATUS) return { kind: 'safety' };
   if (response.status === THROTTLED_STATUS) {
     return {

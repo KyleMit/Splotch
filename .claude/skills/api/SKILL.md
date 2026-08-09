@@ -89,13 +89,16 @@ On success returns the image bytes. A free-grant response also carries
 `X-Free-Generations-Remaining`. Exhaustion is `403` with
 `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
 already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
-child correctly (ADR-0023): a **`422`** means Gemini refused the drawing on **safety** grounds — the
-child should draw something *different* (the app shows "let's try drawing something else!"); a
-**`502`** is a genuine upstream/empty failure (retryable). The route talks to the model through the
-provider-agnostic `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the
-vendor SDK never appears in route code. The safety vs. empty/error split is decided by
-`classifyGeminiResponse` / `isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by
-the manual red-team suite (`npm run redteam`, `tests/redteam/`).
+child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
+`{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
+records the released installation reservation as `daily-limit`, not as an upstream provider failure.
+A **`422`** means Gemini refused the drawing on **safety** grounds — the child should draw something
+*different* (the app shows "let's try drawing something else!"); a **`502`** is a genuine
+upstream/empty failure (retryable). The route talks to the model through the provider-agnostic
+`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
+appears in route code. The safety vs. empty/error split is decided by `classifyGeminiResponse` /
+`isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite
+(`npm run redteam`, `tests/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:

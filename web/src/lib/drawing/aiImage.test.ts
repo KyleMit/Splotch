@@ -253,6 +253,34 @@ describe('generateAiImage response handling', () => {
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 
+  it('routes an exhausted daily free limit to BYOK setup without marking the grant spent', async () => {
+    mocks.settings.aiAccessToken = '';
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json(
+          {
+            ok: false,
+            code: 'FREE_DAILY_LIMIT_EXHAUSTED',
+            error: 'Free creations are unavailable today.',
+          },
+          { status: 503 }
+        )
+      )
+    );
+
+    const { generateAiImage } = await import('./aiImage');
+    const { freeGenerations } = await import('$lib/state/freeGenerations.svelte');
+    const { settingsModal, ui } = await import('$lib/state/ui.svelte');
+
+    await generateAiImage();
+
+    expect(freeGenerations).toMatchObject({ available: false, remaining: 10 });
+    expect(ui.requestedSettingsSection).toBe('ai');
+    expect(settingsModal.open).toBe(true);
+  });
+
   it('saves the child drawing once across re-rolls of the same unchanged drawing', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     // Same drawing bytes on every roll → the signature matches, so the drawing

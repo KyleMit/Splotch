@@ -7,6 +7,7 @@ export interface FreeGenerationGrantStatus {
 }
 
 export const FREE_GRANT_EXHAUSTED_CODE = 'FREE_GRANT_EXHAUSTED';
+export const FREE_DAILY_LIMIT_EXHAUSTED_CODE = 'FREE_DAILY_LIMIT_EXHAUSTED';
 
 export interface FreeGenerationGrantExhausted {
   ok: false;
@@ -15,8 +16,15 @@ export interface FreeGenerationGrantExhausted {
   remaining: 0;
 }
 
+export interface FreeGenerationDailyLimitExhausted {
+  ok: false;
+  code: typeof FREE_DAILY_LIMIT_EXHAUSTED_CODE;
+  error: string;
+}
+
 export type FreeGenerationFailureKind =
   | 'abandoned'
+  | 'daily-limit'
   | 'exhausted'
   | 'invalid-request'
   | 'safety'

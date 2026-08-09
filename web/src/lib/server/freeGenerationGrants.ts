@@ -67,6 +67,7 @@ function stringOrNull(value: unknown): string | null {
 
 const FAILURE_KINDS = new Set<FreeGenerationFailureKind>([
   'abandoned',
+  'daily-limit',
   'exhausted',
   'invalid-request',
   'safety',

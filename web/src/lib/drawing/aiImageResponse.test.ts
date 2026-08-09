@@ -49,6 +49,21 @@ describe('readAiImageResponse', () => {
     ).resolves.toEqual({ kind: 'free-exhausted' });
   });
 
+  it('classifies the exhausted daily limit by its machine-readable code', async () => {
+    await expect(
+      readAiImageResponse(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            code: 'FREE_DAILY_LIMIT_EXHAUSTED',
+            error: 'Free creations are unavailable today.',
+          }),
+          { status: 503 }
+        )
+      )
+    ).resolves.toEqual({ kind: 'free-unavailable' });
+  });
+
   it('reads the error from a canonical JSON failure response', async () => {
     await expect(
       readAiImageResponse(

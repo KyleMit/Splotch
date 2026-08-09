@@ -6,8 +6,10 @@ import {
   INSTALLATION_ID_HEADER,
 } from '$lib/apiHeaders';
 import {
+  FREE_DAILY_LIMIT_EXHAUSTED_CODE,
   FREE_GENERATION_LIMIT,
   FREE_GRANT_EXHAUSTED_CODE,
+  type FreeGenerationDailyLimitExhausted,
   type FreeGenerationFailureKind,
   type FreeGenerationGrantExhausted,
 } from '$lib/freeGenerations';
@@ -151,6 +153,15 @@ function exhaustedGrant(): Response {
   return Response.json(body, { status: 403 });
 }
 
+function exhaustedDailyLimit(): Response {
+  const body: FreeGenerationDailyLimitExhausted = {
+    ok: false,
+    code: FREE_DAILY_LIMIT_EXHAUSTED_CODE,
+    error: 'Free creations are unavailable today. Add your own Gemini key to keep creating.',
+  };
+  return Response.json(body, { status: 503 });
+}
+
 const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const source = await readGenerationRequest(request, url);
 
@@ -173,7 +184,11 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       if (!reservation.reserved) return exhaustedGrant();
       reservationId = reservation.reservationId;
       const daily = await reserveDailyFreeGeneration();
-      if (!daily.reserved) throw error(503, 'Free generations are unavailable today');
+      if (!daily.reserved) {
+        await failFreeGeneration(authorization.installationId, 'daily-limit', reservationId);
+        reservationId = undefined;
+        return exhaustedDailyLimit();
+      }
     }
 
     recordGenerationUsage(authorization, style, finalPrompt, platform);
