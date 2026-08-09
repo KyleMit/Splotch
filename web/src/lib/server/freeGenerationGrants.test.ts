@@ -147,6 +147,18 @@ describe('free generation grants', () => {
     await expect(reserveDailyFreeGeneration()).rejects.toThrow('Missing Blobs environment');
   });
 
+  it('keeps read-only admin monitoring available with a labelled memory fallback', async () => {
+    getStoreMock.mockImplementation(() => {
+      throw new Error('Missing Blobs environment');
+    });
+
+    await expect(getFreeGenerationGrantAdminStats()).resolves.toMatchObject({
+      persistent: false,
+      dailyProviderStarts: 0,
+      sampledGrantCount: 0,
+    });
+  });
+
   it('bounds admin enumeration and labels the grant metrics as a partial sample', async () => {
     for (let index = 0; index <= ADMIN_GRANT_SAMPLE_LIMIT; index++) {
       entries.set(index.toString(16).padStart(64, '0'), {

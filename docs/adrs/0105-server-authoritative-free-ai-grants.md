@@ -56,8 +56,9 @@ for the current UTC day. It is reserved after input validation and before Gemini
 refunded after a provider call, and refuses the 501st call. The durable daily ceiling is therefore
 500 provider starts even when clients mint pseudonyms, requests land on different function
 instances, or Gemini returns a refusal or error. If Blobs accounting cannot be read or written, the
-production route fails closed instead of calling the provider. Local Vite development retains the
-existing explicitly non-persistent memory fallback.
+production generation route fails closed instead of calling the provider. Read-only admin monitoring
+in non-Netlify development and test environments retains the existing, explicitly labelled
+non-persistent memory fallback.
 
 Free attempts use their own per-IP 15/minute in-memory guard in
 `generationAuthorization.ts`/`rateLimitPolicy.ts`, preserving ADR-0014's low-latency rate-limit

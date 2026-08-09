@@ -40,7 +40,7 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Free generation grants' })).toBeVisible();
   await expect(page.getByText('Free grant monitoring is using local memory')).toBeVisible();
-  await expect(page.getByText('Successful').locator('..')).toContainText('0');
+  await expect(page.getByText('Sampled successes').locator('..')).toContainText('0');
   await addsAndRemovesToken(page, `e2e-web-${Date.now()}`);
 
   await page.getByRole('button', { name: 'Sign out' }).click();

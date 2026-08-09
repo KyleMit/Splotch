@@ -44,11 +44,11 @@ const memoryDailyProviderStarts = new Map<string, DailyProviderStarts>();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function grantStore(): ReturnType<typeof getStore> | null {
+function grantStore(allowMemoryFallback = false): ReturnType<typeof getStore> | null {
   try {
     return getStore(STORE_NAME);
   } catch (error) {
-    if (!dev) throw error;
+    if (!dev && !allowMemoryFallback) throw error;
     return null;
   }
 }
@@ -334,9 +334,13 @@ function statsFor(
 }
 
 export async function getFreeGenerationGrantAdminStats(): Promise<FreeGenerationGrantAdminStats> {
-  const store = grantStore();
+  const store = grantStore(true);
   if (!store) {
-    const daily = await getDailyFreeGenerationStatus();
+    const date = utcDate(new Date());
+    const daily = normalizeDailyProviderStarts(
+      memoryDailyProviderStarts.get(dailyProviderStartKey(date)),
+      date
+    );
     const grants = [...memoryGrants.entries()];
     return statsFor(
       grants.slice(0, ADMIN_GRANT_SAMPLE_LIMIT),
