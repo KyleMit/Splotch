@@ -10,6 +10,7 @@ import {
 } from '$lib/server/tokens';
 import type { MutationResult } from '$lib/server/tokens';
 import { getUsage } from '$lib/server/usage';
+import { getFreeGenerationGrantAdminStats } from '$lib/server/freeGenerationGrants';
 import { ASSUME_PERSISTENT, mutationMessage } from '$lib/adminPersistence';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -62,6 +63,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
       authed: false,
       persistent: ASSUME_PERSISTENT,
       invites: [] satisfies Invite[],
+      freeGrantStats: null,
     };
   }
   // Renew the session on each authenticated load so its expiry keeps sliding
@@ -72,12 +74,15 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   // field always-defined so the component can tell "never used" (null) apart
   // from "usage unavailable" (undefined, the JSON /api/admin/tokens snapshot,
   // which carries no usage).
-  const usage = await getUsage(tokens);
+  const [usage, freeGrantStats] = await Promise.all([
+    getUsage(tokens),
+    getFreeGenerationGrantAdminStats(),
+  ]);
   const invites = buildInvites(tokens, url.origin).map((invite) => ({
     ...invite,
     usage: usage[invite.token] ?? null,
   }));
-  return { authed: true, persistent, invites };
+  return { authed: true, persistent, invites, freeGrantStats };
 };
 
 // The `add`/`remove` actions differ only in which core mutation they call and

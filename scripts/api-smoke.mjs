@@ -72,7 +72,9 @@ async function checkCorsContract(base, noAuth) {
   const CORS_SET = {
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
-    'access-control-allow-headers': 'Content-Type, Authorization, X-Access-Token, X-Api-Key',
+    'access-control-allow-headers':
+      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id',
+    'access-control-expose-headers': 'X-Free-Generations-Remaining',
     'access-control-max-age': '86400',
   };
   const wrongCors = (res) =>
@@ -385,6 +387,33 @@ async function checkGenerateImage(base) {
   );
 }
 
+async function checkFreeGenerationGrant(base) {
+  const installationId = 'a'.repeat(64);
+  const status = await fetch(`${base}/api/free-generation-grant`, {
+    headers: { 'X-Installation-Id': installationId },
+  });
+  const statusBody = await json(status);
+  check(
+    'free-generation-grant fresh installation → 10 remaining',
+    status.status === 200 &&
+      statusBody?.ok === true &&
+      statusBody?.remaining === 10 &&
+      statusBody?.limit === 10,
+    `got ${status.status} ${JSON.stringify(statusBody)}`
+  );
+
+  const invalidImage = await fetch(`${base}/api/generate-image`, {
+    method: 'POST',
+    headers: { 'X-Installation-Id': installationId },
+  });
+  const invalidImageBody = await json(invalidImage);
+  check(
+    'credential-free generation is authorized before image validation',
+    invalidImage.status === 400 && invalidImageBody?.ok === false,
+    `got ${invalidImage.status} ${JSON.stringify(invalidImageBody)}`
+  );
+}
+
 // --- standard 429 contract (throttled() in src/lib/server/http.ts) ---
 async function checkThrottling(base) {
   // The per-IP limit is 10/min; burst past it and assert the shared shape:
@@ -433,6 +462,7 @@ async function run() {
   await checkImageReport(BASE);
   await checkCspReport(BASE);
   await checkGenerateImage(BASE);
+  await checkFreeGenerationGrant(BASE);
   await checkThrottling(BASE);
 }
 

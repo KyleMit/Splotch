@@ -12,6 +12,50 @@ import { openDrawer } from './flows-harness';
 const webp = readFileSync(new URL('../static/icons/handmade-paper.webp', import.meta.url));
 const AI_KEY_SEED_MARKER = 'splotch-test-ai-key-seeded';
 
+test('a fresh installation sees its server-authoritative free balance', async ({ page }) => {
+  await page.route('**/api/free-generation-grant', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, limit: 10, remaining: 7, exhausted: false }),
+    })
+  );
+  await gotoApp(page);
+  await openDrawer(page);
+
+  const ai = page.locator('#aiImageButton');
+  await expect(ai).toBeVisible();
+  await expect(ai).toHaveAccessibleName('Create AI image, 7 free left');
+  await expect(ai.locator('.free-count')).toHaveText('7');
+});
+
+test('an exhausted free installation keeps the AI affordance and opens BYOK setup', async ({
+  page,
+}) => {
+  await page.route('**/api/free-generation-grant', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, limit: 10, remaining: 0, exhausted: true }),
+    })
+  );
+  await gotoApp(page);
+  await openDrawer(page);
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+
+  const ai = page.locator('#aiImageButton');
+  await expect(ai).toBeVisible();
+  await expect(ai).toHaveAccessibleName('Set up AI image');
+  await ai.click();
+
+  await expect(page.locator('#settingsModal')).toBeVisible();
+  await expect(page.getByText('Your 10 free AI creations are used up.')).toBeVisible();
+  await expect(page.locator('#aiKeyInput')).toBeVisible();
+});
+
 test('a migrated BYO key reveals the AI button on the next launch', async ({ page }) => {
   await page.addInitScript(
     ({ aiUserApiKey, seedMarker }) => {

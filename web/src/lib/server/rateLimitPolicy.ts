@@ -7,7 +7,9 @@ type EndpointRateLimitPolicy = Record<
   | 'reportImageByok'
   | 'cspReport'
   | 'generateToken'
-  | 'generateByok',
+  | 'generateByok'
+  | 'generateFree'
+  | 'freeGrantStatus',
   { limit: number; windowMs: number }
 >;
 
@@ -23,4 +25,6 @@ export const rateLimitPolicy = {
   cspReport: { limit: 10, windowMs: WINDOW_MS },
   generateToken: { limit: 15, windowMs: WINDOW_MS },
   generateByok: { limit: 30, windowMs: WINDOW_MS },
+  generateFree: { limit: 15, windowMs: WINDOW_MS },
+  freeGrantStatus: { limit: 30, windowMs: WINDOW_MS },
 } satisfies EndpointRateLimitPolicy;

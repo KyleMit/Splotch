@@ -33,6 +33,22 @@ describe('readAiImageResponse', () => {
     ).resolves.toEqual({ kind: 'error', status: 502, detail: 'Upstream unavailable' });
   });
 
+  it('classifies an exhausted free grant by its machine-readable code', async () => {
+    await expect(
+      readAiImageResponse(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            code: 'FREE_GRANT_EXHAUSTED',
+            error: 'Add your own key.',
+            remaining: 0,
+          }),
+          { status: 403 }
+        )
+      )
+    ).resolves.toEqual({ kind: 'free-exhausted', detail: 'Add your own key.' });
+  });
+
   it('reads the error from a canonical JSON failure response', async () => {
     await expect(
       readAiImageResponse(

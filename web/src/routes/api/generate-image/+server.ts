@@ -1,5 +1,15 @@
 import { error, isHttpError } from '@sveltejs/kit';
-import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import {
+  ACCESS_TOKEN_HEADER,
+  API_KEY_HEADER,
+  FREE_GENERATIONS_REMAINING_HEADER,
+  INSTALLATION_ID_HEADER,
+} from '$lib/apiHeaders';
+import {
+  FREE_GRANT_EXHAUSTED_CODE,
+  type FreeGenerationFailureKind,
+  type FreeGenerationGrantExhausted,
+} from '$lib/freeGenerations';
 import { recordByokUsage, recordTokenUsage } from '$lib/server/usage';
 import { aiProvider } from '$lib/server/ai/provider';
 import {
@@ -12,6 +22,11 @@ import {
   resolveGenerationPrompt,
 } from '$lib/server/generateImagePolicy';
 import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
+import {
+  completeFreeGeneration,
+  failFreeGeneration,
+  reserveFreeGeneration,
+} from '$lib/server/freeGenerationGrants';
 import type { RequestHandler } from './$types';
 
 // A safety refusal is the model declining the drawing on policy grounds — the
@@ -39,6 +54,7 @@ const asString = (value: FormDataEntryValue | null): string | null =>
 interface GenerationRequest {
   token: string | null;
   apiKey: string | null;
+  installationId: string | null;
   style: string | null;
   // Deferred so the ≤15 MB body isn't read or validated until authorization
   // succeeds — the thunk can throw 400, 413, or 415. (The multipart shape has
@@ -66,6 +82,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
     return {
       token: asString(form.get('token')),
       apiKey: asString(form.get('apiKey')),
+      installationId: asString(form.get('installationId')),
       style: asString(form.get('style')),
       readValidatedImage: async () => {
         if (!(imageFile instanceof Blob)) throw error(400, 'Missing image');
@@ -78,6 +95,7 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
   return {
     token: request.headers.get(ACCESS_TOKEN_HEADER),
     apiKey: request.headers.get(API_KEY_HEADER),
+    installationId: request.headers.get(INSTALLATION_ID_HEADER),
     style: url.searchParams.get('style'),
     readValidatedImage: async () => {
       const mimeType = contentTypeOf(request);
@@ -99,9 +117,9 @@ function recordGenerationUsage(
 ): void {
   // Only the managed tokens are worth a per-token tally (to spot one going
   // rogue). BYOK requests run on the parent's own quota, so just log them.
-  if (authorization.usingByok) {
+  if (authorization.kind === 'byok') {
     recordByokUsage(style, finalPrompt);
-  } else {
+  } else if (authorization.kind === 'managed') {
     // The synchronous audit log inside recordTokenUsage runs immediately; only
     // the Blobs write is async, and we don't make the image wait on it. waitUntil
     // keeps the function alive long enough to finish on Netlify; without it
@@ -114,40 +132,92 @@ function recordGenerationUsage(
   }
 }
 
+function freeFailureKind(cause: unknown): FreeGenerationFailureKind {
+  if (!isHttpError(cause)) return 'upstream';
+  if (cause.status === SAFETY_STATUS) return 'safety';
+  if (cause.status >= 500) return 'upstream';
+  return 'invalid-request';
+}
+
+function exhaustedGrant(): Response {
+  const body: FreeGenerationGrantExhausted = {
+    ok: false,
+    code: FREE_GRANT_EXHAUSTED_CODE,
+    error: 'Your 10 free creations are used up. Add your own Gemini key to keep creating.',
+    remaining: 0,
+  };
+  return Response.json(body, { status: 403 });
+}
+
 const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const source = await readGenerationRequest(request, url);
 
   const authorization = await authorizeGenerationRequest({
     apiKey: source.apiKey,
     token: source.token,
+    installationId: source.installationId,
     clientAddress: getClientAddress(),
   });
   if (!authorization.authorized) return authorization.response;
 
-  const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
-  const style = source.style;
+  let reservationId: string | undefined;
+  try {
+    const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
+    const style = source.style;
+    const finalPrompt = resolveGenerationPrompt(style);
 
-  const finalPrompt = resolveGenerationPrompt(style);
+    if (authorization.kind === 'free') {
+      const reservation = await reserveFreeGeneration(authorization.installationId);
+      if (!reservation.reserved) return exhaustedGrant();
+      reservationId = reservation.reservationId;
+    }
 
-  recordGenerationUsage(authorization, style, finalPrompt, platform);
+    recordGenerationUsage(authorization, style, finalPrompt, platform);
 
-  const inputBase64 = inputBytes.toString('base64');
+    const result = await aiProvider.generateImage({
+      apiKey: authorization.effectiveKey,
+      image: { base64: inputBytes.toString('base64'), mimeType: mimeType || 'image/png' },
+      prompt: finalPrompt,
+    });
+    if (result.kind === 'refusal') safetyRefusal(result.reason);
+    if (result.kind === 'error') throw error(502, result.reason);
 
-  const result = await aiProvider.generateImage({
-    apiKey: authorization.effectiveKey,
-    image: { base64: inputBase64, mimeType: mimeType || 'image/png' },
-    prompt: finalPrompt,
-  });
-  if (result.kind === 'refusal') safetyRefusal(result.reason);
-  if (result.kind === 'error') throw error(502, result.reason);
+    let freeRemaining: number | null = null;
+    if (authorization.kind === 'free' && reservationId) {
+      try {
+        freeRemaining = (await completeFreeGeneration(authorization.installationId, reservationId))
+          .remaining;
+        reservationId = undefined;
+      } catch {
+        throw error(503, 'Could not confirm the free generation allowance');
+      }
+    }
 
-  const outBytes = Buffer.from(result.data, 'base64');
-  return new Response(outBytes, {
-    headers: {
+    const headers: Record<string, string> = {
       'Content-Type': result.mimeType,
       'Cache-Control': 'no-store',
-    },
-  });
+    };
+    if (freeRemaining !== null) {
+      headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
+    }
+    return new Response(Buffer.from(result.data, 'base64'), { headers });
+  } catch (cause) {
+    if (authorization.kind === 'free') {
+      try {
+        await failFreeGeneration(
+          authorization.installationId,
+          freeFailureKind(cause),
+          reservationId
+        );
+      } catch (trackingError) {
+        console.warn(
+          '[free-generation] failed to record unsuccessful attempt:',
+          trackingError instanceof Error ? trackingError.message : trackingError
+        );
+      }
+    }
+    throw cause;
+  }
 };
 
 export const POST: RequestHandler = async (event) => {

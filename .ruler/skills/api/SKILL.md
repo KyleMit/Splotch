@@ -12,12 +12,13 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 
 **CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
 `/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
-`X-Access-Token` / `X-Api-Key` headers allowed, plus `Access-Control-Max-Age: 86400` so native
-clients cache the preflight instead of paying an OPTIONS round trip per request. The wildcard is
-safe because every endpoint is either gated by a credential the caller must already hold (access
-token, Gemini key, or admin session) or rate-limited and bounded. The credential-less `report`
-endpoint creates a sanitized private support issue; `csp-report` is size-capped and bounded to log
-lines. Nothing under `/api` uses cookies. See ADR-0007.
+`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` headers allowed, plus
+`X-Free-Generations-Remaining` exposed and `Access-Control-Max-Age: 86400` so native clients can
+read the updated allowance and cache the preflight instead of paying an OPTIONS round trip per
+request. The wildcard is safe because every endpoint is either gated by a credential the caller must
+already hold (access token, Gemini key, or admin session) or rate-limited and bounded. The
+credential-less `report` endpoint creates a sanitized private support issue; `csp-report` is
+size-capped and bounded to log lines. Nothing under `/api` uses cookies. See ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -73,10 +74,21 @@ failed guesses share `/api/verify-access-code`'s per-IP budget: a limited IP get
 before the token is even checked (no allowlist read), while valid tokens never touch that bucket.
 See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
 
-On success returns the image bytes. Failure modes are split so the client can guide the child
-correctly (ADR-0023): a **`422`** means Gemini refused the drawing on **safety** grounds — the child
-should draw something *different* (the app shows "let's try drawing something else!"); a **`502`**
-is a genuine upstream/empty failure (retryable). The route talks to the model through the
+With neither credential, the request uses the installation's free grant and must send the
+privacy-preserving `X-Installation-Id` pseudonym. Free attempts are rate-limited per IP at 15/min,
+including validation, safety, upstream, exhaustion, and throttled failures. A durable Netlify Blobs
+grant reserves one of ten slots before the provider call and conditionally finalizes it only after a
+usable image exists; failures release the reservation. The short reservation lease recovers slots
+after a function crash, and compare-and-set writes prevent concurrent requests from spending one
+remaining slot twice.
+
+On success returns the image bytes. A free-grant response also carries
+`X-Free-Generations-Remaining`. Exhaustion is `403` with
+`{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
+already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
+child correctly (ADR-0023): a **`422`** means Gemini refused the drawing on **safety** grounds — the
+child should draw something *different* (the app shows "let's try drawing something else!"); a
+**`502`** is a genuine upstream/empty failure (retryable). The route talks to the model through the
 provider-agnostic `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the
 vendor SDK never appears in route code. The safety vs. empty/error split is decided by
 `classifyGeminiResponse` / `isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by
@@ -128,6 +140,15 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 { "ok": false, "error": "That key could not authenticate with Gemini." }
 // 400 — missing, non-string, or blank key
 { "ok": false, "error": "No API key provided" }
+```
+
+### `GET /api/free-generation-grant`
+
+Returns the server-authoritative free allowance for `X-Installation-Id`. The read is rate-limited
+per IP and never creates or spends a grant.
+
+```json
+{ "ok": true, "remaining": 10, "limit": 10 }
 ```
 
 ---
@@ -252,6 +273,10 @@ with no body; browsers ignore the response, so there is nothing to return.
 ---
 
 ## Admin (access-token management)
+
+The authenticated `/admin` page also aggregates the `free-generation-grants` store: successful and
+failed attempts, active and exhausted grants, in-flight reservations, and the twenty most recently
+active pseudonymous installations. The raw Capacitor identifier is never sent or stored.
 
 JSON twin of the server-rendered `/admin` console, driven by `scripts/lib/adminClient.mjs` (the
 local and deploy smoke tests). Both front doors call the same core (`web/src/lib/server/admin.ts` \+

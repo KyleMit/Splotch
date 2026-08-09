@@ -23,6 +23,7 @@
     type SubmitStatus,
   } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
+  import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 
   // The copy for every kind-dependent outcome of a submission, so each terminal
   // branch of `submitKey` is a single lookup rather than an inline ternary.
@@ -172,10 +173,23 @@
   {#if aiLocked}
     <div class="setting byok">
       <p class="byok-intro">
-        Splotch turns drawings into AI art with Google's Gemini. To keep the app free with no
-        accounts, you <strong>bring your own key</strong> (BYOK): you paste a Gemini API key, it's saved
-        only on this device, and it's used only for your child's creations. Any usage is billed to your
-        own Google account. We never keep a copy of your key.
+        {#if freeGenerations.loading}
+          <strong>Checking your free AI creations…</strong>
+        {:else if freeGenerations.available && freeGenerations.remaining > 0}
+          <strong
+            >{freeGenerations.remaining} free AI {freeGenerations.remaining === 1
+              ? 'creation'
+              : 'creations'} left.</strong
+          >
+          No setup is needed. After those are used, add your own Gemini API key to keep creating.
+        {:else if freeGenerations.available}
+          <strong>Your 10 free AI creations are used up.</strong> Add your own Gemini API key to keep
+          creating.
+        {:else}
+          Add your own Gemini API key to create AI art while the free allowance is unavailable.
+        {/if}
+        Your key is saved only on this device, used only for your child's creations, and billed to your
+        Google account. We never keep a copy of it.
       </p>
 
       <Disclosure class="byok-howto">
@@ -276,9 +290,7 @@
     <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}>{keyMessage}</StatusMessage>
   {/if}
 
-  {#if !aiLocked}
-    <AiFeatureToggles />
-  {/if}
+  <AiFeatureToggles />
 </section>
 
 <style>

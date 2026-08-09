@@ -10,7 +10,14 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
-import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import {
+  ACCESS_TOKEN_HEADER,
+  API_KEY_HEADER,
+  FREE_GENERATIONS_REMAINING_HEADER,
+  INSTALLATION_ID_HEADER,
+} from '$lib/apiHeaders';
+import { installationId, setFreeGenerationsRemaining } from '$lib/state/freeGenerations.svelte';
+import { openAiSettings } from '$lib/state/ui.svelte';
 import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
@@ -164,19 +171,24 @@ async function exportUploadImage(
 }
 
 // Send the raw image bytes as the body — no multipart envelope for the server
-// to buffer and parse (ADR-0064). Prefer the parent's own Gemini key (BYOK);
-// fall back to a managed access token. Both are secrets, so they ride in
-// headers, never the query string (which leaks into logs/history). The
-// non-secret style enum is a query param.
+// to buffer and parse (ADR-0064). Prefer the parent's own Gemini key (BYOK),
+// then a managed access token, then the non-secret installation grant
+// pseudonym. Credentials ride in headers, never the query string (which leaks
+// into logs/history). The non-secret style enum is a query param.
 function buildRequest(
   uploadBlob: Blob,
-  style: string
+  style: string,
+  freeInstallationId: string | null
 ): { endpoint: string; headers: Record<string, string>; body: Blob } {
   const headers: Record<string, string> = {
     'Content-Type': uploadBlob.type || 'image/png',
   };
   if (settings.aiUserApiKey) headers[API_KEY_HEADER] = settings.aiUserApiKey;
   else headers[ACCESS_TOKEN_HEADER] = settings.aiAccessToken;
+  if (freeInstallationId) {
+    delete headers[ACCESS_TOKEN_HEADER];
+    headers[INSTALLATION_ID_HEADER] = freeInstallationId;
+  }
 
   const endpoint =
     apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
@@ -196,6 +208,11 @@ function applyResponse(runId: number, response: AiImageResponse): { committedBlo
       console.error(
         `AI image request throttled (retry after ${response.retryAfter}s): ${response.detail}`
       );
+      return null;
+    case 'free-exhausted':
+      setFreeGenerationsRemaining(0);
+      closeAiResult();
+      openAiSettings(null);
       return null;
     case 'error':
       // A 5xx is transient — an upstream Gemini failure or the server aborting
@@ -240,7 +257,9 @@ export async function generateAiImage({
     const exported = await exportUploadImage(drawing, runId);
     if (!exported) return;
 
-    const { endpoint, headers, body } = buildRequest(exported.upload, style);
+    const freeInstallationId =
+      settings.aiUserApiKey || settings.aiAccessToken ? null : await installationId();
+    const { endpoint, headers, body } = buildRequest(exported.upload, style, freeInstallationId);
     timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -248,6 +267,11 @@ export async function generateAiImage({
       body,
       signal: controller.signal,
     });
+    const remainingHeader = res.headers.get(FREE_GENERATIONS_REMAINING_HEADER);
+    if (remainingHeader !== null) {
+      const remaining = Number(remainingHeader);
+      if (Number.isInteger(remaining)) setFreeGenerationsRemaining(remaining);
+    }
     const response = await readAiImageResponse(res);
     const committed = applyResponse(runId, response);
     if (committed && settings.autoSaveAiEnabled) {

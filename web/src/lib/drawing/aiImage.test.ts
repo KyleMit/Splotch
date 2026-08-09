@@ -32,6 +32,8 @@ beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   mocks.settings.autoSaveAiEnabled = false;
+  mocks.settings.aiUserApiKey = '';
+  mocks.settings.aiAccessToken = 'test-token';
 
   let objectUrlId = 0;
   vi.spyOn(URL, 'createObjectURL').mockImplementation(() => `blob:test-${++objectUrlId}`);
@@ -377,6 +379,43 @@ describe('generateAiImage upload format', () => {
 
     expect(uploadedImage().type).toBe('image/webp');
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the installation pseudonym instead of a credential for a free generation', async () => {
+    mocks.settings.aiAccessToken = '';
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(new Blob(['result']), {
+          status: 200,
+          headers: { 'X-Free-Generations-Remaining': '9' },
+        })
+      )
+    );
+
+    const { generateAiImage } = await import('./aiImage');
+    const { freeGenerations } = await import('$lib/state/freeGenerations.svelte');
+    await generateAiImage();
+
+    const headers = vi.mocked(fetch).mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers['X-Installation-Id']).toMatch(/^[a-f0-9]{64}$/);
+    expect(headers['X-Access-Token']).toBeUndefined();
+    expect(freeGenerations.remaining).toBe(9);
+  });
+
+  it('does not interpret an absent free-balance response header as zero', async () => {
+    mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['png'], { type: 'image/png' }));
+    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+
+    const { generateAiImage } = await import('./aiImage');
+    const { freeGenerations } = await import('$lib/state/freeGenerations.svelte');
+    await generateAiImage();
+
+    expect(freeGenerations.remaining).toBe(10);
+    expect(freeGenerations.available).toBe(false);
   });
 });
 

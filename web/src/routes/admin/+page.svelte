@@ -42,6 +42,7 @@
   authed={data.authed}
   invites={data.invites}
   persistent={data.persistent}
+  freeGrantStats={data.freeGrantStats}
   {flash}
   loginError={form?.loginError ?? null}
   onlogin={(key) => submit('?/login', { 'access-key': key })}

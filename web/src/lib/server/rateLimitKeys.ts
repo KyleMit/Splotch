@@ -17,6 +17,14 @@ export function generateImageByokBucket(address: string): string {
   return `generate-image-byok:${address}`;
 }
 
+export function generateImageFreeBucket(address: string): string {
+  return `generate-image-free:${address}`;
+}
+
+export function freeGenerationGrantStatusBucket(address: string): string {
+  return `free-generation-grant-status:${address}`;
+}
+
 export function verifyKeyBucket(address: string): string {
   return `verify-key:${address}`;
 }

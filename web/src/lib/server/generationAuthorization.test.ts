@@ -11,11 +11,15 @@ const { envState, isAllowedToken, peekRateLimit, rateLimit } = vi.hoisted(() => 
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('./tokens', () => ({ isAllowedToken }));
 vi.mock('./rateLimit', () => ({ peekRateLimit, rateLimit }));
+vi.mock('./freeGenerationGrants', () => ({
+  isInstallationId: (value: string | null) => /^[a-f0-9]{64}$/.test(value ?? ''),
+}));
 
 import { authorizeGenerationRequest } from './generationAuthorization';
 import {
   generateImageBucket,
   generateImageByokBucket,
+  generateImageFreeBucket,
   verifyAccessCodeBucket,
 } from './rateLimitKeys';
 import { rateLimitPolicy } from './rateLimitPolicy';
@@ -23,6 +27,7 @@ import { rateLimitPolicy } from './rateLimitPolicy';
 const managedInput = {
   apiKey: null,
   token: 'daycare-club',
+  installationId: null,
   clientAddress: '203.0.113.5',
 };
 
@@ -79,7 +84,7 @@ describe('authorizeGenerationRequest', () => {
 
     expect(result).toEqual({
       authorized: true,
-      usingByok: false,
+      kind: 'managed',
       effectiveKey: 'managed-key',
       managedToken: 'daycare-club',
     });
@@ -116,6 +121,7 @@ describe('authorizeGenerationRequest', () => {
     const result = await authorizeGenerationRequest({
       apiKey: '  parent-key  ',
       token: null,
+      installationId: null,
       clientAddress: '198.51.100.8',
     });
 
@@ -147,6 +153,61 @@ describe('authorizeGenerationRequest', () => {
     expect(await result.response.json()).toEqual({
       ok: false,
       error: 'Server is missing GEMINI_API_KEY',
+    });
+  });
+
+  it('authorizes a credential-free installation and rate-limits all of its attempts by IP', async () => {
+    const installationId = 'a'.repeat(64);
+
+    await expect(
+      authorizeGenerationRequest({
+        apiKey: null,
+        token: null,
+        installationId,
+        clientAddress: '198.51.100.20',
+      })
+    ).resolves.toEqual({
+      authorized: true,
+      kind: 'free',
+      effectiveKey: 'managed-key',
+      installationId,
+    });
+    expect(rateLimit).toHaveBeenCalledWith(generateImageFreeBucket('198.51.100.20'), {
+      limit: 15,
+      windowMs: 60_000,
+    });
+  });
+
+  it('throttles a free attempt before it can reach the durable grant', async () => {
+    rateLimit.mockReturnValue({ limited: true, retryAfter: 8 });
+    const installationId = 'b'.repeat(64);
+
+    const result = await authorizeGenerationRequest({
+      apiKey: null,
+      token: null,
+      installationId,
+      clientAddress: '198.51.100.21',
+    });
+
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(429);
+  });
+
+  it('rate-limits a malformed credential-free attempt before rejecting its installation ID', async () => {
+    const result = await authorizeGenerationRequest({
+      apiKey: null,
+      token: null,
+      installationId: 'not-an-installation-id',
+      clientAddress: '198.51.100.22',
+    });
+
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(400);
+    expect(rateLimit).toHaveBeenCalledWith(generateImageFreeBucket('198.51.100.22'), {
+      limit: 15,
+      windowMs: 60_000,
     });
   });
 });

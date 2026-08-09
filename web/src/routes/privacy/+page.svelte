@@ -1,8 +1,7 @@
 <script lang="ts">
-  // Friendly, plain-language privacy policy. Splotch collects nothing in the
-  // background — the only data it receives is what a grown-up deliberately
-  // turns on or sends: a magic-image request, a confirmed picture report, or
-  // the optional feedback form.
+  // Friendly, plain-language privacy policy. The only automatic request is the
+  // pseudonymous free-allowance check disclosed below; drawing content is sent
+  // only when someone deliberately requests AI art or a grown-up reports it.
   // This page exists mostly to *prove* that. It's required by the app stores
   // (see the `mobile` skill's store-release checklist). Keep the tone simple
   // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
@@ -14,7 +13,7 @@
   // Splotch has no email; questions/concerns go through GitHub issues.
   import { GITHUB_NEW_ISSUE_URL as CONTACT_URL } from '$lib/githubRepo';
 
-  const LAST_UPDATED = 'August 8, 2026';
+  const LAST_UPDATED = 'August 9, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -25,8 +24,8 @@
     { label: 'Green', lead: 'No analytics.', body: 'No third-party trackers or SDKs.' },
     {
       label: 'Blue',
-      lead: 'No background collection.',
-      body: 'The only info we receive is what a grown-up turns on or sends us — a magic-image request, a picture report, or feedback.',
+      lead: 'No hidden collection.',
+      body: 'We explain the small free-allowance check and every feature that sends content below.',
     },
     { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
   ];
@@ -70,14 +69,16 @@
     <p>
       Ordinary drawing stays on your device. Splotch does not create a profile about you or your
       child, does not sell information, and does not show advertising of any kind. The optional
-      internet features below send only what you deliberately choose to send.
+      internet features below send content only when you deliberately choose to send it.
     </p>
 
     <h3>When the internet is used</h3>
     <p>
       Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
-      illustration. A grown-up has to switch it on first — the button stays hidden until an access
-      code or Gemini key is entered in Settings — and it only ever runs when someone taps it.
+      illustration. Each installation gets ten successful creations free, and the operation runs
+      through the grown-up check configured in Parent Center. After the free creations are used, a
+      grown-up can add a Gemini key in Settings. A drawing is sent only when someone taps the
+      button.
     </p>
     <ul>
       <li>
@@ -85,9 +86,9 @@
         AI) to generate a new picture, which is sent right back.
       </li>
       <li>
-        <strong>We don't keep an ordinary magic-image request.</strong> It passes straight through our
-        service on its way to Google and back. Neither the drawing nor the picture that comes back is
-        saved on our servers unless a grown-up separately confirms “Report this picture.”
+        <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong> They
+        pass straight through our service on the way to Google and back, unless a grown-up separately
+        confirms “Report this picture.”
       </li>
       <li>
         Google generates the picture on its own systems, under the
@@ -102,6 +103,13 @@
         and never store. It reaches Google under <em>your</em> account and the terms that apply to it,
         rather than ours. On a free Gemini key, those terms let Google use the content to improve its
         own products, so it's worth reading them before you add one.
+      </li>
+      <li>
+        To enforce the ten free creations, the app sends a one-way, app-purpose installation code
+        when it checks the remaining allowance and requests a free image. We store that code with
+        counts, timestamps, and broad failure reasons. We never receive the underlying device ID,
+        and the code is not combined with an account, advertising ID, hardware fingerprint, or
+        location. Clearing browser data and some iOS uninstall sequences can create a new code.
       </li>
       <li>
         We keep a simple count of how often each access code is used, purely to prevent abuse —
@@ -157,17 +165,21 @@
     <h3>Settings on your device</h3>
     <p>
       Splotch remembers small preferences (like sound on/off and your last color or brush size)
-      using your device's local storage. This stays on your device and is never sent to us.
+      using your device's local storage. Those preferences stay on your device and are never sent to
+      us. On the web, a random local installation value is used only to create the one-way free-
+      allowance code described above.
     </p>
 
     <h3>Children's privacy</h3>
     <p>
       Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and
-      gathers nothing in the background. Sending feedback and reporting an AI-generated picture each
-      has its own grown-up-check policy in Parent Center, defaulting to Every time. Splotch does not
-      ask for a child's name, email address, account, or location, and the submitted content is not
-      used to identify a child. We handle these deliberate flows in line with children's privacy
-      laws, including COPPA and the GDPR's protections for children. There are no social features,
+      has no advertising or analytics SDKs. When the app opens online, it checks the free allowance
+      using the one-way installation code described above; it does not send drawing content during
+      that check. Sending feedback and reporting an AI-generated picture each has its own
+      grown-up-check policy in Parent Center, defaulting to Every time. Splotch does not ask for a
+      child's name, email address, account, or location, and the submitted content is not used to
+      identify a child. We handle these deliberate flows in line with children's privacy laws,
+      including COPPA and the GDPR's protections for children. There are no social features,
       comments, chat, advertising, or in-app purchases.
     </p>
 

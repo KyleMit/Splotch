@@ -4,10 +4,12 @@ export interface UiState {
   // True while the parent is dragging the button-size slider. Settings
   // hides everything but the slider so the live-resizing action buttons show.
   resizingActionButtons: boolean;
+  requestedSettingsSection: 'ai' | null;
 }
 
 export const ui: UiState = $state({
   resizingActionButtons: false,
+  requestedSettingsSection: null,
 });
 
 export const SETTINGS_BUTTON_ID = 'settingsButton';
@@ -28,4 +30,9 @@ export const aiPromptModal = createModal();
 
 export function setResizingActionButtons(active: boolean) {
   ui.resizingActionButtons = active;
+}
+
+export function openAiSettings(origin: import('./modal.svelte').Origin | null): void {
+  ui.requestedSettingsSection = 'ai';
+  settingsModal.show(origin);
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Component } from 'svelte';
+  import { untrack, type Component } from 'svelte';
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
@@ -100,7 +100,11 @@
   let navEl = $state<HTMLElement>();
   $effect(() => {
     if (!settingsModal.open) return;
-    view = 'hub';
+    // Clearing a consumed request must not rerun this open-transition effect and
+    // immediately replace the requested section with the default hub.
+    const requestedSection = untrack(() => ui.requestedSettingsSection);
+    view = requestedSection ?? 'hub';
+    ui.requestedSettingsSection = null;
     navEl?.scrollTo({ top: 0 });
   });
 
