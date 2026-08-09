@@ -24,6 +24,7 @@
   } from '$lib/latestRequest';
   import { getPlatform, type Platform } from '$lib/platform';
   import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+  import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 
   // The copy for every kind-dependent outcome of a submission, so each terminal
   // branch of `submitKey` is a single lookup rather than an inline ternary.
@@ -183,8 +184,8 @@
           >
           No setup is needed. After those are used, add your own Gemini API key to keep creating.
         {:else if freeGenerations.available}
-          <strong>Your 10 free AI creations are used up.</strong> Add your own Gemini API key to keep
-          creating.
+          <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your own Gemini
+          API key to keep creating.
         {:else}
           Add your own Gemini API key to create AI art while the free allowance is unavailable.
         {/if}

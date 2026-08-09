@@ -24,12 +24,17 @@ export type FreeGenerationFailureKind =
 
 export interface FreeGenerationGrantAdminStats {
   persistent: boolean;
-  totalSuccessful: number;
-  totalAttempts: number;
-  totalFailures: number;
-  activeGrants: number;
-  exhaustedGrants: number;
-  activeReservations: number;
+  dailyProviderStarts: number;
+  dailyProviderStartLimit: number;
+  sampledGrantCount: number;
+  grantSampleLimit: number;
+  grantSamplePartial: boolean;
+  sampledSuccessful: number;
+  sampledAttempts: number;
+  sampledFailures: number;
+  sampledActiveGrants: number;
+  sampledExhaustedGrants: number;
+  sampledActiveReservations: number;
   recent: Array<{
     installation: string;
     successful: number;

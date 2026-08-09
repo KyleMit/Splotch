@@ -6,6 +6,7 @@ import {
   INSTALLATION_ID_HEADER,
 } from '$lib/apiHeaders';
 import {
+  FREE_GENERATION_LIMIT,
   FREE_GRANT_EXHAUSTED_CODE,
   type FreeGenerationFailureKind,
   type FreeGenerationGrantExhausted,
@@ -25,6 +26,7 @@ import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import {
   completeFreeGeneration,
   failFreeGeneration,
+  reserveDailyFreeGeneration,
   reserveFreeGeneration,
 } from '$lib/server/freeGenerationGrants';
 import type { RequestHandler } from './$types';
@@ -143,7 +145,7 @@ function exhaustedGrant(): Response {
   const body: FreeGenerationGrantExhausted = {
     ok: false,
     code: FREE_GRANT_EXHAUSTED_CODE,
-    error: 'Your 10 free creations are used up. Add your own Gemini key to keep creating.',
+    error: `Your ${FREE_GENERATION_LIMIT} free creations are used up. Add your own Gemini key to keep creating.`,
     remaining: 0,
   };
   return Response.json(body, { status: 403 });
@@ -170,6 +172,8 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       const reservation = await reserveFreeGeneration(authorization.installationId);
       if (!reservation.reserved) return exhaustedGrant();
       reservationId = reservation.reservationId;
+      const daily = await reserveDailyFreeGeneration();
+      if (!daily.reserved) throw error(503, 'Free generations are unavailable today');
     }
 
     recordGenerationUsage(authorization, style, finalPrompt, platform);

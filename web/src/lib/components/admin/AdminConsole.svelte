@@ -36,7 +36,7 @@
 
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
+  import { FREE_GENERATION_LIMIT, type FreeGenerationGrantAdminStats } from '$lib/freeGenerations';
   import PageShell from '../page/PageShell.svelte';
   import RuleLabel from '../page/RuleLabel.svelte';
   import InviteLedger from './InviteLedger.svelte';
@@ -234,36 +234,46 @@
     />
 
     {#if freeGrantStats}
-      <RuleLabel>Free generation grants</RuleLabel>
+      <RuleLabel>Free generation grants · sample {freeGrantStats.sampledGrantCount}</RuleLabel>
       {#if !freeGrantStats.persistent}
         <div class="flash flash-warning" role="alert">
           Free grant monitoring is using local memory and will reset with this server instance.
         </div>
       {/if}
+      {#if freeGrantStats.grantSamplePartial}
+        <div class="flash flash-warning" role="status">
+          Grant metrics and activity are sampled from the first {freeGrantStats.grantSampleLimit}
+          records. Today's provider-start count is complete.
+        </div>
+      {/if}
       <dl class="grant-metrics">
         <div>
-          <dt>Successful</dt>
-          <dd>{freeGrantStats.totalSuccessful}</dd>
+          <dt>Provider starts today</dt>
+          <dd>{freeGrantStats.dailyProviderStarts}/{freeGrantStats.dailyProviderStartLimit}</dd>
         </div>
         <div>
-          <dt>Attempts</dt>
-          <dd>{freeGrantStats.totalAttempts}</dd>
+          <dt>Sampled successes</dt>
+          <dd>{freeGrantStats.sampledSuccessful}</dd>
         </div>
         <div>
-          <dt>Failures</dt>
-          <dd>{freeGrantStats.totalFailures}</dd>
+          <dt>Sampled attempts</dt>
+          <dd>{freeGrantStats.sampledAttempts}</dd>
         </div>
         <div>
-          <dt>Active grants</dt>
-          <dd>{freeGrantStats.activeGrants}</dd>
+          <dt>Sampled failures</dt>
+          <dd>{freeGrantStats.sampledFailures}</dd>
         </div>
         <div>
-          <dt>Exhausted</dt>
-          <dd>{freeGrantStats.exhaustedGrants}</dd>
+          <dt>Sampled active</dt>
+          <dd>{freeGrantStats.sampledActiveGrants}</dd>
         </div>
         <div>
-          <dt>In flight</dt>
-          <dd>{freeGrantStats.activeReservations}</dd>
+          <dt>Sampled exhausted</dt>
+          <dd>{freeGrantStats.sampledExhaustedGrants}</dd>
+        </div>
+        <div>
+          <dt>Sampled in flight</dt>
+          <dd>{freeGrantStats.sampledActiveReservations}</dd>
         </div>
       </dl>
       {#if freeGrantStats.recent.length > 0}
@@ -280,7 +290,7 @@
               {#each freeGrantStats.recent as grant (grant.installation)}
                 <tr>
                   <td><code>{grant.installation}…</code></td>
-                  <td>{grant.successful}/10</td>
+                  <td>{grant.successful}/{FREE_GENERATION_LIMIT}</td>
                   <td>{grant.attempts}</td>
                   <td>{grant.failures}</td>
                   <td>{grant.lastFailureKind ?? '—'}</td>

@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 interface StoredEntry {
   data: unknown;
@@ -12,12 +12,17 @@ const { entries, getStoreMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
+vi.mock('$app/environment', () => ({ dev: false }));
 
 import {
+  ADMIN_GRANT_SAMPLE_LIMIT,
   completeFreeGeneration,
   failFreeGeneration,
+  FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+  getDailyFreeGenerationStatus,
   getFreeGenerationGrantAdminStats,
   getFreeGenerationGrantStatus,
+  reserveDailyFreeGeneration,
   reserveFreeGeneration,
 } from './freeGenerationGrants';
 
@@ -64,6 +69,10 @@ beforeEach(() => {
   getStoreMock.mockReset().mockReturnValue(makeStore());
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('free generation grants', () => {
   it('atomically reserves at most ten concurrent generations', async () => {
     const id = installation('a');
@@ -92,7 +101,11 @@ describe('free generation grants', () => {
 
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 10 });
     const stats = await getFreeGenerationGrantAdminStats();
-    expect(stats).toMatchObject({ totalSuccessful: 0, totalAttempts: 1, totalFailures: 1 });
+    expect(stats).toMatchObject({
+      sampledSuccessful: 0,
+      sampledAttempts: 1,
+      sampledFailures: 1,
+    });
     expect(stats.recent[0]).toMatchObject({ installation: 'bbbbbbbb', lastFailureKind: 'safety' });
   });
 
@@ -104,5 +117,52 @@ describe('free generation grants', () => {
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 9 });
     await completeFreeGeneration(id, reservation.reservationId);
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 9 });
+  });
+
+  it('atomically refuses provider starts after the durable daily ceiling', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-09T12:00:00Z'));
+    entries.set('daily-provider-starts/2026-08-09', {
+      data: {
+        version: 1,
+        date: '2026-08-09',
+        starts: FREE_GENERATION_DAILY_PROVIDER_START_LIMIT - 1,
+      },
+      etag: 'daily-v1',
+    });
+
+    await expect(reserveDailyFreeGeneration()).resolves.toEqual({ reserved: true, remaining: 0 });
+    await expect(reserveDailyFreeGeneration()).resolves.toEqual({ reserved: false, remaining: 0 });
+    await expect(getDailyFreeGenerationStatus()).resolves.toEqual({
+      available: false,
+      starts: FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+    });
+  });
+
+  it('fails closed outside development when durable accounting is unavailable', async () => {
+    getStoreMock.mockImplementation(() => {
+      throw new Error('Missing Blobs environment');
+    });
+
+    await expect(reserveDailyFreeGeneration()).rejects.toThrow('Missing Blobs environment');
+  });
+
+  it('bounds admin enumeration and labels the grant metrics as a partial sample', async () => {
+    for (let index = 0; index <= ADMIN_GRANT_SAMPLE_LIMIT; index++) {
+      entries.set(index.toString(16).padStart(64, '0'), {
+        data: null,
+        etag: `grant-${index}`,
+      });
+    }
+
+    const stats = await getFreeGenerationGrantAdminStats();
+
+    expect(stats).toMatchObject({
+      sampledGrantCount: ADMIN_GRANT_SAMPLE_LIMIT,
+      grantSampleLimit: ADMIN_GRANT_SAMPLE_LIMIT,
+      grantSamplePartial: true,
+    });
+    const store = getStoreMock.mock.results[0]?.value;
+    expect(store.get).toHaveBeenCalledTimes(ADMIN_GRANT_SAMPLE_LIMIT + 1);
   });
 });

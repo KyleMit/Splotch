@@ -12,11 +12,11 @@ import { securityHeadersFor } from '$lib/server/securityHeaders';
 
 // The native apps load from a WebView origin (https://localhost on Android,
 // capacitor://localhost on iOS) but call the hosted /api/* endpoints. Those are
-// cross-origin requests, so the endpoints need permissive CORS. Every route is
-// already gated server-side (access token for generate-image, bearer session
-// for /api/admin/*), so allowing any origin here is safe — nothing under /api
-// can be abused without a valid credential, and none of it relies on cookies
-// (the wildcard origin is incompatible with credentialed requests anyway).
+// cross-origin requests, so the endpoints need permissive CORS. Credentialed
+// routes authenticate each request; the unauthenticated free-generation path
+// is bounded by its durable daily provider-start ceiling and per-IP rate limit.
+// None of the APIs relies on cookies (the wildcard origin is incompatible with
+// credentialed requests anyway).
 // Only /api/* is opened up; the rest of the site stays same-origin.
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

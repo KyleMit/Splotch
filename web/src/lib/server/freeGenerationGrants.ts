@@ -1,4 +1,5 @@
 import { getStore } from '@netlify/blobs';
+import { dev } from '$app/environment';
 import {
   FREE_GENERATION_LIMIT,
   type FreeGenerationFailureKind,
@@ -7,9 +8,12 @@ import {
 
 const STORE_NAME = 'free-generation-grants';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
+const DAILY_PROVIDER_START_KEY_PREFIX = 'daily-provider-starts/';
 const RESERVATION_LEASE_MS = 60_000;
 const CAS_ATTEMPTS = 12;
 const CAS_BACKOFF_MS = 20;
+export const FREE_GENERATION_DAILY_PROVIDER_START_LIMIT = 500;
+export const ADMIN_GRANT_SAMPLE_LIMIT = 200;
 
 interface FreeGenerationGrant {
   version: 1;
@@ -24,14 +28,30 @@ interface FreeGenerationGrant {
   reservations: Record<string, string>;
 }
 
+interface DailyProviderStarts {
+  version: 1;
+  date: string;
+  starts: number;
+}
+
 type GrantUpdate<T> = (
   grant: FreeGenerationGrant,
   now: Date
 ) => { grant: FreeGenerationGrant; result: T };
 
 const memoryGrants = new Map<string, FreeGenerationGrant>();
+const memoryDailyProviderStarts = new Map<string, DailyProviderStarts>();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function grantStore(): ReturnType<typeof getStore> | null {
+  try {
+    return getStore(STORE_NAME);
+  } catch (error) {
+    if (!dev) throw error;
+    return null;
+  }
+}
 
 export function isInstallationId(value: string | null): value is string {
   return typeof value === 'string' && INSTALLATION_ID_PATTERN.test(value);
@@ -96,11 +116,89 @@ function remainingFor(grant: FreeGenerationGrant): number {
   );
 }
 
+function utcDate(now: Date): string {
+  return now.toISOString().slice(0, 10);
+}
+
+function dailyProviderStartKey(date: string): string {
+  return `${DAILY_PROVIDER_START_KEY_PREFIX}${date}`;
+}
+
+function normalizeDailyProviderStarts(value: unknown, date: string): DailyProviderStarts {
+  const source =
+    typeof value === 'object' && value !== null ? (value as Partial<DailyProviderStarts>) : {};
+  return {
+    version: 1,
+    date,
+    starts: source.date === date ? nonNegativeInteger(source.starts) : 0,
+  };
+}
+
+export async function getDailyFreeGenerationStatus(): Promise<{
+  available: boolean;
+  starts: number;
+}> {
+  const date = utcDate(new Date());
+  const key = dailyProviderStartKey(date);
+  const store = grantStore();
+  if (!store) {
+    const daily = normalizeDailyProviderStarts(memoryDailyProviderStarts.get(key), date);
+    return {
+      available: daily.starts < FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+      starts: daily.starts,
+    };
+  }
+  const daily = normalizeDailyProviderStarts(await store.get(key, { type: 'json' }), date);
+  return {
+    available: daily.starts < FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+    starts: daily.starts,
+  };
+}
+
+export async function reserveDailyFreeGeneration(): Promise<
+  { reserved: true; remaining: number } | { reserved: false; remaining: 0 }
+> {
+  const date = utcDate(new Date());
+  const key = dailyProviderStartKey(date);
+  const store = grantStore();
+  if (!store) {
+    const daily = normalizeDailyProviderStarts(memoryDailyProviderStarts.get(key), date);
+    if (daily.starts >= FREE_GENERATION_DAILY_PROVIDER_START_LIMIT) {
+      return { reserved: false, remaining: 0 };
+    }
+    daily.starts += 1;
+    memoryDailyProviderStarts.set(key, daily);
+    return {
+      reserved: true,
+      remaining: FREE_GENERATION_DAILY_PROVIDER_START_LIMIT - daily.starts,
+    };
+  }
+
+  for (let attempt = 1; attempt <= CAS_ATTEMPTS; attempt++) {
+    if (attempt > 1) await sleep(CAS_BACKOFF_MS * attempt);
+    const existing = await store.getWithMetadata(key, { type: 'json' });
+    const daily = normalizeDailyProviderStarts(existing?.data, date);
+    if (daily.starts >= FREE_GENERATION_DAILY_PROVIDER_START_LIMIT) {
+      return { reserved: false, remaining: 0 };
+    }
+    daily.starts += 1;
+    const condition = existing?.etag
+      ? { onlyIfMatch: existing.etag }
+      : { onlyIfNew: true as const };
+    const write = await store.setJSON(key, daily, condition);
+    if (write.modified) {
+      return {
+        reserved: true,
+        remaining: FREE_GENERATION_DAILY_PROVIDER_START_LIMIT - daily.starts,
+      };
+    }
+  }
+  throw new Error('Daily free generation budget is busy');
+}
+
 async function updateGrant<T>(installationId: string, update: GrantUpdate<T>): Promise<T> {
-  let store: ReturnType<typeof getStore>;
-  try {
-    store = getStore(STORE_NAME);
-  } catch {
+  const store = grantStore();
+  if (!store) {
     const now = new Date();
     const current = normalizeGrant(memoryGrants.get(installationId), now);
     const next = update(current, now);
@@ -126,10 +224,8 @@ async function updateGrant<T>(installationId: string, update: GrantUpdate<T>): P
 export async function getFreeGenerationGrantStatus(
   installationId: string
 ): Promise<{ remaining: number }> {
-  let store: ReturnType<typeof getStore>;
-  try {
-    store = getStore(STORE_NAME);
-  } catch {
+  const store = grantStore();
+  if (!store) {
     const grant = memoryGrants.get(installationId);
     return {
       remaining: grant ? remainingFor(normalizeGrant(grant, new Date())) : FREE_GENERATION_LIMIT,
@@ -196,7 +292,9 @@ export async function failFreeGeneration(
 
 function statsFor(
   grants: ReadonlyArray<readonly [string, FreeGenerationGrant]>,
-  persistent: boolean
+  persistent: boolean,
+  dailyProviderStarts: number,
+  grantSamplePartial: boolean
 ): FreeGenerationGrantAdminStats {
   const now = new Date();
   const normalized = grants.map(([id, grant]) => [id, normalizeGrant(grant, now)] as const);
@@ -214,13 +312,20 @@ function statsFor(
     }));
   return {
     persistent,
-    totalSuccessful: normalized.reduce((sum, [, grant]) => sum + grant.successful, 0),
-    totalAttempts: normalized.reduce((sum, [, grant]) => sum + grant.attempts, 0),
-    totalFailures: normalized.reduce((sum, [, grant]) => sum + grant.failures, 0),
-    activeGrants: normalized.filter(([, grant]) => grant.successful < FREE_GENERATION_LIMIT).length,
-    exhaustedGrants: normalized.filter(([, grant]) => grant.successful >= FREE_GENERATION_LIMIT)
+    dailyProviderStarts,
+    dailyProviderStartLimit: FREE_GENERATION_DAILY_PROVIDER_START_LIMIT,
+    sampledGrantCount: normalized.length,
+    grantSampleLimit: ADMIN_GRANT_SAMPLE_LIMIT,
+    grantSamplePartial,
+    sampledSuccessful: normalized.reduce((sum, [, grant]) => sum + grant.successful, 0),
+    sampledAttempts: normalized.reduce((sum, [, grant]) => sum + grant.attempts, 0),
+    sampledFailures: normalized.reduce((sum, [, grant]) => sum + grant.failures, 0),
+    sampledActiveGrants: normalized.filter(([, grant]) => grant.successful < FREE_GENERATION_LIMIT)
       .length,
-    activeReservations: normalized.reduce(
+    sampledExhaustedGrants: normalized.filter(
+      ([, grant]) => grant.successful >= FREE_GENERATION_LIMIT
+    ).length,
+    sampledActiveReservations: normalized.reduce(
       (sum, [, grant]) => sum + Object.keys(grant.reservations).length,
       0
     ),
@@ -229,18 +334,33 @@ function statsFor(
 }
 
 export async function getFreeGenerationGrantAdminStats(): Promise<FreeGenerationGrantAdminStats> {
-  let store: ReturnType<typeof getStore>;
-  try {
-    store = getStore(STORE_NAME);
-  } catch {
-    return statsFor([...memoryGrants.entries()], false);
+  const store = grantStore();
+  if (!store) {
+    const daily = await getDailyFreeGenerationStatus();
+    const grants = [...memoryGrants.entries()];
+    return statsFor(
+      grants.slice(0, ADMIN_GRANT_SAMPLE_LIMIT),
+      false,
+      daily.starts,
+      grants.length > ADMIN_GRANT_SAMPLE_LIMIT
+    );
   }
   const keys: string[] = [];
+  let grantSamplePartial = false;
   for await (const page of store.list({ paginate: true })) {
-    keys.push(...page.blobs.map((blob) => blob.key).filter((key) => isInstallationId(key)));
+    for (const blob of page.blobs) {
+      if (!isInstallationId(blob.key)) continue;
+      if (keys.length === ADMIN_GRANT_SAMPLE_LIMIT) {
+        grantSamplePartial = true;
+        break;
+      }
+      keys.push(blob.key);
+    }
+    if (grantSamplePartial) break;
   }
-  const grants = (
-    await Promise.all(
+  const [daily, grants] = await Promise.all([
+    getDailyFreeGenerationStatus(),
+    Promise.all(
       keys.map(async (key) => {
         try {
           return [key, normalizeGrant(await store.get(key, { type: 'json' }), new Date())] as const;
@@ -252,7 +372,12 @@ export async function getFreeGenerationGrantAdminStats(): Promise<FreeGeneration
           return null;
         }
       })
-    )
-  ).filter((grant): grant is readonly [string, FreeGenerationGrant] => grant !== null);
-  return statsFor(grants, true);
+    ),
+  ]);
+  return statsFor(
+    grants.filter((grant): grant is readonly [string, FreeGenerationGrant] => grant !== null),
+    true,
+    daily.starts,
+    grantSamplePartial
+  );
 }

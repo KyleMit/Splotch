@@ -80,7 +80,10 @@ including validation, safety, upstream, exhaustion, and throttled failures. A du
 grant reserves one of ten slots before the provider call and conditionally finalizes it only after a
 usable image exists; failures release the reservation. The short reservation lease recovers slots
 after a function crash, and compare-and-set writes prevent concurrent requests from spending one
-remaining slot twice.
+remaining slot twice. A separate durable compare-and-set counter reserves every free provider start
+before Gemini is called and caps project-funded traffic across all installations and function
+instances at 500 calls per UTC day. Provider failures and safety refusals are not refunded from that
+daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
 `X-Free-Generations-Remaining`. Exhaustion is `403` with
@@ -145,7 +148,9 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 ### `GET /api/free-generation-grant`
 
 Returns the server-authoritative free allowance for `X-Installation-Id`. The read is rate-limited
-per IP and never creates or spends a grant.
+per IP and never creates or spends a grant. It returns `503` when the project Gemini key is absent
+or the durable daily provider-start ceiling is exhausted, allowing clients without another
+credential to hide the unavailable AI path.
 
 ```json
 { "ok": true, "remaining": 10, "limit": 10 }
@@ -274,9 +279,10 @@ with no body; browsers ignore the response, so there is nothing to return.
 
 ## Admin (access-token management)
 
-The authenticated `/admin` page also aggregates the `free-generation-grants` store: successful and
-failed attempts, active and exhausted grants, in-flight reservations, and the twenty most recently
-active pseudonymous installations. The raw Capacitor identifier is never sent or stored.
+The authenticated `/admin` page shows the exact current UTC day's provider starts against the daily
+ceiling. To keep page load bounded, it reads at most 200 records from the `free-generation-grants`
+store and labels all grant-derived success, failure, active/exhausted, reservation, and activity
+figures as sampled. The raw Capacitor identifier is never sent or stored.
 
 JSON twin of the server-rendered `/admin` console, driven by `scripts/lib/adminClient.mjs` (the
 local and deploy smoke tests). Both front doors call the same core (`web/src/lib/server/admin.ts` \+

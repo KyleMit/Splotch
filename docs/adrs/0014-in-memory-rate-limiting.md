@@ -34,6 +34,10 @@ is the same access-code oracle, so failed guesses draw on the `verify-access-cod
 checked read-only (`peekRateLimit`) before the allowlist lookup so a limited IP gets a blind 429,
 and recorded only when the guess fails, so valid tokens stay keyed per token.
 
+Free-generation requests use a separate 15/minute per-IP bucket as a low-latency hammering
+guardrail. It is not their cost boundary: ADR-0105's Netlify Blobs compare-and-set counter durably
+caps all project-funded free provider starts across instances at 500 per UTC day.
+
 An opportunistic cleanup pass runs when the `buckets` Map exceeds 5,000 entries to prevent unbounded
 memory growth from large numbers of distinct source IPs.
 
@@ -48,6 +52,6 @@ memory growth from large numbers of distinct source IPs.
 * **-** Concurrent Netlify instances don't share state — a token could exceed the per-instance limit
   on one instance while staying under limit on another. In practice, Netlify routes similar traffic
   to the same warm instance, but this is not guaranteed.
-* **-** If a durable, cross-instance rate limit is ever required, the `Map` should be replaced with
-  a Netlify Blobs counter (the code already shows this path in a comment; the Blobs storage model
-  and its eventual-consistency constraint are in ADR-0025).
+* **-** A future durable, cross-instance request-rate limit would still require replacing the `Map`.
+  The free-generation provider-start ceiling is deliberately a separate Blobs counter: it bounds
+  spend but does not promise an evenly paced request rate.

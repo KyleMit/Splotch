@@ -19,6 +19,10 @@ Alternatives considered:
   addresses, while addresses change and are more revealing than an app-scoped pseudonym.
 * **Decrement after the provider returns, without reserving first.** Rejected because eleven
   concurrent requests could all observe one remaining generation and incur eleven provider calls.
+* **Return a generated image when the final per-installation accounting write fails and reconcile
+  later.** Rejected because the synchronous function has no durable job or idempotent recovery
+  channel. Repeated write contention could otherwise deliver uncounted successes. The route remains
+  fail-closed after a provider success until such a recovery mechanism exists.
 * **Use a new database or Redis service.** Rejected because the grants are tiny, low-traffic records
   and Netlify Blobs is already the server storage boundary established by ADR-0025.
 
@@ -46,17 +50,28 @@ attempts are recorded as failures without spending a successful slot. A one-minu
 reservation if a function dies; an expired lease is recorded as abandoned. If final accounting
 cannot be confirmed, the route does not return the generated image.
 
+The installation pseudonym is intentionally resettable, so it cannot be the project's hard cost
+boundary. A second compare-and-set record counts every free provider start across all installations
+for the current UTC day. It is reserved after input validation and before Gemini is called, never
+refunded after a provider call, and refuses the 501st call. The durable daily ceiling is therefore
+500 provider starts even when clients mint pseudonyms, requests land on different function
+instances, or Gemini returns a refusal or error. If Blobs accounting cannot be read or written, the
+production route fails closed instead of calling the provider. Local Vite development retains the
+existing explicitly non-persistent memory fallback.
+
 Free attempts use their own per-IP 15/minute in-memory guard in
 `generationAuthorization.ts`/`rateLimitPolicy.ts`, preserving ADR-0014's low-latency rate-limit
-model while the durable grant remains the hard spend boundary. Managed access codes and BYOK keep
-their existing branches and limits. Successful free responses carry `X-Free-Generations-Remaining`;
-`GET /api/free-generation-grant` refreshes the authoritative count without creating or spending a
-grant. Exhaustion keeps the AI button visible and routes the already-parent-gated operation to BYOK
-setup, following ADR-0094's operation-level gate.
+model while the durable daily provider-start counter supplies the cross-instance cost boundary.
+Managed access codes and BYOK keep their existing branches and limits. Successful free responses
+carry `X-Free-Generations-Remaining`; `GET /api/free-generation-grant` refreshes the authoritative
+count without creating or spending a grant and reports unavailable when the project key or daily
+budget cannot serve a free generation. Exhaustion keeps the AI button visible and routes the
+already-parent-gated operation to BYOK setup, following ADR-0094's operation-level gate.
 
-The authenticated web-only `/admin` console (ADR-0101) enumerates the grant store to show aggregate
-successes, attempts, failures, active/exhausted grants, active reservations, and recent
-pseudonymous-installation detail. Local development uses a server-memory fallback, clearly marked
+The authenticated web-only `/admin` console (ADR-0101) reads the exact daily provider-start counter
+and samples at most 200 installation grants. Sample-derived successes, attempts, failures,
+active/exhausted grants, reservations, and activity are labelled as sampled; enumeration stops once
+the bounded sample is full. Local development uses a server-memory fallback, clearly marked
 non-persistent, because plain Vite has no Netlify Blobs context (ADR-0025).
 
 ## Consequences
@@ -65,6 +80,8 @@ non-persistent, because plain Vite has no Netlify Blobs context (ADR-0025).
   parent-supplied key.
 * \+ Conditional reservations make the ten-generation boundary safe under concurrency, while failed
   provider calls do not consume it.
+* \+ A durable global UTC-day counter caps project-funded provider calls at 500 even if installation
+  pseudonyms are reset or requests span function instances.
 * \+ The server and `/admin` can observe aggregate spend and failure patterns without storing a raw
   device identifier.
 * \+ Reloads, app updates, and ordinary Android reinstalls retain the allowance through the chosen
@@ -72,8 +89,9 @@ non-persistent, because plain Vite has no Netlify Blobs context (ADR-0025).
 * − Web site-data clearing and some iOS uninstall sequences can mint a new pseudonym and another
   allowance. This is the explicit cost of declining accounts, fingerprints, advertising IDs, and
   IP-based identity.
-* − Every free attempt adds conditional Blobs writes before and after the provider call, and the
-  admin aggregate performs a store listing plus record reads.
+* − Every free provider call adds a global conditional write as well as the per-installation writes.
+  The admin view intentionally samples installation records rather than reporting an exact lifetime
+  aggregate.
 * − A provider success followed by an unconfirmable accounting write is withheld from the client; it
   can still incur provider cost without consuming a successful user-visible generation.
 * − The one-minute reservation lease temporarily reduces the displayed remaining count while a
