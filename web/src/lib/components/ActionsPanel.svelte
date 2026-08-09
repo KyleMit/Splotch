@@ -21,7 +21,7 @@
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import {
     freeGenerations,
-    grantRefreshReady,
+    createFreeGenerationGrantRefreshGate,
     refreshFreeGenerationGrant,
   } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
@@ -52,6 +52,7 @@
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
+  const shouldRefreshFreeGenerationGrant = createFreeGenerationGrantRefreshGate();
 
   // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
   // opening one closes the other and the outside-click handler below only ever
@@ -158,8 +159,7 @@
   });
 
   $effect(() => {
-    if (!grantRefreshReady() || !freeGenerations.loading) return;
-    void refreshFreeGenerationGrant();
+    if (shouldRefreshFreeGenerationGrant()) void refreshFreeGenerationGrant();
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
@@ -390,9 +390,9 @@
         <Icon name="camera" class="action-icon" />
       </button>
 
-      <!-- AI button keeps its reactive `hidden`: its visibility also depends on a
-           runtime, non-persisted signal (network.online) the head script can't
-           know pre-paint, so there's no first-paint value to seed. -->
+      <!-- AI button keeps its reactive `hidden`: its visibility also depends on
+           runtime credential, grant-availability, and network signals the head
+           script can't know pre-paint, so there's no first-paint value to seed. -->
       <button
         class="action-button"
         class:disabled={canvasState.canvasEmpty || aiResult.generating}

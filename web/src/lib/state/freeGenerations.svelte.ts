@@ -2,6 +2,7 @@ import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
 import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
+import { network } from '$lib/state/network.svelte';
 import { settings } from '$lib/state/settings.svelte';
 
 const WEB_INSTALLATION_KEY = 'splotch-free-generation-installation-v1';
@@ -57,6 +58,25 @@ export function setFreeGenerationsRemaining(remaining: number): void {
   freeGenerations.loading = false;
 }
 
+export function setFreeGenerationsUnavailable(): void {
+  freeGenerations.available = false;
+  freeGenerations.loading = false;
+}
+
+export function createFreeGenerationGrantRefreshGate(): () => boolean {
+  let wasReady = false;
+  let wasOnline = false;
+  return () => {
+    const ready = grantRefreshReady();
+    const online = network.online;
+    const shouldRearm = (ready && !wasReady) || (online && !wasOnline);
+    wasReady = ready;
+    wasOnline = online;
+    if (shouldRearm && !freeGenerations.available) freeGenerations.loading = true;
+    return ready && online && freeGenerations.loading;
+  };
+}
+
 export function grantRefreshReady(): boolean {
   return (
     persistedStateStatus.hydrated &&
@@ -77,7 +97,6 @@ export async function refreshFreeGenerationGrant(): Promise<void> {
     const status = (await response.json()) as FreeGenerationGrantStatus;
     if (status.ok) setFreeGenerationsRemaining(status.remaining);
   } catch {
-    freeGenerations.available = false;
-    freeGenerations.loading = false;
+    setFreeGenerationsUnavailable();
   }
 }

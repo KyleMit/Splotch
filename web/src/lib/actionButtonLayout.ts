@@ -42,8 +42,9 @@ export const PALETTE_CLEARANCE = 8;
 export const MAX_ACTION_BUTTON_COUNT = 6;
 
 // The AI button is hidden in the prerendered HTML because its visibility depends
-// on client-only network state. app.html corrects this default count before first
-// paint when persisted settings hide other buttons.
+// on client-only credential, grant-availability, and network state. app.html
+// corrects this default count before first paint when persisted settings hide
+// other buttons.
 export const FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT = MAX_ACTION_BUTTON_COUNT - 1;
 export const FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT =
   (FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT - 1) * ACTION_BUTTON_GAP;
