@@ -76,6 +76,12 @@ monochrome UI glyphs. Regenerate it straight into place with
 `npm run gen:icons-sheet -- --out scrapbook/icons/index.html` after adding or changing an app icon,
 then `npm run scrapbook:index`.
 
+The responsive app inventory lives at `https://kylemit.github.io/Splotch/page-inventory/`. It is
+built from a real Playwright session at the four canonical Apple logical viewports. The generator
+discovers routes and Settings sections from source, then captures the app's dialogs, flyouts, and
+other notable transient states. Regenerate it in place with `npm run gen:page-inventory`, then run
+`npm run scrapbook:index`.
+
 > HTML reports render because they're served by Pages. `raw.githubusercontent.com` would serve them
 > as `text/plain` (source, not a page) — that's why Pages, not a raw URL, is the mechanism here.
 
