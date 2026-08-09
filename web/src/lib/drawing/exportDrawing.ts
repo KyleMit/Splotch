@@ -18,6 +18,10 @@ import { encodeCanvasPng, encodeTiledCanvasPng } from './pngEncoder';
 import type { TiledCanvasSnapshot } from './tiledSurfaces';
 
 type ExportCanvas = HTMLCanvasElement | OffscreenCanvas;
+// ADR-0088 measured the isolated preview near 230 ms; optional feedback gets
+// generous headroom without pinning the save pipeline after a stalled tile read.
+const COMPATIBILITY_PREVIEW_TIMEOUT_MS = 1_000;
+
 export interface TiledExportSnapshot {
   source: TiledCanvasSnapshot;
   sourceScale: number;
@@ -86,39 +90,39 @@ async function deliverTiledPreview(
   preview: NonNullable<ExportOptions['preview']>,
   paperColor: string,
   texture: CanvasImageSource | null,
-  overlayImage: HTMLImageElement | null
+  overlayImage: HTMLImageElement | null,
+  signal: AbortSignal
 ) {
   if (!preview.source) return;
-  const settledTiles = await Promise.allSettled(
-    preview.source.source.tiles.map(async ({ bitmap, x, y }) => ({
-      bitmap: await bitmap,
-      x,
-      y,
-    }))
-  );
-  const failure = settledTiles.find((result) => result.status === 'rejected');
-  if (failure?.status === 'rejected') {
-    for (const result of settledTiles) {
-      if (result.status === 'fulfilled') result.value.bitmap.close();
-    }
-    throw failure.reason;
-  }
-
-  const tiles = settledTiles.flatMap((result) =>
-    result.status === 'fulfilled' ? [result.value] : []
-  );
-  const logicalWidth = preview.source.source.width / preview.source.sourceScale;
-  const logicalHeight = preview.source.source.height / preview.source.sourceScale;
-  const outputScale = preview.width / logicalWidth;
-  const outputHeight = Math.max(1, Math.round(logicalHeight * outputScale));
-  const canvas = new OffscreenCanvas(preview.width, outputHeight);
-  const context = canvas.getContext('2d');
-  if (!context) {
-    for (const tile of tiles) tile.bitmap.close();
-    return;
-  }
+  const resolvedBitmaps = new Set<ImageBitmap>();
+  const closeResolvedBitmaps = () => {
+    for (const bitmap of resolvedBitmaps) bitmap.close();
+    resolvedBitmaps.clear();
+  };
+  signal.addEventListener('abort', closeResolvedBitmaps, { once: true });
 
   try {
+    const tiles = await Promise.all(
+      preview.source.source.tiles.map(async ({ bitmap: bitmapPromise, x, y }) => {
+        const bitmap = await bitmapPromise;
+        if (signal.aborted) {
+          bitmap.close();
+          throw new Error('Compatibility preview timed out');
+        }
+        resolvedBitmaps.add(bitmap);
+        return { bitmap, x, y };
+      })
+    );
+    const logicalWidth = preview.source.source.width / preview.source.sourceScale;
+    const logicalHeight = preview.source.source.height / preview.source.sourceScale;
+    const outputScale = preview.width / logicalWidth;
+    const outputHeight = Math.max(1, Math.round(logicalHeight * outputScale));
+    const canvas = new OffscreenCanvas(preview.width, outputHeight);
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
     const tileScale = outputScale / preview.source.sourceScale;
     context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
     for (const tile of tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
@@ -149,17 +153,42 @@ async function deliverTiledPreview(
       bitmap?.close();
     }
   } finally {
-    for (const tile of tiles) tile.bitmap.close();
+    signal.removeEventListener('abort', closeResolvedBitmaps);
+    closeResolvedBitmaps();
   }
 }
 
-async function closeTiledPreviewSource(preview: ExportOptions['preview']) {
+async function deliverTiledPreviewBeforeExport(
+  preview: NonNullable<ExportOptions['preview']>,
+  paperColor: string,
+  texture: CanvasImageSource | null,
+  overlayImage: HTMLImageElement | null
+) {
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      deliverTiledPreview(preview, paperColor, texture, overlayImage, controller.signal),
+      new Promise<void>((resolve) => {
+        timeoutId = setTimeout(() => {
+          controller.abort();
+          resolve();
+        }, COMPATIBILITY_PREVIEW_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    controller.abort();
+  }
+}
+
+function closeTiledPreviewSource(preview: ExportOptions['preview']) {
   if (!preview?.source) return;
-  const settledBitmaps = await Promise.allSettled(
-    preview.source.source.tiles.map(({ bitmap }) => bitmap)
-  );
-  for (const result of settledBitmaps) {
-    if (result.status === 'fulfilled') result.value.close();
+  for (const { bitmap } of preview.source.source.tiles) {
+    void bitmap.then(
+      (resolved) => resolved.close(),
+      () => undefined
+    );
   }
 }
 
@@ -242,7 +271,7 @@ export async function composeExportPng(
 
   const target = getExportContext(snapshot);
   if (!target) {
-    await closeTiledPreviewSource(preview);
+    closeTiledPreviewSource(preview);
     return null;
   }
   let texture: HTMLImageElement | null;
@@ -253,12 +282,14 @@ export async function composeExportPng(
       loadExportOverlay(overlaySource),
     ]);
   } catch (error) {
-    await closeTiledPreviewSource(preview);
+    closeTiledPreviewSource(preview);
     throw error;
   }
   if (preview?.source) {
     try {
-      await deliverTiledPreview(preview, PAPER_COLORS[theme], texture, overlayImage);
+      // Mount the short-lived feedback before compatibility composition begins,
+      // but never let optional feedback pin the save or its coalescing promise.
+      await deliverTiledPreviewBeforeExport(preview, PAPER_COLORS[theme], texture, overlayImage);
     } catch {
       // Preview feedback is optional; its failure must not cancel the save.
     }
