@@ -19,7 +19,11 @@
   } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
-  import { freeGenerations, refreshFreeGenerationGrant } from '$lib/state/freeGenerations.svelte';
+  import {
+    freeGenerations,
+    grantRefreshReady,
+    refreshFreeGenerationGrant,
+  } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
   import { layout } from '$lib/state/layout.svelte';
@@ -153,6 +157,11 @@
     publishActionPanelState(panelEl, drawerExpanded, buttonScale);
   });
 
+  $effect(() => {
+    if (!grantRefreshReady() || !freeGenerations.loading) return;
+    void refreshFreeGenerationGrant();
+  });
+
   // The stroke-size lines preview the ink you'll lay down, tinted via
   // currentColor. Only the pen uses it — the eraser previews are theme-driven
   // "holes in the paper" (--paper / --hole-stroke), never color-tinted, so
@@ -191,7 +200,6 @@
   }
 
   onMount(() => {
-    void refreshFreeGenerationGrant();
     // Click outside closes the open flyout
     const onDocPointerDown = (e: PointerEvent) => {
       if (!openFlyout) return;
@@ -265,7 +273,11 @@
     requireParentalGate(
       'aiImage',
       () => {
-        if (!settings.aiUserApiKey && !settings.aiAccessToken && freeGenerations.remaining === 0) {
+        if (
+          !settings.aiUserApiKey &&
+          !settings.aiAccessToken &&
+          (!freeGenerations.available || freeGenerations.remaining === 0)
+        ) {
           openAiSettings(origin);
           return;
         }

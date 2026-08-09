@@ -46,7 +46,7 @@ describe('readAiImageResponse', () => {
           { status: 403 }
         )
       )
-    ).resolves.toEqual({ kind: 'free-exhausted', detail: 'Add your own key.' });
+    ).resolves.toEqual({ kind: 'free-exhausted' });
   });
 
   it('reads the error from a canonical JSON failure response', async () => {

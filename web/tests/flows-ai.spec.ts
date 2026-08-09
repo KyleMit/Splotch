@@ -57,6 +57,11 @@ test('an exhausted free installation keeps the AI affordance and opens BYOK setu
 });
 
 test('a migrated BYO key reveals the AI button on the next launch', async ({ page }) => {
+  let grantStatusRequests = 0;
+  await page.route('**/api/free-generation-grant', (route) => {
+    grantStatusRequests += 1;
+    return route.fulfill({ status: 500 });
+  });
   await page.addInitScript(
     ({ aiUserApiKey, seedMarker }) => {
       if (sessionStorage.getItem(seedMarker)) return;
@@ -80,10 +85,16 @@ test('a migrated BYO key reveals the AI button on the next launch', async ({ pag
   await openDrawer(page);
 
   await expect(page.locator('#aiImageButton')).toBeVisible();
+  expect(grantStatusRequests).toBe(0);
 });
 
 test('the AI button posts the drawing and reveals the generated result', async ({ page }) => {
   let postedImage = false;
+  let grantStatusRequests = 0;
+  await page.route('**/api/free-generation-grant', (route) => {
+    grantStatusRequests += 1;
+    return route.fulfill({ status: 500 });
+  });
   await page.route('**/api/generate-image?style=Magical', async (route) => {
     const req = route.request();
     // The client sends the raw image bytes as the body (no multipart envelope)
@@ -122,6 +133,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
   await downloadButton.click();
   await expect((await download).suggestedFilename()).toMatch(/^splotch-ai-.+\.webp$/);
   expect(postedImage).toBe(true);
+  expect(grantStatusRequests).toBe(0);
 });
 
 // A cutout cover ships with real alpha so the picker's own surface shows

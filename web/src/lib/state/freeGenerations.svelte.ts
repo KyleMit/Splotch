@@ -1,6 +1,8 @@
 import { apiUrl } from '$lib/api';
 import { INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { FREE_GENERATION_LIMIT, type FreeGenerationGrantStatus } from '$lib/freeGenerations';
+import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
+import { settings } from '$lib/state/settings.svelte';
 
 const WEB_INSTALLATION_KEY = 'splotch-free-generation-installation-v1';
 const INSTALLATION_NAMESPACE = 'splotch-free-generation-v1';
@@ -53,6 +55,15 @@ export function setFreeGenerationsRemaining(remaining: number): void {
   freeGenerations.remaining = Math.max(0, Math.min(FREE_GENERATION_LIMIT, Math.floor(remaining)));
   freeGenerations.available = true;
   freeGenerations.loading = false;
+}
+
+export function grantRefreshReady(): boolean {
+  return (
+    persistedStateStatus.hydrated &&
+    settings.aiImageEnabled &&
+    !settings.aiUserApiKey &&
+    !settings.aiAccessToken
+  );
 }
 
 export async function refreshFreeGenerationGrant(): Promise<void> {

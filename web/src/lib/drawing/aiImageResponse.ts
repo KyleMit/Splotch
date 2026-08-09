@@ -4,7 +4,7 @@ export type AiImageResponse =
   | { kind: 'image'; blob: Blob }
   | { kind: 'safety' }
   | { kind: 'throttled'; retryAfter: string | null; detail: string }
-  | { kind: 'free-exhausted'; detail: string }
+  | { kind: 'free-exhausted' }
   | { kind: 'error'; status: number; detail: string };
 
 const SAFETY_REFUSAL_STATUS = 422;
@@ -35,7 +35,7 @@ export async function readAiImageResponse(response: Response): Promise<AiImageRe
   if (response.ok) return { kind: 'image', blob: await response.blob() };
 
   const { detail, code } = await readError(response);
-  if (code === FREE_GRANT_EXHAUSTED_CODE) return { kind: 'free-exhausted', detail };
+  if (code === FREE_GRANT_EXHAUSTED_CODE) return { kind: 'free-exhausted' };
   if (response.status === SAFETY_REFUSAL_STATUS) return { kind: 'safety' };
   if (response.status === THROTTLED_STATUS) {
     return {

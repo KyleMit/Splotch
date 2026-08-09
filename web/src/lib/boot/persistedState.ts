@@ -3,6 +3,7 @@ import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/orientation';
+import { persistedStateStatus } from './persistedStateStatus.svelte';
 
 export async function hydratePersistedState(): Promise<void> {
   // Load the optional saved-photo folder name for display in Settings
@@ -31,4 +32,5 @@ export async function hydratePersistedState(): Promise<void> {
   // legacy plaintext key that survived only in Preferences can move into secure
   // storage before both plaintext copies are scrubbed.
   await hydrateApiKey();
+  persistedStateStatus.hydrated = true;
 }

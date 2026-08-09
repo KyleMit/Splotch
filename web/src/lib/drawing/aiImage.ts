@@ -184,11 +184,8 @@ function buildRequest(
     'Content-Type': uploadBlob.type || 'image/png',
   };
   if (settings.aiUserApiKey) headers[API_KEY_HEADER] = settings.aiUserApiKey;
+  else if (freeInstallationId) headers[INSTALLATION_ID_HEADER] = freeInstallationId;
   else headers[ACCESS_TOKEN_HEADER] = settings.aiAccessToken;
-  if (freeInstallationId) {
-    delete headers[ACCESS_TOKEN_HEADER];
-    headers[INSTALLATION_ID_HEADER] = freeInstallationId;
-  }
 
   const endpoint =
     apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');

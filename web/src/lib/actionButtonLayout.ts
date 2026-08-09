@@ -9,6 +9,7 @@ import {
   ACTION_BUTTON_SCALE_MAX,
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
+import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 import { layout, type Orientation } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
@@ -63,7 +64,8 @@ export const WORST_CASE_CHROME =
 export const PALETTE_BAR_RESERVE = 76;
 
 export function isAiImageButtonVisible(): boolean {
-  return settings.aiImageEnabled && network.online;
+  const hasCredential = Boolean(settings.aiUserApiKey || settings.aiAccessToken);
+  return settings.aiImageEnabled && network.online && (hasCredential || freeGenerations.available);
 }
 
 export function visibleActionButtonCount(): number {

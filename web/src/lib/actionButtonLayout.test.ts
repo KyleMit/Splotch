@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { layout } from './state/layout.svelte';
 import { network } from './state/network.svelte';
+import { freeGenerations } from './state/freeGenerations.svelte';
 import {
   settings,
   setAdvancedControls,
@@ -63,6 +64,7 @@ function resetState() {
   setAiAccessToken('');
   settings.aiUserApiKey = '';
   network.online = true;
+  freeGenerations.available = true;
 
   layout.orientation = 'landscape';
   layout.viewportWidth = 1280;
@@ -110,6 +112,16 @@ describe('visibleActionButtonCount', () => {
     setAiImage(false);
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
+  });
+
+  it('requires a usable free-generation path when no credential is saved', () => {
+    freeGenerations.available = false;
+    expect(isAiImageButtonVisible()).toBe(false);
+    expect(visibleActionButtonCount()).toBe(5);
+
+    setAiAccessToken('code');
+    expect(isAiImageButtonVisible()).toBe(true);
+    expect(visibleActionButtonCount()).toBe(6);
   });
 
   it('drops buttons the parent switched off', () => {

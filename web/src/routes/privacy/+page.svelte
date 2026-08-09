@@ -166,8 +166,8 @@
     <p>
       Splotch remembers small preferences (like sound on/off and your last color or brush size)
       using your device's local storage. Those preferences stay on your device and are never sent to
-      us. On the web, a random local installation value is used only to create the one-way free-
-      allowance code described above.
+      us. On the web, a random local installation value is used only to create the one-way
+      free-allowance code described above.
     </p>
 
     <h3>Children's privacy</h3>
