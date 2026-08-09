@@ -167,6 +167,9 @@ test('a saved disabled setting blocks pack boot until coloring books are enabled
     (key) => localStorage.setItem(key, 'false'),
     STORAGE_KEYS.coloringBookEnabled
   );
+  // Leave the enabled document before counting so its already-scheduled downloader
+  // cannot be mistaken for work started by the disabled cold boot.
+  await page.goto('about:blank');
   manifestRequests = 0;
 
   await gotoApp(page);

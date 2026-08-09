@@ -97,7 +97,9 @@ export function readDesignCritique(path, expectedImages) {
   try {
     document = JSON.parse(readFileSync(path, 'utf8'));
   } catch (error) {
-    throw new Error(`Could not read design critique at ${path}: ${error.message}`);
+    throw new Error(`Could not read design critique at ${path}: ${error.message}`, {
+      cause: error,
+    });
   }
   if (!document || typeof document !== 'object' || !Array.isArray(document.entries)) {
     throw new Error(`Design critique at ${path} must contain an entries array`);
