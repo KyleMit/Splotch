@@ -20,55 +20,6 @@ them as reusable raw material.
 
 Entries below arrived after those passes and are awaiting triage.
 
-### [P4][consistency] No `.editorconfig`; indent width `2` and print width `100` are restated in three files
-
-**File(s):** `.prettierrc.json:3,6`, `dprint.json:1-2`, `.vscode/settings.json:4` (config) — pinned
-at SHA f934d43
-
-#### Problem
-
-The same two formatting constants live in three places with three vocabularies: `.prettierrc.json`
-(`tabWidth: 2`, `printWidth: 100`), `dprint.json` (`indentWidth: 2`, `lineWidth: 100`),
-`.vscode/settings.json` (`editor.tabSize: 2` for markdown). There is no `.editorconfig`, so any
-editor without the Prettier/dprint extensions gets no indentation guidance, and the `100`/`2` magic
-numbers must be kept in lockstep by hand across formatter configs.
-
-#### Proposed solution
-
-Add a root `.editorconfig` (`indent_size = 2`, `max_line_length = 100`, `charset = utf-8`,
-`insert_final_newline = true`) as the editor-agnostic source, and reference it in a comment from the
-formatter configs. This doesn't remove the per-tool settings (each formatter needs its own) but
-gives one canonical statement and covers editors without extensions.
-
-#### Verification
-
-Open a source file in a bare editor (no plugins) and confirm 2-space indent is applied from
-`.editorconfig`. Confirm `100`/`2` still agree across `.prettierrc.json` and `dprint.json`.
-
----
-
-#### Why it was deferred
-
-implementer failed to deliver a fix round
-
-Reviewer's unresolved objections:
-
-* `.prettierrc.json`, `dprint.json`, and `.vscode/settings.json` do not reference `.editorconfig` as
-  the canonical source, so this change merely adds a fourth independent copy of the `2`/`100` values
-  and leaves the original lockstep-maintenance problem unresolved.
-
-#### What was tried
-
-Added root EditorConfig defaults so EditorConfig-aware editors inherit the repository’s shared
-spacing, line length, encoding, and final-newline preferences without formatter extensions.
-
-#### Draft implementation
-
-The rolled-back draft is kept at
-`docs/audit-deferred/p4-consistency-no-editorconfig-indent-width-2-and-print-width-100-are-re.patch`
-(1 commit). It was not accepted, so it is a starting point rather than scrap. Apply with
-`git apply docs/audit-deferred/p4-consistency-no-editorconfig-indent-width-2-and-print-width-100-are-re.patch`.
-
 ### [P1][duplication] Extract a shared segmented-control primitive — it now exists three times with drift
 
 **File(s):** `web/src/lib/components/settings/AppearanceSection.svelte:32-47,92-138` ·
