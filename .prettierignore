@@ -11,6 +11,7 @@ ios/
 package-lock.json
 web/src/lib/components/icon-names.d.ts
 web/src/lib/components/page/ReleaseHistory.svelte
+web/src/lib/components/settings/CurrentReleaseNotes.svelte
 web/src/lib/releases.json
 web/src/tokens.css
 tools/store-drawings/generated/store-drawings.mjs

@@ -4,6 +4,7 @@ import {
   releaseAnchor,
   renderReleaseComponent,
   renderReleaseHistory,
+  validateBundledReleaseText,
   validateStoreText,
 } from '../generate-releases.mjs';
 
@@ -49,6 +50,25 @@ describe('validateStoreText', () => {
       validateStoreText('App updates no longer leave stale content.\n</content>')
     ).toThrow('Store text contains HTML/XML-like markup');
   });
+});
+
+describe('validateBundledReleaseText', () => {
+  it('allows qualified features from the complete cross-platform history', () => {
+    expect(() =>
+      validateBundledReleaseText(
+        'Save your drawings straight to a folder on your computer (web).\nNative Apple Pencil support.'
+      )
+    ).not.toThrow();
+  });
+
+  it.each(['Google Play', 'Play Store', 'App Store'])(
+    'rejects marketplace-specific copy containing %s',
+    (phrase) => {
+      expect(() => validateBundledReleaseText(`Now available on ${phrase}.`, '2.0.0.md')).toThrow(
+        `2.0.0.md: release notes are bundled on web, Android, and iOS and must not name ${phrase}`
+      );
+    }
+  );
 });
 
 describe('renderReleaseComponent', () => {

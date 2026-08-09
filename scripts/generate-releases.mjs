@@ -17,6 +17,7 @@ import { parseFrontmatter, compareSemverDesc, writeFileDeep } from './lib/frontm
 const RELEASES_DIR = join(ROOT, 'releases');
 const ANDROID_CHANGELOG_LIMIT = 500; // Google Play "What's new" hard limit.
 const ISO_RELEASE_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const FORBIDDEN_BUNDLED_RELEASE_PHRASES = ['Google Play', 'Play Store', 'App Store'];
 
 function parseRelease(filename) {
   return parseReleaseSource(filename, readFileSync(join(RELEASES_DIR, filename), 'utf8'));
@@ -25,6 +26,7 @@ function parseRelease(filename) {
 export function parseReleaseSource(filename, source) {
   const parsed = parseFrontmatter(source);
   if (!parsed) throw new Error(`${filename}: missing or malformed frontmatter`);
+  validateBundledReleaseText(parsed.body, filename);
   const isoDate = parsed.meta.date;
   if (!ISO_RELEASE_DATE.test(isoDate)) {
     throw new Error(`${filename}: date must use YYYY-MM-DD`);
@@ -63,6 +65,18 @@ function toPlainText(body) {
 export function validateStoreText(text) {
   if (/<\/?[A-Za-z][A-Za-z0-9:-]*(?:\s[^<>]*?)?\s*\/?>/.test(text)) {
     throw new Error('Store text contains HTML/XML-like markup');
+  }
+}
+
+export function validateBundledReleaseText(text, filename = 'release notes') {
+  const lowerText = text.toLocaleLowerCase('en-US');
+  const phrase = FORBIDDEN_BUNDLED_RELEASE_PHRASES.find((candidate) =>
+    lowerText.includes(candidate.toLocaleLowerCase('en-US'))
+  );
+  if (phrase) {
+    throw new Error(
+      `${filename}: release notes are bundled on web, Android, and iOS and must not name ${phrase}`
+    );
   }
 }
 
@@ -127,9 +141,7 @@ export function renderReleaseHistory(releases) {
         /^(#{1,5})(?=\s)/gm,
         (heading) => `${heading}#`
       );
-      const notes = indentStaticHtml(
-        escapeSvelteBraces(marked.parse(bodyWithNestedHeadings).trim())
-      );
+      const notes = escapeSvelteBraces(marked.parse(bodyWithNestedHeadings).trim());
       return (
         `<article class="release" id="${releaseAnchor(release.meta.version)}">\n` +
         `  <header class="release-header">\n` +

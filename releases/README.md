@@ -42,6 +42,11 @@ The body is free Markdown. Headings become section labels in the plain-text stor
 items become `•` bullets. Keep the Android changelog under **500 characters** (the script warns if
 the latest release exceeds it).
 
+The same body also appears in the complete changelog bundled on web, Android, and iOS. Keep the full
+history intact and qualify platform-limited features with `(web)`, `(Android)`, or `(iOS)`. Do not
+name a platform marketplace: `gen:releases` rejects Google Play, Play Store, and App Store copy
+because it would also ship inside the other platform's binary.
+
 ## How to cut a release
 
 Shipping is **three ordered phases** — release, build, publish (ADR-0077). The order matters: an
