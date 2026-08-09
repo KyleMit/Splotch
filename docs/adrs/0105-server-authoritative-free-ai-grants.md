@@ -62,12 +62,15 @@ non-persistent memory fallback.
 
 Free attempts use their own per-IP 15/minute in-memory guard in
 `generationAuthorization.ts`/`rateLimitPolicy.ts`, preserving ADR-0014's low-latency rate-limit
-model while the durable daily provider-start counter supplies the cross-instance cost boundary.
-Managed access codes and BYOK keep their existing branches and limits. Successful free responses
-carry `X-Free-Generations-Remaining`; `GET /api/free-generation-grant` refreshes the authoritative
-count without creating or spending a grant and reports unavailable when the project key or daily
-budget cannot serve a free generation. Exhaustion keeps the AI button visible and routes the
-already-parent-gated operation to BYOK setup, following ADR-0094's operation-level gate.
+model while the durable daily provider-start counter supplies the cross-instance cost boundary. The
+project does not persist a per-IP daily sub-cap: doing so would turn the rejected IP-keyed allowance
+into durable source tracking while penalizing shared family, school, carrier, and VPN addresses. The
+global ceiling bounds cost; the in-memory source limit only slows a single-source availability
+attack. Managed access codes and BYOK keep their existing branches and limits. Successful free
+responses carry `X-Free-Generations-Remaining`; `GET /api/free-generation-grant` refreshes the
+authoritative count without creating or spending a grant and reports unavailable when the project
+key or daily budget cannot serve a free generation. Exhaustion keeps the AI button visible and
+routes the already-parent-gated operation to BYOK setup, following ADR-0094's operation-level gate.
 
 The authenticated web-only `/admin` console (ADR-0101) reads the exact daily provider-start counter
 and samples at most 200 installation grants. Sample-derived successes, attempts, failures,
@@ -91,8 +94,13 @@ non-persistent, because plain Vite has no Netlify Blobs context (ADR-0025).
   allowance. This is the explicit cost of declining accounts, fingerprints, advertising IDs, and
   IP-based identity.
 * − Every free provider call adds a global conditional write as well as the per-installation writes.
-  The admin view intentionally samples installation records rather than reporting an exact lifetime
-  aggregate.
+  Provider starts serialize on that daily record, so a sufficiently concurrent burst can exhaust the
+  bounded compare-and-set retries and receive a busy failure before the daily ceiling. The admin
+  view intentionally samples installation records rather than reporting an exact lifetime aggregate.
+* − The global ceiling is a shared availability budget. One source can consume the day’s allowance
+  by minting installation pseudonyms; the per-IP in-memory limiter slows that denial but cannot
+  prevent it across cold starts or function instances. This is accepted instead of durably storing
+  source IPs or imposing a sub-cap that blocks families and classrooms behind shared addresses.
 * − A provider success followed by an unconfirmable accounting write is withheld from the client; it
   can still incur provider cost without consuming a successful user-visible generation.
 * − The one-minute reservation lease temporarily reduces the displayed remaining count while a
