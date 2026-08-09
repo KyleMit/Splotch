@@ -121,10 +121,11 @@ npx @capacitor/assets generate --ios
       1024×1024 `AppIcon` doubles as the App Store icon.
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip against
       `https://splotch.art`), offline airplane mode (AI button hides; Farm and installed coloring
-      packs remain), background a coloring-pack download and confirm the next whole book appears,
-      save-to-photos (add-only permission prompt wording), Guided Access tips in Settings read
-      correctly for iOS — and with Guided Access **on**, the lock section shows a green ✓ + the exit
-      steps (via the custom `DeviceLock` plugin, `ios/App/App/DeviceLockPlugin.swift`).
+      packs remain), disable Coloring Book during a background download and confirm it cancels while
+      completed packs remain, re-enable it and confirm the next whole book appears, save-to-photos
+      (add-only permission prompt wording), Guided Access tips in Settings read correctly for iOS —
+      and with Guided Access **on**, the lock section shows a green ✓ + the exit steps (via the
+      custom `DeviceLock` plugin, `ios/App/App/DeviceLockPlugin.swift`).
 
 ### Apple Developer account (one-time)
 

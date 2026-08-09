@@ -13,6 +13,7 @@ export interface ColoringPackStore {
     allowMetered: boolean,
     signal: AbortSignal
   ): Promise<InstalledColoringPack>;
+  cancel(): Promise<void>;
   remove(manifest: ResolvedColoringPackManifest): Promise<void>;
   usage(manifest: ResolvedColoringPackManifest): Promise<number>;
 }

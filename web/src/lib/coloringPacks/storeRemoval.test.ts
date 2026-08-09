@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedColoringPackManifest } from './manifest';
 
 const mocks = vi.hoisted(() => ({
+  nativeCancel: vi.fn(),
   nativeRemove: vi.fn(),
   webDelete: vi.fn(),
 }));
 
 vi.mock('$lib/plugins/coloringPacks', () => ({
-  ColoringPacks: { remove: mocks.nativeRemove },
+  ColoringPacks: { cancel: mocks.nativeCancel, remove: mocks.nativeRemove },
   nativeColoringPackRootUrl: (path: string) => path,
 }));
 
@@ -22,6 +23,7 @@ const manifest: ResolvedColoringPackManifest = {
 };
 
 beforeEach(() => {
+  mocks.nativeCancel.mockReset().mockResolvedValue(undefined);
   mocks.nativeRemove.mockReset().mockResolvedValue(undefined);
   mocks.webDelete.mockReset().mockResolvedValue(true);
   vi.stubGlobal('caches', { delete: mocks.webDelete });
@@ -30,6 +32,13 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('coloring-pack removal', () => {
+  it('cancels native work without removing either stored resolution', async () => {
+    await createNativeColoringPackStore().cancel();
+
+    expect(mocks.nativeCancel).toHaveBeenCalledOnce();
+    expect(mocks.nativeRemove).not.toHaveBeenCalled();
+  });
+
   it('removes both web resolution namespaces', async () => {
     await createWebColoringPackStore().remove(manifest);
 

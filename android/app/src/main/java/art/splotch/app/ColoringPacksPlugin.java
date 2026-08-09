@@ -3,14 +3,18 @@ package art.splotch.app;
 import android.content.Context;
 import android.net.Uri;
 
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.work.Constraints;
 import androidx.work.Data;
 import androidx.work.ExistingWorkPolicy;
 import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.Operation;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -135,15 +139,34 @@ public class ColoringPacksPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void cancel(PluginCall call) {
+        cancelWork(call, call::resolve);
+    }
+
+    @PluginMethod
     public void remove(PluginCall call) {
         try {
             String version = requiredComponent(call, "version");
-            WorkManager.getInstance(getContext()).cancelUniqueWork(WORK_NAME);
-            deleteRecursively(new File(new File(getContext().getNoBackupFilesDir(), "coloring"), version));
-            call.resolve();
+            cancelWork(call, () -> {
+                deleteRecursively(new File(new File(getContext().getNoBackupFilesDir(), "coloring"), version));
+                call.resolve();
+            });
         } catch (Exception error) {
             call.reject(error.getMessage(), error);
         }
+    }
+
+    private void cancelWork(PluginCall call, Runnable onCancelled) {
+        ListenableFuture<Operation.State.SUCCESS> cancelled =
+                WorkManager.getInstance(getContext()).cancelUniqueWork(WORK_NAME).getResult();
+        cancelled.addListener(() -> {
+            try {
+                cancelled.get();
+                onCancelled.run();
+            } catch (Exception error) {
+                call.reject(error.getMessage(), error);
+            }
+        }, ContextCompat.getMainExecutor(getContext()));
     }
 
     private static String requiredString(PluginCall call, String key) {

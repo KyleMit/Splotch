@@ -82,7 +82,7 @@
     // theme-color meta and OS-switch tracking now fall out of the single
     // reactive source in lib/state/appearance.svelte.ts.
     applyTheme(settings.theme);
-    hydratePersistedState();
+    const settingsReady = hydratePersistedState();
 
     const teardowns = [
       mountBootHiddenOverlays(
@@ -94,7 +94,7 @@
       initWebOnlyServices(),
       installDevHarnessSeam(),
       installUndoShortcut(),
-      installColoringPackDownloads(),
+      installColoringPackDownloads(settingsReady),
     ];
     return () => teardowns.forEach((teardown) => teardown());
   });

@@ -86,6 +86,9 @@ export function createWebColoringPackStore(): ColoringPackStore {
       return { id: book.id };
     },
 
+    // Web transfers abort through the AbortSignal install() already receives.
+    async cancel() {},
+
     async remove(manifest) {
       await Promise.all(
         COLORING_PACK_RESOLUTIONS.map((resolution) =>

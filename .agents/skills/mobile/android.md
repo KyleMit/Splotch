@@ -221,7 +221,8 @@ multi-touch input — the best way to get accurate profiles.
       round-trips against `https://splotch.art`.
 * [ ] Test offline: enable airplane mode → AI button disappears; Farm and every previously
       downloaded coloring book still work. On a clean install only Farm is present.
-* [ ] Test coloring-pack background work: on Wi-Fi, books appear one at a time; with default
+* [ ] Test coloring-pack background work: on Wi-Fi, books appear one at a time; disabling Coloring
+      Book cancels WorkManager but keeps completed packs, re-enabling resumes; with default
       settings, metered/Data Saver conditions pause WorkManager; Settings removal returns to Farm.
 * [ ] Test "save to gallery" → confirm a **Splotch** album with the PNG, and that the photo-add
       permission prompt reads sensibly.

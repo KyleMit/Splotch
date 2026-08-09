@@ -35,6 +35,10 @@ export function createNativeColoringPackStore(): ColoringPackStore {
       return resolvedPack(pack);
     },
 
+    async cancel() {
+      await ColoringPacks.cancel();
+    },
+
     async remove(manifest) {
       for (const resolution of COLORING_PACK_RESOLUTIONS) {
         await ColoringPacks.remove({ version: storageVersion({ ...manifest, resolution }) });

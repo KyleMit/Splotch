@@ -46,6 +46,7 @@ function connection(): NetworkInformationLike | undefined {
 }
 
 function automaticDownloadAllowed(): boolean {
+  if (!settings.coloringBookEnabled) return false;
   if (__IS_CAPACITOR__ || settings.coloringPacksAllowMetered) return true;
   const network = connection();
   if (!network) return true;
@@ -78,15 +79,21 @@ async function initializeState(
 export function createColoringPackDownloader(downloadAllowed = automaticDownloadAllowed) {
   let stopped = false;
   let paused = false;
+  let rerunRequested = false;
   let runPromise: Promise<void> | null = null;
   let controller: AbortController | null = null;
+  let activeStore: ColoringPackStore | null = null;
 
   async function run() {
+    if (!downloadAllowed()) return;
     controller = new AbortController();
     const manifest = await loadManifest(controller.signal);
+    if (controller.signal.aborted || !downloadAllowed()) return;
     const store = await createStore();
+    if (controller.signal.aborted || !downloadAllowed()) return;
+    activeStore = store;
     const installed = await initializeState(store, manifest);
-    if (!downloadAllowed()) return;
+    if (controller.signal.aborted || !downloadAllowed()) return;
 
     for (const book of manifest.books) {
       if (stopped || paused || controller.signal.aborted) return;
@@ -107,14 +114,22 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
   }
 
   function requestRun() {
-    if (stopped || paused || runPromise) return;
+    if (stopped || paused) return;
+    if (runPromise) {
+      rerunRequested = true;
+      return;
+    }
+    rerunRequested = false;
     runPromise = run()
       .catch((error) => {
         if (!controller?.signal.aborted) console.warn('Coloring-pack download paused', error);
       })
       .finally(() => {
         coloringPackState.downloadingBookId = null;
+        controller = null;
+        activeStore = null;
         runPromise = null;
+        if (rerunRequested) requestRun();
       });
   }
 
@@ -124,9 +139,17 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
   const network = connection();
   const pause = () => {
     paused = true;
-    if (!__IS_CAPACITOR__) controller?.abort();
+    rerunRequested = false;
+    controller?.abort();
+    void activeStore?.cancel().catch((error) => {
+      console.warn('Coloring-pack cancellation failed', error);
+    });
   };
-  const resumeForPolicyChange = () => {
+  const applyDownloadPolicy = () => {
+    if (!downloadAllowed()) {
+      pause();
+      return;
+    }
     paused = false;
     requestRun();
   };
@@ -136,16 +159,18 @@ export function createColoringPackDownloader(downloadAllowed = automaticDownload
       requestRun();
       window.addEventListener('online', requestRun);
       document.addEventListener('visibilitychange', requestWhenVisible);
-      window.addEventListener(COLORING_PACK_POLICY_EVENT, resumeForPolicyChange);
+      window.addEventListener(COLORING_PACK_POLICY_EVENT, applyDownloadPolicy);
       window.addEventListener(COLORING_PACK_REMOVE_EVENT, pause);
       network?.addEventListener('change', requestRun);
     },
     stop() {
       stopped = true;
+      // Route teardown leaves native background work running; only an explicit
+      // policy or removal pause cancels it.
       if (!__IS_CAPACITOR__) controller?.abort();
       window.removeEventListener('online', requestRun);
       document.removeEventListener('visibilitychange', requestWhenVisible);
-      window.removeEventListener(COLORING_PACK_POLICY_EVENT, resumeForPolicyChange);
+      window.removeEventListener(COLORING_PACK_POLICY_EVENT, applyDownloadPolicy);
       window.removeEventListener(COLORING_PACK_REMOVE_EVENT, pause);
       network?.removeEventListener('change', requestRun);
     },

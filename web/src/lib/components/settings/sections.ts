@@ -63,7 +63,9 @@ export function sectionSubtitle(id: SectionId): string {
     case 'saving':
       return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
     case 'coloring':
-      return `${Math.max(0, coloringPackState.installedBookIds.length - 1)} extra books ready`;
+      return settings.coloringBookEnabled
+        ? `${Math.max(0, coloringPackState.installedBookIds.length - 1)} extra books ready`
+        : 'Coloring books off';
     case 'controls':
       return settings.advancedControlsEnabled ? 'Advanced controls on' : 'Standard controls';
     case 'ai': {

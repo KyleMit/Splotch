@@ -1,7 +1,8 @@
 # ADR-0103: Ship One Starter Coloring Book and Install the Rest as Verified Background Packs
 
-**Status:** Active — implements issue #200; amended 2026-08-08 for screen-sized pack variants; and
-amends [ADR-0022](0022-pwa-service-worker-strategy.md),
+**Status:** Active — implements issue #200; amended 2026-08-08 for screen-sized pack variants and
+2026-08-09 for issue #880's Coloring Book feature gate; and amends
+[ADR-0022](0022-pwa-service-worker-strategy.md),
 [ADR-0042](0042-static-media-cache-invalidation.md), and
 [ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md). **Date:** 2026-08
 
@@ -81,6 +82,12 @@ The same TypeScript store contract has platform-specific implementations:
 The Parent Settings Coloring section can allow automatic downloads over mobile data and can remove
 all downloaded books. Removal cancels/pauses installation for the current app session, clears both
 resolution namespaces for the current app version, and immediately returns the picker to Farm.
+
+The section's Coloring Book master toggle gates the whole feature. Disabling it clears the active
+page, hides the canvas action, aborts web transfers, and cancels Android WorkManager or iOS
+background-session work without removing any completed pack or install marker. Re-enabling it
+resumes normal automatic installation. Boot waits for durable settings recovery before scheduling
+the dynamically imported manager, and a disabled setting prevents even the manifest request.
 
 ### Scheduling and drawing-path boundary
 

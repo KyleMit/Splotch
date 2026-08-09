@@ -120,6 +120,18 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         }
     }
 
+    func cancel(completion: @escaping () -> Void) {
+        queue.async {
+            self.cancelAllTasks()
+            self.currentJob = nil
+            let callback = self.completion
+            self.completion = nil
+            try? FileManager.default.removeItem(at: Self.jobURL)
+            callback?(.failure(ColoringPackError.cancelled))
+            completion()
+        }
+    }
+
     func acceptBackgroundEvents(identifier: String, completion: @escaping () -> Void) {
         queue.async {
             self.backgroundCompletions[identifier] = completion
@@ -302,6 +314,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 }
 
 private enum ColoringPackError: Error {
+    case cancelled
     case downloadInProgress
     case invalidURL
     case invalidPath
@@ -315,6 +328,7 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "install", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "cancel", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "remove", returnType: CAPPluginReturnPromise)
     ]
 
@@ -385,6 +399,12 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
             } else {
                 call.resolve()
             }
+        }
+    }
+
+    @objc func cancel(_ call: CAPPluginCall) {
+        ColoringPackDownloadCoordinator.shared.cancel {
+            call.resolve()
         }
     }
 

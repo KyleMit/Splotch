@@ -17,6 +17,7 @@ interface ColoringPacksPlugin {
     book: ResolvedColoringPackBookManifest;
     allowMetered: boolean;
   }): Promise<NativeColoringPack>;
+  cancel(): Promise<void>;
   remove(options: { version: string }): Promise<void>;
 }
 

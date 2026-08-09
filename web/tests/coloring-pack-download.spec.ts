@@ -8,6 +8,7 @@ import {
 } from './flows-harness';
 import { gotoApp, openSettingsModal } from './helpers';
 import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 async function holdDinosaurDownload(page: Page): Promise<() => void> {
   let releaseDownload!: () => void;
@@ -122,6 +123,75 @@ test('removing downloaded books restores single-book page thumbnails', async ({ 
         .evaluate((image: HTMLImageElement) => image.naturalWidth)
     )
     .toBeGreaterThan(0);
+});
+
+test('the Coloring section toggle clears the page but keeps downloaded books', async ({ page }) => {
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await openDrawer(page);
+  await openColoringDialog(page);
+
+  const dialog = page.locator('#coloring-book-dialog');
+  const pages = await openFarmPageGrid(page);
+  await pages.first().click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#coloringOverlay')).toBeVisible();
+
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Buttons', exact: true }).click();
+  await expect(settings.locator('#coloringBookToggle')).toHaveCount(0);
+
+  await settings.getByRole('button', { name: 'Coloring', exact: true }).click();
+  const toggle = settings.locator('#coloringBookToggle');
+  await expect(
+    settings.locator('.setting-group > .setting').first().locator('#coloringBookToggle')
+  ).toBeVisible();
+  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
+
+  await toggle.click();
+
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(page.locator('#coloringOverlay')).toBeHidden();
+  await expect(page.locator('#coloringBookButton')).toBeHidden();
+  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
+});
+
+test('a saved disabled setting blocks pack boot until coloring books are enabled', async ({
+  page,
+}) => {
+  let manifestRequests = 0;
+  page.on('request', (request) => {
+    if (/\/coloring\/manifest-.+\.json$/.test(request.url())) manifestRequests++;
+  });
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await page.evaluate(
+    (key) => localStorage.setItem(key, 'false'),
+    STORAGE_KEYS.coloringBookEnabled
+  );
+  manifestRequests = 0;
+
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await expect(page.locator('html')).toHaveAttribute('data-off-coloring', '');
+  await expect(page.locator('html')).toHaveCSS('--action-btn-first-paint-count', '4');
+  await expect(page.locator('#coloringBookButton')).toBeHidden();
+
+  // This proves a negative over longer than scheduleIdle's fallback window: a
+  // slower worker only lengthens the observation and cannot create a false pass.
+  await page.waitForTimeout(500);
+  expect(manifestRequests).toBe(0);
+
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Coloring', exact: true }).click();
+  await expect(
+    settings.getByText('Storage details are unavailable while coloring books are off')
+  ).toBeVisible();
+  await expect(settings.locator('#coloringPacksMeteredToggle')).toBeDisabled();
+  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
+  await settings.locator('#coloringBookToggle').click();
+
+  await expect(page.locator('#coloringBookButton')).toBeVisible();
+  await expect.poll(() => manifestRequests).toBeGreaterThan(0);
 });
 
 test('finishing a download keeps the open page grid stable', async ({ page }) => {
