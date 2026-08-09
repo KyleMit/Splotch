@@ -1,4 +1,7 @@
-import { COMPACT_COLORING_PACK_MAX_EDGE_PX } from '../state/books.ts';
+import {
+  COMPACT_COLORING_PACK_MAX_EDGE_PX,
+  COMPACT_COLORING_PACK_SHORT_EDGE_PX,
+} from '../state/books.ts';
 
 export const COLORING_PACK_RESOLUTIONS = ['compact', 'full'] as const;
 export type ColoringPackResolution = (typeof COLORING_PACK_RESOLUTIONS)[number];
@@ -9,9 +12,8 @@ interface ColoringPackScreen {
   devicePixelRatio: number;
 }
 
-const MAX_RENDER_DPR = 2;
-const COLORING_PAGE_LONG_TO_SHORT_RATIO = 1.5;
-const COMPACT_PACK_MAX_UPSCALE_RATIO = 1.125;
+const COLORING_PAGE_LONG_TO_SHORT_RATIO =
+  COMPACT_COLORING_PACK_MAX_EDGE_PX / COMPACT_COLORING_PACK_SHORT_EDGE_PX;
 
 export function coloringPackResolutionForScreen({
   widthCssPx,
@@ -34,10 +36,8 @@ export function coloringPackResolutionForScreen({
     longEdgeCssPx,
     shortEdgeCssPx * COLORING_PAGE_LONG_TO_SHORT_RATIO
   );
-  const requiredLongEdgePx = paperLongEdgeCssPx * Math.min(devicePixelRatio, MAX_RENDER_DPR);
-  return requiredLongEdgePx <= COMPACT_COLORING_PACK_MAX_EDGE_PX * COMPACT_PACK_MAX_UPSCALE_RATIO
-    ? 'compact'
-    : 'full';
+  const requiredLongEdgePx = paperLongEdgeCssPx * devicePixelRatio;
+  return requiredLongEdgePx <= COMPACT_COLORING_PACK_MAX_EDGE_PX ? 'compact' : 'full';
 }
 
 export function currentColoringPackResolution(): ColoringPackResolution {

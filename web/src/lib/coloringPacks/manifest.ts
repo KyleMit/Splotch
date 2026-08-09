@@ -5,9 +5,13 @@ export const COLORING_PACK_FORMAT_VERSION = 2;
 
 interface ColoringPackFile {
   path: string;
-  downloadPath: string;
+  downloadPath?: string;
   bytes: number;
   sha256: string;
+}
+
+interface ResolvedColoringPackFile extends ColoringPackFile {
+  downloadPath: string;
 }
 
 interface ColoringPackVariantManifest {
@@ -27,8 +31,12 @@ export interface ColoringPackManifest {
   books: ColoringPackBookManifest[];
 }
 
-export interface ResolvedColoringPackBookManifest extends ColoringPackVariantManifest {
+export interface ResolvedColoringPackBookManifest extends Omit<
+  ColoringPackVariantManifest,
+  'files'
+> {
   id: string;
+  files: ResolvedColoringPackFile[];
 }
 
 export interface ResolvedColoringPackManifest {
@@ -50,7 +58,17 @@ export function resolveColoringPackManifest(
     appVersion: manifest.appVersion,
     resolution,
     starterBookId: manifest.starterBookId,
-    books: manifest.books.map((book) => ({ id: book.id, ...book.variants[resolution] })),
+    books: manifest.books.map((book) => {
+      const variant = book.variants[resolution];
+      return {
+        id: book.id,
+        bytes: variant.bytes,
+        files: variant.files.map((file) => ({
+          ...file,
+          downloadPath: file.downloadPath ?? file.path,
+        })),
+      };
+    }),
   };
 }
 
@@ -76,9 +94,10 @@ function validVariant(
       !file.path.endsWith('.webp') ||
       file.path.includes('..') ||
       paths.has(file.path) ||
-      typeof file.downloadPath !== 'string' ||
-      !file.downloadPath.endsWith('.webp') ||
-      file.downloadPath.includes('..') ||
+      (file.downloadPath !== undefined &&
+        (typeof file.downloadPath !== 'string' ||
+          !file.downloadPath.endsWith('.webp') ||
+          file.downloadPath.includes('..'))) ||
       !Number.isSafeInteger(file.bytes) ||
       (file.bytes as number) <= 0 ||
       typeof file.sha256 !== 'string' ||
@@ -86,10 +105,12 @@ function validVariant(
     ) {
       return Number.NaN;
     }
+    const downloadPath = file.downloadPath ?? file.path;
     const validDownloadPath =
       resolution === 'full'
-        ? file.downloadPath === file.path
-        : new RegExp(`^/coloring/max-\\d+px/${bookId}/`).test(file.downloadPath);
+        ? downloadPath === file.path
+        : downloadPath === file.path ||
+          new RegExp(`^/coloring/max-\\d+px/${bookId}/`).test(downloadPath);
     if (!validDownloadPath) return Number.NaN;
     paths.add(file.path);
     return sum + (file.bytes as number);

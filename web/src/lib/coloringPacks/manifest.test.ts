@@ -4,9 +4,9 @@ import { parseColoringPackManifest, resolveColoringPackManifest } from './manife
 
 function manifest() {
   const path = '/coloring/farm/cover.thumb.webp';
-  const file = (downloadPath: string) => ({
+  const file = (downloadPath?: string) => ({
     path,
-    downloadPath,
+    ...(downloadPath ? { downloadPath } : {}),
     bytes: 3,
     sha256: 'a'.repeat(64),
   });
@@ -22,7 +22,7 @@ function manifest() {
             bytes: 3,
             files: [file('/coloring/max-240px/farm/cover.thumb.webp')],
           },
-          full: { bytes: 3, files: [file(path)] },
+          full: { bytes: 3, files: [file()] },
         },
       },
     ],
@@ -37,6 +37,8 @@ describe('parseColoringPackManifest', () => {
     expect(compact.books[0].files[0].downloadPath).toBe(
       '/coloring/max-240px/farm/cover.thumb.webp'
     );
+    const full = resolveColoringPackManifest(parsed, 'full');
+    expect(full.books[0].files[0].downloadPath).toBe(full.books[0].files[0].path);
   });
 
   it('rejects version, path, digest, aggregate-byte, and tier mismatches', () => {
@@ -45,7 +47,7 @@ describe('parseColoringPackManifest', () => {
       (value: ReturnType<typeof manifest>) =>
         (value.books[0].variants.full.files[0].path = '../escape.webp'),
       (value: ReturnType<typeof manifest>) =>
-        (value.books[0].variants.compact.files[0].downloadPath = '/coloring/farm/cover.thumb.webp'),
+        (value.books[0].variants.compact.files[0].downloadPath = '/outside/farm/cover.thumb.webp'),
       (value: ReturnType<typeof manifest>) =>
         (value.books[0].variants.full.files[0].sha256 = 'bad'),
       (value: ReturnType<typeof manifest>) => (value.books[0].variants.full.bytes = 4),

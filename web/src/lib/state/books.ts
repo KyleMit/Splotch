@@ -122,6 +122,8 @@ const RESPONSIVE_COLORING_TIERS = {
   },
 } as const;
 export const COMPACT_COLORING_PACK_MAX_EDGE_PX = RESPONSIVE_COLORING_TIERS.overlay.maxEdgePx;
+export const COMPACT_COLORING_PACK_SHORT_EDGE_PX =
+  RESPONSIVE_COLORING_TIERS.overlay.widths.portrait.candidate;
 export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COLORING_TIERS).map(
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );

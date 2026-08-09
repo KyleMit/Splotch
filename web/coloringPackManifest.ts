@@ -32,20 +32,31 @@ export function buildColoringPackManifest(
 } {
   const books = booksForPlatform(platform).map((book) => {
     const canonicalPaths = bookPackAssetPaths(book);
+    const responsiveAssets = responsiveColoringAssets(book);
     const compactPaths = new Map(
-      responsiveColoringAssets(book).map((asset) => [asset.source, asset.target])
+      responsiveAssets
+        .filter((asset) => asset.encoding !== 'thumbnail')
+        .map((asset) => [asset.source, asset.target])
     );
-    if (compactPaths.size !== canonicalPaths.length) {
+    const canonicalThumbnailPaths = new Set(
+      responsiveAssets
+        .filter((asset) => asset.encoding === 'thumbnail')
+        .map((asset) => asset.source)
+    );
+    if (compactPaths.size + canonicalThumbnailPaths.size !== canonicalPaths.length) {
       throw new Error(`Compact coloring-pack inventory is incomplete for ${book.id}`);
     }
     const variant = (resolution: ColoringPackResolution) => {
       const files = canonicalPaths.map((path) => {
-        const downloadPath = resolution === 'compact' ? compactPaths.get(path) : path;
+        const downloadPath =
+          resolution === 'compact' && !canonicalThumbnailPaths.has(path)
+            ? compactPaths.get(path)
+            : path;
         if (!downloadPath) throw new Error(`No compact coloring asset for ${path}`);
         const bytes = readFileSync(`${STATIC_DIRECTORY}${downloadPath}`);
         return {
           path,
-          downloadPath,
+          ...(downloadPath === path ? {} : { downloadPath }),
           bytes: bytes.byteLength,
           sha256: sha256(bytes),
         };
