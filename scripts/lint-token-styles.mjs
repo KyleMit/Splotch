@@ -60,6 +60,8 @@ const BASELINE = new Map(
     // --page-* defaults to the same light values /android-beta pins (eleven),
     // plus the highlight panel's brand-tinted border and row hairline (two).
     'routes/privacy/+page.svelte': 13,
+    // Light-only full release history, matching /privacy's PageShell palette.
+    'routes/changelog/+page.svelte': 11,
     // Light-only page (ADR-0071 amendment) — a palette pinned to a light
     // ground, declared once as custom properties at the top of its <style>
     // block. Its eleven pin PageShell's themed --page-* defaults (whose dark

@@ -21,6 +21,7 @@ import { STARTER_COLORING_BOOK_ID } from '../web/src/lib/state/books.ts';
 // matching is worse than no guard, because the build stays green.
 const BUILD_DIR = join(ROOT, 'web', 'build'); // capacitor.config.json webDir
 const ADMIN_CONSOLE_PATH = 'web/src/lib/components/admin/AdminConsole.svelte';
+export const REQUIRED_NATIVE_PAGES = ['privacy.html', 'changelog.html'];
 
 // These literals survive minification and uniquely identify the web-only boot
 // behavior that initWebOnlyServices() must keep out of the native JavaScript.
@@ -145,14 +146,25 @@ export function nativeBundleProblems(
   return problems;
 }
 
+export function requiredNativePageProblems(dir) {
+  return REQUIRED_NATIVE_PAGES.flatMap((page) =>
+    existsSync(join(dir, page)) ? [] : [`Required native page is missing: ${page}`]
+  );
+}
+
 export async function checkNativeBundle({ dir = BUILD_DIR, log = console.log } = {}) {
   const sentinels = adminConsoleSentinels();
-  const problems = [...webOnlyMarkerSourceProblems(), ...nativeBundleProblems(dir, sentinels)];
+  const problems = [
+    ...webOnlyMarkerSourceProblems(),
+    ...nativeBundleProblems(dir, sentinels),
+    ...requiredNativePageProblems(dir),
+  ];
   if (problems.length) throw new Error(problems.join('\n'));
   log(
     `[native-bundle] native export references none of: ${FORBIDDEN_NATIVE_HOSTS.join(', ')}; ` +
       `no admin-console copy (${sentinels.length} sentinel(s)); ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
+      `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled`
   );
 }

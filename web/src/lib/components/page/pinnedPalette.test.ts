@@ -13,6 +13,7 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf
 
 const privacy = read('../../../routes/privacy/+page.svelte');
 const beta = read('../../../routes/android-beta/+page.svelte');
+const changelog = read('../../../routes/changelog/+page.svelte');
 
 function declaration(source: string, label: string, property: string): string {
   const match = source.match(new RegExp(`${property}:\\s*([^;]+);`));
@@ -24,5 +25,6 @@ describe('the pinned light-only palettes agree where they share one treatment', 
   it('lifts every pinned sheet with one --page-shadow', () => {
     const shadow = declaration(privacy, '/privacy', '--page-shadow');
     expect(declaration(beta, '/android-beta', '--page-shadow')).toBe(shadow);
+    expect(declaration(changelog, '/changelog', '--page-shadow')).toBe(shadow);
   });
 });

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   parseReleaseSource,
+  releaseAnchor,
   renderReleaseComponent,
+  renderReleaseHistory,
   validateStoreText,
 } from '../generate-releases.mjs';
 
@@ -67,5 +69,33 @@ describe('renderReleaseComponent', () => {
     expect(component).toContain('export const RELEASE_NOTE_SECTION_COUNT = 2;');
     expect(component).toContain('{#if visibleSections >= 1}\n  <h2>New</h2>');
     expect(component).toContain('{#if visibleSections >= 2}\n  <h2>Fixed</h2>');
+  });
+});
+
+describe('renderReleaseHistory', () => {
+  const releases = [
+    {
+      meta: { version: '2.0.0', date: '2026-08-08' },
+      dateLabel: 'August 8, 2026',
+      body: '## New\n\n* Draw `{fast}`.',
+    },
+    {
+      meta: { version: '1.9.0', date: '2026-07-01' },
+      dateLabel: 'July 1, 2026',
+      body: '## Fixed\n\n* Smoother lines.',
+    },
+  ];
+
+  it('renders every release with matching anchors, dates, and nested note headings', () => {
+    const component = renderReleaseHistory(releases);
+
+    expect(releaseAnchor('2.0.0')).toBe('release-2-0-0');
+    expect(component.startsWith('<script lang="ts"></script>')).toBe(true);
+    expect(component).toContain('<article class="release" id="release-2-0-0">');
+    expect(component).toContain('<article class="release" id="release-1-9-0">');
+    expect(component).toContain('<time datetime="2026-08-08">August 8, 2026</time>');
+    expect(component).toContain('<h3>New</h3>');
+    expect(component).toContain('<code>&#123;fast&#125;</code>');
+    expect(component).not.toMatch(/[ \t]+$/m);
   });
 });

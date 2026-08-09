@@ -300,8 +300,8 @@ The **adult-facing surfaces** get an automated axe-core scan (`@axe-core/playwri
 devDependency per ADR-0070 — CI-only tooling, never in the Netlify build) as part of the normal E2E
 run — no separate command or workflow:
 
-* **What's scanned:** `/privacy`, `/admin` (logged-out *and* logged-in, via the `test-admin-secret`
-  web-server key), and Settings dialog opened over `/`.
+* **What's scanned:** `/privacy`, `/changelog`, `/admin` (logged-out *and* logged-in, via the
+  `test-admin-secret` web-server key), and Settings dialog opened over `/`.
 * **What's deliberately not:** the drawing canvas and toddler-facing chrome. Toddler UX (giant
   wordless buttons, no reading order) isn't WCAG's model, so Settings scan is **scoped to
   `#settingsModal`** via `AxeBuilder.include()` instead of scanning the whole drawing page.

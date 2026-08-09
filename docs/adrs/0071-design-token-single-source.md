@@ -6,7 +6,8 @@ light-only — see the amendment at the end. Amended 2026-08-03: the styleguide 
 controls now share the `SegmentedPicker` primitive — see the amendment at the end. Amended
 2026-08-04: `/admin` left the light-only set — the console redesign moved it onto the themed tokens
 — see the amendment at the end. Amended 2026-08-06: `Button`'s `ghost` variant was removed — see the
-amendment at the end.
+amendment at the end. Amended 2026-08-08: `/changelog` adopted the pinned light-only reading
+palette.
 
 ## Context
 
@@ -88,7 +89,7 @@ swaps.
 ## Amendment (2026-07-22): light-only surfaces
 
 > Superseded for `/admin` by the 2026-08-04 admin-redesign amendment below; still in force for
-> `/privacy` (and `/android-beta`, which adopted the same pinned palette).
+> `/privacy` (plus `/android-beta` and `/changelog`, which adopted the same pinned palette).
 
 `/admin` and `/privacy` will **not** get a dark theme — a dark theme was considered and declined
 (owner decision, 2026-07-22). Both keep self-contained, WCAG-tuned light palettes that are exempt
@@ -178,8 +179,8 @@ along with the console's `--page-*` pins — `PageShell` runs on its themed defa
 * The one raw-hex survivor is the persistence banner's warning amber (no warn token pair exists — it
   is the product's only warning surface); it stays light-pinned on both themes with its own
   self-contained contrast, allowlisted in the ratchet.
-* `/privacy` and `/android-beta` remain light-only per the 2026-07-22 amendment; their shared
-  `--page-shadow` drift guard (`pinnedPalette.test.ts`) now covers just those two pages.
+* `/privacy`, `/android-beta`, and `/changelog` remain light-only per the 2026-07-22 amendment;
+  their shared `--page-shadow` drift guard (`pinnedPalette.test.ts`) covers all three pages.
 
 ## Amendment (2026-08-06): `Button`'s `ghost` variant is removed
 

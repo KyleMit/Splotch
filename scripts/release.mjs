@@ -33,6 +33,7 @@ const RELEASE_PATHS = [
   'package-lock.json',
   'web/src/lib/releases.json',
   'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
+  'web/src/lib/components/page/ReleaseHistory.svelte',
   'android/',
   'ios/',
   'fastlane/',

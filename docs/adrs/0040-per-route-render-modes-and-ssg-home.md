@@ -41,7 +41,7 @@ the **client**, not the server:
 
 | Render                                   | Routes                                                    | Why                                                              |
 | ---------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| **SSG** (prerendered, CDN/bundle-served) | `/`, `/privacy`                                           | No per-request input; must also work in the native static export |
+| **SSG** (prerendered, CDN/bundle-served) | `/`, `/privacy`, `/changelog`                             | No per-request input; must also work in the native static export |
 | **SSR** (`sveltekit-render` per request) | `/admin` (cookie auth + form actions), `/api/*`, `/dev/*` | Genuinely need request context (cookies, headers, live data)     |
 
 Because `/` renders from defaults, anything whose stored/measured value differs from the default is
@@ -170,3 +170,15 @@ surfaces.
   `data-action-panel-live`, then panel-local attributes afterward. A new action-state selector must
   cover both phases, and profilers must inspect the panel rather than treating the root seed as
   live.
+
+## Amendment (2026-08-08): bundled informational routes
+
+`/privacy` and `/changelog` are static informational routes in both targets. The native bundle
+verifier requires both emitted HTML files, closing adapter-static's `strict: false` gap: a route
+that accidentally stops prerendering now fails `build:cap` instead of silently disappearing from the
+app. `/changelog` compiles every `releases/*.md` body at build time and renders a table of contents
+from the generated metadata, so it needs no request context or runtime Markdown parser.
+
+Settings links directly to these in-bundle routes. They are ordinary internal navigation, not an
+external-link operation, so opening either page does not invoke the parental gate. This keeps the
+policy/legal and release-history content available offline and avoids gating harmless reading.

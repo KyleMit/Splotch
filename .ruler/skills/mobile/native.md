@@ -194,7 +194,7 @@ generated from the real app where possible:
 * [x] **Play app icon** 512×512 (`store-assets/icon-512.png`); the App Store icon ships inside the
       binary's asset catalog (no separate upload).
 * [x] **Release notes / "What's new"** — generated per release from `releases/<version>.md` into
-      `fastlane/metadata/` (`npm run gen:releases`).
+      `fastlane/metadata/` and the bundled `/changelog` page (`npm run gen:releases`).
 * [ ] (Optional) short promo video.
 
 > Keep screenshots text-light and kid-friendly, and only show the generic coloring books (no
@@ -220,10 +220,10 @@ The shared baseline both depend on:
 ### Legal / privacy artifacts (required by both stores)
 
 * [x] **Privacy Policy** page — created at `/privacy` (`web/src/routes/privacy/+page.svelte`), live
-      at `https://splotch.art/privacy`. ← required by both stores. Contact is via GitHub issues (no
-      email). It must state: no background collection, ads, tracking, or third-party analytics;
-      explain ordinary ephemeral AI processing, private feedback, and the confirmed-report-only
-      30-day retention rule.
+      at `https://splotch.art/privacy` and bundled into both native apps. ← required by both stores.
+      Contact is via GitHub issues (no email). It must state: no background collection, ads,
+      tracking, or third-party analytics; explain ordinary ephemeral AI processing, private
+      feedback, and the confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
       `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` ("Splotch can save a

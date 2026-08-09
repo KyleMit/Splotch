@@ -152,8 +152,8 @@ component table above when you do.
 
 ## Page chrome — standalone pages
 
-Every standalone page — the link-shareable parent pages (`/privacy`, `/android-beta`, `/feedback`)
-and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
+Every standalone page — the link-shareable parent pages (`/privacy`, `/changelog`, `/android-beta`,
+`/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
 **`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
 shell (sticky header + scrollspy TOC, in its route file); it still signs itself with `BrandMark`:
 
@@ -168,10 +168,10 @@ shell (sticky header + scrollspy TOC, in its route file); it still signs itself 
 | `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
 
 **Light-only pages pin the whole `--page-*` palette** on the class forwarded to `PageShell`
-(`/privacy` and `/android-beta` pin the same values, including a link purple darkened past `--brand`
-to clear 4.5:1). Read the pinned values from each route's own style block — they are the documented
-raw-value exception, not candidates for tokens. The values that must agree across the pinned pages —
-the sheet shadow — are locked by the drift guard
+(`/privacy`, `/changelog`, and `/android-beta` pin the same values, including a link purple darkened
+past `--brand` to clear 4.5:1). Read the pinned values from each route's own style block — they are
+the documented raw-value exception, not candidates for tokens. The values that must agree across the
+pinned pages — the sheet shadow — are locked by the drift guard
 `web/src/lib/components/page/pinnedPalette.test.ts`, which fails on divergence; extend it when a new
 cross-page agreement appears. Content inside the shell reads `--page-*`, never restates a color. The
 admin console stays on the themed defaults — `/admin` follows light/dark since the 2026-08 redesign
@@ -235,7 +235,7 @@ elsewhere is not** — raw px padding/margin/gap is still the norm in older comp
 hex and font-size ratchets enforce anything, so rule 2 is what governs spacing in new and edited
 styles. What remains raw beyond that is deliberate — documented one-offs (polaroid/photographic
 whites, ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
-ColoringBook's label reserve) and the **deliberately light-only pages** (`/privacy`,
+ColoringBook's label reserve) and the **deliberately light-only pages** (`/privacy`, `/changelog`,
 `/android-beta`): a dark theme for them was considered and declined (owner decision, recorded in the
 ADR-0071 amendment — don't re-open it; `/admin` left that set in the 2026-08 redesign and is themed
 now). Their self-contained palettes must not use the themed color tokens: those flip with

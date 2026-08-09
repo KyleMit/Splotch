@@ -155,6 +155,34 @@ test("What's New formats the current release date without runtime locale initial
   }
 });
 
+test("What's New opens the internal changelog without a parental gate", async ({ page }) => {
+  await gotoApp(page, '/', { gateUnlocked: false });
+
+  await openSettingsModal(page);
+  await retryOpen(page.getByRole('link', { name: 'See all releases' }), () =>
+    page.getByRole('button', { name: "What's New" }).click({ timeout: 3000 })
+  );
+  await page.getByRole('link', { name: 'See all releases' }).click();
+
+  await expect(page).toHaveURL(/\/changelog$/);
+  await expect(page.getByRole('heading', { name: 'Changelog', level: 1 })).toBeVisible();
+  await expect(page.locator('#parentalGate')).not.toBeVisible();
+});
+
+test('About opens the bundled privacy policy without a parental gate', async ({ page }) => {
+  await gotoApp(page, '/', { gateUnlocked: false });
+
+  await openSettingsModal(page);
+  await retryOpen(page.getByRole('link', { name: 'Privacy Policy' }), () =>
+    page.getByRole('button', { name: 'About' }).click({ timeout: 3000 })
+  );
+  await page.getByRole('link', { name: 'Privacy Policy' }).click();
+
+  await expect(page).toHaveURL(/\/privacy$/);
+  await expect(page.getByRole('heading', { name: 'Privacy policy', level: 1 })).toBeVisible();
+  await expect(page.locator('#parentalGate')).not.toBeVisible();
+});
+
 test('setting card spacing only applies to direct section siblings', async ({ page }) => {
   await page.addInitScript(
     (aiAccessToken) => localStorage.setItem(aiAccessToken, 'test-access-code'),
