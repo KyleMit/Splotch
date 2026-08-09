@@ -104,7 +104,9 @@
   function pickPage(page: ColoringPage) {
     const selectedOverlayUrl = pageOverlayImageSource(page, orientation, resolvedTheme()).src;
     cancelImagePrefetchesExcept(selectedOverlayUrl);
-    for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
+    if (hasBookPicker) {
+      for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
+    }
     setOverlayPage(page, orientation);
     coloringBookModal.hide();
   }

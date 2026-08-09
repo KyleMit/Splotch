@@ -51,6 +51,14 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
 
   await openColoringDialog(page);
   await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+  await expect
+    .poll(() =>
+      dialog
+        .locator('.coloring-pages-grid img')
+        .first()
+        .evaluate((image: HTMLImageElement) => image.naturalWidth)
+    )
+    .toBeGreaterThan(0);
   await expect(dialog.locator('.coloring-pages-grid > .coloring-tile').last()).toHaveAttribute(
     'aria-label',
     'Clear Page'
