@@ -8,7 +8,7 @@ import {
   MUTATION_FAILURE_STATUS,
 } from '$lib/server/tokens';
 import type { MutationFailure } from '$lib/server/tokens';
-import { readJsonBody, stringField } from '$lib/server/http';
+import { apiHandler, readJsonBody, stringField } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 // JSON twin of the /admin console's token management, for clients that can't
@@ -73,13 +73,13 @@ function mutationError(result: MutationFailure) {
 }
 
 /** List access tokens and their prebuilt invite URLs. */
-export const GET: RequestHandler = async ({ request, url }) => {
+export const GET: RequestHandler = apiHandler(async ({ request, url }) => {
   requireSession(request);
   return snapshot(url.origin);
-};
+});
 
 /** Add an access token. Body: { token }. */
-export const POST: RequestHandler = async ({ request, url }) => {
+export const POST: RequestHandler = apiHandler(async ({ request, url }) => {
   requireSession(request);
 
   const parsed = await readJsonBody(request);
@@ -87,10 +87,10 @@ export const POST: RequestHandler = async ({ request, url }) => {
   const result = await addToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
   return snapshot(url.origin, result.tokens);
-};
+});
 
 /** Remove an access token. Body: { token }. */
-export const DELETE: RequestHandler = async ({ request, url }) => {
+export const DELETE: RequestHandler = apiHandler(async ({ request, url }) => {
   requireSession(request);
 
   const parsed = await readJsonBody(request);
@@ -98,4 +98,4 @@ export const DELETE: RequestHandler = async ({ request, url }) => {
   const result = await removeToken(stringField(parsed.body, 'token'));
   if (!result.ok) return mutationError(result);
   return snapshot(url.origin, result.tokens);
-};
+});

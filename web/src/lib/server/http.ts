@@ -1,4 +1,4 @@
-import { json } from '@sveltejs/kit';
+import { isHttpError, json } from '@sveltejs/kit';
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
@@ -49,8 +49,8 @@ export function throttledMessage(retryAfter: number): string {
   return `Too many attempts. Please wait ${retryAfter}s.`;
 }
 
-export function fail(status: number, error: string) {
-  return json({ ok: false, error }, { status });
+export function fail(status: number, error: string, headers?: HeadersInit) {
+  return json({ ok: false, error }, { status, headers });
 }
 
 /**
@@ -59,8 +59,26 @@ export function fail(status: number, error: string) {
  * the same `error` field they already read from other failure responses.
  */
 export function throttled(retryAfter: number) {
-  return json(
-    { ok: false, error: throttledMessage(retryAfter) },
-    { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-  );
+  return fail(429, throttledMessage(retryAfter), { 'Retry-After': String(retryAfter) });
+}
+
+/**
+ * Wraps an /api/* handler so a thrown SvelteKit `error()` leaves the wire as
+ * the same canonical `{ ok:false, error }` body every returned failure uses —
+ * throw-based control flow inside a route can't reintroduce SvelteKit's
+ * `{ message }` shape. A non-HttpError still propagates to SvelteKit's
+ * unexpected-error path (500 + handleError). csp-report is the one unwrapped
+ * endpoint: its responses are deliberately bodyless (browsers ignore them).
+ */
+export function apiHandler<Event>(
+  handler: (event: Event) => Response | Promise<Response>
+): (event: Event) => Promise<Response> {
+  return async (event) => {
+    try {
+      return await handler(event);
+    } catch (cause) {
+      if (isHttpError(cause)) return fail(cause.status, cause.body.message);
+      throw cause;
+    }
+  };
 }

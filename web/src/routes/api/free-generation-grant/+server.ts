@@ -6,13 +6,13 @@ import {
   getFreeGenerationGrantStatus,
   isInstallationId,
 } from '$lib/server/freeGenerationGrants';
-import { fail, throttled } from '$lib/server/http';
+import { apiHandler, fail, throttled } from '$lib/server/http';
 import { rateLimit } from '$lib/server/rateLimit';
 import { freeGenerationGrantStatusBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ request, getClientAddress }) => {
+export const GET: RequestHandler = apiHandler(async ({ request, getClientAddress }) => {
   const limited = rateLimit(
     freeGenerationGrantStatusBucket(getClientAddress()),
     rateLimitPolicy.freeGrantStatus
@@ -26,4 +26,4 @@ export const GET: RequestHandler = async ({ request, getClientAddress }) => {
   const { remaining } = await getFreeGenerationGrantStatus(installationId);
   const body: FreeGenerationGrantStatus = { ok: true, remaining, limit: FREE_GENERATION_LIMIT };
   return Response.json(body, { headers: { 'Cache-Control': 'no-store' } });
-};
+});

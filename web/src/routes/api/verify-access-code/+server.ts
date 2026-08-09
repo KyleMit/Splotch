@@ -3,7 +3,7 @@ import { isAllowedToken } from '$lib/server/tokens';
 import { peekRateLimit, rateLimit } from '$lib/server/rateLimit';
 import { verifyAccessCodeBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { asRecord, readJsonBody, throttled } from '$lib/server/http';
+import { apiHandler, asRecord, readJsonBody, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 /**
@@ -13,7 +13,7 @@ import type { RequestHandler } from './$types';
  * canonical access code for the client to persist. Returns { ok: true, accessCode }
  * on a match, or { ok: false, error } otherwise.
  */
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = apiHandler(async ({ request, getClientAddress }) => {
   // This endpoint is an unauthenticated oracle for guessing allowlisted tokens,
   // so it shares generate-image's per-IP guess budget and throttles only its
   // failure path (ADR-0014): peek before checking the code — a limited IP gets a
@@ -34,4 +34,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     return json({ ok: false, error: 'That access code was not recognized.' });
   }
   return json({ ok: true, accessCode: code });
-};
+});

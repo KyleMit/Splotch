@@ -14,6 +14,11 @@ paths:
   every endpoint is either gated by a credential the caller already holds or (the telemetry
   receivers `report`/`csp-report`) rate-limited and side-effect-bounded to log lines, and nothing
   under `/api` uses cookies — never add a cookie-authenticated `/api` endpoint.
+* Every client-facing JSON error across `/api/*` is the one canonical `{ ok: false, error }` body,
+  built by `fail(status, error, headers?)` in `src/lib/server/http.ts`. Wrap every `/api/*` handler
+  export in its `apiHandler(...)`, which converts a thrown SvelteKit `error(...)` into the same
+  shape at the boundary — never let SvelteKit's `{ message }` body reach a client. `csp-report` is
+  the one exemption (deliberately bodyless responses; browsers ignore them) and stays unwrapped.
 * Any unauthenticated oracle (login, code/key verification) must be rate-limited per IP via
   `src/lib/server/rateLimit.ts` (ADR-0014). Throttled responses use `throttled(retryAfter)` from
   `src/lib/server/http.ts` — the standard JSON `429` with `Retry-After` — and JSON bodies are parsed

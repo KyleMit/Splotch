@@ -24,7 +24,7 @@ import {
   MAX_IMAGE_BYTES,
   resolveGenerationPrompt,
 } from '$lib/server/generateImagePolicy';
-import { contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
+import { apiHandler, contentTypeOf, readBodyWithinLimit } from '$lib/server/http';
 import {
   completeFreeGeneration,
   failFreeGeneration,
@@ -239,11 +239,4 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
   }
 };
 
-export const POST: RequestHandler = async (event) => {
-  try {
-    return await generateImage(event);
-  } catch (cause) {
-    if (isHttpError(cause)) return fail(cause.status, cause.body.message);
-    throw cause;
-  }
-};
+export const POST: RequestHandler = apiHandler(generateImage);

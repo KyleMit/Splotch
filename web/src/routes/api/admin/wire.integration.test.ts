@@ -75,6 +75,18 @@ describe('native admin API wire responses', () => {
     });
   });
 
+  it('returns the canonical unauthorized body for a bad bearer', async () => {
+    const request = new Request('https://splotch.art/api/admin/tokens', {
+      headers: { Authorization: 'Bearer deadbeef' },
+    });
+    const event = { request, url: new URL(request.url) };
+
+    const response = await GET(event as unknown as Parameters<typeof GET>[0]);
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ ok: false, error: 'Unauthorized' });
+  });
+
   it('returns the token snapshot body', async () => {
     getTokensStatus.mockResolvedValue({ tokens: ['sunny meadow'], persistent: true });
 

@@ -29,10 +29,14 @@ shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `4
 { "ok": false, "error": "Too many attempts. Please wait 12s." }
 ```
 
-The `error` field is user-facing (clients surface it directly). The same module's
-`readJsonBody(request)` is the shared JSON-body parser — a malformed body is a uniform
-`400 "Expected a JSON body"`. Use both helpers in any new endpoint instead of hand-rolling the parse
-or the 429.
+The `error` field is user-facing (clients surface it directly). That `{ ok: false, error }` body is
+the **one client-facing JSON error shape** across `/api/*`, built by the same module's
+`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)`, which converts a
+thrown SvelteKit `error(...)` into the same shape at the boundary, so throw-based control flow
+inside a route can't leak SvelteKit's `{ message }` body. The one exemption is `csp-report`, whose
+responses are deliberately bodyless (browsers ignore them). The module's `readJsonBody(request)` is
+the shared JSON-body parser — a malformed body is a uniform `400 "Expected a JSON body"`. Use these
+helpers in any new endpoint instead of hand-rolling the parse, the failure body, or the 429.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
@@ -323,8 +327,8 @@ page's login action, so the two doors don't double an attacker's budget).
 ### `/api/admin/tokens`
 
 All methods require `Authorization: Bearer <session>`; failures are a uniform
-`401 {"message":"Unauthorized"}`. All methods return the same snapshot shape so mutations never need
-a follow-up fetch:
+`401 { "ok": false, "error": "Unauthorized" }`. All methods return the same snapshot shape so
+mutations never need a follow-up fetch:
 
 ```json
 {

@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { rateLimit } from '$lib/server/rateLimit';
 import { reportBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
-import { asRecord, readJsonBody, throttled } from '$lib/server/http';
+import { apiHandler, asRecord, readJsonBody, throttled } from '$lib/server/http';
 import { submitReport } from '$lib/server/report';
 import { REPORT_HONEYPOT_FIELD } from '$lib/report';
 import type { RequestHandler } from './$types';
@@ -25,7 +25,7 @@ export type ReportResponse = { ok: true } | { ok: false; error: string };
  * honeypotted payloads that cannot open an issue on any server, and
  * server.test.ts pins that order.
  */
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = apiHandler(async ({ request, getClientAddress }) => {
   const { limited, retryAfter } = rateLimit(
     reportBucket(getClientAddress()),
     rateLimitPolicy.report
@@ -47,4 +47,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     : json({ ok: false, error: result.error } satisfies ReportResponse, {
         status: result.status,
       });
-};
+});

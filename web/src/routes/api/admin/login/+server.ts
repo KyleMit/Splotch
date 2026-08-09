@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { beginAdminLogin } from '$lib/server/admin';
-import { readJsonBody, stringField, throttled } from '$lib/server/http';
+import { apiHandler, readJsonBody, stringField, throttled } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 export type LoginResponse = { ok: true; session: string } | { ok: false; error: string };
@@ -14,7 +14,7 @@ export type LoginResponse = { ok: true; session: string } | { ok: false; error: 
  * The session is the same HMAC the cookie flow uses (see $lib/server/admin),
  * never the raw secret.
  */
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = apiHandler(async ({ request, getClientAddress }) => {
   const attempt = beginAdminLogin(getClientAddress());
   if (!attempt.ok) return throttled(attempt.retryAfter);
 
@@ -28,4 +28,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     });
   }
   return json({ ok: true, session: result.session } satisfies LoginResponse);
-};
+});

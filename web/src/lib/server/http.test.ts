@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, it, expect, vi } from 'vitest';
+import { error } from '@sveltejs/kit';
 import {
+  apiHandler,
   asRecord,
   contentTypeOf,
   fail,
@@ -65,6 +67,42 @@ describe('fail', () => {
 
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({ ok: false, error: 'Not allowed' });
+  });
+
+  it('carries extra headers alongside the JSON body', () => {
+    const response = fail(429, 'Slow down', { 'Retry-After': '9' });
+
+    expect(response.headers.get('Retry-After')).toBe('9');
+    expect(response.headers.get('Content-Type')).toContain('application/json');
+  });
+});
+
+describe('apiHandler', () => {
+  it('converts a thrown SvelteKit error into the canonical failure shape', async () => {
+    const handler = apiHandler(async () => {
+      throw error(413, 'Image is too large');
+    });
+
+    const response = await handler(undefined);
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({ ok: false, error: 'Image is too large' });
+  });
+
+  it('returns the handler response untouched', async () => {
+    const success = fail(400, 'Handled inside');
+    const handler = apiHandler(async () => success);
+
+    expect(await handler(undefined)).toBe(success);
+  });
+
+  it('rethrows a non-HttpError so SvelteKit treats it as unexpected', async () => {
+    const boom = new Error('boom');
+    const handler = apiHandler(async () => {
+      throw boom;
+    });
+
+    await expect(handler(undefined)).rejects.toBe(boom);
   });
 });
 
