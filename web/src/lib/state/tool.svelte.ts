@@ -93,7 +93,7 @@ export function selectInkBrush() {
 
 export function fallBackFromBrush(brush: OptionalBrushType) {
   if (brush === 'crayon' && inkBrush === 'crayon') inkBrush = 'pen';
-  if (toolState.brush === brush) selectBrush('pen');
+  if (toolState.brush === brush) selectInkBrush();
 }
 
 // Flip between the ink brush and the eraser. Shared by the Brush Menu's eraser

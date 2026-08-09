@@ -86,6 +86,16 @@ describe('tool state', () => {
     expect(toolState.brush).toBe('pen');
   });
 
+  it('forgetting an active non-ink brush resumes and persists the remembered ink brush', () => {
+    selectBrush('crayon');
+    selectBrush('eraser');
+
+    fallBackFromBrush('eraser');
+
+    expect(toolState.brush).toBe('crayon');
+    expect(localStorage.getItem(STORAGE_KEYS.brushType)).toBe('crayon');
+  });
+
   it('resetToolAfterClear switches back to the ink brush when erasing', () => {
     selectBrush('crayon');
     selectBrush('eraser');
