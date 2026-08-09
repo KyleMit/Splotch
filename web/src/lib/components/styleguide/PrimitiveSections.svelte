@@ -27,6 +27,13 @@
   // releases it back to none.
   let demoOrientation = $state<DemoOrientation | null>('portrait');
 
+  type DemoKind = 'bug' | 'feature';
+  const demoKindOptions: SegmentedPickerOption<DemoKind>[] = [
+    { value: 'bug', label: "Something's broken" },
+    { value: 'feature', label: 'I have an idea' },
+  ];
+  let demoKind = $state<DemoKind>('bug');
+
   type DemoChip = 'eraser' | 'camera';
   const demoChipOptions: SegmentedPickerOption<DemoChip>[] = [
     { value: 'eraser', label: 'Eraser', icon: 'brush-eraser' },
@@ -57,8 +64,9 @@
   <h4>Segmented picker <code class="file-path">design/SegmentedPicker.svelte</code></h4>
   <p class="sub-intro">
     A control with a <strong>selected state</strong> is a picker, not a <code>Button</code>.
-    <code>segment</code> is the raised-thumb track; <code>chip</code> is the bordered toggle grid; radio
-    vs toggle semantics stay with the caller.
+    <code>segment</code> is the raised-thumb track; <code>chip</code> is the borderless toggle grid;
+    radio vs toggle semantics stay with the caller. A form that must post without JavaScript renders
+    the same chrome over real native radios through <code>inputName</code>.
   </p>
   <div class="picker-demo">
     <SegmentedPicker
@@ -76,6 +84,15 @@
       options={demoOrientationOptions}
       selected={demoOrientation}
       onSelect={(value) => (demoOrientation = demoOrientation === value ? null : value)}
+    />
+  </div>
+  <div class="picker-demo">
+    <SegmentedPicker
+      label="Report type (specimen)"
+      options={demoKindOptions}
+      selected={demoKind}
+      onSelect={(value) => (demoKind = value)}
+      inputName="sg-demo-kind"
     />
   </div>
   <div class="picker-demo">

@@ -65,6 +65,40 @@ test('Settings sidebar switches the content pane (tablet layout)', async ({ page
   await expect(aboutMascot).toHaveClass(/icon-color/);
 });
 
+test('the theme picker is one tab stop and the arrow keys move the selection', async ({ page }) => {
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  const light = page.locator('#themeOption-light');
+  const dark = page.locator('#themeOption-dark');
+  const system = page.locator('#themeOption-system');
+
+  // APG radio-group pattern: the checked option is the group's only tab stop.
+  await expect(system).toHaveAttribute('aria-checked', 'true');
+  await expect(system).toHaveAttribute('tabindex', '0');
+  await expect(light).toHaveAttribute('tabindex', '-1');
+  await expect(dark).toHaveAttribute('tabindex', '-1');
+
+  // Arrows move focus and selection together, wrapping past either end —
+  // System is the last option, so ArrowRight lands on Light.
+  await system.press('ArrowRight');
+  await expect(light).toHaveAttribute('aria-checked', 'true');
+  await expect(light).toBeFocused();
+  await expect(light).toHaveAttribute('tabindex', '0');
+  await expect(system).toHaveAttribute('tabindex', '-1');
+
+  await light.press('ArrowLeft');
+  await expect(system).toHaveAttribute('aria-checked', 'true');
+  await expect(system).toBeFocused();
+
+  // The vertical pair works the same, for screen-reader users navigating by
+  // the other axis.
+  await system.press('ArrowDown');
+  await expect(light).toHaveAttribute('aria-checked', 'true');
+  await light.press('ArrowUp');
+  await expect(system).toHaveAttribute('aria-checked', 'true');
+});
+
 test('the shortest sidebar viewport can still reach every section', async ({ page }) => {
   // One pixel shorter and the compact shell takes over, so this is the least
   // vertical room the sidebar column ever gets — and the section icons are

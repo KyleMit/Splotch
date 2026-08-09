@@ -1,6 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import Disclosure from '../design/Disclosure.svelte';
+  import SegmentedPicker from '../design/SegmentedPicker.svelte';
   import { collectDeviceInfo } from '$lib/deviceInfo';
   import { createSingleFlight } from '$lib/singleFlight';
   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
@@ -101,18 +102,14 @@
 </script>
 
 <div class="report-fields">
-  <!-- Native radios group themselves by `name`, but that group has no
-       accessible name unless one is given: without this a screen reader reaches
-       "Something's broken, radio button, 1 of 2" with nothing saying what the
-       two choose between. No axe rule covers it. -->
-  <div class="report-kind" role="radiogroup" aria-label="Report type">
-    {#each REPORT_KINDS as option (option.value)}
-      <label class="report-kind-option" class:active={kind === option.value}>
-        <input type="radio" name="kind" value={option.value} bind:group={kind} />
-        {option.label}
-      </label>
-    {/each}
-  </div>
+  <SegmentedPicker
+    class="report-kind"
+    label="Report type"
+    options={REPORT_KINDS}
+    selected={kind}
+    onSelect={(value) => (kind = value)}
+    inputName="kind"
+  />
 
   <label class="report-label" for="reportMessage">
     {kind === 'bug' ? 'What went wrong?' : "What's your idea?"}
@@ -189,80 +186,21 @@
     gap: 12px;
   }
 
-  /* Bug / feature segmented control — mirrors the Appearance theme picker. */
-  .report-kind {
-    display: flex;
-    gap: 6px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 4px;
-  }
-
-  .report-kind-option {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 10px 12px;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-soft);
-    background: transparent;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease;
-  }
-
-  /* The radio itself is the accessible control; the label is its skin. Hidden
-     without display:none / visibility:hidden, both of which would take it out of
-     the a11y tree and off the focus path. */
-  .report-kind-option input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
-    margin: 0;
-  }
-
-  /* Keyboard users move through the group with the arrow keys and see nothing
-     otherwise — the ring has to come from the hidden input's focus. */
-  .report-kind-option:has(input:focus-visible) {
-    outline: 2px solid var(--brand-text);
-    outline-offset: 2px;
-  }
-
-  /* --brand-solid, not --brand: a white label on the identity hue is 3.4:1 and
-     fails WCAG AA at this size. */
-  .report-kind-option.active {
-    background: var(--brand-solid);
-    color: var(--on-brand);
-  }
-
-  /* A phone tightens the track rather than stacking the two options: stacked,
-     they stop reading as one control and the selected one looks like a button
-     someone already pressed. */
+  /* A phone tightens the kind picker's track rather than stacking the two
+     options: stacked, they stop reading as one control and the selected one
+     looks like a button someone already pressed. Reached through the picker's
+     forwarded class because these two labels are the primitive's longest — the
+     other pickers' fit at every supported width. */
   @media (max-width: 400px) {
-    .report-kind {
+    .report-fields :global(.report-kind) {
       gap: 4px;
       padding: 3px;
     }
 
-    .report-kind-option {
+    .report-fields :global(.report-kind .option) {
       padding: 9px 6px;
       font-size: var(--font-size-xs);
       white-space: nowrap;
-    }
-  }
-
-  @media (hover: hover) {
-    .report-kind-option:not(.active):hover {
-      background: var(--surface-hover);
-      color: var(--text-strong);
     }
   }
 

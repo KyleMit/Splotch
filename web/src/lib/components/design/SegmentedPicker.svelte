@@ -35,11 +35,22 @@
     onSelect: (value: T) => void;
     /** radio = choose-one (radiogroup/aria-checked); toggle = pressable options (group/aria-pressed). */
     mode?: 'radio' | 'toggle';
+    /**
+     * Renders each option as a real `<input type="radio">` under this name
+     * instead of a button, for a form that must submit with JavaScript
+     * unavailable. radio mode only: the native radios carry the checked state
+     * and arrow-key roving themselves, and the group's radiogroup role is what
+     * gives them the accessible name grouping by `name` alone leaves them
+     * without.
+     */
+    inputName?: string;
     /** segment = raised-thumb track; chip = borderless toggle grid. */
     variant?: 'segment' | 'chip';
     size?: 'md' | 'sm';
     /** false = the track hugs its content instead of stretching full-width. */
     fill?: boolean;
+    /** Forwarded to the track so a call site can restyle via `:global()`. */
+    class?: string;
   }
 
   let {
@@ -49,45 +60,100 @@
     selected,
     onSelect,
     mode = 'radio',
+    inputName,
     variant = 'segment',
     size = 'md',
     fill = true,
+    class: className,
   }: Props = $props();
 
   function isSelected(value: T): boolean {
     return Array.isArray(selected) ? selected.includes(value) : selected === value;
   }
+
+  // Element refs for the roving focus moves below — deliberately untracked,
+  // nothing renders from them.
+  let optionEls: HTMLButtonElement[] = [];
+
+  // APG radio-group pattern: the group is one tab stop. The selected option
+  // carries it — or the first enabled one while nothing is selected.
+  const rovingIndex = $derived.by(() => {
+    const selectedIndex = options.findIndex(
+      (option) => !option.disabled && isSelected(option.value)
+    );
+    return selectedIndex !== -1 ? selectedIndex : options.findIndex((option) => !option.disabled);
+  });
+
+  // Arrow keys move focus *and* selection, wrapping past either end and
+  // skipping disabled options — the other half of the APG radio-group pattern.
+  function moveWithArrow(event: KeyboardEvent, from: number) {
+    const delta =
+      event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+        ? -1
+        : event.key === 'ArrowRight' || event.key === 'ArrowDown'
+          ? 1
+          : 0;
+    if (delta === 0) return;
+    event.preventDefault();
+    let next = from;
+    do {
+      next = (next + delta + options.length) % options.length;
+    } while (options[next].disabled && next !== from);
+    onSelect(options[next].value);
+    optionEls[next]?.focus();
+  }
 </script>
 
 <div
-  class={['picker', variant, size, fill && 'fill']}
+  class={['picker', variant, size, fill && 'fill', className]}
   role={mode === 'radio' ? 'radiogroup' : 'group'}
   aria-label={label}
   aria-describedby={describedBy}
 >
-  {#each options as option (option.value)}
+  {#each options as option, index (option.value)}
     {@const active = isSelected(option.value)}
-    <button
-      type="button"
-      class="option"
-      class:active
-      id={option.id}
-      disabled={option.disabled}
-      role={mode === 'radio' ? 'radio' : undefined}
-      aria-checked={mode === 'radio' ? active : undefined}
-      aria-pressed={mode === 'toggle' ? active : undefined}
-      onclick={() => onSelect(option.value)}
-    >
-      {#if option.icon}
-        <Icon name={option.icon} class="picker-option-icon" />
-      {/if}
-      <span class="option-label">{option.label}</span>
-      {#if variant === 'chip'}
-        <span class="option-check" aria-hidden="true">{active ? '✓' : ''}</span>
-      {/if}
-    </button>
+    {#if inputName}
+      <label class="option" class:active id={option.id}>
+        <input
+          type="radio"
+          name={inputName}
+          value={option.value}
+          checked={active}
+          disabled={option.disabled}
+          onchange={() => onSelect(option.value)}
+        />
+        {@render optionBody(option, active)}
+      </label>
+    {:else}
+      <button
+        type="button"
+        class="option"
+        class:active
+        id={option.id}
+        disabled={option.disabled}
+        role={mode === 'radio' ? 'radio' : undefined}
+        aria-checked={mode === 'radio' ? active : undefined}
+        aria-pressed={mode === 'toggle' ? active : undefined}
+        tabindex={mode === 'radio' ? (index === rovingIndex ? 0 : -1) : undefined}
+        onclick={() => onSelect(option.value)}
+        onkeydown={mode === 'radio' ? (event) => moveWithArrow(event, index) : undefined}
+        bind:this={optionEls[index]}
+      >
+        {@render optionBody(option, active)}
+      </button>
+    {/if}
   {/each}
 </div>
+
+{#snippet optionBody(option: SegmentedPickerOption<T>, active: boolean)}
+  {#if option.icon}
+    <Icon name={option.icon} class="picker-option-icon" />
+  {/if}
+  <span class="option-label">{option.label}</span>
+  {#if variant === 'chip'}
+    <span class="option-check" aria-hidden="true">{active ? '✓' : ''}</span>
+  {/if}
+{/snippet}
 
 <style>
   .option {
@@ -103,6 +169,24 @@
   .option:disabled {
     cursor: not-allowed;
     opacity: 0.55;
+  }
+
+  /* In the native-radio skin the input is the accessible control and the option
+     is its skin. Hidden without display:none / visibility:hidden, both of which
+     would take it out of the a11y tree and off the focus path. */
+  .option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    margin: 0;
+  }
+
+  /* Keyboard users move through the group with the arrow keys and see nothing
+     otherwise — the ring has to come from the hidden input's focus. */
+  .option:has(input:focus-visible) {
+    outline: 2px solid var(--brand-text);
+    outline-offset: 2px;
   }
 
   /* The picker owns its icon ink (the modal shell's re-ink rule only reaches

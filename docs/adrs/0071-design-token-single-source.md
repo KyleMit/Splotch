@@ -151,9 +151,11 @@ What changed, and what stands:
 * **`/admin` stays excluded**, per the light-only amendment above: the primitive is built from
   themed tokens (`--slider-track`, `--surface`, `--brand-solid`), which would flip on the
   permanently light console.
-* **The report-kind row (`ReportFields`) stays native radios on purpose.** The `/feedback` page must
-  submit with JavaScript unavailable, and `SegmentedPicker`'s `<button role="radio">` markup cannot
-  — that one hand-rolled picker is a deliberate carve-out, not a migration gap.
+* **The report-kind row (`ReportFields`) migrated onto the primitive too.** The `/feedback` page
+  must submit with JavaScript unavailable, which `<button role="radio">` markup cannot — so
+  `SegmentedPicker` grew an opt-in `inputName` prop that renders each option as a real
+  `<input type="radio">` under that name inside the same track/option chrome. The last hand-rolled
+  picker migrated without losing the no-JS post.
 
 ## Amendment (2026-08-03): the styleguide moved to public `/design`
 
