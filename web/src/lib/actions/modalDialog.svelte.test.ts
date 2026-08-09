@@ -67,4 +67,35 @@ describe('modalDialog', () => {
       dialog.remove();
     }
   });
+
+  it('dismisses a pointer event targeting the backdrop outside the dialog border box', () => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    dialog.getBoundingClientRect = () =>
+      ({ left: 100, right: 200, top: 100, bottom: 200 }) as DOMRect;
+    let closeRequests = 0;
+
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: false,
+        onRequestClose: () => closeRequests++,
+      }));
+      return action.destroy;
+    });
+
+    try {
+      const pointerDown = new PointerEvent('pointerdown', {
+        bubbles: true,
+        cancelable: true,
+        clientX: 300,
+        clientY: 300,
+      });
+      dialog.dispatchEvent(pointerDown);
+
+      expect(closeRequests).toBe(1);
+      expect(pointerDown.defaultPrevented).toBe(true);
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
 });

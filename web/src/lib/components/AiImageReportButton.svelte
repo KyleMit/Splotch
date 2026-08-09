@@ -18,7 +18,7 @@
   .ai-report-flag {
     position: absolute;
     right: calc(50% - 50vw + var(--report-flag-inset) + env(safe-area-inset-right));
-    bottom: calc(50% - 50vh + var(--report-flag-inset) + env(safe-area-inset-bottom));
+    bottom: calc(50% - 50dvh + var(--report-flag-inset) + env(safe-area-inset-bottom));
     z-index: 3;
     min-width: var(--report-flag-size);
     height: var(--report-flag-size);

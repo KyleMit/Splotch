@@ -250,17 +250,17 @@
 
 <style>
   .ai-result-modal {
-    --report-flag-size: 44px;
-    --report-flag-inset: var(--space-3);
-    --report-flag-gap: var(--space-3);
-    --report-flag-clearance: calc(
-      var(--report-flag-size) + var(--report-flag-inset) + var(--report-flag-gap)
+    --result-footer-reserve: 112px;
+    --result-autosave-footer-reserve: 118px;
+    --report-flag-reserve: calc(
+      var(--report-flag-clearance) + var(--report-flag-clearance) + env(safe-area-inset-bottom) +
+        env(safe-area-inset-bottom)
     );
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
     width: min(96vw, 560px);
-    max-height: 96vh;
+    max-height: 96dvh;
     overflow: visible;
   }
 
@@ -320,41 +320,32 @@
        around the whole card. Width is capped to the content box; a tall image
        is limited by the height reserve (padding + gap + download + some air). */
     max-width: 100%;
-    max-height: calc(94vh - 96px);
+    max-height: calc(96dvh - var(--result-footer-reserve));
   }
 
   /* Auto-save on: no Download button, so the freed vertical space goes to the
      image — only a slim "Saved" caption is reserved below it. */
   .ai-result-modal.autosave .stage-sizer {
-    max-height: calc(96vh - 118px);
+    max-height: calc(96dvh - var(--result-autosave-footer-reserve));
   }
 
   .ai-result-modal.report-expanded .stage-sizer {
     /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
        ordinary footer above needs much less room. */
-    max-height: calc(96vh - 276px);
+    max-height: calc(96dvh - 276px);
   }
 
-  @media (max-width: 700px) {
+  @media (max-width: 800px) {
     .ai-result-modal:not(.report-expanded) {
-      max-height: calc(
-        100vh - var(--report-flag-clearance) - var(--report-flag-clearance) -
-          env(safe-area-inset-bottom) - env(safe-area-inset-bottom)
-      );
+      max-height: calc(100dvh - var(--report-flag-reserve));
     }
 
     .ai-result-modal:not(.report-expanded) .stage-sizer {
-      max-height: calc(
-        100vh - 96px - var(--report-flag-clearance) - var(--report-flag-clearance) -
-          env(safe-area-inset-bottom) - env(safe-area-inset-bottom)
-      );
+      max-height: calc(100dvh - var(--result-footer-reserve) - var(--report-flag-reserve));
     }
 
     .ai-result-modal.autosave:not(.report-expanded) .stage-sizer {
-      max-height: calc(
-        100vh - 118px - var(--report-flag-clearance) - var(--report-flag-clearance) -
-          env(safe-area-inset-bottom) - env(safe-area-inset-bottom)
-      );
+      max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-flag-reserve));
     }
   }
 

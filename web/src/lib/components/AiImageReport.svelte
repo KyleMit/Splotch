@@ -98,29 +98,31 @@
   }
 </script>
 
-<div class="ai-image-report">
-  {#if status === 'confirm' || status === 'busy'}
-    <div class="ai-report-confirmation">
-      <p>
-        Send this picture and the drawing behind it for review? The report is deleted after
-        {IMAGE_REPORT_RETENTION_DAYS} days.
-      </p>
-      <div class="ai-report-confirm-actions">
-        <Button size="sm" onclick={() => (status = 'idle')} disabled={status === 'busy'}>
-          Cancel
-        </Button>
-        <Button variant="brand" size="sm" onclick={confirm} disabled={status === 'busy'}>
-          {status === 'busy' ? 'Sending…' : 'Send report'}
-        </Button>
+{#if status !== 'idle'}
+  <div class="ai-image-report">
+    {#if status === 'confirm' || status === 'busy'}
+      <div class="ai-report-confirmation">
+        <p>
+          Send this picture and the drawing behind it for review? The report is deleted after
+          {IMAGE_REPORT_RETENTION_DAYS} days.
+        </p>
+        <div class="ai-report-confirm-actions">
+          <Button size="sm" onclick={() => (status = 'idle')} disabled={status === 'busy'}>
+            Cancel
+          </Button>
+          <Button variant="brand" size="sm" onclick={confirm} disabled={status === 'busy'}>
+            {status === 'busy' ? 'Sending…' : 'Send report'}
+          </Button>
+        </div>
       </div>
-    </div>
-  {:else if status === 'success' || status === 'error'}
-    <StatusMessage {status}>{message}</StatusMessage>
-    {#if status === 'error'}
-      <Button size="sm" onclick={() => (status = 'confirm')}>Try again</Button>
+    {:else if status === 'success' || status === 'error'}
+      <StatusMessage {status}>{message}</StatusMessage>
+      {#if status === 'error'}
+        <Button size="sm" onclick={() => (status = 'confirm')}>Try again</Button>
+      {/if}
     {/if}
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
   .ai-image-report {

@@ -16,6 +16,20 @@ async function triggerAiTimer(page: Page, name: RegExp) {
   }).toPass({ timeout: 10000 });
 }
 
+async function resultBoxes(page: Page) {
+  const [card, content, report] = await Promise.all([
+    page.locator('dialog.ai-result-modal').boundingBox(),
+    page.locator('.ai-result-content').boundingBox(),
+    page.getByRole('button', { name: 'Report this picture' }).boundingBox(),
+  ]);
+  if (!card || !content || !report) throw new Error('AI result geometry was not measurable');
+  return { card, content, report };
+}
+
+function boxesOverlap(a: { x: number; y: number; width: number; height: number }, b: typeof a) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
 test.describe('AI render timer', () => {
   test('plays the dial and reveals the result image', async ({ page }) => {
     await page.goto('/dev/ai-timer');
@@ -64,20 +78,9 @@ test.describe('AI render timer', () => {
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
     const report = page.getByRole('button', { name: 'Report this picture' });
-    const [cardBox, reportBox] = await Promise.all([
-      page.locator('dialog.ai-result-modal').boundingBox(),
-      report.boundingBox(),
-    ]);
-    expect(cardBox).not.toBeNull();
-    expect(reportBox).not.toBeNull();
-    expect(reportBox!.width).toBeGreaterThanOrEqual(44);
-    expect(reportBox!.height).toBeGreaterThanOrEqual(44);
-    const overlapsCard =
-      reportBox!.x < cardBox!.x + cardBox!.width &&
-      reportBox!.x + reportBox!.width > cardBox!.x &&
-      reportBox!.y < cardBox!.y + cardBox!.height &&
-      reportBox!.y + reportBox!.height > cardBox!.y;
-    expect(overlapsCard).toBe(false);
+    const { report: reportBox } = await resultBoxes(page);
+    expect(reportBox.width).toBeGreaterThanOrEqual(44);
+    expect(reportBox.height).toBeGreaterThanOrEqual(44);
     const chrome = await report.evaluate((button) => {
       const icon = button.querySelector('svg');
       const dangerProbe = document.createElement('span');
@@ -106,6 +109,33 @@ test.describe('AI render timer', () => {
     await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
     expect(reportRequests).toBe(1);
   });
+
+  test('keeps the report flag clear of the result card on iPad portrait', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await page.goto('/dev/ai-timer');
+    await triggerAiTimer(page, /fast/i);
+    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+
+    const { card, report } = await resultBoxes(page);
+    expect(boxesOverlap(card, report)).toBe(false);
+  });
+
+  for (const viewport of [
+    { width: 740, height: 360 },
+    { width: 700, height: 420 },
+  ]) {
+    test(`keeps result content inside the card at ${viewport.width}×${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/dev/ai-timer');
+      await triggerAiTimer(page, /fast/i);
+      await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+
+      const { card, content } = await resultBoxes(page);
+      expect(content.y + content.height).toBeLessThanOrEqual(card.y + card.height + 1);
+    });
+  }
 
   test('shows the error state', async ({ page }) => {
     await page.goto('/dev/ai-timer');
