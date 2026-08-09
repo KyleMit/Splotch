@@ -105,7 +105,11 @@ import { createPenStreamAdopter } from './penStreamQuirks';
 import type { ExportOptions, ExportSnapshot, TiledExportSnapshot } from './exportDrawing';
 import { getActiveOverlayExportSource } from './overlay';
 import { currentExportScale } from './exportScale';
-import { captureTiledSnapshot, createStrokeSnapshot } from './strokeSnapshot';
+import {
+  captureLiveTileSnapshot,
+  captureTiledSnapshot,
+  createStrokeSnapshot,
+} from './strokeSnapshot';
 import { registerDrawingEngineListeners } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
@@ -1485,17 +1489,14 @@ export function setSafeAreaInsets(insets: {
 // in-flight stroke) rather than copying the visible canvas: under a
 // rotation-locked view the visible canvas is the letterboxed presentation, and
 // the export should be the full upright page.
-interface StrokeSnapshots {
-  export: ExportSnapshot;
-  preview: TiledExportSnapshot | null;
-}
+type StrokeSnapshots = { export: ExportSnapshot; preview: TiledExportSnapshot | null };
 
 function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
   const tiledSnapshot = captureTiledSnapshot(snapshotScale, renderScale);
   if (tiledSnapshot) return { export: tiledSnapshot, preview: null };
-  const preview = capturePreview ? captureTiledSnapshot(renderScale, renderScale) : null;
+  const preview = capturePreview ? captureLiveTileSnapshot(renderScale) : null;
   return {
     export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
       if (tiledRendererActive()) renderTiledSnapshot(target);
