@@ -3,19 +3,19 @@ import { COLORING_PACK_RESOLUTIONS, type ColoringPackResolution } from './resolu
 /** @public Build-time manifest generator entry used from the Vite config graph. */
 export const COLORING_PACK_FORMAT_VERSION = 2;
 
-export interface ColoringPackFile {
+interface ColoringPackFile {
   path: string;
   downloadPath: string;
   bytes: number;
   sha256: string;
 }
 
-export interface ColoringPackVariantManifest {
+interface ColoringPackVariantManifest {
   bytes: number;
   files: ColoringPackFile[];
 }
 
-export interface ColoringPackBookManifest {
+interface ColoringPackBookManifest {
   id: string;
   variants: Record<ColoringPackResolution, ColoringPackVariantManifest>;
 }
