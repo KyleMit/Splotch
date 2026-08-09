@@ -5,6 +5,7 @@
     value: T;
     label: string;
     icon?: CommonIconName;
+    disabled?: boolean;
     /** Stable DOM id — E2E tests target options through these. */
     id?: string;
   }
@@ -71,6 +72,7 @@
       class="option"
       class:active
       id={option.id}
+      disabled={option.disabled}
       role={mode === 'radio' ? 'radio' : undefined}
       aria-checked={mode === 'radio' ? active : undefined}
       aria-pressed={mode === 'toggle' ? active : undefined}
@@ -96,6 +98,11 @@
     font-weight: var(--font-weight-semibold);
     cursor: pointer;
     touch-action: manipulation;
+  }
+
+  .option:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
   }
 
   /* The picker owns its icon ink (the modal shell's re-ink rule only reaches

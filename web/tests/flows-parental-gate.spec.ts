@@ -159,6 +159,27 @@ test('Parent Center is gated before its controls appear and persists every featu
   ).toHaveAttribute('aria-checked', 'true');
 });
 
+test('Parent Center card toggles fit a small mobile screen without horizontal scrolling', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await gotoApp(page);
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
+
+  const cards = settings.locator('.policy-card');
+  await expect(cards).toHaveCount(5);
+  await expect(cards.getByRole('radiogroup')).toHaveCount(5);
+  await expect(cards.first().getByRole('radio')).toHaveCount(3);
+  await expect
+    .poll(() =>
+      settings
+        .locator('.settings-scroll')
+        .evaluate((scroller) => scroller.scrollWidth - scroller.clientWidth)
+    )
+    .toBeLessThanOrEqual(1);
+});
+
 test('iOS explains why external links cannot use Never without changing the policy', async ({
   page,
 }) => {
@@ -176,14 +197,10 @@ test('iOS explains why external links cannot use Never without changing the poli
   const externalLinks = settings.getByRole('radiogroup', {
     name: 'Viewing external links parental gate frequency',
   });
-  const never = externalLinks.getByRole('button', { name: 'Never' });
-  await expect(never).toHaveAttribute('aria-disabled', 'true');
-  await expect(never.locator('.unavailable-mark')).toHaveText('*');
-
-  await never.click({ force: true });
+  const never = externalLinks.getByRole('radio', { name: 'Never' });
+  await expect(never).toBeDisabled();
 
   await expect(settings.getByText('Why Never is unavailable on iOS')).toBeVisible();
-  await expect(never).toHaveAttribute('aria-expanded', 'true');
   await expect(externalLinks.getByRole('radio', { name: 'Every time' })).toHaveAttribute(
     'aria-checked',
     'true'
