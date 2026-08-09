@@ -71,7 +71,24 @@ describe('Android native theme backgrounds', () => {
     expect(styles).toMatch(
       /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:colorBackground">@color\/app_background<\/item>[\s\S]*?<\/style>/
     );
-    expect(styles).not.toMatch(/<style name="AppTheme\.NoActionBar"\b/);
+  });
+
+  it('keeps Capacitor BridgeActivity on the DayNight app theme', () => {
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    expect(styles).toMatch(/<style name="AppTheme\.NoActionBar" parent="AppTheme"\s*\/>/);
+  });
+
+  it('varies WebView theme detection through one day/night boolean resource', () => {
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    expect(styles).toMatch(
+      /<style name="AppTheme"[^>]*>[\s\S]*?<item name="android:isLightTheme">@bool\/app_theme_is_light<\/item>[\s\S]*?<\/style>/
+    );
+    expect(read('android/app/src/main/res/values/bools.xml')).toContain(
+      '<bool name="app_theme_is_light">true</bool>'
+    );
+    expect(read('android/app/src/main/res/values-night/bools.xml')).toContain(
+      '<bool name="app_theme_is_light">false</bool>'
+    );
   });
 
   it('matches the web app background in both themes', () => {
