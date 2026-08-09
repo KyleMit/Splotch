@@ -295,6 +295,65 @@ describe('composeExportPng overlay', () => {
     expect(toBlob).not.toHaveBeenCalled();
   });
 
+  it('delivers a bounded live-tile preview for a compatibility export', async () => {
+    setupExportContexts(null);
+    const tileBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const previewBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    const onReady = vi.fn();
+    const previewContext = {
+      globalCompositeOperation: 'source-over',
+      imageSmoothingEnabled: false,
+      imageSmoothingQuality: 'low',
+      fillStyle: '',
+      setTransform: vi.fn(),
+      resetTransform: vi.fn(),
+      fillRect: vi.fn(),
+      createPattern: vi.fn(() => null),
+      drawImage: vi.fn(),
+    } as unknown as OffscreenCanvasRenderingContext2D;
+    const previewCanvases: Array<{ width: number; height: number }> = [];
+    class PreviewCanvas {
+      constructor(
+        public width: number,
+        public height: number
+      ) {
+        previewCanvases.push(this);
+      }
+
+      getContext() {
+        return previewContext;
+      }
+
+      transferToImageBitmap() {
+        return previewBitmap;
+      }
+    }
+    vi.stubGlobal('OffscreenCanvas', PreviewCanvas);
+    const { composeExportPng } = await import('./exportDrawing');
+
+    await composeExportPng(createSnapshot(), 2, null, {
+      includePaperTexture: false,
+      preview: {
+        width: 100,
+        onReady,
+        source: {
+          source: {
+            width: 200,
+            height: 100,
+            tiles: [{ bitmap: Promise.resolve(tileBitmap), x: 0, y: 0 }],
+          },
+          sourceScale: 1,
+        },
+      },
+    });
+
+    expect(previewCanvases).toEqual([{ width: 100, height: 50 }]);
+    expect(previewContext.drawImage).toHaveBeenCalledWith(tileBitmap, 0, 0);
+    expect(onReady).toHaveBeenCalledWith(previewBitmap);
+    expect(tileBitmap.close).toHaveBeenCalledOnce();
+    expect(previewBitmap.close).not.toHaveBeenCalled();
+  });
+
   it('draws the transparent light overlay source-over', async () => {
     const contexts = setupExportContexts(null);
     const overlay = createOverlayImage();
@@ -330,14 +389,28 @@ describe('composeExportPng overlay', () => {
 
   it('rejects instead of exporting without an unavailable canonical overlay', async () => {
     const contexts = setupExportContexts(null);
+    const previewTile = { close: vi.fn() } as unknown as ImageBitmap;
     const { composeExportPng } = await import('./exportDrawing');
 
     const exported = composeExportPng(createSnapshot(), 1, createOverlaySource(null), {
       includePaperTexture: false,
+      preview: {
+        width: 100,
+        onReady: vi.fn(),
+        source: {
+          source: {
+            width: 200,
+            height: 100,
+            tiles: [{ bitmap: Promise.resolve(previewTile), x: 0, y: 0 }],
+          },
+          sourceScale: 1,
+        },
+      },
     });
     requested[0].onerror!();
 
     await expect(exported).rejects.toThrow('Failed to load canonical coloring overlay');
     expect(contexts.outputContext.fillRect).not.toHaveBeenCalled();
+    expect(previewTile.close).toHaveBeenCalledOnce();
   });
 });

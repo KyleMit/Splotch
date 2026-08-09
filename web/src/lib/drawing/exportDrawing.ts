@@ -29,6 +29,7 @@ export interface ExportOptions {
   preview?: {
     width: number;
     onReady: (preview: ImageBitmap) => void;
+    source?: TiledExportSnapshot;
   };
 }
 
@@ -79,6 +80,87 @@ function loadExportOverlay(
     };
     image.src = overlaySource.canonicalUrl;
   });
+}
+
+async function deliverTiledPreview(
+  preview: NonNullable<ExportOptions['preview']>,
+  paperColor: string,
+  texture: CanvasImageSource | null,
+  overlayImage: HTMLImageElement | null
+) {
+  if (!preview.source) return;
+  const settledTiles = await Promise.allSettled(
+    preview.source.source.tiles.map(async ({ bitmap, x, y }) => ({
+      bitmap: await bitmap,
+      x,
+      y,
+    }))
+  );
+  const failure = settledTiles.find((result) => result.status === 'rejected');
+  if (failure?.status === 'rejected') {
+    for (const result of settledTiles) {
+      if (result.status === 'fulfilled') result.value.bitmap.close();
+    }
+    throw failure.reason;
+  }
+
+  const tiles = settledTiles.flatMap((result) =>
+    result.status === 'fulfilled' ? [result.value] : []
+  );
+  const logicalWidth = preview.source.source.width / preview.source.sourceScale;
+  const logicalHeight = preview.source.source.height / preview.source.sourceScale;
+  const outputScale = preview.width / logicalWidth;
+  const outputHeight = Math.max(1, Math.round(logicalHeight * outputScale));
+  const canvas = new OffscreenCanvas(preview.width, outputHeight);
+  const context = canvas.getContext('2d');
+  if (!context) {
+    for (const tile of tiles) tile.bitmap.close();
+    return;
+  }
+
+  try {
+    const tileScale = outputScale / preview.source.sourceScale;
+    context.setTransform(tileScale, 0, 0, tileScale, 0, 0);
+    for (const tile of tiles) context.drawImage(tile.bitmap, tile.x, tile.y);
+    context.resetTransform();
+    paintExportPaper(context, {
+      width: logicalWidth,
+      height: logicalHeight,
+      scale: outputScale,
+      paperColor,
+      texture,
+    });
+    if (overlayImage) {
+      drawExportOverlay(
+        context,
+        {
+          source: overlayImage,
+          width: overlayImage.naturalWidth,
+          height: overlayImage.naturalHeight,
+        },
+        { width: logicalWidth, height: logicalHeight, scale: outputScale }
+      );
+    }
+    let bitmap: ImageBitmap | null = canvas.transferToImageBitmap();
+    try {
+      preview.onReady(bitmap);
+      bitmap = null;
+    } finally {
+      bitmap?.close();
+    }
+  } finally {
+    for (const tile of tiles) tile.bitmap.close();
+  }
+}
+
+async function closeTiledPreviewSource(preview: ExportOptions['preview']) {
+  if (!preview?.source) return;
+  const settledBitmaps = await Promise.allSettled(
+    preview.source.source.tiles.map(({ bitmap }) => bitmap)
+  );
+  for (const result of settledBitmaps) {
+    if (result.status === 'fulfilled') result.value.close();
+  }
 }
 
 // Warm the paper texture so the fetch + decode (~226ms) doesn't stall the
@@ -159,11 +241,28 @@ export async function composeExportPng(
   const h = snapshot.height / renderScale;
 
   const target = getExportContext(snapshot);
-  if (!target) return null;
-  const [texture, overlayImage] = await Promise.all([
-    includePaperTexture ? loadPaperTexture() : null,
-    loadExportOverlay(overlaySource),
-  ]);
+  if (!target) {
+    await closeTiledPreviewSource(preview);
+    return null;
+  }
+  let texture: HTMLImageElement | null;
+  let overlayImage: HTMLImageElement | null;
+  try {
+    [texture, overlayImage] = await Promise.all([
+      includePaperTexture ? loadPaperTexture() : null,
+      loadExportOverlay(overlaySource),
+    ]);
+  } catch (error) {
+    await closeTiledPreviewSource(preview);
+    throw error;
+  }
+  if (preview?.source) {
+    try {
+      await deliverTiledPreview(preview, PAPER_COLORS[theme], texture, overlayImage);
+    } catch {
+      // Preview feedback is optional; its failure must not cancel the save.
+    }
+  }
   paintExportPaper(target, {
     width: w,
     height: h,

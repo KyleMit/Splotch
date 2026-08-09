@@ -293,6 +293,25 @@ test.describe('tiled screenshot export', () => {
   });
 });
 
+test.describe('compatibility screenshot export', () => {
+  test.use({ deviceScaleFactor: 1 });
+
+  test('shows the polaroid on the 1x path', async ({ page }) => {
+    await gotoApp(page);
+    await openDrawer(page);
+    await draw(page, [
+      { x: 140, y: 140 },
+      { x: 240, y: 200 },
+    ]);
+
+    expect(await page.evaluate(() => window.devicePixelRatio)).toBe(1);
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#screenshotButton').click();
+    await expect(page.locator('.polaroid-frame')).toBeVisible();
+    await downloadPromise;
+  });
+});
+
 // ── tool/stroke state + persistence ─────────────────────────────────────────
 
 test('pen and eraser keep independent stroke sizes that persist across reload', async ({
