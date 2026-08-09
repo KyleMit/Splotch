@@ -179,13 +179,28 @@
       onclick={clearAndClose}
     >
       <img
+        class="active-page-thumbnail"
         src={activePageThumbnail.src}
         srcset={__IS_CAPACITOR__ ? undefined : activePageThumbnail.srcset}
-        sizes={__IS_CAPACITOR__ ? undefined : '44px'}
+        sizes={__IS_CAPACITOR__ ? undefined : '36px'}
         alt=""
       />
+      <span class="active-page-name">{activePage.name}</span>
+      <span class="active-page-clear" aria-hidden="true">
+        <Icon name="close" class="active-page-clear-icon" />
+      </span>
     </button>
   {/if}
+{/snippet}
+
+{#snippet closeButton()}
+  <button
+    class="coloring-book-close modal-close-btn"
+    aria-label="Close"
+    onclick={coloringBookModal.hide}
+  >
+    <Icon name="close" class="modal-close-icon" />
+  </button>
 {/snippet}
 
 <dialog
@@ -200,19 +215,12 @@
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
-    <button
-      class="coloring-book-close modal-close-btn"
-      aria-label="Close"
-      onclick={coloringBookModal.hide}
-    >
-      <Icon name="close" class="modal-close-icon" />
-    </button>
-
     {#if !activeBook}
       <div class="coloring-book-view">
         <div class="coloring-book-header">
           <h2>Coloring Books</h2>
           {@render activePageChip()}
+          {@render closeButton()}
         </div>
         <div
           class="coloring-grid coloring-books-grid"
@@ -255,6 +263,7 @@
           {/if}
           <h2>{activeBook.name}</h2>
           {@render activePageChip()}
+          {@render closeButton()}
         </div>
         {#key pagesGridToken}
           <div
@@ -309,6 +318,8 @@
   }
 
   .coloring-book-close {
+    position: static;
+    flex: 0 0 var(--modal-close-size);
     transition: opacity var(--duration-base) ease;
     z-index: 1;
   }
@@ -317,27 +328,32 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    min-height: 44px;
+    min-height: var(--modal-close-size);
     margin-bottom: var(--space-5);
-    padding-right: var(--modal-close-clearance-x);
   }
 
   .coloring-book-header h2 {
     margin: 0;
     min-width: 0;
+    margin-right: auto;
   }
 
-  /* The raw dimension is the platform touch-target floor, not a spacing value. */
+  /* The raw dimensions are control sizing: the pill keeps the platform's 44px
+     touch-target floor while the thumbnail and clear mark stay visibly nested. */
   .active-page-chip {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
+    --active-page-thumbnail-size: 36px;
+    --active-page-clear-size: 28px;
+    height: var(--modal-close-size);
+    flex: 0 0 auto;
     overflow: hidden;
     padding: var(--space-1);
     background: var(--surface-2);
     border: var(--border-width) solid var(--border-warm);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-pill);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     touch-action: manipulation;
     transition:
       border-color var(--duration-base) ease,
@@ -349,14 +365,47 @@
     transform: scale(0.92);
   }
 
-  .active-page-chip img {
-    width: 100%;
-    height: 100%;
+  .active-page-thumbnail {
+    width: var(--active-page-thumbnail-size);
+    height: var(--active-page-thumbnail-size);
+    flex: 0 0 var(--active-page-thumbnail-size);
     display: block;
     object-fit: contain;
     pointer-events: none;
     mix-blend-mode: var(--lineart-blend);
     filter: var(--lineart-filter);
+  }
+
+  .active-page-name {
+    max-width: 12ch;
+    overflow: hidden;
+    color: var(--text);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .active-page-clear {
+    width: var(--active-page-clear-size);
+    height: var(--active-page-clear-size);
+    flex: 0 0 var(--active-page-clear-size);
+    padding: var(--space-1);
+    border-radius: 50%;
+    background: var(--danger-wash);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  :global(.active-page-clear-icon) {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  :global(.active-page-clear-icon svg) {
+    fill: var(--danger-text);
   }
 
   /* 36px is control sizing, not spacing — the repo has no size ramp (the 44px
@@ -526,6 +575,16 @@
 
     .coloring-pages-grid.portrait-pages {
       --page-cols: 2;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .coloring-book-header h2 {
+      font-size: var(--font-size-lg);
+    }
+
+    .active-page-name {
+      max-width: 4ch;
     }
   }
 

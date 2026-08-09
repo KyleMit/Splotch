@@ -28,6 +28,7 @@ const BOOK_GRID_VIEWPORTS = [
 ] as const;
 const SMALL_VIEWPORT = { width: 320, height: 568 };
 const MINIMUM_TOUCH_TARGET_PX = 44;
+const MAX_CHIP_CLOSE_GAP_PX = 8;
 
 async function tileGeometry(grid: Locator) {
   return grid.locator(':scope > .coloring-tile').evaluateAll((tiles) =>
@@ -273,8 +274,10 @@ test('the active-page chip identifies the page in both picker views', async ({ p
   await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Clear Page' })).toHaveCount(0);
   await expect(chip).toBeVisible();
+  await expect(chip).toContainText('Cat');
+  await expect(chip.locator('[data-icon="close"]')).toBeVisible();
   await expect(chip.locator('img')).toHaveAttribute('src', /\/farm\/cat-wide\.thumb\.webp$/);
-  await expect(chip.locator('img')).toHaveAttribute('sizes', '44px');
+  await expect(chip.locator('img')).toHaveAttribute('sizes', '36px');
 
   await openFarmPageGrid(page);
   await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
@@ -285,7 +288,7 @@ test('the active-page chip identifies the page in both picker views', async ({ p
 test.describe('active-page chip on a small viewport', () => {
   test.use({ viewport: SMALL_VIEWPORT });
 
-  test('is a full-size keyboard action after the close button', async ({ page }) => {
+  test('is a full-size right-aligned keyboard action before the close button', async ({ page }) => {
     await gotoApp(page);
     await openDrawer(page);
     await applyFarmPage(page);
@@ -295,12 +298,17 @@ test.describe('active-page chip on a small viewport', () => {
     await settleFlyIn(dialog);
     const close = dialog.getByRole('button', { name: 'Close' });
     const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
-    const box = await chip.boundingBox();
-    expect(box?.width).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
-    expect(box?.height).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
+    const [chipBox, closeBox] = await Promise.all([chip.boundingBox(), close.boundingBox()]);
+    expect(chipBox?.width).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
+    expect(chipBox?.height).toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
+    const chipCloseGap = closeBox!.x - (chipBox!.x + chipBox!.width);
+    expect(chipCloseGap).toBeGreaterThanOrEqual(0);
+    expect(chipCloseGap).toBeLessThanOrEqual(MAX_CHIP_CLOSE_GAP_PX);
 
-    await close.focus();
+    await chip.focus();
     await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
     await expect(chip).toBeFocused();
     await page.keyboard.press('Enter');
 
