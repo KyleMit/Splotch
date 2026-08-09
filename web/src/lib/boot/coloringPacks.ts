@@ -1,19 +1,40 @@
 import { scheduleIdle } from '$lib/idle';
+import { COLORING_PACK_POLICY_EVENT } from '$lib/coloringPacks/policy';
+import { settings } from '$lib/state/settings.svelte';
 
-export function installColoringPackDownloads(): () => void {
+export function installColoringPackDownloads(settingsReady: Promise<unknown>): () => void {
+  let cancelIdle: (() => void) | undefined;
   let stopDownloader: (() => void) | undefined;
   let stopped = false;
-  const cancelIdle = scheduleIdle(() => {
-    void import('$lib/coloringPacks/manager').then(({ createColoringPackDownloader }) => {
-      if (stopped) return;
-      const downloader = createColoringPackDownloader();
-      downloader.start();
-      stopDownloader = downloader.stop;
+
+  const scheduleDownloadManager = () => {
+    if (stopped || cancelIdle || stopDownloader || !settings.coloringBookEnabled) return;
+    cancelIdle = scheduleIdle(() => {
+      cancelIdle = undefined;
+      void import('$lib/coloringPacks/manager').then(({ createColoringPackDownloader }) => {
+        if (stopped || !settings.coloringBookEnabled) return;
+        const downloader = createColoringPackDownloader();
+        downloader.start();
+        stopDownloader = downloader.stop;
+      });
     });
-  });
+  };
+
+  const handlePolicyChange = () => {
+    if (!settings.coloringBookEnabled) {
+      cancelIdle?.();
+      cancelIdle = undefined;
+      return;
+    }
+    scheduleDownloadManager();
+  };
+  window.addEventListener(COLORING_PACK_POLICY_EVENT, handlePolicyChange);
+  void settingsReady.then(scheduleDownloadManager, scheduleDownloadManager);
+
   return () => {
     stopped = true;
-    cancelIdle();
+    window.removeEventListener(COLORING_PACK_POLICY_EVENT, handlePolicyChange);
+    cancelIdle?.();
     stopDownloader?.();
   };
 }

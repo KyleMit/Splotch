@@ -15,12 +15,10 @@
     setCrayon,
     setMagicBrush,
     setEraser,
-    setColoringBook,
     setAdvancedControls,
     setPencilEraserEnabled,
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
-  import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
 
@@ -33,13 +31,6 @@
   // displayed clamped — it isn't rewritten unless the parent drags the slider.
   const scaleCeiling = $derived(maxActionButtonScale());
   const displayedScale = $derived(Math.min(settings.actionButtonScale, scaleCeiling));
-
-  // Side-effect on top of the persisted setting: disabling the coloring book
-  // should also clear any active overlay page.
-  function toggleColoringBook(next: boolean) {
-    setColoringBook(next);
-    if (!next) clearOverlay();
-  }
 
   // The per-button on/off list is a 2-column chip grid: tap a chip to show or
   // hide that Actions Panel button. Each chip reads live `settings` so its
@@ -85,14 +76,6 @@
       section: 'brush',
       checked: () => settings.eraserEnabled,
       toggle: setEraser,
-    },
-    {
-      id: 'coloringBookToggle',
-      label: 'Coloring book',
-      icon: 'shapes',
-      section: 'button',
-      checked: () => settings.coloringBookEnabled,
-      toggle: toggleColoringBook,
     },
     {
       id: 'screenshotToggle',

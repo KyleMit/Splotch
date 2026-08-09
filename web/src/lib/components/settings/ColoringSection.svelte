@@ -3,8 +3,13 @@
   import Button from '../design/Button.svelte';
   import ToggleRow from './ToggleRow.svelte';
   import { BOOKS, STARTER_COLORING_BOOK_ID } from '$lib/state/books';
+  import { clearOverlay } from '$lib/state/coloringBook.svelte';
   import { coloringPackState } from '$lib/state/coloringPacks.svelte';
-  import { settings, setColoringPacksAllowMetered } from '$lib/state/settings.svelte';
+  import {
+    settings,
+    setColoringBook,
+    setColoringPacksAllowMetered,
+  } from '$lib/state/settings.svelte';
   import { notifyColoringPackPolicyChanged } from '$lib/coloringPacks/policy';
 
   let removing = $state(false);
@@ -25,6 +30,12 @@
     notifyColoringPackPolicyChanged();
   }
 
+  function setColoringBooksEnabled(next: boolean) {
+    setColoringBook(next);
+    if (!next) clearOverlay();
+    notifyColoringPackPolicyChanged();
+  }
+
   async function removeDownloadedPictures() {
     removing = true;
     removeError = false;
@@ -40,6 +51,17 @@
 </script>
 
 <section class="setting-group">
+  <div class="setting">
+    <ToggleRow
+      icon="shapes"
+      label="Coloring book"
+      id="coloringBookToggle"
+      checked={settings.coloringBookEnabled}
+      onToggle={setColoringBooksEnabled}
+      help="Show coloring pages and download new books automatically"
+    />
+  </div>
+
   <div class="setting">
     <ToggleRow
       icon="download"

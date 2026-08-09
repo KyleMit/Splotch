@@ -135,6 +135,12 @@ public class ColoringPacksPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void cancel(PluginCall call) {
+        WorkManager.getInstance(getContext()).cancelUniqueWork(WORK_NAME);
+        call.resolve();
+    }
+
+    @PluginMethod
     public void remove(PluginCall call) {
         try {
             String version = requiredComponent(call, "version");

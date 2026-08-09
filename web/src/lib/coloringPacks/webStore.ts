@@ -86,6 +86,8 @@ export function createWebColoringPackStore(): ColoringPackStore {
       return { id: book.id };
     },
 
+    async cancel() {},
+
     async remove(manifest) {
       await Promise.all(
         COLORING_PACK_RESOLUTIONS.map((resolution) =>
