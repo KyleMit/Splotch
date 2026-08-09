@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { openColoringDialog, openDrawer } from './flows-harness';
+import { openColoringDialog, openDrawer, openFarmPageGrid } from './flows-harness';
 import { gotoApp } from './helpers';
 import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
 
@@ -69,10 +69,7 @@ test('finishing a download keeps the open page grid stable', async ({ page }) =>
     await openColoringDialog(page);
 
     const dialog = page.locator('#coloring-book-dialog');
-    await dialog
-      .getByRole('button', { name: / coloring page$/i })
-      .first()
-      .click();
+    await (await openFarmPageGrid(page)).first().click();
     await expect(dialog).toBeHidden();
     await expect(page.locator('#coloringOverlay')).toBeVisible();
 
