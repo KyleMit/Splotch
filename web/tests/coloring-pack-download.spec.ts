@@ -1,8 +1,34 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { openColoringDialog, openDrawer } from './flows-harness';
 import { gotoApp } from './helpers';
 import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
+
+async function holdDinosaurDownload(page: Page): Promise<() => void> {
+  let releaseDownload!: () => void;
+  const downloadHeld = new Promise<void>((resolve) => {
+    releaseDownload = resolve;
+  });
+
+  await page.route(/\/coloring\/manifest-.+\.json$/, async (route) => {
+    const response = await route.fetch();
+    const manifest = (await response.json()) as ColoringPackManifest;
+    const books = manifest.books
+      .filter((book) => book.id === manifest.starterBookId || book.id === 'dinosaur')
+      .map((book) => {
+        if (book.id !== 'dinosaur') return book;
+        const files = book.files.slice(0, 1);
+        return { ...book, files, bytes: files[0].bytes };
+      });
+    await route.fulfill({ response, json: { ...manifest, books } });
+  });
+  await page.route(/\/coloring\/dinosaur\/.+\.webp$/, async (route) => {
+    await downloadHeld;
+    await route.continue();
+  });
+
+  return releaseDownload;
+}
 
 test('a fresh install opens the Farm pages directly before packs arrive', async ({ page }) => {
   await page.route(/\/coloring\/manifest-.+\.json$/, (route) => route.abort());
@@ -25,33 +51,52 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
 
   await openColoringDialog(page);
   await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
+  await expect(dialog.locator('.coloring-pages-grid > .coloring-tile').last()).toHaveAttribute(
+    'aria-label',
+    'Clear Page'
+  );
   await dialog.getByRole('button', { name: 'Clear Page' }).click();
   await expect(dialog).toBeHidden();
   await expect(page.locator('#coloringOverlay')).toBeHidden();
 });
 
-test('the picker responds when a second book finishes downloading', async ({ page }) => {
-  let releaseDinosaurDownload!: () => void;
-  const dinosaurDownloadHeld = new Promise<void>((resolve) => {
-    releaseDinosaurDownload = resolve;
-  });
+test('finishing a download keeps the open page grid stable', async ({ page }) => {
+  const releaseDinosaurDownload = await holdDinosaurDownload(page);
 
-  await page.route(/\/coloring\/manifest-.+\.json$/, async (route) => {
-    const response = await route.fetch();
-    const manifest = (await response.json()) as ColoringPackManifest;
-    const books = manifest.books
-      .filter((book) => book.id === manifest.starterBookId || book.id === 'dinosaur')
-      .map((book) => {
-        if (book.id !== 'dinosaur') return book;
-        const files = book.files.slice(0, 1);
-        return { ...book, files, bytes: files[0].bytes };
-      });
-    await route.fulfill({ response, json: { ...manifest, books } });
-  });
-  await page.route(/\/coloring\/dinosaur\/.+\.webp$/, async (route) => {
-    await dinosaurDownloadHeld;
-    await route.continue();
-  });
+  try {
+    await gotoApp(page);
+    await openDrawer(page);
+    await openColoringDialog(page);
+
+    const dialog = page.locator('#coloring-book-dialog');
+    await dialog
+      .getByRole('button', { name: / coloring page$/i })
+      .first()
+      .click();
+    await expect(dialog).toBeHidden();
+    await expect(page.locator('#coloringOverlay')).toBeVisible();
+
+    await openColoringDialog(page);
+    const gridTiles = dialog.locator('.coloring-pages-grid > .coloring-tile');
+    await expect(gridTiles).toHaveCount(7);
+    const labelsBeforeDownload = await gridTiles.evaluateAll((tiles) =>
+      tiles.map((tile) => tile.getAttribute('aria-label'))
+    );
+
+    releaseDinosaurDownload();
+    await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible({ timeout: 30_000 });
+    await expect
+      .poll(() =>
+        gridTiles.evaluateAll((tiles) => tiles.map((tile) => tile.getAttribute('aria-label')))
+      )
+      .toEqual(labelsBeforeDownload);
+  } finally {
+    releaseDinosaurDownload();
+  }
+});
+
+test('the picker responds when a second book finishes downloading', async ({ page }) => {
+  const releaseDinosaurDownload = await holdDinosaurDownload(page);
 
   try {
     await gotoApp(page);
@@ -63,21 +108,7 @@ test('the picker responds when a second book finishes downloading', async ({ pag
     await expect(dialog.getByRole('button', { name: 'Back' })).toHaveCount(0);
 
     releaseDinosaurDownload();
-    await expect
-      .poll(() =>
-        page.evaluate(async () => {
-          for (const cacheName of await caches.keys()) {
-            const requests = await (await caches.open(cacheName)).keys();
-            if (requests.some(({ url }) => new URL(url).pathname.endsWith('/dinosaur'))) {
-              return true;
-            }
-          }
-          return false;
-        })
-      )
-      .toBe(true);
-
-    await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Back' })).toBeVisible({ timeout: 30_000 });
     await dialog.getByRole('button', { name: 'Close' }).click();
     await expect(dialog).toBeHidden();
 

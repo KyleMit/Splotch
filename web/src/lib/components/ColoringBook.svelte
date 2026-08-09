@@ -38,6 +38,7 @@
   const hasBookPicker = $derived(books.length >= 2);
 
   let activeBook = $state<Book | null>(null);
+  let clearPageInPagesGrid = $state(false);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -64,13 +65,14 @@
     return coloringOverlayImageSize(canvasState.paperCssWidth);
   }
 
-  $effect(() =>
-    scheduleIdle(() =>
+  $effect(() => {
+    if (!hasBookPicker) return;
+    return scheduleIdle(() =>
       prefetchImages(
         books.map((book) => imageRequest(coverThumbImageSource(book), coverThumbnailSizes))
       )
-    )
-  );
+    );
+  });
 
   // Pressing/hovering a book tile warms that book's page thumbs before the
   // sub-grid renders; hovering a page tile warms its selected overlay candidate
@@ -135,6 +137,11 @@
     return hasBookPicker ? null : (books.at(0) ?? null);
   }
 
+  function showInitialView() {
+    clearPageInPagesGrid = !hasBookPicker;
+    showView(initialView());
+  }
+
   $effect(() => {
     const activeBookStillAvailable = books.some((book) => book.id === activeBook?.id);
     if ((!activeBook && !hasBookPicker) || (activeBook && !activeBookStillAvailable)) {
@@ -157,6 +164,18 @@
   }
 </script>
 
+{#snippet clearPageTile()}
+  <button
+    class="coloring-tile coloring-book-tile"
+    type="button"
+    aria-label="Clear Page"
+    onclick={clearAndClose}
+  >
+    <Icon name="remove-page" class="coloring-remove-icon" />
+    <span class="coloring-book-label">Clear Page</span>
+  </button>
+{/snippet}
+
 <dialog
   bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
@@ -165,7 +184,7 @@
     open: coloringBookModal.open,
     origin: coloringBookModal.origin,
     onRequestClose: coloringBookModal.hide,
-    onOpen: () => showView(initialView()),
+    onOpen: showInitialView,
   })}
 >
   <div class="coloring-book-content" class:hover-armed={hoverArmed} use:armHoverOnMouseMove>
@@ -186,15 +205,7 @@
           class:book-grid-has-nine-tiles={bookGridLayout.hasNineTiles}
         >
           {#if overlayActive}
-            <button
-              class="coloring-tile coloring-book-tile"
-              type="button"
-              aria-label="Clear Page"
-              onclick={clearAndClose}
-            >
-              <Icon name="remove-page" class="coloring-remove-icon" />
-              <span class="coloring-book-label">Clear Page</span>
-            </button>
+            {@render clearPageTile()}
           {/if}
           {#each books as book (book.id)}
             {@const coverImage = coverThumbImageSource(book)}
@@ -236,17 +247,6 @@
           class="coloring-grid coloring-pages-grid"
           class:portrait-pages={orientation === 'portrait'}
         >
-          {#if !hasBookPicker && overlayActive}
-            <button
-              class="coloring-tile coloring-book-tile"
-              type="button"
-              aria-label="Clear Page"
-              onclick={clearAndClose}
-            >
-              <Icon name="remove-page" class="coloring-remove-icon" />
-              <span class="coloring-book-label">Clear Page</span>
-            </button>
-          {/if}
           {#each activeBook.pages as page (page.id)}
             {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
             <button
@@ -266,6 +266,9 @@
               />
             </button>
           {/each}
+          {#if clearPageInPagesGrid && overlayActive}
+            {@render clearPageTile()}
+          {/if}
         </div>
       </div>
     {/if}
