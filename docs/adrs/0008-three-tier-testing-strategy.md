@@ -16,22 +16,20 @@ Splotch has three distinct layers of testable behavior that require different to
 
 ## Decision
 
-Three testing tiers, with separate unit-test commands for the app, asset pipeline, store-drawing
-pipeline, and repository automation:
+Three testing tiers, with separate unit-test commands for the app, asset pipeline, and repository
+automation:
 
-| Tier                 | Tool                          | Command                                                                     | What it covers                                                                       |
-| -------------------- | ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Unit (app)           | Vitest + happy-dom            | `npm run test:unit`                                                         | Pure functions, `$state` modules, storage layer, color ring math                     |
-| Unit (asset)         | Vitest + Node                 | `npm run test:asset-gen`                                                    | Image-analysis gates and mocked asset-generator workflows against committed fixtures |
-| Unit (store drawing) | Vitest + Node                 | `npm run test:store-drawings`                                               | SVG parsing and deterministic store-drawing instruction generation                   |
-| Unit (repo scripts)  | Vitest + Node                 | `npm run test:scripts`                                                      | Repository automation whose failures would corrupt state rather than simply crash    |
-| E2E web              | Playwright (production build) | `npm run test:e2e` / `npm run test:webkit:smoke`                            | Chromium flows plus a WebKit critical-path smoke subset                              |
-| Native launch smoke  | Maestro                       | `npm run test:android` / `npm run test:android:device` / `npm run test:ios` | App boots on a real emulator/simulator and the "Settings" button becomes visible     |
+| Tier                | Tool                          | Command                                                                     | What it covers                                                                                     |
+| ------------------- | ----------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Unit (app)          | Vitest + happy-dom            | `npm run test:unit`                                                         | Pure functions, `$state` modules, storage layer, color ring math                                   |
+| Unit (asset)        | Vitest + Node                 | `npm run test:asset-gen`                                                    | Image-analysis gates and mocked asset-generator workflows against committed fixtures               |
+| Unit (repo scripts) | Vitest + Node                 | `npm run test:scripts`                                                      | Repository automation whose failures would corrupt state rather than simply crash                  |
+| E2E web             | Playwright (production build) | `npm run test:e2e`                                                          | Real browser flows on `/`, drawing engine harness, palette CSS trim, AI route (mocked), multitouch |
+| Native launch smoke | Maestro                       | `npm run test:android` / `npm run test:android:device` / `npm run test:ios` | App boots on a real emulator/simulator and the "Settings" button becomes visible                   |
 
-`npm test` runs all four unit suites plus E2E sequentially; the native smoke tests are separate
-commands because they require an emulator or simulator. CI runs the four unit commands in a
-browser-free job, sharded Chromium E2E and the WebKit smoke subset in parallel, and reserves native
-smoke for release tags.
+`npm test` runs app unit + asset-pipeline unit + repo-script unit + E2E sequentially; the native
+smoke tests are separate opt-in commands because they require an emulator or simulator. CI runs all
+three unit commands before setting up Playwright, then runs E2E.
 
 The Playwright E2E suite runs against the **production build** (not dev server) to catch build-time
 issues. A `global-setup.ts` warms each route with a cold Vite load before workers start to avoid
@@ -52,3 +50,10 @@ process is alive.
   warmup). Retries (2 on CI) add buffer against cold-start flakiness.
 * **-** Native smoke requires an Android emulator/device or an iOS simulator; neither is runnable in
   a standard web CI job without platform-specific setup.
+
+## Amendment (2026-08-08): expanded suites and parallel CI
+
+The three behavioral tiers remain unchanged, while their command and CI coverage expanded. The unit
+tier now also includes `test:store-drawings`; `npm test` runs all four unit commands before E2E. CI
+runs the unit commands in a browser-free job, shards Chromium E2E, runs a separate WebKit
+critical-path smoke subset, and reserves Maestro native launch smoke for release tags.

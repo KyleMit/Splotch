@@ -41,7 +41,7 @@ the **client**, not the server:
 
 | Render                                   | Routes                                                    | Why                                                              |
 | ---------------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------- |
-| **SSG** (prerendered, CDN/bundle-served) | `/`, `/privacy`, `/changelog`                             | No per-request input; must also work in the native static export |
+| **SSG** (prerendered, CDN/bundle-served) | `/`, `/privacy`                                           | No per-request input; must also work in the native static export |
 | **SSR** (`sveltekit-render` per request) | `/admin` (cookie auth + form actions), `/api/*`, `/dev/*` | Genuinely need request context (cookies, headers, live data)     |
 
 Because `/` renders from defaults, anything whose stored/measured value differs from the default is
@@ -181,4 +181,10 @@ from the generated metadata, so it needs no request context or runtime Markdown 
 
 Settings links directly to these in-bundle routes. They are ordinary internal navigation, not an
 external-link operation, so opening either page does not invoke the parental gate. This keeps the
-policy/legal and release-history content available offline and avoids gating harmless reading.
+policy/legal and release-history content available offline in the native apps, and cache-backed on
+the web after its first visit, without gating harmless reading.
+
+The changelog keeps the complete cross-target release history. Platform-limited features stay in
+that history with explicit `(web)`, `(Android)`, or `(iOS)` qualifiers. Because the same markup
+ships inside both native binaries, the release generator rejects marketplace-specific names that
+would be irrelevant in the other store's app.

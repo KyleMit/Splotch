@@ -7,9 +7,8 @@
 
 Splotch targets two distinct deployment environments:
 
-1. **Web** — hosted on Netlify, using prerendered pages for static surfaces such as the home page,
-   plus SSR/serverless handling for request-dependent routes such as `/api/generate-image` and the
-   token management admin console (`/admin`) (the per-route split is ADR-0040).
+1. **Web** — hosted on Netlify, needing SSR for the home page, serverless functions for the AI image
+   generation endpoint (`/api/generate-image`), and a token management admin console (`/admin`).
 2. **Native (Android/iOS)** — wrapped via Capacitor, which requires a fully static, pre-rendered
    bundle embedded in the app binary. Serverless functions aren't available inside the native shell;
    the native app calls the hosted endpoint directly.
@@ -44,3 +43,13 @@ Capacitor shell provides equivalent offline capability).
   changes require attention.
 * **-** `strict: false` means misconfigured static routes fail silently at runtime instead of at
   build time.
+
+## Amendment (2026-08-08): per-route SSG and native route verification
+
+The original context described the home page as needing SSR. ADR-0040 subsequently established the
+actual per-route boundary: the home page and informational routes are prerendered, while Netlify SSR
+is reserved for request-dependent routes. The dual-adapter decision is unchanged.
+
+Because adapter-static's `strict: false` can silently omit an intended static route, the native
+post-build verifier requires both `privacy.html` and `changelog.html`. A missing bundled
+informational page therefore fails `build:cap` instead of reaching a native release unnoticed.
