@@ -4,16 +4,16 @@
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
   // masthead (back link + crayon strip + wordmark) and a hero. Shared by
-  // /android-beta, /feedback, /privacy, /design, and the admin console so a
-  // URL handed out in a store listing or a README lands somewhere recognisably
-  // Splotch either way.
+  // /android-beta, /changelog, /feedback, /privacy, /design, and the admin
+  // console so a URL handed out in a store listing or a README lands somewhere
+  // recognisably Splotch either way.
   //
   // The palette is the --page-* custom properties declared in the style block
   // below, defaulting to the themed app tokens; everything nested inside — the
   // page's own body copy, RuleLabel, StepLedger — reads them rather than
   // restating a color. A page that must not follow the theme overrides them on
-  // the forwarded `class` (see /android-beta and /privacy, whose link and
-  // button contrast is measured against a light ground).
+  // the forwarded `class` (see /android-beta, /changelog, and /privacy, whose
+  // link and button contrast is measured against a light ground).
   interface Props {
     /** The <h1>. Also the only heading the shell owns. */
     title: string;

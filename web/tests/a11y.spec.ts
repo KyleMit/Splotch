@@ -5,8 +5,8 @@ import { draw, gotoApp, openSettingsModal } from './helpers';
 import { openParentalGate } from './flows-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
-// /android-beta, /feedback, /design, /admin (both auth states), and the
-// Settings dialog.
+// /changelog, /android-beta, /feedback, /design, /admin (both auth states),
+// and the Settings dialog.
 // The toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Settings scan
 // is scoped to the dialog itself rather than the whole drawing page.
@@ -48,6 +48,12 @@ async function expectNoSeriousViolations(page: Page, include?: string) {
 test('/privacy has no serious accessibility violations', async ({ page }) => {
   await page.goto('/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test('/changelog has no serious accessibility violations', async ({ page }) => {
+  await page.goto('/changelog');
+  await expect(page.getByRole('heading', { name: 'Changelog', level: 1 })).toBeVisible();
   await expectNoSeriousViolations(page);
 });
 

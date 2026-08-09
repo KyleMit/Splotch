@@ -6,7 +6,8 @@ is generated from them:
 
 | Target                                 | Generated artifact                                             |
 | -------------------------------------- | -------------------------------------------------------------- |
-| In-app Settings ("What's New")         | `web/src/lib/releases.json` + generated release-note component |
+| In-app Settings ("What's New")         | `web/src/lib/releases.json` + generated current-note component |
+| Web/native changelog                   | generated full-history component at `/changelog`               |
 | Google Play "What's new"               | `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` |
 | App Store "What's New in This Version" | `fastlane/metadata/en-US/release_notes.txt`                    |
 | GitHub Release                         | the file body, via `gh release create`                         |
@@ -40,6 +41,11 @@ androidVersionCode: 3
 The body is free Markdown. Headings become section labels in the plain-text store changelogs; list
 items become `•` bullets. Keep the Android changelog under **500 characters** (the script warns if
 the latest release exceeds it).
+
+The same body also appears in the complete changelog bundled on web, Android, and iOS. Keep the full
+history intact and qualify platform-limited features with `(web)`, `(Android)`, or `(iOS)`. Do not
+name a platform marketplace: `gen:releases` rejects Google Play, Play Store, and App Store copy
+because it would also ship inside the other platform's binary.
 
 ## How to cut a release
 

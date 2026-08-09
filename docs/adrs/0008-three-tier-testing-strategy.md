@@ -50,3 +50,10 @@ process is alive.
   warmup). Retries (2 on CI) add buffer against cold-start flakiness.
 * **-** Native smoke requires an Android emulator/device or an iOS simulator; neither is runnable in
   a standard web CI job without platform-specific setup.
+
+## Amendment (2026-08-08): expanded suites and parallel CI
+
+The three behavioral tiers remain unchanged, while their command and CI coverage expanded. The unit
+tier now also includes `test:store-drawings`; `npm test` runs all four unit commands before E2E. CI
+runs the unit commands in a browser-free job, shards Chromium E2E, runs a separate WebKit
+critical-path smoke subset, and reserves Maestro native launch smoke for release tags.

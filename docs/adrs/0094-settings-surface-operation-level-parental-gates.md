@@ -108,3 +108,12 @@ Consequences:
   that device; this is intentional, visible, and reversible.
 * − Adding another protected operation requires a feature id, persisted policy key, Parent Center
   row, boundary call, and tests.
+
+## Amendment (2026-08-08): bundled informational pages are internal navigation
+
+Opening an informational page bundled with the app is not an `externalLinks` operation. Settings
+links directly to `/privacy` and `/changelog` without a parental challenge; both routes are
+prerendered into the native package and need no network handoff. The external-link policy continues
+to guard URLs that leave Splotch. The distinction is the destination boundary, not the section or
+anchor element: internal app content stays directly readable, while an actual link-out keeps its
+configured Every time / Per session / Never behavior.

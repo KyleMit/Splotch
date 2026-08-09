@@ -170,3 +170,21 @@ surfaces.
   `data-action-panel-live`, then panel-local attributes afterward. A new action-state selector must
   cover both phases, and profilers must inspect the panel rather than treating the root seed as
   live.
+
+## Amendment (2026-08-08): bundled informational routes
+
+`/privacy` and `/changelog` are static informational routes in both targets. The native bundle
+verifier requires both emitted HTML files, closing adapter-static's `strict: false` gap: a route
+that accidentally stops prerendering now fails `build:cap` instead of silently disappearing from the
+app. `/changelog` compiles every `releases/*.md` body at build time and renders a table of contents
+from the generated metadata, so it needs no request context or runtime Markdown parser.
+
+Settings links directly to these in-bundle routes. They are ordinary internal navigation, not an
+external-link operation, so opening either page does not invoke the parental gate. This keeps the
+policy/legal and release-history content available offline in the native apps, and cache-backed on
+the web after its first visit, without gating harmless reading.
+
+The changelog keeps the complete cross-target release history. Platform-limited features stay in
+that history with explicit `(web)`, `(Android)`, or `(iOS)` qualifiers. Because the same markup
+ships inside both native binaries, the release generator rejects marketplace-specific names that
+would be irrelevant in the other store's app.

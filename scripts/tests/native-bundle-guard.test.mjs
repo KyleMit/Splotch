@@ -6,6 +6,8 @@ import {
   adminConsoleSentinels,
   FORBIDDEN_NATIVE_HOSTS,
   nativeBundleProblems,
+  REQUIRED_NATIVE_PAGES,
+  requiredNativePageProblems,
   WEB_ONLY_MODULE_MARKERS,
   webOnlyMarkerSourceProblems,
 } from '../check-native-bundle.mjs';
@@ -81,6 +83,23 @@ describe('native bundle scan', () => {
       }
     }
   );
+});
+
+describe('required native pages', () => {
+  it('requires the privacy policy and changelog in the static export', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-pages-'));
+    try {
+      for (const page of REQUIRED_NATIVE_PAGES) writeFileSync(join(root, page), page);
+      expect(requiredNativePageProblems(root)).toEqual([]);
+
+      rmSync(join(root, REQUIRED_NATIVE_PAGES[0]));
+      expect(requiredNativePageProblems(root)).toEqual([
+        `Required native page is missing: ${REQUIRED_NATIVE_PAGES[0]}`,
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('web-only boot markers', () => {
