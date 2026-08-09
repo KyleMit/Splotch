@@ -83,4 +83,16 @@ describe('installColoringPackDownloads', () => {
     pendingIdleWork?.();
     await vi.waitFor(() => expect(mocks.createDownloader).not.toHaveBeenCalled());
   });
+
+  it('does not schedule a second downloader while the manager chunk is loading', async () => {
+    teardown = installColoringPackDownloads(Promise.resolve());
+    await vi.waitFor(() => expect(mocks.idleQueue).toHaveLength(1));
+
+    mocks.idleQueue[0]?.();
+    window.dispatchEvent(new Event(COLORING_PACK_POLICY_EVENT));
+
+    expect(mocks.idleQueue).toHaveLength(1);
+    await vi.waitFor(() => expect(mocks.createDownloader).toHaveBeenCalledOnce());
+    expect(mocks.start).toHaveBeenCalledOnce();
+  });
 });

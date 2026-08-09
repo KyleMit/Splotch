@@ -4,19 +4,34 @@ import { settings } from '$lib/state/settings.svelte';
 
 export function installColoringPackDownloads(settingsReady: Promise<unknown>): () => void {
   let cancelIdle: (() => void) | undefined;
+  let startingDownloader = false;
   let stopDownloader: (() => void) | undefined;
   let stopped = false;
 
   const scheduleDownloadManager = () => {
-    if (stopped || cancelIdle || stopDownloader || !settings.coloringBookEnabled) return;
+    if (
+      stopped ||
+      cancelIdle ||
+      startingDownloader ||
+      stopDownloader ||
+      !settings.coloringBookEnabled
+    )
+      return;
     cancelIdle = scheduleIdle(() => {
       cancelIdle = undefined;
-      void import('$lib/coloringPacks/manager').then(({ createColoringPackDownloader }) => {
-        if (stopped || !settings.coloringBookEnabled) return;
-        const downloader = createColoringPackDownloader();
-        downloader.start();
-        stopDownloader = downloader.stop;
-      });
+      startingDownloader = true;
+      void import('$lib/coloringPacks/manager').then(
+        ({ createColoringPackDownloader }) => {
+          startingDownloader = false;
+          if (stopped || !settings.coloringBookEnabled) return;
+          const downloader = createColoringPackDownloader();
+          downloader.start();
+          stopDownloader = downloader.stop;
+        },
+        () => {
+          startingDownloader = false;
+        }
+      );
     });
   };
 
