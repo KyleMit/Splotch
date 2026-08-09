@@ -162,10 +162,12 @@ test('a saved disabled setting blocks pack boot until coloring books are enabled
   page.on('request', (request) => {
     if (/\/coloring\/manifest-.+\.json$/.test(request.url())) manifestRequests++;
   });
-  await page.addInitScript(
+  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await page.evaluate(
     (key) => localStorage.setItem(key, 'false'),
     STORAGE_KEYS.coloringBookEnabled
   );
+  manifestRequests = 0;
 
   await gotoApp(page);
   await openDrawer(page);
@@ -181,6 +183,11 @@ test('a saved disabled setting blocks pack boot until coloring books are enabled
 
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'Coloring', exact: true }).click();
+  await expect(
+    settings.getByText('Storage details are unavailable while coloring books are off')
+  ).toBeVisible();
+  await expect(settings.locator('#coloringPacksMeteredToggle')).toBeDisabled();
+  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
   await settings.locator('#coloringBookToggle').click();
 
   await expect(page.locator('#coloringBookButton')).toBeVisible();

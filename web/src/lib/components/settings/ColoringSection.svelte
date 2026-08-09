@@ -70,6 +70,7 @@
       checked={settings.coloringPacksAllowMetered}
       onToggle={setAllowMetered}
       help="Allows automatic picture downloads when Wi-Fi isn't available"
+      disabled={!settings.coloringBookEnabled}
     />
   </div>
 
@@ -89,13 +90,15 @@
           {:else if downloadedBookCount === coloringPackState.totalBookCount - 1}
             <p>Every coloring book is ready offline</p>
           {/if}
+        {:else if !settings.coloringBookEnabled}
+          <p>Storage details are unavailable while coloring books are off</p>
         {/if}
       </div>
     </div>
     <Button
       variant="danger"
       size="sm"
-      disabled={removing || downloadedBookCount === 0}
+      disabled={removing || (coloringPackState.initialized && downloadedBookCount === 0)}
       onclick={removeDownloadedPictures}
     >
       {removing ? 'Removing…' : 'Remove downloaded pictures'}

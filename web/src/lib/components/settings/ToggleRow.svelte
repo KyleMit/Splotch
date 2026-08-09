@@ -13,12 +13,13 @@
     checked: boolean;
     onToggle: (next: boolean) => void;
     help?: string;
+    disabled?: boolean;
   }
 
-  let { icon, label, id, checked, onToggle, help = '' }: Props = $props();
+  let { icon, label, id, checked, onToggle, help = '', disabled = false }: Props = $props();
 </script>
 
-<div class="setting-toggle">
+<div class="setting-toggle" class:disabled>
   <label class="setting-info" for={id}>
     <Icon name={icon} class="setting-icon" />
     <span class="setting-label">{label}</span>
@@ -31,13 +32,14 @@
     aria-label={label}
     aria-checked={checked}
     aria-describedby={help ? `${id}-help` : undefined}
+    {disabled}
     onclick={() => onToggle(!checked)}
   >
     <span class="toggle-switch-thumb"></span>
   </button>
 </div>
 {#if help}
-  <p id="{id}-help" class="setting-help">{help}</p>
+  <p id="{id}-help" class="setting-help" class:disabled>{help}</p>
 {/if}
 
 <style>
@@ -73,6 +75,16 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     color: var(--text);
+  }
+
+  .setting-toggle.disabled,
+  .setting-help.disabled {
+    opacity: 0.55;
+  }
+
+  .setting-toggle.disabled .setting-info,
+  .toggle-switch:disabled {
+    cursor: default;
   }
 
   /* iOS-style toggle switch (boolean settings) */
