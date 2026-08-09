@@ -3,7 +3,11 @@ import { expect, type Page } from '@playwright/test';
 import { gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
 import { coloringPackCacheName, coloringPackMarkerPath } from '../src/lib/coloringPacks/cacheKeys';
-import type { ColoringPackManifest } from '../src/lib/coloringPacks/manifest';
+import {
+  resolveColoringPackManifest,
+  type ColoringPackManifest,
+} from '../src/lib/coloringPacks/manifest';
+import { coloringPackResolutionForScreen } from '../src/lib/coloringPacks/resolution';
 
 // Layer 3 — full-UI end-to-end flows on the real app page. These exercise the
 // Svelte component wiring (palette, action drawer, tool/stroke state, AI fetch,
@@ -29,8 +33,17 @@ async function gotoAppWithInstalledColoringBooks(
 ) {
   const manifestResponse = page.waitForResponse(/\/coloring\/manifest-.+\.json$/);
   await gotoApp(page);
-  const manifest = (await (await manifestResponse).json()) as ColoringPackManifest;
-  const markers = installedBookIds(manifest).map((id) => ({
+  const sourceManifest = (await (await manifestResponse).json()) as ColoringPackManifest;
+  const screen = await page.evaluate(() => ({
+    widthCssPx: window.screen.width,
+    heightCssPx: window.screen.height,
+    devicePixelRatio: window.devicePixelRatio,
+  }));
+  const manifest = resolveColoringPackManifest(
+    sourceManifest,
+    coloringPackResolutionForScreen(screen)
+  );
+  const markers = installedBookIds(sourceManifest).map((id) => ({
     id,
     path: coloringPackMarkerPath(manifest, id),
   }));

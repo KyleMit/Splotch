@@ -1,8 +1,8 @@
 # ADR-0045: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
 
 **Status:** Active — the 2026-07-31 thumbnail decode bridge is superseded by the 2026-08-01
-amendment, and the 2026-08-02 issue #621 amendment adds responsive web presentation while keeping
-canonical export and offline authority. **Date:** 2026-07
+amendment, the 2026-08-02 issue #621 amendment adds responsive web presentation, and the 2026-08-08
+amendment reuses the derivatives for screen-sized web/native packs. **Date:** 2026-07
 
 ## Context
 
@@ -147,10 +147,11 @@ canonical picker thumbnail and canvas overlay:
 
 `books.ts` owns the source URL, candidate URL, intrinsic width descriptors, and generated-asset
 inventory. The picker publishes layout-specific `sizes`; the canvas publishes its locked paper
-width. Native builds omit `srcset` and strip both responsive directories, so they retain the prior
-single-canonical behavior. `gen:coloring-responsive` deterministically derives all candidates, and
-the catalog fidelity test checks dimensions, alpha preservation, overlay channel error, and total
-byte savings against those same catalog records.
+width. Native builds omit `srcset` and strip both responsive directories from the initial bundle. At
+the time of this amendment, downloaded native packs retained the prior single-canonical behavior;
+section 6 supersedes that download behavior. `gen:coloring-responsive` deterministically derives all
+candidates, and the catalog fidelity test checks dimensions, alpha preservation, overlay channel
+error, and total byte savings against those same catalog records.
 
 The DOM's ready-gated image may decode a responsive candidate on web. That is presentation only: the
 element's `src` remains the canonical root URL, and every exported drawing resolves that URL.
@@ -174,13 +175,48 @@ background pack. Picker prefetch observes only the installed-book list, so it ca
 advertise an incomplete book. Responsive web requests still fall back to the corresponding canonical
 URL, whether that URL is in Farm's Workbox precache or a downloaded pack cache.
 
+### 6. Screen-sized downloaded packs on web, Android, and iOS
+
+**Amendment (2026-08-08).** The responsive generator also derives every light/night Magic fill at
+the 1,152 px tier. A book therefore has a complete compact runtime inventory: canonical 400 px
+picker thumbnails plus 1,152 px overlays and fills, all mapped to the same logical canonical paths
+as the full tier. Keeping thumbnails canonical avoids softening 2× and 3× picker tiles; they account
+for little of the pack saving. The fidelity test regenerates every derivative byte-for-byte, so
+changing a master without rerunning `gen:coloring-responsive` fails rather than leaving a stale
+rendition.
+
+The pack manifest carries `compact` and `full` variants. Selection uses the device's full screen in
+CSS pixels, the true device pixel ratio, and the contained 3:2 paper geometry. Compact is selected
+only when the paper's required long edge fits within the 1,152 px asset. The drawing canvas's 2×
+render-scale cap (ADR-0015) does not apply: line art is an `<img>` rasterized at the device's true
+DPR. This keeps downloaded bytes consistent with web `srcset` width descriptors and limits compact
+selection to screens that do not upscale its line art. The screen rather than the current viewport
+makes the choice stable across rotation and split-view changes.
+
+Each manifest file has a logical `path` and, when the selected bytes differ, a tier-specific
+`downloadPath`; parsing defaults an omitted `downloadPath` to `path` to avoid repeating every
+canonical URL on the wire. Web Cache Storage fetches the resolved download path but stores it under
+the logical path; Android WorkManager and iOS background `URLSession` do the same in app-private
+storage. Every existing WebView consumer therefore keeps resolving the canonical URL shape, while
+the installed bytes match the device. Native `<img>` elements still omit `srcset`: their whole local
+book has already been selected, so a second per-element mechanism would only create missing local
+candidate URLs.
+
+The Farm starter book remains full resolution in the initial PWA/native bundle. It is the complete
+offline baseline and cannot be selected per device inside one static Capacitor bundle without
+shipping both copies. Android `drawable-*dpi` and iOS asset-catalog scales were rejected for this
+catalog: they select compiled native UI resources, while these files are WebView content and
+post-install background downloads. Moving them into native resources would duplicate the catalog,
+require a native resource bridge, and still not solve web delivery.
+
 ## Consequences
 
 * **+** Grid downloads drop ~85% (thumbnails ~15 KB vs. 84–120 KB); the picker paints fast even on a
   cold visit, and decode cost per tile falls with the pixel count.
 * **+** The steady-state web overlay uses the browser-selected resolution appropriate for the locked
   paper width, and its decode window preserves the paper texture instead of displaying an opaque
-  substitute. Canonical art remains mandatory for export.
+  substitute. Export still resolves the canonical logical source; a compact downloaded pack may
+  provide screen-sized bytes at that path.
 * **+** Prefetch turns each hop (open → book → apply) from first-fetch latency into a cache hit on
   the common path — measured at 14–137× faster first open and 1.5–44× faster page-apply (see
   **Measured impact** below).
@@ -201,11 +237,14 @@ URL, whether that URL is in Farm's Workbox precache or a downloaded pack cache.
   overlay decodes. This is deliberate: the retired bridge remained blank for its own transfer and
   then substituted visibly soft art for the rest of the window.
 
-* **+** Responsive presentation reduces cold web transfer and decode cost without changing native
-  assets, exported PNG fidelity, or the canonical offline catalog.
+* **+** Responsive presentation reduces cold web transfer and decode cost. Screen-sized downloaded
+  packs extend the same generated catalog to web, Android, and iOS without changing consumer URL
+  shapes.
 
-* **−** The web catalog carries 392 deterministic derivatives. They are committed and manifest-
-  guarded, but excluded from the PWA precache so installs do not store both resolutions.
+* **+** A compact seven-book background install transfers about 19.3 MiB instead of 28.3 MiB, a
+  31.6% reduction, while denser phones and tablets retain the full tier.
+* **−** The web catalog carries 584 deterministic derivatives. They are committed and drift-guarded,
+  but excluded from the PWA precache so installs do not store both resolutions.
 
 ### Superseded escalation threshold
 

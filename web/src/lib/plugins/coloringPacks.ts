@@ -1,5 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import type { ColoringPackBookManifest } from '$lib/coloringPacks/manifest';
+import type { ResolvedColoringPackBookManifest } from '$lib/coloringPacks/manifest';
 
 export interface NativeColoringPack {
   id: string;
@@ -12,8 +12,9 @@ interface ColoringPacksPlugin {
   }>;
   install(options: {
     version: string;
+    appVersion: string;
     baseUrl: string;
-    book: ColoringPackBookManifest;
+    book: ResolvedColoringPackBookManifest;
     allowMetered: boolean;
   }): Promise<NativeColoringPack>;
   remove(options: { version: string }): Promise<void>;

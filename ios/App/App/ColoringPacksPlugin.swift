@@ -4,6 +4,7 @@ import Foundation
 
 fileprivate struct ColoringPackFile: Codable {
     let path: String
+    let downloadPath: String
     let bytes: Int64
     let sha256: String
 }
@@ -15,6 +16,7 @@ fileprivate struct ColoringPackBook: Codable {
 
 fileprivate struct ColoringPackJob: Codable {
     let version: String
+    let appVersion: String
     let baseURL: String
     let book: ColoringPackBook
     let allowMetered: Bool
@@ -71,13 +73,21 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 
     func resumePendingDownload() {
         queue.async {
-            guard self.currentJob == nil, let job = try? self.loadJob() else { return }
+            guard self.currentJob == nil else { return }
+            guard FileManager.default.fileExists(atPath: Self.jobURL.path) else { return }
+            let job: ColoringPackJob
+            do {
+                job = try self.loadJob()
+            } catch {
+                try? FileManager.default.removeItem(at: Self.jobURL)
+                self.cancelAllTasks()
+                return
+            }
             let appVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            guard job.version == appVersion else {
+            guard job.appVersion == appVersion else {
                 try? FileManager.default.removeItem(at: Self.versionDirectory(job.version))
                 try? FileManager.default.removeItem(at: Self.jobURL)
-                self.wifiSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
-                self.meteredSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
+                self.cancelAllTasks()
                 return
             }
             self.currentJob = job
@@ -92,8 +102,7 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
 
     func remove(version: String, completion: @escaping (Error?) -> Void) {
         queue.async {
-            self.wifiSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
-            self.meteredSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
+            self.cancelAllTasks()
             self.currentJob = nil
             self.completion = nil
             do {
@@ -134,6 +143,11 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
         return URLSession(configuration: configuration, delegate: self, delegateQueue: delegateQueue)
     }
 
+    private func cancelAllTasks() {
+        wifiSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
+        meteredSession.getAllTasks { tasks in tasks.forEach { $0.cancel() } }
+    }
+
     private func sessionIdentifier(allowMetered: Bool) -> String {
         "art.splotch.app.coloring-packs.\(allowMetered ? "metered" : "wifi")"
     }
@@ -144,8 +158,10 @@ final class ColoringPackDownloadCoordinator: NSObject, URLSessionDownloadDelegat
             finish(job)
             return
         }
-        guard let baseURL = URL(string: job.baseURL),
-              let url = URL(string: job.book.files[job.nextFileIndex].path, relativeTo: baseURL) else {
+        let downloadPath = job.book.files[job.nextFileIndex].downloadPath
+        guard downloadPath.hasPrefix("/coloring/"), !downloadPath.contains(".."),
+              let baseURL = URL(string: job.baseURL),
+              let url = URL(string: downloadPath, relativeTo: baseURL) else {
             fail(ColoringPackError.invalidURL)
             return
         }
@@ -331,6 +347,7 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
 
     @objc func install(_ call: CAPPluginCall) {
         guard let version = safeComponent(call.getString("version")),
+              let appVersion = safeComponent(call.getString("appVersion")),
               let baseURL = call.getString("baseUrl"),
               let bookObject = call.getObject("book"),
               let bookData = try? JSONSerialization.data(withJSONObject: bookObject),
@@ -341,6 +358,7 @@ public class ColoringPacksPlugin: CAPPlugin, CAPBridgedPlugin {
         }
         let job = ColoringPackJob(
             version: version,
+            appVersion: appVersion,
             baseURL: baseURL,
             book: book,
             allowMetered: call.getBool("allowMetered") ?? false,

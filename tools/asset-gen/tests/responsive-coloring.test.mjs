@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import {
@@ -11,12 +11,15 @@ import {
 } from '../../../web/src/lib/state/books.ts';
 import { WEB_STATIC } from '../lib/paths.mjs';
 import { maxOverlayAlphaError, OVERLAY_MAX_CHANNEL_ERROR } from '../lib/overlay-alpha.mjs';
-import { RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION } from '../lib/responsive-coloring.mjs';
+import {
+  RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,
+  renderResponsiveColoringAsset,
+} from '../lib/responsive-coloring.mjs';
 
 // The catalog fidelity pass decodes every committed derivative and is I/O-bound on CI runners. Its
 // wall time tracks how many sibling files vitest decodes on the same cores, not its own work, so the
 // budget is several times the solo run — a margin under contention, not a performance assertion.
-const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 60_000;
+const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 120_000;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -43,19 +46,21 @@ function srcsetWidths() {
 
 describe('responsive coloring catalog', () => {
   it(
-    'keeps every srcset width descriptor equal to the committed intrinsic width',
+    'regenerates every derivative exactly and keeps srcset descriptors intrinsic',
     async () => {
       const widths = srcsetWidths();
       const assets = BOOKS.flatMap(responsiveColoringAssets);
       let sourceBytes = 0;
       let targetBytes = 0;
 
-      expect(assets).toHaveLength(392);
+      expect(assets).toHaveLength(584);
       for (const asset of assets) {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
-        expect(widths.get(asset.source), asset.source).toBe(sourceMetadata.width);
-        expect(widths.get(asset.target), asset.target).toBe(targetMetadata.width);
+        if (asset.encoding !== 'fill') {
+          expect(widths.get(asset.source), asset.source).toBe(sourceMetadata.width);
+          expect(widths.get(asset.target), asset.target).toBe(targetMetadata.width);
+        }
         expect(targetMetadata.width, asset.target).toBe(asset.widthPx);
         expect(Math.max(targetMetadata.width ?? 0, targetMetadata.height ?? 0), asset.target).toBe(
           asset.maxEdgePx
@@ -68,6 +73,9 @@ describe('responsive coloring catalog', () => {
         expect(targetSize, asset.target).toBeLessThan(sourceSize);
         sourceBytes += sourceSize;
         targetBytes += targetSize;
+
+        const regenerated = await renderResponsiveColoringAsset(sourcePath, asset);
+        expect(regenerated.equals(await readFile(targetPath)), asset.target).toBe(true);
 
         if (asset.encoding === 'overlay') {
           const expected = await sharp(sourcePath)

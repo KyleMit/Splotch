@@ -1,16 +1,27 @@
+import { COLORING_PACK_RESOLUTIONS, type ColoringPackResolution } from './resolution.ts';
+
 /** @public Build-time manifest generator entry used from the Vite config graph. */
-export const COLORING_PACK_FORMAT_VERSION = 1;
+export const COLORING_PACK_FORMAT_VERSION = 2;
 
 interface ColoringPackFile {
   path: string;
+  downloadPath?: string;
   bytes: number;
   sha256: string;
 }
 
-export interface ColoringPackBookManifest {
-  id: string;
+interface ResolvedColoringPackFile extends ColoringPackFile {
+  downloadPath: string;
+}
+
+interface ColoringPackVariantManifest {
   bytes: number;
   files: ColoringPackFile[];
+}
+
+interface ColoringPackBookManifest {
+  id: string;
+  variants: Record<ColoringPackResolution, ColoringPackVariantManifest>;
 }
 
 export interface ColoringPackManifest {
@@ -20,12 +31,91 @@ export interface ColoringPackManifest {
   books: ColoringPackBookManifest[];
 }
 
+export interface ResolvedColoringPackBookManifest extends Omit<
+  ColoringPackVariantManifest,
+  'files'
+> {
+  id: string;
+  files: ResolvedColoringPackFile[];
+}
+
+export interface ResolvedColoringPackManifest {
+  appVersion: string;
+  resolution: ColoringPackResolution;
+  starterBookId: string;
+  books: ResolvedColoringPackBookManifest[];
+}
+
 export function coloringPackManifestPath(appVersion: string): string {
   return `/coloring/manifest-${appVersion}.json`;
 }
 
+export function resolveColoringPackManifest(
+  manifest: ColoringPackManifest,
+  resolution: ColoringPackResolution
+): ResolvedColoringPackManifest {
+  return {
+    appVersion: manifest.appVersion,
+    resolution,
+    starterBookId: manifest.starterBookId,
+    books: manifest.books.map((book) => {
+      const variant = book.variants[resolution];
+      return {
+        id: book.id,
+        bytes: variant.bytes,
+        files: variant.files.map((file) => ({
+          ...file,
+          downloadPath: file.downloadPath ?? file.path,
+        })),
+      };
+    }),
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function validVariant(
+  value: unknown,
+  bookId: string,
+  resolution: ColoringPackResolution
+): value is ColoringPackVariantManifest {
+  if (!isRecord(value) || !Number.isSafeInteger(value.bytes) || (value.bytes as number) <= 0) {
+    return false;
+  }
+  if (!Array.isArray(value.files)) return false;
+  const paths = new Set<string>();
+  const totalBytes = value.files.reduce((sum: number, file: unknown) => {
+    if (
+      !isRecord(file) ||
+      typeof file.path !== 'string' ||
+      !file.path.startsWith(`/coloring/${bookId}/`) ||
+      !file.path.endsWith('.webp') ||
+      file.path.includes('..') ||
+      paths.has(file.path) ||
+      (file.downloadPath !== undefined &&
+        (typeof file.downloadPath !== 'string' ||
+          !file.downloadPath.endsWith('.webp') ||
+          file.downloadPath.includes('..'))) ||
+      !Number.isSafeInteger(file.bytes) ||
+      (file.bytes as number) <= 0 ||
+      typeof file.sha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(file.sha256)
+    ) {
+      return Number.NaN;
+    }
+    const downloadPath = file.downloadPath ?? file.path;
+    const validDownloadPath =
+      resolution === 'full'
+        ? downloadPath === file.path
+        : downloadPath === file.path ||
+          new RegExp(`^/coloring/max-\\d+px/${bookId}/`).test(downloadPath);
+    if (!validDownloadPath) return Number.NaN;
+    paths.add(file.path);
+    return sum + (file.bytes as number);
+  }, 0);
+  return value.files.length > 0 && totalBytes === value.bytes;
 }
 
 export function parseColoringPackManifest(
@@ -43,33 +133,28 @@ export function parseColoringPackManifest(
   }
 
   const validBooks = value.books.every((book) => {
+    const variants = isRecord(book) ? book.variants : undefined;
     if (
       !isRecord(book) ||
       typeof book.id !== 'string' ||
       !/^[a-z0-9-]+$/.test(book.id) ||
-      !Number.isSafeInteger(book.bytes) ||
-      (book.bytes as number) <= 0 ||
-      !Array.isArray(book.files)
+      !isRecord(variants) ||
+      Object.keys(variants).length !== COLORING_PACK_RESOLUTIONS.length
     ) {
       return false;
     }
-    const totalBytes = book.files.reduce((sum: number, file: unknown) => {
-      if (
-        !isRecord(file) ||
-        typeof file.path !== 'string' ||
-        !file.path.startsWith(`/coloring/${book.id}/`) ||
-        !file.path.endsWith('.webp') ||
-        file.path.includes('..') ||
-        !Number.isSafeInteger(file.bytes) ||
-        (file.bytes as number) <= 0 ||
-        typeof file.sha256 !== 'string' ||
-        !/^[a-f0-9]{64}$/.test(file.sha256)
-      ) {
-        return Number.NaN;
-      }
-      return sum + (file.bytes as number);
-    }, 0);
-    return book.files.length > 0 && totalBytes === book.bytes;
+    const variantsValid = COLORING_PACK_RESOLUTIONS.every((resolution) =>
+      validVariant(variants[resolution], book.id as string, resolution)
+    );
+    if (!variantsValid) return false;
+    const [firstResolution, ...otherResolutions] = COLORING_PACK_RESOLUTIONS;
+    const firstPaths = new Set(
+      (variants[firstResolution] as ColoringPackVariantManifest).files.map((file) => file.path)
+    );
+    return otherResolutions.every((resolution) => {
+      const files = (variants as Record<string, ColoringPackVariantManifest>)[resolution].files;
+      return files.length === firstPaths.size && files.every((file) => firstPaths.has(file.path));
+    });
   });
   const ids = value.books.map((book) => (isRecord(book) ? book.id : undefined));
   if (!validBooks || new Set(ids).size !== ids.length || !ids.includes(value.starterBookId)) {

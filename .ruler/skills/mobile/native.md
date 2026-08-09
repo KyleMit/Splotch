@@ -42,9 +42,11 @@ Two background features use the network. The **AI "magic image" button** calls t
 `https://splotch.art/api/generate-image` (`__NATIVE_API_BASE__`, injected at build time in
 `web/vite.config.ts`). When the device is offline the AI button is **hidden** automatically
 (`web/src/lib/state/network.svelte.ts` + `@capacitor/network`). The seven non-starter coloring books
-download automatically, one complete verified book at a time (ADR-0103). Android WorkManager stores
-them under `noBackupFilesDir`; iOS background `URLSession` stores them in Application Support with
-backup exclusion. The picker exposes a book only after its install marker is written.
+download automatically, one complete verified book at a time (ADR-0103). Compact screens receive
+1,152 px overlays/fills and canonical 400 px thumbnails; larger or denser screens receive the
+canonical tier. Android WorkManager stores the selected bytes under `noBackupFilesDir`; iOS
+background `URLSession` stores them in Application Support with backup exclusion. The picker exposes
+a book only after its install marker is written.
 
 ### Storage
 

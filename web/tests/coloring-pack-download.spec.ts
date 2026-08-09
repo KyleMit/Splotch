@@ -22,12 +22,19 @@ async function holdDinosaurDownload(page: Page): Promise<() => void> {
       .filter((book) => book.id === manifest.starterBookId || book.id === 'dinosaur')
       .map((book) => {
         if (book.id !== 'dinosaur') return book;
-        const files = book.files.slice(0, 1);
-        return { ...book, files, bytes: files[0].bytes };
+        return {
+          ...book,
+          variants: Object.fromEntries(
+            Object.entries(book.variants).map(([resolution, variant]) => {
+              const files = variant.files.slice(0, 1);
+              return [resolution, { ...variant, files, bytes: files[0].bytes }];
+            })
+          ),
+        };
       });
     await route.fulfill({ response, json: { ...manifest, books } });
   });
-  await page.route(/\/coloring\/dinosaur\/.+\.webp$/, async (route) => {
+  await page.route(/\/coloring\/(?:max-\d+px\/)?dinosaur\/.+\.webp$/, async (route) => {
     await downloadHeld;
     await route.continue();
   });
