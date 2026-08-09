@@ -1,5 +1,8 @@
+<script module lang="ts">
+  export type ImageReportStatus = 'idle' | 'confirm' | 'busy' | 'success' | 'error';
+</script>
+
 <script lang="ts">
-  import type { Snippet } from 'svelte';
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
@@ -16,21 +19,18 @@
     drawingUrl: string | null;
     outputUrl: string;
     style: StyleName | null;
-    disabled?: boolean;
     expanded?: boolean;
-    primaryAction: Snippet;
+    status?: ImageReportStatus;
   }
 
   let {
     drawingUrl,
     outputUrl,
     style,
-    disabled = false,
     expanded = $bindable(false),
-    primaryAction,
+    status = $bindable('idle'),
   }: Props = $props();
 
-  let status = $state<'idle' | 'confirm' | 'busy' | 'success' | 'error'>('idle');
   let message = $state('');
   let controller: AbortController | null = null;
 
@@ -41,6 +41,7 @@
   $effect(() => {
     return () => {
       controller?.abort();
+      status = 'idle';
       expanded = false;
     };
   });
@@ -98,15 +99,6 @@
 </script>
 
 <div class="ai-image-report">
-  <div class="ai-result-actions">
-    {@render primaryAction()}
-    {#if status === 'idle'}
-      <Button size="sm" onclick={() => (status = 'confirm')} disabled={disabled || !drawingUrl}>
-        Report this picture
-      </Button>
-    {/if}
-  </div>
-
   {#if status === 'confirm' || status === 'busy'}
     <div class="ai-report-confirmation">
       <p>
@@ -139,7 +131,6 @@
     gap: var(--space-2);
   }
 
-  .ai-result-actions,
   .ai-report-confirm-actions {
     display: flex;
     flex-wrap: wrap;

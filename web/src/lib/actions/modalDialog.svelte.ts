@@ -66,6 +66,10 @@ export function modalDialog(node: HTMLDialogElement, getOptions: () => ModalOpti
       e.stopPropagation();
       return;
     }
+    // A dialog may deliberately render a top-layer control outside its own
+    // border box. Its event still bubbles through the dialog, but it is content,
+    // not a backdrop tap.
+    if (e.target !== node) return;
     // Taps on the content fall through to the dialog's own controls.
     if (isInsideDialog(e.clientX, e.clientY)) return;
     // Tap landed on the backdrop. Always swallow it so it can't leak to the

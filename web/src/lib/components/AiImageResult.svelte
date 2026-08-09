@@ -2,7 +2,8 @@
   import Icon from './Icon.svelte';
   import AiDial from './AiDial.svelte';
   import AiConfetti from './AiConfetti.svelte';
-  import AiImageReport from './AiImageReport.svelte';
+  import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
+  import AiImageReportButton from './AiImageReportButton.svelte';
   import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -43,6 +44,7 @@
   let progress = $state(0);
   let exiting = $state(false);
   let reportExpanded = $state(false);
+  let reportStatus = $state<ImageReportStatus>('idle');
 
   const DEFAULT_ASPECT = 4 / 3;
   const MIN_BLUR_PX = 2;
@@ -68,6 +70,7 @@
       exiting = false;
       revealed = false;
       progress = 0;
+      reportStatus = 'idle';
     }
   });
 
@@ -217,38 +220,48 @@
       {#if revealed && aiResult.resultUrl}
         <div class="ai-result-footer">
           <p class="ai-generated-label">AI-generated picture</p>
+          {#if settings.autoSaveAiEnabled}
+            <p class="ai-result-saved">✓ Saved to your photos</p>
+          {:else}
+            <button class="ai-result-download" onclick={handleDownload}>
+              <Icon name="download" class="ai-result-download-icon" />
+              <span>Download</span>
+            </button>
+          {/if}
           <AiImageReport
             drawingUrl={aiResult.previewUrl}
             outputUrl={aiResult.resultUrl}
             style={aiResult.style}
-            disabled={exiting}
             bind:expanded={reportExpanded}
-          >
-            {#snippet primaryAction()}
-              {#if settings.autoSaveAiEnabled}
-                <p class="ai-result-saved">✓ Saved to your photos</p>
-              {:else}
-                <button class="ai-result-download" onclick={handleDownload}>
-                  <Icon name="download" class="ai-result-download-icon" />
-                  <span>Download</span>
-                </button>
-              {/if}
-            {/snippet}
-          </AiImageReport>
+            bind:status={reportStatus}
+          />
         </div>
       {/if}
     {/if}
   </div>
+
+  {#if revealed && aiResult.resultUrl && reportStatus === 'idle' && !exiting}
+    <AiImageReportButton
+      onclick={() => (reportStatus = 'confirm')}
+      disabled={!aiResult.previewUrl}
+    />
+  {/if}
 </dialog>
 
 <style>
   .ai-result-modal {
+    --report-flag-size: 44px;
+    --report-flag-inset: var(--space-3);
+    --report-flag-gap: var(--space-3);
+    --report-flag-clearance: calc(
+      var(--report-flag-size) + var(--report-flag-inset) + var(--report-flag-gap)
+    );
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
     width: min(96vw, 560px);
     max-height: 96vh;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .ai-result-content {
@@ -320,6 +333,29 @@
     /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
        ordinary footer above needs much less room. */
     max-height: calc(96vh - 276px);
+  }
+
+  @media (max-width: 700px) {
+    .ai-result-modal:not(.report-expanded) {
+      max-height: calc(
+        100vh - var(--report-flag-clearance) - var(--report-flag-clearance) -
+          env(safe-area-inset-bottom) - env(safe-area-inset-bottom)
+      );
+    }
+
+    .ai-result-modal:not(.report-expanded) .stage-sizer {
+      max-height: calc(
+        100vh - 96px - var(--report-flag-clearance) - var(--report-flag-clearance) -
+          env(safe-area-inset-bottom) - env(safe-area-inset-bottom)
+      );
+    }
+
+    .ai-result-modal.autosave:not(.report-expanded) .stage-sizer {
+      max-height: calc(
+        100vh - 118px - var(--report-flag-clearance) - var(--report-flag-clearance) -
+          env(safe-area-inset-bottom) - env(safe-area-inset-bottom)
+      );
+    }
   }
 
   /* No image yet (modal opened before the export finished): a definite width so

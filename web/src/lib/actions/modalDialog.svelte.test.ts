@@ -35,4 +35,36 @@ describe('modalDialog', () => {
       dialog.remove();
     }
   });
+
+  it('allows a descendant control outside the dialog border box to receive pointer input', () => {
+    const dialog = document.body.appendChild(document.createElement('dialog'));
+    const button = dialog.appendChild(document.createElement('button'));
+    dialog.getBoundingClientRect = () =>
+      ({ left: 100, right: 200, top: 100, bottom: 200 }) as DOMRect;
+    let pointerDowns = 0;
+    button.addEventListener('pointerdown', () => pointerDowns++);
+
+    const destroy = $effect.root(() => {
+      const action = modalDialog(dialog, () => ({
+        open: false,
+        onRequestClose: () => {},
+      }));
+      return action.destroy;
+    });
+
+    try {
+      button.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          bubbles: true,
+          cancelable: true,
+          clientX: 300,
+          clientY: 300,
+        })
+      );
+      expect(pointerDowns).toBe(1);
+    } finally {
+      destroy();
+      dialog.remove();
+    }
+  });
 });

@@ -31,7 +31,11 @@ test.describe('AI render timer', () => {
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /download/i })).toBeVisible();
     await expect(page.getByText('AI-generated picture')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Report this picture' })).toBeVisible();
+    const footer = page.locator('.ai-result-footer');
+    await expect(footer.getByRole('button')).toHaveCount(1);
+    const report = page.getByRole('button', { name: 'Report this picture' });
+    await expect(report).toBeVisible();
+    await expect(report.locator('[data-icon="flag"]')).toBeVisible();
 
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
@@ -39,6 +43,8 @@ test.describe('AI render timer', () => {
 
   test('confirms and sends an AI picture report from the result', async ({ page }) => {
     let reportRequests = 0;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.addInitScript(
       (key) => localStorage.setItem(key, 'never'),
       STORAGE_KEYS.parentalGateImageReportMode
@@ -56,7 +62,34 @@ test.describe('AI render timer', () => {
     await triggerAiTimer(page, /fast/i);
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole('button', { name: 'Report this picture' }).click();
+    const report = page.getByRole('button', { name: 'Report this picture' });
+    const [cardBox, reportBox] = await Promise.all([
+      page.locator('dialog.ai-result-modal').boundingBox(),
+      report.boundingBox(),
+    ]);
+    expect(cardBox).not.toBeNull();
+    expect(reportBox).not.toBeNull();
+    expect(reportBox!.width).toBeGreaterThanOrEqual(44);
+    expect(reportBox!.height).toBeGreaterThanOrEqual(44);
+    const overlapsCard =
+      reportBox!.x < cardBox!.x + cardBox!.width &&
+      reportBox!.x + reportBox!.width > cardBox!.x &&
+      reportBox!.y < cardBox!.y + cardBox!.height &&
+      reportBox!.y + reportBox!.height > cardBox!.y;
+    expect(overlapsCard).toBe(false);
+    const chrome = await report.evaluate((button) => {
+      const icon = button.querySelector('svg');
+      return {
+        background: getComputedStyle(button).backgroundColor,
+        iconFill: icon ? getComputedStyle(icon).fill : '',
+      };
+    });
+    expect(chrome.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(chrome.iconFill).not.toBe('');
+
+    await report.focus();
+    await expect(report).toBeFocused();
+    await page.keyboard.press('Enter');
     await expect(page.locator('.ai-report-confirmation')).toContainText(
       'The report is deleted after 30 days.'
     );
