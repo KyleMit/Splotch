@@ -1,5 +1,5 @@
-import { isNative } from './platform';
-import { lazyPluginModule } from './nativePlugin';
+import { isNative } from './index';
+import { lazyPluginModule } from '../nativePlugin';
 
 // Tactile feedback for confirming gestures. Native (iOS/Android) routes through
 // @capacitor/haptics, which drives the Taptic Engine / vibrator motor — crucially

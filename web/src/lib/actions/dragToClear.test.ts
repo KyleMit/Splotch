@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { stopDrawSound } from '$lib/audio/drawingSound';
-import { impactThreshold } from '$lib/haptics';
+import { impactThreshold } from '$lib/platform/haptics';
 import { dragToClear, PAGE_TURN_DURATION_MS, type DragToClearOptions } from './dragToClear';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
 vi.mock('$lib/audio/drawingSound', () => ({ stopDrawSound: vi.fn() }));
-vi.mock('$lib/haptics', () => ({ impactThreshold: vi.fn() }));
+vi.mock('$lib/platform/haptics', () => ({ impactThreshold: vi.fn() }));
 
 // happy-dom lacks a PointerEvent constructor with pointerId, so stub it the
 // same way scribbleGuard.test.ts does.

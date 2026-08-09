@@ -2,7 +2,7 @@ import { hydrateApiKey } from '$lib/state/aiKey';
 import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
-import { applyDeviceOrientationPreference } from '$lib/orientation';
+import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 import { persistedStateStatus } from './persistedStateStatus.svelte';
 
 export async function hydratePersistedState(): Promise<void> {

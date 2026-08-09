@@ -20,7 +20,7 @@ import {
 } from '$lib/state/tool.svelte';
 
 // Phone-class devices stay below the shared tablet floor even in landscape, so
-// they default to portrait. The threshold itself is owned by platform.ts, which
+// they default to portrait. The threshold itself is owned by $lib/platform, which
 // applies the same boundary to orientation-lock capability.
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;

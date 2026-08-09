@@ -53,7 +53,7 @@ import type { ResolvedTheme } from '../theme';
 import { resolveColoringAssetUrl } from '../coloringPacks/assetResolver.ts';
 
 // Distribution platforms a book may ship on - distinct from the runtime
-// platform in platform.ts (which also has 'ios'/'android').
+// platform in $lib/platform (which also has 'ios'/'android').
 export type BookPlatform = 'web' | 'mobile';
 export type BookOrientation = 'portrait' | 'landscape';
 

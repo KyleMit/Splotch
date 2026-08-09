@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { describe, expect, it } from 'vitest';
-import { osLabelFromUserAgent } from './platform';
+import { osLabelFromUserAgent } from './index';
 
 describe('osLabelFromUserAgent', () => {
   it.each([

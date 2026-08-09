@@ -2,9 +2,9 @@
   import { slide } from 'svelte/transition';
   import Disclosure from '../design/Disclosure.svelte';
   import SegmentedPicker from '../design/SegmentedPicker.svelte';
-  import { collectDeviceInfo } from '$lib/deviceInfo';
+  import { collectDeviceInfo } from '$lib/platform/deviceInfo';
   import { createSingleFlight } from '$lib/singleFlight';
-  import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
+  import { describeDeviceInfo, type DeviceInfo } from '$lib/platform/deviceReport';
   import {
     MAX_REPORT_MESSAGE_LENGTH,
     REPORT_HONEYPOT_FIELD,

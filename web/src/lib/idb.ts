@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from './platform';
+import { isNative } from '$lib/platform';
 
 // Ask the browser not to evict our IndexedDB during low-storage cleanups. Web only.
 export async function requestPersistentStorage() {

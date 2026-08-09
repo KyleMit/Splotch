@@ -22,8 +22,8 @@ const ctrl = vi.hoisted(() => ({ native: false }));
 
 // Spread the real module so only the two platform *behaviours* are faked; the
 // constants it also exports stay real rather than being restated here.
-vi.mock('./platform', async (importActual) => ({
-  ...(await importActual<typeof import('./platform')>()),
+vi.mock('$lib/platform', async (importActual) => ({
+  ...(await importActual<typeof import('$lib/platform')>()),
   isNative: () => ctrl.native,
   getPlatform: () => (ctrl.native ? 'android' : 'web'),
 }));

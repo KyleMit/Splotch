@@ -17,10 +17,10 @@
 // All of the platform-independent decisions live here as pure functions so the
 // four deployment targets and the color math are unit-testable without a DOM.
 
-import { isLightColor } from './colorRing';
+import { isLightColor } from '../colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
-import type { Platform } from './platform';
+import type { Platform } from './index';
 // Type-only — same purity guarantee as the Platform import above. The Style
 // enum's *values* are passed in by the call site (NotchBand.svelte), not
 // imported here, so this file never touches @capacitor/status-bar at runtime.

@@ -1,6 +1,6 @@
 import { releaseAllPointers } from '$lib/drawing/engine';
 import { stopDrawSound } from '$lib/audio/drawingSound';
-import { impactThreshold } from '$lib/haptics';
+import { impactThreshold } from '$lib/platform/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
 
 // Drag-to-clear gesture constants.

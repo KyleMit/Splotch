@@ -10,7 +10,7 @@
     NETWORK_ERROR_MESSAGE,
     type SubmitStatus,
   } from '$lib/latestRequest';
-  import type { DeviceInfo } from '$lib/deviceReport';
+  import type { DeviceInfo } from '$lib/platform/deviceReport';
   import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
   import type { ReportResponse } from '../../../routes/api/report/+server';
 

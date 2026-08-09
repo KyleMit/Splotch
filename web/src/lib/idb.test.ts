@@ -13,7 +13,7 @@ vi.mock('$app/environment', () => ({
 
 vi.mock('idb', () => ({ openDB }));
 
-vi.mock('./platform', () => ({
+vi.mock('$lib/platform', () => ({
   isNative: () => persistence.native,
 }));
 

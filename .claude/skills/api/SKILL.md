@@ -206,10 +206,10 @@ AI provider seam, ADR-0047) — route code never touches the token or the REST s
 fine-grained PAT in `GITHUB_ISSUE_TOKEN` (scope: *Issues: Read and write* on the target repo), read
 via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default private repository
 `KyleMit/splotch-feedback`. The optional `device` payload is shaped by the shared, dependency-free
-`web/src/lib/deviceReport.ts` (also used client-side to preview exactly what will be sent) and
-re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the issue
-body. Because the endpoint is an unauthenticated public write and the message + device values are
-attacker-controlled, both are run through `escapeIssueMarkdown()` (same seam) before they are
+`web/src/lib/platform/deviceReport.ts` (also used client-side to preview exactly what will be sent)
+and re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the
+issue body. Because the endpoint is an unauthenticated public write and the message + device values
+are attacker-controlled, both are run through `escapeIssueMarkdown()` (same seam) before they are
 embedded in the Markdown body — it backslash-escapes `@`-mentions, `#`-references, image embeds
 (`![…]`), and raw `<` HTML so a submitter can't make the issue notify people or load remote content.
 See ADR-0060.

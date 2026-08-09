@@ -39,13 +39,13 @@ Where things live (full file-by-file map: `architecture` skill):
   routes import `aiProvider` from `ai/provider.ts`; the `@google/genai` SDK is only touched inside
   that directory.
 * `lib/storage.ts` — dual-layer persistence (localStorage + Capacitor Preferences mirror on native,
-  ADR-0005). `lib/secureStorage.ts` — client-held secrets. `lib/platform.ts` — native detection
-  without importing `@capacitor/core` (ADR-0013). `lib/nativePlugin.ts` — `lazyPluginModule()`:
-  lazy-loads a Capacitor plugin as its module namespace, never the plugin proxy (a proxy resolves
-  `.then` to a native call and hangs the awaiting promise). Every plugin load — this or an inline
-  `import()` in a component — must sit behind the literal `__IS_CAPACITOR__` so Rollup drops the
-  chunk from the web bundle (`isNative()` alone can't tree-shake); see the `mobile` skill's
-  plugin-loading section.
+  ADR-0005). `lib/secureStorage.ts` — client-held secrets. `lib/platform/index.ts` — native
+  detection without importing `@capacitor/core` (ADR-0013). `lib/nativePlugin.ts` —
+  `lazyPluginModule()`: lazy-loads a Capacitor plugin as its module namespace, never the plugin
+  proxy (a proxy resolves `.then` to a native call and hangs the awaiting promise). Every plugin
+  load — this or an inline `import()` in a component — must sit behind the literal
+  `__IS_CAPACITOR__` so Rollup drops the chunk from the web bundle (`isNative()` alone can't
+  tree-shake); see the `mobile` skill's plugin-loading section.
 * `routes/api/*` — serverless endpoints (see `api` skill). `routes/admin` — token console.
   `routes/dev/*` — test harnesses, unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`.
 

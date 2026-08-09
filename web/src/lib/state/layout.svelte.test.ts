@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { SafeAreaInsets } from '$lib/safeArea';
+import type { SafeAreaInsets } from '$lib/platform/safeArea';
 
 const mocks = vi.hoisted(() => ({
   portrait: false,
@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('$app/environment', () => ({ browser: true }));
-vi.mock('$lib/safeArea', () => ({
+vi.mock('$lib/platform/safeArea', () => ({
   ZERO_INSETS: { top: 0, right: 0, bottom: 0, left: 0 },
   measureSafeAreaInsets: (): SafeAreaInsets => ({ ...mocks.insets }),
 }));

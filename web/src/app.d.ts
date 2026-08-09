@@ -32,7 +32,7 @@ declare global {
   const __DEV_HARNESS__: boolean;
 
   // Capacitor injects this global in the native shell and once @capacitor/core
-  // loads on the web. Read off the global (see src/lib/platform.ts) so the
+  // loads on the web. Read off the global (see src/lib/platform/index.ts) so the
   // module stays SSR-safe; declared optional because it's absent under Node.
 
   var Capacitor: { isNativePlatform?: () => boolean; getPlatform?: () => string } | undefined;

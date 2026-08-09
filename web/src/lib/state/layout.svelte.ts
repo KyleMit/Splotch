@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/safeArea';
+import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/platform/safeArea';
 
 export type Orientation = 'portrait' | 'landscape';
 

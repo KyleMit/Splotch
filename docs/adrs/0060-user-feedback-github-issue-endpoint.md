@@ -48,12 +48,12 @@ A new `POST /api/report` endpoint (`web/src/routes/api/report/+server.ts`) recei
   issue *titles* need no escaping (GitHub renders them as inert plain text).
 * **Opt-in, non-identifying device info.** For bugs only, the parent may tick a box (off by default)
   to attach a small snapshot, and expand a chevron to see exactly what will be sent first. The shape
-  lives in a shared, dependency-free `web/src/lib/deviceReport.ts` (one ordered field/label map used
-  both to preview client-side and to render the issue Markdown, so they never drift) and is
+  lives in a shared, dependency-free `web/src/lib/platform/deviceReport.ts` (one ordered field/label
+  map used both to preview client-side and to render the issue Markdown, so they never drift) and is
   re-sanitized server-side (known keys only, single-line, length-capped). The client collector
-  (`web/src/lib/deviceInfo.ts`) forks by platform: on native it reads `@capacitor/device` (added as
-  a dependency; import gated behind the literal `__IS_CAPACITOR__` so Rollup drops it from the web
-  bundle, per ADR-0013) for a clean OS/model reading; on web it reads only standard
+  (`web/src/lib/platform/deviceInfo.ts`) forks by platform: on native it reads `@capacitor/device`
+  (added as a dependency; import gated behind the literal `__IS_CAPACITOR__` so Rollup drops it from
+  the web bundle, per ADR-0013) for a clean OS/model reading; on web it reads only standard
   `navigator`/`window`/`screen` fields plus the raw user-agent. It deliberately excludes anything
   identifying — no `Device.getId()`, no advertising id, no added IP.
 

@@ -12,8 +12,8 @@ import {
   NOTCH_INSET_THRESHOLD_PX,
   type NotchBandInput,
 } from './notchBand';
-import { PALETTE_COLORS } from './state/colors.svelte';
-import { PAPER_COLORS } from './theme';
+import { PALETTE_COLORS } from '../state/colors.svelte';
+import { PAPER_COLORS } from '../theme';
 
 // Representative insets: a clear notch vs. a bezel/status-bar device.
 const NOTCH_INSET = 47; // iPhone notch (portrait)

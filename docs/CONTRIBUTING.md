@@ -176,9 +176,9 @@ constraint, a workaround, a subtle invariant. Don't describe what the code does;
 for genuine cross-component tokens. Use `:global()` sparingly and only when a class is set
 imperatively (e.g. via `classList`).
 
-**No framework overhead in `platform.ts`.** The platform detection module reads the Capacitor global
-directly rather than importing `@capacitor/core`, so it evaluates safely during SSR without pulling
-in native code.
+**No framework overhead in `platform/index.ts`.** The platform detection module reads the Capacitor
+global directly rather than importing `@capacitor/core`, so it evaluates safely during SSR without
+pulling in native code.
 
 **Formatting is enforced in CI** (ADR-0031, ADR-0057). Prettier formats source; dprint formats
 markdown (asterisk bullets and emphasis, hard wrap at 100 — `dprint.json`). Run `npm run format`

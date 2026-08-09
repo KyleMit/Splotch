@@ -99,7 +99,7 @@ index ec894f5..7a2ce8d 100644
 @@ -2,6 +2,7 @@ import { hydrateApiKey } from '$lib/state/aiKey.svelte';
  import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
  import { hydrateDurableStorage } from '$lib/storage';
- import { applyDeviceOrientationPreference } from '$lib/orientation';
+ import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 +import { settings } from '$lib/state/settings.svelte';
  
  export function hydratePersistedState(): void {
@@ -164,10 +164,10 @@ index 8735c2f..f0a160e 100644
    });
  </script>
  
-diff --git a/web/src/lib/orientation.ts b/web/src/lib/orientation.ts
+diff --git a/web/src/lib/platform/orientation.ts b/web/src/lib/platform/orientation.ts
 index 7d7cd47..8f6f6e0 100644
---- a/web/src/lib/orientation.ts
-+++ b/web/src/lib/orientation.ts
+--- a/web/src/lib/platform/orientation.ts
++++ b/web/src/lib/platform/orientation.ts
 @@ -1,6 +1,5 @@
  import { browser } from '$app/environment';
  import { isNative, supportsOrientationLock } from '$lib/platform';

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
 import { APP_VERSION } from '$lib/appVersion';
 import { getPlatform, isStandalone, osLabelFromUserAgent } from '$lib/platform';
-import type { DeviceInfo } from '$lib/deviceReport';
+import type { DeviceInfo } from './deviceReport';
 import type { Platform } from '$lib/platform';
 
 const PLATFORM_LABEL: Record<Platform, string> = { web: 'Web', ios: 'iOS', android: 'Android' };

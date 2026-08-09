@@ -30,13 +30,13 @@ export function isNative(): boolean {
 means the function safely returns `false` in any non-native context, including Node.js during
 prerender.
 
-This module (`src/lib/platform.ts`) is therefore safe to import from any module — shared, server, or
-client — without risking SSR breakage.
+This module (`src/lib/platform/index.ts`) is therefore safe to import from any module — shared,
+server, or client — without risking SSR breakage.
 
 ## Consequences
 
-* **+** `platform.ts` can be imported from state modules, storage, screenshot, and server hooks
-  without conditional guards or dynamic imports.
+* **+** `platform/index.ts` can be imported from state modules, storage, screenshot, and server
+  hooks without conditional guards or dynamic imports.
 * **+** No runtime initialization side effects from `@capacitor/core` during prerender.
 * **-** Relies on Capacitor injecting a `window.Capacitor` global before any app code runs. If that
   injection timing changes in a future Capacitor major version, this approach would silently return

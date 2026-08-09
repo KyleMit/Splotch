@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // factories, so the factories can close over this mutable state.
 const ctrl = vi.hoisted(() => ({ native: false }));
 
-vi.mock('./platform', () => ({
+vi.mock('$lib/platform', () => ({
   isNative: () => ctrl.native,
   getPlatform: () => (ctrl.native ? 'android' : 'web'),
 }));
