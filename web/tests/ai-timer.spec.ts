@@ -35,6 +35,7 @@ test.describe('AI render timer', () => {
     await expect(footer.getByRole('button')).toHaveCount(1);
     const report = page.getByRole('button', { name: 'Report this picture' });
     await expect(report).toBeVisible();
+    await expect(report).toContainText('Report');
     await expect(report.locator('[data-icon="flag"]')).toBeVisible();
 
     // The dial is torn down after the reveal.
@@ -79,12 +80,18 @@ test.describe('AI render timer', () => {
     expect(overlapsCard).toBe(false);
     const chrome = await report.evaluate((button) => {
       const icon = button.querySelector('svg');
+      const dangerProbe = document.createElement('span');
+      dangerProbe.style.backgroundColor = 'var(--danger-text)';
+      button.append(dangerProbe);
+      const dangerFill = getComputedStyle(dangerProbe).backgroundColor;
+      dangerProbe.remove();
       return {
         background: getComputedStyle(button).backgroundColor,
         iconFill: icon ? getComputedStyle(icon).fill : '',
+        dangerFill,
       };
     });
-    expect(chrome.background).not.toBe('rgba(0, 0, 0, 0)');
+    expect(chrome.background).toBe(chrome.dangerFill);
     expect(chrome.iconFill).not.toBe('');
 
     await report.focus();

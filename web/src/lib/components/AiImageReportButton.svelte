@@ -11,33 +11,35 @@
 
 <button class="ai-report-flag" aria-label="Report this picture" {onclick} {disabled}>
   <Icon name="flag" class="ai-report-flag-icon" />
+  <span>Report</span>
 </button>
 
 <style>
   .ai-report-flag {
     position: absolute;
-    left: calc(
-      50vw + 50% - var(--report-flag-inset) - env(safe-area-inset-right) - var(--report-flag-size)
-    );
-    top: calc(
-      50vh + 50% - var(--report-flag-inset) - env(safe-area-inset-bottom) - var(--report-flag-size)
-    );
+    right: calc(50% - 50vw + var(--report-flag-inset) + env(safe-area-inset-right));
+    bottom: calc(50% - 50vh + var(--report-flag-inset) + env(safe-area-inset-bottom));
     z-index: 3;
-    width: var(--report-flag-size);
+    min-width: var(--report-flag-size);
     height: var(--report-flag-size);
-    padding: 10px;
-    display: grid;
-    place-items: center;
-    border: var(--border-width) solid var(--border);
+    padding: 0 var(--space-3);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    border: var(--border-width) solid var(--danger-text);
     border-radius: var(--radius-pill);
-    background: var(--surface);
+    background: var(--danger-text);
+    color: var(--danger-wash);
     box-shadow: var(--shadow-control);
     cursor: pointer;
+    font-family: inherit;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
     touch-action: manipulation;
     transition:
       transform var(--duration-fast) var(--ease-glide),
-      background var(--duration-base) var(--ease-glide),
-      border-color var(--duration-base) var(--ease-glide);
+      box-shadow var(--duration-base) var(--ease-glide);
   }
 
   .ai-report-flag:focus-visible {
@@ -60,18 +62,12 @@
   }
 
   :global(.ai-report-flag-icon svg) {
-    fill: var(--icon-muted);
-    transition: fill var(--duration-base) var(--ease-glide);
+    fill: currentColor;
   }
 
   @media (hover: hover) {
     .ai-report-flag:not(:disabled):hover {
-      background: var(--surface-hover);
-      border-color: var(--border-warm-strong);
-    }
-
-    .ai-report-flag:not(:disabled):hover :global(.ai-report-flag-icon svg) {
-      fill: var(--icon-ink);
+      transform: translateY(-1px);
     }
   }
 </style>
