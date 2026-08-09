@@ -1,6 +1,7 @@
 import { chromium } from '@playwright/test';
 import { spawnSync } from 'node:child_process';
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -14,11 +15,16 @@ import {
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
-import { esc } from './lib/html.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 import { chromiumExecutablePath } from './lib/playwright.mjs';
-import { chromeStyle, masthead, siteFooter } from './lib/scrapbook-chrome.mjs';
 import { waitForUrl } from './lib/net.mjs';
+import {
+  PAGE_INVENTORY_VIEWPORTS,
+  attachExpectedCapturePaths,
+  inventoryCapturePath,
+  readDesignCritique,
+  renderPageInventoryReport,
+} from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from './lib/vite-server.mjs';
 
 const PORT_DEFAULT = 4319;
@@ -27,13 +33,6 @@ const SERVER_BOOT_MS = 120_000;
 const ACTION_MS = 15_000;
 const TAP_GUARD_MS = 750;
 const WEBP_QUALITY = 84;
-
-const VIEWPORTS = [
-  ['iphone-13-mini', 'Small iPhone', 'iPhone 13 mini', 375, 812],
-  ['iphone-16-pro-max', 'Large iPhone', 'iPhone 16 Pro Max', 440, 956],
-  ['ipad-mini-7', 'iPad mini', 'iPad mini 7th Gen (2024)', 744, 1133],
-  ['ipad-pro-13-m4', 'Large iPad Pro', 'iPad Pro 13-inch (M4)', 1032, 1376],
-].map(([id, category, device, width, height]) => ({ id, category, device, width, height }));
 
 const PHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -75,20 +74,6 @@ const ROUTES = {
   '/dev/engine': ['Drawing engine harness', 'The development-only engine control surface.'],
   '/feedback': ['Feedback', 'The standalone bug report and feature idea form.'],
   '/privacy': ['Privacy policy', 'The public privacy policy at its opening position.'],
-};
-
-const GROUPS = {
-  routes: [
-    'Routes',
-    'Every SvelteKit page route with a visual surface. API endpoints are omitted.',
-  ],
-  settings: ['Settings', 'The responsive hub and every section from the canonical Settings list.'],
-  controls: [
-    'Canvas & controls',
-    'Drawing states, flyouts, pickers, guidance, and transient chrome.',
-  ],
-  ai: ['AI flow', 'The style picker and every meaningful generated-picture modal state.'],
-  admin: ['Admin', 'Authenticated ledger views and responsive row actions.'],
 };
 
 function filesBelow(dir) {
@@ -625,7 +610,7 @@ function adminSurfaces() {
   ];
 }
 
-function allSurfaces() {
+export function allSurfaces() {
   return [
     ...routeSurfaces(),
     ...settingsSurfaces(),
@@ -668,7 +653,7 @@ async function settle(page) {
 async function capture(page, item, viewport, out) {
   await item.prepare(page, viewport);
   await settle(page);
-  const path = `assets/${item.group}/${item.id}--${viewport.id}.webp`;
+  const path = inventoryCapturePath(item, viewport);
   const target = join(out, path);
   mkdirSync(resolve(target, '..'), { recursive: true });
   const png = await page.screenshot({ type: 'png' });
@@ -677,67 +662,13 @@ async function capture(page, item, viewport, out) {
   return path;
 }
 
-const REPORT_CSS = `
-.inventory-nav{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--paper) 92%,transparent);border-bottom:1px solid var(--hair);backdrop-filter:blur(12px)}
-.inventory-nav .shell{display:flex;gap:8px;overflow:auto;padding-top:10px;padding-bottom:10px}
-.inventory-nav a{flex:0 0 auto;padding:6px 11px;border:1px solid var(--hair);border-radius:999px;background:var(--card);color:var(--muted);font-size:.78rem;font-weight:700}
-.inventory-nav a:hover{color:var(--accent-ink);text-decoration:none;border-color:var(--accent)}
-.viewport-key{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:32px}
-.viewport-key article{padding:12px;border:1px solid var(--hair);border-radius:var(--r-sm);background:var(--card)}
-.viewport-key strong,.viewport-key span{display:block}.viewport-key strong{font-size:.82rem}.viewport-key span{color:var(--muted);font-size:.73rem}
-.group{scroll-margin-top:72px;margin-top:46px}.group:first-of-type{margin-top:0}.group-head{margin-bottom:16px}.group-head h2{margin:0;font-size:1.35rem}.group-head p{margin:4px 0 0;color:var(--muted);max-width:72ch}
-.surface-list{display:flex;flex-direction:column;gap:24px}.surface{scroll-margin-top:72px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--shadow-sm);overflow:hidden}
-.surface-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--hair)}
-.surface-head h3{margin:0;font-size:1.03rem}.surface-head p{margin:4px 0 0;color:var(--muted);font-size:.86rem;max-width:72ch}.surface-source{flex:0 0 auto;color:var(--faint);font:600 .72rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--card-2);border:1px solid var(--hair);border-radius:6px;padding:4px 7px}
-.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--hair)}.shot{margin:0;padding:12px;background:var(--card-2);min-width:0}.shot a{display:block}.shot img{display:block;width:100%;height:auto;border:1px solid var(--hair-strong);border-radius:7px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
-.shot figcaption{margin-bottom:7px;line-height:1.25}.shot figcaption strong,.shot figcaption span{display:block}.shot figcaption strong{font-size:.76rem}.shot figcaption span{color:var(--faint);font-size:.68rem}
-@media(max-width:820px){.shots,.viewport-key{grid-template-columns:repeat(2,minmax(0,1fr))}.surface-head{flex-direction:column}.surface-source{flex:none}}@media(max-width:480px){.shots,.viewport-key{grid-template-columns:1fr}.shot{padding:10px}}
-`;
-
-function report(items) {
-  const stats = `<span class="chip accent"><b>${items.length}</b> surfaces</span><span class="chip"><b>${items.length * VIEWPORTS.length}</b> snapshots</span><span class="chip"><b>4</b> logical viewports</span>`;
-  const nav = Object.entries(GROUPS)
-    .map(([id, [title]]) => `<a href="#${id}">${esc(title)}</a>`)
-    .join('');
-  const key = VIEWPORTS.map(
-    (view) =>
-      `<article><strong>${esc(view.category)}</strong><span>${esc(view.device)}</span><span>${view.width} × ${view.height} pt</span></article>`
-  ).join('');
-  const groups = Object.entries(GROUPS)
-    .map(([groupId, [title, description]]) => {
-      const cards = items
-        .filter((item) => item.group === groupId)
-        .map((item) => {
-          const shots = VIEWPORTS.map((view) => {
-            const path = item.captures[view.id];
-            return `<figure class="shot"><figcaption><strong>${esc(view.category)}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} at ${view.device}`)}"/></a></figure>`;
-          }).join('');
-          return `<article class="surface" id="${esc(item.id)}"><header class="surface-head"><div><h3>${esc(item.title)}</h3><p>${esc(item.description)}</p></div><span class="surface-source">${esc(item.source)}</span></header><div class="shots">${shots}</div></article>`;
-        })
-        .join('');
-      return `<section class="group" id="${groupId}"><header class="group-head"><h2>${esc(title)}</h2><p>${esc(description)}</p></header><div class="surface-list">${cards}</div></section>`;
-    })
-    .join('');
-  const body = `${masthead({
-    title: 'App page inventory',
-    tagline:
-      'A static, source-discovered inventory of every route, every Settings section, every modal, and the app’s most useful transient views. Each row comes from the same Playwright run at four Apple logical viewports.',
-    home: '../index.html',
-    crumbs: [{ label: 'App page inventory' }],
-    stats,
-  })}<nav class="inventory-nav" aria-label="Inventory groups"><div class="shell">${nav}</div></nav><main><div class="shell"><div class="viewport-key">${key}</div>${groups}</div></main>${siteFooter({ home: '../index.html' })}`;
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>App page inventory — Splotch scrapbook</title>${chromeStyle(REPORT_CSS)}</head><body>${body}</body></html>\n`.replace(
-    /[ \t]+$/gm,
-    ''
-  );
-}
-
 function options(argv) {
   const parsed = parseArgs({
     args: argv,
     options: {
       out: { type: 'string', default: OUT_DEFAULT },
       port: { type: 'string', default: String(PORT_DEFAULT) },
+      critique: { type: 'string' },
     },
     strict: true,
   }).values;
@@ -749,7 +680,12 @@ function options(argv) {
   if (!out.startsWith(`${scrapbook}${sep}`)) {
     throw new Error(`--out must stay inside scrapbook/: ${parsed.out}`);
   }
-  return { out, port };
+  const defaultCritique = join(out, 'design-critique.json');
+  const critique = parsed.critique ? resolve(ROOT, parsed.critique) : defaultCritique;
+  if (parsed.critique && !existsSync(critique)) {
+    throw new Error(`--critique does not exist: ${parsed.critique}`);
+  }
+  return { out, port, critique: existsSync(critique) ? critique : undefined };
 }
 
 export async function generateOutputAtomically(out, generate) {
@@ -779,7 +715,10 @@ export async function generateOutputAtomically(out, generate) {
 }
 
 export async function generatePageInventory(argv = process.argv.slice(2)) {
-  const { out, port } = options(argv);
+  const { out, port, critique: critiquePath } = options(argv);
+  const items = attachExpectedCapturePaths(allSurfaces());
+  const expectedImages = items.flatMap((item) => Object.values(item.captures));
+  const critique = readDesignCritique(critiquePath, expectedImages);
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: ROOT,
     env: { ...process.env, ...SERVER_ENV },
@@ -798,8 +737,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
     try {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
-      const items = allSurfaces();
-      for (const view of VIEWPORTS) {
+      for (const view of PAGE_INVENTORY_VIEWPORTS) {
         const context = await browser.newContext({
           baseURL: `http://localhost:${port}`,
           viewport: { width: view.width, height: view.height },
@@ -822,9 +760,10 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
         }
         await context.close();
       }
-      writeFileSync(join(staging, 'index.html'), report(items));
+      writeFileSync(join(staging, 'index.html'), renderPageInventoryReport(items, critique));
+      if (critiquePath) copyFileSync(critiquePath, join(staging, 'design-critique.json'));
       return {
-        snapshots: items.length * VIEWPORTS.length,
+        snapshots: items.length * PAGE_INVENTORY_VIEWPORTS.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
       };
     } finally {
