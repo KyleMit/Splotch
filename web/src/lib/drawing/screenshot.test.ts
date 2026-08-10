@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   playScreenshotFeedback: vi.fn(),
   playScreenshotSuppressedFeedback: vi.fn(),
   createPolaroidPreviewRequest: vi.fn(),
+  triggerDownload: vi.fn(),
   perfMarks: false,
 }));
 
@@ -19,6 +20,10 @@ vi.mock('./screenshotFeedback', () => ({
 }));
 vi.mock('./polaroidAnimation', () => ({
   createPolaroidPreviewRequest: mocks.createPolaroidPreviewRequest,
+}));
+vi.mock('$lib/saveNaming', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('$lib/saveNaming')>()),
+  triggerDownload: mocks.triggerDownload,
 }));
 vi.mock('./screenshotTiming', () => ({ SCREENSHOT_COOLDOWN_MS: 4_000 }));
 vi.mock('./perf', () => ({
@@ -165,5 +170,21 @@ describe('saveImageBlob', () => {
       expect.stringMatching(/^splotch-ai-.+\.webp$/),
       undefined
     );
+    expect(mocks.triggerDownload).not.toHaveBeenCalled();
+  });
+
+  it('falls back to a download and revokes the object URL when no folder takes the blob', async () => {
+    mocks.saveBlobToFolder.mockResolvedValue(false);
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const { saveImageBlob } = await import('./screenshot');
+
+    const saved = await saveImageBlob(new Blob(['image'], { type: 'image/png' }));
+
+    expect(saved).toBe(true);
+    expect(mocks.triggerDownload).toHaveBeenCalledWith(
+      'blob:polaroid',
+      expect.stringMatching(/^splotch-.+\.png$/)
+    );
+    expect(revoke).toHaveBeenCalledWith('blob:polaroid');
   });
 });
