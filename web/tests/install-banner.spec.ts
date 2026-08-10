@@ -1,9 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { draw, gotoApp } from './helpers';
-
-const ANDROID_UA =
-  'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36';
+import { ANDROID_UA, draw, gotoApp } from './helpers';
 
 test.use({
   userAgent: ANDROID_UA,
