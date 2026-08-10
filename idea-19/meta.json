@@ -9,7 +9,7 @@
     "books.ts: chalkThumbPath() + theme-aware pageThumb(); bookAssetPaths() lists chalk thumbs for check-assets/strip-native-assets",
     "ColoringBook.svelte: page tiles + prefetch swap to pageThumb(page, orientation, resolvedTheme())",
     "Before/after dark-mode screenshots of the live app (run-splotch driver + Playwright, splotch-theme=dark) for creatures, shapes, and the covers grid",
-    "svelte-check, extended books unit tests, and scripts/check-assets.mjs over the result",
+    "svelte-check, extended books unit tests, and tools/check-assets.mjs over the result",
     "Assessed cover-chalk generation path in gen-coloring-chalk.mjs without burning API calls"
   ],
   "worked": [

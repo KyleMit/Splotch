@@ -22,12 +22,12 @@ index 32fb485..f3fde5f 100644
 --- a/package.json
 +++ b/package.json
 @@ -22,6 +22,7 @@
-     "check": "node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json",
-     "check:watch": "node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json --watch",
-     "check:assets": "node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-assets.mjs",
+     "check": "node tools/web.mjs svelte-check --tsconfig ./tsconfig.json",
+     "check:watch": "node tools/web.mjs svelte-check --tsconfig ./tsconfig.json --watch",
+     "check:assets": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-assets.mjs",
 +    "check:assets:manifest": "node tools/asset-gen/gen-asset-manifest.mjs --check",
-     "img:audit": "node scripts/image-audit.mjs",
-     "img:audit:check": "node scripts/image-audit.mjs --check",
+     "img:audit": "node tools/image-audit.mjs",
+     "img:audit:check": "node tools/image-audit.mjs --check",
      "lint": "eslint .",
 @@ -70,6 +71,7 @@
      "gen:coloring-punch": "node tools/asset-gen/punch-fill-outlines.mjs",
