@@ -26,6 +26,22 @@ const testsDir = join(repoRoot, 'web', 'tests');
 // there is no agreement for this walk to have missed.
 const INSTRUCTION_ROOTS = ['.ruler', '.claude', '.agents', 'scripts'];
 const INSTRUCTION_FILENAMES = ['CLAUDE.md', 'AGENTS.md'];
+
+// The reference documents ADR-0107 moved out of the skill trees. Their spec
+// citations were inside INSTRUCTION_ROOTS before the move and have to stay
+// scanned, but `docs/` as a whole must not join that list — ADRs, the handoffs,
+// the scratchpad, and the audit backlog all record what was true at the time and
+// may name a deleted spec on purpose.
+const REFERENCE_DOCS = [
+  'docs/ARCHITECTURE.md',
+  'docs/API.md',
+  'docs/TESTING.md',
+  'docs/PROFILING.md',
+  'docs/PROFILING-IPAD.md',
+  'docs/MOBILE/native.md',
+  'docs/MOBILE/android.md',
+  'docs/MOBILE/ios.md',
+];
 const EXCLUDED_DIRS = new Set([
   'node_modules',
   '.git',
@@ -62,6 +78,9 @@ const docs = [
   ...new Set([
     ...INSTRUCTION_ROOTS.flatMap((root) => walk(join(repoRoot, root), isMarkdown)),
     ...walk(repoRoot, (name) => INSTRUCTION_FILENAMES.includes(name)),
+    // Named, not walked: a moved or renamed reference doc must fail loudly here
+    // rather than quietly leaving its citations unscanned.
+    ...REFERENCE_DOCS.map((doc) => join(repoRoot, doc)),
   ]),
 ];
 
