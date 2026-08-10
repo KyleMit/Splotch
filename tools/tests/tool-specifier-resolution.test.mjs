@@ -1,0 +1,102 @@
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join, normalize } from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+// A relative specifier that points nowhere is not always an error, so moving a
+// file between directory depths breaks these two ways silently:
+//
+//   vi.mock('<path that no longer exists>')  — mocks nothing, no warning. The
+//     suite stays green while the test exercises the real module; during the
+//     ADR-0108 migration this had the perf tests running real production builds.
+//   join(import.meta.dirname, '..', '..')    — resolves to *a* directory, just
+//     the wrong one, so reads fail far from the cause (or silently find nothing).
+//
+// Both are the same family as web/tests' engine-harness import guard
+// (tools/tests/e2e-harness-imports.test.mjs): wrong without being an error, and
+// a green suite is exactly the evidence used to conclude a move was clean.
+const repoRoot = join(import.meta.dirname, '..', '..');
+
+// Packages with their own suites and their own layout conventions.
+const SEPARATELY_CONFIGURED = /^tools\/(asset-gen|store-drawings)\//;
+
+// Synthetic diff fixtures: opaque strings fed to the audit-burndown diff parser,
+// deliberately naming files that do not exist.
+const FIXTURE_SPECIFIERS = new Set(['./folderSaveSupport', './foo', './lazy', './x', './y']);
+
+const toolFiles = execFileSync('git', ['ls-files', 'tools'], { cwd: repoRoot, encoding: 'utf8' })
+  .trim()
+  .split('\n')
+  .filter((path) => path.endsWith('.mjs') && !SEPARATELY_CONFIGURED.test(path));
+
+const RELATIVE_SPECIFIER =
+  /(?:from\s*|import\s*\(\s*|vi\.(?:mock|doMock|unmock)\(\s*|new URL\(\s*)(['"])(\.\.?\/[^'"]*)\1/g;
+
+/** Every relative specifier in `file`, paired with the repo path it resolves to. */
+function resolvedSpecifiers(file) {
+  const source = readFileSync(join(repoRoot, file), 'utf8');
+  return [...source.matchAll(RELATIVE_SPECIFIER)]
+    .map((match) => match[2])
+    .filter((spec) => !FIXTURE_SPECIFIERS.has(spec))
+    .map((spec) => ({
+      spec,
+      // Strip any '?query' — import('./x.mjs?fresh') is a cache-buster, not part
+      // of the path.
+      target: normalize(join(dirname(file), spec.split('?')[0])),
+    }));
+}
+
+describe('relative specifiers under tools/', () => {
+  it.each(toolFiles)('%s resolves every relative specifier', (file) => {
+    const broken = resolvedSpecifiers(file).filter(
+      ({ target }) =>
+        !existsSync(join(repoRoot, target)) &&
+        !existsSync(join(repoRoot, `${target}.mjs`)) &&
+        !existsSync(join(repoRoot, `${target}.js`))
+    );
+
+    expect(broken.map(({ spec, target }) => `${spec} -> ${target}`)).toEqual([]);
+  });
+});
+
+describe('tools/lib is the dependency foundation', () => {
+  // ADR-0108's owned-vs-shared split rests on this direction: a shared module
+  // reaching back into a capability folder makes tools/lib the grab bag the
+  // split exists to prevent, and does it one import at a time.
+  it.each(toolFiles.filter((file) => /^tools\/lib\/[^/]+\.mjs$/.test(file)))(
+    '%s imports no capability module',
+    (file) => {
+      const reaching = resolvedSpecifiers(file)
+        .filter(({ target }) => target !== 'tools/lib' && !target.startsWith('tools/lib/'))
+        .map(({ spec }) => spec);
+
+      expect(reaching).toEqual([]);
+    }
+  );
+});
+
+describe('repo-root walks under tools/', () => {
+  // `package.json` naming the app is the marker: any wrong number of '..' lands
+  // somewhere without it (or outside the repo entirely).
+  const isRepoRoot = (path) => {
+    const manifest = join(repoRoot, path, 'package.json');
+    return existsSync(manifest) && JSON.parse(readFileSync(manifest, 'utf8')).name === 'splotch';
+  };
+
+  const walkers = toolFiles.flatMap((file) => {
+    const source = readFileSync(join(repoRoot, file), 'utf8');
+    const walks = [
+      ...source.matchAll(/join\(import\.meta\.dirname((?:,\s*'\.\.')+)\)/g),
+      ...source.matchAll(/resolve\(import\.meta\.dirname,\s*'((?:\.\.\/?)+)'\)/g),
+    ].map((match) => (match[0].match(/\.\./g) ?? []).length);
+    return walks.map((ups) => ({ file, ups }));
+  });
+
+  it('finds the walks it is meant to guard', () => {
+    expect(walkers.length).toBeGreaterThan(0);
+  });
+
+  it.each(walkers)('$file walks $ups levels to the repo root', ({ file, ups }) => {
+    expect(isRepoRoot(join(dirname(file), ...Array(ups).fill('..')))).toBe(true);
+  });
+});

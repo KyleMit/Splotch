@@ -32,9 +32,11 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
   `asset-gen` and `store-drawings` are excluded because they keep their own named suites.
 * A new capability folder must be added to the `project` list in `knip.json`, which enumerates them
   (knip cannot re-include a path under a negated glob, so a blanket `tools/**` plus exclusions is
-  not an option). Its `entry` glob `tools/*/*.mjs` needs no edit. `tools/lib/` is deliberately
-  excluded from `entry` so `lint:dead` still flags dead shared code; it stays reachable through its
-  importers.
+  not an option). You do not have to remember: `tools/tests/enumerated-build-paths.test.mjs` fails
+  on the omission, and also pins the Netlify deploy filter's `:(glob)` pathspec and its coverage of
+  everything the production build runs. Its `entry` glob `tools/*/*.mjs` needs no edit. `tools/lib/`
+  is deliberately excluded from `entry` so `lint:dead` still flags dead shared code; it stays
+  reachable through its importers.
 
 ## Libraries: one shared, many owned
 
@@ -61,6 +63,11 @@ at a file it deleted; `tools/release/lib/frontmatter.mjs` the release frontmatte
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
 concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
+
+Moving a tool between depths is the operation that breaks this tree quietly: a stale `vi.mock()`
+path mocks nothing without erroring, and a repo-root walk with the wrong number of `..` still
+resolves — just somewhere else. `tools/tests/tool-specifier-resolution.test.mjs` fails on either,
+and on a `tools/lib/` module that reaches back into a capability folder.
 
 ## Writing a tool
 
