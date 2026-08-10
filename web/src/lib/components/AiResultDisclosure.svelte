@@ -93,10 +93,7 @@
     background: none;
     color: #e09393;
     cursor: pointer;
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: inherit;
-    line-height: inherit;
+    font: inherit;
     touch-action: manipulation;
     transition: transform var(--duration-fast) var(--ease-glide);
   }
