@@ -145,6 +145,13 @@ export async function openSettingsModal(page: Page) {
     page.getByRole('button', { name: 'Settings' }).click({ timeout: 3000 })
   );
   await settleFlyIn(modal);
+  // The wide shell mounts its sections a frame at a time (issue #910), so on a
+  // wide viewport the pane is still growing when the card lands — every offset a
+  // spec reads off it, and every section an axe scan walks, is only final once
+  // the pane stops reporting itself busy. The fly-in is no proxy for it: that is
+  // wall-clock, this is frames, and a starved worker separates the two.
+  const pane = modal.locator('.settings-pane');
+  if (await pane.count()) await expect(pane).toHaveAttribute('aria-busy', 'false');
   return modal;
 }
 

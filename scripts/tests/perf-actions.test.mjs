@@ -115,6 +115,16 @@ describe('trusted action setup', () => {
     expect(IPAD_ACTIONS).toContain(`getAttribute('aria-current') === '${token}'`);
     expect(PAGE_INVENTORY).toContain(`[aria-current="${token}"]`);
   });
+
+  // The wide pane fills a section per frame (issue #910) and reports itself busy
+  // until the last one lands. The inventory shoots every Settings surface, so it
+  // waits on that flag going quiet; were the pane to stop carrying it, the wait
+  // would resolve on an element that never had it and the shots would go back to
+  // catching a half-built page — silently, since a screenshot always succeeds.
+  it('shoots the wide pane only once it stops reporting itself busy', () => {
+    expect(SETTINGS_WIDE_SHELL).toMatch(/class="settings-pane"[^>]*aria-busy=\{/);
+    expect(PAGE_INVENTORY).toContain('.settings-pane[aria-busy="false"]');
+  });
 });
 
 describe('action probe selector contract', () => {

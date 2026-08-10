@@ -224,3 +224,48 @@ continuous document, so only closing the overlay returns the text to its normal 
 
 Superseded from the original Consequences: "reopening always lands on the hub / first section" now
 reads "the hub (phone) / the top of the Pane, or the deep-linked section scrolled into place".
+
+## Amendment (2026-08): the wide Pane fills a section per frame
+
+The cost the amendment above accepted — eleven section bodies constructed in the one task that opens
+the dialog — is now paid a frame at a time. The Pane mounts the run of sections from the first up to
+whichever one this open lands on (one, for a default open; a deep link pays for its own prefix,
+since a section's offset depends only on what stacks above it), and a `requestAnimationFrame` pump
+appends the rest in nav order. This is the same shape as the idle overlay pump ADR-0049 established,
+for the same reason: batching the work only relocates the long task.
+
+Nothing is mounted at a fake height. Every section is either absent or laid out in full, so the
+scrollspy's live offsets and the jump arithmetic stay exact for whatever exists — which is why
+`content-visibility: auto` and a placeholder-height scheme were both still rejected. Three
+adjustments make that hold while the Pane is filling:
+
+* The scroll-end fallback that elects the last section is gated on the Pane being whole. Until then
+  the end of the scroll is merely the end of what has arrived, and electing About there would strobe
+  the highlight down the column on open.
+* A table-of-contents row is live from the first frame, so a click mounts through the section it
+  names before scrolling to it — never a silent no-op.
+* Because that click can raise the watermark past where the pump had reached, the pump asks each
+  frame for one more than the watermark currently holds rather than counting up privately, which
+  would leave every section below a jumped-to one stranded.
+
+The Pane carries `aria-busy` until the last section is in. That is what `tests/helpers.ts`'s
+`openSettingsModal` and `gen-page-inventory.mjs` wait on before reading an offset or taking a shot;
+the fly-in is no substitute, since it is wall-clock and this is frames.
+`scripts/tests/perf-actions.test.mjs` guards the token, and `npm run perf:settings`
+(`scripts/perf/settings-open.mjs`) is the measurement, scoring both shells on the production build
+under a `longtask` observer.
+
+Median of five, this host, production build:
+
+| viewport, throttle                | before | after                                             |
+| --------------------------------- | ------ | ------------------------------------------------- |
+| wide 1280x800, 1x                 | 56 ms  | none over 50 ms                                   |
+| wide 1280x800, 4x                 | 219 ms | 81 ms on the tap, then 57 ms a frame or two later |
+| phone hub 412x915, 4x (the floor) | 64 ms  | 64 ms                                             |
+
+The tap's own task is within ~17 ms of the phone hub it is measured against — that residue is the
+Sidebar plus the first section. The one task still over the threshold at 4x is a *single* section
+body (Install, the longest in the app) that does not fit in one frame on its own; splitting a
+section is a separate change. The trade is wall clock for responsiveness: click to all-eleven-
+attached goes from 304 ms to 452 ms at 4x, spent in frames the card is flying in over rather than in
+one block with the main thread held.

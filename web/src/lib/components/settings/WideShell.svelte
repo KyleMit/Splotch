@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick, untrack } from 'svelte';
   import SectionIcon from '../SectionIcon.svelte';
   import SectionBody from './SectionBody.svelte';
   import ParentCenterLock from './ParentCenterLock.svelte';
@@ -28,6 +29,25 @@
   let parentCenterRevealed = $derived(
     parentCenterUnlocked || !requiresParentalGate('parentCenter')
   );
+
+  // Constructing every section body in the one task that opens the dialog was a
+  // long task several times the phone hub's on the app's low-end tablet targets
+  // (issue #910; `npm run perf:settings` scores both shells). They arrive a
+  // section per frame instead, top of the pane downwards — the same shape, and
+  // the same reasoning, as the idle overlay pump in boot/bootHiddenOverlays.ts:
+  // batching the work merely relocates the long task. What must not be deferred
+  // is a section's height, since the scrollspy and the jump arithmetic are both
+  // specified in live offsets — so a section is either laid out in full or not
+  // in the pane at all, never a placeholder.
+  const SECTIONS_PER_FRAME = 1;
+
+  // How many sections, from the first, currently exist in the pane — one frame's
+  // worth to start with, since the opening tap is itself the first frame. A
+  // watermark, never lowered: the dialog is closed rather than unmounted, so a
+  // reopen keeps whatever the last open finished mounting and pays nothing again.
+  let mountedCount = $state(SECTIONS_PER_FRAME);
+  const mountedSections = $derived(SECTIONS.slice(0, mountedCount));
+  const fullyMounted = $derived(mountedCount >= SECTIONS.length);
 
   // How far past the pane's top edge the reading line sits. The highlight flips
   // as a heading approaches that line rather than after it has scrolled away.
@@ -59,6 +79,34 @@
 
   const sectionHeadingId = (id: SectionId) => `settingsSection-${id}`;
 
+  const sectionIndex = (id: SectionId) => SECTIONS.findIndex((section) => section.id === id);
+
+  // Raise the watermark to cover `count` sections, reporting whether anything
+  // new is on its way in. The read is untracked so the frame pump and the click
+  // handler that call this can't re-enter the effect they were started from.
+  function mountAtLeast(count: number): boolean {
+    const next = Math.min(count, SECTIONS.length);
+    if (untrack(() => mountedCount) >= next) return false;
+    mountedCount = next;
+    return true;
+  }
+
+  // Each frame asks for one more than the watermark currently holds, rather than
+  // counting up privately: a jump can raise the watermark mid-fill, and a
+  // private counter would then find nothing left to do and stop the fill for
+  // good, stranding every section below the one that was jumped to.
+  function pumpRemainingSections(): () => void {
+    let frame = 0;
+    const mountNext = () => {
+      const next = untrack(() => mountedCount) + SECTIONS_PER_FRAME;
+      frame = mountAtLeast(next) ? requestAnimationFrame(mountNext) : 0;
+    };
+    frame = requestAnimationFrame(mountNext);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }
+
   // The card flies in scaled from its opening button, so a rect read while that
   // animation runs is not in CSS pixels. A scroller's own visual-to-layout ratio
   // converts a measurement into whatever space the current frame is in.
@@ -75,7 +123,13 @@
   }
 
   function spiedSectionAt(pane: HTMLElement): SectionId {
-    if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - SCROLL_END_EPSILON_PX) {
+    // The end of the scroll only means the last section once every section is in
+    // the pane; while they are still arriving it is just the end of what has
+    // arrived, and electing About there would strobe the highlight down the
+    // column on open.
+    const atScrollEnd =
+      pane.scrollTop + pane.clientHeight >= pane.scrollHeight - SCROLL_END_EPSILON_PX;
+    if (fullyMounted && atScrollEnd) {
       return SECTIONS[SECTIONS.length - 1].id;
     }
     const line = pane.getBoundingClientRect().top + SCROLLSPY_LINE_INSET_PX * visualScale(pane);
@@ -129,6 +183,12 @@
     const landing = landingSection;
     parentCenterUnlocked = false;
     spiedSection = landing;
+    // A section's offset depends only on what stacks above it, so mounting the
+    // run up to the landing section is what makes the landing scroll below land
+    // on a true offset. For the default landing that is one section; a deep link
+    // pays for its own prefix.
+    mountAtLeast(sectionIndex(landing) + 1);
+    let stopPump: (() => void) | undefined;
     // A still-closed dialog is `display: none`, so both scrollers report 0 and
     // ignore a scrollTo — and the browser then restores the offsets it kept the
     // moment the card gets a layout box. Waiting a frame is what makes the reset
@@ -137,8 +197,12 @@
       navEl?.scrollTo({ top: 0 });
       revealNavRow(landing, 'auto');
       scrollToSection(landing, 'auto');
+      stopPump = pumpRemainingSections();
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      stopPump?.();
+    };
   });
 
   $effect(() => {
@@ -184,7 +248,11 @@
     );
   }
 
-  function jumpToSection(id: SectionId, trigger: HTMLElement) {
+  async function jumpToSection(id: SectionId, trigger: HTMLElement) {
+    // Every row is in the table of contents from the first frame, so one can be
+    // tapped while the pane is still filling in behind it — the section it names
+    // has to exist before there is an offset to scroll to.
+    if (mountAtLeast(sectionIndex(id) + 1)) await tick();
     const behavior = jumpBehavior();
     if (id !== 'parentCenter' || parentCenterRevealed) {
       scrollToSection(id, behavior);
@@ -216,9 +284,14 @@
       </button>
     {/each}
   </nav>
-  <div class="settings-pane" use:pinchTextZoom={textZoom} bind:this={paneEl}>
+  <div
+    class="settings-pane"
+    aria-busy={!fullyMounted}
+    use:pinchTextZoom={textZoom}
+    bind:this={paneEl}
+  >
     <div class="settings-zoom" bind:this={zoomTarget}>
-      {#each SECTIONS as section (section.id)}
+      {#each mountedSections as section (section.id)}
         <section
           class="settings-section"
           data-section={section.id}

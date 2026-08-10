@@ -172,12 +172,19 @@ async function openDialog(page, selector, trigger, label) {
 }
 
 async function openSettings(page) {
-  return openDialog(
+  const modal = await openDialog(
     page,
     '#settingsModal',
     () => page.locator('#settingsButton').click(),
     'Settings'
   );
+  // The wide shell fills its pane a section per frame, so a shot taken as the
+  // card lands catches a half-built page. scripts/tests/perf-actions.test.mjs
+  // holds this token against the shell that sets it.
+  if (await modal.locator('.settings-pane').count()) {
+    await modal.locator('.settings-pane[aria-busy="false"]').waitFor();
+  }
+  return modal;
 }
 
 async function openDrawer(page) {
