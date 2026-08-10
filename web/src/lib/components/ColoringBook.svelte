@@ -22,6 +22,7 @@
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
+  import { cutTrailingRow, retireAtScrollEnd } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
@@ -40,6 +41,9 @@
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
+  // Starts retired so a catalog that fits shows no cue at all; the first
+  // reading arms it only when there is something below the fold.
+  let scrolledToEnd = $state(true);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -214,6 +218,7 @@
         <div
           class="coloring-grid coloring-books-grid"
           class:book-grid-has-orphan={bookGridLayout.hasOrphan}
+          use:cutTrailingRow
         >
           {#each books as book (book.id)}
             {@const coverImage = coverThumbImageSource(book)}
@@ -257,6 +262,7 @@
           <div
             class="coloring-grid coloring-pages-grid"
             class:portrait-pages={orientation === 'portrait'}
+            use:cutTrailingRow
           >
             {#each activeBook.pages as page (page.id)}
               {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
@@ -281,10 +287,23 @@
         {/key}
       </div>
     {/if}
+    <!-- Outside the view branches on purpose: one fade serves the book grid and
+         every page grid, so its observer never ends up watching a node the keyed
+         page grid has since replaced. -->
+    <div
+      class="coloring-scroll-fade"
+      class:retired={scrolledToEnd}
+      use:retireAtScrollEnd={(atEnd) => (scrolledToEnd = atEnd)}
+    ></div>
   </div>
 </dialog>
 
 <style>
+  /* This is the ceiling, not the height the picker settles at. Whenever the
+     catalog outgrows it, `cutTrailingRow` budgets an inline max-height derived
+     from the live row pitch so the fold cuts a tile in half instead of landing
+     between two rows — a flat cap has no relationship to the grid, so which of
+     those two it does is down to the device. */
   .coloring-book-modal {
     --coloring-book-modal-max-height: 85vh;
     max-width: min(920px, calc(100vw - 32px));
@@ -477,6 +496,12 @@
       padding: var(--space-6) var(--space-4);
     }
 
+    /* Tighter than the roomier layouts above: on a two-column phone grid the
+       reclaimed pixels both widen the tiles and expose more of the next row. */
+    .coloring-grid {
+      gap: var(--space-2);
+    }
+
     .coloring-books-grid {
       --book-cols: 2;
     }
@@ -510,5 +535,39 @@
     font-weight: var(--font-weight-semibold);
     color: var(--text);
     text-align: center;
+  }
+
+  /* The dialog is the scroll container, so this cue has to travel with the
+     scrollport rather than sit inside the content: sticky, and pulled back over
+     the grid so it costs no layout height. Short enough to thin the clipped row
+     rather than hide it, and the opaque stop is held down in the bottom fifth so
+     a cover tile's caption band stays readable under it. */
+  .coloring-scroll-fade {
+    --coloring-scroll-fade-height: 72px;
+    --coloring-scroll-fade-opaque-from: 80%;
+    position: sticky;
+    bottom: 0;
+    height: var(--coloring-scroll-fade-height);
+    margin-top: calc(-1 * var(--coloring-scroll-fade-height));
+    pointer-events: none;
+    transition: opacity var(--duration-base) ease;
+    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); painting
+       from --surface rather than white gives dark mode a dark fade. The clear
+       end is a zero-alpha surface, not the `transparent` keyword, which some
+       engines interpolate through gray. */
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 1) var(--coloring-scroll-fade-opaque-from)
+    );
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--surface) 0%, transparent),
+      var(--surface) var(--coloring-scroll-fade-opaque-from)
+    );
+  }
+
+  .coloring-scroll-fade.retired {
+    opacity: 0;
   }
 </style>
