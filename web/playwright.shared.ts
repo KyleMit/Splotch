@@ -23,10 +23,33 @@ export function resolvePlaywrightPort(value = process.env.SPLOTCH_E2E_PORT): num
 export const playwrightPort = resolvePlaywrightPort();
 export const playwrightBaseURL = `http://localhost:${playwrightPort}`;
 
+/**
+ * A deadlock backstop, not a performance budget.
+ *
+ * Playwright's per-test timeout already bounds a hanging test. What nothing
+ * bounds is globalSetup, globalTeardown and the webServer wait, so without this
+ * a wedged run hangs its invoker — a developer, or an agent session — until the
+ * machine goes away.
+ *
+ * Derived rather than guessed: wall clock models as fixed overhead plus summed
+ * test time divided by workers, and `workers` is itself derived from the machine
+ * (playwright.config.ts), so the slowest supported shape is a single worker on a
+ * dual-core box. This is roughly twice that modeled floor, and it is sized for
+ * the full unsharded run — the local and cloud-session shape. CI shards and
+ * bounds each shard with `timeout-minutes` (.github/workflows/test.yml), so it
+ * never reaches this ceiling.
+ *
+ * Re-derive it if the suite grows substantially. Tuning it *down* toward
+ * observed runtimes turns it into a flake generator whose failure reads as the
+ * very hang it exists to catch.
+ */
+const RUN_DEADLOCK_CEILING_MS = 1_200_000;
+
 export const commonPlaywrightConfig = {
   testDir: './tests',
   globalSetup: './tests/global-setup.ts',
   fullyParallel: true,
+  globalTimeout: RUN_DEADLOCK_CEILING_MS,
   use: { baseURL: playwrightBaseURL },
 } satisfies PlaywrightTestConfig;
 

@@ -20,6 +20,70 @@ The constraint that matters here is **networking**:
   The container shares no network with your phone or laptop, so the LAN (`dev:host`) and USB
   (`adb:reverse`) flows in the mobile guide do **not** apply in a cloud session.
 
+## Session lifecycle and what persists
+
+The VM is allocated on demand and reclaimed after a period of inactivity whose duration Anthropic
+does not publish. Reopening an expired session provisions a **fresh** VM and restores the
+**conversation** — it does not restore the disk. Everything below follows from that one asymmetry.
+
+**Startup order.** The environment cache (a filesystem snapshot taken after the setup script's first
+successful run) is restored → the repo is cloned fresh from GitHub → SessionStart hooks run. The
+setup script re-runs only when it changes, when the allowed-hosts list changes, or when the snapshot
+passes its expiry of roughly seven days; resuming a session never re-runs it. The snapshot keeps
+files and loses processes, which is why [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh)
+installs binaries while the SessionStart hooks start whatever needs to be running.
+
+| What                                                                             | Survives reclamation? | Where it lives                  |
+| -------------------------------------------------------------------------------- | --------------------- | ------------------------------- |
+| Commits **pushed** to a branch                                                   | **Yes**               | GitHub — the only durable store |
+| Commits made locally, never pushed                                               | No                    | `.git` on the container disk    |
+| Staged changes                                                                   | No                    | container disk                  |
+| Uncommitted edits to tracked files                                               | No                    | container disk                  |
+| Untracked and gitignored files — build output, `playwright-report/`, screenshots | No                    | container disk                  |
+| Conversation transcript and the web diff view                                    | **Yes**               | Anthropic, server-side          |
+| Tooling the setup script installed                                               | Yes, until expiry     | environment cache snapshot      |
+
+**Work has to be made findable, not merely saved.** Restoring the conversation restores the branch
+*name*, which is a weak pointer — it needs that session reopened by someone who knows to look. Push
+at the first commit rather than the last, and prefer a pointer that outlives the session: a draft
+PR, or a `docs/handoff/` packet from `/create-handoff`, which travels with the repo. A gitignored
+artifact worth keeping needs an explicit route out — `npm run scrapbook:publish`, an attachment on
+the PR, or `git add -f` onto a scratch branch.
+
+## Bounding long-running work
+
+**Nothing keeps a session alive while work runs.** Session idle is measured on the conversation —
+turns and messages — not on container activity, so a healthy background process does not stop
+reclamation, and no file, ping loop, or hook can hold a session open. Claude Code does send a real
+heartbeat, `POST /v1/code/sessions/{id}/worker/heartbeat`, but the worker sends it itself and reads
+no state from the filesystem, so a heartbeat *file* is inert however it is written. (The pattern
+that circulates for this — a `PostToolUse` hook plus a background watchdog loop — is worse than
+inert: the loop inherits the hook's stdout, the harness reads that pipe to EOF, and every tool call
+in the session then stalls until the hook timeout.) The robust mitigation is to chunk work so each
+chunk commits and pushes, making a reclamation cost one chunk instead of the session.
+
+The complementary failure is work that never ends, where three mechanisms compound:
+
+* **A foreground Bash call that exceeds its timeout is detached, not killed.** The default is 120s;
+  on expiry the harness moves the command to the background and reports that it will notify on
+  completion.
+* **A detached command has no bound at all.** Measured: a detached hang was still running after
+  eight minutes with no harness intervention. Its only limit is one baked into the command itself.
+* **A completion notification that can never arrive.** A command that never exits never notifies,
+  and an agent polling for it resets the subagent stall watchdog on every poll, because
+  `tool_heartbeat` progress events fire on elapsed time rather than on actual progress.
+
+Hence the rules `.claude/hooks/cloud-long-running-work.sh` injects at SessionStart: put the bound in
+the command (`timeout 600 …`), treat "moved to the background" as a decision point, and read a
+background task's output file rather than its reported exit code — that code belongs to the wrapper
+shell, so a SIGKILLed command can surface as `exit code 0`.
+
+The test suite is bounded independently of all of this, so a session cannot hang on it:
+`globalTimeout` in `web/playwright.shared.ts` ends a wedged run, and the harness probe in
+`web/tests/global-setup.ts` aborts rather than waiting on a server that never answers. Playwright's
+per-test timeout already covered a hanging *test*; those two cover the gaps around it — globalSetup,
+globalTeardown, and the webServer wait.
+
 ## Per-session branch + Netlify preview
 
 Cloud sessions follow a fixed branching convention, injected into every session by

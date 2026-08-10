@@ -1,6 +1,14 @@
 import { chromium, type FullConfig } from '@playwright/test';
 import { HARNESS_PROBE_CODE } from '../playwright.shared';
 
+// `fetch` carries no overall deadline, so a server that accepts the connection
+// and then never answers would hang this hook — and globalSetup is one of the
+// few places Playwright's per-test timeout cannot reach. The abort lands in the
+// same `outcome` path as any other failure, so it reports itself through the
+// diagnostic below rather than as the run-wide `globalTimeout`
+// (playwright.shared.ts), which is the far blunter backstop above it.
+const HARNESS_PROBE_TIMEOUT_MS = 10_000;
+
 // Prove the server answering the port is the one this harness started.
 //
 // The production configs refuse server reuse and use Vite strictPort, so an
@@ -22,6 +30,7 @@ async function assertHarnessServer(baseURL: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code: HARNESS_PROBE_CODE }),
+    signal: AbortSignal.timeout(HARNESS_PROBE_TIMEOUT_MS),
   }).catch((err: unknown) => err);
   const recognized =
     outcome instanceof Response && (await outcome.json().catch(() => null))?.ok === true;
