@@ -52,13 +52,22 @@ function clippedText(page: Page, selector: string): Promise<string[]> {
     );
 }
 
-// One client rect per line box, so a label that broke across lines reports > 1.
+// One client rect per line box the *text* occupies, so a label that broke
+// across lines reports > 1. Measured off a Range around the contents, never off
+// the element: a flex item is blockified, so its own getClientRects() is a
+// single border box no matter how many lines the text takes — an element-level
+// count reports 1 for a label rendering at twice its line height, and the
+// assertion below would pass through exactly the wrapping it exists to catch.
 function wrappedText(page: Page, selector: string): Promise<string[]> {
-  return page
-    .locator(selector)
-    .evaluateAll((els) =>
-      els.filter((el) => el.getClientRects().length > 1).map((el) => el.textContent?.trim() ?? '')
-    );
+  return page.locator(selector).evaluateAll((els) =>
+    els
+      .filter((el) => {
+        const line = document.createRange();
+        line.selectNodeContents(el);
+        return line.getClientRects().length > 1;
+      })
+      .map((el) => el.textContent?.trim() ?? '')
+  );
 }
 
 for (const { device, width, height, chipColumns } of PHONE_VIEWPORTS) {
