@@ -137,15 +137,19 @@ test('the Coloring section toggle clears the page but keeps downloaded books', a
   await expect(page.locator('#coloringOverlay')).toBeVisible();
 
   const settings = await openSettingsModal(page);
-  await settings.getByRole('button', { name: 'Buttons', exact: true }).click();
-  await expect(settings.locator('#coloringBookToggle')).toHaveCount(0);
-
+  // The wide shell stacks every section in one scrolling pane, so the table of
+  // contents moves the scroll position rather than swapping the pane's content:
+  // the toggle is mounted throughout, and "the first card of the first group"
+  // has to be read inside the Coloring section rather than across the whole card.
   await settings.getByRole('button', { name: 'Coloring', exact: true }).click();
-  const toggle = settings.locator('#coloringBookToggle');
+  const coloring = settings.locator('.settings-section[data-section="coloring"]');
+  const toggle = coloring.locator('#coloringBookToggle');
   await expect(
-    settings.locator('.setting-group > .setting').first().locator('#coloringBookToggle')
+    coloring.locator('.setting-group > .setting').first().locator('#coloringBookToggle')
   ).toBeVisible();
-  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
+  const removeDownloads = settings.getByRole('button', { name: 'Remove downloaded pictures' });
+  await expect(removeDownloads).toBeEnabled();
+  await expect(removeDownloads).toBeInViewport();
 
   await toggle.click();
 

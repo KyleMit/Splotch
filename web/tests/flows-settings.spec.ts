@@ -3,21 +3,36 @@ import { expect, test, type Page } from '@playwright/test';
 import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { gotoApp, openSettingsModal, retryOpen } from './helpers';
+import {
+  activeNavRowInsideColumn,
+  gotoApp,
+  headingOffsetFromPaneTop,
+  openSettingsModal,
+  retryOpen,
+  SECTION_LANDED_MAX_PX,
+} from './helpers';
 
-// Settings is a section list — a sidebar item on tablet/desktop, a hub row on
-// phone. Either way the control carries the section label; opening it (sidebar
-// select or phone drill-in) reveals the section content.
+// Settings is a section list — a table-of-contents entry on tablet/desktop, a
+// hub row on phone. Either way the control carries the section label; activating
+// it brings the section's content into view (a scroll on the wide shell, a
+// drill-in on phone).
 //
-// Retried rather than clicked once: the dialog itself mounts on first open
-// (ADR-0049) and flies in, so this click lands on markup that is still
-// arriving, and a lost one would leave the section closed with nothing to
-// re-open it — the same hazard openSettingsModal above rides out.
+// The wide shell mounts every section at once, so the field a caller works on is
+// present before anything is clicked; the click is what scrolls it into view,
+// and `toBeInViewport` is what proves that happened. Retried rather than clicked
+// once: the dialog itself mounts on first open (ADR-0049) and flies in, so a
+// click lands on markup that is still arriving — the same hazard
+// openSettingsModal rides out.
 async function openSettingsSection(page: Page, label: string, expectedField: string) {
   await openSettingsModal(page);
-  await retryOpen(page.locator(expectedField), () =>
-    page.getByRole('button', { name: label }).click({ timeout: 3000 })
-  );
+  const field = page.locator(expectedField);
+  const entry = page.locator('.settings-nav').getByRole('button', { name: label, exact: true });
+  // Clicked on every attempt rather than gated on the field being present: in
+  // this shell it always is, and the click is what scrolls it into view.
+  await expect(async () => {
+    await entry.click({ timeout: 2000 });
+    await expect(field).toBeInViewport({ timeout: 2000 });
+  }).toPass({ timeout: 10_000 });
 }
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
@@ -33,40 +48,73 @@ async function submitAiKey(page: Page, value: string) {
   await save.click();
 }
 
-test('Settings sidebar switches the content pane (tablet layout)', async ({ page }) => {
+function scrollPaneToTop(page: Page) {
+  return page.locator('.settings-pane').evaluate((el) => el.scrollTo({ top: 0 }));
+}
+
+test('the Settings table of contents drives one continuous pane (tablet layout)', async ({
+  page,
+}) => {
   await gotoApp(page);
 
   const modal = await openSettingsModal(page);
   // The default Playwright viewport is desktop-width, so the two-pane shell with
-  // a persistent sidebar renders and the first section is selected.
+  // a persistent sidebar renders and the pane opens at the first section.
   await expect(modal).toHaveClass(/wide/);
   // Scoped to the nav: the short section labels also read as ordinary words
-  // inside the panes they open ("Install Splotch" in the Setup section).
+  // inside the sections they point at ("Install Splotch" in the Setup section).
   const nav = page.locator('.settings-nav');
   await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveClass(/active/);
+  await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveAttribute(
+    'aria-current',
+    'location'
+  );
   await expect(
     nav.getByRole('button', { name: 'Parent Center' }).locator('[data-icon="parent-center"]')
   ).toHaveClass(/icon-color/);
 
-  // Selecting a section highlights it in the sidebar and swaps the pane content.
+  // Every section is mounted at once — the nav moves the scroll position, it
+  // does not choose what is rendered. Counted off the nav so neither side
+  // restates how many sections there are.
+  await expect(page.locator('.settings-section')).toHaveCount(
+    await nav.locator('.settings-nav-item').count()
+  );
+
+  // Clicking an entry scrolls its heading to just below the pane's top edge and
+  // moves the highlight — while the first section stays mounted behind it.
   await nav.getByRole('button', { name: 'Buttons' }).click();
+  await expect
+    .poll(() => headingOffsetFromPaneTop(page, 'controls'))
+    .toBeLessThan(SECTION_LANDED_MAX_PX);
+  expect(await headingOffsetFromPaneTop(page, 'controls')).toBeGreaterThanOrEqual(0);
   await expect(nav.getByRole('button', { name: 'Buttons' })).toHaveClass(/active/);
-  await expect(page.locator('#advancedControlsToggle')).toBeVisible();
+  await expect(nav.getByRole('button', { name: 'Appearance' })).not.toHaveAttribute('aria-current');
+  // In viewport, not merely visible: every section is mounted at all times, and
+  // `toBeVisible` ignores the pane's scroll clipping — it would pass without the
+  // scroll ever happening.
+  await expect(page.locator('#advancedControlsToggle')).toBeInViewport();
+  await expect(page.locator('#themeOption-light')).toHaveCount(1);
 
   // The Setup section keeps its own <details> accordions inside the pane.
   await nav.getByRole('button', { name: 'Install' }).click();
   const setupDetails = page.locator('.help-section').first();
-  await expect(setupDetails.locator('summary')).toBeVisible();
+  await expect(setupDetails.locator('summary')).toBeInViewport();
 
   // About holds the identity block — the mascot renders in full color.
   await nav.getByRole('button', { name: 'About' }).click();
   const aboutMascot = page.locator('.about-brand [data-icon="splotchy"]');
   const aboutMascotImage = aboutMascot.locator('img');
-  await expect(aboutMascotImage).toBeVisible();
+  await expect(aboutMascotImage).toBeInViewport();
   await expect
     .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   await expect(aboutMascot).toHaveClass(/icon-color/);
+
+  // Scrolling the pane back by hand moves the highlight with it: the sidebar
+  // tracks the reading position rather than the last thing clicked.
+  await scrollPaneToTop(page);
+  await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveClass(/active/);
+  await expect(nav.getByRole('button', { name: 'Buttons' })).not.toHaveClass(/active/);
 });
 
 test('the theme picker is one tab stop and the arrow keys move the selection', async ({ page }) => {
@@ -122,24 +170,28 @@ test('the shortest sidebar viewport can still reach every section', async ({ pag
   // would sail past that, so the check is on the computed overflow.
   expect(column.overflowing ? column.overflowY : 'auto').toMatch(/auto|scroll/);
 
-  // The last section opens for real once scrolled to.
+  // The last entry jumps for real once scrolled to.
   await nav.getByRole('button').last().click();
-  await expect(page.locator('.about-brand')).toBeVisible();
+  await expect(nav.locator('.settings-nav-item').last()).toHaveClass(/active/);
+  await expect(page.locator('.about-brand')).toBeInViewport();
 });
 
 test('reopening a scrolled sidebar lands back on the active row', async ({ page }) => {
-  // The dialog is closed, not unmounted, so the nav keeps the scroll offset the
-  // parent left it at while the section resets to the first one — which would
-  // reopen with the selected row scrolled off the top and no highlight in view.
+  // The dialog is closed, not unmounted, so the nav and the pane both keep the
+  // scroll offsets the parent left them at while the highlight resets to the
+  // first section — which would reopen with the selected row scrolled off the
+  // top and no highlight in view, over a pane still showing the last section.
   await page.setViewportSize({ width: 1024, height: TABLET_MIN_SIDE_PX });
   await gotoApp(page);
   const modal = await openSettingsModal(page);
   const nav = page.locator('.settings-nav');
+  const pane = page.locator('.settings-pane');
 
-  await retryOpen(page.locator('.about-brand'), () =>
+  await retryOpen(nav.locator('[data-section="about"].active'), () =>
     nav.locator('[data-section="about"]').click({ timeout: 3000 })
   );
   expect(await nav.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+  expect(await pane.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
 
   await modal.getByRole('button', { name: 'Close' }).click();
   await expect(async () => {
@@ -147,19 +199,12 @@ test('reopening a scrolled sidebar lands back on the active row', async ({ page 
     await expect(page.locator('.settings-nav')).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 5000 });
 
-  // Reopening selects the first section, so its row is the one that has to be
-  // in view — read off the nav rather than restating which section that is.
-  const active = nav.locator('.settings-nav-item.active');
+  // Reopening returns the pane to the top, so the first row is the highlighted
+  // one and it has to be in view — read off the nav rather than restating which
+  // section that is.
+  await expect.poll(() => pane.evaluate((el) => el.scrollTop)).toBe(0);
   await expect(nav.locator('.settings-nav-item').first()).toHaveClass(/active/);
-  await expect
-    .poll(() =>
-      active.evaluate((row) => {
-        const box = row.parentElement!.getBoundingClientRect();
-        const seat = row.getBoundingClientRect();
-        return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
-      })
-    )
-    .toBe(true);
+  await expect.poll(() => activeNavRowInsideColumn(page)).toBe(true);
 });
 
 test("What's New formats the current release date without runtime locale initialization", async ({
@@ -229,13 +274,17 @@ test('setting card spacing only applies to direct section siblings', async ({ pa
   await gotoApp(page);
 
   const modal = await openSettingsModal(page);
-  const directCards = page.locator('.settings-pane .setting-group > .setting');
+  // Scoped to one section: the wide pane stacks every section at once, so an
+  // unscoped selector would sweep up the whole modal's cards.
+  const directCards = page.locator(
+    '.settings-section[data-section="appearance"] .setting-group > .setting'
+  );
   await expect(directCards).toHaveCount(3);
   await expect(directCards.nth(1)).toHaveCSS('margin-top', '6px');
   await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
 
-  await page.getByRole('button', { name: 'AI Art' }).click();
-  await expect(page.locator('#aiCodeActive')).toBeVisible();
+  await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  await expect(page.locator('#aiCodeActive')).toBeInViewport();
   const aiFeatureCards = page.locator('.settings-pane .ai-controls > .setting');
   await expect(aiFeatureCards).toHaveCount(3);
   await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '0px');

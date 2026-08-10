@@ -1,5 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { gotoApp, openSettingsModal } from './helpers';
+import {
+  gotoApp,
+  headingOffsetFromPaneTop,
+  openSettingsModal,
+  SECTION_LANDED_MAX_PX,
+} from './helpers';
 
 // Tier-2 accessibility (ADR-0076): a low-vision parent can pinch to enlarge the
 // Settings' reading content, while the drawing page itself stays zoom-locked. The
@@ -270,11 +275,10 @@ test('a one-finger drag actually scrolls the pane (native scrolling survives)', 
   expect(movePrevented).toBe(false);
 
   // Part 2: and a *real* one-finger touch drag genuinely scrolls the pane — the
-  // load-bearing invariant. Enlarge first so the content overflows, then drive
-  // real compositor touch (not synthetic pointer events) via CDP: a future
-  // `touch-action: none` on the pane or an ancestor would block this and fail
-  // here, where the `movePrevented` check alone would sail past it.
-  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
+  // load-bearing invariant. Enlarge first so the drag is exercised on a zoomed
+  // pane, then drive real compositor touch (not synthetic pointer events) via
+  // CDP: a future `touch-action: none` on the pane or an ancestor would block
+  // this and fail here, where the `movePrevented` check alone would sail past it.
   await pinchUntilZoomed(page, 3);
 
   const { pane, box } = await paneBox(page);
@@ -298,7 +302,6 @@ test('a pinch finger that lifts outside the pane still reports its lift to the p
 }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
 
   const { liftedOutside } = await pinchLiftingAFingerOutsideThePane(page);
   const { log, lift, paneTop } = await liftedOutside();
@@ -316,7 +319,6 @@ test('a scroll after a pinch finger lifted outside the pane scrolls instead of z
 }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
 
   const { pane, box, touch, liftedOutside } = await pinchLiftingAFingerOutsideThePane(page);
   await expect.poll(() => paneZoom(page)).toBeGreaterThan(1);
@@ -338,7 +340,6 @@ test('a scroll after a pinch finger lifted outside the pane scrolls instead of z
 test('a tap after a pinch finger lifted outside the pane is not swallowed', async ({ page }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await page.locator('.settings-nav').getByRole('button', { name: 'Install' }).click();
 
   const { pane, box, touch, liftedOutside } = await pinchLiftingAFingerOutsideThePane(page);
   expect((await liftedOutside()).lift?.type).toBe('pointerup');
@@ -366,15 +367,43 @@ test('a non-touch (mouse) pinch is ignored', async ({ page }) => {
   expect(movePrevented).toBe(false);
 });
 
-test('navigating to another section resets the zoom', async ({ page }) => {
+test('a table-of-contents jump keeps the zoom (the wide pane is one document)', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  await pinchUntilZoomed(page);
+  const zoomed = await paneZoom(page);
+
+  // The wide sidebar only moves the scroll position within a single continuous
+  // pane, so a jump is not "landing on a new section": dropping the enlargement
+  // there would shrink the text out from under the parent who asked for it.
+  await page.locator('.settings-nav').getByRole('button', { name: 'Sound' }).click();
+  // The landing inset is subtracted from the pane's own scrollTop, and CSS
+  // `zoom` on the child content does not scale the pane's coordinate space — so
+  // the heading parks the same distance down however far the parent pinched.
+  await expect
+    .poll(() => headingOffsetFromPaneTop(page, 'sound'))
+    .toBeLessThan(SECTION_LANDED_MAX_PX);
+  expect(await paneZoom(page)).toBe(zoomed);
+});
+
+test('drilling into a phone section resets the zoom', async ({ page }) => {
+  // The phone shell still swaps one section in for another (resetKey: view), so
+  // a parent never lands on a new section still enlarged from the previous one.
+  await page.setViewportSize({ width: 460, height: 852 });
   await gotoApp(page);
   await openSettingsModal(page);
 
   await pinchUntilZoomed(page);
 
-  // Switching sections (resetKey: view) returns the pane to normal size, so a
-  // parent never lands on a new section still enlarged from the previous one.
-  await page.locator('.settings-nav').getByRole('button', { name: 'Sound' }).click();
+  // The hub row sits inside the scroller the pinch ran on, so the first tap is
+  // eaten by the ghost-click guard — the retry is the second, genuine one.
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Buttons' }).click({ timeout: 1000 });
+    await expect(page.locator('#advancedControlsToggle')).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 5000 });
   await expect.poll(() => paneZoom(page)).toBe(1);
 });
 

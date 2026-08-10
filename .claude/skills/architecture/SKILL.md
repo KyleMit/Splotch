@@ -314,19 +314,25 @@ media queries + the head-script stamp in `app.html`).
   session / Never policy. Native iOS keeps external links' Never choice visible but unavailable and
   explains the Kids Category constraint inline; web and Android allow it. Policy selections persist,
   while per-session solves are in-memory. External-link handoff runs immediately inside the solving
-  tap so browser user activation survives.
+  tap so browser user activation survives. "Parent Center entry" is a drill-in tap on the phone
+  shell; in the wide shell every section is one scroll away, so `ParentCenterLock.svelte` stands in
+  for that section's controls until the gate is solved.
 * **Settings Button** - Floating button that opens Settings
   * **Settings** - Modal for app settings, install guides, and about info. Its body is one flat list
     of **Sections** (ADR-0061), not tabs: Appearance, Sound, Buttons, Saving, Coloring, AI Art,
     Parent Center, Install, Feedback, What's New (drilled-in header: "Updates"), About. Both shells
     render from the same `SECTIONS` list in `settings/sections.ts`, chosen by viewport width
     (`SettingsModal.svelte`): below ~700px a **Hub** list drills into a full-page section with a
-    back arrow; at/above ~700px a persistent **Sidebar** (its own scroller whenever the section list
-    outgrows the column; scroll-position edge shades mark it, and a reopen resets its scroll) sits
-    beside a scrolling content **Pane**. Each section component lives in `settings/`
-    (`AppearanceSection`, `SoundSection`, `SavingSection`, `ColoringSection`, `ControlsSection`,
-    `AiKeyManager`, `ParentCenterSection`, `SetupInstructions`, `WhatsNewSection`, `ReportForm`,
-    `AboutSection`).
+    back arrow; at/above ~700px (`settings/WideShell.svelte`) a persistent **Sidebar** (its own
+    scroller whenever the section list outgrows the column; scroll-position edge shades mark it, and
+    a reopen resets its scroll) sits beside a scrolling content **Pane** that holds *every* section
+    at once in nav order — the Sidebar is a scrollspy-driven table of contents that moves the Pane's
+    scroll position rather than choosing what renders, so its highlight is an indicator
+    (`aria-current="location"`, a brand wash with a left rail), not a page state, and the Sidebar
+    scrolls the spied row back into its own column when the Pane elects one that is off screen
+    (ADR-0061). Each section component lives in `settings/` (`AppearanceSection`, `SoundSection`,
+    `SavingSection`, `ColoringSection`, `ControlsSection`, `AiKeyManager`, `ParentCenterSection`,
+    `SetupInstructions`, `WhatsNewSection`, `ReportForm`, `AboutSection`).
     * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Install** section, plus
       the one-tap install button when the browser supports it
     * **Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider that rescales

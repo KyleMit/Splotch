@@ -1,52 +1,18 @@
 <script lang="ts">
-  import { untrack, type Component } from 'svelte';
+  import { untrack } from 'svelte';
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
   import { ui, settingsModal } from '$lib/state/ui.svelte';
-  import AppearanceSection from './settings/AppearanceSection.svelte';
-  import SoundSection from './settings/SoundSection.svelte';
-  import SavingSection from './settings/SavingSection.svelte';
-  import ColoringSection from './settings/ColoringSection.svelte';
-  import ControlsSection from './settings/ControlsSection.svelte';
-  import AiKeyManager from './settings/AiKeyManager.svelte';
-  import ParentCenterSection from './settings/ParentCenterSection.svelte';
-  import SetupInstructions from './settings/SetupInstructions.svelte';
-  import WhatsNewSection from './settings/WhatsNewSection.svelte';
-  import ReportForm from './settings/ReportForm.svelte';
-  import AboutSection from './settings/AboutSection.svelte';
+  import SectionBody from './settings/SectionBody.svelte';
   import CompactShell from './settings/CompactShell.svelte';
-  import { SECTIONS, sectionSubtitle, type SectionId, type SectionMeta } from './settings/sections';
+  import WideShell from './settings/WideShell.svelte';
+  import { SECTIONS, sectionHeading, sectionSubtitle, type SectionId } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
-
-  // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
-  // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
-  // can't express that, so the map admits both prop shapes and the render site widens to the one
-  // that carries `open`.
-  type SectionComponent = Component<Record<string, never>> | Component<{ open?: boolean }>;
-
-  const SECTION_CONTENT: Record<SectionId, SectionComponent> = {
-    appearance: AppearanceSection,
-    sound: SoundSection,
-    saving: SavingSection,
-    coloring: ColoringSection,
-    controls: ControlsSection,
-    ai: AiKeyManager,
-    parentCenter: ParentCenterSection,
-    setup: SetupInstructions,
-    whatsnew: WhatsNewSection,
-    feedback: ReportForm,
-    about: AboutSection,
-  };
-
-  const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s] as const)) as Record<
-    SectionId,
-    SectionMeta
-  >;
 
   // Seeds from the live viewport at construction time (before first paint) so
   // a flag that's already true on open renders its shell on the first frame —
@@ -85,19 +51,17 @@
   const COMPACT_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 1}px)`;
   const compact = mediaQueryFlag(COMPACT_QUERY);
 
-  // 'hub' = the phone top-level list; a section id = that section is open.
+  // 'hub' = the phone top-level list; a section id = that section is drilled
+  // into. Only the phone shell navigates: the wide shell stacks every section in
+  // one scroll, so its sidebar moves the scroll position instead of this.
   let view = $state<'hub' | SectionId>('hub');
 
-  // The section whose content the pane shows. The tablet pane always shows one
-  // (the hub itself never renders there), defaulting to the first section.
+  // The section the drilled-in phone view shows, and the one the wide pane parks
+  // on when it opens.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
-  let activeMeta = $derived(SECTION_BY_ID[activeSection]);
 
-  // Each reopen lands on the hub (phone) / first section (tablet). The dialog is
-  // closed, never unmounted, so a nav the parent scrolled stays where they left
-  // it — and since the section resets to the first one, that would reopen with
-  // the selected row above the visible top and no highlight anywhere in view.
-  let navEl = $state<HTMLElement>();
+  // Each reopen lands on the hub (phone) / the requested section, else the top
+  // of the pane (tablet).
   $effect(() => {
     if (!settingsModal.open) return;
     // Clearing a consumed request must not rerun this open-transition effect and
@@ -105,7 +69,6 @@
     const requestedSection = untrack(() => ui.requestedSettingsSection);
     view = requestedSection ?? 'hub';
     ui.requestedSettingsSection = null;
-    navEl?.scrollTo({ top: 0 });
   });
 
   function openSection(id: SectionId, trigger: HTMLElement) {
@@ -121,11 +84,12 @@
   }
 
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
-  // reading content. The bound element gets CSS `zoom`; both full-size scroll shells
-  // (wide sidebar pane, phone hub/section scroll) bind it. The compact
+  // reading content. The bound element gets CSS `zoom`; the phone hub/section
+  // scroll binds it here and the wide pane binds its own. The compact
   // landscape-phone shell is deliberately excluded — it has no vertical room to zoom
   // into; rotate to portrait for the full zoomable settings. Zoom resets to normal
-  // whenever the overlay closes or the parent navigates to another section.
+  // whenever the overlay closes and whenever the phone shell drills into another
+  // section.
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,
@@ -133,11 +97,6 @@
     resetKey: view,
   });
 </script>
-
-{#snippet sectionContent(id: SectionId)}
-  {@const Section = SECTION_CONTENT[id] as Component<{ open?: boolean }>}
-  <Section open={settingsModal.open} />
-{/snippet}
 
 <dialog
   class="settings-modal modal-dialog modal-fly-in modal-shell"
@@ -159,32 +118,10 @@
     {#if compact.current}
       <CompactShell />
     {:else if wide.current}
-      <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
       <header class="settings-header">
         <h2>Settings</h2>
       </header>
-      <div class="settings-split">
-        <nav class="settings-nav" aria-label="Settings sections" bind:this={navEl}>
-          {#each SECTIONS as section (section.id)}
-            <button
-              class="settings-nav-item"
-              data-section={section.id}
-              class:active={section.id === activeSection}
-              aria-current={section.id === activeSection ? 'page' : undefined}
-              onclick={(event) => openSection(section.id, event.currentTarget)}
-            >
-              <SectionIcon icon={section.icon} class="settings-nav-icon" />
-              <span>{section.label}</span>
-            </button>
-          {/each}
-        </nav>
-        <div class="settings-pane" use:pinchTextZoom={textZoom}>
-          <div class="settings-zoom" bind:this={zoomTarget}>
-            <h3 class="settings-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
-            {@render sectionContent(activeSection)}
-          </div>
-        </div>
-      </div>
+      <WideShell landingSection={activeSection} />
     {:else if view === 'hub'}
       <!-- Phone: top-level hub list. -->
       <header class="settings-header">
@@ -220,11 +157,11 @@
         <button class="settings-back" onclick={backToHub} aria-label="Back">
           <Icon name="chevron-left" class="settings-back-icon" />
         </button>
-        <h2>{activeMeta.title ?? activeMeta.label}</h2>
+        <h2>{sectionHeading(activeSection)}</h2>
       </header>
       <div class="settings-scroll" use:pinchTextZoom={textZoom}>
         <div class="settings-zoom" bind:this={zoomTarget}>
-          {@render sectionContent(activeSection)}
+          <SectionBody id={activeSection} open={settingsModal.open} />
         </div>
       </div>
     {/if}
@@ -439,104 +376,6 @@
 
   :global(.hub-chevron svg) {
     fill: var(--text-soft);
-  }
-
-  /* ── Tablet two-pane ────────────────────────────────────────────────────── */
-  .settings-split {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    gap: 8px;
-    padding: 0 24px 24px;
-  }
-
-  /* The pane is the primary scroller; the nav becomes one wherever the column
-     cannot hold the full section list. That includes landscape iPad Safari once
-     browser chrome reduces the available height. Contained, so scrolling past
-     either end never chains out to the pane.
-
-     The edge shades are the affordance for it, since a row clipped at a gap
-     leaves the column looking finished and touch scrollbars don't paint until
-     the flick starts. The two `local` covers scroll with the list and sit over
-     the shade at whichever end is already at rest, so each shade appears only
-     while there is more list that way — the pattern needs no scroll listener. */
-  .settings-nav {
-    flex-shrink: 0;
-    width: 232px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    background:
-      linear-gradient(var(--surface) 40%, transparent) top / 100% 24px no-repeat local,
-      linear-gradient(transparent, var(--surface) 60%) bottom / 100% 24px no-repeat local,
-      linear-gradient(var(--border), transparent) top / 100% 9px no-repeat scroll,
-      linear-gradient(transparent, var(--border)) bottom / 100% 9px no-repeat scroll;
-  }
-
-  .settings-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    /* Tighter vertically than the hub rows: the taller icon carries most of the
-       row height on its own. */
-    padding: 8px 14px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--text-soft);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    text-align: left;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .settings-nav-item:not(.active):hover {
-      background: var(--surface-hover);
-      color: var(--text-strong);
-    }
-  }
-
-  /* --brand-solid, not --brand: the fill carries the item's label, and
-     --brand is only 3.4:1 against --on-brand (fails WCAG AA at this size). */
-  .settings-nav-item.active {
-    background: var(--brand-solid);
-    color: var(--on-brand);
-  }
-
-  :global(.settings-nav-icon) {
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-  }
-
-  .settings-nav-item.active :global(.settings-nav-icon svg) {
-    fill: var(--on-brand);
-  }
-
-  .settings-pane {
-    flex: 1;
-    min-width: 0;
-    min-height: 0;
-    /* overflow (not just -y) so a pinch-enlarged (.settings-zoom) pane scrolls sideways
-       too; at rest the content is pane-width, so no horizontal bar shows. */
-    overflow: auto;
-    padding: 4px 8px 4px 16px;
-  }
-
-  .settings-pane-title {
-    margin: 0 0 20px 0;
-    font-size: var(--font-size-xl);
-    font-weight: var(--font-weight-semibold);
-    color: var(--text-strong);
   }
 
   /* Shared setting-card tokens for the section bodies. The sections only ever

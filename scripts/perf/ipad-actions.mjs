@@ -783,8 +783,12 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           execute,
           label: `open Settings section: ${label}`,
           selector,
+          // The wide sidebar is a table of contents over one continuous pane, so a
+          // click scrolls rather than swaps and the row reports a reading
+          // position. scripts/tests/perf-actions.test.mjs holds this token
+          // against the shell that sets it.
           ready: settingsModalUsesSidebar
-            ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'page'`
+            ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`
             : `document.querySelector('#settingsModal .settings-back') !== null`,
           activation: 'webdriver',
         })

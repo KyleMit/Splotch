@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { draw, gotoApp } from './helpers';
+import { draw, gotoApp, headingOffsetFromPaneTop, SECTION_LANDED_MAX_PX } from './helpers';
 
 import { openDrawer } from './flows-harness';
 
@@ -53,6 +53,10 @@ test('an exhausted free installation keeps the AI affordance and opens BYOK setu
 
   await expect(page.locator('#settingsModal')).toBeVisible();
   await expect(page.getByText('Your 10 free AI creations are used up.')).toBeVisible();
+  // The wide shell mounts every section at once, so a visible key field no
+  // longer proves the request landed on AI Art — the pane has to have scrolled
+  // that section's heading up to its top edge.
+  await expect.poll(() => headingOffsetFromPaneTop(page, 'ai')).toBeLessThan(SECTION_LANDED_MAX_PX);
   await expect(page.locator('#aiKeyInput')).toBeVisible();
 });
 
