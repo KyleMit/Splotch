@@ -17,15 +17,21 @@
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # consumes — docs, ADRs, ruler-generated agent files, scrapbook/, native trees,
   # asset-gen internals. The watched paths are everything the build reads: the
-  # app (web/), custom functions (netlify/), the build+prebuild tools that the
-  # build actually runs (tools/*.mjs, tools/release/, tools/native/, tools/tokens/,
-  # tools/icons/ — enumerated rather than all of tools/, so an asset-gen,
-  # store-drawings, perf, or vectorize change does not trigger a rebuild that the
-  # old tools/ filter never triggered), gen:releases input (releases/), the
+  # app (web/), custom functions (netlify/), the build+prebuild tools the build
+  # actually runs (the flat tools/*.mjs entry points plus tools/lib, tools/icons,
+  # tools/release) — enumerated rather than all of tools/, so an asset-gen,
+  # store-drawings, perf, or vectorize change does not trigger a rebuild the old
+  # scripts/ filter never triggered — gen:releases input (releases/), the
   # toolchain (package.json + lockfile), and this config.
+  #
+  # ':(glob)' on the flat entry points is load-bearing: in a plain Git pathspec
+  # '*' crosses directory separators, so 'tools/*.mjs' would match every .mjs
+  # under tools/ rather than only the flat ones, rebuilding on every
+  # capability-folder change. tools/tests/enumerated-build-paths.test.mjs pins
+  # both the semantics and the enumeration.
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify 'tools/*.mjs' tools/lib tools/release tools/native tools/tokens tools/icons releases package.json package-lock.json netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/release releases package.json package-lock.json netlify.toml"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
