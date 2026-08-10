@@ -94,6 +94,20 @@
     pointer-events: none; /* Never blocks the real button underneath */
     opacity: 0;
     visibility: hidden;
+    /* Hint coral (dashed, inviting) for .coachmark-ring's base + early
+       keyframe frames. */
+    --hint-rgb: 255, 107, 107;
+    /* Settled "ready" rose (solid, alarm-adjacent) — one pair of whole-value
+       properties so the coachmarkRing keyframe's 70%,86% frame and the
+       reduced-motion fallback below read the exact same border/fill and
+       cannot drift apart. */
+    --ready-rgb: 238, 90, 111;
+    --ready-border: rgba(var(--ready-rgb), 0.85);
+    --ready-fill: radial-gradient(
+      circle,
+      rgba(var(--ready-rgb), 0) 50%,
+      rgba(var(--ready-rgb), 0.18) 100%
+    );
     transition:
       opacity 0.4s ease,
       visibility 0.4s;
@@ -110,8 +124,12 @@
     position: fixed;
     box-sizing: border-box;
     border-radius: 50%;
-    border: 4px dashed rgba(255, 107, 107, 0.4);
-    background: radial-gradient(circle, rgba(255, 107, 107, 0) 60%, rgba(255, 107, 107, 0.05) 100%);
+    border: 4px dashed rgba(var(--hint-rgb), 0.4);
+    background: radial-gradient(
+      circle,
+      rgba(var(--hint-rgb), 0) 60%,
+      rgba(var(--hint-rgb), 0.05) 100%
+    );
     animation: coachmarkRing 2.8s ease-in-out infinite;
   }
 
@@ -194,7 +212,7 @@
     8% {
       opacity: 0;
       transform: scale(0.9);
-      border-color: rgba(255, 107, 107, 0.4);
+      border-color: rgba(var(--hint-rgb), 0.4);
       border-style: dashed;
     }
     18% {
@@ -204,21 +222,21 @@
     57% {
       opacity: 1;
       transform: scale(1);
-      border-color: rgba(255, 107, 107, 0.4);
+      border-color: rgba(var(--hint-rgb), 0.4);
       border-style: dashed;
       background: radial-gradient(
         circle,
-        rgba(255, 107, 107, 0) 60%,
-        rgba(255, 107, 107, 0.05) 100%
+        rgba(var(--hint-rgb), 0) 60%,
+        rgba(var(--hint-rgb), 0.05) 100%
       );
     }
     70%,
     86% {
       opacity: 1;
       transform: scale(1.015);
-      border-color: rgba(238, 90, 111, 0.85);
+      border-color: var(--ready-border);
       border-style: solid;
-      background: radial-gradient(circle, rgba(238, 90, 111, 0) 50%, rgba(238, 90, 111, 0.18) 100%);
+      background: var(--ready-fill);
     }
     94%,
     100% {
@@ -237,9 +255,9 @@
     .coachmark-ring {
       animation: none;
       opacity: 1;
-      border-color: rgba(238, 90, 111, 0.85);
+      border-color: var(--ready-border);
       border-style: solid;
-      background: radial-gradient(circle, rgba(238, 90, 111, 0) 50%, rgba(238, 90, 111, 0.18) 100%);
+      background: var(--ready-fill);
     }
   }
 </style>

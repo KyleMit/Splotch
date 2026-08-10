@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // The dev ports are declared across a TS config, a TOML file, npm scripts, and
-// two Node drivers — surfaces that cannot import from each other — so the
+// three Node drivers — surfaces that cannot import from each other — so the
 // agreement gets a drift guard instead of the "keep in sync" comments it used to
 // rely on. A silent disagreement is nasty in a specific way: dev:kill stops
 // killing the listener it names, and the stale server it leaves behind then
@@ -24,7 +24,11 @@ const match = (source, pattern, label) => {
 
 const vitePort = match(viteConfig, /^\s*port: (\d+),$/m, 'vite server.port');
 const netlifyPort = match(netlifyToml, /^\s*port = (\d+)$/m, 'netlify [dev].port');
-const killedPorts = (packageJson.scripts['dev:kill'].match(/\d+/g) ?? []).map(Number);
+const killedPorts = (
+  read('scripts/dev-kill.mjs')
+    .match(/const DEV_PORTS = \[([^\]]+)]/)?.[1]
+    .match(/\d+/g) ?? []
+).map(Number);
 
 // Every executable consumer of the vite dev port — anything that would send a
 // device, a tunnel, or a process at the wrong place if the port moved. Prose

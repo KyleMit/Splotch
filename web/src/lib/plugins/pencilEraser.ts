@@ -1,6 +1,6 @@
 import { registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 import { isNative, getPlatform } from '$lib/platform';
-import { impactThreshold } from '$lib/haptics';
+import { impactThreshold } from '$lib/platform/haptics';
 import { toggleEraser } from '$lib/state/tool.svelte';
 import { settings, setApplePencilSeen } from '$lib/state/settings.svelte';
 

@@ -26,9 +26,9 @@ default auto-inset to keep content clear of the cutout.
 ## Decision
 
 Paint the notch with **one CSS band** (`NotchBand.svelte`) sized to `env(safe-area-inset-top)`,
-driven by one reactive source of truth (`computeNotchBandState` in `src/lib/notchBand.ts`), rather
-than per-platform native status-bar coloring. Three mechanisms fan out from that source, each only
-where it's the one that reaches the strip:
+driven by one reactive source of truth (`computeNotchBandState` in `src/lib/platform/notchBand.ts`),
+rather than per-platform native status-bar coloring. Three mechanisms fan out from that source, each
+only where it's the one that reaches the strip:
 
 * **CSS band** — the primary visual on iOS native, the iOS PWA, and native Android. A CSS
   `background-color` transition gives the animate-in for free.

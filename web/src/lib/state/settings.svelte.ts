@@ -20,7 +20,7 @@ import {
 } from '$lib/state/tool.svelte';
 
 // Phone-class devices stay below the shared tablet floor even in landscape, so
-// they default to portrait. The threshold itself is owned by platform.ts, which
+// they default to portrait. The threshold itself is owned by $lib/platform, which
 // applies the same boundary to orientation-lock capability.
 function defaultForceLandscapeOrientation() {
   if (typeof window === 'undefined') return true;
@@ -79,11 +79,13 @@ const boolSettingEntries = () =>
   Object.entries(BOOL_SETTINGS) as [BoolSettingKey, [StorageKey, boolean]][];
 
 // 50 is the normal authored volume (the slider's midpoint and its snap detent).
+export const SOUND_VOLUME_MIN = 0;
+export const SOUND_VOLUME_MAX = 100;
 export const SOUND_VOLUME_DEFAULT = 50;
 
 function clampVolume(v: number) {
   if (!Number.isFinite(v)) return SOUND_VOLUME_DEFAULT;
-  return Math.max(0, Math.min(100, Math.round(v)));
+  return Math.max(SOUND_VOLUME_MIN, Math.min(SOUND_VOLUME_MAX, Math.round(v)));
 }
 
 // Action-center button size, expressed as a percentage of the authored size

@@ -53,11 +53,19 @@ async function checkAdminAuth(admin) {
     `got ${good.status}`
   );
 
-  const { res: noAuth } = await admin.listTokens({});
-  check('tokens without auth → 401', noAuth.status === 401, `got ${noAuth.status}`);
+  const { res: noAuth, body: noAuthBody } = await admin.listTokens({});
+  check(
+    'tokens without auth → 401 {ok:false, error}',
+    noAuth.status === 401 && noAuthBody?.ok === false && typeof noAuthBody?.error === 'string',
+    `got ${noAuth.status} ${JSON.stringify(noAuthBody)}`
+  );
 
-  const { res: badAuth } = await admin.listTokens(authHeader('deadbeef'));
-  check('tokens with bad bearer → 401', badAuth.status === 401, `got ${badAuth.status}`);
+  const { res: badAuth, body: badAuthBody } = await admin.listTokens(authHeader('deadbeef'));
+  check(
+    'tokens with bad bearer → 401 {ok:false, error}',
+    badAuth.status === 401 && badAuthBody?.ok === false && typeof badAuthBody?.error === 'string',
+    `got ${badAuth.status} ${JSON.stringify(badAuthBody)}`
+  );
 
   return { auth: authHeader(session), noAuth };
 }
@@ -136,6 +144,20 @@ async function checkTokensCrud(admin, auth) {
     'tokens DELETE removes the token',
     del.status === 200 && !delBody?.tokens?.includes(newToken),
     `got ${del.status}`
+  );
+
+  // readJsonBody's uniform malformed-body 400 must carry the same canonical
+  // failure shape as every other JSON error.
+  const badJson = await fetch(`${BASE}/api/admin/tokens`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...auth },
+    body: 'not json',
+  });
+  const badJsonBody = await json(badJson);
+  check(
+    'tokens POST malformed body → 400 {ok:false, error}',
+    badJson.status === 400 && badJsonBody?.ok === false && typeof badJsonBody?.error === 'string',
+    `got ${badJson.status} ${JSON.stringify(badJsonBody)}`
   );
 }
 
@@ -327,10 +349,13 @@ async function checkGenerateImage(base) {
   };
 
   const badToken = await genRequest({ token: 'not-a-real-token' });
+  const badTokenBody = await json(badToken);
   check(
-    'generate-image with invalid token → 403',
-    badToken.status === 403,
-    `got ${badToken.status}`
+    'generate-image with invalid token → 403 {ok:false, error}',
+    badToken.status === 403 &&
+      badTokenBody?.ok === false &&
+      typeof badTokenBody?.error === 'string',
+    `got ${badToken.status} ${JSON.stringify(badTokenBody)}`
   );
 
   const noImage = await genRequest({ token: 'alpha' });

@@ -1,6 +1,18 @@
 // @vitest-environment node
-import { describe, expect, it } from 'vitest';
-import { extensionForImageType } from './saveNaming';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { extensionForImageType, timestamp } from './saveNaming';
+
+describe('timestamp', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('formats local time as sortable YYYY-MM-DD_HH-MM-SS with zero-padded fields', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 2, 4, 5, 6, 7));
+    expect(timestamp()).toBe('2026-03-04_05-06-07');
+  });
+});
 
 describe('extensionForImageType', () => {
   it.each([

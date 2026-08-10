@@ -32,14 +32,23 @@ function isHue(hex) {
   return c.s >= 0.35 && c.l >= 0.14 && c.l <= 0.93;
 }
 
-// The hex colors an SVG actually paints, via a fill/stroke/stop-color attribute
-// or CSS declaration. Ignores hex sitting in titles, ids, or other text.
+// Every fill/stroke/stop-color paint an SVG carries, via an attribute or CSS
+// declaration, as { attr, value } pairs. Ignores text sitting in titles, ids,
+// or other non-paint content — the regex only matches text that follows one
+// of the three paint keywords.
+export function paintedValues(svg) {
+  const values = [];
+  for (const m of svg.matchAll(/(fill|stroke|stop-color)\s*[:=]\s*['"]?\s*([^'";\s>}/]+)/gi))
+    values.push({ attr: m[1].toLowerCase(), value: m[2] });
+  return values;
+}
+
+// The hex colors an SVG actually paints. A subset of paintedValues: only the
+// hex-shaped values, deduplicated.
 function paintHexes(svg) {
   const set = new Set();
-  for (const m of svg.matchAll(
-    /(?:fill|stroke|stop-color)\s*[:=]\s*['"]?\s*(#[0-9a-fA-F]{3,8})\b/gi
-  ))
-    set.add(m[1].toLowerCase());
+  for (const { value } of paintedValues(svg))
+    if (/^#[0-9a-fA-F]{3,8}$/.test(value)) set.add(value.toLowerCase());
   return [...set];
 }
 

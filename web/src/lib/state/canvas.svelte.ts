@@ -1,3 +1,5 @@
+import type { Orientation } from '$lib/platform';
+
 // The shared "the child has settled in" threshold: earned UI (the install
 // banner) and deferred background work (service-worker registration, #462)
 // both wait for this many committed strokes, deliberately the same signal.
@@ -23,7 +25,7 @@ export const canvasState = $state({
   // rotation with ink on the canvas locks it. The coloring-book picker keys the
   // tall/wide art variant off this, not the live viewport, so a locked page
   // keeps the art the child colored on. null until the engine mounts.
-  paperOrientation: null as 'portrait' | 'landscape' | null,
+  paperOrientation: null as Orientation | null,
   // CSS width of that same adopted/locked paper. Responsive overlay prefetches
   // use this instead of the full pointer canvas, which diverges under ADR-0050.
   paperCssWidth: 0,

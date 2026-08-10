@@ -115,7 +115,7 @@ End by printing a short summary of what changed and what's left as optional foll
 
 This is an audit skill. Its findings go in the dated `docs/claude-workflow-review-YYYY-MM-DD.md`
 report rather than `docs/AUDIT.md`, but the run-tracking conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md) still apply:
+[`.claude/audit-conventions.md`](../../../.claude/audit-conventions.md) still apply:
 
 * **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md` linking the dated report and
   summarizing the headline findings in one line.

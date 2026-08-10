@@ -122,7 +122,7 @@ next runs on CI, so keep each Action bump to its own commit for an easy revert.
 
 This is an audit skill. It doesn't write to `docs/AUDIT.md` (its findings land as one commit per
 package), but the run-tracking conventions in
-[`.claude/audit-conventions.md`](../../audit-conventions.md) still apply:
+[`.claude/audit-conventions.md`](../../../.claude/audit-conventions.md) still apply:
 
 * **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md` summarizing what was upgraded,
   deferred, or reverted.

@@ -1,5 +1,9 @@
 import { createIssue, escapeIssueMarkdown, isReportingConfigured } from './github';
-import { describeDeviceInfo, sanitizeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
+import {
+  describeDeviceInfo,
+  sanitizeDeviceInfo,
+  type DeviceInfo,
+} from '$lib/platform/deviceReport';
 import { MAX_REPORT_MESSAGE_LENGTH, type ReportKind } from '$lib/report';
 
 // Server-only core of the feedback flow, shared by its two front doors: the

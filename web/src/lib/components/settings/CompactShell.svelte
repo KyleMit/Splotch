@@ -12,7 +12,7 @@
     setAdvancedControls,
   } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
-  import { supportsOrientationLock } from '$lib/platform';
+  import { supportsOrientationLock, type Orientation } from '$lib/platform';
 
   const showOrientationControls = supportsOrientationLock();
 
@@ -25,7 +25,7 @@
   // the escape hatch from a landscape lock: tapping Portrait flips the lock
   // upright, which rotates the device out of this cramped shell and back to the
   // full settings — the old switch could only *remove* the lock.
-  type LockedOrientation = 'portrait' | 'landscape';
+  type LockedOrientation = Orientation;
   const orientationOptions: SegmentedPickerOption<LockedOrientation>[] = [
     { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait', id: 'quickLockPortrait' },
     { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape', id: 'quickLockLandscape' },

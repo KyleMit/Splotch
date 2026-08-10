@@ -6,7 +6,7 @@ import {
   onDurableRestore,
   type StorageKey,
 } from '../storage';
-import { getPlatform, type Platform } from '../platform';
+import { getPlatform, type Platform } from '$lib/platform';
 import type { Origin } from './modal.svelte';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a

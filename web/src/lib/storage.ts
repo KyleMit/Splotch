@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { isNative } from './platform';
+import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
 import { STORAGE_KEYS, type StorageKey } from './storageKeys';
 

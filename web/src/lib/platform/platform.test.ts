@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { getPlatform } from './platform';
+import { getPlatform } from './index';
 
 const originalCapacitor = globalThis.Capacitor;
 

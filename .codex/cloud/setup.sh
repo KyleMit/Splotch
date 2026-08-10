@@ -25,12 +25,14 @@ warn() {
 }
 
 node -e '
+  const floor = require("./package.json").engines.node.replace(/^>=/, "");
+  const [floorMajor, floorMinor = 0] = floor.split(".").map(Number);
   const [major, minor] = process.versions.node.split(".").map(Number);
-  if (major !== 22 || minor < 12) {
-    console.error(`Expected Node 22.12+; found ${process.version}.`);
+  if (major < floorMajor || (major === floorMajor && minor < floorMinor)) {
+    console.error(`Expected Node ${floor}+ (package.json engines); found ${process.version}.`);
     process.exit(1);
   }
-' || warn "Node version check failed — expected Node 22.12+ (found $(node --version)). Later steps may misbehave."
+' || warn "Node version check failed — expected the package.json engines floor (found $(node --version)). Later steps may misbehave."
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 

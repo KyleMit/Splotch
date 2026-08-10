@@ -17,7 +17,7 @@ Neither lock state is visible to the WebView/JS layer — both are native-only:
 No installed `@capacitor/*` plugin exposes either, and the repo had **no custom native plugin** at
 all (only stock `MainActivity.java` / `AppDelegate.swift` with minor overrides).
 
-This is the mirror image of the orientation-lock decision recorded in `platform.ts`, which
+This is the mirror image of the orientation-lock decision recorded in `platform/index.ts`, which
 deliberately *avoided* a native plugin. The two differ on the facts that matter:
 
 * **Orientation lock** had no authoritative synchronous native query (UIKit exposes the lock *state*

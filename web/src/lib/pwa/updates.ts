@@ -64,6 +64,15 @@ export function createPWAUpdates() {
   let registrationScheduled = false;
   const observedInstallingWorkers = new WeakSet<ServiceWorker>();
 
+  function reloadForUpdate(): void {
+    updateReload = 'none';
+    window.location.reload();
+  }
+
+  function deferReload(): void {
+    updateReload = 'owed';
+  }
+
   // The register() call itself still waits for an idle slot: the stroke gate
   // fires at stroke end, and kicking off the precache in that same frame could
   // contend with the commit fold of the stroke that tripped it.
@@ -162,11 +171,10 @@ export function createPWAUpdates() {
     const onControllerChange = () => {
       clearTimeout(recoveryTimer);
       if (!canvasState.canvasEmpty) {
-        updateReload = 'owed';
+        deferReload();
         return;
       }
-      updateReload = 'none';
-      window.location.reload();
+      reloadForUpdate();
     };
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange, {
       once: true,
@@ -196,8 +204,7 @@ export function createPWAUpdates() {
     try {
       if (updateReload === 'owed') {
         if (canvasState.canvasEmpty) {
-          updateReload = 'none';
-          window.location.reload();
+          reloadForUpdate();
         }
         return;
       }

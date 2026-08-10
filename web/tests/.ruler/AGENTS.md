@@ -7,8 +7,9 @@
   automatically on path match; other agents: read that file before editing specs). The full guide —
   commands, the three-tier strategy (ADR-0008), Maestro install, CI triggers — is the `testing`
   skill.
-* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with source as
-  `web/src/**/*.test.ts`. Pick the lowest layer that can catch the regression.
+* Specs here are Playwright E2E (`*.spec.ts`). Unit tests are Vitest, colocated with their subject:
+  `web/src/**/*.test.ts` for app modules, `web/*.test.ts` for the build-time modules that sit at the
+  web root. Pick the lowest layer that can catch the regression.
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
   `DEV_SERVER=1` to iterate against `vite dev` instead. The server's private env is declared by
   `commonWebServer.env` (`playwright.shared.ts`) — known test credentials in, `GITHUB_ISSUE_TOKEN`

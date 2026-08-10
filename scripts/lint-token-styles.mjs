@@ -81,11 +81,12 @@ const BASELINE = new Map(
     'lib/components/AiImageResult.svelte': 2,
     // Constant dim swatch ring + var(--color) usage documented in-file.
     'lib/components/ColorPicker.svelte': 1,
-    // The armed (drag-past-threshold) danger red — unthemed on purpose, it
-    // reads the same on both papers (ADR-0052 and the ThemeTokens doc comment
-    // in lib/design/tokens.ts). The at-rest fill is --clear-gradient-rest,
+    // The delete-ready gradient's darker second stop — unthemed on purpose,
+    // it reads the same on both papers (ADR-0052 and the ThemeTokens doc
+    // comment in lib/design/tokens.ts). The alarm red itself is the local
+    // --alarm-rgb custom property; the at-rest fill is --clear-gradient-rest,
     // shared with the coachmark ghost.
-    'lib/components/ClearButton.svelte': 2,
+    'lib/components/ClearButton.svelte': 1,
     // Eraser-hole preview chrome and the rainbow conic gradient (moved here
     // from DrawingCanvas.svelte with the rest of the pointer-halo UI).
     'lib/components/PointerHalos.svelte': 9,

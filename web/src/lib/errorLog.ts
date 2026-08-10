@@ -1,9 +1,9 @@
-// Shared vocabulary for the three uncaught-error sinks (hooks.client.ts,
-// hooks.server.ts, the root layout's render boundary) so their console prefixes stay in step.
-// GENERIC_ERROR_MESSAGE is only consumed by hooks.client.ts/hooks.server.ts — it reaches
-// SvelteKit's default fallback error page (no custom error.html here) and, from the server hook,
-// the JSON error body of a thrown /api/* +server.ts handler. It never reaches ErrorScreen: the
-// render boundary and +error.svelte both render ErrorScreen's own hardcoded copy instead.
+// Shared vocabulary for the uncaught-error sinks (hooks.client.ts, hooks.server.ts, the root
+// layout's render boundary, and lib/server/http.ts's apiHandler) so their console prefixes stay
+// in step. GENERIC_ERROR_MESSAGE reaches SvelteKit's default fallback error page (no custom
+// error.html here) via the hooks, and the canonical `{ ok:false, error }` 500 body via
+// apiHandler's unexpected-error catch. It never reaches ErrorScreen: the render boundary and
+// +error.svelte both render ErrorScreen's own hardcoded copy instead.
 export const ERROR_LOG_PREFIX = {
   client: '[client error]',
   server: '[server error]',

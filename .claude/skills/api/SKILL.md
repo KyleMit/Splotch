@@ -29,10 +29,16 @@ shape, built by `throttled(retryAfter)` in `web/src/lib/server/http.ts` — a `4
 { "ok": false, "error": "Too many attempts. Please wait 12s." }
 ```
 
-The `error` field is user-facing (clients surface it directly). The same module's
-`readJsonBody(request)` is the shared JSON-body parser — a malformed body is a uniform
-`400 "Expected a JSON body"`. Use both helpers in any new endpoint instead of hand-rolling the parse
-or the 429.
+The `error` field is user-facing (clients surface it directly). That `{ ok: false, error }` body is
+the **one client-facing JSON error shape** across `/api/*`, built by the same module's
+`fail(status, error, headers?)`; every handler is wrapped in its `apiHandler(...)`, which converts
+every thrown failure into the same shape at the boundary — a SvelteKit `error(...)` keeps its status
+and message, and an unexpected exception becomes a 500 with the generic error text — so neither
+throw-based control flow nor a crashed dependency can leak SvelteKit's `{ message }` body. The one
+exemption is `csp-report`, whose responses are deliberately bodyless (browsers ignore them). The
+module's `readJsonBody(request)` is the shared JSON-body parser — a malformed body is a uniform
+`400 "Expected a JSON body"`. Use these helpers in any new endpoint instead of hand-rolling the
+parse, the failure body, or the 429.
 
 An endpoint that is only an oracle on its *failure* path (`verify-access-code` and generate-image's
 managed-token check, which share one per-IP bucket) throttles just that path: `peekRateLimit`
@@ -202,10 +208,10 @@ AI provider seam, ADR-0047) — route code never touches the token or the REST s
 fine-grained PAT in `GITHUB_ISSUE_TOKEN` (scope: *Issues: Read and write* on the target repo), read
 via `$env/dynamic/private`; `GITHUB_ISSUE_REPO` overrides the default private repository
 `KyleMit/splotch-feedback`. The optional `device` payload is shaped by the shared, dependency-free
-`web/src/lib/deviceReport.ts` (also used client-side to preview exactly what will be sent) and
-re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the issue
-body. Because the endpoint is an unauthenticated public write and the message + device values are
-attacker-controlled, both are run through `escapeIssueMarkdown()` (same seam) before they are
+`web/src/lib/platform/deviceReport.ts` (also used client-side to preview exactly what will be sent)
+and re-sanitized server-side (known keys only, single-line, length-capped) before it reaches the
+issue body. Because the endpoint is an unauthenticated public write and the message + device values
+are attacker-controlled, both are run through `escapeIssueMarkdown()` (same seam) before they are
 embedded in the Markdown body — it backslash-escapes `@`-mentions, `#`-references, image embeds
 (`![…]`), and raw `<` HTML so a submitter can't make the issue notify people or load remote content.
 See ADR-0060.
@@ -323,8 +329,8 @@ page's login action, so the two doors don't double an attacker's budget).
 ### `/api/admin/tokens`
 
 All methods require `Authorization: Bearer <session>`; failures are a uniform
-`401 {"message":"Unauthorized"}`. All methods return the same snapshot shape so mutations never need
-a follow-up fetch:
+`401 { "ok": false, "error": "Unauthorized" }`. All methods return the same snapshot shape so
+mutations never need a follow-up fetch:
 
 ```json
 {
@@ -388,7 +394,8 @@ real issue is created), `csp-report`'s two payload formats + caps, and `generate
 image → 400 — every case is rejected before the model call), then tears the server down. No Gemini
 key or Netlify Blobs needed; successful generation and `verify-key` (which make live model calls)
 are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the cheap
-counterpart to the Playwright admin E2E in `tests/admin.spec.ts`.
+counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `unit` job of
+`test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
 
 `test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so it can't catch the
 failure mode of ADR-0025 (a deployed function without the Blobs context). For that, run

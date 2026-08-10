@@ -165,8 +165,8 @@ not `npm view`. Three kinds:
   floats.
 
 Assign the same verdicts (keep/monitor/investigate/replace). Typical monitor triggers here: unpinned
-`npx`/`curl | bash` installs (Maestro, kill-port), a third-party action a major behind, an unpinned
-Xcode. A version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to
+`npx`/`curl | bash` installs (Maestro), a third-party action a major behind, an unpinned Xcode. A
+version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to
 `/dependency-update-audit`, same as an npm minor.
 
 ## Phase 5 — Write the report
@@ -226,8 +226,8 @@ per package (`not deprecated (npm, checked …)`) so each entry shows the check 
 ## Shared audit conventions
 
 This is an audit skill. It writes to its own report (`docs/DEPENDENCIES.md`), not `docs/AUDIT.md`,
-but the run-tracking conventions in [`.claude/audit-conventions.md`](../../audit-conventions.md)
-still apply:
+but the run-tracking conventions in
+[`.claude/audit-conventions.md`](../../../.claude/audit-conventions.md) still apply:
 
 * **Log the run** (§2) — add an entry to `docs/AUDIT-LOG.md`: how many packages reviewed, the
   verdict split, and any replace/investigate calls.

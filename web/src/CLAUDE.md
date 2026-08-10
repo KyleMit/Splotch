@@ -12,18 +12,21 @@ Where things live (full file-by-file map: `architecture` skill):
   live in sibling modules (`strokeOps`, `undoHistory`, `exportDrawing` — map in the `architecture`
   skill).
 * `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`). A
-  listening/side-effecting store self-initializes at module load, gated on `browser` — never behind
-  an exported `initX()` a route must remember to call (see `layout.svelte.ts`,
-  `appearance.svelte.ts`, `network.svelte.ts`, `fullscreen.svelte.ts`). `install.svelte.ts` is the
-  one exception: its one-shot `beforeinstallprompt` listener must be eager (a deferred listener
-  could miss an event that fires before hydration), but its state seeding stays behind
-  `initInstallPrompt()`, called from `lib/boot/webOnlyServices.ts` — kept split for now to avoid
-  touching its well-tested surface, not because the seeding itself needs to be deferred. Shared
-  derived values are exposed as plain getter functions that recompute per call (`resolvedTheme()` in
-  `appearance.svelte.ts`, `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level
-  `$derived` — the getter reads reactive state so a caller opts into reactivity locally by wrapping
-  it in its own `$derived` when a template needs it (e.g. `ColorPalette.svelte`), yet stays callable
-  as a plain function from a unit test with no reactive context.
+  listening/side-effecting store self-initializes at module load behind a client-only guard —
+  `browser` from `$app/environment`, or a `typeof` probe of the exact global the module is about to
+  touch (`appearance.svelte.ts` probes `matchMedia`/`document`); both spellings are in deliberate
+  use (`docs/audit-deferred/decisions/ssr-guard-idioms.md`) — never behind an exported `initX()` a
+  route must remember to call (see `layout.svelte.ts`, `appearance.svelte.ts`, `network.svelte.ts`,
+  `fullscreen.svelte.ts`). `install.svelte.ts` is the one exception: its one-shot
+  `beforeinstallprompt` listener must be eager (a deferred listener could miss an event that fires
+  before hydration), but its state seeding stays behind `initInstallPrompt()`, called from
+  `lib/boot/webOnlyServices.ts` — kept split for now to avoid touching its well-tested surface, not
+  because the seeding itself needs to be deferred. Shared derived values are exposed as plain getter
+  functions that recompute per call (`resolvedTheme()` in `appearance.svelte.ts`,
+  `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level `$derived` — the getter reads
+  reactive state so a caller opts into reactivity locally by wrapping it in its own `$derived` when
+  a template needs it (e.g. `ColorPalette.svelte`), yet stays callable as a plain function from a
+  unit test with no reactive context.
 * `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
   `routes/+page.svelte`'s `onMount`: `hydratePersistedState()`, then `mountBootHiddenOverlays()`
   (the idle overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`,
@@ -39,13 +42,13 @@ Where things live (full file-by-file map: `architecture` skill):
   routes import `aiProvider` from `ai/provider.ts`; the `@google/genai` SDK is only touched inside
   that directory.
 * `lib/storage.ts` — dual-layer persistence (localStorage + Capacitor Preferences mirror on native,
-  ADR-0005). `lib/secureStorage.ts` — client-held secrets. `lib/platform.ts` — native detection
-  without importing `@capacitor/core` (ADR-0013). `lib/nativePlugin.ts` — `lazyPluginModule()`:
-  lazy-loads a Capacitor plugin as its module namespace, never the plugin proxy (a proxy resolves
-  `.then` to a native call and hangs the awaiting promise). Every plugin load — this or an inline
-  `import()` in a component — must sit behind the literal `__IS_CAPACITOR__` so Rollup drops the
-  chunk from the web bundle (`isNative()` alone can't tree-shake); see the `mobile` skill's
-  plugin-loading section.
+  ADR-0005). `lib/secureStorage.ts` — client-held secrets. `lib/platform/index.ts` — native
+  detection without importing `@capacitor/core` (ADR-0013). `lib/nativePlugin.ts` —
+  `lazyPluginModule()`: lazy-loads a Capacitor plugin as its module namespace, never the plugin
+  proxy (a proxy resolves `.then` to a native call and hangs the awaiting promise). Every plugin
+  load — this or an inline `import()` in a component — must sit behind the literal
+  `__IS_CAPACITOR__` so Rollup drops the chunk from the web bundle (`isNative()` alone can't
+  tree-shake); see the `mobile` skill's plugin-loading section.
 * `routes/api/*` — serverless endpoints (see `api` skill). `routes/admin` — token console.
   `routes/dev/*` — test harnesses, unlocked by `PUBLIC_ENABLE_DEV_HARNESS=true`.
 

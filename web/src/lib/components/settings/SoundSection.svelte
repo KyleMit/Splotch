@@ -7,6 +7,8 @@
     setSound,
     setSoundVolume,
     SOUND_VOLUME_DEFAULT,
+    SOUND_VOLUME_MAX,
+    SOUND_VOLUME_MIN,
   } from '$lib/state/settings.svelte';
   import { playDrawSound, preloadDrawSounds, stopDrawSound } from '$lib/audio/drawingSound';
   import { SECTION_SLIDE } from './sections';
@@ -51,8 +53,8 @@
           id="soundVolumeLabel"
           label="Volume"
           value={settings.soundVolume}
-          min={0}
-          max={100}
+          min={SOUND_VOLUME_MIN}
+          max={SOUND_VOLUME_MAX}
           snap={SOUND_VOLUME_DEFAULT}
           onInput={onVolumeInput}
           onActiveChange={onVolumeActive}

@@ -3,11 +3,12 @@ import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
 import { isReportingConfigured } from '$lib/server/github';
 import { submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
+import { apiHandler } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 export type ImageReportResponse = { ok: true; reportId: string } | { ok: false; error: string };
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = apiHandler(async ({ request, getClientAddress }) => {
   if (!isReportingConfigured()) {
     return json(
       {
@@ -44,4 +45,4 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     : json({ ok: false, error: result.error } satisfies ImageReportResponse, {
         status: result.status,
       });
-};
+});

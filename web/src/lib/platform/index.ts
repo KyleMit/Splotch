@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 
-import { TABLET_MIN_SIDE_PX } from './breakpoints';
+import { TABLET_MIN_SIDE_PX } from '../breakpoints';
 
 // Capacitor injects a global `Capacitor` object both in the native runtime and
 // once @capacitor/core is loaded on the web. We read it off the global rather
@@ -69,6 +69,8 @@ export function osLabelFromUserAgent(ua: string): string {
 }
 
 export type Platform = 'android' | 'ios' | 'web';
+
+export type Orientation = 'portrait' | 'landscape';
 
 export function getPlatform(): Platform {
   if (!browser) return 'web';

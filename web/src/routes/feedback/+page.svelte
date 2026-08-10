@@ -174,15 +174,8 @@
   }
 
   /* Three radii on the page, one family: the sheet on xl, the buttons, fields,
-     and the kind control on md, its nested options one step in on sm. */
-  .card :global(.report-kind) {
-    border-radius: var(--radius-md);
-  }
-
-  .card :global(.report-kind-option) {
-    border-radius: var(--radius-sm);
-  }
-
+     and the kind control on md, its nested options one step in on sm. The
+     picker primitive already lands on that family; these two don't. */
   .card :global(.report-textarea),
   .card :global(.report-device-details) {
     border-radius: var(--radius-md);

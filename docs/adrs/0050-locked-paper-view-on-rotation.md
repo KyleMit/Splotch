@@ -23,8 +23,8 @@ at the top-left. For a device rotation that produced two bad experiences:
    vanishing.
 
 Locking the screen orientation is not an answer: iPadOS doesn't allow it for windowed apps, and
-overriding the OS rotation preference is hostile anyway (`lib/orientation.ts` exists for parents who
-explicitly opt in).
+overriding the OS rotation preference is hostile anyway (`lib/platform/orientation.ts` exists for
+parents who explicitly opt in).
 
 Alternatives considered:
 

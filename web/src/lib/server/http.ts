@@ -1,4 +1,5 @@
-import { json } from '@sveltejs/kit';
+import { isHttpError, json } from '@sveltejs/kit';
+import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
@@ -49,8 +50,8 @@ export function throttledMessage(retryAfter: number): string {
   return `Too many attempts. Please wait ${retryAfter}s.`;
 }
 
-export function fail(status: number, error: string) {
-  return json({ ok: false, error }, { status });
+export function fail(status: number, error: string, headers?: HeadersInit) {
+  return json({ ok: false, error }, { status, headers });
 }
 
 /**
@@ -59,8 +60,30 @@ export function fail(status: number, error: string) {
  * the same `error` field they already read from other failure responses.
  */
 export function throttled(retryAfter: number) {
-  return json(
-    { ok: false, error: throttledMessage(retryAfter) },
-    { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-  );
+  return fail(429, throttledMessage(retryAfter), { 'Retry-After': String(retryAfter) });
+}
+
+/**
+ * Wraps an /api/* handler so every thrown failure leaves the wire as the same
+ * canonical `{ ok:false, error }` body every returned failure uses. A thrown
+ * SvelteKit `error()` keeps its status and message; an unexpected non-HttpError
+ * becomes `fail(500, GENERIC_ERROR_MESSAGE)` — SvelteKit's `{ message }` shape
+ * can't reach a client either way. Catching here bypasses hooks.server.ts's
+ * handleError, whose console record is the only trace of an unexpected /api
+ * failure, so the same-format log line is emitted here instead. csp-report is
+ * the one unwrapped endpoint: its responses are deliberately bodyless
+ * (browsers ignore them).
+ */
+export function apiHandler<Event extends { url: { pathname: string } }>(
+  handler: (event: Event) => Response | Promise<Response>
+): (event: Event) => Promise<Response> {
+  return async (event) => {
+    try {
+      return await handler(event);
+    } catch (cause) {
+      if (isHttpError(cause)) return fail(cause.status, cause.body.message);
+      console.error(ERROR_LOG_PREFIX.server, event.url.pathname, 500, cause);
+      return fail(500, GENERIC_ERROR_MESSAGE);
+    }
+  };
 }

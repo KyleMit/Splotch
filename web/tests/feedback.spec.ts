@@ -66,6 +66,27 @@ test('the kind picker is a real radio group, so it submits without JavaScript', 
   await context.close();
 });
 
+test('a narrow phone keeps each kind option on one line', async ({ browser }) => {
+  // The ≤400px tightening lives in ReportFields as a :global() override on the
+  // picker's forwarded class: without it these two labels — the longest any
+  // picker carries — wrap to two lines and the control stops reading as one
+  // track. Wrapping would push an option past the primitive's 44px single-line
+  // min-height, and a label that merely got clipped instead would overflow its
+  // option box — so the two checks together prove each label fits on one line.
+  const context = await browser.newContext({ viewport: { width: 360, height: 740 } });
+  const page = await context.newPage();
+  await page.goto('/feedback');
+
+  const options = page.locator('.report-kind label.option');
+  await expect(options).toHaveCount(2);
+  for (const option of await options.all()) {
+    const box = await option.boundingBox();
+    expect(box?.height).toBeLessThanOrEqual(45);
+    expect(await option.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  }
+  await context.close();
+});
+
 test('opting into device info fills the hidden field the form action reads', async ({ page }) => {
   await page.goto('/feedback');
   const devicePayload = page.locator('input[name="device"]');

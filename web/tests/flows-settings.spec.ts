@@ -5,19 +5,23 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 import { gotoApp, openSettingsModal, retryOpen } from './helpers';
 
-async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+// Settings is a section list — a sidebar item on tablet/desktop, a hub row on
+// phone. Either way the control carries the section label; opening it (sidebar
+// select or phone drill-in) reveals the section content.
+//
+// Retried rather than clicked once: the dialog itself mounts on first open
+// (ADR-0049) and flies in, so this click lands on markup that is still
+// arriving, and a lost one would leave the section closed with nothing to
+// re-open it — the same hazard openSettingsModal above rides out.
+async function openSettingsSection(page: Page, label: string, expectedField: string) {
   await openSettingsModal(page);
-  // Settings is a section list — a sidebar item on tablet/desktop, a
-  // hub row on phone. Either way the control carries the section label; opening
-  // it (sidebar select or phone drill-in) reveals the section content.
-  //
-  // Retried rather than clicked once: the dialog itself mounts on first open
-  // (ADR-0049) and flies in, so this click lands on markup that is still
-  // arriving, and a lost one would leave the section closed with nothing to
-  // re-open it — the same hazard openSettingsModal above rides out.
   await retryOpen(page.locator(expectedField), () =>
-    page.getByRole('button', { name: 'AI Art' }).click({ timeout: 3000 })
+    page.getByRole('button', { name: label }).click({ timeout: 3000 })
   );
+}
+
+async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+  await openSettingsSection(page, 'AI Art', expectedField);
 }
 
 async function submitAiKey(page: Page, value: string) {
@@ -63,6 +67,40 @@ test('Settings sidebar switches the content pane (tablet layout)', async ({ page
     .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
   await expect(aboutMascot).toHaveClass(/icon-color/);
+});
+
+test('the theme picker is one tab stop and the arrow keys move the selection', async ({ page }) => {
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  const light = page.locator('#themeOption-light');
+  const dark = page.locator('#themeOption-dark');
+  const system = page.locator('#themeOption-system');
+
+  // APG radio-group pattern: the checked option is the group's only tab stop.
+  await expect(system).toHaveAttribute('aria-checked', 'true');
+  await expect(system).toHaveAttribute('tabindex', '0');
+  await expect(light).toHaveAttribute('tabindex', '-1');
+  await expect(dark).toHaveAttribute('tabindex', '-1');
+
+  // Arrows move focus and selection together, wrapping past either end —
+  // System is the last option, so ArrowRight lands on Light.
+  await system.press('ArrowRight');
+  await expect(light).toHaveAttribute('aria-checked', 'true');
+  await expect(light).toBeFocused();
+  await expect(light).toHaveAttribute('tabindex', '0');
+  await expect(system).toHaveAttribute('tabindex', '-1');
+
+  await light.press('ArrowLeft');
+  await expect(system).toHaveAttribute('aria-checked', 'true');
+  await expect(system).toBeFocused();
+
+  // The vertical pair works the same, for screen-reader users navigating by
+  // the other axis.
+  await system.press('ArrowDown');
+  await expect(light).toHaveAttribute('aria-checked', 'true');
+  await light.press('ArrowUp');
+  await expect(system).toHaveAttribute('aria-checked', 'true');
 });
 
 test('the shortest sidebar viewport can still reach every section', async ({ page }) => {
@@ -450,10 +488,7 @@ test('Settings sends the collected device info with a bug report', async ({ page
   });
   await gotoApp(page);
 
-  await openSettingsModal(page);
-  await retryOpen(page.locator('#reportMessage'), () =>
-    page.getByRole('button', { name: 'Feedback' }).click({ timeout: 3000 })
-  );
+  await openSettingsSection(page, 'Feedback', '#reportMessage');
 
   await page.locator('#reportMessage').fill('The purple crayon draws green');
   await page.getByRole('checkbox', { name: /Include device info/ }).check();
@@ -470,4 +505,51 @@ test('Settings sends the collected device info with a bug report', async ({ page
 
   await expect(page.getByText('Thanks for your feedback.')).toBeVisible();
   expect(reportBody?.device).toMatchObject({ platform: 'Web' });
+});
+
+test('reopening Settings mid-submit leaves the sent report to land', async ({ page }) => {
+  // The counterpart of the AI-key case above, and deliberately its opposite:
+  // verifying a key is idempotent so AiKeyManager aborts it, but this POST
+  // files an issue, so closing and reopening must not cancel a report already
+  // sent.
+  const reportOutcomes: string[] = [];
+  page.on('requestfailed', (request) => {
+    if (request.url().includes('/api/report')) {
+      reportOutcomes.push(request.failure()?.errorText ?? 'unknown');
+    }
+  });
+  page.on('requestfinished', (request) => {
+    if (request.url().includes('/api/report')) reportOutcomes.push('finished');
+  });
+
+  let requestCount = 0;
+  let releaseReport!: () => void;
+  const heldReport = new Promise<void>((resolve) => {
+    releaseReport = resolve;
+  });
+  await page.route('**/api/report', async (route) => {
+    requestCount += 1;
+    await heldReport;
+    await route
+      .fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      })
+      .catch(() => undefined);
+  });
+
+  await gotoApp(page);
+  await openSettingsSection(page, 'Feedback', '#reportMessage');
+  await page.locator('#reportMessage').fill('The paint brush disappeared.');
+  await page.getByRole('button', { name: 'Send report' }).click();
+  await expect.poll(() => requestCount).toBe(1);
+
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#settingsModal')).toBeHidden();
+  await openSettingsModal(page);
+
+  // The server answers only now — after the reopen that used to abort it.
+  releaseReport();
+  await expect.poll(() => reportOutcomes).toEqual(['finished']);
 });

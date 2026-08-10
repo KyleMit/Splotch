@@ -64,8 +64,8 @@ index b5528457..ad9b9bfd 100644
    import { apiUrl } from '$lib/api';
 +  import type { ReportResponse } from '$lib/apiContracts';
    import { createLatestRequest } from '$lib/latestRequest';
-   import { collectDeviceInfo } from '$lib/deviceInfo';
-   import { describeDeviceInfo, type DeviceInfo } from '$lib/deviceReport';
+   import { collectDeviceInfo } from '$lib/platform/deviceInfo';
+   import { describeDeviceInfo, type DeviceInfo } from '$lib/platform/deviceReport';
 @@ -83,9 +84,7 @@
          }),
          signal,

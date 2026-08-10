@@ -21,6 +21,7 @@ releases. That split is ADR-0100 — see the commit-gate section under Continuou
 | Unit (store drawings)    | Vitest (Node)       | `npm run test:store-drawings`   | every push / PR                              |
 | Unit (repo scripts)      | Vitest (Node)       | `npm run test:scripts`          | every push / PR                              |
 | E2E (web)                | Playwright          | `npm run test:e2e`              | every push / PR                              |
+| Smoke (API contract)     | Node + `vite dev`   | `npm run test:api:smoke`        | every push / PR (unit job)                   |
 | Smoke (WebKit)           | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)               |
 | Smoke (Android)          | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                     |
 | Smoke (iOS)              | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner)      |
@@ -29,21 +30,22 @@ releases. That split is ADR-0100 — see the commit-gate section under Continuou
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
-integration below. Two additional server-contract smoke tests, `test:api:smoke` and
-`test:blobs:smoke`, run on demand rather than on every push.
+integration below. One more server-contract smoke test, `test:blobs:smoke`, runs against real
+deploys rather than on every push.
 
 `npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
 `test:scripts` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
 they need an emulator/simulator and the native toolchains.
 
-## Deploy smoke tests — `test:api:smoke`, `test:blobs:smoke`
+## Server-contract smoke tests — `test:api:smoke`, `test:blobs:smoke`
 
-Two Node smoke tests guard the server contract, on demand:
+Two Node smoke tests guard the server contract:
 
 * **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
   bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
-  apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. See the `api`
-  skill.
+  apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
+  browserless `unit` job on every push/PR; run it locally after any endpoint change (see the `api`
+  skill).
 * **`test:blobs:smoke`** runs against a **real deploy** to prove Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:

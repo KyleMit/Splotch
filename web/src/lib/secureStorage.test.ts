@@ -3,7 +3,7 @@ import { webcrypto } from 'node:crypto';
 
 if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto);
 
-vi.mock('./platform', () => ({
+vi.mock('$lib/platform', () => ({
   isNative: () => false,
   getPlatform: () => 'web',
 }));

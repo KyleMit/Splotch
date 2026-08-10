@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { COLOR_ICONS } from './Icon.svelte';
 import { iconNameFromPath } from './iconTypes';
 import type { CommonIconName } from './iconTypes';
-import { isSpot } from '../../../../scripts/lib/iconChroma.mjs';
+import { isSpot, paintedValues } from '../../../../scripts/lib/iconChroma.mjs';
+import { themes } from '../design/tokens';
 
 // Guards the hand-maintained COLOR_ICONS allowlist (Icon.svelte) against a
 // forgotten full-color icon: every icon whose raw SVG paints a saturated hue
@@ -43,4 +44,42 @@ describe('COLOR_ICONS allowlist', () => {
       ).toBe(true);
     }
   );
+});
+
+describe('monochrome icon fill', () => {
+  // Every icon outside COLOR_ICONS renders through the app's monochrome tint
+  // filter, which assumes the SVG bakes this exact ink — a different fill
+  // (a fresh export using `#000`, say) would pass the filter untinted and
+  // render subtly off. Locked from the values actually painted at HEAD.
+  const ALLOWED_PAINTS: readonly string[] = [themes.light.iconInk];
+
+  // github.svg bakes no fill/stroke at all (only fill-rule) — it inherits its
+  // color from the tinted <svg> wrapper it's rendered into, so it has nothing
+  // for this guard to check.
+  const NO_PAINT_EXCEPTIONS = new Set(['github']);
+
+  const monochrome = Object.keys(svgs)
+    .map(iconNameFromPath)
+    .filter((name) => !COLOR_ICONS.has(name as CommonIconName))
+    .sort();
+
+  it.each(monochrome)('%s: paints only the shared monochrome ink', (name) => {
+    const paints = paintedValues(svgs[`../icons/${name}.svg`]).filter(
+      ({ attr }) => attr === 'fill' || attr === 'stroke'
+    );
+    if (NO_PAINT_EXCEPTIONS.has(name)) {
+      expect(paints).toHaveLength(0);
+      return;
+    }
+    expect(
+      paints.length,
+      `${name} bakes no fill/stroke — this guard can't verify its ink`
+    ).toBeGreaterThan(0);
+    for (const { attr, value } of paints) {
+      expect(
+        ALLOWED_PAINTS,
+        `${name} ${attr}="${value}" is outside the monochrome palette`
+      ).toContain(value.toLowerCase());
+    }
+  });
 });

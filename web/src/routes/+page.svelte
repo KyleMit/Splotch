@@ -17,7 +17,7 @@
   import { pwaUpdates } from '$lib/pwa/updates';
   import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
   import { applyTheme } from '$lib/theme';
-  import { applyDeviceOrientationPreference } from '$lib/orientation';
+  import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
   import { mountBootHiddenOverlays } from '$lib/boot/bootHiddenOverlays';
   import { installWakeLock } from '$lib/boot/wakeLock';
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';

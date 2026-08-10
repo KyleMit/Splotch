@@ -159,6 +159,39 @@ describe('workflow hygiene', () => {
     });
   });
 
+  // CI and the Netlify build install the newest release of the engines floor
+  // major, so the oldest line the repo promises to support is the one green CI
+  // and the deploy actually exercise — a newer major would hide floor-only
+  // breakage until deploy time.
+  describe('Node version policy', () => {
+    const enginesNode = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).engines
+      .node;
+    const floorMajor = enginesNode.match(/^>=(\d+)(?:\.\d+)?$/)?.[1];
+
+    it('declares the engines floor as >=major[.minor]', () => {
+      expect(floorMajor).toBeDefined();
+    });
+
+    it('CI installs the engines floor major', () => {
+      const setupNode = actions.find(({ name }) => name === 'actions/setup-node');
+      const nodeVersion = setupNode.lines
+        .find((line) => /^\s+node-version:/.test(line))
+        .split(':', 2)[1]
+        .trim();
+      expect(nodeVersion).toBe(floorMajor);
+    });
+
+    it('the Netlify build pins the engines floor major', () => {
+      const netlifyToml = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
+      expect(netlifyToml.match(/^\s*NODE_VERSION = "(\d+)"$/m)?.[1]).toBe(floorMajor);
+    });
+
+    it('the Codex environment guide names the engines floor major', () => {
+      const codexGuide = readFileSync(join(repoRoot, 'docs/CLOUD/Codex.md'), 'utf8');
+      expect(codexGuide.match(/latest available Node (\d+) patch/)?.[1]).toBe(floorMajor);
+    });
+  });
+
   for (const { name, lines } of [...workflows, ...actions]) {
     it(`${name} pins every external action to a 40-char SHA`, () => {
       for (const ref of usesRefs(lines)) {

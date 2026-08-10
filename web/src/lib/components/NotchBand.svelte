@@ -2,7 +2,7 @@
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
   import { isNative, getPlatform } from '$lib/platform';
-  import { applyStatusBar, computeNotchBandState } from '$lib/notchBand';
+  import { applyStatusBar, computeNotchBandState } from '$lib/platform/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { PAPER_COLORS, setThemeColorMeta } from '$lib/theme';

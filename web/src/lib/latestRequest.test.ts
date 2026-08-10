@@ -21,6 +21,23 @@ describe('createLatestRequest', () => {
     expect(second.signal.aborted).toBe(false);
   });
 
+  it('makes the in-flight request stale and aborts its signal when cancelled', () => {
+    const latest = createLatestRequest();
+    const first = latest.begin();
+    expect(latest.isCurrent(first.id)).toBe(true);
+    expect(first.signal.aborted).toBe(false);
+
+    latest.cancel();
+
+    expect(latest.isCurrent(first.id)).toBe(false);
+    expect(first.signal.aborted).toBe(true);
+
+    const second = latest.begin();
+    expect(second.id).toBeGreaterThan(first.id);
+    expect(latest.isCurrent(second.id)).toBe(true);
+    expect(second.signal.aborted).toBe(false);
+  });
+
   it('hands out monotonically increasing ids', () => {
     const latest = createLatestRequest();
     const a = latest.begin();

@@ -1,7 +1,7 @@
 import { browser } from '$app/environment';
-import { isNative, supportsOrientationLock } from '$lib/platform';
+import { isNative, supportsOrientationLock, type Orientation } from '$lib/platform';
 
-type OrientationLockType = 'portrait' | 'landscape';
+type OrientationLockType = Orientation;
 
 type LockableScreenOrientation = ScreenOrientation & {
   lock?: (orientation: OrientationLockType) => Promise<void>;

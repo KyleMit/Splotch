@@ -10,7 +10,7 @@
     NETWORK_ERROR_MESSAGE,
     type SubmitStatus,
   } from '$lib/latestRequest';
-  import type { DeviceInfo } from '$lib/deviceReport';
+  import type { DeviceInfo } from '$lib/platform/deviceReport';
   import { REPORT_HONEYPOT_FIELD, type ReportKind } from '$lib/report';
   import type { ReportResponse } from '../../../routes/api/report/+server';
 
@@ -45,6 +45,11 @@
     feedback = '';
   }
 
+  // Deliberately no abort on open/close, unlike AiKeyManager's idempotent
+  // verify: this POST files an issue, so a report the parent already sent must
+  // be left to land. A late result can only write to this instance, and every
+  // reopen unmounts it (the hub / first section mounts instead), so stale
+  // feedback never greets the next visit.
   $effect(() => {
     if (open) reset();
   });

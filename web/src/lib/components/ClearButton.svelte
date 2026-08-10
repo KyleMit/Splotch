@@ -6,7 +6,8 @@
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { layout, type Orientation } from '$lib/state/layout.svelte';
+  import type { Orientation } from '$lib/platform';
+  import { layout } from '$lib/state/layout.svelte';
   import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
   let containerEl: HTMLDivElement;
@@ -106,6 +107,15 @@
     transition: none;
   }
 
+  /* Alarm red for the delete-ready glow (.clear-button) and the accept-zone
+     threshold (.clear-accept-zone) below — declared once on the group since
+     .clear-button (a child of .clear-container) and .clear-accept-zone (that
+     container's sibling) share no single non-root ancestor to hang it on. */
+  .clear-button,
+  .clear-accept-zone {
+    --alarm-rgb: 255, 56, 56;
+  }
+
   .clear-button {
     position: relative;
     width: 70px;
@@ -182,9 +192,9 @@
   }
 
   .clear-button:global(.delete-ready) {
-    background: linear-gradient(135deg, #ff3838, #d63031);
+    background: linear-gradient(135deg, rgb(var(--alarm-rgb)), #d63031);
     transform: scale(1.1);
-    box-shadow: 0 6px 40px rgba(255, 56, 56, 0.6);
+    box-shadow: 0 6px 40px rgba(var(--alarm-rgb), 0.6);
   }
 
   :global(.clear-icon) {
@@ -204,8 +214,12 @@
     display: none;
     z-index: var(--z-clear-accept-zone); /* Below .clear-container so the button sits on top */
     border-radius: 50%;
-    border: 4px dashed rgba(255, 56, 56, 0.45);
-    background: radial-gradient(circle, rgba(255, 56, 56, 0) 55%, rgba(255, 56, 56, 0.06) 100%);
+    border: 4px dashed rgba(var(--alarm-rgb), 0.45);
+    background: radial-gradient(
+      circle,
+      rgba(var(--alarm-rgb), 0) 55%,
+      rgba(var(--alarm-rgb), 0.06) 100%
+    );
     box-sizing: border-box;
     opacity: 0;
     transform: scale(0.85);
@@ -224,9 +238,13 @@
   }
 
   .clear-accept-zone:global(.threshold-reached) {
-    border-color: rgba(255, 56, 56, 0.9);
+    border-color: rgba(var(--alarm-rgb), 0.9);
     border-style: solid;
-    background: radial-gradient(circle, rgba(255, 56, 56, 0) 50%, rgba(255, 56, 56, 0.22) 100%);
+    background: radial-gradient(
+      circle,
+      rgba(var(--alarm-rgb), 0) 50%,
+      rgba(var(--alarm-rgb), 0.22) 100%
+    );
   }
 
   /* Radial paper wash previewing the clear mid-drag. A paper-colored

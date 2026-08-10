@@ -6,8 +6,8 @@ const secureStore = vi.hoisted(() => ({ apiKey: null as string | null }));
 
 // Spread the real module so only the two platform *behaviours* are faked; the
 // constants it also exports stay real rather than being restated here.
-vi.mock('../platform', async (importActual) => ({
-  ...(await importActual<typeof import('../platform')>()),
+vi.mock('$lib/platform', async (importActual) => ({
+  ...(await importActual<typeof import('$lib/platform')>()),
   isNative: () => ctrl.native,
   getPlatform: () => (ctrl.native ? 'android' : 'web'),
 }));
@@ -40,12 +40,12 @@ vi.mock('../state/saveFolder.svelte', () => ({
   hydrateSaveFolder: vi.fn(),
 }));
 
-vi.mock('../orientation', () => ({
+vi.mock('../platform/orientation', () => ({
   applyDeviceOrientationPreference: vi.fn(),
 }));
 
 import { STORAGE_KEYS } from '../storage';
-import { applyDeviceOrientationPreference } from '../orientation';
+import { applyDeviceOrientationPreference } from '../platform/orientation';
 import { settings } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
 

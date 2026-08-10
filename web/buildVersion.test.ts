@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { buildMetadata, deriveWebVersion } from '../../buildVersion';
+import { buildMetadata, deriveWebVersion } from './buildVersion';
 
 describe('deriveWebVersion', () => {
   it('uses the commit count without asking for the short SHA', () => {

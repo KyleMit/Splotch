@@ -113,12 +113,14 @@ don't offer.
 | ------------------------ | ------------------------------------------------------------------------------------------- |
 | `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `md` / `sm`. Not          |
 |                          | for controls with a **selected state** — those are pickers, not actions: use                |
-|                          | `SegmentedPicker`. (The report-kind row stays hand-rolled on native radios so the           |
-|                          | `/feedback` form posts without JavaScript)                                                  |
-| `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup: the theme      |
-|                          | pickers) / `toggle` (`aria-pressed`; deselection and multi-select stay with the caller: the |
-|                          | orientation segment, the controls chips). `variant` = `segment` (raised-thumb track) /      |
-|                          | `chip` (borderless toggle grid); sizes `md` / `sm`; `fill={false}` hugs content             |
+|                          | `SegmentedPicker`                                                                           |
+| `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup with roving     |
+|                          | tabindex + arrow-key selection: the theme pickers) / `toggle` (`aria-pressed`; deselection  |
+|                          | and multi-select stay with the caller: the orientation segment, the controls chips).        |
+|                          | `variant` = `segment` (raised-thumb track) / `chip` (borderless toggle grid); sizes `md` /  |
+|                          | `sm`; `fill={false}` hugs content; `inputName` renders the options as real native radios    |
+|                          | for a form that must post without JavaScript (the report-kind row); the forwarded `class`   |
+|                          | carries call-site restyling via `:global()`                                                 |
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
@@ -140,6 +142,10 @@ Shared *global* patterns are classes in **`web/src/app.css`** rather than compon
 |                                          | Fullscreen Toggle, Settings Button; positioning and z-index stay           |
 |                                          | per-component                                                              |
 | `.flyout-menu` / `.flyout-option`        | The popover shell and its option buttons — BrushMenu, StrokeWidthMenu      |
+| `.white-stroke` / `.dark-stroke`         | Ink keylines ringing an icon's ink-colored parts so white ink reads on the |
+|                                          | white cards (black ring) and near-black ink reads on the dark ones         |
+|                                          | (`--dark-ink-keyline`, inert in light mode). The brush/stroke trigger      |
+|                                          | buttons (BrushControl, ActionsPanel), BrushMenu, StrokeWidthMenu           |
 
 They stay classes for one of two reasons: dialogs and imperative DOM need them unscoped, or the
 pattern is chrome that several components share verbatim but that hasn't earned a primitive yet.

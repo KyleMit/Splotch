@@ -76,12 +76,13 @@ export const handle: Handle = sequence(handleCors, handleSecurityHeaders);
 
 // Server twin of hooks.client.ts's handleError. No third-party telemetry by
 // design, so the Netlify function log is the only record of an unexpected
-// SSR or /api/* failure — SvelteKit only calls this for unexpected errors,
-// so expected error(4xx) responses never land here.
+// SSR failure — SvelteKit only calls this for unexpected errors, so expected
+// error(4xx) responses never land here. Wrapped /api/* handlers don't either:
+// apiHandler (lib/server/http.ts) catches at the route boundary and emits the
+// same-format log line itself.
 export const handleError: HandleServerError = ({ error, event, status }) => {
   console.error(ERROR_LOG_PREFIX.server, event.url.pathname, status, error);
   // `message` isn't read by +error.svelte/ErrorScreen (their copy is fixed independently), but
-  // it does surface: SvelteKit's default fallback error page (no custom error.html here), and
-  // the JSON error body returned to callers when a /api/* +server.ts handler throws.
+  // it does surface on SvelteKit's default fallback error page (no custom error.html here).
   return { message: GENERIC_ERROR_MESSAGE };
 };

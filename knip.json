@@ -13,6 +13,7 @@
     "web/tests/**/*.spec.ts",
     "web/tests/global-setup.ts",
     "web/src/**/*.test.ts",
+    "web/*.test.ts",
     "netlify/**/*.ts",
     "scripts/*.mjs",
     "scripts/perf/*.mjs",

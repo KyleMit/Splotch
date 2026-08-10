@@ -26,6 +26,7 @@
 //   exportDrawing.ts    PNG composition for save/share (loaded on demand)
 
 import { dev } from '$app/environment';
+import type { Orientation } from '$lib/platform';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import type { BrushType } from '$lib/state/tool.svelte';
 import {
@@ -338,7 +339,7 @@ export interface EngineViewState {
   ty: number;
   paperCssWidth: number;
   paperCssHeight: number;
-  paperOrientation: 'portrait' | 'landscape';
+  paperOrientation: Orientation;
 }
 
 // The pre-adoption SSR-shell value of EngineViewState, before getViewState() has

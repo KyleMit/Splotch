@@ -10,5 +10,28 @@
     // --experimental-strip-types), which needs the real .ts specifier on its
     // relative imports since there's no bundler to resolve an extensionless one.
     "allowImportingTsExtensions": true
-  }
+  },
+  // Restates the include list generated into .svelte-kit/tsconfig.json (rebased from
+  // .svelte-kit/ to here) so the web-root unit tests — outside every SvelteKit-generated
+  // glob, and imported by nothing — are type-checked too. tsconfig.test.ts fails when the
+  // generated list gains an entry this one lacks; scripts/tests/web-root-unit-tests.test.mjs
+  // fails when the `*.test.ts` entry here or its counterpart in vitest.config.ts goes missing.
+  "include": [
+    "./.svelte-kit/ambient.d.ts",
+    "./.svelte-kit/env.d.ts",
+    "./.svelte-kit/non-ambient.d.ts",
+    "./.svelte-kit/types/**/$types.d.ts",
+    "./vite.config.js",
+    "./vite.config.ts",
+    "./*.test.ts",
+    "./src/**/*.js",
+    "./src/**/*.ts",
+    "./src/**/*.svelte",
+    "./test/**/*.js",
+    "./test/**/*.ts",
+    "./test/**/*.svelte",
+    "./tests/**/*.js",
+    "./tests/**/*.ts",
+    "./tests/**/*.svelte"
+  ]
 }

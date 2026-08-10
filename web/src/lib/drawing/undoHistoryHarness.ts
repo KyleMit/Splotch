@@ -21,6 +21,9 @@ const PAPER_SIDE = 64;
 // around a single case.
 export function createCanvasStub() {
   let drawImageCalls = 0;
+  let clearRectArgs: number[][] = [];
+  let drawImageArgs: number[][] = [];
+  let drawImageStates: { globalCompositeOperation: string; globalAlpha: number }[] = [];
   let origGetContext: typeof HTMLCanvasElement.prototype.getContext;
   let origToBlob: typeof HTMLCanvasElement.prototype.toBlob;
 
@@ -31,8 +34,23 @@ export function createCanvasStub() {
       return drawImageCalls;
     },
 
+    get clearRectArgs() {
+      return clearRectArgs;
+    },
+
+    get drawImageArgs() {
+      return drawImageArgs;
+    },
+
+    get drawImageStates() {
+      return drawImageStates;
+    },
+
     install() {
       drawImageCalls = 0;
+      clearRectArgs = [];
+      drawImageArgs = [];
+      drawImageStates = [];
       origGetContext = HTMLCanvasElement.prototype.getContext;
       origToBlob = HTMLCanvasElement.prototype.toBlob;
       // Every encode "fails" by default, so snapshots keep their rasters and
@@ -56,9 +74,21 @@ export function createCanvasStub() {
           strokeStyle: '',
           fillStyle: '',
           lineWidth: 0,
-          globalCompositeOperation: '',
-          save() {},
-          restore() {},
+          globalCompositeOperation: 'source-over',
+          globalAlpha: 1,
+          savedStates: [] as { globalCompositeOperation: string; globalAlpha: number }[],
+          save() {
+            ctx.savedStates.push({
+              globalCompositeOperation: ctx.globalCompositeOperation,
+              globalAlpha: ctx.globalAlpha,
+            });
+          },
+          restore() {
+            const state = ctx.savedStates.pop();
+            if (!state) return;
+            ctx.globalCompositeOperation = state.globalCompositeOperation;
+            ctx.globalAlpha = state.globalAlpha;
+          },
           setTransform() {},
           getTransform: () => new DOMMatrix(),
           beginPath() {},
@@ -70,7 +100,8 @@ export function createCanvasStub() {
           createPattern() {
             return {};
           },
-          clearRect() {
+          clearRect(...args: number[]) {
+            clearRectArgs.push(args);
             canvas._content!.length = 0;
           },
           stroke() {
@@ -79,8 +110,13 @@ export function createCanvasStub() {
           fill() {
             canvas._content!.push(String(ctx.fillStyle));
           },
-          drawImage(src: { _content?: string[] }) {
+          drawImage(src: { _content?: string[] }, ...args: number[]) {
             drawImageCalls++;
+            drawImageArgs.push(args);
+            drawImageStates.push({
+              globalCompositeOperation: ctx.globalCompositeOperation,
+              globalAlpha: ctx.globalAlpha,
+            });
             if (src?._content) canvas._content!.push(...src._content);
           },
         };
@@ -92,6 +128,16 @@ export function createCanvasStub() {
     restore() {
       HTMLCanvasElement.prototype.getContext = origGetContext;
       HTMLCanvasElement.prototype.toBlob = origToBlob;
+    },
+
+    resetRecordedCalls() {
+      clearRectArgs = [];
+      drawImageArgs = [];
+      drawImageStates = [];
+    },
+
+    contentOf(canvas: HTMLCanvasElement) {
+      return [...((canvas as HTMLCanvasElement & { _content?: string[] })._content ?? [])];
     },
 
     // Every canvas in a test shares the stub, so starve exactly one canvas of
