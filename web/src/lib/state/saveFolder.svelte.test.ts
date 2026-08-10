@@ -16,9 +16,11 @@ import { describe, expect, it } from 'vitest';
 // as unsupported (and vice versa).
 //
 // The two sites spell their SSR guard differently on purpose — folderSave.ts
-// imports `browser` from $app/environment, which saveFolder.svelte.ts cannot
-// afford. So this compares the *capabilities* each predicate probes, not the
-// source text, and separately asserts each still carries some SSR guard.
+// gates on `browser`, while the inline copy exists to import nothing, so it
+// probes `typeof window` rather than adding an `$app/environment` import just
+// for spelling symmetry. So this compares the *capabilities* each predicate
+// probes, not the source text, and separately asserts each still carries some
+// SSR guard.
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 

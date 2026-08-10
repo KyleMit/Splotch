@@ -20,39 +20,6 @@ them as reusable raw material.
 
 Entries below arrived after those passes and are awaiting triage.
 
-### [Maintainability] Three different SSR-guard idioms across the state modules (and docs say `appearance` uses `browser`)
-
-**File(s):** `web/src/lib/state/appearance.svelte.ts` (lines 17–18, 35),
-`web/src/lib/state/settings.svelte.ts` (lines 16, 234), `web/src/lib/state/saveFolder.svelte.ts`
-(line 72) @ 9ae62ff1
-
-**Priority:** P4
-
-#### Problem
-
-The state directory's documented pattern (web/src CLAUDE.md) is self-initialization "gated on
-`browser`", and it explicitly lists `appearance.svelte.ts` among the examples. In fact `appearance`
-gates on `typeof matchMedia !== 'undefined'` (line 17) and `typeof document !== 'undefined'` (line
-35); `settings.svelte.ts` uses `typeof window === 'undefined'` (lines 16, 234);
-`saveFolder.svelte.ts` uses `typeof window === 'undefined'` (line 72); while `layout`, `network`,
-`fullscreen`, and `install` import `browser` from `$app/environment`. Three idioms for one concept
-make it harder to grep for "client-only" gates and leave the orientation doc mildly wrong about one
-of its own examples.
-
-#### Proposed solution
-
-Standardize on `browser` from `$app/environment` in all five spots. Gotcha:
-`appearance.svelte.test.ts` and `settings.svelte.test.ts` currently import these modules without
-mocking `$app/environment`; under Vitest the SvelteKit plugin resolves it but `browser` may be
-`false`, so the tests will need the same `vi.mock('$app/environment', () => ({ browser: true }))`
-that `layout.svelte.test.ts` and `install.svelte.test.ts` already use. If that test churn is judged
-not worth it, the fallback is to fix the CLAUDE.md source (`.ruler/`) so the doc stops claiming
-`appearance` is browser-gated — either way the current doc/code disagreement should not stand.
-
-#### Why it was deferred
-
-implementation failed
-
 ### [Testing] `buildVersion.test.ts` lives two directories away from the module it tests
 
 **File(s):** `web/src/lib/buildVersion.test.ts` (line 3) @ 9ae62ff1

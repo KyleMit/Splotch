@@ -12,18 +12,21 @@ Where things live (full file-by-file map: `architecture` skill):
   live in sibling modules (`strokeOps`, `undoHistory`, `exportDrawing` — map in the `architecture`
   skill).
 * `lib/state/` — all shared state, as Svelte 5 rune modules (`*.svelte.ts`). A
-  listening/side-effecting store self-initializes at module load, gated on `browser` — never behind
-  an exported `initX()` a route must remember to call (see `layout.svelte.ts`,
-  `appearance.svelte.ts`, `network.svelte.ts`, `fullscreen.svelte.ts`). `install.svelte.ts` is the
-  one exception: its one-shot `beforeinstallprompt` listener must be eager (a deferred listener
-  could miss an event that fires before hydration), but its state seeding stays behind
-  `initInstallPrompt()`, called from `lib/boot/webOnlyServices.ts` — kept split for now to avoid
-  touching its well-tested surface, not because the seeding itself needs to be deferred. Shared
-  derived values are exposed as plain getter functions that recompute per call (`resolvedTheme()` in
-  `appearance.svelte.ts`, `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level
-  `$derived` — the getter reads reactive state so a caller opts into reactivity locally by wrapping
-  it in its own `$derived` when a template needs it (e.g. `ColorPalette.svelte`), yet stays callable
-  as a plain function from a unit test with no reactive context.
+  listening/side-effecting store self-initializes at module load behind a client-only guard —
+  `browser` from `$app/environment`, or a `typeof` probe of the exact global the module is about to
+  touch (`appearance.svelte.ts` probes `matchMedia`/`document`); both spellings are in deliberate
+  use (`docs/audit-deferred/decisions/ssr-guard-idioms.md`) — never behind an exported `initX()` a
+  route must remember to call (see `layout.svelte.ts`, `appearance.svelte.ts`, `network.svelte.ts`,
+  `fullscreen.svelte.ts`). `install.svelte.ts` is the one exception: its one-shot
+  `beforeinstallprompt` listener must be eager (a deferred listener could miss an event that fires
+  before hydration), but its state seeding stays behind `initInstallPrompt()`, called from
+  `lib/boot/webOnlyServices.ts` — kept split for now to avoid touching its well-tested surface, not
+  because the seeding itself needs to be deferred. Shared derived values are exposed as plain getter
+  functions that recompute per call (`resolvedTheme()` in `appearance.svelte.ts`,
+  `activeStrokeSize()` in `strokeWidth.svelte.ts`), never module-level `$derived` — the getter reads
+  reactive state so a caller opts into reactivity locally by wrapping it in its own `$derived` when
+  a template needs it (e.g. `ColorPalette.svelte`), yet stays callable as a plain function from a
+  unit test with no reactive context.
 * `lib/boot/` — the drawing route's boot steps as named helpers, called in order from
   `routes/+page.svelte`'s `onMount`: `hydratePersistedState()`, then `mountBootHiddenOverlays()`
   (the idle overlay pump, ADR-0049), `installContextMenuGuard()`, `installWakeLock()`,

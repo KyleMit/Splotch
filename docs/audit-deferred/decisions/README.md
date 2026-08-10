@@ -23,6 +23,7 @@
 | —  | Personal device identifiers hard-coded into committed scripts                  | P3       | [personal-device-scripts.md](personal-device-scripts.md) | DROP    |
 | —  | Dev/preview port numbers are magic values scattered across scripts and configs | P3       | [dev-port-magic-values.md](dev-port-magic-values.md)     | DROP    |
 | —  | Off-scale hardcoded font sizes where the token scale is the convention         | P4       | [off-scale-font-sizes.md](off-scale-font-sizes.md)       | DROP    |
+| —  | Three different SSR-guard idioms across the state modules                      | P4       | [ssr-guard-idioms.md](ssr-guard-idioms.md)               | DROP    |
 
 Findings 1–14 from this pass are dispatched. Each decision doc was deleted by the commit that
 resolved it, so the doc and its implementation sit in the same changeset — recover any of them with:
