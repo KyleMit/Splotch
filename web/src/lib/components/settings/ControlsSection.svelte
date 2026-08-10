@@ -162,6 +162,7 @@
         <SegmentedPicker
           variant="chip"
           mode="toggle"
+          class="control-chips"
           label="Show these buttons"
           options={buttonOptions}
           selected={activeButtons}
@@ -174,6 +175,7 @@
         <SegmentedPicker
           variant="chip"
           mode="toggle"
+          class="control-chips"
           label="Brushes"
           options={brushOptions}
           selected={activeBrushes}
@@ -208,6 +210,20 @@
 
   .chip-block {
     margin-top: 20px;
+    container-type: inline-size;
+  }
+
+  /* A chip spends ~84px of its box on furniture — padding, the 26px icon, the
+     two gaps, the check mark — so two columns need roughly this much room
+     before the longest option names ("Screenshot", "Magic brush") start
+     breaking across lines. Below it the grid drops to one column, which every
+     label clears with room to spare. Measured off the block rather than the
+     viewport, so the phone hub and the wide shell's pane each get the column
+     count their own width earns. */
+  @container (max-width: 345px) {
+    .chip-block :global(.control-chips) {
+      grid-template-columns: 1fr;
+    }
   }
 
   .chip-heading {

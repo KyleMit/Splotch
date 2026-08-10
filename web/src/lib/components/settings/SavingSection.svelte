@@ -67,8 +67,12 @@
 </section>
 
 <style>
+  /* The action drops below the label rather than crowding it once the row is
+     too narrow to seat both — the label keeps its full name, and the chosen
+     folder gets the whole second line to say where drawings land. */
   .folder-location {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -105,11 +109,14 @@
   /* Selected state: the wash variant carries the secondary (lighter) fill; this
      row supplies the pill shape and the ellipsis for a long folder name. The
      display override matters — the primitive is inline-flex, which would wrap
-     the label in an anonymous flex item that text-overflow can't clip. */
+     the label in an anonymous flex item that text-overflow can't clip. The cap
+     is the line it sits on rather than a fixed width: a name too long for the
+     label's line wraps the whole action below it and then has the row to
+     itself. */
   .folder-actions :global(.folder-pill) {
     display: block;
     min-width: 0;
-    max-width: 190px;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
