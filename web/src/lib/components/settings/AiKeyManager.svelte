@@ -92,9 +92,8 @@
   }
 
   $effect(() => {
-    const isOpen = open;
-    latest.begin();
-    if (isOpen) {
+    latest.cancel(); // opening or closing obsoletes any in-flight verify
+    if (open) {
       platform = getPlatform();
       keyInput = '';
       resetKeyFeedback();

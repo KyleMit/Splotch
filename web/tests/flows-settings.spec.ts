@@ -5,19 +5,23 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 import { gotoApp, openSettingsModal, retryOpen } from './helpers';
 
-async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+// Settings is a section list — a sidebar item on tablet/desktop, a hub row on
+// phone. Either way the control carries the section label; opening it (sidebar
+// select or phone drill-in) reveals the section content.
+//
+// Retried rather than clicked once: the dialog itself mounts on first open
+// (ADR-0049) and flies in, so this click lands on markup that is still
+// arriving, and a lost one would leave the section closed with nothing to
+// re-open it — the same hazard openSettingsModal above rides out.
+async function openSettingsSection(page: Page, label: string, expectedField: string) {
   await openSettingsModal(page);
-  // Settings is a section list — a sidebar item on tablet/desktop, a
-  // hub row on phone. Either way the control carries the section label; opening
-  // it (sidebar select or phone drill-in) reveals the section content.
-  //
-  // Retried rather than clicked once: the dialog itself mounts on first open
-  // (ADR-0049) and flies in, so this click lands on markup that is still
-  // arriving, and a lost one would leave the section closed with nothing to
-  // re-open it — the same hazard openSettingsModal above rides out.
   await retryOpen(page.locator(expectedField), () =>
-    page.getByRole('button', { name: 'AI Art' }).click({ timeout: 3000 })
+    page.getByRole('button', { name: label }).click({ timeout: 3000 })
   );
+}
+
+async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
+  await openSettingsSection(page, 'AI Art', expectedField);
 }
 
 async function submitAiKey(page: Page, value: string) {
@@ -484,10 +488,7 @@ test('Settings sends the collected device info with a bug report', async ({ page
   });
   await gotoApp(page);
 
-  await openSettingsModal(page);
-  await retryOpen(page.locator('#reportMessage'), () =>
-    page.getByRole('button', { name: 'Feedback' }).click({ timeout: 3000 })
-  );
+  await openSettingsSection(page, 'Feedback', '#reportMessage');
 
   await page.locator('#reportMessage').fill('The purple crayon draws green');
   await page.getByRole('checkbox', { name: /Include device info/ }).check();
@@ -504,4 +505,51 @@ test('Settings sends the collected device info with a bug report', async ({ page
 
   await expect(page.getByText('Thanks for your feedback.')).toBeVisible();
   expect(reportBody?.device).toMatchObject({ platform: 'Web' });
+});
+
+test('reopening Settings mid-submit leaves the sent report to land', async ({ page }) => {
+  // The counterpart of the AI-key case above, and deliberately its opposite:
+  // verifying a key is idempotent so AiKeyManager aborts it, but this POST
+  // files an issue, so closing and reopening must not cancel a report already
+  // sent.
+  const reportOutcomes: string[] = [];
+  page.on('requestfailed', (request) => {
+    if (request.url().includes('/api/report')) {
+      reportOutcomes.push(request.failure()?.errorText ?? 'unknown');
+    }
+  });
+  page.on('requestfinished', (request) => {
+    if (request.url().includes('/api/report')) reportOutcomes.push('finished');
+  });
+
+  let requestCount = 0;
+  let releaseReport!: () => void;
+  const heldReport = new Promise<void>((resolve) => {
+    releaseReport = resolve;
+  });
+  await page.route('**/api/report', async (route) => {
+    requestCount += 1;
+    await heldReport;
+    await route
+      .fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      })
+      .catch(() => undefined);
+  });
+
+  await gotoApp(page);
+  await openSettingsSection(page, 'Feedback', '#reportMessage');
+  await page.locator('#reportMessage').fill('The paint brush disappeared.');
+  await page.getByRole('button', { name: 'Send report' }).click();
+  await expect.poll(() => requestCount).toBe(1);
+
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#settingsModal')).toBeHidden();
+  await openSettingsModal(page);
+
+  // The server answers only now — after the reopen that used to abort it.
+  releaseReport();
+  await expect.poll(() => reportOutcomes).toEqual(['finished']);
 });
