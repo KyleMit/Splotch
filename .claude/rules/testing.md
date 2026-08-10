@@ -2,6 +2,7 @@
 paths:
   - "web/tests/**"
   - "web/src/**/*.test.ts"
+  - "web/*.test.ts"
   - "web/playwright.config.ts"
   - "web/playwright.shared.ts"
   - "web/vitest.config.ts"
@@ -11,9 +12,10 @@ paths:
 
 # Testing rules
 
-* Three layers (ADR-0008): Vitest unit tests (`src/**/*.test.ts`, colocated with source), Playwright
-  E2E (`tests/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared
-  by Android and iOS). Pick the lowest layer that can catch the regression.
+* Three layers (ADR-0008): Vitest unit tests, colocated with their subject (`web/src/**/*.test.ts`
+  for app modules, `web/*.test.ts` for build-time modules at the web root), Playwright E2E
+  (`tests/*.spec.ts`), and a Maestro native smoke test (`.maestro/smoke.yaml` — one flow shared by
+  Android and iOS). Pick the lowest layer that can catch the regression.
 * Unit tests cover pure logic and state modules only; UI flows belong in Playwright. The Vitest
   environment is **happy-dom**, not jsdom (ADR-0009). Test files that need no DOM at all —
   `lib/server/**` and pure-logic modules — opt out with a `// @vitest-environment node` first line

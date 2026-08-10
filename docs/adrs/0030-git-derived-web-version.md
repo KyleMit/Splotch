@@ -31,7 +31,7 @@ existing `CAPACITOR` build flag (ADR-0001), the single web-vs-native signal:
 
 > Amended 2026-07: the derivation originally lived inline in `web/vite.config.ts`; it moved to the
 > root-level `web/buildVersion.ts` module (the `web/defines.ts` pattern) so the fallback chain is
-> unit-testable (`web/src/lib/buildVersion.test.ts`). The version semantics are unchanged.
+> unit-testable (`web/buildVersion.test.ts`). The version semantics are unchanged.
 
 * **Native** (`CAPACITOR=true`): use the `package.json` version verbatim. Store submissions need
   deliberate numbers; `capacitor-set-version` keeps Android/iOS in sync from the same source.
