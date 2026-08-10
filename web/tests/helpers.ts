@@ -148,10 +148,23 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
+// The highlighted Settings row's own seat, measured against the column that
+// holds it. Read off the nav rather than the browser viewport: the column is its
+// own scroller wherever the section list outgrows it, and that clipping is the
+// thing at stake.
+export function activeNavRowInsideColumn(page: Page) {
+  return page.locator('.settings-nav .settings-nav-item.active').evaluate((row) => {
+    const box = row.parentElement!.getBoundingClientRect();
+    const seat = row.getBoundingClientRect();
+    return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
+  });
+}
+
 // The widest a jumped-to heading may sit below the pane's top edge and still
-// count as landed. Deliberately looser than the shell's own `--section-jump-inset`
-// so retuning that inset stays a design decision rather than a spec edit; a
-// section that did not scroll sits hundreds of pixels away.
+// count as landed. Deliberately looser than the shell's own
+// `SECTION_JUMP_INSET_PX` so retuning that inset stays a design decision rather
+// than a spec edit — a tolerance, not a mirrored copy of it. A section that did
+// not scroll at all sits hundreds of pixels away.
 export const SECTION_LANDED_MAX_PX = 24;
 
 // How far a Settings section's heading sits below the scrolling pane's top edge

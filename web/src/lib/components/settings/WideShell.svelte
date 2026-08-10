@@ -38,12 +38,18 @@
   // Where a table-of-contents jump parks the heading: just clear of the pane's
   // top edge rather than flush against it.
   const SECTION_JUMP_INSET_PX = 12;
+  // How far the spied row is kept clear of the nav's own edges. Matches the
+  // height of the scroll-position edge shades below, so a row the pane elected
+  // never surfaces half-buried under a fade.
+  const NAV_ROW_CLEARANCE_PX = 24;
 
   // Plain refs, deliberately untracked: the reopen reset reads the nav inside a
-  // frame callback and the scrollspy reads the sections off events, so nothing
-  // re-renders when either arrives. The pane and its zoom target are `$state`
-  // because the scrollspy effect below has to start once they exist.
+  // frame callback and the scrollspy reads the sections and rows off events, so
+  // nothing re-renders when any of them arrives. The pane and its zoom target
+  // are `$state` because the scrollspy effect below has to start once they
+  // exist.
   let navEl: HTMLElement | undefined;
+  const navRowEls: Partial<Record<SectionId, HTMLElement>> = {};
   const sectionEls: Partial<Record<SectionId, HTMLElement>> = {};
   let paneEl = $state<HTMLElement>();
   let zoomTarget = $state<HTMLElement>();
@@ -51,18 +57,25 @@
   const sectionHeadingId = (id: SectionId) => `settingsSection-${id}`;
 
   // The card flies in scaled from its opening button, so a rect read while that
-  // animation runs is not in CSS pixels. The pane's own visual-to-layout ratio
-  // converts the reading line into whatever space the current frame is in.
-  function paneVisualScale(pane: HTMLElement): number {
-    const height = pane.clientHeight;
-    return height ? pane.getBoundingClientRect().height / height : 1;
+  // animation runs is not in CSS pixels. A scroller's own visual-to-layout ratio
+  // converts a measurement into whatever space the current frame is in.
+  function visualScale(el: HTMLElement): number {
+    const height = el.clientHeight;
+    return height ? el.getBoundingClientRect().height / height : 1;
+  }
+
+  // A long jump is animated, but the parent may have asked the OS for less
+  // motion — and Chrome does not apply that preference to programmatic smooth
+  // scrolls on its own.
+  function jumpBehavior(): ScrollBehavior {
+    return matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   }
 
   function spiedSectionAt(pane: HTMLElement): SectionId {
     if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - SCROLL_END_EPSILON_PX) {
       return SECTIONS[SECTIONS.length - 1].id;
     }
-    const line = pane.getBoundingClientRect().top + SCROLLSPY_LINE_INSET_PX * paneVisualScale(pane);
+    const line = pane.getBoundingClientRect().top + SCROLLSPY_LINE_INSET_PX * visualScale(pane);
     let current: SectionId = SECTIONS[0].id;
     for (const section of SECTIONS) {
       const el = sectionEls[section.id];
@@ -71,19 +84,37 @@
     return current;
   }
 
-  // Arithmetic on the pane's own scrollTop, never `scrollIntoView`: that method
-  // scrolls *every* scrollable ancestor, and the card and the dialog are both
-  // `overflow: hidden` boxes — so it dragged the Settings header and the close
-  // button clean out of the top of the card. Dividing the rect delta by the
-  // pane's visual scale lands the arithmetic in layout pixels, so neither the
-  // fly-in's transform nor a pinch-zoomed pane skews where the jump lands.
+  // Arithmetic on each scroller's own scrollTop, never `scrollIntoView`: that
+  // method scrolls *every* scrollable ancestor, and the card, the split and the
+  // dialog are all clipped boxes. Dividing the rect delta by the scroller's
+  // visual scale lands the arithmetic in layout pixels, so neither the fly-in's
+  // transform nor a pinch-zoomed pane skews where the scroll ends up.
   function scrollToSection(id: SectionId, behavior: ScrollBehavior) {
     const el = sectionEls[id];
     const pane = paneEl;
     if (!el || !pane) return;
     const offset =
-      (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) / paneVisualScale(pane);
+      (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) / visualScale(pane);
     pane.scrollTo({ top: pane.scrollTop + offset - SECTION_JUMP_INSET_PX, behavior });
+  }
+
+  // The pane's scroll elects the highlight now, so — unlike a click, which can
+  // only land on a row already on screen — the spied row can be one the parent
+  // never scrolled the nav to. Wherever the list outgrows its column, that
+  // leaves the table of contents showing no highlight at all.
+  function revealNavRow(id: SectionId, behavior: ScrollBehavior) {
+    const nav = navEl;
+    const row = navRowEls[id];
+    if (!nav || !row) return;
+    const scale = visualScale(nav);
+    const navRect = nav.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const clearance = NAV_ROW_CLEARANCE_PX * scale;
+    const above = navRect.top + clearance - rowRect.top;
+    const below = rowRect.bottom - (navRect.bottom - clearance);
+    if (above <= 0 && below <= 0) return;
+    const shift = above > 0 ? -above : below;
+    nav.scrollTo({ top: nav.scrollTop + shift / scale, behavior });
   }
 
   // The dialog is closed, never unmounted, so both the nav and the pane keep the
@@ -101,6 +132,7 @@
     // stick rather than be overwritten.
     const frame = requestAnimationFrame(() => {
       navEl?.scrollTo({ top: 0 });
+      revealNavRow(landing, 'auto');
       scrollToSection(landing, 'auto');
     });
     return () => cancelAnimationFrame(frame);
@@ -113,7 +145,10 @@
     let frame = 0;
     const spy = () => {
       frame = 0;
-      spiedSection = spiedSectionAt(pane);
+      const next = spiedSectionAt(pane);
+      if (next === spiedSection) return;
+      spiedSection = next;
+      revealNavRow(next, jumpBehavior());
     };
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(spy);
@@ -143,11 +178,12 @@
   }
 
   function jumpToSection(id: SectionId, trigger: HTMLElement) {
+    const behavior = jumpBehavior();
     if (id !== 'parentCenter' || parentCenterRevealed) {
-      scrollToSection(id, 'smooth');
+      scrollToSection(id, behavior);
       return;
     }
-    unlockParentCenter(trigger, () => scrollToSection(id, 'smooth'));
+    unlockParentCenter(trigger, () => scrollToSection(id, behavior));
   }
 
   // Tier-2 accessibility (ADR-0076). No `resetKey`: a table-of-contents jump
@@ -166,6 +202,7 @@
         class:active={section.id === spiedSection}
         aria-current={section.id === spiedSection ? 'location' : undefined}
         onclick={(event) => jumpToSection(section.id, event.currentTarget)}
+        bind:this={navRowEls[section.id]}
       >
         <SectionIcon icon={section.icon} class="settings-nav-icon" />
         <span>{section.label}</span>

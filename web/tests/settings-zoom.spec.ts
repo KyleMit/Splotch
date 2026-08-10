@@ -380,11 +380,12 @@ test('a table-of-contents jump keeps the zoom (the wide pane is one document)', 
   // pane, so a jump is not "landing on a new section": dropping the enlargement
   // there would shrink the text out from under the parent who asked for it.
   await page.locator('.settings-nav').getByRole('button', { name: 'Sound' }).click();
-  // The landing inset is a CSS length inside the zoomed subtree, so it arrives
-  // enlarged by the same factor the parent pinched to.
+  // The landing inset is subtracted from the pane's own scrollTop, and CSS
+  // `zoom` on the child content does not scale the pane's coordinate space — so
+  // the heading parks the same distance down however far the parent pinched.
   await expect
     .poll(() => headingOffsetFromPaneTop(page, 'sound'))
-    .toBeLessThan(SECTION_LANDED_MAX_PX * zoomed);
+    .toBeLessThan(SECTION_LANDED_MAX_PX);
   expect(await paneZoom(page)).toBe(zoomed);
 });
 

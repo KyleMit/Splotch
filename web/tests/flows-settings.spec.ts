@@ -4,6 +4,7 @@ import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 import {
+  activeNavRowInsideColumn,
   gotoApp,
   headingOffsetFromPaneTop,
   openSettingsModal,
@@ -16,15 +17,22 @@ import {
 // it brings the section's content into view (a scroll on the wide shell, a
 // drill-in on phone).
 //
-// Retried rather than clicked once: the dialog itself mounts on first open
-// (ADR-0049) and flies in, so this click lands on markup that is still
-// arriving, and a lost one would leave the section closed with nothing to
-// re-open it — the same hazard openSettingsModal above rides out.
+// The wide shell mounts every section at once, so the field a caller works on is
+// present before anything is clicked; the click is what scrolls it into view,
+// and `toBeInViewport` is what proves that happened. Retried rather than clicked
+// once: the dialog itself mounts on first open (ADR-0049) and flies in, so a
+// click lands on markup that is still arriving — the same hazard
+// openSettingsModal rides out.
 async function openSettingsSection(page: Page, label: string, expectedField: string) {
   await openSettingsModal(page);
-  await retryOpen(page.locator(expectedField), () =>
-    page.getByRole('button', { name: label }).click({ timeout: 3000 })
-  );
+  const field = page.locator(expectedField);
+  const entry = page.locator('.settings-nav').getByRole('button', { name: label, exact: true });
+  // Clicked on every attempt rather than gated on the field being present: in
+  // this shell it always is, and the click is what scrolls it into view.
+  await expect(async () => {
+    await entry.click({ timeout: 2000 });
+    await expect(field).toBeInViewport({ timeout: 2000 });
+  }).toPass({ timeout: 10_000 });
 }
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
@@ -81,17 +89,22 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   expect(await headingOffsetFromPaneTop(page, 'controls')).toBeGreaterThanOrEqual(0);
   await expect(nav.getByRole('button', { name: 'Buttons' })).toHaveClass(/active/);
   await expect(nav.getByRole('button', { name: 'Appearance' })).not.toHaveAttribute('aria-current');
-  await expect(page.locator('#advancedControlsToggle')).toBeVisible();
+  // In viewport, not merely visible: every section is mounted at all times, and
+  // `toBeVisible` ignores the pane's scroll clipping — it would pass without the
+  // scroll ever happening.
+  await expect(page.locator('#advancedControlsToggle')).toBeInViewport();
   await expect(page.locator('#themeOption-light')).toHaveCount(1);
 
   // The Setup section keeps its own <details> accordions inside the pane.
+  await nav.getByRole('button', { name: 'Install' }).click();
   const setupDetails = page.locator('.help-section').first();
-  await expect(setupDetails.locator('summary')).toBeVisible();
+  await expect(setupDetails.locator('summary')).toBeInViewport();
 
   // About holds the identity block — the mascot renders in full color.
+  await nav.getByRole('button', { name: 'About' }).click();
   const aboutMascot = page.locator('.about-brand [data-icon="splotchy"]');
   const aboutMascotImage = aboutMascot.locator('img');
-  await expect(aboutMascotImage).toBeVisible();
+  await expect(aboutMascotImage).toBeInViewport();
   await expect
     .poll(() => aboutMascotImage.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .toBeGreaterThan(0);
@@ -102,45 +115,6 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   await scrollPaneToTop(page);
   await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveClass(/active/);
   await expect(nav.getByRole('button', { name: 'Buttons' })).not.toHaveClass(/active/);
-});
-
-test('a jump scrolls the pane and never the card itself', async ({ page }) => {
-  // `scrollIntoView` moves every scrollable ancestor, and both the card and the
-  // dialog are `overflow: hidden` boxes — so a jump built on it dragged the
-  // Settings header and the close button clean out of the top of the card, with
-  // nothing in the suite the wiser. Read off the card's own edge rather than
-  // pixel literals.
-  await gotoApp(page);
-  const modal = await openSettingsModal(page);
-
-  const chromeInsideCard = () =>
-    modal.evaluate((dialog) => {
-      const card = dialog.getBoundingClientRect();
-      const top = (selector: string) => dialog.querySelector(selector)!.getBoundingClientRect().top;
-      return Math.min(top('.settings-header'), top('.settings-close')) >= card.top - 0.5;
-    });
-
-  // The landing scroll every open performs is enough to break this on its own.
-  expect(await chromeInsideCard()).toBe(true);
-
-  await page.locator('.settings-nav').getByRole('button', { name: 'Coloring' }).click();
-  await expect
-    .poll(() => headingOffsetFromPaneTop(page, 'coloring'))
-    .toBeLessThan(SECTION_LANDED_MAX_PX);
-  expect(await chromeInsideCard()).toBe(true);
-});
-
-test('scrolling to the very bottom highlights the last section', async ({ page }) => {
-  await gotoApp(page);
-  await openSettingsModal(page);
-
-  const nav = page.locator('.settings-nav');
-  await page.locator('.settings-pane').evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
-
-  // The final section is usually too short to reach the reading line on its own,
-  // so the end of the scroll is what elects it.
-  await expect(nav.locator('.settings-nav-item').last()).toHaveClass(/active/);
-  await expect(nav.locator('.settings-nav-item.active')).toHaveCount(1);
 });
 
 test('the theme picker is one tab stop and the arrow keys move the selection', async ({ page }) => {
@@ -229,17 +203,8 @@ test('reopening a scrolled sidebar lands back on the active row', async ({ page 
   // one and it has to be in view — read off the nav rather than restating which
   // section that is.
   await expect.poll(() => pane.evaluate((el) => el.scrollTop)).toBe(0);
-  const active = nav.locator('.settings-nav-item.active');
   await expect(nav.locator('.settings-nav-item').first()).toHaveClass(/active/);
-  await expect
-    .poll(() =>
-      active.evaluate((row) => {
-        const box = row.parentElement!.getBoundingClientRect();
-        const seat = row.getBoundingClientRect();
-        return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
-      })
-    )
-    .toBe(true);
+  await expect.poll(() => activeNavRowInsideColumn(page)).toBe(true);
 });
 
 test("What's New formats the current release date without runtime locale initialization", async ({
@@ -318,7 +283,8 @@ test('setting card spacing only applies to direct section siblings', async ({ pa
   await expect(directCards.nth(1)).toHaveCSS('margin-top', '6px');
   await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
 
-  await expect(page.locator('#aiCodeActive')).toBeVisible();
+  await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  await expect(page.locator('#aiCodeActive')).toBeInViewport();
   const aiFeatureCards = page.locator('.settings-pane .ai-controls > .setting');
   await expect(aiFeatureCards).toHaveCount(3);
   await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '0px');

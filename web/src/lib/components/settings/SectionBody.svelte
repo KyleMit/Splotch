@@ -1,4 +1,4 @@
-<script lang="ts">
+<script lang="ts" module>
   import type { Component } from 'svelte';
   import AppearanceSection from './AppearanceSection.svelte';
   import SoundSection from './SoundSection.svelte';
@@ -32,7 +32,9 @@
     feedback: ReportForm,
     about: AboutSection,
   };
+</script>
 
+<script lang="ts">
   interface Props {
     id: SectionId;
     open: boolean;

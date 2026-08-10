@@ -147,7 +147,9 @@ test('the Coloring section toggle clears the page but keeps downloaded books', a
   await expect(
     coloring.locator('.setting-group > .setting').first().locator('#coloringBookToggle')
   ).toBeVisible();
-  await expect(settings.getByRole('button', { name: 'Remove downloaded pictures' })).toBeEnabled();
+  const removeDownloads = settings.getByRole('button', { name: 'Remove downloaded pictures' });
+  await expect(removeDownloads).toBeEnabled();
+  await expect(removeDownloads).toBeInViewport();
 
   await toggle.click();
 

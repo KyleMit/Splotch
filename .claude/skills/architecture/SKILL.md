@@ -328,9 +328,10 @@ media queries + the head-script stamp in `app.html`).
     a reopen resets its scroll) sits beside a scrolling content **Pane** that holds *every* section
     at once in nav order — the Sidebar is a scrollspy-driven table of contents that moves the Pane's
     scroll position rather than choosing what renders, so its highlight is an indicator
-    (`aria-current="location"`, a brand wash with a left rail), not a page state (ADR-0061). Each
-    section component lives in `settings/` (`AppearanceSection`, `SoundSection`, `SavingSection`,
-    `ColoringSection`, `ControlsSection`, `AiKeyManager`, `ParentCenterSection`,
+    (`aria-current="location"`, a brand wash with a left rail), not a page state, and the Sidebar
+    scrolls the spied row back into its own column when the Pane elects one that is off screen
+    (ADR-0061). Each section component lives in `settings/` (`AppearanceSection`, `SoundSection`,
+    `SavingSection`, `ColoringSection`, `ControlsSection`, `AiKeyManager`, `ParentCenterSection`,
     `SetupInstructions`, `WhatsNewSection`, `ReportForm`, `AboutSection`).
     * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Install** section, plus
       the one-tap install button when the browser supports it

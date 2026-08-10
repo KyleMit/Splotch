@@ -171,17 +171,22 @@ shells now render a section through the shared `settings/SectionBody.svelte`.
 The Sidebar becomes a scrollspy-driven table of contents: same rows, icons, and order, but the
 highlight follows a reading line 130px past the Pane's top edge (last section wins at the scroll
 end), a click smooth-scrolls that section's heading to `SECTION_JUMP_INSET_PX` (12px) below the top
-edge, and a deep link scrolls rather than swaps. That jump is **arithmetic on the Pane's own
-`scrollTop`, never `scrollIntoView`** — the latter scrolls every scrollable ancestor, and both the
-card and the `<dialog>` are `overflow: hidden` boxes, so it dragged the Settings header and the
-close button clean out of the top of the card on every open. Dividing the rect delta by the Pane's
-visual scale keeps the arithmetic in layout pixels under the fly-in transform and a pinch-zoomed
-pane alike. The spy re-reads live rects on scroll *and* on a `ResizeObserver` of the Pane content,
-because a conditional reveal inside a section (the volume slider, advanced controls, the
-force-landscape row, the AI toggles) moves every section below it. Because the highlight is now an
-indicator rather than a page state — several sections can be on-screen at once — the active row
-softened from the solid `--brand-solid` pill to a `--brand-wash`/`--brand-text` fill with a
-`--brand` left rail, and carries `aria-current="location"` instead of `"page"`.
+edge, and a deep link scrolls rather than swaps. The Sidebar also **scrolls the spied row back into
+its own column**: a click can only ever highlight a row already on screen, but the Pane's scroll
+elects rows the parent never scrolled the column to, and the column overflows on every viewport
+shorter than ~800px — without it the table of contents simply shows no highlight for the bottom of
+the Pane. The glide honours `prefers-reduced-motion`, which Chrome does not apply to programmatic
+smooth scrolls on its own. That jump is **arithmetic on the Pane's own `scrollTop`, never
+`scrollIntoView`** — the latter scrolls every scrollable ancestor, and both the card and the
+`<dialog>` are `overflow: hidden` boxes, so it dragged the Settings header and the close button
+clean out of the top of the card on every open. Dividing the rect delta by the Pane's visual scale
+keeps the arithmetic in layout pixels under the fly-in transform and a pinch-zoomed pane alike. The
+spy re-reads live rects on scroll *and* on a `ResizeObserver` of the Pane content, because a
+conditional reveal inside a section (the volume slider, advanced controls, the force-landscape row,
+the AI toggles) moves every section below it. Because the highlight is now an indicator rather than
+a page state — several sections can be on-screen at once — the active row softened from the solid
+`--brand-solid` pill to a `--brand-wash`/`--brand-text` fill with a `--brand` left rail, and carries
+`aria-current="location"` instead of `"page"`.
 
 Two consequences of "everything is mounted at once" are load-bearing:
 
@@ -195,8 +200,18 @@ Two consequences of "everything is mounted at once" are load-bearing:
   `.settings-section`.
 
 The whole suite sailed past the ancestor-scroll defect above, because every spec read section
-content rather than the card's own chrome; `flows-settings.spec.ts` now holds that invariant
-directly ("a jump scrolls the pane and never the card itself").
+content rather than the card's own chrome; `settings-toc.spec.ts` now holds that invariant directly
+("a jump scrolls the pane and never the card itself"), alongside the scrollspy band, the bottom
+election, the nav reveal, and the glide.
+
+A third consequence is a cost rather than a hazard, and is accepted rather than solved here. Eleven
+section bodies mount on the first open instead of one. On the production build under a `longtask`
+observer that is a single 329 ms task at 4x CPU throttle against 93 ms for the phone hub (same modal
+chrome, eleven rows, no section bodies) — roughly 240 ms of section construction, first-open only
+and off the drawing hot path that ADR-0049 protects. `content-visibility: auto` does not help, for
+the reason this ADR already records for the release cards: the browser still parses and constructs
+the DOM. A deferred mount would also have to preserve each section's true height, since the
+scrollspy's live offsets and the jump arithmetic both read it. Tracked as issue 910.
 
 The reopen reset from the previous amendment also had to move a frame later. A closed `<dialog>` is
 `display: none`, so both the nav and the Pane report `scrollTop` 0 and ignore a `scrollTo` — and the
