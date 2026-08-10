@@ -59,4 +59,18 @@ describe('skeleton front matter', () => {
       expect(frontMatterValue(output, key)).toMatch(/^".*"$/);
     }
   });
+
+  it('reports transcript_bytes as UTF-8 bytes, not code units', () => {
+    const { content, output } = skeletonFor([
+      {
+        type: 'user',
+        sessionId: 'abc',
+        timestamp: '2026-08-10T12:00:00.000Z',
+        message: { content: [{ type: 'text', text: 'drawing 🎨 test' }] },
+      },
+    ]);
+    const bytes = Buffer.byteLength(content, 'utf8');
+    expect(bytes).toBeGreaterThan(content.length);
+    expect(frontMatterValue(output, 'transcript_bytes')).toBe(String(bytes));
+  });
 });

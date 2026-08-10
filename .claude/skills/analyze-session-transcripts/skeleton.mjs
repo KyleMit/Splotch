@@ -176,7 +176,7 @@ function main() {
     `pr: ${yamlString(meta.pr ?? 'none')}`,
     `started: ${yamlString(shortTimestamp(meta.started) || 'unknown')}`,
     `ended: ${yamlString(shortTimestamp(meta.ended) || 'unknown')}`,
-    `transcript_bytes: ${raw.length}`,
+    `transcript_bytes: ${Buffer.byteLength(raw, 'utf8')}`,
     `user_records: ${counts.user}`,
     `assistant_records: ${counts.assistant}`,
     `tool_calls: ${counts.toolCalls}`,
