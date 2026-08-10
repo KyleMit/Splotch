@@ -1,5 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import {
+  MIN_ANDROID_API_LEVEL,
+  MIN_ANDROID_RELEASE,
+} from '../../web/src/lib/components/androidBeta/androidBeta.ts';
 import { themes } from '../../web/src/lib/design/tokens.ts';
 import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android.mjs';
 
@@ -46,6 +50,71 @@ describe('Android emulator API level single source', () => {
       );
       expect(levels.length).toBeGreaterThan(0);
       for (const level of levels) expect(level).toBe(ANDROID_API_LEVEL);
+    });
+  }
+});
+
+const GRADLE_MIN_SDK = Number(
+  read('android/variables.gradle').match(/^\s*minSdkVersion = (\d+)$/m)[1]
+);
+
+// The human release name each installable floor shipped as. Extend when
+// minSdkVersion moves — an unmapped level fails the floor tests below rather
+// than letting a stale release label ride along with a fresh API number.
+const ANDROID_RELEASE_BY_MIN_SDK = { 24: '7.0' };
+const GRADLE_MIN_RELEASE = ANDROID_RELEASE_BY_MIN_SDK[GRADLE_MIN_SDK];
+
+// Context-anchored claims of the published Android support floor. Named groups
+// carry what each claim states: `api` (the API level), `release` (the full
+// release, "7.0"), `releaseMajor` (the release's major only, "7"). Prose
+// patterns use \s+ between words because dprint re-wraps at 100 columns.
+const SUPPORT_FLOOR_CLAIMS = [
+  [
+    'supported-devices table row',
+    'docs/COMPATIBILITY.md',
+    /\|\s+\*\*Native Android app\*\*\s+\|\s+\*\*Android (?<release>\d+\.\d+) \/ API (?<api>\d+)\+\*\*/,
+  ],
+  [
+    'why-these-numbers bullet',
+    'docs/COMPATIBILITY.md',
+    /\*\*Native\s+Android\s+API\s+(?<api>\d+)\s+\((?<release>\d+\.\d+)\)\*\*\s+is\s+older\s+than\s+the\s+web\s+floor/,
+  ],
+  [
+    'enforcement table value',
+    'docs/COMPATIBILITY.md',
+    /\|\s+Native Android min SDK\s+\|\s+`android\/variables\.gradle` → `minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
+  ],
+  [
+    'floor-validation emulator claim',
+    'docs/COMPATIBILITY.md',
+    /The\s+stock\s+Android\s+API\s+(?<api>\d+)\s+emulator\s+image\s+ships\s+a\s+pre-floor\s+WebView\s+\(a\s+maintained\s+Android\s+(?<releaseMajor>\d+)\s+device/,
+  ],
+  [
+    'minimum supported OS statement',
+    '.ruler/skills/mobile/android.md',
+    /Minimum supported OS: \*\*Android (?<release>\d+\.\d+) \/ API (?<api>\d+)\*\*/,
+  ],
+];
+
+describe('Android support floor single source', () => {
+  it('maps minSdkVersion to its Android release', () => {
+    expect(GRADLE_MIN_RELEASE, `add ${GRADLE_MIN_SDK} to ANDROID_RELEASE_BY_MIN_SDK`).toBeDefined();
+  });
+
+  it('the /android-beta constants track minSdkVersion', () => {
+    expect(MIN_ANDROID_API_LEVEL).toBe(GRADLE_MIN_SDK);
+    expect(MIN_ANDROID_RELEASE).toBe(GRADLE_MIN_RELEASE);
+  });
+
+  for (const [claim, file, pattern] of SUPPORT_FLOOR_CLAIMS) {
+    it(`${file} ${claim} matches minSdkVersion`, () => {
+      const groups = read(file).match(pattern)?.groups;
+      expect(groups, `expected ${file} to contain a match for ${pattern}`).toBeDefined();
+      if (groups.api) expect(Number(groups.api)).toBe(GRADLE_MIN_SDK);
+      if (groups.release) expect(groups.release).toBe(GRADLE_MIN_RELEASE);
+      if (groups.releaseMajor) {
+        expect(groups.releaseMajor).toBe(GRADLE_MIN_RELEASE.split('.')[0]);
+      }
     });
   }
 });
