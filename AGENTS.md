@@ -9,10 +9,10 @@
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
 > the output. Direct provider packages registered in `scripts/direct-provider-skills.mjs` are the
-> exceptions: `burn-down-audits` has independent Claude and Codex implementations, while
-> `implement-issue-stack` is intentionally Codex-only and `analyze-session-transcripts` is
-> intentionally Claude-only. Edit only the registered provider package and note you intend to
-> change; never manufacture a missing provider by copying another one.
+> exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and Codex
+> implementations, while `implement-issue-stack` is intentionally Codex-only. Edit only the
+> registered provider package and note you intend to change; never manufacture a missing provider by
+> copying another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -54,9 +54,9 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
 * Direct-maintained exceptions are declared in `scripts/direct-provider-skills.mjs`.
   `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
   Codex package because it orchestrates a standalone Claude reviewer; `analyze-session-transcripts`
-  has only a Claude package because it mines Claude Code's own transcript format — a Codex analyzer
-  would share nothing with it. Edit registered packages and notes directly, never through `.ruler/`,
-  and never create an undeclared provider by copying one.
+  has independent provider packages because Claude Code and Codex persist different transcript
+  formats. Edit registered packages and notes directly, never through `.ruler/`, and never create an
+  undeclared provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
@@ -248,8 +248,8 @@ auto-invokes them by description (or via `/name`); agents without skill support 
 skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
 generated from `.ruler/`; managed runner forks may be produced from `.ruler/skill-forks/<runner>/`.
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
-under `.claude/` and `.agents/`, Codex-only `implement-issue-stack` lives only under `.agents/`, and
-Claude-only `analyze-session-transcripts` lives only under `.claude/`. See
+under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
+implementations; Codex-only `implement-issue-stack` lives only under `.agents/`. See
 `scripts/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |

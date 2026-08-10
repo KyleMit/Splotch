@@ -127,9 +127,9 @@ documents its own decisions under `tools/asset-gen/docs/`.
 | `analyze-session-transcripts` | Mine past local session transcripts into factual, evidence-anchored reports        |
 | `skills-guide`                | This guide                                                                         |
 
-`analyze-session-transcripts` is a registered direct Claude-only package (Codex session logs have an
-entirely different shape) and is user-invoked only — a batch run spawns a subagent per session, so
-it never fires on model initiative.
+`analyze-session-transcripts` has independent registered Claude and Codex packages because their
+session stores and record envelopes differ. It is user-invoked only — a batch run spawns a subagent
+per session, so it never fires on model initiative.
 
 `reconcile-with-main` exists because a clean `git merge` proves almost nothing about a branch that
 has been open a while: it detects overlapping line edits and nothing else. The skill surveys the
@@ -144,9 +144,9 @@ Every skill must appear here in exactly one primary group (cross-reference a sec
 when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
 `scripts/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
-implementations, `implement-issue-stack` is Codex-only, and `analyze-session-transcripts` is
-Claude-only. When editing one, change only the declared provider; never copy one implementation into
-an undeclared provider tree.
+implementations, as does `analyze-session-transcripts`; `implement-issue-stack` is Codex-only. When
+editing one, change only the declared provider; never copy one implementation into an undeclared
+provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
