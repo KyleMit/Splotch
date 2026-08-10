@@ -58,10 +58,13 @@ byte-stable output, so bumps are deliberate). A deliberately small registry in
   destination package while enforcing paired providers and shared-source isolation. Direct packages
   are intentionally not managed by that layer. `burn-down-audits` has complete, independent
   implementations in `.claude/skills/burn-down-audits/` and `.agents/skills/burn-down-audits/`.
-  `implement-issue-stack` exists only in `.agents/skills/implement-issue-stack/`: its defining
-  operation is Codex orchestrating a fresh Claude Code adversarial reviewer, so a Claude package
-  would misrepresent the workflow. The registry declares exactly which providers exist; changing one
-  never implies creating or syncing another provider.
+  `analyze-session-transcripts` likewise has independent provider packages because Claude Code and
+  Codex use different transcript stores and record formats; sharing the name preserves one user
+  concept without imposing a shared parser or runbook. `implement-issue-stack` exists only in
+  `.agents/skills/implement-issue-stack/`: its defining operation is Codex orchestrating a fresh
+  Claude Code adversarial reviewer, so a Claude package would misrepresent the workflow. The
+  registry declares exactly which providers exist; changing one never implies creating or syncing
+  another provider.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A

@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 
 export const DIRECT_PROVIDER_SKILLS = [
-  { name: 'analyze-session-transcripts', providers: ['claude'] },
+  { name: 'analyze-session-transcripts', providers: ['claude', 'codex'] },
   { name: 'burn-down-audits', providers: ['claude', 'codex'] },
   { name: 'implement-issue-stack', providers: ['codex'] },
 ];
