@@ -3,7 +3,7 @@
   import AiDial from './AiDial.svelte';
   import AiConfetti from './AiConfetti.svelte';
   import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
-  import AiImageReportButton from './AiImageReportButton.svelte';
+  import AiResultDisclosure from './AiResultDisclosure.svelte';
   import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -220,7 +220,6 @@
 
       {#if revealed && aiResult.resultUrl}
         <div class="ai-result-footer">
-          <p class="ai-generated-label">AI-generated picture</p>
           {#if settings.autoSaveAiEnabled}
             <p class="ai-result-saved">✓ Saved to your photos</p>
           {:else}
@@ -241,8 +240,10 @@
     {/if}
   </div>
 
-  {#if revealed && aiResult.resultUrl && reportStatus === 'idle' && !exiting}
-    <AiImageReportButton
+  <!-- Stays mounted through the polaroid send-off so it fades out with the rest
+       of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
+  {#if revealed && aiResult.resultUrl && reportStatus === 'idle'}
+    <AiResultDisclosure
       onclick={() => (reportStatus = 'confirm')}
       disabled={!aiResult.previewUrl}
     />
@@ -251,18 +252,22 @@
 
 <style>
   .ai-result-modal {
-    --result-footer-reserve: 112px;
-    --result-autosave-footer-reserve: 118px;
-    --report-flag-reserve: calc(
-      var(--report-flag-clearance) + var(--report-flag-clearance) + env(safe-area-inset-bottom) +
-        env(safe-area-inset-bottom)
-    );
+    --result-footer-reserve: 89px;
+    --result-autosave-footer-reserve: 95px;
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
     width: min(96vw, 560px);
     max-height: 96dvh;
     overflow: visible;
+  }
+
+  /* Whenever the disclosure strip is on screen the card gives up the room it
+     needs below (mirrored above, since the card is transform-centered) — so a
+     short viewport shrinks the picture instead of pushing the strip off-screen.
+     The confirmation state replaces the strip, and keeps the plain 96dvh above. */
+  .ai-result-modal:not(.report-expanded) {
+    max-height: calc(100dvh - var(--report-strip-reserve));
   }
 
   .ai-result-content {
@@ -321,33 +326,19 @@
        around the whole card. Width is capped to the content box; a tall image
        is limited by the height reserve (padding + gap + download + some air). */
     max-width: 100%;
-    max-height: calc(96dvh - var(--result-footer-reserve));
+    max-height: calc(100dvh - var(--result-footer-reserve) - var(--report-strip-reserve));
   }
 
   /* Auto-save on: no Download button, so the freed vertical space goes to the
      image — only a slim "Saved" caption is reserved below it. */
   .ai-result-modal.autosave .stage-sizer {
-    max-height: calc(96dvh - var(--result-autosave-footer-reserve));
+    max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-strip-reserve));
   }
 
   .ai-result-modal.report-expanded .stage-sizer {
     /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
        ordinary footer above needs much less room. */
     max-height: calc(96dvh - 276px);
-  }
-
-  @media (max-width: 800px) {
-    .ai-result-modal:not(.report-expanded) {
-      max-height: calc(100dvh - var(--report-flag-reserve));
-    }
-
-    .ai-result-modal:not(.report-expanded) .stage-sizer {
-      max-height: calc(100dvh - var(--result-footer-reserve) - var(--report-flag-reserve));
-    }
-
-    .ai-result-modal.autosave:not(.report-expanded) .stage-sizer {
-      max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-flag-reserve));
-    }
   }
 
   /* No image yet (modal opened before the export finished): a definite width so
@@ -435,13 +426,6 @@
     gap: var(--space-2);
   }
 
-  .ai-generated-label {
-    margin: 0;
-    color: var(--text-soft);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-  }
-
   /* ── Download button ── */
   .ai-result-download {
     height: 44px;
@@ -518,7 +502,8 @@
   /* Hide the controls so the card reads as a clean polaroid. The download
      button keeps its footprint, leaving the thick blank border at the bottom. */
   .ai-result-modal.polaroid-mode .ai-result-close,
-  .ai-result-modal.polaroid-mode .ai-result-footer {
+  .ai-result-modal.polaroid-mode .ai-result-footer,
+  .ai-result-modal.polaroid-mode :global(.ai-result-disclosure) {
     opacity: 0;
     pointer-events: none;
     transition: opacity var(--duration-base) ease;
