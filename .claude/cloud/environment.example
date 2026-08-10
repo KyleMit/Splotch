@@ -22,13 +22,19 @@ ALLOWED_TOKENS_LIST=                             # seed access codes
 # allowedHosts). `npm run dev:tunnel` injects this itself, so it's optional if you only
 # ever preview via that script.
 TUNNEL_HOST=splotch-tunnel-kyle.fly.dev
-# Non-secret — how long-running work is bounded. Each one covers less than its name suggests;
-# docs/CLOUD/Claude.md, "Bounding long-running work", has the mechanisms. There is deliberately
-# no keep-alive setting here: session idle is measured on the conversation, not on container
-# activity, so nothing set in this dialog can hold a session open while work runs.
-CLAUDE_AUTO_BACKGROUND_TASKS=1                   # detaches a long foreground command; does NOT kill it
-BASH_MAX_TIMEOUT_MS=600000                       # ceiling for foreground Bash only; detached commands have none
-CLAUDE_ASYNC_AGENT_STALL_TIMEOUT_MS=300000       # dead model stream only; tool_heartbeat resets it mid-tool-call
+# Non-secret — how long-running work is bounded; docs/CLOUD/Claude.md, "Bounding long-running
+# work", has the mechanisms. There is deliberately no keep-alive setting here: session idle is
+# measured on the conversation, not on container activity, so nothing set in this dialog can hold
+# a session open while work runs.
+#
+# The foreground Bash timeout, raised from its stock 120000. A command that outlives it is detached
+# rather than killed, and a detached command carries no bound at all — so a longer default is what
+# keeps a full test or build run in the foreground, bounded and visible, instead of unbounded.
+BASH_DEFAULT_TIMEOUT_MS=600000
+# Aborts a background subagent whose model stream has gone dead. It does NOT catch a subagent stuck
+# inside a live tool call: tool_heartbeat progress events fire on elapsed time, not on progress, and
+# keep resetting it.
+CLAUDE_ASYNC_AGENT_STALL_TIMEOUT_MS=300000
 
 [setup-script]
 # One-line bootstrap to paste in the dialog; real logic is committed in the target file.

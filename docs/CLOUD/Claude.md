@@ -64,9 +64,12 @@ chunk commits and pushes, making a reclamation cost one chunk instead of the ses
 
 The complementary failure is work that never ends, where three mechanisms compound:
 
-* **A foreground Bash call that exceeds its timeout is detached, not killed.** The default is 120s;
-  on expiry the harness moves the command to the background and reports that it will notify on
-  completion.
+* **A foreground Bash call that exceeds its timeout is detached, not killed.** On expiry the harness
+  moves the command to the background and reports that it will notify on completion. The stock
+  timeout is 120s — short enough that a full test or build run always crosses it — which is why this
+  environment raises `BASH_DEFAULT_TIMEOUT_MS`
+  ([`.claude/cloud/environment.example`](../../.claude/cloud/environment.example)) to keep such a
+  run in the foreground, where it stays bounded.
 * **A detached command has no bound at all.** Measured: a detached hang was still running after
   eight minutes with no harness intervention. Its only limit is one baked into the command itself.
 * **A completion notification that can never arrive.** A command that never exits never notifies,
