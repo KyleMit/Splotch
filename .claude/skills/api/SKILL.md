@@ -392,7 +392,8 @@ real issue is created), `csp-report`'s two payload formats + caps, and `generate
 image → 400 — every case is rejected before the model call), then tears the server down. No Gemini
 key or Netlify Blobs needed; successful generation and `verify-key` (which make live model calls)
 are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the cheap
-counterpart to the Playwright admin E2E in `tests/admin.spec.ts`.
+counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `unit` job of
+`test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
 
 `test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so it can't catch the
 failure mode of ADR-0025 (a deployed function without the Blobs context). For that, run

@@ -48,5 +48,6 @@ paths:
   part of the same change (then `npm run ruler:apply` — the `.claude/skills/` and `.agents/skills/`
   copies are generated, ADR-0058).
 * After changing an endpoint, run `npm run test:api:smoke` to validate the live `/api/*` contract
-  (self-contained; boots its own test server). Extend the smoke script (`scripts/api-smoke.mjs`)
-  when you add an endpoint or change a response shape.
+  (self-contained; boots its own test server). CI also runs it on every push/PR (`test.yml` `unit`
+  job), so a contract break fails CI even if the local run is skipped. Extend the smoke script
+  (`scripts/api-smoke.mjs`) when you add an endpoint or change a response shape.
