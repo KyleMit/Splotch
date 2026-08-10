@@ -79,12 +79,13 @@
     /* Fine print, not a CTA: the visual stays small so a pre-reader doesn't
        target it, while transparent padding — cancelled by the matching negative
        margin so the strip's own height is unchanged — grows the tap target to
-       the app's 44px minimum. */
-    --report-tap-size: 44px;
+       --report-strip-tap. That target overhangs the pill it sits in, which is
+       why the card's height budget reserves off the same token rather than off
+       the pill (app.css). */
     --report-icon-size: 14px;
-    min-width: var(--report-tap-size);
-    padding: calc((var(--report-tap-size) - var(--report-icon-size)) / 2) 0;
-    margin: calc((var(--report-icon-size) - var(--report-tap-size)) / 2) 0;
+    min-width: var(--report-strip-tap);
+    padding: calc((var(--report-strip-tap) - var(--report-icon-size)) / 2) 0;
+    margin: calc((var(--report-icon-size) - var(--report-strip-tap)) / 2) 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;

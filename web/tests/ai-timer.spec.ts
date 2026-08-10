@@ -30,7 +30,7 @@ async function resultBoxes(page: Page) {
 }
 
 // The strip's placement below the card and the room the card's height budget
-// keeps clear for it come from the same two custom properties, so the geometry
+// keeps clear for it come from the same custom properties, so the geometry
 // assertions read them off the page instead of restating their values.
 function stripTokens(page: Page) {
   return page.evaluate(() => {
@@ -38,6 +38,7 @@ function stripTokens(page: Page) {
     return {
       gap: parseFloat(root.getPropertyValue('--report-strip-gap')),
       height: parseFloat(root.getPropertyValue('--report-strip-height')),
+      tap: parseFloat(root.getPropertyValue('--report-strip-tap')),
     };
   });
 }
@@ -129,13 +130,15 @@ test.describe('AI render timer', () => {
       await triggerAiTimer(page, /fast/i);
       await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
-      const { card, strip } = await resultBoxes(page);
+      const { card, strip, report } = await resultBoxes(page);
       const tokens = await stripTokens(page);
       expect(strip.y - (card.y + card.height)).toBeCloseTo(tokens.gap, 0);
       expect(strip.x + strip.width / 2).toBeCloseTo(card.x + card.width / 2, 0);
-      // The card's height budget reserves --report-strip-height for the strip;
-      // a strip that outgrew it would be reserved short and clip off-screen.
+      // The card's height budget is reserved off these two tokens, so either one
+      // drifting from what actually renders would reserve short and clip the
+      // strip — or the Report target overhanging it — off a short screen.
       expect(strip.height).toBeCloseTo(tokens.height, 0);
+      expect(report.height).toBeCloseTo(tokens.tap, 0);
     });
   }
 
@@ -184,11 +187,14 @@ test.describe('AI render timer', () => {
       await triggerAiTimer(page, /fast/i);
       await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
-      const { card, content, strip } = await resultBoxes(page);
+      const { card, content, report } = await resultBoxes(page);
       expect(content.y + content.height).toBeLessThanOrEqual(card.y + card.height + 1);
       // The card gives up height for the strip rather than pushing it off the
-      // bottom of a short screen.
-      expect(strip.y + strip.height).toBeLessThanOrEqual(viewport.height + 1);
+      // bottom of a short screen. Measured on the Report box, not the strip:
+      // its tap target is taller than the pill and overhangs it, so the strip
+      // can sit fully on screen while the bottom of a 44px target is clipped.
+      expect(report.y).toBeGreaterThanOrEqual(-1);
+      expect(report.y + report.height).toBeLessThanOrEqual(viewport.height + 1);
     });
   }
 

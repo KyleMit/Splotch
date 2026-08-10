@@ -178,15 +178,27 @@ body {
 }
 
 /* The AI disclosure strip hangs below the result card on the dimmed backdrop.
-   It owns its own height and the gap above it; the card consumes the reserve so
-   its responsive height budget follows that geometry. The reserve is doubled
-   because the card is transform-centered — room kept clear below it is mirrored
-   above — and carries the safe-area inset so the strip clears a home indicator. */
+   It owns its height, the gap above it, and the Report control's tap target;
+   the card consumes the reserve so its responsive height budget follows that
+   geometry. The reserve is doubled because the card is transform-centered —
+   room kept clear below it is mirrored above — and carries the safe-area inset
+   so the strip clears a home indicator.
+
+   What the reserve measures is the tap target, not the pill: the target is
+   taller than the pill and centered on it, so it overhangs both edges, and
+   reserving only the pill lets a short viewport clip the bottom of a 44px
+   target down to something a parent can't reliably hit. Hence half of each —
+   the distance from the card's edge to the far side of the overhang. */
 :root {
   --report-strip-height: 26px;
   --report-strip-gap: var(--space-4);
+  --report-strip-tap: 44px;
   --report-strip-reserve: calc(
-    2 * (var(--report-strip-height) + var(--report-strip-gap) + env(safe-area-inset-bottom))
+    2 *
+      (
+        var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
+          env(safe-area-inset-bottom)
+      )
   );
 }
 
