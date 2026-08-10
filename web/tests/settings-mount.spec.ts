@@ -17,12 +17,19 @@ import { gotoApp } from './helpers';
 // `sections.ts` reaches the rune modules behind the hub subtitles, so a spec
 // can't load it, and every row is in the column from the first frame anyway.
 
+// Frames to keep sampling for if the pane never completes — a bound on a broken
+// run, not a schedule. The fill waits out the card's fly-in before it starts, so
+// a healthy run is that animation plus a frame per section, and this is several
+// times either.
+const FILL_FRAME_LIMIT = 300;
+
 /** Section bodies in the pane on each frame, from the frame the pane appears. */
-function paneFillPerFrame(page: Page, frames: number) {
+function paneFillPerFrame(page: Page, frameLimit: number) {
   return page.evaluate(
-    (frames) =>
+    (frameLimit) =>
       new Promise<{ rows: number; sections: number[] }>((resolve) => {
         const sections: number[] = [];
+        const rows = () => document.querySelectorAll('.settings-nav-item').length;
         const step = () => {
           const pane = document.querySelector('.settings-pane');
           if (!pane) {
@@ -30,21 +37,22 @@ function paneFillPerFrame(page: Page, frames: number) {
           } else {
             sections.push(pane.querySelectorAll('.settings-section').length);
           }
-          if (sections.length < frames) requestAnimationFrame(step);
-          else resolve({ rows: document.querySelectorAll('.settings-nav-item').length, sections });
+          if (sections.at(-1) === rows() || sections.length >= frameLimit) {
+            resolve({ rows: rows(), sections });
+          } else {
+            requestAnimationFrame(step);
+          }
         };
         requestAnimationFrame(step);
       }),
-    frames
+    frameLimit
   );
 }
 
 test('the pane fills a section at a time rather than all at once', async ({ page }) => {
   await gotoApp(page);
 
-  // Comfortably more frames than sections, so the run is seen to finish rather
-  // than merely to be under way when the window closes.
-  const { rows, sections } = await paneFillPerFrame(page, 40);
+  const { rows, sections } = await paneFillPerFrame(page, FILL_FRAME_LIMIT);
 
   expect(rows).toBeGreaterThan(1);
   expect(sections[0]).toBeGreaterThan(0);

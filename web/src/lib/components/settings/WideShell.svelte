@@ -91,6 +91,25 @@
     return true;
   }
 
+  // The card flies in over its own run of frames, and the fill would otherwise
+  // spend them: a section body too big to construct inside one frame drops one
+  // of the animation's. So the fill waits for the card to land — nothing may
+  // read the pane before then anyway, which is what `aria-busy` states. A
+  // cancelled animation rejects `finished`; that leaves nothing to wait for,
+  // which is the same answer as landing.
+  function fillAfterFlyIn(): () => void {
+    let stopPump: (() => void) | undefined;
+    let cancelled = false;
+    const flyIn = paneEl?.closest('dialog')?.getAnimations() ?? [];
+    Promise.all(flyIn.map((animation) => animation.finished.catch(() => undefined))).then(() => {
+      if (!cancelled) stopPump = pumpRemainingSections();
+    });
+    return () => {
+      cancelled = true;
+      stopPump?.();
+    };
+  }
+
   // Each frame asks for one more than the watermark currently holds, rather than
   // counting up privately: a jump can raise the watermark mid-fill, and a
   // private counter would then find nothing left to do and stop the fill for
@@ -188,7 +207,7 @@
     // on a true offset. For the default landing that is one section; a deep link
     // pays for its own prefix.
     mountAtLeast(sectionIndex(landing) + 1);
-    let stopPump: (() => void) | undefined;
+    let stopFill: (() => void) | undefined;
     // A still-closed dialog is `display: none`, so both scrollers report 0 and
     // ignore a scrollTo — and the browser then restores the offsets it kept the
     // moment the card gets a layout box. Waiting a frame is what makes the reset
@@ -197,11 +216,11 @@
       navEl?.scrollTo({ top: 0 });
       revealNavRow(landing, 'auto');
       scrollToSection(landing, 'auto');
-      stopPump = pumpRemainingSections();
+      stopFill = fillAfterFlyIn();
     });
     return () => {
       cancelAnimationFrame(frame);
-      stopPump?.();
+      stopFill?.();
     };
   });
 

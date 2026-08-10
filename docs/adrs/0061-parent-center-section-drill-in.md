@@ -248,24 +248,36 @@ adjustments make that hold while the Pane is filling:
   frame for one more than the watermark currently holds rather than counting up privately, which
   would leave every section below a jumped-to one stranded.
 
+**The fill waits for the card to land.** The dialog flies in over its own run of frames, and the
+first version of this spent them — the one section body too big to construct inside a frame dropped
+one of the animation's, ~120 ms into an open. The pump now starts on the card's
+`Animation.finished`, so the fill and the fly-in never contend. Nothing may read the Pane before
+then in any case, which is what `aria-busy` states.
+
 The Pane carries `aria-busy` until the last section is in. That is what `tests/helpers.ts`'s
 `openSettingsModal` and `gen-page-inventory.mjs` wait on before reading an offset or taking a shot;
 the fly-in is no substitute, since it is wall-clock and this is frames.
 `scripts/tests/perf-actions.test.mjs` guards the token, and `npm run perf:settings`
 (`scripts/perf/settings-open.mjs`) is the measurement, scoring both shells on the production build
-under a `longtask` observer.
+under a `longtask` observer, with both timings taken in the page — read from the driver, a
+`waitForSelector` plus a round trip lands ~150 ms of its own polling on numbers this small.
 
-Median of five, this host, production build:
+Median of five, this host, production build. The phone hub is the floor: same modal chrome, same
+eleven rows, no section bodies.
 
-| viewport, throttle                | before | after                                             |
-| --------------------------------- | ------ | ------------------------------------------------- |
-| wide 1280x800, 1x                 | 56 ms  | none over 50 ms                                   |
-| wide 1280x800, 4x                 | 219 ms | 81 ms on the tap, then 57 ms a frame or two later |
-| phone hub 412x915, 4x (the floor) | 64 ms  | 64 ms                                             |
+| viewport, CPU     | before                | after                                     |
+| ----------------- | --------------------- | ----------------------------------------- |
+| wide 1280x800, 1x | 53 ms on the tap      | none over 50 ms                           |
+| wide 1280x800, 4x | **281 ms** on the tap | **89 ms** on the tap, 60 ms at ~475 ms in |
+| phone hub, 4x     | 67 ms                 | 67 ms — untouched                         |
 
-The tap's own task is within ~17 ms of the phone hub it is measured against — that residue is the
-Sidebar plus the first section. The one task still over the threshold at 4x is a *single* section
-body (Install, the longest in the app) that does not fit in one frame on its own; splitting a
-section is a separate change. The trade is wall clock for responsiveness: click to all-eleven-
-attached goes from 304 ms to 452 ms at 4x, spent in frames the card is flying in over rather than in
-one block with the main thread held.
+The tap's own task is within ~22 ms of that floor; the residue is the Sidebar plus the first
+section. The one task still over the threshold at 4x is a *single* section body — Install, the
+longest in the app — that does not fit in one frame on its own, and splitting a section is a
+separate change.
+
+The trade is wall clock. Click to all-eleven-attached goes 287 ms → 798 ms at 4x (53 ms → 549 ms at
+1x), of which ~460 ms is the fly-in the fill now waits out rather than works through; the fill
+itself is one frame per section either way. That buys a card that is interactive on its first
+painted frame and an open animation nothing competes with, at the price of the *bottom* of a
+settings list nobody has scrolled to yet arriving half a second later.

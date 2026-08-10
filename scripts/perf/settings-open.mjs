@@ -79,14 +79,36 @@ async function measureOneOpen(browser, cdpThrottle, { device, ready }, base) {
     await page.waitForSelector('#drawingCanvas');
     await page.waitForTimeout(IDLE_BOOT_SETTLE_MS);
 
-    const tapAt = await page.evaluate(() => {
+    // Both timings are taken in the page, a frame apart at worst. Read from the
+    // driver instead, a `waitForSelector` plus a round trip lands ~150 ms of its
+    // own polling on a number this small. The fly-in is recorded because the
+    // wide shell deliberately holds its fill until the card lands: without that
+    // split, the wait reads as work.
+    const tapAt = await page.evaluate((ready) => {
       const at = performance.now();
       document.querySelector('#settingsButton').click();
+      const pollReady = () => {
+        if (document.querySelector(ready))
+          window.__settingsOpen.attachedMs = performance.now() - at;
+        else requestAnimationFrame(pollReady);
+      };
+      requestAnimationFrame(() => {
+        pollReady();
+        const dialog = document.querySelector('#settingsModal');
+        Promise.all(
+          dialog.getAnimations().map((animation) => animation.finished.catch(() => undefined))
+        ).then(() => {
+          window.__settingsOpen.flyInMs = performance.now() - at;
+        });
+      });
       return at;
-    });
+    }, ready);
     await page.waitForSelector(ready);
-    const attachedMs = await page.evaluate((at) => performance.now() - at, tapAt);
     await page.waitForTimeout(TAIL_SETTLE_MS);
+    const { attachedMs, flyInMs } = await page.evaluate(() => ({
+      attachedMs: window.__settingsOpen.attachedMs ?? 0,
+      flyInMs: window.__settingsOpen.flyInMs ?? 0,
+    }));
 
     // Kept by end, not by start: the task the tap itself runs in began before
     // the clock was read inside it, and on a shell that mounts everything at
@@ -99,7 +121,7 @@ async function measureOneOpen(browser, cdpThrottle, { device, ready }, base) {
           .map((task) => ({ afterTapMs: task.start - at, duration: task.duration })),
       tapAt
     );
-    return { attachedMs, longTasks };
+    return { attachedMs, flyInMs, longTasks };
   } finally {
     await ctx.close();
   }
@@ -134,6 +156,7 @@ export async function runSettingsOpenProfile() {
           })),
         })),
         medianAttachedMs: round(median(runs.map((run) => run.attachedMs))),
+        medianFlyInMs: round(median(runs.map((run) => run.flyInMs))),
         medianLongestTaskMs: round(
           median(runs.map((run) => Math.max(0, ...run.longTasks.map((task) => task.duration))))
         ),
@@ -150,7 +173,8 @@ export async function runSettingsOpenProfile() {
   for (const [name, result] of Object.entries(results)) {
     console.log(
       `${name.padEnd(10)} ${result.viewport.padEnd(9)} cpu ${throttle.tag}  ` +
-        `longest long task ${result.medianLongestTaskMs} ms, attached in ${result.medianAttachedMs} ms  ` +
+        `longest long task ${result.medianLongestTaskMs} ms, ` +
+        `attached in ${result.medianAttachedMs} ms (fly-in ${result.medianFlyInMs} ms)  ` +
         `(runs: ${result.runs
           .map(
             (run) =>
