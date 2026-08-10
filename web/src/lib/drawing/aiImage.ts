@@ -181,7 +181,7 @@ async function exportUploadImage(
 // into logs/history). The non-secret style enum is a query param.
 function buildRequest(
   uploadBlob: Blob,
-  style: string,
+  style: StyleName | '',
   freeInstallationId: string | null
 ): { endpoint: string; headers: Record<string, string>; body: Blob } {
   const headers: Record<string, string> = {
