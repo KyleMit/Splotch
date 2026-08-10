@@ -12,8 +12,7 @@ const scenarioKeys = (source) => [...source.matchAll(/^\s*key: '([a-z-]+)',$/gm)
 
 // The driver's only interface is globals an operator types into the Safari
 // console before pasting it, so one that isn't in the runbook is one nobody can
-// find. The runbook is the .ruler/ source; ruler:check gates the two generated
-// copies.
+// find.
 const perfGlobals = (source) =>
   [...new Set([...source.matchAll(/window\.(__perf[A-Za-z]+)/g)].map((m) => m[1]))].sort();
 

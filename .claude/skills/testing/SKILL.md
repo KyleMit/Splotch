@@ -5,8 +5,8 @@ description: Full testing guide — the three-tier strategy (Vitest unit, Playwr
 
 # Splotch — Testing
 
-The full guide is **`docs/TESTING.md`**: the layer-by-layer table (tool, command, and what CI runs
-it on), then a section per layer.
+The full guide is **[`docs/TESTING.md`](../../../docs/TESTING.md)**: the layer-by-layer table (tool,
+command, and what CI runs it on), then a section per layer.
 
 | Read this section        | When                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |

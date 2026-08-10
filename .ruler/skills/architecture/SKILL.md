@@ -5,8 +5,8 @@ description: Splotch tech stack, file-by-file source map of web/src/, route tabl
 
 # Splotch — Architecture
 
-The reference lives in **`docs/ARCHITECTURE.md`**. Read the section that matches the question rather
-than the whole file.
+The reference lives in **[`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md)**. Read the section
+that matches the question rather than the whole file.
 
 | Section               | Answers                                                                                                                                      |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |

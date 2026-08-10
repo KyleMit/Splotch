@@ -9,7 +9,7 @@ The harness (`scripts/perf/`, ADR-0032) drives a deterministic "toddler session"
 while recording a profile, then writes a machine-readable report. One command per platform; the
 analyzer is pure and re-runnable on any saved trace.
 
-**`docs/PROFILING.md`** is the reference:
+**[`docs/PROFILING.md`](../../../docs/PROFILING.md)** is the reference:
 
 | Section                                 | Answers                                                                                                  |
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -20,10 +20,10 @@ analyzer is pure and re-runnable on any saved trace.
 | **Known findings & deferred tradeoffs** | Whether what you found is already understood and deliberately accepted                                   |
 | **Native specifics**                    | Android/iOS capture differences                                                                          |
 
-**`docs/PROFILING-IPAD.md`** is the separate runbook for a **physical iPad** — the highest-fidelity
-target, and the only one that exercises the real WebKit/JavaScriptCore engine, Apple GPU, and 120 Hz
-ProMotion display together. Read it before any real-device profiling; start at its "Which approach
-to use" table.
+**[`docs/PROFILING-IPAD.md`](../../../docs/PROFILING-IPAD.md)** is the separate runbook for a
+**physical iPad** — the highest-fidelity target, and the only one that exercises the real
+WebKit/JavaScriptCore engine, Apple GPU, and 120 Hz ProMotion display together. Read it before any
+real-device profiling; start at its "Which approach to use" table.
 
 Two things to check before drawing a conclusion:
 

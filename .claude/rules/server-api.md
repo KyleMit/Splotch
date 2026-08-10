@@ -48,8 +48,8 @@ paths:
   (`src/lib/server/ai/provider.ts`) — never import the SDK or Gemini types outside that directory.
   (The dev-time asset scripts in `scripts/` are the one sanctioned exception.)
 * When adding or changing an endpoint, update the API reference in `docs/API.md` as part of the same
-  change (then `npm run ruler:apply` — the `.claude/skills/` and `.agents/skills/` copies are
-  generated, ADR-0058).
+  change. It is authored in place — the `api` skill only points at it (ADR-0107), so there is
+  nothing to regenerate.
 * After changing an endpoint, run `npm run test:api:smoke` to validate the live `/api/*` contract
   (self-contained; boots its own test server). CI also runs it on every push/PR (`test.yml` `unit`
   job), so a contract break fails CI even if the local run is skipped. Extend the smoke script

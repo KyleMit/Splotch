@@ -5,10 +5,10 @@ description: HTTP API reference for the /api/* endpoints — generate-image, rep
 
 # Splotch HTTP API
 
-The full contract lives in **`docs/API.md`** — request/response shapes, status codes, headers, and
-per-endpoint rate limits. Read the endpoint's own section plus the shared preamble at the top of the
-file, which covers the CORS posture, the credential model, and the canonical failure shape every
-endpoint returns.
+The full contract lives in **[`docs/API.md`](../../../docs/API.md)** — request/response shapes,
+status codes, headers, and per-endpoint rate limits. Read the endpoint's own section plus the shared
+preamble at the top of the file, which covers the CORS posture, the credential model, and the
+canonical failure shape every endpoint returns.
 
 | Group         | Endpoints                                                                                                  |
 | ------------- | ---------------------------------------------------------------------------------------------------------- |
@@ -26,4 +26,5 @@ Before changing an endpoint:
   `__NATIVE_API_BASE__`, so a contract change ships to installed apps that were built against the
   old shape.
 * `.claude/rules/server-api.md` loads automatically when you edit files under the API routes and
-  carries the implementation rules; this skill and `docs/API.md` are the contract.
+  carries the implementation rules; this skill and [`docs/API.md`](../../../docs/API.md) are the
+  contract.

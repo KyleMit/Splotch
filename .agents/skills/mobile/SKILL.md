@@ -11,14 +11,16 @@ unchanged and still deploys to Netlify.
 
 The guide is `docs/MOBILE/`, split into three files — **read the one that matches your task**:
 
-* **`docs/MOBILE/native.md`** — start here. How the static native build works, offline vs. online
-  behavior, dual-layer storage, the data/privacy posture the stores ask about, shared store-listing
-  assets, the kids-compliance baseline, and cross-platform follow-ups.
-* **`docs/MOBILE/android.md`** — Android toolchain setup (macOS + Linux), build/sign/run commands,
-  on-device web testing, Chrome remote profiling, and the Google Play release + Families-policy
-  checklist.
-* **`docs/MOBILE/ios.md`** — iOS toolchain setup (macOS + Xcode, SPM not CocoaPods), build/run
-  commands, Safari Web Inspector, and the App Store release + Kids-Category checklist.
+* **[`docs/MOBILE/native.md`](../../../docs/MOBILE/native.md)** — start here. How the static native
+  build works, offline vs. online behavior, dual-layer storage, the data/privacy posture the stores
+  ask about, shared store-listing assets, the kids-compliance baseline, and cross-platform
+  follow-ups.
+* **[`docs/MOBILE/android.md`](../../../docs/MOBILE/android.md)** — Android toolchain setup (macOS +
+  Linux), build/sign/run commands, on-device web testing, Chrome remote profiling, and the Google
+  Play release + Families-policy checklist.
+* **[`docs/MOBILE/ios.md`](../../../docs/MOBILE/ios.md)** — iOS toolchain setup (macOS + Xcode, SPM
+  not CocoaPods), build/run commands, Safari Web Inspector, and the App Store release +
+  Kids-Category checklist.
 
 Both platforms are active and committed (`android/`, `ios/`). Android builds on macOS or Linux; iOS
 requires macOS + Xcode. The `CAPACITOR=true` build env var is the single signal for all

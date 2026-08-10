@@ -5,8 +5,8 @@ description: Index of all architectural decision records (ADRs). Use before prop
 
 # Consulting ADRs
 
-The current index is `docs/adrs/README.md` — read it first; it is the only reliable map of what has
-already been decided.
+The current index is [`docs/adrs/README.md`](../../../docs/adrs/README.md) — read it first; it is
+the only reliable map of what has already been decided.
 
 * Read only the ADR(s) relevant to the decision at hand — never all of them — and cite the ADR
   numbers in your response.
