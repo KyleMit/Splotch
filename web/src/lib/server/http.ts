@@ -1,4 +1,5 @@
 import { isHttpError, json } from '@sveltejs/kit';
+import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 
 export function contentTypeOf(request: Request): string {
   return (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
@@ -63,14 +64,17 @@ export function throttled(retryAfter: number) {
 }
 
 /**
- * Wraps an /api/* handler so a thrown SvelteKit `error()` leaves the wire as
- * the same canonical `{ ok:false, error }` body every returned failure uses —
- * throw-based control flow inside a route can't reintroduce SvelteKit's
- * `{ message }` shape. A non-HttpError still propagates to SvelteKit's
- * unexpected-error path (500 + handleError). csp-report is the one unwrapped
- * endpoint: its responses are deliberately bodyless (browsers ignore them).
+ * Wraps an /api/* handler so every thrown failure leaves the wire as the same
+ * canonical `{ ok:false, error }` body every returned failure uses. A thrown
+ * SvelteKit `error()` keeps its status and message; an unexpected non-HttpError
+ * becomes `fail(500, GENERIC_ERROR_MESSAGE)` — SvelteKit's `{ message }` shape
+ * can't reach a client either way. Catching here bypasses hooks.server.ts's
+ * handleError, whose console record is the only trace of an unexpected /api
+ * failure, so the same-format log line is emitted here instead. csp-report is
+ * the one unwrapped endpoint: its responses are deliberately bodyless
+ * (browsers ignore them).
  */
-export function apiHandler<Event>(
+export function apiHandler<Event extends { url: { pathname: string } }>(
   handler: (event: Event) => Response | Promise<Response>
 ): (event: Event) => Promise<Response> {
   return async (event) => {
@@ -78,7 +82,8 @@ export function apiHandler<Event>(
       return await handler(event);
     } catch (cause) {
       if (isHttpError(cause)) return fail(cause.status, cause.body.message);
-      throw cause;
+      console.error(ERROR_LOG_PREFIX.server, event.url.pathname, 500, cause);
+      return fail(500, GENERIC_ERROR_MESSAGE);
     }
   };
 }

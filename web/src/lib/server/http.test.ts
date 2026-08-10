@@ -78,12 +78,14 @@ describe('fail', () => {
 });
 
 describe('apiHandler', () => {
+  const event = { url: { pathname: '/api/test' } };
+
   it('converts a thrown SvelteKit error into the canonical failure shape', async () => {
     const handler = apiHandler(async () => {
       throw error(413, 'Image is too large');
     });
 
-    const response = await handler(undefined);
+    const response = await handler(event);
 
     expect(response.status).toBe(413);
     expect(await response.json()).toEqual({ ok: false, error: 'Image is too large' });
@@ -93,16 +95,22 @@ describe('apiHandler', () => {
     const success = fail(400, 'Handled inside');
     const handler = apiHandler(async () => success);
 
-    expect(await handler(undefined)).toBe(success);
+    expect(await handler(event)).toBe(success);
   });
 
-  it('rethrows a non-HttpError so SvelteKit treats it as unexpected', async () => {
+  it('normalizes a non-HttpError to the canonical 500 and keeps the server log', async () => {
     const boom = new Error('boom');
     const handler = apiHandler(async () => {
       throw boom;
     });
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    await expect(handler(undefined)).rejects.toBe(boom);
+    const response = await handler(event);
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ ok: false, error: 'Something went wrong.' });
+    expect(logged).toHaveBeenCalledWith('[server error]', '/api/test', 500, boom);
+    logged.mockRestore();
   });
 });
 

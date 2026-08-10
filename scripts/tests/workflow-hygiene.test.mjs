@@ -185,6 +185,11 @@ describe('workflow hygiene', () => {
       const netlifyToml = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
       expect(netlifyToml.match(/^\s*NODE_VERSION = "(\d+)"$/m)?.[1]).toBe(floorMajor);
     });
+
+    it('the Codex environment guide names the engines floor major', () => {
+      const codexGuide = readFileSync(join(repoRoot, 'docs/CLOUD/Codex.md'), 'utf8');
+      expect(codexGuide.match(/latest available Node (\d+) patch/)?.[1]).toBe(floorMajor);
+    });
   });
 
   for (const { name, lines } of [...workflows, ...actions]) {
