@@ -154,12 +154,15 @@ export const SETTINGS_FILL_FRAME_BUDGET = 300;
 // the harness instead, and on a starved worker one can span the whole fill
 // (settings-mount.spec.ts watches the same fill the same way).
 //
-// The pane arriving in the DOM is not frame-paced, so that half keeps Playwright's
-// ordinary wall-clock cap; the fill is, so the sampling runs with `timeout: 0` and
-// is bounded by the frame budget alone. Leaving the default 30s on the evaluate
-// would put a wall clock back around the very thing this counts in frames.
+// The frame budget is the whole of this wait's own bound, and it needs to be:
+// none of Playwright's timeouts reach the sampling. `locator.evaluate`'s
+// `timeout` is spent resolving the element (`_withElement` passes it to
+// `waitForSelector` and hands the task only a deadline it ignores), so it never
+// covers the promise the page function returns — an explicit 3s cap let a
+// measured 10s in-page promise run to completion — and `actionTimeout` defaults
+// to 0 under the test runner anyway. So a fill that never finishes is bounded by
+// the test timeout, and the budget is what turns that into a pointed failure.
 export async function settleSettingsPane(pane: Locator) {
-  await pane.waitFor({ state: 'attached' });
   await pane.evaluate(
     (el, budget) =>
       new Promise<void>((resolve, reject) => {
@@ -181,8 +184,7 @@ export async function settleSettingsPane(pane: Locator) {
         };
         requestAnimationFrame(read);
       }),
-    SETTINGS_FILL_FRAME_BUDGET,
-    { timeout: 0 }
+    SETTINGS_FILL_FRAME_BUDGET
   );
 }
 
