@@ -421,9 +421,11 @@ Move these current central tests into the moved subtree:
 
 `burn-down-audits` is a registered direct provider package. Update the Claude and Codex
 implementations and their notes independently at their registered paths; do not edit a Ruler source
-or copy one provider into the other. Check the existing `docs/handoff/audit-burndown-72.md` before
-implementation: if it is still live, update its executable paths or consume it first rather than
-leaving an active transfer packet stale.
+or copy one provider into the other. `docs/handoff/audit-burndown-72.md` is confirmed live (reviewed
+2026-08-10): the burndown is wrapped-but-resumable with 43 findings still staged in `docs/AUDIT.md`,
+and the packet embeds executable `scripts/audit-burndown/` paths (its status line, the
+`pop.mjs --count` command, the pgrep pattern, and a `lib.mjs` pointer). Update those paths in place
+during this migration — do not consume the packet; its work is independent of this one.
 
 ### Existing tool tests
 
@@ -483,15 +485,37 @@ The file moves are only half the work. Use `rg`, not memory, to update every liv
 * `package.json`: every command path, every `scripts-info` path-bearing description, root `test`,
   and `test:scripts` → `test:tools`.
 * `.gitignore`: model-eval and redteam paths/comments; any `scripts/`-rooted scratch patterns.
-* `netlify.toml` and `web/netlify.toml`: build/staging and `web.mjs` paths plus comments.
+* `netlify.toml` and `web/netlify.toml`: build/staging and `web.mjs` paths plus comments. The deploy
+  `ignore` filter diffs `-- web netlify scripts releases …`; substituting `tools` widens rebuild
+  triggers to asset-gen/store-drawings/vectorize changes that never triggered deploys before. Decide
+  whether to accept that widening or enumerate the build-relevant subpaths.
 * `.github/actions/**` and `.github/workflows/**`: Playwright version, worker sweep, blob smoke,
   Android constants/tests, perf seed, ADR check, comments, and path filters.
 * `knip.json`/ESLint/format/dependency tooling and any config whose scope explicitly lists
-  `scripts/`.
+  `scripts/`. Knip's entry globs are depth-specific (`scripts/*.mjs`, `scripts/perf/*.mjs`,
+  `scripts/audit-burndown/*.mjs`, `scripts/tests/*.test.mjs`); the new tree has entry points at two
+  depths plus owner-local `lib/` and `tests/` directories, so redesign the entry list deliberately
+  rather than renaming the prefix — and `tools/lib/` must stay reachable from some entry or
+  `lint:dead` will flag it. ESLint's `scripts/perf/ipad-*.js` override glob moves with the perf
+  subtree.
+* `.claude/settings.json`: the `Bash(node scripts/**)` permission-allowlist entry must become
+  `Bash(node tools/**)`, or every moved invocation starts prompting.
+* `.claude/rules/*.md` (`server-api.md`, `testing.md`, `svelte.md`, `ipad-profiling-docs.md`):
+  edited in place; all four carry `scripts/` paths.
+* `.claude/hooks/` contents: the hooks stay where they are per the non-goals, but `session-start.sh`
+  runs `node scripts/web.mjs svelte-kit sync` and both burndown snapshot hooks pgrep for
+  `^node scripts/audit-burndown/burndown.mjs`.
+* `web/.env.example`: the redteam key comment references the `tests/redteam/` corpus location.
+* `.ruler/ruler.toml`: nested discovery is automatic (`nested = true`), so `tools/.ruler/` needs no
+  config change, but the comment enumerating the nested `.ruler/` directories names `scripts`.
 * Current human docs: `docs/CONTRIBUTING.md`, `docs/TESTING.md`, `docs/MOBILE/**`,
   `docs/PROFILING*.md`, `scrapbook/README.md`, model-eval/redteam READMEs, and other live runbooks.
-* `.ruler/**` instruction and shared-skill sources. Then run `npm run ruler:apply`; do not edit
-  generated `AGENTS.md`, `CLAUDE.md`, `.claude/skills`, or ordinary `.agents/skills` directly.
+* `.ruler/**` instruction and shared-skill sources — including the nested sources
+  `android/.ruler/AGENTS.md`, `tools/asset-gen/.ruler/AGENTS.md`, and
+  `tools/store-drawings/.ruler/AGENTS.md`, which all reference `scripts/` paths, and the shared
+  skill helper `.ruler/skills/run-splotch/driver.mjs`, which imports across the boundary. Then run
+  `npm run ruler:apply`; do not edit generated `AGENTS.md`, `CLAUDE.md`, `.claude/skills`, or
+  ordinary `.agents/skills` directly.
 * Registered direct provider packages/notes declared by the relocated
   `tools/ruler/direct-provider-skills.mjs`; update each provider independently.
 * Code imports, usage strings, generated-file banners, error messages, comments with live commands,
@@ -558,8 +582,10 @@ commands/tests runnable.
 * The current branch name is unrelated to this plan, but it was the active clean branch when the
   handoff was created. The resuming session should decide whether to branch from it or create a
   dedicated tooling-layout branch before implementation.
-* Existing active handoff `docs/handoff/audit-burndown-72.md` may still be live. Its state was not
-  audited during this planning-only task.
+* (Resolved 2026-08-10) `docs/handoff/audit-burndown-72.md` is live: the burndown wrapped resumable
+  with 43 findings still staged in `docs/AUDIT.md`, and the packet embeds executable
+  `scripts/audit-burndown/` paths. Update those paths in place during the migration; do not consume
+  the packet — its work is independent of this one.
 
 ## Done & verified
 
@@ -576,6 +602,22 @@ Read-only inventory completed against the current checkout:
 
 No implementation or validation command was run because the user explicitly requested a plan and no
 file moves. The mapping itself still needs a coverage script before implementation.
+
+A pre-implementation review (2026-08-10) re-verified the packet against the repo and agreed with the
+structure — umbrella name, flat-first rule, capability folders, shared-library restraint, and the
+single `test:scripts` → `test:tools` rename. Specifically:
+
+* every tracked `scripts/**` path appears exactly once across the destination tables (all 72
+  `scripts/tests` files, all 29 `scripts/lib` modules, every root entry point, and
+  `scripts/assets/`);
+* the npm command surface, the path-bearing `scripts-info` prose entries, the `.gitignore`
+  model-eval/redteam blocks, and the referenced ADR files all match the plan's claims;
+* shared-library consumer claims spot-checked and confirmed to cross capabilities as stated:
+  `book-assets` (flat asset check + native strip + native tests), `html` (perf, icons, and
+  e2e-tuning report producers), `smoke` (app-driver + api-smoke);
+* the review added the `.claude/settings.json` permission, `.claude/rules/`, hook contents,
+  `web/.env.example`, `ruler.toml` comment, nested `.ruler` sources, knip entry-glob redesign, and
+  Netlify deploy-filter items to **Must update**, and resolved the audit-burndown-72 assumption.
 
 ## Risks & next 3 steps
 
