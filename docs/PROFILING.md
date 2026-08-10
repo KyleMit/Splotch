@@ -2,9 +2,9 @@
 
 # Splotch — Performance Profiling
 
-The harness (`scripts/perf/`, ADR-0032) drives a deterministic "toddler session" — multi-finger
-draw, color changes, stroke-size changes, erase, undo, clear — through the app while recording a
-profile, then writes a machine-readable report. One command per platform; the analyzer is pure and
+The harness (`tools/perf/`, ADR-0032) drives a deterministic "toddler session" — multi-finger draw,
+color changes, stroke-size changes, erase, undo, clear — through the app while recording a profile,
+then writes a machine-readable report. One command per platform; the analyzer is pure and
 re-runnable on any saved trace.
 
 ## Commands
@@ -28,7 +28,7 @@ re-runnable on any saved trace.
 | `npm run perf:undo:webkit`                    | the same 7 scenarios in Playwright **WebKit** — the engine family the iOS app ships. **Enforces the commit gate** (exits non-zero past `COMMIT_GATE_MS`); no throttle                                                                                                                                                                                                                                                                                                                              | engine marks (no CDP trace, no JS-heap table) **+** the same per-scenario tables                                                                 |
 | `npm run perf:undo:webkit:fast`               | the post-merge subset (ADR-0100): `multi-finger` (the sole encode-path exerciser) + `crayon-scribbles` (mid-stroke pass splits), run on pushes to `main`. The named script owns the set; CI never repeats its scenario list. Multi-finger gates raw P95; crayon-scribbles normalizes P95 by same-run crayon renderer throughput so shared-host canvas slowdown does not impersonate new commit-only work                                                                                           | raw and normalized gate evidence + the same per-scenario tables                                                                                  |
 | `npm run perf:undo:encode-path`               | the pre-merge structural guard (ADR-0100): every scenario declaring the cold-encode path, on Chromium. Fails on any `engine.encode` measure inside the commit window — the shape #635 regressed. A count, not a millisecond budget, so it is decidable on an engine whose timing is unfaithful and cannot be tripped by shared-runner slowness                                                                                                                                                     | encode-on-commit verdict + the same per-scenario tables                                                                                          |
-| `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `scripts/perf/ipad-recorder.js` (see `docs/PROFILING-IPAD.md`) at real timing                                                                                                                                                                                                                                                                                                            | CDP trace **+** how your input landed on the snapshot stack (`getUndoDebug`) + engine.draw/commit/undo cost                                      |
+| `npm run perf:replay -- --recording=<f>`      | **real recorded finger input** instead of synthetic strokes — replays a recording captured on-device with `tools/perf/ipad-recorder.js` (see `docs/PROFILING-IPAD.md`) at real timing                                                                                                                                                                                                                                                                                                              | CDP trace **+** how your input landed on the snapshot stack (`getUndoDebug`) + engine.draw/commit/undo cost                                      |
 | `npm run perf:analyze -- <dir or trace.json>` | re-summarize a saved trace                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | —                                                                                                                                                |
 
 Flags (web/ios): `--device=phone\|tablet\|desktop`, `--no-build` (reuse the last build); web also
@@ -130,7 +130,7 @@ restored state, and a run without commit samples never enters the history.
 
 > **Not available in a cloud session.** `.claude/cloud/setup.sh` installs Chromium only, so any
 > WebKit-driving command (`perf:undo:webkit`, `perf:ios`) fails there with Playwright's raw
-> `Executable doesn't exist`. `scripts/lib/playwright.mjs` self-heals a drifted *Chromium* revision
+> `Executable doesn't exist`. `tools/lib/playwright.mjs` self-heals a drifted *Chromium* revision
 > and has no WebKit equivalent. Run these locally, or `npx playwright install webkit` first if the
 > session's network allowlist covers `cdn.playwright.dev`.
 
@@ -249,7 +249,7 @@ session + the seven `perf:undo` scenarios, with a ranked findings write-up) live
   `performance.now()` to ~1 ms, so its engine-mark timings are coarse.
 * **Real iPad** (the highest-fidelity target — real WebKit + GPU + 120 Hz ProMotion): the gates run
   is automated — **`npm run perf:ipad`** (ADR-0079) attaches over the WebKit Inspector Protocol and
-  drives the same `perf:undo` scenarios through `scripts/perf/ipad-console-driver.js`; trusted-touch
+  drives the same `perf:undo` scenarios through `tools/perf/ipad-console-driver.js`; trusted-touch
   real-screen capture is automated separately by **`npm run perf:ipad:xcuitest`** (ADR-0084),
   because Appium's temporary Safari window is not visible to the Inspector relay. There is no *CDP*
   endpoint on a device, which is why these are their own transports rather than the Android path.

@@ -3,6 +3,9 @@
 **Status:** Active — amends [ADR-0052](0052-dark-mode-theme-tokens.md) and
 [ADR-0071](0071-design-token-single-source.md). **Date:** 2026-08
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 ADR-0052 themes the monochrome glyphs wholesale: they bake `fill="#1f1f1f"` and one `app.css` rule

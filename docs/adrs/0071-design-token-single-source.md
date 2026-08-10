@@ -9,6 +9,9 @@ controls now share the `SegmentedPicker` primitive — see the amendment at the 
 amendment at the end. Amended 2026-08-08: `/changelog` adopted the pinned light-only reading
 palette.
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 The visual language lived in three loosely-coupled places. `app.css` held ~40 hand-written color

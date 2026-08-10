@@ -2,6 +2,9 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 The Splotch logo and the whole `web/src/lib/icons/*.svg` set are inlined into the DOM via `{@html}`

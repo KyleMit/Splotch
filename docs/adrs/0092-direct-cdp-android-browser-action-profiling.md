@@ -3,6 +3,9 @@
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md). **Date:** 2026-07
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 ADR-0090 reused the iPad Appium action runner for the cross-platform deployment matrix. That reuse

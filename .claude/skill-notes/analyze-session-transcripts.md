@@ -7,7 +7,7 @@ Direct Claude-only package; this note is edited in place and has no `.ruler/` so
 Codex session logs (`~/.codex/`) share no format with Claude Code transcripts — different store,
 different record shape. A shared or forked skill would either paper over that or force a Codex
 implementation nobody has designed. If a Codex analyzer is ever built, it gets its own independent
-package registered in `scripts/direct-provider-skills.mjs`, not a copy of this one.
+package registered in `tools/ruler/direct-provider-skills.mjs`, not a copy of this one.
 
 ## Why user-invocation only
 

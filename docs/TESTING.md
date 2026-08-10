@@ -14,7 +14,7 @@ releases. That split is ADR-0100 — see the commit-gate section under Continuou
 | Unit (app)               | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                              |
 | Unit (asset pipeline)    | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                              |
 | Unit (store drawings)    | Vitest (Node)       | `npm run test:store-drawings`   | every push / PR                              |
-| Unit (repo scripts)      | Vitest (Node)       | `npm run test:scripts`          | every push / PR                              |
+| Unit (repo scripts)      | Vitest (Node)       | `npm run test:tools`            | every push / PR                              |
 | E2E (web)                | Playwright          | `npm run test:e2e`              | every push / PR                              |
 | Smoke (API contract)     | Node + `vite dev`   | `npm run test:api:smoke`        | every push / PR (unit job)                   |
 | Smoke (WebKit)           | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)               |
@@ -29,7 +29,7 @@ integration below. One more server-contract smoke test, `test:blobs:smoke`, runs
 deploys rather than on every push.
 
 `npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
-`test:scripts` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
+`test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
 they need an emulator/simulator and the native toolchains.
 
 ## Server-contract smoke tests — `test:api:smoke`, `test:blobs:smoke`
@@ -95,18 +95,18 @@ closed width/color vocabularies, and exact generator drift without launching a b
 ## Repo-script unit tests — Vitest
 
 ```bash
-npm run test:scripts
+npm run test:tools
 ```
 
-Configured in `scripts/vitest.config.mjs` (Node env), tests in `scripts/tests/`. Covers repo
-automation helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md`
-surgery in `scripts/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal,
-dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
-in `scripts/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
+Configured in `tools/vitest.config.mjs` (Node env), tests in `tools/tests/`. Covers repo automation
+helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md` surgery in
+`tools/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal, dprint-clean seams; see
+the `burn-down-audits` skill) and complete runner-specific skill replacement in
+`tools/ruler/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
 shared-source collision guards). The latter covers generic Ruler-managed forks; packages listed in
-`scripts/direct-provider-skills.mjs` are maintained directly in their declared provider trees and
-excluded from Ruler drift ownership. `scripts/ruler-apply.mjs` snapshots and restores every
-registered path around generation, including its failure path. Add a test here when a `scripts/`
+`tools/ruler/direct-provider-skills.mjs` are maintained directly in their declared provider trees
+and excluded from Ruler drift ownership. `tools/ruler/ruler-apply.mjs` snapshots and restores every
+registered path around generation, including its failure path. Add a test here when a `tools/`
 helper's failure mode is corrupting state rather than crashing.
 
 The suite also hosts the **drift guards** over things prose can't keep in agreement —
@@ -117,7 +117,7 @@ then selects zero tests. The scan covers the skill trees, every `CLAUDE.md`/`AGE
 audit-burndown role prompts. Globs and placeholders (`engine-*.spec.ts`, `tests/<name>.ts`) read as
 prose and are skipped; design history — skill notes, ADRs, `docs/AUDIT.md` — is outside the scanned
 surface on purpose, as is any non-Markdown source, whose spec names are indistinguishable from the
-synthetic ones the `scripts/tests/` fixtures feed their reporters.
+synthetic ones the `tools/tests/` fixtures feed their reporters.
 
 ## E2E web tests — Playwright
 
@@ -135,7 +135,7 @@ For ad-hoc validation of a single change, filter through the npm script — **no
 `npx playwright test` from the repo root. The config + `baseURL` live in `web/`, so raw `npx` from
 the root navigates to an empty `baseURL` (`Cannot navigate to
 invalid URL`) and also loses the
-Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node scripts/web.mjs` sets the
+Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/web.mjs` sets the
 `web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
 
 Configured in `web/playwright.config.ts`. By default it builds the production artifact and serves it
@@ -258,7 +258,7 @@ specs that can't race in the first place:
   green on retry (a retry re-runs the file alone) and green in isolation. Extend `test` in the
   helper instead (`base.extend({ page: async ({ page }, use) => { …setup…; await use(page) } })`,
   see `tests/engine-harness.ts`) and have specs import `test`/`expect` from the helper;
-  `scripts/tests/e2e-harness-imports.test.mjs` fails the build if one imports `test` from
+  `tools/tests/e2e-harness-imports.test.mjs` fails the build if one imports `test` from
   `@playwright/test` instead.
 * **Prove it's fixed under load, not in isolation.** Flakes only appear under contention, so verify
   with `npm run test:e2e -- <spec> --repeat-each=10` (which still fans out across the configured
@@ -293,9 +293,9 @@ also runs on **WebKit** as the `webkit` Playwright project:
 * **Import the tag, never type it.** Playwright validates no tag, so a hand-written `@webkti-only`
   matches neither project and runs under Chromium alone — and the WebKit job stays green, because
   the correctly tagged specs still populate it. Only editing the shared constant to match nothing
-  fails loudly (`No tests found`). `scripts/tests/e2e-engine-tags.test.mjs` covers the gap: it
-  rejects a tag string literal and any tag not exported by `tags.ts`, and asserts at least one spec
-  still carries `WEBKIT_ONLY_TAG`.
+  fails loudly (`No tests found`). `tools/tests/e2e-engine-tags.test.mjs` covers the gap: it rejects
+  a tag string literal and any tag not exported by `tags.ts`, and asserts at least one spec still
+  carries `WEBKIT_ONLY_TAG`.
 * Keep the spec WebKit-portable: no CDP sessions (`rotateViewportViaCdp` in `tests/cdp.ts` and the
   `touchDriver` in `tests/settings-zoom.spec.ts` are Chromium-only), no dev-harness routes, no
   assertions tied to Chromium's rasterizer. Chromium skips the tagged specs — their coverage is
@@ -380,17 +380,17 @@ npm run test:android:device   # run against an emulator you already have running
 npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
-| Script                | What happens                                                                                                                                                                                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test:android`        | Runs `scripts/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
-| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                 |
-| `test:ios`            | Runs `scripts/ios-simulator-smoke.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.               |
+| Script                | What happens                                                                                                                                                                                                                                                                                            |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test:android`        | Runs `tools/android/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                       |
+| `test:ios`            | Runs `tools/native/ios-simulator-smoke.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.                |
 
 > The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
-> SDK locations resolve per-platform in `scripts/lib/android.mjs`; override the SDK with
+> SDK locations resolve per-platform in `tools/android/lib/android.mjs`; override the SDK with
 > `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's install location
-> resolves in `scripts/lib/maestro.mjs`.
+> resolves in `tools/native/lib/maestro.mjs`.
 
 ### Prerequisites
 
@@ -418,7 +418,7 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 
 > Use `get.maestro.mobile.dev` — `get.maestro.dev` does not work.
 >
-> The smoke scripts resolve Maestro via `scripts/lib/maestro.mjs` (PATH first, then
+> The smoke scripts resolve Maestro via `tools/native/lib/maestro.mjs` (PATH first, then
 > `~/.maestro/bin`), so they run even before you reopen your shell to pick up the PATH entry the
 > installer adds.
 
@@ -446,14 +446,14 @@ npm run test:android:device     # re-run as often as you like
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` +
-`test:store-drawings` + `test:scripts`) run in a browser-free `unit` job, and the Playwright e2e
-suite runs as a three-way `--shard=N/3` matrix in `Tests` — each shard builds the app itself (a
-shared build artifact was measured slower: it serializes shards behind `needs:`), and each uploads
-its own `playwright-report-shard-N` artifact. The app-driver smoke rides shard 1 only. With
-`fullyParallel` on, `--shard` deals out individual tests (not files) in a deterministic order,
-balanced by count and blind to duration — so the longest shard is bounded by the slowest single
-test, which lives among the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts`
-(the header comment there explains why their cost is intrinsic).
+`test:store-drawings` + `test:tools`) run in a browser-free `unit` job, and the Playwright e2e suite
+runs as a three-way `--shard=N/3` matrix in `Tests` — each shard builds the app itself (a shared
+build artifact was measured slower: it serializes shards behind `needs:`), and each uploads its own
+`playwright-report-shard-N` artifact. The app-driver smoke rides shard 1 only. With `fullyParallel`
+on, `--shard` deals out individual tests (not files) in a deterministic order, balanced by count and
+blind to duration — so the longest shard is bounded by the slowest single test, which lives among
+the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts` (the header comment there
+explains why their cost is intrinsic).
 
 The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching the deploy's admin
 secret; without it the job fails at the login step. The iOS smoke mirrors Android but on a

@@ -17,7 +17,7 @@ AGENTS.md              linguist-generated=true
 .ruler/** linguist-generated=false
 
 # Direct-maintained provider packages are canonical, not generated — they have no
-# `.ruler/` source. Registered in `scripts/direct-provider-skills.mjs`.
+# `.ruler/` source. Registered in `tools/ruler/direct-provider-skills.mjs`.
 .claude/skills/burn-down-audits/**             linguist-generated=false
 .agents/skills/burn-down-audits/**             linguist-generated=false
 .agents/skills/implement-issue-stack/**        linguist-generated=false

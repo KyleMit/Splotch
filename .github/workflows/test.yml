@@ -94,7 +94,7 @@ jobs:
 
       # Token-style ratchet: component <style> blocks must use the design tokens
       # (ADR-0071); the per-file allowlist of documented one-offs lives in
-      # scripts/lint-token-styles.mjs. Fails on any new raw hex color or raw
+      # tools/tokens/lint-token-styles.mjs. Fails on any new raw hex color or raw
       # 2+-digit z-index.
       - name: Token style lint
         run: npm run lint:tokens
@@ -148,7 +148,7 @@ jobs:
         run: npm run test:store-drawings
 
       - name: Run repo-script tests
-        run: npm run test:scripts
+        run: npm run test:tools
 
       # The /api/* contract (CORS/preflight, admin auth, oracle shapes, the
       # canonical error envelope) has no other CI coverage — blobs-smoke.yml
@@ -187,7 +187,7 @@ jobs:
       - name: Run e2e tests
         run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
 
-      # The gen:* generators drive the live app through scripts/lib/app-driver.mjs
+      # The gen:* generators drive the live app through tools/app-driver/lib/app-driver.mjs
       # and never run elsewhere in CI, so this smoke keeps that module from rotting
       # silently on selector/import changes. Reuses the chromium installed above.
       # One shard suffices — the smoke doesn't shard, it just needs to run once.
@@ -386,7 +386,7 @@ jobs:
             fi
           fi
           if [[ "$restore_ok" -eq 0 ]]; then
-            cp scripts/perf/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
+            cp tools/perf/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
           fi
 
       - name: Run full WebKit commit gate

@@ -6,10 +6,10 @@ Design history and open questions for the shared agent **skills** in this repo �
 named after it.
 
 Authored here as `<name>.md.template` and mirrored, suffix stripped, to `.claude/skill-notes/` and
-`.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs` on every `npm run ruler:apply` — **edit
-the `.ruler/` copy**, the other two are generated and carry a `<!-- Source: ... -->` marker saying
-so. Both agent trees get them for the same reason both get the skills: a Codex session working on a
-skill needs its design history as much as a Claude session does.
+`.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs` on every `npm run ruler:apply` —
+**edit the `.ruler/` copy**, the other two are generated and carry a `<!-- Source: ... -->` marker
+saying so. Both agent trees get them for the same reason both get the skills: a Codex session
+working on a skill needs its design history as much as a Claude session does.
 
 **The `.md.template` suffix is not decoration.** Ruler's recursive rule loader concatenates every
 `.md` under `.ruler/` into the root `CLAUDE.md` / `AGENTS.md`, so a note saved as a plain `.md` gets
@@ -25,13 +25,13 @@ A fully forked skill keeps its independent notes beside its independent packages
 └── codex/skill-notes/<name>.md.template
 ```
 
-`scripts/apply-ruler-skill-forks.mjs` writes each note only to its matching agent tree. A fork note
-must not also exist here; that guard prevents runner-specific design history from silently becoming
-a shared contract.
+`tools/ruler/apply-ruler-skill-forks.mjs` writes each note only to its matching agent tree. A fork
+note must not also exist here; that guard prevents runner-specific design history from silently
+becoming a shared contract.
 
-Unmanaged provider packages are registered in `scripts/direct-provider-skills.mjs`. Their notes are
-edited directly in the matching `.claude/skill-notes/` or `.agents/skill-notes/` tree and have no
-`.ruler/` source. `burn-down-audits` and `analyze-session-transcripts` have independent notes for
+Unmanaged provider packages are registered in `tools/ruler/direct-provider-skills.mjs`. Their notes
+are edited directly in the matching `.claude/skill-notes/` or `.agents/skill-notes/` tree and have
+no `.ruler/` source. `burn-down-audits` and `analyze-session-transcripts` have independent notes for
 both providers; `implement-issue-stack` has a Codex note only.
 
 A skill's `SKILL.md` is a runbook: it tells an agent what to do *now*, and every line it carries is

@@ -82,8 +82,8 @@ OS.
 
 The mechanical change is small — `android/variables.gradle`, this document, the `mobile` skill's
 Android page, and the context-anchored API-level assertions in
-`scripts/tests/android-config.test.mjs` — but it moves a published support floor, so it warrants an
-ADR rather than a quiet bump.
+`tools/android/tests/android-config.test.mjs` — but it moves a published support floor, so it
+warrants an ADR rather than a quiet bump.
 
 ## How the floor is enforced
 
@@ -215,14 +215,14 @@ non-polyfill choices:
   but order doesn't matter, as for a vendor-prefixed twin. Anchoring only the modern half is a false
   green: deleting the fallback leaves the row passing while the below-floor behavior it promises is
   gone. Don't assert order on a twin pair — a harmless reordering would fail CI and teach people to
-  distrust the guard. `scripts/tests/compatibility-register.test.mjs` reads every anchor in this
-  table and fails, naming the row, if the file is gone, if the marker is no longer in it, if a path
-  is cited without a marker, or if a line pin reappears. Line pins are what this column used to
-  hold: nothing read them, so nothing failed when they rotted, and they went stale together —
-  several drifting far enough that the cited file no longer contained the API at all.
+  distrust the guard. `tools/tests/compatibility-register.test.mjs` reads every anchor in this table
+  and fails, naming the row, if the file is gone, if the marker is no longer in it, if a path is
+  cited without a marker, or if a line pin reappears. Line pins are what this column used to hold:
+  nothing read them, so nothing failed when they rotted, and they went stale together — several
+  drifting far enough that the cited file no longer contained the API at all.
 * Change the native Android floor in `android/variables.gradle` → `minSdkVersion`. The support-floor
-  drift guard in `scripts/tests/android-config.test.mjs` then fails on every stale claim — this
-  document, the `mobile` skill's Android page, and the `/android-beta` constants — until each moves
-  with it (including the release label, via its API-level → release map). Read "Why the Android
-  floor is not raised to API 29" above first — it records the standing trade-off and the two
+  drift guard in `tools/android/tests/android-config.test.mjs` then fails on every stale claim —
+  this document, the `mobile` skill's Android page, and the `/android-beta` constants — until each
+  moves with it (including the release label, via its API-level → release map). Read "Why the
+  Android floor is not raised to API 29" above first — it records the standing trade-off and the two
   conditions that would justify moving it.

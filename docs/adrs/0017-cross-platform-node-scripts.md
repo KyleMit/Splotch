@@ -8,6 +8,11 @@ were removed. **Date:** 2026-06
 **Amended 2026-07-27:** command discovery now uses POSIX `sh` + `command -v`, stateless stroke
 geometry lives outside the Playwright driver, and Vite lifecycle handling has its own shared module.
 
+> **Superseded in part by [ADR-0108](0108-unified-tools-tree.md):** the shared-helper, Node `.mjs`,
+> macOS/Linux, and process-safety rules below all stand. Only the **location** changed — `scripts/`
+> is now `tools/`, and `scripts/lib/` split into a shared `tools/lib/` plus per-capability
+> `tools/<capability>/lib/`.
+
 ## Context
 
 The `scripts/` folder grew to eleven standalone `.mjs` files that each re-derived the same

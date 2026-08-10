@@ -10,7 +10,7 @@
 // a hand-written '@webkti-only' on one spec matches neither project and runs
 // under Chromium alone — silently, since the correctly tagged specs keep the
 // WebKit job non-empty and green. Specs therefore import WEBKIT_ONLY_TAG rather
-// than spelling it out, and scripts/tests/e2e-engine-tags.test.mjs fails on a
+// than spelling it out, and tools/tests/e2e-engine-tags.test.mjs fails on a
 // tag literal, which turns that typo into a module-resolution error.
 export const WEBKIT_ONLY_TAG = '@webkit-only';
 

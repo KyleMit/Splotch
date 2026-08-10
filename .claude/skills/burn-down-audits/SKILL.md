@@ -1,14 +1,14 @@
 ---
 name: burn-down-audits
-description: Drive the scripted bulk burndown of docs/AUDIT.md — one one-shot `claude -p` subprocess per role per finding (verify → implement → adversarial review → fix), orchestrated by scripts/audit-burndown/ and built to run unattended. Use when the staged audit backlog is too large to vet-and-file as GitHub issues (hundreds of findings) and the user asks to burn it down in bulk, run the audit burndown, or launch/check on a run.
+description: Drive the scripted bulk burndown of docs/AUDIT.md — one one-shot `claude -p` subprocess per role per finding (verify → implement → adversarial review → fix), orchestrated by tools/audit-burndown/ and built to run unattended. Use when the staged audit backlog is too large to vet-and-file as GitHub issues (hundreds of findings) and the user asks to burn it down in bulk, run the audit burndown, or launch/check on a run.
 ---
 
 # Burn down audits
 
 Progressive, adversarial burndown of a large `docs/AUDIT.md` backlog. Each finding goes through
 verify → implement → review → fix, entirely inside one-shot `claude -p` subprocesses, so nothing
-accumulates in a long-lived context window. The driver is `scripts/audit-burndown/burndown.mjs`;
-this skill is the runbook for launching, watching, and closing out a run.
+accumulates in a long-lived context window. The driver is `tools/audit-burndown/burndown.mjs`; this
+skill is the runbook for launching, watching, and closing out a run.
 
 **This runs in a Claude Code cloud session.** Two facts shape everything below and are not
 negotiable knobs:
@@ -91,8 +91,8 @@ consequences worth internalising before touching the driver:
   one JSON record per fix to `.audit-work/pending-comments.jsonl` and expects you to post it.
 
 No agent — including you — should read or edit `docs/AUDIT.md` directly at burndown scale (~19k
-lines): `scripts/audit-burndown/pop.mjs` is the only thing that touches it (`--count`, print,
-`--peek N`, `--delete`). Role system prompts live in `scripts/audit-burndown/prompts/*.md`.
+lines): `tools/audit-burndown/pop.mjs` is the only thing that touches it (`--count`, print,
+`--peek N`, `--delete`). Role system prompts live in `tools/audit-burndown/prompts/*.md`.
 
 ## Commands
 
@@ -305,9 +305,9 @@ and `failed adversarial review` **only** when a reviewer genuinely rejected the 
 
 Each fix gets its own PR comment — the finding (issue), the implementer's own summary (how it was
 solved), and any adversarial catch the reviewer forced before approval — so the PR reads as a
-per-commit history rather than a batched dump. `scripts/audit-burndown/comment.mjs` renders them
-(unit-tested in `scripts/tests/audit-burndown-comment.test.mjs`). Deferrals and drops stay in the
-commit log only (they carry their reason in the commit message).
+per-commit history rather than a batched dump. `tools/audit-burndown/comment.mjs` renders them
+(unit-tested in `tools/audit-burndown/tests/audit-burndown-comment.test.mjs`). Deferrals and drops
+stay in the commit log only (they carry their reason in the commit message).
 
 **The driver writes these records; you post them.** The instant a fix lands, one JSON line is
 appended to `COMMENT_STORE` (default `.audit-work/pending-comments.jsonl`) — written immediately
@@ -315,11 +315,11 @@ rather than held in memory until a push, because an earlier version accumulated 
 a kill between two pushes took every reviewer catch since the last one with it. Then, as often as
 you can be bothered (and always at wrap-up), drain the store:
 
-1. `node scripts/audit-burndown/backfill-comments.mjs next` — prints `SHA <sha>` then the rendered
+1. `node tools/audit-burndown/backfill-comments.mjs next` — prints `SHA <sha>` then the rendered
    body.
 2. Post it with `mcp__github__add_issue_comment` on the PR number, appending the Claude Code
    attribution footer.
-3. `node scripts/audit-burndown/backfill-comments.mjs done <sha>` — drops that record.
+3. `node tools/audit-burndown/backfill-comments.mjs done <sha>` — drops that record.
 4. Repeat until `next` says nothing is pending.
 
 `done` comes **after** the post, deliberately: a crash between the two re-offers the same record, so
@@ -705,7 +705,7 @@ itself. No `claude` call in the sample exceeded ~13 min.
   its own death. It looks exactly like a driver that will not stop, and it will still be "waiting"
   long after the run has finished. Anchor the pattern so only the bare driver process matches:
   ```bash
-  until ! pgrep -f '^node scripts/audit-burndown/burndown.mjs' >/dev/null; do sleep 15; done
+  until ! pgrep -f '^node tools/audit-burndown/burndown.mjs' >/dev/null; do sleep 15; done
   ```
   `env` execs node, so the real driver's cmdline starts with `node` and the anchor is safe on every
   launch path. The same anchor is what to use for the plain liveness question — an unanchored
@@ -738,10 +738,10 @@ Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/
 be empty (if it isn't, the run is already going — say so, don't launch a second). Read the matches
 rather than counting them: `pgrep -f` matches whole command lines, so the launcher's `env … node …`
 wrapper — and any shell whose own command line happens to mention the path, including the `pgrep`
-call you just typed — matches too. Only a bare `node scripts/audit-burndown/burndown.mjs` line is
-the driver. Then `rm .audit-work/STOP`, relaunch with the exact command from the durable checkpoint,
-and re-arm the event-driven monitor. The launcher self-recovers even in a brand-new session that
-never saw this run — see **Resuming a crashed run** below.
+call you just typed — matches too. Only a bare `node tools/audit-burndown/burndown.mjs` line is the
+driver. Then `rm .audit-work/STOP`, relaunch with the exact command from the durable checkpoint, and
+re-arm the event-driven monitor. The launcher self-recovers even in a brand-new session that never
+saw this run — see **Resuming a crashed run** below.
 
 **Re-arm the monitor as part of the relaunch** — stopping the previous one first, and confirming the
 new one caught. Both failure directions and the arming details are under **Surviving the context
@@ -1016,7 +1016,7 @@ Notes from real runs — set these before a large run rather than discovering th
   scores `null`:
 
   ```bash
-  node -e "import('./scripts/audit-burndown/lib.mjs').then(({findingPriority})=>{
+  node -e "import('./tools/audit-burndown/lib.mjs').then(({findingPriority})=>{
     const b=require('fs').readFileSync('docs/AUDIT.md','utf8').split(/^### /m).slice(1);
     const n=b.filter(x=>findingPriority(x.split('\n',1)[0],'### '+x)===null).length;
     console.log(b.length+' findings, '+n+' with no parsable priority');

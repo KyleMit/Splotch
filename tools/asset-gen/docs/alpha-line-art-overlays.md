@@ -58,9 +58,9 @@ optional chalk bookkeeping.
 
 Opaque sources and alpha overlays are both committed under `web/static/coloring` and covered by
 `golden/asset-manifest.sha256`. Web deployments retain both sets so the in-repo pipeline can keep
-its source locations. `scripts/strip-native-assets.mjs` removes the opaque full-resolution sources
-from the completed native static build because native runtime code uses only alpha overlays and
-picker thumbnails.
+its source locations. `tools/native/strip-native-assets.mjs` removes the opaque full-resolution
+sources from the completed native static build because native runtime code uses only alpha overlays
+and picker thumbnails.
 
 ## Consequences
 

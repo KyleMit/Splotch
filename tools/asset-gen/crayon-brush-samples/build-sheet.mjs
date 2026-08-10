@@ -16,8 +16,8 @@ import {
   masthead,
   page,
   siteFooter,
-} from '../../../scripts/lib/scrapbook-chrome.mjs';
-import { argFlag } from '../../../scripts/lib/proc.mjs';
+} from '../../../tools/scrapbook/lib/scrapbook-chrome.mjs';
+import { argFlag } from '../../../tools/lib/proc.mjs';
 import { SAMPLES, STAGES } from './samples.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

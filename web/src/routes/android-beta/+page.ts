@@ -10,6 +10,6 @@
 // module *source*, which is what keeps the Play Store URLs, the testers' group
 // link, and the support address out of the shipped JS chunk.
 //
-// scripts/check-native-bundle.mjs scans the built native output for those
+// tools/native/check-native-bundle.mjs scans the built native output for those
 // strings and fails the build if either layer stops working.
 export const prerender = !__IS_CAPACITOR__;

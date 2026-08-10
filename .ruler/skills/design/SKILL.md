@@ -248,7 +248,7 @@ now). Their self-contained palettes must not use the themed color tokens: those 
 `data-theme`/`prefers-color-scheme` and would half-dark-theme them.
 
 CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
-allowlisted baselines (with per-file reasons) live in `scripts/lint-token-styles.mjs`, plus a
+allowlisted baselines (with per-file reasons) live in `tools/tokens/lint-token-styles.mjs`, plus a
 zero-tolerance check on multi-digit raw z-index. A new raw hex color or raw `font-size` fails the
 Quality job: use a token, or (for a genuine one-off) add a WHY comment and bump the baseline. When
 you remove a one-off, lower its baseline entry so the ratchet holds. box-shadow is deliberately not

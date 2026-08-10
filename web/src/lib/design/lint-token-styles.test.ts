@@ -11,7 +11,7 @@ import {
   countRawHexCss,
   countRawZIndex,
   countRawZIndexCss,
-} from '../../../../scripts/lint-token-styles.mjs';
+} from '../../../../tools/tokens/lint-token-styles.mjs';
 
 describe('countRawHex', () => {
   it('counts hex colors only inside <style> blocks', () => {

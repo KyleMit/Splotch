@@ -3,8 +3,8 @@
 # profiling — design notes
 
 Design history for the `profiling` skill, and specifically for `npm run perf:ipad`
-(`scripts/perf/ipad.mjs` + `scripts/perf/webkit-inspector.mjs`), whose shape is almost entirely
-dictated by protocol facts that are expensive to rediscover.
+(`tools/perf/ipad.mjs` + `tools/perf/webkit-inspector.mjs`), whose shape is almost entirely dictated
+by protocol facts that are expensive to rediscover.
 
 ## Driving a physical iPad: what is actually true
 
@@ -63,7 +63,7 @@ stale tab silently running an old bundle, and a leftover `window.__perfScenarios
 "full" run to one scenario. Both are invisible in the output — the table looks completely normal. So
 the runner navigates the tab itself rather than trusting one that already shows the harness URL, and
 assigns *every* `window.__perf*` override on each run rather than only the requested ones. The
-overrides are locked by `scripts/tests/perf-ipad.test.mjs`; the navigation is not, because faking
+overrides are locked by `tools/perf/tests/perf-ipad.test.mjs`; the navigation is not, because faking
 the device is more machinery than the guarantee is worth.
 
 ### What stays manual, and why
@@ -79,7 +79,7 @@ the device is more machinery than the guarantee is worth.
 
 ## The real-screen probe (`perf:ipad:frames`) — what the measurements cost to learn
 
-Design history for `scripts/perf/real-screen-probe.js` + `real-screen-stats.mjs` + `ipad-frames.mjs`
+Design history for `tools/perf/real-screen-probe.js` + `real-screen-stats.mjs` + `ipad-frames.mjs`
 (issue #659). The shape of all three is dictated by wrong readings that had to be corrected against
 real device captures, which is also why the probe **records raw tables and computes nothing**: every
 metric definition below was fixed without re-drawing anything.

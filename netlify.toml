@@ -1,7 +1,7 @@
 # Production deploy config — the Netlify site builds from the repo ROOT (base directory = root,
 # the default), because package.json + the lockfile live here so `npm ci` works. The SvelteKit
 # app lives in web/ (ADR-0024): `npm run build` runs the build with cwd=web/, so adapter-netlify
-# writes its output under web/; scripts/stage-netlify.mjs then copies web/build -> build and
+# writes its output under web/; tools/stage-netlify.mjs then copies web/build -> build and
 # web/.netlify -> .netlify so Netlify sees the standard "app at root" layout it expects.
 #
 # Local development uses web/netlify.toml instead (via `npm run dev:netlify`, which runs
@@ -13,16 +13,19 @@
   # release tag and the web version would fall back to major.minor.0+<sha>
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.
-  command = "git fetch --tags --force || true; npm run build && node scripts/stage-netlify.mjs"
+  command = "git fetch --tags --force || true; npm run build && node tools/stage-netlify.mjs"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # consumes — docs, ADRs, ruler-generated agent files, scrapbook/, native trees,
   # asset-gen internals. The watched paths are everything the build reads: the
-  # app (web/), custom functions (netlify/), the build+prebuild scripts
-  # (scripts/), gen:releases input (releases/), the toolchain (package.json +
-  # lockfile), and this config.
+  # app (web/), custom functions (netlify/), the build+prebuild tools that the
+  # build actually runs (tools/*.mjs, tools/release/, tools/native/, tools/tokens/,
+  # tools/icons/ — enumerated rather than all of tools/, so an asset-gen,
+  # store-drawings, perf, or vectorize change does not trigger a rebuild that the
+  # old tools/ filter never triggered), gen:releases input (releases/), the
+  # toolchain (package.json + lockfile), and this config.
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify scripts releases package.json package-lock.json netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify 'tools/*.mjs' tools/lib tools/release tools/native tools/tokens tools/icons releases package.json package-lock.json netlify.toml"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
@@ -36,7 +39,7 @@
   NPM_FLAGS = "--omit=dev --no-audit --no-fund"
   # The engines floor major from package.json engines.node, pinned so a Netlify
   # platform-default bump can't move the deploy off the major CI tests.
-  # scripts/tests/workflow-hygiene.test.mjs guards this agreement.
+  # tools/tests/workflow-hygiene.test.mjs guards this agreement.
   NODE_VERSION = "22"
 
 # Edge deny-rules (issue #347). The site is one catch-all SSR function

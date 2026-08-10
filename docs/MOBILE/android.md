@@ -56,8 +56,8 @@ the Google Play release checklist. For the general build model and shared assets
      then open `http://localhost:5173` in Chrome on the phone. See "Running the web app on a real
      device" below.
    * **Native debug build**: `npm run android:run` (cap:sync + build + install) — the `android:*`
-     scripts go through `scripts/gradle.mjs`, which resolves the Gradle wrapper and runs it from
-     `android/` (ADR-0017). You can also use Capacitor's runner: `npx cap run android`.
+     scripts go through `tools/android/gradle.mjs`, which resolves the Gradle wrapper and runs it
+     from `android/` (ADR-0017). You can also use Capacitor's runner: `npx cap run android`.
 
 6. **Debug with Chrome DevTools**: on desktop Chrome open `chrome://inspect/#devices` and click
    **Inspect** on the phone's tab — see "Performance profiling with Chrome DevTools" below for the
@@ -92,9 +92,9 @@ npm run android:clean   # gradle clean (no cap:sync)
 >    per §1; reopen a terminal that was open before you set it).
 > 3. For `android:bundle`, `android/keystore.properties` must exist (see §4).
 >
-> These scripts run the Gradle wrapper through `scripts/gradle.mjs`, which resolves the wrapper to
-> an absolute path and runs it from `android/` (ADR-0017), so `npm run android:*` needs no inline
-> `cd android && ./gradlew` dance.
+> These scripts run the Gradle wrapper through `tools/android/gradle.mjs`, which resolves the
+> wrapper to an absolute path and runs it from `android/` (ADR-0017), so `npm run android:*` needs
+> no inline `cd android && ./gradlew` dance.
 
 From Android Studio: **Run ▶** to test on emulator/device; **Build → Generate Signed Bundle/APK** to
 produce a release `.aab`.
@@ -210,7 +210,7 @@ multi-touch input — the best way to get accurate profiles.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then rerun `npx @capacitor/assets generate --android`.
-* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` — `scripts/release.mjs`
+* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` — `tools/release/release.mjs`
       (`setAndroidVersion`) derives both and writes them into `android/app/build.gradle`, which is
       the source of truth. Only a hand-built release needs them set manually.
 * [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**

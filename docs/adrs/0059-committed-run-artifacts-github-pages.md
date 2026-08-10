@@ -21,6 +21,9 @@
 > nothing published silently goes missing. Raw data (`.json`, …) and `assets/` stay unsurfaced, as
 > before. (Issue #490.)
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 Several Splotch generators produce **reviewable run outputs** worth keeping between sessions:

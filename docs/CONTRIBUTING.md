@@ -93,14 +93,14 @@ The switch is the `CAPACITOR` env var, read by both `web/svelte.config.js` (adap
 The SvelteKit app lives in **`web/`** (`web/src/`, the Vite/SvelteKit/test configs,
 `web/netlify.toml`, and the `web/build/` output). The Capacitor native projects (`android/`,
 `ios/`), `capacitor.config.json` (`webDir: "web/build"`), the single root
-`package.json`/`node_modules`, and `scripts/` stay at the repo root. `npm run dev:netlify` runs
+`package.json`/`node_modules`, and `tools/` stay at the repo root. `npm run dev:netlify` runs
 `netlify dev --cwd web` so netlify-cli's file watcher is scoped to `web/` and never traverses the
 large native trees (the cause of the `EMFILE` crash this layout fixes). All the npm scripts still
-run from the repo root; the web toolchain is dispatched into `web/` by `scripts/web.mjs`.
+run from the repo root; the web toolchain is dispatched into `web/` by `tools/web.mjs`.
 
 > **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the lockfile
 > live). The root `netlify.toml` build command runs `npm run build` (which builds the app in `web/`)
-> then `node scripts/stage-netlify.mjs`, which copies `web/build → build` and
+> then `node tools/stage-netlify.mjs`, which copies `web/build → build` and
 > `web/.netlify → .netlify` so Netlify sees the standard root layout (`publish = "build"`, SSR
 > function in `.netlify/functions-internal`). Local `netlify dev` uses `web/netlify.toml` instead.
 

@@ -36,10 +36,10 @@ Verified at HEAD (`package.json` scripts block and `scripts-info`):
 
 ## Options considered
 
-1. **Env var with the current serial as committed fallback** (resolution in `scripts/gradle.mjs` or
-   a wrapper, since the helpers are Node and portable). The personal serial stays committed — the
-   finding's core complaint survives intact — and the only user's behavior is unchanged. Pure
-   indirection.
+1. **Env var with the current serial as committed fallback** (resolution in
+   `tools/android/gradle.mjs` or a wrapper, since the helpers are Node and portable). The personal
+   serial stays committed — the finding's core complaint survives intact — and the only user's
+   behavior is unchanged. Pure indirection.
 2. **Env var with no fallback.** Removes the serial from the repo but breaks the zero-config
    workflow of the repo's only regular user and every skill reference to the pinned commands; each
    machine then needs shell configuration to restore what a committed literal already provides.

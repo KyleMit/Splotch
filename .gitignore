@@ -189,18 +189,17 @@ ios/local.xcconfig
 
 # Red-team AI safety fixtures (ADR-0023). Only encrypted/*.enc is committed;
 # the plaintext sources, decrypted copies, and run outputs stay local.
-# Anchored at web/ since the app moved into that subdirectory (ADR-0024).
-/web/tests/redteam/source/
-/web/tests/redteam/decrypted/
-/web/tests/redteam/output/
+/tools/redteam/source/
+/tools/redteam/decrypted/
+/tools/redteam/output/
 
-# Image-model eval harness (scripts/model-eval-*). The local input corpus is
+# Image-model eval harness (tools/model-eval/). The local input corpus is
 # regenerable (npm run model-eval:fixtures) and run outputs are large, so both stay
 # local — but the Gemini-authored gen__* inputs (not reproducible) are kept in git,
 # and the published reference report lives in scrapbook/model-eval/ (ADR-0059).
-/web/tests/model-eval/inputs/*
-!/web/tests/model-eval/inputs/gen__*
-/web/tests/model-eval/output/
+/tools/model-eval/inputs/*
+!/tools/model-eval/inputs/gen__*
+/tools/model-eval/output/
 # Scratch dir for ad-hoc eval debugging.
 /.eval-tmp/
 

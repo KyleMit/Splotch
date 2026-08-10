@@ -7,6 +7,9 @@ cache-bust redirect under the same canvas-empty guard as the waiting-worker relo
 2026-06. Amended 2026-08-08 by [ADR-0103](0103-progressive-coloring-book-packs.md) so only the Farm
 starter book is precached and other books use verified runtime pack caches.
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 The web target needs a service worker to:

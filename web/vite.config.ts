@@ -29,7 +29,7 @@ const responsiveColoringGlobIgnores = RESPONSIVE_COLORING_TIER_DIRECTORIES.map(
 );
 
 // Opt-in `performance.mark/measure` instrumentation on the drawing engine's hot
-// paths, read by the profiling harness (scripts/perf/, `npm run perf:web`). Off
+// paths, read by the profiling harness (tools/perf/, `npm run perf:web`). Off
 // by default so the marks never ship: with the literal `false` the guarded
 // blocks — and their mark-name strings — dead-code-eliminate from the bundle.
 const perfMarks = process.env.PERF_MARKS === 'true';
@@ -53,7 +53,7 @@ export default defineConfig({
   server: {
     // Every executable consumer of this port — netlify.toml, dev:kill,
     // cloud-tunnel, the emulator/simulator live-reload runs, and adb:reverse —
-    // is guarded against it by scripts/tests/dev-ports.test.mjs.
+    // is guarded against it by tools/tests/dev-ports.test.mjs.
     port: 5173,
     strictPort: true,
     // Allow a phone-preview reverse tunnel (e.g. chisel) to forward in under its

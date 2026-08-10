@@ -3,7 +3,7 @@ import { QUICKSAND_FONT_FAMILY } from '../fonts.ts';
 // Design-token single source of truth (ADR-0071).
 //
 // Every value here is emitted into web/src/tokens.css by `npm run gen:tokens`
-// (scripts/gen-tokens.mjs) — camelCase keys become kebab-case custom
+// (tools/tokens/gen-tokens.mjs) — camelCase keys become kebab-case custom
 // properties (`appBg` → `--app-bg`). Components consume the CSS variables;
 // the few JS consumers that can't read CSS (canvas export fill, Notch Band,
 // theme-color meta) import the typed objects below, so there is no

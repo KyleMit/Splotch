@@ -8,8 +8,8 @@ Target **web/dev-engine (headless Chromium — not WebKit/real GPU)** · device 
 > Headless Chromium (Blink/V8) is **not** WebKit/JavaScriptCore or the iPad GPU — SwiftShader
 > software rendering exaggerates full-canvas blits (the paper copy, restores, blob decodes) heavily
 > — and CPU throttle models a slow CPU, not the tighter 8.3 ms ProMotion frame. Absolute ms want the
-> on-device run (`scripts/perf/ipad-console-driver.js` / the `profiling` skill); this run is for
-> stack behavior, op-volume scaling, and relative cost.
+> on-device run (`tools/perf/ipad-console-driver.js` / the `profiling` skill); this run is for stack
+> behavior, op-volume scaling, and relative cost.
 
 > Note: strokes are dispatched synchronously (to land exact op counts), so the draw phase is one big
 > task — its FPS/long-task numbers in report.md are a harness artifact. The clean live-draw signal

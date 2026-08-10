@@ -6,9 +6,9 @@
 > Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
-> the output. Direct provider packages registered in `scripts/direct-provider-skills.mjs` are the
-> exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and Codex
-> implementations, while `implement-issue-stack` is intentionally Codex-only. Edit only the
+> the output. Direct provider packages registered in `tools/ruler/direct-provider-skills.mjs` are
+> the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and
+> Codex implementations, while `implement-issue-stack` is intentionally Codex-only. Edit only the
 > registered provider package and note you intend to change; never manufacture a missing provider by
 > copying another one.
 
@@ -20,9 +20,9 @@ Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two tar
 
 The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, build output); the
 Capacitor native trees (`android/`, `ios/`), `capacitor.config.json`, the single root
-`package.json`/`node_modules`, and `scripts/` stay at the repo root. This keeps netlify-cli's file
+`package.json`/`node_modules`, and `tools/` stay at the repo root. This keeps netlify-cli's file
 watcher (run via `netlify dev --cwd web`) off the large native trees — see ADR-0024. The web
-toolchain runs with `cwd = web/` through `scripts/web.mjs`.
+toolchain runs with `cwd = web/` through `tools/web.mjs`.
 
 The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
 (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be
@@ -43,20 +43,20 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references).
 * A skill whose implementation genuinely differs by runner is absent from the shared tree. Its
   complete, independent packages live in `.ruler/skill-forks/<runner>/skills/<name>/`.
-  `scripts/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after Ruler's
-  shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also exists under
-  `.ruler/skills/` or lacks a package for either configured runner, preventing either fork from
-  inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
-  in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
-  from concatenating them into root instructions.
-* Direct-maintained exceptions are declared in `scripts/direct-provider-skills.mjs`.
+  `tools/ruler/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after
+  Ruler's shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also
+  exists under `.ruler/skills/` or lacks a package for either configured runner, preventing either
+  fork from inheriting shared implementation files or disappearing from one agent. Markdown fork
+  sources end in `.template`; the suffix is removed at the destination and keeps Ruler's recursive
+  rule loader from concatenating them into root instructions.
+* Direct-maintained exceptions are declared in `tools/ruler/direct-provider-skills.mjs`.
   `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
   Codex package because it orchestrates a standalone Claude reviewer; `analyze-session-transcripts`
   has independent provider packages because Claude Code and Codex persist different transcript
   formats. Edit registered packages and notes directly, never through `.ruler/`, and never create an
   undeclared provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
-  to `.claude/skill-notes/` and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. The
+  to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
   recursive rule loader concatenates every `.md` under `.ruler/` into the root instruction files, so
   a plain `.md` note would land in every session's context — exactly what this tree exists to avoid.
@@ -136,13 +136,13 @@ Codex-managed worktrees share host ports and machine capacity.
   is imported from one exported constant; when the agreeing sites can't share code (the `app.html`
   boot script, YAML, native config, generated output), add a drift-guard test that reads both sides
   and fails on divergence — the pattern of `web/src/app.html.test.ts`,
-  `scripts/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep in sync with
-  X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage keys, query
-  params, event names, special-case ids): declared once, imported everywhere (tests deliberately
-  excepted). A **bundle boundary** is one of the places that can't share code: a static import into
-  a startup-path module hands Rollup an edge that re-partitions chunks no matter how small the
-  imported module, so there the duplication is deliberate and the sharing itself is the defect
-  (`web/src/lib/state/saveFolder.svelte.ts` vs `folderSave.ts`, drift-guarded by
+  `tools/android/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep in sync
+  with X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage keys,
+  query params, event names, special-case ids): declared once, imported everywhere (tests
+  deliberately excepted). A **bundle boundary** is one of the places that can't share code: a static
+  import into a startup-path module hands Rollup an edge that re-partitions chunks no matter how
+  small the imported module, so there the duplication is deliberate and the sharing itself is the
+  defect (`web/src/lib/state/saveFolder.svelte.ts` vs `folderSave.ts`, drift-guarded by
   `saveFolder.svelte.test.ts` and pinned by `web/tests/startup-bundle.spec.ts`). Such a site keeps
   its inline copy, adds the drift-guard test, and carries a comment stating the constraint and
   naming the enforcing spec — that comment is load-bearing evidence of intent, not the "keep in
@@ -164,8 +164,8 @@ Codex-managed worktrees share host ports and machine capacity.
 * **Svelte 5 runes only.** No legacy stores (`writable`, `readable`, `derived` from `svelte/store`).
 * All npm scripts must run on macOS and Linux (ADR-0017; Windows dev support was dropped in
   ADR-0062): env vars are set inline (`VAR=value cmd`, no `cross-env`), and platform-specific tools
-  (the Gradle wrapper, the file-manager opener) are invoked via Node helpers in `scripts/` rather
-  than inline shell.
+  (the Gradle wrapper, the file-manager opener) are invoked via Node helpers in `tools/` rather than
+  inline shell.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
   Netlify web build needs (runtime imports + vite/SvelteKit/adapter/`marked`); `devDependencies` =
   local/CI-only tooling (Playwright, dprint, sharp, the Capacitor CLIs, …). Netlify installs with
@@ -248,7 +248,7 @@ generated from `.ruler/`; managed runner forks may be produced from `.ruler/skil
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
 under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
 implementations; Codex-only `implement-issue-stack` lives only under `.agents/`. See
-`scripts/direct-provider-skills.mjs` for the authoritative registry.
+`tools/ruler/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -272,7 +272,7 @@ applies or how skills relate.
 **Prefer skills over slash commands.** Reusable agent workflows are normally authored in
 `.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
 packages under `.ruler/skill-forks/<runner>/`; only packages registered in
-`scripts/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
+`tools/ruler/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
 workflows as commands in `.claude/commands/`. A skill with a good `description` is both
 user-invocable (`/name`) and model-invocable, so Claude can reach for it on its own — a plain
 command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
@@ -308,7 +308,7 @@ that must not be missed — invariants, footguns, the thing that makes a wrong r
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
 `testing.md`, `ipad-profiling-docs.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`,
-`web/tests/`, `android/`, `scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`web/tests/`, `android/`, `tools/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable

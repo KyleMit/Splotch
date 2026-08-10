@@ -1,8 +1,8 @@
 # `burn-down-audits` — design notes
 
 Design history and open questions for the Claude Code bulk audit burndown: the `burn-down-audits`
-skill (`.claude/skills/burn-down-audits/SKILL.md`), the driver under `scripts/audit-burndown/`, the
-role prompts in `scripts/audit-burndown/prompts/`, and the two compaction hooks in `.claude/hooks/`.
+skill (`.claude/skills/burn-down-audits/SKILL.md`), the driver under `tools/audit-burndown/`, the
+role prompts in `tools/audit-burndown/prompts/`, and the two compaction hooks in `.claude/hooks/`.
 
 This note and the Claude skill are maintained directly. The Codex implementation lives under the
 parallel `.agents/` paths and is maintained independently; never synchronize either provider's
@@ -68,10 +68,10 @@ to reconstruct.
 Ported from an external "audit-burndown kit" written in bash. The port was not a literal
 translation:
 
-* Bash orchestration became Node `.mjs` under `scripts/audit-burndown/`, because ADR-0017 rejected
-  bash for `scripts/`. Registered as `audit:*` npm scripts with `scripts-info` entries per ADR-0019.
+* Bash orchestration became Node `.mjs` under `tools/audit-burndown/`, because ADR-0017 rejected
+  bash for `tools/`. Registered as `audit:*` npm scripts with `scripts-info` entries per ADR-0019.
 * The runbook became a skill, registered in `skills-guide`, `audit-conventions`, the knowledge map,
-  and the `scripts/` orientation.
+  and the `tools/` orientation.
 * The verifier prompt reads the pin SHA from each finding instead of the kit's hardcoded `f934d43`.
 * `pop.mjs` keeps the excision seam dprint-clean, because CI runs `dprint check` on `AUDIT.md`.
 * `jq` was dropped entirely — Node parses the `claude -p` envelopes.
@@ -87,9 +87,10 @@ different sizes.
 `getEntry`/`countEntries`/`deleteFirstEntry` were documented as the only things allowed to touch the
 19k-line `AUDIT.md`, and that the header comment called hundreds of sequential edits "a corruption
 risk" — yet the entry-boundary parsing and seam-collapse logic had no committed test, only manual
-exercise against a scratch copy. The response created `scripts/tests/audit-burndown-lib.test.mjs` +
-`scripts/vitest.config.mjs`, wired as `npm run test:scripts` into `npm test` and its own CI step.
-The whole repo-script test suite traces back to that one comment.
+exercise against a scratch copy. The response created
+`tools/audit-burndown/tests/audit-burndown-lib.test.mjs` + `tools/vitest.config.mjs`, wired as
+`npm run test:scripts` into `npm test` and its own CI step. The whole repo-script test suite traces
+back to that one comment.
 
 ### The gate ladder — why type-checking was never enough
 
@@ -641,8 +642,8 @@ Two smaller things from the same run, both recorded because they generalise:
   killing its own shell, and the orphan check matching the supervising CLI), and the first where the
   failure is a silent hang rather than a wrong answer. The anchored
   `'^node
-  scripts/audit-burndown/burndown.mjs'` form fixes all three; it is now in the skill for
-  the wait loop as well as the liveness check.
+  tools/audit-burndown/burndown.mjs'` form fixes all three; it is now in the skill for the
+  wait loop as well as the liveness check.
 * **The verifier invalidated a finding the run itself had obsoleted, correctly and in 25 seconds.**
   An early P1 extracted the drawing shell's boot sequence into `lib/boot/`; a later P2 asked for
   wake-lock lifecycle to be pulled out of `onMount`, which the P1 had already done. The verifier

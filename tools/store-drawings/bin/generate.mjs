@@ -5,7 +5,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import { PALETTE_COLORS } from '../../../web/src/lib/palette.ts';
 import { COLOR_FAMILIES } from '../../../web/src/lib/hexPickerLayout.ts';
-import { isMain, ROOT } from '../../../scripts/lib/proc.mjs';
+import { isMain, ROOT } from '../../../tools/lib/proc.mjs';
 
 const DEFAULT_INPUT = join(ROOT, 'tools/store-drawings/samples');
 const DEFAULT_OUTPUT = join(ROOT, 'tools/store-drawings/generated/store-drawings.mjs');

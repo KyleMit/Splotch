@@ -5,6 +5,9 @@ undo; amended by [ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md) for
 snapshots; amended in 2026-08 to preserve the advertised twenty-step depth for measured large
 sweeps. **Date:** 2026-07
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 ADR-0085 eliminated iPad live-render starvation by replacing every frequently mutated full-size

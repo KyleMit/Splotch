@@ -6,6 +6,9 @@ support was dropped, so the Windows-specific mechanics recorded below (nvm-windo
 **Node ≥ 22** and a **full JDK 21** — still hold on macOS and Linux.\
 **Date:** 2026-06-01
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 Building the Splotch Android app (Capacitor 8 + AGP/Gradle) on Windows has non-obvious toolchain

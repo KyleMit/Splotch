@@ -2,6 +2,9 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 ADR-0032 built the profiling harness around three capture paths — headless Chromium over CDP, the

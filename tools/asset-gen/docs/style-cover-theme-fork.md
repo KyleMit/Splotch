@@ -106,7 +106,7 @@ and adding one is a decision about what the button *produces* — not about how 
 * **`theme.ts` is now on the sanctioned `web/src` import list** ([`README.md`](README.md)) and
   spells its own tokens import with an explicit `.ts`, because bare Node under
   `--experimental-strip-types` will not resolve an extensionless specifier the way Vite does.
-* **`AiImagePrompt.svelte` left the raw-hex allowlist** in `scripts/lint-token-styles.mjs`: its
+* **`AiImagePrompt.svelte` left the raw-hex allowlist** in `tools/tokens/lint-token-styles.mjs`: its
   paper-white plate is `var(--paper)` now that both themes have real art behind it.
 * **Sticker still ships two variants even though its backdrop is gone.** The band and the cut are
   identical; what differs is the scene inside it, which the night clause recolors like any other

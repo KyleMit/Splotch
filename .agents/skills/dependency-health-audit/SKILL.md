@@ -38,7 +38,7 @@ end. Skip every other entry.
    optional confirmation *when* `node_modules` exists. Count the lockfile's `packages` entries for
    the total installed footprint (`node -e` over `package-lock.json`).
 2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep
-   `web/src/`, `web/*.config.*`, `scripts/`, `tools/`, and the npm scripts for imports and
+   `web/src/`, `web/*.config.*`, `tools/`, `tools/`, and the npm scripts for imports and
    invocations. A package with no findable usage is itself a finding (candidate for removal — but
    check `overrides`, `postinstall`, config-file plugin references, and CLI-only use before calling
    it dead).
@@ -154,8 +154,8 @@ not `npm view`. Three kinds:
   third-party actions.
 * **Runtime-fetched CLIs** — tools invoked by npm scripts that aren't deps: `npx <tool>` (often
   unpinned → runs latest each time), and globally-installed CLIs deliberately kept out of the tree
-  (e.g. `netlify-cli`, guarded by a `scripts/check-*.mjs`). Grep `package.json` scripts and
-  `scripts/*.mjs` for `npx`, and bare tool names (`netlify`, `cap`, `maestro`, `adb`, `emulator`,
+  (e.g. `netlify-cli`, guarded by a `tools/check-*.mjs`). Grep `package.json` scripts and
+  `tools/*.mjs` for `npx`, and bare tool names (`netlify`, `cap`, `maestro`, `adb`, `emulator`,
   `xcodebuild`, `gradle`). Confirm a tool is genuinely absent from the lockfile before listing it
   here (`node -e` over `package-lock.json`).
 * **System toolchains** — the language/SDK layer native builds and tests need: Node (`setup-node`

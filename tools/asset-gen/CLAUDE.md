@@ -49,7 +49,7 @@ carve-out):
   root tree.
 * **Paths go through `lib/paths.mjs`.** Use its exported constants (`REPO_ROOT`, `COLORING_DIR`,
   `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode `../../..` walks
-  or import from the repo-root `scripts/lib/`.
+  or import from the repo-root `tools/lib/`.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
   `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
   are their fills-only punch (`bin/punch-fill-outlines.mjs`, root: `npm run gen:coloring-punch` —

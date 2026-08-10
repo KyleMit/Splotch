@@ -11,7 +11,7 @@
 # advises against path filtering a required workflow. The check itself is
 # unconditional, so the job always runs and always reports.
 #
-# No setup-node step: scripts/check-adr-numbering.mjs imports only node: builtins
+# No setup-node step: tools/adrs/check-adr-numbering.mjs imports only node: builtins
 # and its own siblings, and the runner ships Node, so installing dependencies
 # would cost ~15s to change nothing (setup-node measured at 14-20s in the Quality
 # job, against well under a second for the check itself). node is invoked directly
@@ -71,4 +71,4 @@ jobs:
       # against a tree that already holds duplicates, which is the exact state a
       # workflow_dispatch audit exists to find.
       - name: Check ADR integrity
-        run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"
+        run: node tools/adrs/check-adr-numbering.mjs "--base=origin/${BASE_REF}"

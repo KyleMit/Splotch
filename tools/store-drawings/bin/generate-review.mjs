@@ -4,14 +4,14 @@ import { chromium } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { ROOT, isMain, sleep } from '../../../scripts/lib/proc.mjs';
-import { chromiumExecutablePath } from '../../../scripts/lib/playwright.mjs';
+import { ROOT, isMain, sleep } from '../../../tools/lib/proc.mjs';
+import { chromiumExecutablePath } from '../../../tools/lib/playwright.mjs';
 import {
   ensureDevServer,
   openAppPage,
   canvasBox,
   expandDrawer,
-} from '../../../scripts/lib/app-driver.mjs';
+} from '../../../tools/app-driver/lib/app-driver.mjs';
 import { drawHouseTall, drawHouseWide } from '../generated/store-drawings.mjs';
 
 const DEFAULT_OUTPUT = join(ROOT, 'screenshots/store-drawing-review');

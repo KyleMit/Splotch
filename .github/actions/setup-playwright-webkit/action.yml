@@ -9,7 +9,7 @@ runs:
     - name: Resolve Playwright version
       id: playwright-version
       shell: bash
-      run: node scripts/playwright-version.mjs >> "$GITHUB_OUTPUT"
+      run: node tools/playwright-version.mjs >> "$GITHUB_OUTPUT"
 
     - name: Cache Playwright browser
       id: playwright-cache

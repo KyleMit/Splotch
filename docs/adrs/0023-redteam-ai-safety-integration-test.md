@@ -2,6 +2,9 @@
 
 **Status:** Active **Date:** 2026-06
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 Splotch sends a toddler's drawing to Gemini and shows the stylized result (`/api/generate-image`,

@@ -10,7 +10,7 @@ pointer instructions and evaluates their replay through the production Splotch c
   directly. `npm run gen:store-drawings:check` guards drift.
 * Node-environment unit tests live in `tests/` and run through `npm run test:store-drawings` using
   this folder's `vitest.config.mjs`.
-* The browser-driving entries deliberately reuse `scripts/lib/app-driver.mjs`, the shared production
-  UI/pointer driver also covered by `npm run test:driver:smoke`.
+* The browser-driving entries deliberately reuse `tools/app-driver/lib/app-driver.mjs`, the shared
+  production UI/pointer driver also covered by `npm run test:driver:smoke`.
 * Read `README.md` for conversion and review workflows and `DESIGN.md` for the tool-local rationale
   and tradeoffs.

@@ -84,7 +84,7 @@ describe('POST /api/report', () => {
     expect(createIssue).not.toHaveBeenCalled();
   });
 
-  // Load-bearing ordering, not an incidental one: scripts/api-smoke.mjs bursts
+  // Load-bearing ordering, not an incidental one: tools/api-smoke/api-smoke.mjs bursts
   // past this endpoint's limit with honeypotted payloads so the run can never
   // open a real issue whatever GITHUB_ISSUE_TOKEN the server was given, and it
   // still asserts the 429. Charging the bucket after the honeypot short-circuit

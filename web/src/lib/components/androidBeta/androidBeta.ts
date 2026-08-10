@@ -1,7 +1,7 @@
 // The closed-testing facts the /android-beta page renders, in a side-effect-free
 // module so the drift guards can read them: androidBeta.test.ts checks
 // MIN_ANDROID_API_LEVEL against android/variables.gradle, and
-// scripts/check-native-app-id.mjs checks PLAY_STORE_APP_ID against
+// tools/native/check-native-app-id.mjs checks PLAY_STORE_APP_ID against
 // capacitor.config.json.
 
 export const PLAY_STORE_APP_ID = 'art.splotch.app';

@@ -53,7 +53,7 @@
       "Bash(npm ci)",
       "Bash(npm install)",
       "Bash(npx *)",
-      "Bash(node scripts/**)",
+      "Bash(node tools/**)",
 
       "Bash(git status*)",
       "Bash(git log*)",

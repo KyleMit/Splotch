@@ -81,7 +81,7 @@ export const commonWebServer = {
   // precedence over web/.env, so this is what keeps a developer's real dotenv
   // from changing what a spec exercises — or what it reaches: an ambient
   // GITHUB_ISSUE_TOKEN made the /feedback failure-path spec file live issues in
-  // the tracker from its fixture text (scripts/api-smoke.mjs clears it for the
+  // the tracker from its fixture text (tools/api-smoke/api-smoke.mjs clears it for the
   // same reason). A blank value is a deliberate "unconfigured", which is the
   // state CI runs in.
   //
@@ -95,7 +95,7 @@ export const commonWebServer = {
   // the server and never touch real data.
   //
   // Every name web/src reads from $env/dynamic/private belongs in this object;
-  // scripts/tests/e2e-server-env.test.mjs fails when one is missing.
+  // tools/tests/e2e-server-env.test.mjs fails when one is missing.
   env: {
     PUBLIC_ENABLE_DEV_HARNESS: 'true',
     ADMIN_ACCESS_TOKEN,

@@ -21,7 +21,7 @@ export type ReportResponse = { ok: true } | { ok: false; error: string };
  * Unauthenticated, so it is rate-limited per IP and each issue creation is a
  * write; the limit is deliberately tighter than the read-only oracles. The
  * bucket is charged before submitReport sees the body, so a honeypot submission
- * still costs budget — scripts/api-smoke.mjs bursts past the limit with
+ * still costs budget — tools/api-smoke/api-smoke.mjs bursts past the limit with
  * honeypotted payloads that cannot open an issue on any server, and
  * server.test.ts pins that order.
  */

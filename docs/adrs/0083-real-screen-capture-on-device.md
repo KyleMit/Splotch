@@ -2,6 +2,9 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
+> `tools/`, folded by capability. The decision itself is unchanged.
+
 ## Context
 
 ADR-0079 automated the device gates run. On iPadOS 26.5 it reports every ADR-0066 column at ≤ 2 ms
