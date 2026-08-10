@@ -91,5 +91,5 @@ one). It cannot run in CI or a cloud session, like the Android path before it.
   ADR-0082's budget, and a sign that the interesting costs on device are compositor-side, where the
   engine marks cannot see them.
 
-The runbook (Approach A of the `profiling` skill's `ipad-device-profiling.md`) documents both the
-command and the by-hand fallback; the skill's design notes record the protocol findings.
+The runbook (Approach A of `docs/PROFILING-IPAD.md`) documents both the command and the by-hand
+fallback; the skill's design notes record the protocol findings.

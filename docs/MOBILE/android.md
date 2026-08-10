@@ -8,7 +8,7 @@ the Google Play release checklist. For the general build model and shared assets
 
 > Minimum supported OS: **Android 7.0 / API 24** (`minSdkVersion` in `android/variables.gradle`).
 > This is safely older than the web floor because the System WebView updates via Play independently
-> of the OS — see [docs/COMPATIBILITY.md](../../../docs/COMPATIBILITY.md).
+> of the OS — see [docs/COMPATIBILITY.md](../COMPATIBILITY.md).
 
 ## 1. Toolchain setup
 
@@ -158,8 +158,8 @@ Off-cloud, any quick tunnel works (e.g. `cloudflared tunnel
 --url http://localhost:5173`, or
 `ngrok http 5173`). From a Claude Code cloud session the egress is a TLS-terminating, HTTP-only MITM
 gateway and those tools fail — the working path is a self-hosted chisel reverse tunnel. See
-**[docs/CLOUD/Claude.md](../../../docs/CLOUD/Claude.md)** and
-**[ADR-0021](../../../docs/adrs/0021-cloud-session-tunneling.md)**.
+**[docs/CLOUD/Claude.md](../CLOUD/Claude.md)** and
+**[ADR-0021](../adrs/0021-cloud-session-tunneling.md)**.
 
 ## 3. Testing
 

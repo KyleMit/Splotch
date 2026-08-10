@@ -183,5 +183,5 @@ console.log(
 console.log(
   '\n⚠ Frame durations are unreliable if the run used the synchronous console driver\n' +
     '  (it dispatches a whole stroke in one blocking tick). For a true per-frame/jank\n' +
-    '  signal, pace input one op per rAF or hand-draw (Approach B in ipad-device-profiling.md).'
+    '  signal, pace input one op per rAF or hand-draw (Approach B in docs/PROFILING-IPAD.md).'
 );

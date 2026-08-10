@@ -21,7 +21,7 @@ describe('iPad console driver operator globals', () => {
   const driver = read('scripts/perf/ipad-console-driver.js');
   // __perfRows is an output the driver writes, not an input to document.
   const inputs = perfGlobals(driver).filter((g) => g !== '__perfRows');
-  const runbook = read('.ruler/skills/profiling/ipad-device-profiling.md');
+  const runbook = read('docs/PROFILING-IPAD.md');
 
   // Guards the extraction itself: if the regex stops matching, `inputs` empties
   // and the per-global cases below silently vanish instead of failing.

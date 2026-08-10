@@ -426,8 +426,8 @@ Timeline recording**, and its table is the ADR-0066 verdict. A4 tells you *how m
 *where* and *whether a frame dropped*. Never try to get both from one run — the reasons are in A5.
 
 In Web Inspector → **Console** tab, paste the **entire contents** of
-[`scripts/perf/ipad-console-driver.js`](../../../scripts/perf/ipad-console-driver.js) and press
-Enter. It runs on the iPad page and:
+[`scripts/perf/ipad-console-driver.js`](../scripts/perf/ipad-console-driver.js) and press Enter. It
+runs on the iPad page and:
 
 * resizes the canvas to the full iPad screen (so the raster is the real on-device size),
 * preflights the build with a probe stroke — if the probe emits no `engine.commit` measure,
@@ -560,8 +560,8 @@ Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 
 1. **⟨iPad⟩** Open `http://<mac-lan-ip>:4173/` (the normal app).
 2. **⟨Mac⟩** Attach Web Inspector (Develop → ⟨iPad⟩ → the page) and paste the whole of
-   [`scripts/perf/ipad-recorder.js`](../../../scripts/perf/ipad-recorder.js) into the **Console**.
-   It starts recording immediately.
+   [`scripts/perf/ipad-recorder.js`](../scripts/perf/ipad-recorder.js) into the **Console**. It
+   starts recording immediately.
 3. **⟨iPad⟩** Draw, change colors, erase, undo — with your fingers or the Apple Pencil, however a
    real session goes. The recorder captures **every pointer event on the page** (canvas strokes and
    UI-targeted events alike, each with its target element, `buttons`, and pen pressure),

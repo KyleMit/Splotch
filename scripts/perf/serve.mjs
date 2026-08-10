@@ -1,6 +1,6 @@
 // Serves the current production build on the LAN for on-device profiling, and
 // prints one reachable URL instead of vite's one-per-bound-interface list — see
-// the profiling skill's ipad-device-profiling.md.
+// docs/PROFILING-IPAD.md.
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';

@@ -287,6 +287,22 @@ only load knowledge into context (`architecture`, `adrs`, `testing`, `skills-gui
 noun names; a verb name on a reference skill would falsely promise an action. Scanning the skill
 list, the name alone should tell you whether invoking it is passive or starts a procedure.
 
+**Where a skill's content lives (ADR-0107).** Every skill is stored three times — the `.ruler/`
+source plus a generated `.claude/` and `.agents/` copy — so one line of skill prose is three lines
+of diff on every edit. Which half of the split a skill belongs to follows from its kind:
+
+* **Reference skills keep their bulk in `docs/` and stay thin routers.** `architecture` →
+  `docs/ARCHITECTURE.md`, `api` → `docs/API.md`, `testing` → `docs/TESTING.md`, `mobile` →
+  `docs/MOBILE/`, `profiling` → `docs/PROFILING.md` + `docs/PROFILING-IPAD.md`. The content is
+  documentation a human would want anyway, it is read by lookup rather than start-to-finish, and one
+  copy means one diff.
+* **Workflow skills keep their procedure inline**, however long it runs. A step the agent never read
+  is a step it never runs, and an imperative runbook has no human reader that `docs/` would serve.
+
+A router still has to earn its keep: name each section of the doc and say what it answers, so the
+agent reads the part that applies instead of the whole file. Reach past the router only for content
+that must not be missed — invariants, footguns, the thing that makes a wrong reading expensive.
+
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
 `testing.md`, `ipad-profiling-docs.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`,
@@ -303,6 +319,12 @@ Remaining `docs/`:
 
 | File                             | When to read it                                                                                                                                                                                                                                                                                                                                                                      |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docs/ARCHITECTURE.md`           | Tech stack, the `web/src/lib/` source map, the route/render table, and the UI element glossary — the `architecture` skill routes here                                                                                                                                                                                                                                                |
+| `docs/API.md`                    | The full `/api/*` contract: request/response shapes, auth, CORS, and per-endpoint rate limits — the `api` skill routes here                                                                                                                                                                                                                                                          |
+| `docs/TESTING.md`                | Every test layer, its command, and what CI runs it on; flake-resistant spec authoring; Maestro setup — the `testing` skill routes here                                                                                                                                                                                                                                               |
+| `docs/MOBILE/`                   | `native.md` (how the Capacitor build works, storage, privacy posture), `android.md`, `ios.md` — toolchains, build/sign/run, and the store release + kids-compliance checklists; the `mobile` skill routes here                                                                                                                                                                       |
+| `docs/PROFILING.md`              | The `npm run perf:*` harness — which command profiles what, how capture works, and reading a report into a bottleneck; the `profiling` skill routes here                                                                                                                                                                                                                             |
+| `docs/PROFILING-IPAD.md`         | The physical-iPad profiling runbook — the highest-fidelity target (real WebKit + Apple GPU + 120 Hz); read before any on-device perf capture                                                                                                                                                                                                                                         |
 | `docs/COMPATIBILITY.md`          | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                                                                                                                                                                                    |
 | `docs/CONTRIBUTING.md`           | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                                                                                                                                                                          |
 | `docs/ISSUE-WORKFLOW.md`         | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                                                                                                                                                                                       |

@@ -18,7 +18,7 @@
 // maths is in real-screen-stats.mjs; this file is the plumbing between them.
 //
 // Local-only, same device prerequisites as `perf:ipad` (see the profiling
-// skill's ipad-device-profiling.md).
+// docs/PROFILING-IPAD.md).
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';

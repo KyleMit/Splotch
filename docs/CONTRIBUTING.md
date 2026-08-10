@@ -20,9 +20,8 @@ on merge.
 * **npm** (bundled with Node)
 * **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via
   `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
-* For native Android/iOS work, see the full toolchain setup in the
-  [mobile guide](../.claude/skills/mobile/SKILL.md). (iOS needs macOS + full Xcode; no CocoaPods —
-  the project uses Swift Package Manager.)
+* For native Android/iOS work, see the full toolchain setup in the [mobile guide](MOBILE/native.md).
+  (iOS needs macOS + full Xcode; no CocoaPods — the project uses Swift Package Manager.)
 
 ## Local setup
 
@@ -109,7 +108,7 @@ On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
 
 To get the static build into the native projects (full toolchain setup, on-device testing, and the
-store release flow live in the [mobile guide](../.claude/skills/mobile/SKILL.md)):
+store release flow live in the [mobile guide](MOBILE/native.md)):
 
 ```bash
 npm run cap:sync       # static build + copy into the native projects
@@ -139,8 +138,8 @@ npm run test:e2e:headed    # Playwright with browser visible (SLOWMO=500)
 npm run test:e2e:ui        # Playwright UI mode
 ```
 
-See the [testing guide](../.claude/skills/testing/SKILL.md) for the full test strategy, including
-the native smoke tests (`test:android`, `test:ios`).
+See the [testing guide](TESTING.md) for the full test strategy, including the native smoke tests
+(`test:android`, `test:ios`).
 
 ## Dev routes
 

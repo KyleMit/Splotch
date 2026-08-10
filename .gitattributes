@@ -1,0 +1,26 @@
+# Generated agent-instruction output (ADR-0058, ADR-0107).
+#
+# `linguist-generated=true` collapses a file in GitHub's diff view by default —
+# still expandable, still reviewable — and drops it from the language stats.
+# Every path below is written by `npm run ruler:apply` from a `.ruler/` source;
+# reviewing the generated copy duplicates reviewing the source.
+
+CLAUDE.md              linguist-generated=true
+AGENTS.md              linguist-generated=true
+.claude/skills/**      linguist-generated=true
+.agents/skills/**      linguist-generated=true
+.claude/skill-notes/** linguist-generated=true
+.agents/skill-notes/** linguist-generated=true
+
+# `.ruler/**` is the authored source, including its own `AGENTS.md` files, which
+# the unanchored patterns above would otherwise match. Later rules win.
+.ruler/** linguist-generated=false
+
+# Direct-maintained provider packages are canonical, not generated — they have no
+# `.ruler/` source. Registered in `scripts/direct-provider-skills.mjs`.
+.claude/skills/burn-down-audits/**      linguist-generated=false
+.agents/skills/burn-down-audits/**      linguist-generated=false
+.agents/skills/implement-issue-stack/** linguist-generated=false
+.claude/skill-notes/burn-down-audits.md      linguist-generated=false
+.agents/skill-notes/burn-down-audits.md      linguist-generated=false
+.agents/skill-notes/implement-issue-stack.md linguist-generated=false
