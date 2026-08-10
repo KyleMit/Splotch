@@ -5,8 +5,9 @@ auto-invokes them by description (or via `/name`); agents without skill support 
 skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
 generated from `.ruler/`; managed runner forks may be produced from `.ruler/skill-forks/<runner>/`.
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
-under `.claude/` and `.agents/`, while Codex-only `implement-issue-stack` lives only under
-`.agents/`. See `scripts/direct-provider-skills.mjs` for the authoritative registry.
+under `.claude/` and `.agents/`, Codex-only `implement-issue-stack` lives only under `.agents/`, and
+Claude-only `analyze-session-transcripts` lives only under `.claude/`. See
+`scripts/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

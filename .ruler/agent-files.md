@@ -19,8 +19,10 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   from concatenating them into root instructions.
 * Direct-maintained exceptions are declared in `scripts/direct-provider-skills.mjs`.
   `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
-  Codex package because it orchestrates a standalone Claude reviewer. Edit registered packages and
-  notes directly, never through `.ruler/`, and never create an undeclared provider by copying one.
+  Codex package because it orchestrates a standalone Claude reviewer; `analyze-session-transcripts`
+  has only a Claude package because it mines Claude Code's own transcript format — a Codex analyzer
+  would share nothing with it. Edit registered packages and notes directly, never through `.ruler/`,
+  and never create an undeclared provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
