@@ -213,6 +213,21 @@ specs that can't race in the first place:
   second caller needs it, so lift it there rather than copying the wait. Query `getAnimations()` on
   the dialog element alone — the fly-in animates it directly, and `{ subtree: true }` would start
   waiting on unrelated descendant animations too.
+* **Budget a frame-paced condition in frames, not milliseconds.** The wide Settings pane mounts one
+  section per frame once the card lands (issue \#910), and `aria-busy` clears only when the last one
+  is in — so the wait for it is on the fill's clock, which is the frame. Playwright's assertion
+  timeout is wall clock, and contention stretches a frame without adding any, which is how the
+  default 5s cap on `expect(pane).toHaveAttribute('aria-busy', 'false')` came to fail a WebKit smoke
+  run three times over on a fill that was merely unfinished (issue \#918 — the `web/` tree under
+  test was byte-identical to a green `main`). `settleSettingsPane` (`tests/helpers.ts`) samples the
+  attribute from inside the page once per `requestAnimationFrame` and gives up only after
+  `SETTINGS_FILL_FRAME_BUDGET` frames, so a starved worker costs it wall clock and nothing else, and
+  the budget still bounds a fill that has genuinely stopped. Sampling from inside the page is half
+  the point: a round trip to the test process measures the harness, and on a starved worker one can
+  span the whole fill. Reach for the same shape wherever the thing being waited on advances with
+  rendered frames — and note this is the *complementary* half of the bullet above: a CSS animation
+  runs on rendered frames too, but it exposes `Animation.finished`, so there you await the browser's
+  own signal instead of counting.
 * **A modal open is not the only thing that arms a dead zone.** `launchGuard.guardTapZone` is armed
   by any tap that repaints something else under the finger, so a spec can be swallowed well after
   the fly-in has landed. `ColoringBook` arms one when a book cover swaps the grid for that book's

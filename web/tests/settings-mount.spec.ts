@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { gotoApp } from './helpers';
+import { gotoApp, SETTINGS_FILL_FRAME_BUDGET, settleSettingsPane } from './helpers';
 
 // The wide Settings shell stages its section bodies a frame at a time instead of
 // mounting all eleven in the tap that opens the dialog (issue #910). Everything
@@ -16,12 +16,6 @@ import { gotoApp } from './helpers';
 // The full section count is read off the table of contents rather than imported:
 // `sections.ts` reaches the rune modules behind the hub subtitles, so a spec
 // can't load it, and every row is in the column from the first frame anyway.
-
-// Frames to keep sampling for if the pane never completes — a bound on a broken
-// run, not a schedule. The fill waits out the card's fly-in before it starts, so
-// a healthy run is that animation plus a frame per section, and this is several
-// times either.
-const FILL_FRAME_LIMIT = 300;
 
 /** Section bodies in the pane on each frame, from the frame the pane appears. */
 function paneFillPerFrame(page: Page, frameLimit: number) {
@@ -52,7 +46,10 @@ function paneFillPerFrame(page: Page, frameLimit: number) {
 test('the pane fills a section at a time rather than all at once', async ({ page }) => {
   await gotoApp(page);
 
-  const { rows, sections } = await paneFillPerFrame(page, FILL_FRAME_LIMIT);
+  // The same frames-not-milliseconds budget the shared helper waits on: it
+  // bounds a fill that has stopped, and the assertions below score the fill that
+  // ran, so sampling past it would only be scoring a run already broken.
+  const { rows, sections } = await paneFillPerFrame(page, SETTINGS_FILL_FRAME_BUDGET);
 
   expect(rows).toBeGreaterThan(1);
   expect(sections[0]).toBeGreaterThan(0);
@@ -137,7 +134,7 @@ test('the pane reports itself busy until the last section is in', async ({ page 
   await page.locator('#settingsButton').click();
 
   const pane = page.locator('.settings-pane');
-  await expect(pane).toHaveAttribute('aria-busy', 'false');
+  await settleSettingsPane(pane);
   const rows = await page.locator('.settings-nav-item').count();
   await expect(pane.locator('.settings-section')).toHaveCount(rows);
 });
@@ -187,5 +184,5 @@ test('a jump to a section that has not arrived yet still reaches it', async ({ p
   ).toHaveCount(1);
   await expect(page.locator(`.settings-nav [data-section="${jumpedTo}"]`)).toHaveClass(/active/);
   // And the fill carries on past the section the jump pulled forward.
-  await expect(page.locator('.settings-pane')).toHaveAttribute('aria-busy', 'false');
+  await settleSettingsPane(page.locator('.settings-pane'));
 });

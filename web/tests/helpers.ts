@@ -136,6 +136,56 @@ export async function settleFlyIn(dialog: Locator) {
   );
 }
 
+// Frames the wide Settings pane is given to finish filling before the wait
+// calls it stuck. Counted in frames because the fill is: one section per frame
+// once the card lands (issue #910), then however many more What's New spends
+// revealing its release notes (ADR-0061). A wall-clock cap is the wrong unit
+// here — contention stretches each frame without adding any, so the default 5s
+// expect timeout failed WebKit smoke on a fill that was merely unfinished
+// (issue #918). A healthy fill is a frame or two per section plus that staging,
+// so this is more than an order of magnitude past it: a bound on a fill that has
+// genuinely stopped, never a schedule a live one can outrun.
+export const SETTINGS_FILL_FRAME_BUDGET = 300;
+
+// Wait for the wide Settings pane to stop reporting itself busy, i.e. for every
+// section to be in it — which is what makes an offset read off the pane, or a
+// node an axe scan walks, the final one. Sampled a frame at a time from inside
+// the page, on the fill's own clock: a round trip to the test process measures
+// the harness instead, and on a starved worker one can span the whole fill
+// (settings-mount.spec.ts watches the same fill the same way).
+//
+// The pane arriving in the DOM is not frame-paced, so that half keeps Playwright's
+// ordinary wall-clock cap; the fill is, so the sampling runs with `timeout: 0` and
+// is bounded by the frame budget alone. Leaving the default 30s on the evaluate
+// would put a wall clock back around the very thing this counts in frames.
+export async function settleSettingsPane(pane: Locator) {
+  await pane.waitFor({ state: 'attached' });
+  await pane.evaluate(
+    (el, budget) =>
+      new Promise<void>((resolve, reject) => {
+        let frames = 0;
+        const read = () => {
+          if (el.getAttribute('aria-busy') === 'false') {
+            resolve();
+          } else if (++frames > budget) {
+            const sections = el.querySelectorAll('.settings-section').length;
+            const rows = document.querySelectorAll('.settings-nav-item').length;
+            reject(
+              new Error(
+                `Settings pane still busy after ${budget} frames — ${sections} of ${rows} sections in`
+              )
+            );
+          } else {
+            requestAnimationFrame(read);
+          }
+        };
+        requestAnimationFrame(read);
+      }),
+    SETTINGS_FILL_FRAME_BUDGET,
+    { timeout: 0 }
+  );
+}
+
 // Open Settings robustly and return its modal locator. It idle-mounts
 // on first open (ADR-0049), so the first click can be lost before its handler is
 // wired — retryOpen rides that out and skips the click when it's already open.
@@ -151,7 +201,7 @@ export async function openSettingsModal(page: Page) {
   // the pane stops reporting itself busy. The fly-in is no proxy for it: that is
   // wall-clock, this is frames, and a starved worker separates the two.
   const pane = modal.locator('.settings-pane');
-  if (await pane.count()) await expect(pane).toHaveAttribute('aria-busy', 'false');
+  if (await pane.count()) await settleSettingsPane(pane);
   return modal;
 }
 
