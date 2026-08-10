@@ -70,6 +70,8 @@ export function osLabelFromUserAgent(ua: string): string {
 
 export type Platform = 'android' | 'ios' | 'web';
 
+export type Orientation = 'portrait' | 'landscape';
+
 export function getPlatform(): Platform {
   if (!browser) return 'web';
   const platform = globalThis.Capacitor?.getPlatform?.();

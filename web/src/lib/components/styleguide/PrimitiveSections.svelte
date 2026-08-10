@@ -5,6 +5,7 @@
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
+  import type { Orientation } from '$lib/platform';
 
   const buttonVariants = ['brand', 'wash', 'danger'] as const;
   const buttonSizes = ['md', 'sm'] as const;
@@ -18,7 +19,7 @@
   ];
   let demoTheme = $state<DemoTheme>('light');
 
-  type DemoOrientation = 'portrait' | 'landscape';
+  type DemoOrientation = Orientation;
   const demoOrientationOptions: SegmentedPickerOption<DemoOrientation>[] = [
     { value: 'portrait', label: 'Portrait', icon: 'mobile-portrait' },
     { value: 'landscape', label: 'Landscape', icon: 'mobile-landscape' },

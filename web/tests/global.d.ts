@@ -1,6 +1,8 @@
 // Ambient types for the dev-only engine harness globals that the Playwright
 // specs read via page.evaluate(). They're defined in the harness page at
 // src/routes/dev/engine/+page.svelte and only ever exist under /dev/engine.
+import type { Orientation } from '../src/lib/platform';
+
 export {};
 
 declare global {
@@ -52,7 +54,7 @@ declare global {
         ty: number;
         paperCssWidth: number;
         paperCssHeight: number;
-        paperOrientation: 'portrait' | 'landscape';
+        paperOrientation: Orientation;
       };
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
       exportCanvasBlob(

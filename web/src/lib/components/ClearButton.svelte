@@ -6,7 +6,8 @@
   import { saveDrawingIfEnabled } from '$lib/drawing/saveOnDelete';
   import { dragToClear } from '$lib/actions/dragToClear';
   import { scribbleGuard } from '$lib/actions/scribbleGuard';
-  import { layout, type Orientation } from '$lib/state/layout.svelte';
+  import type { Orientation } from '$lib/platform';
+  import { layout } from '$lib/state/layout.svelte';
   import { resetToolAfterClear } from '$lib/state/tool.svelte';
 
   let containerEl: HTMLDivElement;

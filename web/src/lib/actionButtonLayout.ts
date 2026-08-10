@@ -11,7 +11,8 @@ import {
 } from '$lib/state/settings.svelte';
 import { network } from '$lib/state/network.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
-import { layout, type Orientation } from '$lib/state/layout.svelte';
+import type { Orientation } from '$lib/platform';
+import { layout } from '$lib/state/layout.svelte';
 import { toolState } from '$lib/state/tool.svelte';
 import {
   landscapeSingleColumnMediaQuery,

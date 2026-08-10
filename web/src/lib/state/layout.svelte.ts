@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
+import type { Orientation } from '$lib/platform';
 import { measureSafeAreaInsets, ZERO_INSETS, type SafeAreaInsets } from '$lib/platform/safeArea';
-
-export type Orientation = 'portrait' | 'landscape';
 
 interface PaletteMeasurement {
   width: number;

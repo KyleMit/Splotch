@@ -20,7 +20,7 @@
 import { isLightColor } from '../colorRing';
 // Type-only import — erased at build time, so this file keeps its no-runtime-
 // plugin-import purity (no @capacitor/core reaches the pure layer).
-import type { Platform } from './index';
+import type { Orientation, Platform } from './index';
 // Type-only — same purity guarantee as the Platform import above. The Style
 // enum's *values* are passed in by the call site (NotchBand.svelte), not
 // imported here, so this file never touches @capacitor/status-bar at runtime.
@@ -38,8 +38,6 @@ export const NOTCH_INSET_THRESHOLD_PX = 30;
 // no plugin import): 'DARK' = light icons (for a dark band), 'LIGHT' = dark
 // icons (for a light band).
 export type StatusBarStyle = 'DARK' | 'LIGHT';
-
-type Orientation = 'portrait' | 'landscape';
 
 // Screen edge the band paints along — the edge the display cutout currently
 // sits on. The hole-punch is at the device's physical top, so it's the top edge
