@@ -4,9 +4,10 @@ import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 import { coloringPackState } from '$lib/state/coloringPacks.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
 
-// Settings is one flat list of sections (ADR-0061). Both shells — the
-// phone hub with full-page drill-in and the tablet sidebar + content pane —
-// render from this single ordered list, so the two layouts can never drift.
+// Settings is one flat list of sections (ADR-0061). Both shells — the phone hub
+// with full-page drill-in and the tablet table of contents over one continuous
+// pane — render from this single ordered list, so the two layouts can never
+// drift, and the nav order is the pane's stacking order.
 export const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
   { id: 'sound', label: 'Sound', icon: 'sound' },
@@ -32,7 +33,18 @@ export const SECTIONS = [
 export type SectionId = (typeof SECTIONS)[number]['id'];
 // The intersection re-states the optional `title`, which is otherwise readable only on the one
 // entry that sets it — every other member of the derived union lacks the key entirely.
-export type SectionMeta = (typeof SECTIONS)[number] & { readonly title?: string };
+type SectionMeta = (typeof SECTIONS)[number] & { readonly title?: string };
+
+const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s] as const)) as Record<
+  SectionId,
+  SectionMeta
+>;
+
+/** The heading a section carries once it is on screen, in either shell. */
+export function sectionHeading(id: SectionId): string {
+  const meta = SECTION_BY_ID[id];
+  return meta.title ?? meta.label;
+}
 
 // Reveal timing for every conditional block a settings section itself owns. The
 // exception is the shared feedback field set, ReportFields: it is also hosted by

@@ -3,7 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { gotoApp, headingOffsetFromPaneTop, openSettingsModal, retryOpen } from './helpers';
+import {
+  gotoApp,
+  headingOffsetFromPaneTop,
+  openSettingsModal,
+  retryOpen,
+  SECTION_LANDED_MAX_PX,
+} from './helpers';
 
 // Settings is a section list — a table-of-contents entry on tablet/desktop, a
 // hub row on phone. Either way the control carries the section label; activating
@@ -69,7 +75,9 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   // Clicking an entry scrolls its heading to just below the pane's top edge and
   // moves the highlight — while the first section stays mounted behind it.
   await nav.getByRole('button', { name: 'Buttons' }).click();
-  await expect.poll(() => headingOffsetFromPaneTop(page, 'controls')).toBeLessThan(24);
+  await expect
+    .poll(() => headingOffsetFromPaneTop(page, 'controls'))
+    .toBeLessThan(SECTION_LANDED_MAX_PX);
   expect(await headingOffsetFromPaneTop(page, 'controls')).toBeGreaterThanOrEqual(0);
   await expect(nav.getByRole('button', { name: 'Buttons' })).toHaveClass(/active/);
   await expect(nav.getByRole('button', { name: 'Appearance' })).not.toHaveAttribute('aria-current');

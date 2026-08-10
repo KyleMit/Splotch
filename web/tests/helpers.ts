@@ -148,6 +148,12 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
+// The widest a jumped-to heading may sit below the pane's top edge and still
+// count as landed. Deliberately looser than the shell's own `--section-jump-inset`
+// so retuning that inset stays a design decision rather than a spec edit; a
+// section that did not scroll sits hundreds of pixels away.
+export const SECTION_LANDED_MAX_PX = 24;
+
 // How far a Settings section's heading sits below the scrolling pane's top edge
 // — the measurement the wide shell's click-to-jump landing and its scrollspy are
 // both specified in.

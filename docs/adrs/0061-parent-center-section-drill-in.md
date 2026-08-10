@@ -154,3 +154,50 @@ Art, Parent Center, Install, Feedback, What's New, About) — additions and word
 within the same structure, listed here because the Decision names the original order. Parent Center
 uses the same section navigation but gates entry at its own operation boundary under ADR-0094;
 Settings and the other sections remain directly accessible.
+
+## Amendment (2026-08): the wide shell is a table of contents over one continuous scroll
+
+The Decision's wide shell swapped one section's content into the Pane per Sidebar click. Sections
+differ enormously in length, so a light one (Sound is a switch and a slider) left most of an 860px
+card empty and read as broken rather than short.
+
+The wide Pane now stacks **every** section in nav order in one scroller, each behind its own pane
+title, separated by whitespace alone (`--section-gap`, 60px — deliberately past the `--space-8`
+ceiling, so no divider rule is needed). The card fills to its existing `max-height` cap and the Pane
+is the scroller it already was. The phone hub/drill-in shell and the compact landscape-phone shell
+are unchanged, which is why the wide shell moved to its own `settings/WideShell.svelte` and both
+shells now render a section through the shared `settings/SectionBody.svelte`.
+
+The Sidebar becomes a scrollspy-driven table of contents: same rows, icons, and order, but the
+highlight follows a reading line 130px past the Pane's top edge (last section wins at the scroll
+end), a click smooth-scrolls that section's heading to `--section-jump-inset` (12px) below the top
+edge, and a deep link scrolls rather than swaps. The spy re-reads live rects on scroll *and* on a
+`ResizeObserver` of the Pane content, because a conditional reveal inside a section (the volume
+slider, advanced controls, the force-landscape row, the AI toggles) moves every section below it.
+Because the highlight is now an indicator rather than a page state — several sections can be
+on-screen at once — the active row softened from the solid `--brand-solid` pill to a
+`--brand-wash`/`--brand-text` fill with a `--brand` left rail, and carries `aria-current="location"`
+instead of `"page"`.
+
+Two consequences of "everything is mounted at once" are load-bearing:
+
+* **Parent Center can no longer be protected by not navigating to it.** ADR-0094 puts the gate at
+  the operation boundary, and in this shell reaching those controls *is* that boundary — so
+  `ParentCenterLock.svelte` stands in for the section's body until the gate is solved, and the
+  Sidebar's Parent Center row still runs the gate before it jumps.
+* **A spec that proved navigation by asserting the other sections were absent now passes
+  vacuously.** Such assertions were rewritten to measure the heading's offset from the Pane's top
+  edge (`headingOffsetFromPaneTop`/`SECTION_LANDED_MAX_PX` in `tests/helpers.ts`) or scoped to one
+  `.settings-section`.
+
+The reopen reset from the previous amendment also had to move a frame later. A closed `<dialog>` is
+`display: none`, so both the nav and the Pane report `scrollTop` 0 and ignore a `scrollTo` — and the
+browser restores the offsets it kept the moment the card gets a layout box. Both resets now run in
+the `requestAnimationFrame` after `open` flips, which is what makes them stick.
+
+Pinch-text-zoom (ADR-0076) is unchanged on the phone shell, where drilling into a section still
+resets it. The wide Pane deliberately drops that reset: a table-of-contents jump stays inside one
+continuous document, so only closing the overlay returns the text to its normal size.
+
+Superseded from the original Consequences: "reopening always lands on the hub / first section" now
+reads "the hub (phone) / the top of the Pane, or the deep-linked section scrolled into place".

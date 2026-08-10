@@ -1,5 +1,10 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { gotoApp, headingOffsetFromPaneTop, openSettingsModal } from './helpers';
+import {
+  gotoApp,
+  headingOffsetFromPaneTop,
+  openSettingsModal,
+  SECTION_LANDED_MAX_PX,
+} from './helpers';
 
 // Tier-2 accessibility (ADR-0076): a low-vision parent can pinch to enlarge the
 // Settings' reading content, while the drawing page itself stays zoom-locked. The
@@ -377,7 +382,9 @@ test('a table-of-contents jump keeps the zoom (the wide pane is one document)', 
   await page.locator('.settings-nav').getByRole('button', { name: 'Sound' }).click();
   // The landing inset is a CSS length inside the zoomed subtree, so it arrives
   // enlarged by the same factor the parent pinched to.
-  await expect.poll(() => headingOffsetFromPaneTop(page, 'sound')).toBeLessThan(24 * zoomed);
+  await expect
+    .poll(() => headingOffsetFromPaneTop(page, 'sound'))
+    .toBeLessThan(SECTION_LANDED_MAX_PX * zoomed);
   expect(await paneZoom(page)).toBe(zoomed);
 });
 

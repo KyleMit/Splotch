@@ -1,10 +1,12 @@
+<!--
+  Stands in for the Parent Center controls in the wide shell, where every section
+  is scrolled past rather than opened: without it a child could reach the
+  protections themselves just by scrolling (ADR-0094 puts the gate at the
+  operation boundary, and reaching these controls is that boundary).
+-->
 <script lang="ts">
   import Button from '../design/Button.svelte';
 
-  // Stands in for the Parent Center controls in the wide shell, where every
-  // section is scrolled past rather than opened: without it a child could reach
-  // the protections themselves just by scrolling (ADR-0094 puts the gate at the
-  // operation boundary, and reading these controls is that boundary).
   interface Props {
     onUnlock: (trigger: HTMLElement) => void;
   }
@@ -33,7 +35,8 @@
 
   .parent-center-lock p {
     margin: 0;
-    font-size: var(--font-size-md);
-    color: var(--text);
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
   }
 </style>
