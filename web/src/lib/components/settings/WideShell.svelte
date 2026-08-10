@@ -38,9 +38,12 @@
   // Where a table-of-contents jump parks the heading: just clear of the pane's
   // top edge rather than flush against it.
   const SECTION_JUMP_INSET_PX = 12;
-  // How far the spied row is kept clear of the nav's own edges. Matches the
-  // height of the scroll-position edge shades below, so a row the pane elected
-  // never surfaces half-buried under a fade.
+  // How far the spied row is kept clear of the nav's own edges, so a row the
+  // pane elected does not surface half-buried under the `local` covers in the
+  // nav's background. The two extreme rows sit against the ends of the scroll
+  // extent and cannot take the full clearance; the covers scroll with the list
+  // and paint over the shade there, which is what that attachment is for. Same
+  // value and same purpose as `/design`'s `CHIP_SCROLL_INSET_PX`.
   const NAV_ROW_CLEARANCE_PX = 24;
 
   // Plain refs, deliberately untracked: the reopen reset reads the nav inside a
@@ -146,6 +149,10 @@
     const spy = () => {
       frame = 0;
       const next = spiedSectionAt(pane);
+      // Not just a dedupe: the reveal below fires on an election change only, so
+      // a parent who scrolls the column by hand keeps the position they chose
+      // until the reading position moves to another section. Revealing on every
+      // tick would yank the column back out from under them mid-gesture.
       if (next === spiedSection) return;
       spiedSection = next;
       revealNavRow(next, jumpBehavior());
