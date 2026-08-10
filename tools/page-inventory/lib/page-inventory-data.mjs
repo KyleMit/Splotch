@@ -122,7 +122,7 @@ export function captureReviewId(item, viewport, theme) {
   return `${item.group}--${item.id}--${viewport.id}--${theme.id}`;
 }
 
-export function captureReviewDescription(item, viewport, theme) {
+function captureReviewDescription(item, viewport, theme) {
   const intent = item.intent ? ` Design intent: ${item.intent}` : '';
   const reviewFocus =
     item.themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY && theme.id === 'dark'
