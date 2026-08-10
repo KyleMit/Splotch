@@ -293,7 +293,12 @@ function settingsSurfaces() {
               .getByRole('heading', { name: section.title ?? section.label, exact: true })
               .waitFor();
           } else {
-            await modal.locator(`[data-section="${section.id}"][aria-current="page"]`).waitFor();
+            // A wide-shell click scrolls the pane instead of swapping it, so the
+            // row reports a reading position. scripts/tests/perf-actions.test.mjs
+            // holds this token against the shell that sets it.
+            await modal
+              .locator(`[data-section="${section.id}"][aria-current="location"]`)
+              .waitFor();
           }
         }
       )
