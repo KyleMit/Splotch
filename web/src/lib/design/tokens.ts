@@ -212,9 +212,10 @@ export interface ThemeTokens {
    */
   textSoft: string;
   /**
-   * Monochrome icon fill (matches the SVGs' baked fill). Also the hover state
-   * of --icon-muted: quiet chrome icons rest muted and hover to full ink —
-   * there is no intermediate hover step.
+   * Monochrome icon fill — matches the SVGs' baked fill, guarded against
+   * drift by web/src/lib/components/Icon.svelte.test.ts. Also the hover
+   * state of --icon-muted: quiet chrome icons rest muted and hover to full
+   * ink — there is no intermediate hover step.
    */
   iconInk: string;
   iconMuted: string;
