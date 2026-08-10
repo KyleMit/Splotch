@@ -11,7 +11,7 @@ import {
 import { canvasHasInk, selectedActions } from '../ipad-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../desktop-actions.mjs';
 
-const ACTION_PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'action-probe.js'), 'utf8');
+const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'action-probe.js'), 'utf8');
 const DRAWING_CANVAS = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'DrawingCanvas.svelte'),
   'utf8'
@@ -28,8 +28,11 @@ const SETTINGS_WIDE_SHELL = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'WideShell.svelte'),
   'utf8'
 );
-const IPAD_ACTIONS = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
-const PAGE_INVENTORY = readFileSync(join(ROOT, 'scripts', 'gen-page-inventory.mjs'), 'utf8');
+const IPAD_ACTIONS = readFileSync(join(ROOT, 'tools', 'perf', 'ipad-actions.mjs'), 'utf8');
+const PAGE_INVENTORY = readFileSync(
+  join(ROOT, 'tools', 'page-inventory', 'gen-page-inventory.mjs'),
+  'utf8'
+);
 
 const frame = (startFromActionMs, gapMs, visualEffectsActive = false) => ({
   startFromActionMs,

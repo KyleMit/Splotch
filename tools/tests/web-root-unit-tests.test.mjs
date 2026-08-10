@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 // being collected and the suite still reports green; without the tsconfig entry
 // svelte-check skips the files and still reports zero errors. So the guard cannot
 // live in a web-root test — that file is itself collected by the glob it would be
-// guarding. It runs here, in the scripts suite, which reaches both configs as
+// guarding. It runs here, in the tools suite, which reaches both configs as
 // plain files.
 //
 // Regex-level for vitest.config.ts on purpose: no TypeScript parser runs in this

@@ -501,7 +501,7 @@ describe('diffAddsClientStaticImport', () => {
     expect(
       diffAddsClientStaticImport(
         diffFor('web/src/lib/drawing/folderSave.ts', [
-          "export { folderSaveSupported } from '../../../scripts/tests/folderSaveSupport';",
+          "export { folderSaveSupported } from './folderSaveSupport';",
         ])
       )
     ).toBe(true);
@@ -511,8 +511,8 @@ describe('diffAddsClientStaticImport', () => {
     expect(
       diffAddsClientStaticImport(
         diffFor('web/src/lib/a.ts', [
-          "import type { Foo } from '../../../scripts/tests/foo';",
-          "export type { Foo } from '../../../scripts/tests/foo';",
+          "import type { Foo } from './foo';",
+          "export type { Foo } from './foo';",
         ])
       )
     ).toBe(false);
@@ -520,9 +520,7 @@ describe('diffAddsClientStaticImport', () => {
 
   it('ignores dynamic import() — the lazy edge is the safe kind', () => {
     expect(
-      diffAddsClientStaticImport(
-        diffFor('web/src/lib/a.ts', ["import('../../../scripts/tests/lazy').then(run);"])
-      )
+      diffAddsClientStaticImport(diffFor('web/src/lib/a.ts', ["import('./lazy').then(run);"]))
     ).toBe(false);
   });
 
@@ -535,9 +533,7 @@ describe('diffAddsClientStaticImport', () => {
       'web/tests/flows.spec.ts',
       'tools/audit-burndown/lib.mjs',
     ]) {
-      expect(
-        diffAddsClientStaticImport(diffFor(path, ["import { x } from '../../../scripts/tests/x';"]))
-      ).toBe(false);
+      expect(diffAddsClientStaticImport(diffFor(path, ["import { x } from './x';"]))).toBe(false);
     }
   });
 
@@ -547,7 +543,7 @@ describe('diffAddsClientStaticImport', () => {
       '--- a/web/src/lib/a.ts',
       '+++ b/web/src/lib/a.ts',
       '@@ -1,2 +1,2 @@',
-      " import { x } from '../../../scripts/tests/x';",
+      " import { x } from './x';",
       '-const a = 1;',
       '+const a = 2;',
     ].join('\n');
@@ -556,8 +552,8 @@ describe('diffAddsClientStaticImport', () => {
 
   it('tracks the current file across a multi-file diff', () => {
     const diff = [
-      diffFor('web/src/lib/a.test.ts', ["import { y } from '../../../scripts/tests/y';"]),
-      diffFor('web/src/lib/a.ts', ["import { y } from '../../../scripts/tests/y';"]),
+      diffFor('web/src/lib/a.test.ts', ["import { y } from './y';"]),
+      diffFor('web/src/lib/a.ts', ["import { y } from './y';"]),
     ].join('\n');
     expect(diffAddsClientStaticImport(diff)).toBe(true);
   });

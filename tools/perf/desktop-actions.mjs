@@ -17,7 +17,7 @@ import { waitForUrl } from '../lib/net.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { PlaywrightWebDriver } from './playwright-webdriver.mjs';
 
-const ACTION_PROBE_FILE = join(ROOT, 'scripts', 'perf', 'action-probe.js');
+const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'action-probe.js');
 const DEFAULT_VIEWPORT = { width: 1512, height: 982 };
 const DEFAULT_DEVICE_SCALE_FACTOR = 2;
 const READY_TIMEOUT_MS = 60_000;

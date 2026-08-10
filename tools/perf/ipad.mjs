@@ -37,7 +37,7 @@ import {
 } from './ipad-session.mjs';
 
 const HARNESS_PATH = '/dev/engine';
-const DRIVER_FILE = join(ROOT, 'scripts', 'perf', 'ipad-console-driver.js');
+const DRIVER_FILE = join(ROOT, 'tools', 'perf', 'ipad-console-driver.js');
 
 // Four scenarios × 22 strokes at real op volume runs a couple of minutes; the
 // cap is loose enough that a slow device is not mistaken for a hung one.

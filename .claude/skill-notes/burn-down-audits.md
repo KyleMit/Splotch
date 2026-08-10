@@ -83,13 +83,13 @@ interactive path, and having two ways to do the same thing at different scales w
 avoiding. This is still the right call — the two skills have genuinely different shapes, not just
 different sizes.
 
-**`npm run test:scripts` exists because of this PR's review.** The reviewer pointed out that
+**`npm run test:tools` exists because of this PR's review.** The reviewer pointed out that
 `getEntry`/`countEntries`/`deleteFirstEntry` were documented as the only things allowed to touch the
 19k-line `AUDIT.md`, and that the header comment called hundreds of sequential edits "a corruption
 risk" — yet the entry-boundary parsing and seam-collapse logic had no committed test, only manual
 exercise against a scratch copy. The response created
 `tools/audit-burndown/tests/audit-burndown-lib.test.mjs` + `tools/vitest.config.mjs`, wired as
-`npm run test:scripts` into `npm test` and its own CI step. The whole repo-script test suite traces
+`npm run test:tools` into `npm test` and its own CI step. The whole repo-script test suite traces
 back to that one comment.
 
 ### The gate ladder — why type-checking was never enough

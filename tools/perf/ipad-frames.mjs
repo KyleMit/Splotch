@@ -46,7 +46,7 @@ import {
 } from './real-screen-stats.mjs';
 
 const APP_PATH = '/';
-const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
+const PROBE_FILE = join(ROOT, 'tools', 'perf', 'real-screen-probe.js');
 
 // A human drawing six phases at 25 s of contact each, plus the paper switching
 // between them, is a few minutes; the budget is loose enough that a slow hand

@@ -204,7 +204,7 @@ afterEach(() => {
 describe('importing the driver', () => {
   it('does not start a run', async () => {
     const before = process.cwd();
-    const module = await import('../../../scripts/audit-burndown/burndown.mjs?fresh');
+    const module = await import('../burndown.mjs?fresh');
     expect(typeof module.createBurndownRun).toBe('function');
     // A module that ran its lifecycle on import would have chdir'd to the repo
     // root and recorded its launch before the first assertion could run.

@@ -22,7 +22,7 @@ Verified at HEAD b4abd2264d06612375ce3b408f5bc13b535c97c0 — the core of the fi
 independently by the PR \#805 audit-backlog burndown (merged 2026-08-06 as 548d37ccea95), which took
 the drift-guard route instead of the module route:
 
-* `tools/tests/dev-ports.test.mjs` (8 tests, in `test:scripts`, in CI, passing) reads
+* `tools/tests/dev-ports.test.mjs` (8 tests, in `test:tools`, in CI, passing) reads
   `web/vite.config.ts`, `web/netlify.toml`, and `package.json` and asserts every executable consumer
   of the vite dev port agrees: netlify `[dev].targetPort`, `cloud-tunnel.mjs`,
   `android-emulator.mjs`, `ios:live`, and both sides of `adb:reverse`; that `dev:kill`'s port list

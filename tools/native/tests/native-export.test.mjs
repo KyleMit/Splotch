@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { nativeUnusedLineArt } from '../../lib/book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from '../lib/native-export.mjs';
 
-const repoRoot = join(import.meta.dirname, '..', '..');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const appHtml = readFileSync(join(repoRoot, 'web/src/app.html'), 'utf8');
 
 describe('WEB_ONLY_STATIC_FILES', () => {

@@ -16,7 +16,7 @@ import {
 import { summarizeUndoActions, undoActionRows } from './undo-action-stats.mjs';
 
 const APP_PATH = '/';
-const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
+const PROBE_FILE = join(ROOT, 'tools', 'perf', 'real-screen-probe.js');
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';

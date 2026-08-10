@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../lib/net.mjs', async (importOriginal) => {
+vi.mock('../../lib/net.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, lanAddresses: () => ['10.0.0.5', '192.168.1.9'] };
 });

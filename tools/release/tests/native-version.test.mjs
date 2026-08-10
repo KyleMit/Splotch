@@ -8,7 +8,7 @@ import {
   IOS_PBXPROJ_PATH,
 } from '../lib/native-version.mjs';
 
-const repoRoot = join(import.meta.dirname, '..', '..');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const { version: packageVersion } = JSON.parse(
   readFileSync(join(repoRoot, 'package.json'), 'utf8')
 );

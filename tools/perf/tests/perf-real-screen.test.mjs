@@ -52,8 +52,8 @@ import {
 } from '../drawing-gates.mjs';
 import { summarizeUndoActions } from '../undo-action-stats.mjs';
 
-const PROBE = readFileSync(join(ROOT, 'scripts', 'perf', 'real-screen-probe.js'), 'utf8');
-const ACTION_RUNNER = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'real-screen-probe.js'), 'utf8');
+const ACTION_RUNNER = readFileSync(join(ROOT, 'tools', 'perf', 'ipad-actions.mjs'), 'utf8');
 const STORAGE_KEYS_SOURCE = readFileSync(join(ROOT, 'web', 'src', 'lib', 'storageKeys.ts'), 'utf8');
 const SCREENSHOT_MODULE = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'drawing', 'screenshot.ts'),

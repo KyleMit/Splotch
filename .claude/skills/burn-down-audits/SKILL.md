@@ -186,8 +186,8 @@ as possible:
     finding, since knip reports repo-wide: run it at the base commit first, and if it starts
     producing unrecoverable fix rounds, drop it and let CI catch it.
   * **A test tier CI runs that `TEST_CMD` does not.** `npm run test:unit` is the default, but a repo
-    with sibling suites (`test:scripts`, `test:asset-gen`) leaves whole trees ungated — and a
-    backlog that audits those trees will edit them. Add the suites that cover the areas your backlog
+    with sibling suites (`test:tools`, `test:asset-gen`) leaves whole trees ungated — and a backlog
+    that audits those trees will edit them. Add the suites that cover the areas your backlog
     actually touches.
 
   Whatever you choose, run the full composed `CHECK_CMD` and `TEST_CMD` **at the base commit** and

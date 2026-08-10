@@ -37,7 +37,7 @@ import { spawnPerfServe } from './serve.mjs';
 import { printRun } from './frames-analyze.mjs';
 import { probeConfigScript } from './ipad-frames.mjs';
 
-const PROBE_FILE = join(ROOT, 'scripts', 'perf', 'real-screen-probe.js');
+const PROBE_FILE = join(ROOT, 'tools', 'perf', 'real-screen-probe.js');
 const APP_URL_PATH = '/';
 
 // The iPad Pro 12.9" the device runs measure, so geometry-dependent costs (a

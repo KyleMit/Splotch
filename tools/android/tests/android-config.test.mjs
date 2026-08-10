@@ -7,7 +7,7 @@ import {
 import { themes } from '../../../web/src/lib/design/tokens.ts';
 import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android.mjs';
 
-const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
+const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
 
 // Files allowed to carry the emulator API level / AVD name as literals — each
 // goes red the moment a literal disagrees with ANDROID_API_LEVEL. Deliberately

@@ -31,7 +31,7 @@ describe('sweep server env', () => {
 
 describe('sweep workflow', () => {
   const workflow = readFileSync(
-    join(import.meta.dirname, '..', '..', '.github', 'workflows', 'worker-sweep.yml'),
+    join(import.meta.dirname, '..', '..', '..', '.github', 'workflows', 'worker-sweep.yml'),
     'utf8'
   );
 
@@ -39,7 +39,7 @@ describe('sweep workflow', () => {
   // protocol belongs to the driver, where the local half runs it too. A rep loop
   // reappearing in YAML is the regression this catches.
   it('delegates the whole rep loop to the driver', () => {
-    expect(workflow).toMatch(/node scripts\/e2e-sweep\.mjs/);
+    expect(workflow).toMatch(/node tools\/e2e-tuning\/e2e-sweep\.mjs/);
     expect(workflow).not.toMatch(/playwright test/);
     expect(workflow).not.toMatch(/vite preview/);
   });

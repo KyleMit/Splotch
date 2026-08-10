@@ -17,7 +17,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 // no offline form, and the failure it guards ships green under every mock.
 
 const repoRoot = join(import.meta.dirname, '..', '..');
-const viteServerUrl = pathToFileURL(join(repoRoot, 'scripts', 'lib', 'vite-server.mjs')).href;
+const viteServerUrl = pathToFileURL(join(repoRoot, 'tools', 'lib', 'vite-server.mjs')).href;
 
 // Its own port. The suite runs in parallel with the rest of tests/ and vite is
 // spawned --strictPort, so sharing one with another script would read as a

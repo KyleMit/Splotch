@@ -13,7 +13,7 @@ import { commonWebServer } from '../../web/playwright.shared.ts';
 // how a spec can pass locally on a credential CI doesn't have.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const appDir = join(repoRoot, 'web', 'src');
-const apiSmokePath = join(repoRoot, 'scripts', 'api-smoke.mjs');
+const apiSmokePath = join(repoRoot, 'tools', 'api-smoke', 'api-smoke.mjs');
 const PRIVATE_ENV_IMPORT = "from '$env/dynamic/private'";
 // Only the bound `env` identifier. `process.env.X` and `import.meta.env.X` are
 // different objects that happen to end in the same characters, and demanding

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ALL_UNDO_SCENARIO_KEYS } from '../undo-scenario-keys.mjs';
 
-const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
+const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
 
 // The console driver is a paste-into-Safari snippet, so it can't import the
 // desktop harness's key manifest. A row found hot on the iPad must still name the

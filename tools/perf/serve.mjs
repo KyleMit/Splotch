@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { ROOT, argFlag, isMain, runMain } from '../lib/proc.mjs';
 import { lanAddresses } from '../lib/net.mjs';
 
-const SERVE_ENTRY = join(ROOT, 'scripts', 'perf', 'serve.mjs');
+const SERVE_ENTRY = join(ROOT, 'tools', 'perf', 'serve.mjs');
 
 // vite's default preview port. The runbook, the console driver, and the
 // recorder snippet all point the iPad at it.
@@ -22,7 +22,7 @@ export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
   const child = spawn(
     process.execPath,
     [
-      join(ROOT, 'scripts', 'web.mjs'),
+      join(ROOT, 'tools', 'web.mjs'),
       'vite',
       'preview',
       '--host',

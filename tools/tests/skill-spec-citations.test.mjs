@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 const repoRoot = join(import.meta.dirname, '..', '..');
 const testsDir = join(repoRoot, 'web', 'tests');
 
-// The live instruction surface — what an agent is told is true *now*. `scripts`
+// The live instruction surface — what an agent is told is true *now*. `tools`
 // is here for the audit-burndown role prompts, which an agent reads and greps
 // exactly like a skill. Design history (skill notes), ADRs, and the audit
 // backlog are deliberately outside it: those record what was true at the time
@@ -24,7 +24,7 @@ const testsDir = join(repoRoot, 'web', 'tests');
 // pattern distinguishes from a real citation. A source comment needing to show
 // a spec path spells it as a `tests/<name>.spec.ts` placeholder instead, so
 // there is no agreement for this walk to have missed.
-const INSTRUCTION_ROOTS = ['.ruler', '.claude', '.agents', 'scripts'];
+const INSTRUCTION_ROOTS = ['.ruler', '.claude', '.agents', 'tools'];
 const INSTRUCTION_FILENAMES = ['CLAUDE.md', 'AGENTS.md'];
 
 // The reference documents ADR-0107 moved out of the skill trees. Their spec

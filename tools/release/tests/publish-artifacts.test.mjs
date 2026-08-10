@@ -81,7 +81,7 @@ describe('parsePublishArgs', () => {
 // prevent: at `gh release create` time the only artifact that can exist is one
 // built for an *earlier* version, because this run is what bumps the version.
 describe('release.mjs', () => {
-  const source = readFileSync(join(ROOT, 'scripts', 'release.mjs'), 'utf8');
+  const source = readFileSync(join(ROOT, 'tools', 'release', 'release.mjs'), 'utf8');
 
   it('never attaches a build artifact to the GitHub release it creates', () => {
     expect(source).not.toMatch(/RELEASE_AAB|RELEASE_IPA|app-release\.aab|App\.ipa/);

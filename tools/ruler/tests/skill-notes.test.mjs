@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const repoRoot = join(import.meta.dirname, '..', '..');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const noteSource = join(repoRoot, '.ruler', 'skill-notes');
 
 // Ruler's recursive rule loader concatenates every .md under .ruler/ into the

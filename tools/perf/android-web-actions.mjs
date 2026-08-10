@@ -19,7 +19,7 @@ import { profilePath } from './paths.mjs';
 import { PlaywrightWebDriver } from './playwright-webdriver.mjs';
 
 const APP_PATH = '/';
-const ACTION_PROBE_FILE = join(ROOT, 'scripts', 'perf', 'action-probe.js');
+const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'action-probe.js');
 const SESSION_ID = 'android-web-cdp';
 const DEFAULT_CDP_PORT = 9_224;
 const CDP_READY_TIMEOUT_MS = 20_000;

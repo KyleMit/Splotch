@@ -22,7 +22,7 @@ import { ensurePreviewServer, resolveDeviceUrl } from './ipad-session.mjs';
 import { profilePath } from './paths.mjs';
 
 const APP_PATH = '/';
-const ACTION_PROBE_FILE = join(ROOT, 'scripts', 'perf', 'action-probe.js');
+const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'action-probe.js');
 const ACTION_PANEL_STATE_TARGET = `(document.querySelector('.actions-panel[data-action-panel-live]') ?? document.documentElement)`;
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');

@@ -52,7 +52,7 @@ deferrals.
 ```bash
 BRANCH=claude/audit-burn-down-vf4iui \
 CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check && npm run img:audit:check && npm run check:assets:manifest && npm run lint:dead' \
-TEST_CMD='npm run test:unit && npm run test:scripts && npm run test:asset-gen' \
+TEST_CMD='npm run test:unit && npm run test:tools && npm run test:asset-gen' \
 npm run audit:burndown:overnight -- 600
 ```
 
@@ -102,7 +102,7 @@ hide behind an earlier one:
 | Gate                                                                                                                   | Result |
 | ---------------------------------------------------------------------------------------------------------------------- | ------ |
 | `check`, `lint:tokens`, `gen:tokens:check`, `scrapbook:check`, `img:audit:check`, `check:assets:manifest`, `lint:dead` | all ok |
-| `test:unit`, `test:scripts`, `test:asset-gen`                                                                          | all 0  |
+| `test:unit`, `test:tools`, `test:asset-gen`                                                                            | all 0  |
 
 Preflight OK: deps, auth, clean tree, origin reachable, all three role prompts present, 72 findings
 parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.

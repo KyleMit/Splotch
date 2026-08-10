@@ -16,7 +16,7 @@ import {
   UNDO_SCENARIO_PATHS,
 } from '../undo-scenario-keys.mjs';
 
-const repoRoot = join(import.meta.dirname, '..', '..');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
 const workflow = readFileSync(join(repoRoot, '.github', 'workflows', 'test.yml'), 'utf8');
 const setupAction = readFileSync(

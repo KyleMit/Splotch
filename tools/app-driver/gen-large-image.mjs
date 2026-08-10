@@ -29,7 +29,7 @@ import {
   dismissMenu,
 } from './lib/app-driver.mjs';
 
-const SVG_FILE = join(ROOT, 'scripts', 'assets', 'large-image.svg');
+const SVG_FILE = join(ROOT, 'tools', 'app-driver', 'assets', 'large-image.svg');
 const OUT = join(ROOT, 'web', 'static', 'large-image.png');
 const PORT = 4173;
 

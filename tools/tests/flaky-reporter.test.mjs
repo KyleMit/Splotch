@@ -65,7 +65,7 @@ describe('FlakyPassReporter', () => {
    *
    * GITHUB_STEP_SUMMARY is unset for the duration, not just captured: every step
    * on GitHub Actions has it set, and .github/workflows/test.yml runs
-   * `npm run test:scripts` — so without this the fixtures below append a
+   * `npm run test:tools` — so without this the fixtures below append a
    * fabricated flaky-test table, naming a real spec, to the Tests job summary of
    * every CI run. That would be a permanent false positive on the one signal this
    * reporter exists to provide.

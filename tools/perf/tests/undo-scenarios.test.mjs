@@ -33,13 +33,13 @@ vi.mock('@playwright/test', () => ({
   },
 }));
 
-vi.mock('../perf/preview.mjs', () => ({
+vi.mock('../preview.mjs', () => ({
   buildAndPreview: async () => ({ base: 'http://profile.test/', stop: state.stop }),
 }));
 
 // createMeasureTimeline stays real — it is the thing under test for the
 // multi-scenario WebKit trace, and stubbing it would test the stub.
-vi.mock('../perf/capture.mjs', async (importOriginal) => {
+vi.mock('../capture.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     startTrace: async () => [],
@@ -53,11 +53,11 @@ vi.mock('../perf/capture.mjs', async (importOriginal) => {
   };
 });
 
-vi.mock('../perf/paths.mjs', () => ({ profilePath: () => state.outDir }));
+vi.mock('../paths.mjs', () => ({ profilePath: () => state.outDir }));
 
-vi.mock('../lib/playwright.mjs', () => ({ chromiumExecutablePath: () => undefined }));
+vi.mock('../../lib/playwright.mjs', () => ({ chromiumExecutablePath: () => undefined }));
 
-vi.mock('../lib/proc.mjs', async (importOriginal) => {
+vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, sleep: async () => {} };
 });

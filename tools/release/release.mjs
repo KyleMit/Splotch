@@ -130,7 +130,7 @@ function bumpVersions(version, versionCode) {
 }
 
 function generateArtifacts() {
-  run('node', [join('scripts', 'generate-releases.mjs')]);
+  run('node', [join('tools', 'release', 'generate-releases.mjs')]);
 }
 
 function assertOnlyReleasePaths() {

@@ -110,7 +110,7 @@ describe('web-only boot markers', () => {
   it('fails loudly when an owning module loses a source needle', () => {
     const [target] = WEB_ONLY_MODULE_MARKERS;
     const problems = webOnlyMarkerSourceProblems((sourcePath) => {
-      const source = readFileSync(new URL(`../../${sourcePath}`, import.meta.url), 'utf8');
+      const source = readFileSync(new URL(`../../../${sourcePath}`, import.meta.url), 'utf8');
       return sourcePath === target.sourcePath ? source.replace(target.sourceNeedle, '') : source;
     });
 

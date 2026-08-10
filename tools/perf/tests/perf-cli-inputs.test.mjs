@@ -15,17 +15,17 @@ vi.mock('node:child_process', async (importOriginal) => {
   return { ...actual, spawnSync: vi.fn(actual.spawnSync) };
 });
 
-vi.mock('../lib/proc.mjs', async (importOriginal) => {
+vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, isMain: () => state.directEntry, runMain: state.runMain };
 });
 
-const repoRoot = join(import.meta.dirname, '..', '..');
-const analyzePath = join(repoRoot, 'scripts', 'perf', 'analyze.mjs');
-const webInspectorPath = join(repoRoot, 'scripts', 'perf', 'analyze-webinspector.mjs');
-const replayPath = join(repoRoot, 'scripts', 'perf', 'replay-scenario.mjs');
-const scenarioPath = join(repoRoot, 'scripts', 'perf', 'scenario.mjs');
-const undoScenariosPath = join(repoRoot, 'scripts', 'perf', 'undo-scenarios.mjs');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
+const analyzePath = join(repoRoot, 'tools', 'perf', 'analyze.mjs');
+const webInspectorPath = join(repoRoot, 'tools', 'perf', 'analyze-webinspector.mjs');
+const replayPath = join(repoRoot, 'tools', 'perf', 'replay-scenario.mjs');
+const scenarioPath = join(repoRoot, 'tools', 'perf', 'scenario.mjs');
+const undoScenariosPath = join(repoRoot, 'tools', 'perf', 'undo-scenarios.mjs');
 
 let fixtureDir;
 
@@ -206,10 +206,10 @@ describe('performance CLI input failures', () => {
 
   it('starts each guarded profiler when invoked directly', async () => {
     const drivers = [
-      ['../perf/scenario.mjs', 'runWebScenario'],
-      ['../perf/mount.mjs', 'runMountProfile'],
-      ['../perf/ios.mjs', 'runIosProfile'],
-      ['../perf/android.mjs', 'runAndroidProfile'],
+      ['../scenario.mjs', 'runWebScenario'],
+      ['../mount.mjs', 'runMountProfile'],
+      ['../ios.mjs', 'runIosProfile'],
+      ['../android.mjs', 'runAndroidProfile'],
     ];
     state.directEntry = true;
 

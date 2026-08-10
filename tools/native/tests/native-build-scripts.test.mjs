@@ -39,7 +39,7 @@ vi.mock('node:fs', async (importOriginal) => {
   };
 });
 
-vi.mock('../lib/proc.mjs', async (importOriginal) => {
+vi.mock('../../lib/proc.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     ...actual,
@@ -51,7 +51,7 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
   };
 });
 
-vi.mock('../../web/src/lib/state/books.ts', () => ({
+vi.mock('../../../web/src/lib/state/books.ts', () => ({
   BOOKS: state.books,
   STARTER_COLORING_BOOK_ID: 'mobile',
   RESPONSIVE_COLORING_TIER_DIRECTORIES: ['/coloring/max-1152px', '/coloring/max-240px'],
@@ -78,8 +78,8 @@ const fixtureHtml = `<!doctype html>
   </head>
 </html>
 `;
-const repoRoot = join(import.meta.dirname, '..', '..');
-const checkAssetsScript = join(repoRoot, 'scripts', 'check-assets.mjs');
+const repoRoot = join(import.meta.dirname, '..', '..', '..');
+const checkAssetsScript = join(repoRoot, 'tools', 'check-assets.mjs');
 
 function fixturePage(directory) {
   return {
@@ -255,7 +255,7 @@ describe('native build script entry points', () => {
       [
         '--experimental-strip-types',
         '--disable-warning=ExperimentalWarning',
-        join(fixtureRoot, 'scripts', 'strip-native-assets.mjs'),
+        join(fixtureRoot, 'tools', 'native', 'strip-native-assets.mjs'),
       ],
       { cwd: fixtureRoot, encoding: 'utf8' }
     );

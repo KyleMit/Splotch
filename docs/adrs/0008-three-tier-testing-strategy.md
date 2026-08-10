@@ -3,6 +3,10 @@
 **Status:** Active\
 **Date:** 2025–2026
 
+> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the repo-automation tier now lives in
+> `tools/` and its command was renamed `test:scripts` → `test:tools`. The three-tier strategy itself
+> is unchanged.
+
 ## Context
 
 Splotch has three distinct layers of testable behavior that require different tools:

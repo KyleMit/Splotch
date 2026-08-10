@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 // driver would launch a browser. Comments are stripped first so the driver can
 // keep naming the anti-pattern in the WHY comment that explains the helper.
 const repoRoot = join(import.meta.dirname, '..', '..');
-const VITE_SERVER = realpathSync(join(repoRoot, 'scripts', 'lib', 'vite-server.mjs'));
+const VITE_SERVER = realpathSync(join(repoRoot, 'tools', 'lib', 'vite-server.mjs'));
 
 // Every generated copy, because each one is a script an agent is told to run and
 // the shared import specifier is relative — it has to resolve from all of them.
