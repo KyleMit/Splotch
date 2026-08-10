@@ -314,13 +314,14 @@
     }
   }
 
+  /* Wraps instead of ellipsizing: the option name is what identifies the
+     control, and an ellipsis leaves only the icon to carry it. Chips in a row
+     stretch to the tallest, so a wrapped label doesn't ragged the grid. */
   .chip .option-label {
     flex: 1;
     min-width: 0;
     text-align: left;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
 
   .chip :global(.picker-option-icon) {
