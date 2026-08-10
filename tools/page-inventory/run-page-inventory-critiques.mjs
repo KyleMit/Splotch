@@ -16,13 +16,16 @@ import {
   readCaptureManifest,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
-import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { ROOT, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
 const WORK_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique');
 const MODEL_DEFAULT = 'gpt-5.6-terra';
 const CONCURRENCY_DEFAULT = 4;
 const ATTEMPTS = 2;
+const REVIEWER_BINARY = 'codex';
+const REVIEW_TIMEOUT_MS = 120_000;
+const REVIEW_TERMINATION_GRACE_MS = 5_000;
 
 const REVIEW_SCHEMA = {
   type: 'object',
@@ -125,19 +128,70 @@ export function reviewerArgs({ capture, image, schema, model, effort, reviewerRo
   ];
 }
 
-function runReviewer({ capture, image, schema, model, effort, reviewerRoot }) {
-  const args = reviewerArgs({ capture, image, schema, model, effort, reviewerRoot });
+export function assertReviewerAvailable(binary) {
+  if (!hasCommand(binary)) {
+    throw new Error(`Page inventory critiques require ${binary} to be available on PATH`);
+  }
+}
+
+function reviewerProcessError(message, stdout, stderr) {
+  const error = new Error(message);
+  error.stdout = stdout;
+  error.stderr = stderr;
+  return error;
+}
+
+export function runReviewerProcess({ binary, args, cwd, timeoutMs, terminationGraceMs }) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn('codex', args, { cwd: reviewerRoot, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(binary, args, { cwd, stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    child.stdout.setEncoding('utf8').on('data', (chunk) => (stdout += chunk));
-    child.stderr.setEncoding('utf8').on('data', (chunk) => (stderr += chunk));
-    child.on('error', rejectPromise);
-    child.on('exit', (code) => {
-      if (code === 0) resolvePromise({ stdout, stderr });
-      else rejectPromise(new Error(`reviewer exited ${code}: ${stderr.trim() || 'no stderr'}`));
+    let spawnError;
+    let timedOut = false;
+    let forceKillTimer;
+    child.stdout?.setEncoding('utf8').on('data', (chunk) => (stdout += chunk));
+    child.stderr?.setEncoding('utf8').on('data', (chunk) => (stderr += chunk));
+    child.on('error', (error) => (spawnError = error));
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      stderr += `${stderr && !stderr.endsWith('\n') ? '\n' : ''}Reviewer timed out after ${timeoutMs} ms\n`;
+      child.kill('SIGTERM');
+      forceKillTimer = setTimeout(() => child.kill('SIGKILL'), terminationGraceMs);
+    }, timeoutMs);
+    child.on('close', (code, signal) => {
+      clearTimeout(timeout);
+      clearTimeout(forceKillTimer);
+      if (spawnError) {
+        rejectPromise(
+          reviewerProcessError(`Could not launch reviewer: ${spawnError.message}`, stdout, stderr)
+        );
+      } else if (timedOut) {
+        rejectPromise(
+          reviewerProcessError(`Reviewer timed out after ${timeoutMs} ms`, stdout, stderr)
+        );
+      } else if (code === 0) {
+        resolvePromise({ stdout, stderr });
+      } else {
+        rejectPromise(
+          reviewerProcessError(
+            `Reviewer exited ${code ?? signal}: ${stderr.trim() || 'no stderr'}`,
+            stdout,
+            stderr
+          )
+        );
+      }
     });
+  });
+}
+
+function runReviewer({ capture, image, schema, model, effort, reviewerRoot }) {
+  const args = reviewerArgs({ capture, image, schema, model, effort, reviewerRoot });
+  return runReviewerProcess({
+    binary: REVIEWER_BINARY,
+    args,
+    cwd: reviewerRoot,
+    timeoutMs: REVIEW_TIMEOUT_MS,
+    terminationGraceMs: REVIEW_TERMINATION_GRACE_MS,
   });
 }
 
@@ -210,6 +264,18 @@ async function reviewCapture(context, capture) {
       return;
     } catch (error) {
       lastError = error;
+      if (error.stdout) {
+        writeFileSync(
+          join(context.logs, `${capture.review_id}.attempt-${attempt}.jsonl`),
+          error.stdout
+        );
+      }
+      if (error.stderr) {
+        writeFileSync(
+          join(context.logs, `${capture.review_id}.attempt-${attempt}.stderr`),
+          error.stderr
+        );
+      }
       console.warn(`${capture.review_id} attempt ${attempt}/${ATTEMPTS} failed: ${error.message}`);
     }
   }
@@ -245,6 +311,7 @@ async function runQueue(queue, concurrency, worker) {
 
 export async function runPageInventoryCritiques(argv = process.argv.slice(2)) {
   const config = options(argv);
+  assertReviewerAvailable(REVIEWER_BINARY);
   const manifest = readCaptureManifest(config.manifest);
   const reviews = join(config.work, 'reviews');
   const logs = join(config.work, 'logs');

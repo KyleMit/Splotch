@@ -16,6 +16,7 @@ import {
   PAGE_INVENTORY_REVIEW_CONTRACT,
   readCaptureManifest,
   StaleCritiqueHashError,
+  validateCritiqueConsistency,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
@@ -92,9 +93,7 @@ function checkpointWithCurrentHashes(document, manifest) {
   const capture = captures.get(document?.review_id);
   return {
     ...document,
-    entry: capture
-      ? { ...document.entry, image: capture.image, sha256: capture.sha256 }
-      : document.entry,
+    entry: capture ? { ...document.entry, sha256: capture.sha256 } : document.entry,
   };
 }
 
@@ -196,6 +195,7 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
     reportStatus: status,
   });
   if (status) {
+    validateCritiqueConsistency(loaded.entries, manifest, { allowPartial: true });
     const expectedReviews = expectedCritiqueReviews(manifest);
     const missing = [...expectedReviews.values()].filter(
       (capture) =>

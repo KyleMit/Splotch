@@ -18,8 +18,10 @@ import sharp from 'sharp';
 import {
   captureRecord,
   createCaptureManifest,
+  PAGE_INVENTORY_THEME_SUPPORT,
   readDesignCritique,
   sha256File,
+  validateThemeCaptureDifferences,
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
@@ -42,6 +44,8 @@ const WEBP_QUALITY = 84;
 const SUSPICIOUS_BLANK_ENTROPY = 0.01;
 const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
 const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
+const SCROLL_END_EPSILON_PX = 1;
+const SECTION_LANDED_TOLERANCE_PX = 1;
 
 const PHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -117,15 +121,40 @@ export function discoverSettingsSections() {
   return sections;
 }
 
-const surface = (group, id, title, description, source, prepare, cleanup) => ({
+const surface = (
   group,
   id,
   title,
   description,
   source,
   prepare,
+  { cleanup, intent, themeSupport = PAGE_INVENTORY_THEME_SUPPORT.THEMED } = {}
+) => ({
+  group,
+  id,
+  title,
+  description,
+  intent,
+  themeSupport,
+  source,
+  prepare,
   cleanup,
 });
+
+const LIGHT_ONLY_ROUTE_METADATA = {
+  intent: 'This route deliberately uses one stable light reading palette in both app themes.',
+  themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
+};
+
+const ROUTE_SURFACE_METADATA = {
+  '/android-beta': LIGHT_ONLY_ROUTE_METADATA,
+  '/changelog': LIGHT_ONLY_ROUTE_METADATA,
+  '/dev/engine': {
+    intent:
+      'This development-only harness intentionally exposes a bare canvas; the unframed canvas is expected.',
+  },
+  '/privacy': LIGHT_ONLY_ROUTE_METADATA,
+};
 
 async function navigate(page, route) {
   const response = await page.goto(route, { waitUntil: 'domcontentloaded', timeout: ACTION_MS });
@@ -244,7 +273,8 @@ function routeSurfaces() {
       async (page) => {
         await navigate(page, route);
         if (route === '/dev/engine') await draw(page, 0.5, '#engineCanvas');
-      }
+      },
+      ROUTE_SURFACE_METADATA[route]
     );
   });
   return [
@@ -301,16 +331,26 @@ function settingsSurfaces() {
               .getByRole('heading', { name: section.title ?? section.label, exact: true })
               .waitFor();
           } else {
-            await page.waitForFunction((sectionId) => {
-              const pane = document.querySelector('#settingsModal .settings-pane');
-              const target = document.querySelector(
-                `#settingsModal .settings-section[data-section="${sectionId}"]`
-              );
-              if (!(pane instanceof HTMLElement) || !(target instanceof HTMLElement)) return false;
-              const paneRect = pane.getBoundingClientRect();
-              const targetRect = target.getBoundingClientRect();
-              return targetRect.bottom > paneRect.top && targetRect.top < paneRect.bottom;
-            }, section.id);
+            await page.waitForFunction(
+              ({ sectionId, scrollEndEpsilonPx, landedTolerancePx }) => {
+                const pane = document.querySelector('#settingsModal .settings-pane');
+                const target = document.querySelector(
+                  `#settingsModal .settings-section[data-section="${sectionId}"]`
+                );
+                if (!(pane instanceof HTMLElement) || !(target instanceof HTMLElement))
+                  return false;
+                const paneRect = pane.getBoundingClientRect();
+                const targetRect = target.getBoundingClientRect();
+                const atEnd =
+                  pane.scrollTop + pane.clientHeight >= pane.scrollHeight - scrollEndEpsilonPx;
+                return atEnd || Math.abs(targetRect.top - paneRect.top) < landedTolerancePx;
+              },
+              {
+                sectionId: section.id,
+                scrollEndEpsilonPx: SCROLL_END_EPSILON_PX,
+                landedTolerancePx: SECTION_LANDED_TOLERANCE_PX,
+              }
+            );
           }
         }
       )
@@ -484,7 +524,7 @@ function controlSurfaces() {
         );
         await page.locator('#clearButton.delete-ready').waitFor();
       },
-      (page) => page.mouse.up()
+      { cleanup: (page) => page.mouse.up() }
     ),
     ...['install-banner', 'install-banner-hint'].map((id) =>
       surface(
@@ -823,6 +863,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
         }
       }
       const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
+      validateThemeCaptureDifferences(manifest.captures, items);
       writeFileSync(join(staging, CAPTURE_MANIFEST_NAME), `${JSON.stringify(manifest, null, 2)}\n`);
       let critique = new Map();
       if (critiquePath) {
