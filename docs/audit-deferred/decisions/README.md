@@ -24,6 +24,7 @@
 | —  | Dev/preview port numbers are magic values scattered across scripts and configs | P3       | [dev-port-magic-values.md](dev-port-magic-values.md)     | DROP    |
 | —  | Off-scale hardcoded font sizes where the token scale is the convention         | P4       | [off-scale-font-sizes.md](off-scale-font-sizes.md)       | DROP    |
 | —  | Three different SSR-guard idioms across the state modules                      | P4       | [ssr-guard-idioms.md](ssr-guard-idioms.md)               | DROP    |
+| —  | Pinch move path allocates per pointermove, against the hot-path rule           | P4       | [pinch-move-allocations.md](pinch-move-allocations.md)   | DROP    |
 
 Findings 1–14 from this pass are dispatched. Each decision doc was deleted by the commit that
 resolved it, so the doc and its implementation sit in the same changeset — recover any of them with:
