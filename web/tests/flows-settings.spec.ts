@@ -104,6 +104,32 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   await expect(nav.getByRole('button', { name: 'Buttons' })).not.toHaveClass(/active/);
 });
 
+test('a jump scrolls the pane and never the card itself', async ({ page }) => {
+  // `scrollIntoView` moves every scrollable ancestor, and both the card and the
+  // dialog are `overflow: hidden` boxes — so a jump built on it dragged the
+  // Settings header and the close button clean out of the top of the card, with
+  // nothing in the suite the wiser. Read off the card's own edge rather than
+  // pixel literals.
+  await gotoApp(page);
+  const modal = await openSettingsModal(page);
+
+  const chromeInsideCard = () =>
+    modal.evaluate((dialog) => {
+      const card = dialog.getBoundingClientRect();
+      const top = (selector: string) => dialog.querySelector(selector)!.getBoundingClientRect().top;
+      return Math.min(top('.settings-header'), top('.settings-close')) >= card.top - 0.5;
+    });
+
+  // The landing scroll every open performs is enough to break this on its own.
+  expect(await chromeInsideCard()).toBe(true);
+
+  await page.locator('.settings-nav').getByRole('button', { name: 'Coloring' }).click();
+  await expect
+    .poll(() => headingOffsetFromPaneTop(page, 'coloring'))
+    .toBeLessThan(SECTION_LANDED_MAX_PX);
+  expect(await chromeInsideCard()).toBe(true);
+});
+
 test('scrolling to the very bottom highlights the last section', async ({ page }) => {
   await gotoApp(page);
   await openSettingsModal(page);

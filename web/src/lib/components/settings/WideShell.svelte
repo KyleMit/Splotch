@@ -35,6 +35,9 @@
   // Fractional device pixels and pinch-zoomed content leave scrollTop a hair
   // short of the true end, so "scrolled to the bottom" needs a tolerance.
   const SCROLL_END_EPSILON_PX = 2;
+  // Where a table-of-contents jump parks the heading: just clear of the pane's
+  // top edge rather than flush against it.
+  const SECTION_JUMP_INSET_PX = 12;
 
   // Plain refs, deliberately untracked: the reopen reset reads the nav inside a
   // frame callback and the scrollspy reads the sections off events, so nothing
@@ -68,12 +71,19 @@
     return current;
   }
 
-  // scrollIntoView rather than arithmetic on scrollTop: the browser does the
-  // measurement in layout space, so neither the fly-in's transform nor a
-  // pinch-zoomed pane can skew where the jump lands. `--section-jump-inset` is
-  // what it reads for the landing position.
+  // Arithmetic on the pane's own scrollTop, never `scrollIntoView`: that method
+  // scrolls *every* scrollable ancestor, and the card and the dialog are both
+  // `overflow: hidden` boxes — so it dragged the Settings header and the close
+  // button clean out of the top of the card. Dividing the rect delta by the
+  // pane's visual scale lands the arithmetic in layout pixels, so neither the
+  // fly-in's transform nor a pinch-zoomed pane skews where the jump lands.
   function scrollToSection(id: SectionId, behavior: ScrollBehavior) {
-    sectionEls[id]?.scrollIntoView({ behavior, block: 'start' });
+    const el = sectionEls[id];
+    const pane = paneEl;
+    if (!el || !pane) return;
+    const offset =
+      (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) / paneVisualScale(pane);
+    pane.scrollTo({ top: pane.scrollTop + offset - SECTION_JUMP_INSET_PX, behavior });
   }
 
   // The dialog is closed, never unmounted, so both the nav and the pane keep the
@@ -191,9 +201,6 @@
        headings do the separating — deliberately more air than any gap inside a
        section, and well past the --space-8 ceiling, so no divider is needed. */
     --section-gap: 60px;
-    /* Where a table-of-contents jump parks the heading: just clear of the pane's
-       top edge rather than flush against it. */
-    --section-jump-inset: 12px;
 
     flex: 1;
     min-height: 0;
@@ -281,12 +288,6 @@
        too; at rest the content is pane-width, so no horizontal bar shows. */
     overflow: auto;
     padding: 4px 8px 4px 16px;
-  }
-
-  .settings-section {
-    /* Read by scrollIntoView, not by layout — headings stay plain scroll
-       targets with no sticky positioning. */
-    scroll-margin-top: var(--section-jump-inset);
   }
 
   .settings-section + .settings-section {

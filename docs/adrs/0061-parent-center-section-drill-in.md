@@ -170,14 +170,18 @@ shells now render a section through the shared `settings/SectionBody.svelte`.
 
 The Sidebar becomes a scrollspy-driven table of contents: same rows, icons, and order, but the
 highlight follows a reading line 130px past the Pane's top edge (last section wins at the scroll
-end), a click smooth-scrolls that section's heading to `--section-jump-inset` (12px) below the top
-edge, and a deep link scrolls rather than swaps. The spy re-reads live rects on scroll *and* on a
-`ResizeObserver` of the Pane content, because a conditional reveal inside a section (the volume
-slider, advanced controls, the force-landscape row, the AI toggles) moves every section below it.
-Because the highlight is now an indicator rather than a page state — several sections can be
-on-screen at once — the active row softened from the solid `--brand-solid` pill to a
-`--brand-wash`/`--brand-text` fill with a `--brand` left rail, and carries `aria-current="location"`
-instead of `"page"`.
+end), a click smooth-scrolls that section's heading to `SECTION_JUMP_INSET_PX` (12px) below the top
+edge, and a deep link scrolls rather than swaps. That jump is **arithmetic on the Pane's own
+`scrollTop`, never `scrollIntoView`** — the latter scrolls every scrollable ancestor, and both the
+card and the `<dialog>` are `overflow: hidden` boxes, so it dragged the Settings header and the
+close button clean out of the top of the card on every open. Dividing the rect delta by the Pane's
+visual scale keeps the arithmetic in layout pixels under the fly-in transform and a pinch-zoomed
+pane alike. The spy re-reads live rects on scroll *and* on a `ResizeObserver` of the Pane content,
+because a conditional reveal inside a section (the volume slider, advanced controls, the
+force-landscape row, the AI toggles) moves every section below it. Because the highlight is now an
+indicator rather than a page state — several sections can be on-screen at once — the active row
+softened from the solid `--brand-solid` pill to a `--brand-wash`/`--brand-text` fill with a
+`--brand` left rail, and carries `aria-current="location"` instead of `"page"`.
 
 Two consequences of "everything is mounted at once" are load-bearing:
 
@@ -189,6 +193,10 @@ Two consequences of "everything is mounted at once" are load-bearing:
   vacuously.** Such assertions were rewritten to measure the heading's offset from the Pane's top
   edge (`headingOffsetFromPaneTop`/`SECTION_LANDED_MAX_PX` in `tests/helpers.ts`) or scoped to one
   `.settings-section`.
+
+The whole suite sailed past the ancestor-scroll defect above, because every spec read section
+content rather than the card's own chrome; `flows-settings.spec.ts` now holds that invariant
+directly ("a jump scrolls the pane and never the card itself").
 
 The reopen reset from the previous amendment also had to move a frame later. A closed `<dialog>` is
 `display: none`, so both the nav and the Pane report `scrollTop` 0 and ignore a `scrollTo` — and the
