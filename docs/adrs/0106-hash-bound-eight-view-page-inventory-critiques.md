@@ -2,6 +2,11 @@
 
 **Status:** Active **Date:** 2026-08
 
+> **Amendment (2026-08-10):** every surface now has an explicit light/night capture axis, and each
+> screenshot is reviewed by a fresh image-only reviewer under its own stable review ID. The original
+> four-device, one-orientation batch checkpoints are superseded by the independent-review contract
+> below.
+
 ## Context
 
 The committed page inventory is both a responsive UI record and the evidence behind its design
@@ -23,37 +28,40 @@ Alternatives considered:
 
 ## Decision
 
-`scripts/gen-page-inventory.mjs` captures every discovered surface at four canonical Apple devices
-in both portrait and landscape. It validates the WebP format and dimensions, rejects captures with
-no visible ready content or suspiciously blank pixels, and writes
-`scrapbook/page-inventory/capture-manifest.json`. Each manifest record includes its surface,
-viewport, orientation, image path, and SHA-256 digest.
+`tools/page-inventory/gen-page-inventory.mjs` captures every discovered surface at four canonical
+Apple devices in both portrait and landscape, in light and night mode. It validates the WebP format
+and dimensions, rejects captures with no visible ready content or suspiciously blank pixels, and
+writes `scrapbook/page-inventory/capture-manifest.json`. Each manifest record includes its surface,
+viewport, orientation, theme, stable review ID, standalone review description, image path, and
+SHA-256 digest. The night description scopes assessment to contrast and legibility; layout is out of
+scope for night captures.
 
-Critique work is split into one checkpoint per surface and orientation under the gitignored
-`.scrapbook-scratch/page-inventory-critique/checkpoints/`. Each checkpoint contains all four device
-assessments for that batch and copies the manifest digest for every image. The
-`critique-page-inventory` skill defines the review loop so interrupted sessions resume from the
-strictly derived missing- and stale-batch queues. An assessment may be reused when another capture
-has the same digest, and finalization rejects different severities for pixel-identical captures.
+Critique work is split into one checkpoint per review ID under the gitignored
+`.scrapbook-scratch/page-inventory-critique/reviews/`. The review runner creates a fresh ephemeral
+process for each capture from an empty temporary directory outside the worktree, with inherited
+user, repository, and execution-policy context disabled. Its only semantic inputs are that capture's
+manifest description and image. Pixel-identical captures remain separate reviews because
+theme-specific scopes and descriptions can differ. Checkpoint filename, review contract, document
+ID, entry ID, image path, and digest must all agree.
 
-`scripts/finalize-page-inventory-critique.mjs` is the only path for producing the committed
-`design-critique.json`. It rejects unknown, duplicate, missing, or stale entries and derives
-coverage and severity totals from the validated records. Complete finalization is the default;
-partial output requires both `--allow-partial` and an explicit scratch destination. The feedback
-attachment step rehashes every WebP and refuses to attach critique unless the manifest, current
-inventory, files, and complete critique agree exactly.
+`tools/page-inventory/finalize-page-inventory-critique.mjs` is the only path for producing the
+committed `design-critique.json`. It rejects unknown, duplicate, missing, or stale entries and
+derives coverage and severity totals from the validated records. Complete finalization is the
+default; partial output requires both `--allow-partial` and an explicit scratch destination. The
+feedback attachment step rehashes every WebP and refuses to attach critique unless the manifest,
+current inventory, files, and complete critique agree exactly.
 
 ## Consequences
 
 * \+ Every committed assessment is traceable to the exact pixels reviewed.
-* \+ The inventory exercises 46 surfaces across four devices in both orientations, including
-  height-constrained landscape behavior.
-* \+ Checkpoints make long reviews resumable and invalidate only the affected surface-orientation
-  batch after a recapture.
+* \+ The inventory exercises every discovered surface across four devices, both orientations, and
+  both themes, including height-constrained landscape behavior and night contrast.
+* \+ Checkpoints make long reviews resumable and invalidate only the affected screenshot after a
+  recapture.
+* \+ Each review is context-isolated and auditable through a stable manifest ID and description.
 * \+ Coverage and severity totals cannot drift from the validated entry set.
-* − A full capture contains twice as many WebPs and a complete review requires twice as many
-  assessments as the portrait-only inventory.
-* − Intentional nondeterminism in a screenshot changes its digest and requires that batch to be
-  reviewed again, even when the visual difference is harmless.
+* − A full capture contains four times as many WebPs as the original portrait-only inventory.
+* − Intentional nondeterminism in a screenshot changes its digest and requires that review to be run
+  again, even when the visual difference is harmless.
 * − The strict attachment path refuses useful-but-incomplete feedback; work in progress must remain
-  in scratch output until all current batches are complete.
+  in scratch output until all current reviews are complete.

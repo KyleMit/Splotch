@@ -1,5 +1,9 @@
 import { esc } from '../../lib/html.mjs';
-import { PAGE_INVENTORY_SEVERITIES } from './page-inventory-data.mjs';
+import {
+  captureReviewId,
+  PAGE_INVENTORY_SEVERITIES,
+  PAGE_INVENTORY_THEMES,
+} from './page-inventory-data.mjs';
 import { chromeStyle, masthead, siteFooter } from '../../scrapbook/lib/scrapbook-chrome.mjs';
 
 const PAGE_INVENTORY_DEVICES = [
@@ -62,7 +66,7 @@ const REPORT_CSS = `
 .surface-list{display:flex;flex-direction:column;gap:24px}.surface{scroll-margin-top:72px;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);box-shadow:var(--shadow-sm);overflow:hidden}
 .surface-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--hair)}
 .surface-head h3{margin:0;font-size:1.03rem}.surface-head p{margin:4px 0 0;color:var(--muted);font-size:.86rem;max-width:72ch}.surface-source{flex:0 0 auto;color:var(--faint);font:600 .72rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--card-2);border:1px solid var(--hair);border-radius:6px;padding:4px 7px}
-.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--hair)}.shot{margin:0;padding:12px;background:var(--card-2);min-width:0}.shot a{display:block}.shot img{display:block;width:100%;height:auto;border:1px solid var(--hair-strong);border-radius:7px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
+.theme-captures+.theme-captures{border-top:1px solid var(--hair)}.theme-head{display:flex;align-items:baseline;gap:10px;padding:10px 18px;background:var(--card-2);border-bottom:1px solid var(--hair)}.theme-head h4{margin:0;font-size:.84rem}.theme-head p{margin:0;color:var(--faint);font-size:.72rem}.shots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--hair)}.shot{margin:0;padding:12px;background:var(--card-2);min-width:0}.shot a{display:block}.shot img{display:block;width:100%;height:auto;border:1px solid var(--hair-strong);border-radius:7px;background:var(--paper-2);box-shadow:var(--shadow-sm)}
 .shot figcaption{margin-bottom:7px;line-height:1.25}.shot figcaption strong,.shot figcaption span{display:block}.shot figcaption strong{font-size:.76rem}.shot figcaption span{color:var(--faint);font-size:.68rem}
 .shot.has-critique{--severity-color:var(--hair-strong)}.shot.has-critique img{border:3px solid var(--severity-color)}
 .shot.severity-pass,.severity-filter .severity-pass{--severity-color:var(--c-green)}.shot.severity-low,.severity-filter .severity-low{--severity-color:var(--c-yellow)}.shot.severity-medium,.severity-filter .severity-medium{--severity-color:var(--c-orange)}.shot.severity-high,.severity-filter .severity-high{--severity-color:var(--c-red)}
@@ -92,17 +96,25 @@ if(severityFilter){
 }
 </script>`;
 
-export function inventoryCapturePath(item, viewport) {
-  return `assets/${item.group}/${item.id}--${viewport.id}.webp`;
+export { PAGE_INVENTORY_THEMES };
+
+export function inventoryCaptureKey(viewport, theme) {
+  return `${viewport.id}--${theme.id}`;
+}
+
+export function inventoryCapturePath(item, viewport, theme) {
+  return `assets/${item.group}/${item.id}--${viewport.id}--${theme.id}.webp`;
 }
 
 export function attachExpectedCapturePaths(items) {
   for (const item of items) {
     item.captures = Object.fromEntries(
-      PAGE_INVENTORY_VIEWPORTS.map((viewport) => [
-        viewport.id,
-        inventoryCapturePath(item, viewport),
-      ])
+      PAGE_INVENTORY_THEMES.flatMap((theme) =>
+        PAGE_INVENTORY_VIEWPORTS.map((viewport) => [
+          inventoryCaptureKey(viewport, theme),
+          inventoryCapturePath(item, viewport, theme),
+        ])
+      )
     );
   }
   return items;
@@ -136,7 +148,9 @@ export function renderPageInventoryReport(items, critique = new Map()) {
           `<span class="chip"><b>${severityCounts[severity]}</b> ${esc(SEVERITY_LABELS[severity].toLowerCase())}</span>`
       ).join('')
     : '';
-  const stats = `<span class="chip accent"><b>${items.length}</b> surfaces</span><span class="chip"><b>${items.length * PAGE_INVENTORY_VIEWPORTS.length}</b> snapshots</span><span class="chip"><b>${PAGE_INVENTORY_VIEWPORTS.length}</b> logical viewports</span>${critiqueStats}`;
+  const snapshotCount =
+    items.length * PAGE_INVENTORY_VIEWPORTS.length * PAGE_INVENTORY_THEMES.length;
+  const stats = `<span class="chip accent"><b>${items.length}</b> surfaces</span><span class="chip"><b>${snapshotCount}</b> snapshots</span><span class="chip"><b>${PAGE_INVENTORY_VIEWPORTS.length}</b> logical viewports</span><span class="chip"><b>${PAGE_INVENTORY_THEMES.length}</b> themes</span>${critiqueStats}`;
   const nav = Object.entries(PAGE_INVENTORY_GROUPS)
     .map(([id, [title]]) => `<a href="#${id}">${esc(title)}</a>`)
     .join('');
@@ -149,27 +163,29 @@ export function renderPageInventoryReport(items, critique = new Map()) {
       const cards = items
         .filter((item) => item.group === groupId)
         .map((item) => {
-          const shots = PAGE_INVENTORY_VIEWPORTS.map((view) => {
-            const path = item.captures[view.id];
-            const feedback = critique.get(path);
-            const severityClass = feedback ? ` has-critique severity-${feedback.severity}` : '';
-            const severityData = critique.size
-              ? ` data-severity="${feedback?.severity ?? 'unreviewed'}"`
-              : '';
-            const orientation = `${view.orientation[0].toUpperCase()}${view.orientation.slice(1)}`;
-            return `<figure class="shot${severityClass}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback)}</figure>`;
+          const themeCaptures = PAGE_INVENTORY_THEMES.map((theme) => {
+            const shots = PAGE_INVENTORY_VIEWPORTS.map((view) => {
+              const path = item.captures[inventoryCaptureKey(view, theme)];
+              const feedback = critique.get(captureReviewId(item, view, theme));
+              const severityClass = feedback ? ` has-critique severity-${feedback.severity}` : '';
+              const severityData = critique.size
+                ? ` data-severity="${feedback?.severity ?? 'unreviewed'}"`
+                : '';
+              const orientation = `${view.orientation[0].toUpperCase()}${view.orientation.slice(1)}`;
+              return `<figure class="shot${severityClass}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} in ${theme.label.toLowerCase()} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback)}</figure>`;
+            }).join('');
+            return `<section class="theme-captures"><header class="theme-head"><h4>${esc(theme.label)}</h4><p>${esc(theme.reviewFocus)}</p></header><div class="shots">${shots}</div></section>`;
           }).join('');
-          return `<article class="surface" id="${esc(item.id)}"><header class="surface-head"><div><h3>${esc(item.title)}</h3><p>${esc(item.description)}</p></div><span class="surface-source">${esc(item.source)}</span></header><div class="shots">${shots}</div></article>`;
+          return `<article class="surface" id="${esc(item.id)}"><header class="surface-head"><div><h3>${esc(item.title)}</h3><p>${esc(item.description)}</p></div><span class="surface-source">${esc(item.source)}</span></header>${themeCaptures}</article>`;
         })
         .join('');
       return `<section class="group" id="${groupId}"><header class="group-head"><h2>${esc(title)}</h2><p>${esc(description)}</p></header><div class="surface-list">${cards}</div></section>`;
     })
     .join('');
-  const snapshotCount = items.length * PAGE_INVENTORY_VIEWPORTS.length;
   const body = `${masthead({
     title: 'App page inventory',
     tagline:
-      'A static, source-discovered inventory of every route, every Settings section, every modal, and the app’s most useful transient views. Each row comes from the same Playwright run across four Apple devices in portrait and landscape.',
+      'A static, source-discovered inventory of every route, every Settings section, every modal, and the app’s most useful transient views. Every surface is captured in light and night mode across four Apple devices in portrait and landscape.',
     home: '../index.html',
     crumbs: [{ label: 'App page inventory' }],
     stats,

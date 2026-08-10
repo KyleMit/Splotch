@@ -88,7 +88,7 @@ drives the bumps itself, this one triages PRs Dependabot has already opened.
 | ------------------------- | ------------------------------------------------------------------------------- |
 | `run-splotch`             | Launch, drive, and screenshot the web app locally to verify a change works      |
 | `cloud-preview`           | Cloud sessions only: dev server + reverse tunnel for a public phone-preview URL |
-| `critique-page-inventory` | Review and finalize every portrait/landscape inventory capture                  |
+| `critique-page-inventory` | Independently review every light/night portrait/landscape inventory capture     |
 
 ## Shipping
 

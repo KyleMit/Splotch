@@ -11,17 +11,19 @@ import {
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
-  expectedCritiqueBatches,
+  expectedCritiqueReviews,
   finalizeDesignCritique,
+  PAGE_INVENTORY_REVIEW_CONTRACT,
   readCaptureManifest,
   StaleCritiqueHashError,
+  validateCritiqueConsistency,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
-const CHECKPOINT_SCHEMA_VERSION = 1;
+const CHECKPOINT_SCHEMA_VERSION = 3;
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
-const CHECKPOINTS_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique/checkpoints');
+const CHECKPOINTS_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique/reviews');
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory/design-critique.json');
 const SCRAPBOOK_ROOT = resolve(ROOT, 'scrapbook');
 
@@ -63,34 +65,35 @@ function readCheckpoint(path) {
   if (document?.schema_version !== CHECKPOINT_SCHEMA_VERSION) {
     throw new Error(`schema_version must be ${CHECKPOINT_SCHEMA_VERSION}`);
   }
-  if (typeof document.batch_key !== 'string' || !document.batch_key) {
-    throw new Error('batch_key must be a string');
+  if (document.review_contract !== PAGE_INVENTORY_REVIEW_CONTRACT) {
+    throw new Error(`review_contract must be ${PAGE_INVENTORY_REVIEW_CONTRACT}`);
   }
-  if (!Array.isArray(document.entries)) throw new Error('entries must be an array');
+  if (typeof document.review_id !== 'string' || !document.review_id) {
+    throw new Error('review_id must be a string');
+  }
+  if (!document.entry || typeof document.entry !== 'object') {
+    throw new Error('entry must be an object');
+  }
   return document;
 }
 
-function validateCheckpoint(document, manifest, expectedBatches) {
-  const expected = expectedBatches.get(document.batch_key);
-  if (!expected) throw new Error(`unknown batch_key ${document.batch_key}`);
-  const entries = validateCritiqueEntries(document.entries, manifest, { allowPartial: true });
-  if (entries.size !== expected.length) {
-    throw new Error(`batch has ${entries.size} of ${expected.length} required entries`);
+function validateCheckpoint(document, manifest, expectedReviews) {
+  const expected = expectedReviews.get(document.review_id);
+  if (!expected) throw new Error(`unknown review_id ${document.review_id}`);
+  if (document.entry.review_id !== document.review_id) {
+    throw new Error(`entry.review_id must equal ${document.review_id}`);
   }
-  for (const capture of expected) {
-    if (!entries.has(capture.image)) throw new Error(`batch is missing ${capture.image}`);
-  }
-  return [...entries.values()];
+  const entries = validateCritiqueEntries([document.entry], manifest, { allowPartial: true });
+  if (!entries.has(expected.review_id)) throw new Error(`review is missing ${expected.review_id}`);
+  return document.entry;
 }
 
 function checkpointWithCurrentHashes(document, manifest) {
-  const captures = new Map(manifest.captures.map((capture) => [capture.image, capture]));
+  const captures = new Map(manifest.captures.map((capture) => [capture.review_id, capture]));
+  const capture = captures.get(document?.review_id);
   return {
     ...document,
-    entries: document.entries.map((entry) => {
-      const capture = captures.get(entry?.image);
-      return capture ? { ...entry, sha256: capture.sha256 } : entry;
-    }),
+    entry: capture ? { ...document.entry, sha256: capture.sha256 } : document.entry,
   };
 }
 
@@ -101,35 +104,38 @@ function loadCheckpointEntries(
 ) {
   if (!existsSync(checkpoints))
     throw new Error(`Checkpoint directory does not exist: ${checkpoints}`);
-  const expectedBatches = expectedCritiqueBatches(manifest);
+  const expectedReviews = expectedCritiqueReviews(manifest);
   const files = readdirSync(checkpoints)
     .filter((file) => file.endsWith('.json'))
     .sort((a, b) => a.localeCompare(b));
   const errors = [];
-  const encounteredBatches = new Set();
-  const seenBatches = new Set();
-  const staleBatches = new Set();
+  const encounteredReviews = new Set();
+  const seenReviews = new Set();
+  const staleReviews = new Set();
   const entries = [];
   for (const file of files) {
     let document;
     try {
       document = readCheckpoint(join(checkpoints, file));
-      if (encounteredBatches.has(document.batch_key)) {
-        throw new Error(`duplicate batch_key ${document.batch_key}`);
+      if (file !== `${document.review_id}.json`) {
+        throw new Error(`filename must be ${document.review_id}.json`);
       }
-      encounteredBatches.add(document.batch_key);
-      const batchEntries = validateCheckpoint(document, manifest, expectedBatches);
-      seenBatches.add(document.batch_key);
-      entries.push(...batchEntries);
+      if (encounteredReviews.has(document.review_id)) {
+        throw new Error(`duplicate review_id ${document.review_id}`);
+      }
+      encounteredReviews.add(document.review_id);
+      const entry = validateCheckpoint(document, manifest, expectedReviews);
+      seenReviews.add(document.review_id);
+      entries.push(entry);
     } catch (error) {
       if (reportStatus && document && error instanceof StaleCritiqueHashError) {
         try {
           validateCheckpoint(
             checkpointWithCurrentHashes(document, manifest),
             manifest,
-            expectedBatches
+            expectedReviews
           );
-          staleBatches.add(document.batch_key);
+          staleReviews.add(document.review_id);
           continue;
         } catch (normalizedError) {
           errors.push(`${file}: ${normalizedError.message}`);
@@ -144,18 +150,27 @@ function loadCheckpointEntries(
       `Invalid critique checkpoints:\n${errors.map((error) => `- ${error}`).join('\n')}`
     );
   }
-  if (!allowPartial && seenBatches.size !== expectedBatches.size) {
-    const missing = [...expectedBatches.keys()].find((key) => !seenBatches.has(key));
+  if (!allowPartial && seenReviews.size !== expectedReviews.size) {
+    const missing = [...expectedReviews.keys()].find((key) => !seenReviews.has(key));
     throw new Error(
-      `Critique has ${seenBatches.size} of ${expectedBatches.size} batches; missing ${missing}`
+      `Critique has ${seenReviews.size} of ${expectedReviews.size} reviews; missing ${missing}`
     );
   }
   return {
     entries,
-    completedBatchKeys: seenBatches,
-    staleBatchKeys: staleBatches,
-    completedBatches: seenBatches.size,
-    expectedBatches: expectedBatches.size,
+    completedReviewIds: seenReviews,
+    staleReviewIds: staleReviews,
+    completedReviews: seenReviews.size,
+    expectedReviews: expectedReviews.size,
+  };
+}
+
+function reviewRequest(capture) {
+  return {
+    review_id: capture.review_id,
+    image: capture.image,
+    sha256: capture.sha256,
+    description: capture.review_description,
   };
 }
 
@@ -180,16 +195,26 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
     reportStatus: status,
   });
   if (status) {
-    const missing = [...expectedCritiqueBatches(manifest).keys()].filter(
-      (key) => !loaded.completedBatchKeys.has(key) && !loaded.staleBatchKeys.has(key)
+    validateCritiqueConsistency(loaded.entries, manifest, { allowPartial: true });
+    const expectedReviews = expectedCritiqueReviews(manifest);
+    const missing = [...expectedReviews.values()].filter(
+      (capture) =>
+        !loaded.completedReviewIds.has(capture.review_id) &&
+        !loaded.staleReviewIds.has(capture.review_id)
+    );
+    const stale = [...loaded.staleReviewIds].map((reviewId) =>
+      reviewRequest(expectedReviews.get(reviewId))
     );
     console.log(
       JSON.stringify(
         {
-          completed_batches: loaded.completedBatches,
-          expected_batches: loaded.expectedBatches,
-          missing_batches: missing,
-          stale_batches: [...loaded.staleBatchKeys],
+          completed_reviews: loaded.completedReviews,
+          expected_reviews: loaded.expectedReviews,
+          missing_reviews: missing.length,
+          stale_reviews: stale.length,
+          next_review: stale[0] ?? (missing[0] ? reviewRequest(missing[0]) : null),
+          missing_review_ids: missing.map((capture) => capture.review_id),
+          stale_review_ids: stale.map((capture) => capture.review_id),
         },
         null,
         2
@@ -200,7 +225,7 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
   const critique = finalizeDesignCritique(manifest, loaded.entries, { allowPartial });
   writeJsonAtomically(out, critique);
   console.log(
-    `Finalized ${loaded.completedBatches} of ${loaded.expectedBatches} batches and ${critique.entries.length} entries to ${relative(ROOT, out)}`
+    `Finalized ${loaded.completedReviews} of ${loaded.expectedReviews} independent reviews to ${relative(ROOT, out)}`
   );
 }
 
