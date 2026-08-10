@@ -2,9 +2,6 @@
 
 **Status:** Active **Date:** 2026-07
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 Project knowledge for coding agents lived in Claude Code-native files only: a root `CLAUDE.md`,

@@ -11,9 +11,6 @@
 > Issues (see `docs/ISSUE-WORKFLOW.md`), and `docs/` has since grown other human-process docs
 > (`COMPATIBILITY.md`, `ISSUE-WORKFLOW.md`, `DEPENDABOT.md`, `CLOUD/`).
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 Project knowledge lived in four large reference docs (`docs/ARCHITECTURE.md`, `docs/API.md`,

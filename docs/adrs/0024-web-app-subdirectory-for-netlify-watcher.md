@@ -2,9 +2,6 @@
 
 **Status:** Active **Date:** 2026-06
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 `npm run dev:netlify` (Netlify Dev — the local server that runs the `/api/*` functions) crashed

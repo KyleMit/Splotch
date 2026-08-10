@@ -2,9 +2,6 @@
 
 **Status:** Active **Date:** 2026-07
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 Shipping Splotch used to be two phases. `npm run release <version>` bumped every version location,

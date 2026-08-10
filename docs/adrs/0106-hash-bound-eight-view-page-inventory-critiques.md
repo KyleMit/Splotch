@@ -2,9 +2,6 @@
 
 **Status:** Active **Date:** 2026-08
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 The committed page inventory is both a responsive UI record and the evidence behind its design

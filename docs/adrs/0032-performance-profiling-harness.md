@@ -13,9 +13,6 @@ than Appium. Further amended by ADR-0093 (2026-08): a narrowly calibrated WebKit
 runs in shared CI without claiming device-accurate timing. See the amendments at the end. **Date:**
 2026-06
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 ADR-0015 (capped-DPR canvas rendering) shipped strokes at `min(devicePixelRatio, 2)` — 4× the pixels

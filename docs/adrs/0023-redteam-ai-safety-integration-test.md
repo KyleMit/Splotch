@@ -2,10 +2,6 @@
 
 **Status:** Active **Date:** 2026-06
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the whole harness moved to
-> `tools/redteam/` — both the `scripts/…` entry points and the `tests/redteam/` corpus paths below.
-> The encryption boundary is unchanged: only `encrypted/*.enc` is committed.
-
 ## Context
 
 Splotch sends a toddler's drawing to Gemini and shows the stylized result (`/api/generate-image`,

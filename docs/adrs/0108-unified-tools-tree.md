@@ -99,6 +99,10 @@ found.
 * The migration touched ~370 files. Nearly all of it is renames plus path updates, but the breadth
   is the cost: workflows, hooks, permission allowlists, generated instruction trees, direct-provider
   skill packages, ignore files, and docs all encoded `scripts/`.
-* Historical prose in superseded and dated ADRs still says `scripts/`. That is left alone — those
-  records describe what was true when they were written. Active ADRs whose *operational* guidance
-  would now mislead carry an amendment note instead.
+* Existing ADRs still say `scripts/`, and are deliberately left that way. An ADR records what was
+  decided when it was written; annotating every record a rename touches turns the log into a
+  changelog and costs every future reader of those records more than the stale path costs the rare
+  reader who follows one. This record is the forward-facing one, reachable from the index. Two
+  exceptions earn their note by carrying information a reader cannot recover from the path alone:
+  ADR-0017, whose location this supersedes, and ADR-0008, whose `test:scripts` command no longer
+  exists under that name.

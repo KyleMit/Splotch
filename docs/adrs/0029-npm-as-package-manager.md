@@ -5,9 +5,6 @@ the Windows dev path referenced below were removed with Windows dev support
 ([ADR-0062](0062-drop-windows-dev-support.md)), so the repo now defines **no** lifecycle scripts.
 **Date:** 2026-06
 
-> **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the `scripts/…` paths below moved under
-> `tools/`, folded by capability. The decision itself is unchanged.
-
 ## Context
 
 Splotch ships from a single root `package.json` + `package-lock.json` (no workspaces) that serves
