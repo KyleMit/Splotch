@@ -43,7 +43,7 @@ and skip iOS with a note if it doesn't).
    Gradle fails, surface the error and stop.
 
 4. **Verify the signature.** Run `npm run android:verify`. This wraps `jarsigner` in
-   `scripts/android-verify.mjs`, which prints just `jar verified.` and exits 0 on success. On
+   `tools/android/android-verify.mjs`, which prints just `jar verified.` and exits 0 on success. On
    success that one line is all you'll see. If it fails, the script dumps the full jarsigner output
    and exits non-zero — surface that and stop.
 

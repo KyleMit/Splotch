@@ -137,7 +137,7 @@ compositor/paint and unmarked-JS work — they make the device slower **without 
 measure larger**, so no amount of gates tuning can surface them. This command measures the screen
 instead of the engine, on the surface users touch.
 
-It opens `/` (not `/dev/engine`), injects `scripts/perf/real-screen-probe.js`, and records four raw
+It opens `/` (not `/dev/engine`), injects `tools/perf/real-screen-probe.js`, and records four raw
 numeric tables which Node then turns into numbers (`real-screen-stats.mjs`):
 
 | Metric                                                                  | What it answers                                                                                       |
@@ -331,7 +331,7 @@ Native screenshot measurement has a narrower persistence-boundary seam:
 `window.__screenshotSaveSink`. A `PERF_MARKS` build calls it only after the production PNG exists,
 letting the action runner observe completion without writing benchmark images to Photos or waiting
 on a permission sheet. It does not alter rendering. Normal builds compile it out, and
-`scripts/check-release-seams.mjs` scans the built client for both seams and `engine.*` mark names.
+`tools/check-release-seams.mjs` scans the built client for both seams and `engine.*` mark names.
 
 ### Counting the rendering work — `--timeline`
 
@@ -402,7 +402,7 @@ It prints the two URLs to open on the iPad:
 ➜  Harness: http://192.168.40.75:4173/dev/engine
 ```
 
-`scripts/perf/serve.mjs` wraps vite to print those. Bare `vite --host` advertises one URL per bound
+`tools/perf/serve.mjs` wraps vite to print those. Bare `vite --host` advertises one URL per bound
 interface, including the `169.254.x.x` link-local address macOS self-assigns to the virtual
 interface it creates for a USB-tethered iPad — a dead end no browser can reach. The wrapper still
 binds every interface (so `localhost` keeps working); it only filters what it advertises.
@@ -426,8 +426,8 @@ Timeline recording**, and its table is the ADR-0066 verdict. A4 tells you *how m
 *where* and *whether a frame dropped*. Never try to get both from one run — the reasons are in A5.
 
 In Web Inspector → **Console** tab, paste the **entire contents** of
-[`scripts/perf/ipad-console-driver.js`](../scripts/perf/ipad-console-driver.js) and press Enter. It
-runs on the iPad page and:
+[`tools/perf/ipad-console-driver.js`](../tools/perf/ipad-console-driver.js) and press Enter. It runs
+on the iPad page and:
 
 * resizes the canvas to the full iPad screen (so the raster is the real on-device size),
 * preflights the build with a probe stroke — if the probe emits no `engine.commit` measure,
@@ -560,8 +560,8 @@ Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 
 1. **⟨iPad⟩** Open `http://<mac-lan-ip>:4173/` (the normal app).
 2. **⟨Mac⟩** Attach Web Inspector (Develop → ⟨iPad⟩ → the page) and paste the whole of
-   [`scripts/perf/ipad-recorder.js`](../scripts/perf/ipad-recorder.js) into the **Console**. It
-   starts recording immediately.
+   [`tools/perf/ipad-recorder.js`](../tools/perf/ipad-recorder.js) into the **Console**. It starts
+   recording immediately.
 3. **⟨iPad⟩** Draw, change colors, erase, undo — with your fingers or the Apple Pencil, however a
    real session goes. The recorder captures **every pointer event on the page** (canvas strokes and
    UI-targeted events alike, each with its target element, `buttons`, and pen pressure),

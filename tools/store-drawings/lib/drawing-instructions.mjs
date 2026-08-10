@@ -3,7 +3,7 @@ import {
   pickBrush,
   setStrokeSize,
   drawStroke,
-} from '../../../scripts/lib/app-driver.mjs';
+} from '../../../tools/app-driver/lib/app-driver.mjs';
 
 export function fitInstructionScene(scene, box) {
   const scale = Math.min(box.width / scene.width, box.height / scene.height);

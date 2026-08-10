@@ -27,10 +27,10 @@ server, so they build a **fully static** export instead:
   token-minting console is exactly the shape Play's Deceptive Behavior policy and App Review 2.3.1
   are written against, and worse in an app declared for a children's audience.
 * Routes that must not reach the bundle at all are listed in `web/nativeExcludedRoutes.ts`, whose
-  Vite plugin blanks their module source at build time; `scripts/check-native-bundle.mjs` scans the
-  built output and fails `build:cap` if a forbidden host or web-only boot-service marker survives. A
-  route's `prerender` flag alone drops only its HTML — the JS chunk, and every string in it, still
-  ships.
+  Vite plugin blanks their module source at build time; `tools/native/check-native-bundle.mjs` scans
+  the built output and fails `build:cap` if a forbidden host or web-only boot-service marker
+  survives. A route's `prerender` flag alone drops only its HTML — the JS chunk, and every string in
+  it, still ships.
 
 ### Offline vs. online
 
@@ -290,7 +290,7 @@ When release cadence justifies automating, set it up roughly as:
    * Android — a **Google Cloud service-account JSON**, granted release permission in Play Console →
      Users & permissions.
 5. **npm scripts** per ADR-0019 — `ios:publish` / `android:publish` (build + upload), each with a
-   matching `scripts-info` entry, routed through a `scripts/` Node helper where shell specifics are
+   matching `scripts-info` entry, routed through a `tools/` Node helper where shell specifics are
    involved.
 
 Because the metadata folders are already in fastlane format, deliver/supply consume them directly —

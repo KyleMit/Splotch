@@ -19,7 +19,7 @@ runs:
         # The engines floor major from package.json engines.node — CI must exercise
         # the oldest supported line, the one the Netlify deploy and floor-version dev
         # machines run, not a newer major that would hide floor-only breakage.
-        # scripts/tests/workflow-hygiene.test.mjs guards this agreement.
+        # tools/tests/workflow-hygiene.test.mjs guards this agreement.
         node-version: 22
         cache: ${{ inputs.cache == 'true' && 'npm' || '' }}
         package-manager-cache: ${{ inputs.cache }}

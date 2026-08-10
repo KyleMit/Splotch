@@ -25,7 +25,7 @@ here into the root `node_modules`, so there is nothing to install in this folder
 
 Path/tree resolution is centralized in `lib/paths.mjs` (`REPO_ROOT`, `COLORING_DIR`, `STYLES_DIR`,
 `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the scripts never hardcode `../../..` walks or
-reach back into the repo-root `scripts/lib/`.
+reach back into the repo-root `tools/lib/`.
 
 ### Raw fills vs shipped fills
 
@@ -208,5 +208,5 @@ views, the outline-% badge, size constraints — lives in
 ## Not here
 
 Scripts that **drive the live app** (`gen:shots`, `gen:large-image` — Playwright against the running
-UI) or that are **build-path codegen** (`gen:icons`, `gen:releases`) stay in the repo-root
-`scripts/`. They are app-coupled, not asset producers.
+UI) or that are **build-path codegen** (`gen:icons`, `gen:releases`) stay in the repo-root `tools/`.
+They are app-coupled, not asset producers.

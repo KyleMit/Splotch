@@ -7,7 +7,7 @@ import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from 
 // $lib/server/tokens). Nothing in the app links to it and the native bundle has
 // no admin route at all — an in-app door to a privileged console reads as
 // hidden functionality to a store reviewer. The JSON /api/admin/* endpoints
-// remain (scripts/lib/adminClient.mjs drives them) and are covered here too.
+// remain (tools/api-smoke/lib/adminClient.mjs drives them) and are covered here too.
 // Token names are unique per test because the preview server's in-memory list
 // is shared across the parallel workers.
 

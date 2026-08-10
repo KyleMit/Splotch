@@ -149,7 +149,7 @@ jobs:
             ## Splotch-specific checks
 
             - **Blast radius.** Grep for the package's actual import sites
-              (web/src/, scripts/, tools/). A package nothing imports directly
+              (web/src/, tools/, tools/). A package nothing imports directly
               is a much cheaper merge than one on the drawing hot path. Say
               which files would be affected.
             - **The dependency split is inverted (ADR-0070).** `dependencies` =

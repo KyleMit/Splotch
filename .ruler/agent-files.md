@@ -11,20 +11,20 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references).
 * A skill whose implementation genuinely differs by runner is absent from the shared tree. Its
   complete, independent packages live in `.ruler/skill-forks/<runner>/skills/<name>/`.
-  `scripts/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after Ruler's
-  shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also exists under
-  `.ruler/skills/` or lacks a package for either configured runner, preventing either fork from
-  inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
-  in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
-  from concatenating them into root instructions.
-* Direct-maintained exceptions are declared in `scripts/direct-provider-skills.mjs`.
+  `tools/ruler/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after
+  Ruler's shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also
+  exists under `.ruler/skills/` or lacks a package for either configured runner, preventing either
+  fork from inheriting shared implementation files or disappearing from one agent. Markdown fork
+  sources end in `.template`; the suffix is removed at the destination and keeps Ruler's recursive
+  rule loader from concatenating them into root instructions.
+* Direct-maintained exceptions are declared in `tools/ruler/direct-provider-skills.mjs`.
   `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
   Codex package because it orchestrates a standalone Claude reviewer; `analyze-session-transcripts`
   has independent provider packages because Claude Code and Codex persist different transcript
   formats. Edit registered packages and notes directly, never through `.ruler/`, and never create an
   undeclared provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
-  to `.claude/skill-notes/` and `.agents/skill-notes/` by `scripts/mirror-skill-notes.mjs`. The
+  to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
   recursive rule loader concatenates every `.md` under `.ruler/` into the root instruction files, so
   a plain `.md` note would land in every session's context — exactly what this tree exists to avoid.

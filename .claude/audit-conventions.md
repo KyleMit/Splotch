@@ -21,7 +21,7 @@ list against the current code, drops what doesn't hold up, and **files each surv
 issue** labeled `type:audit` (draining and deleting the file); `/fix-audits` then burns down the
 open `type:audit` issues autonomously on its own branch + PR — it no longer reads `docs/AUDIT.md`.
 For a backlog too large to file issue-by-issue (hundreds of findings), `burn-down-audits` is the
-bulk consumer: a scripted unattended loop (`npm run audit:burndown`, `scripts/audit-burndown/`) that
+bulk consumer: a scripted unattended loop (`npm run audit:burndown`, `tools/audit-burndown/`) that
 verifies, implements, and adversarially reviews each finding in isolated provider-native
 subprocesses, deleting each entry in the same commit as its fix — replacing both the vet and fix
 stages for that backlog. Its Claude runbook under `.claude/` and Codex runbook under `.agents/` are

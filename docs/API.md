@@ -99,7 +99,7 @@ upstream/empty failure (retryable). The route talks to the model through the pro
 `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
 appears in route code. The safety vs. empty/error split is decided by `classifyGeminiResponse` /
 `isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite
-(`npm run redteam`, `tests/redteam/`).
+(`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:
@@ -288,10 +288,10 @@ ceiling. To keep page load bounded, it reads at most 200 records from the `free-
 store and labels all grant-derived success, failure, active/exhausted, reservation, and activity
 figures as sampled. The raw Capacitor identifier is never sent or stored.
 
-JSON twin of the server-rendered `/admin` console, driven by `scripts/lib/adminClient.mjs` (the
-local and deploy smoke tests). Both front doors call the same core (`web/src/lib/server/admin.ts` \+
-`web/src/lib/server/tokens.ts`) — the web console executes it directly in its form actions and
-**never** loops back through these endpoints.
+JSON twin of the server-rendered `/admin` console, driven by `tools/api-smoke/lib/adminClient.mjs`
+(the local and deploy smoke tests). Both front doors call the same core
+(`web/src/lib/server/admin.ts` \+ `web/src/lib/server/tokens.ts`) — the web console executes it
+directly in its form actions and **never** loops back through these endpoints.
 
 ### Authentication model
 
@@ -340,7 +340,7 @@ mutations never need a follow-up fetch:
 
 `persistent` reports whether the list is durably backed by Netlify Blobs (`true`) or the in-memory
 env-seeded fallback (`false` — local dev, or a deployed function without the Blobs context; see
-ADR-0025). `scripts/blobs-smoke.mjs` asserts it is `true` against a real deploy.
+ADR-0025). `tools/api-smoke/blobs-smoke.mjs` asserts it is `true` against a real deploy.
 
 | Method   | Body                  | Effect                                                            |
 | -------- | --------------------- | ----------------------------------------------------------------- |

@@ -19,7 +19,7 @@ The two standing priorities are **token efficiency** and **reducing repetitive p
    and the `.ruler/` sources (skills in `.ruler/skills/*`, root + nested instruction files —
    generated into `CLAUDE.md`/`AGENTS.md` and the skill trees per ADR-0058; propose edits against
    the sources, never the generated copies). Direct-provider exceptions are declared in
-   `scripts/direct-provider-skills.mjs`; this Claude-focused audit may inspect and edit only a
+   `tools/ruler/direct-provider-skills.mjs`; this Claude-focused audit may inspect and edit only a
    declared Claude package, never synthesize or sync another provider's package.
 3. **Session history** — the JSONL transcripts under `~/.claude/projects/<slug>/`, where `<slug>` is
    the checkout's absolute path with every `/` replaced by `-` (list `~/.claude/projects/` and match

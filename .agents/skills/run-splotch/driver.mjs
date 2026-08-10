@@ -26,8 +26,8 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 // The generated copies under .claude/skills/ and .agents/skills/ sit at the same
 // depth as this .ruler/skills/ source, so one relative specifier resolves from
-// all three; scripts/tests/run-splotch-driver.test.mjs holds that depth.
-import { RELEASABLE_STDIO, spawnViteServer } from '../../../scripts/lib/vite-server.mjs';
+// all three; tools/tests/run-splotch-driver.test.mjs holds that depth.
+import { RELEASABLE_STDIO, spawnViteServer } from '../../../tools/lib/vite-server.mjs';
 
 const repoRoot = resolve(fileURLToPath(import.meta.url), '../../../..');
 const SERVER_OWNERSHIP_SETTLE_MS = 250;

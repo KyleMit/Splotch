@@ -12,12 +12,12 @@
   are owned and editable.
 * Builds require Node ≥ 22 and a **full JDK 21** on `JAVA_HOME` (ADR-0012). A JetBrains JBR will
   fail AGP's `JdkImageTransform`.
-* The npm `android:*` scripts run the Gradle wrapper via `scripts/gradle.mjs`, which resolves
+* The npm `android:*` scripts run the Gradle wrapper via `tools/android/gradle.mjs`, which resolves
   `./gradlew` to an absolute path and runs it from `android/` (ADR-0017), so they work the same on
   macOS and Linux. `npx cap run android` also works.
 * Release signing reads `android/keystore.properties` (git-ignored; template at
   `keystore.properties.example`). Values must not be quoted. Without the file, `bundleRelease`
   produces an unsigned AAB.
 * Don't hand-edit `versionCode`/`versionName` in `app/build.gradle` — `npm run release` sets them
-  via `scripts/lib/native-version.mjs`.
+  via `tools/release/lib/native-version.mjs`.
 * Full toolchain setup, device workflows, and the store release checklist: `mobile` skill.

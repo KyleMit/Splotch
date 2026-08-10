@@ -32,7 +32,7 @@ export default defineConfig({
     setupFiles: ['./vitest-setup.ts'],
     // The root-level `*.test.ts` files cover the build-time modules that sit
     // beside them (buildVersion.ts) — no generated glob reaches them, so
-    // scripts/tests/web-root-unit-tests.test.mjs fails if this entry is dropped.
+    // tools/tests/web-root-unit-tests.test.mjs fails if this entry is dropped.
     include: ['src/**/*.{test,spec}.{js,ts}', '*.test.ts'],
     // The Playwright specs live under tests/ and must not be picked up here.
     exclude: ['tests/**', 'node_modules/**', '.svelte-kit/**'],

@@ -80,10 +80,10 @@ through the approved list **sequentially**. For each package:
    list, not just the latest. Summarize the breaking changes that could plausibly touch this repo.
 7. **Bump the version.** Update the range in `package.json` and install
    (`npm install <pkg>@<version>`).
-8. **Audit every usage.** Grep the whole codebase (`web/src/`, `scripts/`, config files, `android/`
-   & `ios/` only where they consume the JS package) for imports and API calls of the package.
-   Confirm each call site is still valid against the new API; apply the codemod / manual edits the
-   migration guide calls for. Don't assume a clean `npm install` means the code is correct.
+8. **Audit every usage.** Grep the whole codebase (`web/src/`, `tools/`, config files, `android/` &
+   `ios/` only where they consume the JS package) for imports and API calls of the package. Confirm
+   each call site is still valid against the new API; apply the codemod / manual edits the migration
+   guide calls for. Don't assume a clean `npm install` means the code is correct.
 9. **Verify.** Run `npm run check` (svelte-check / types) and the agreed test tier for this package.
    Type errors and test failures are part of the migration — fix them here, not in a later commit.
    If the upgrade can't be made green within reason, **revert that package** (restore

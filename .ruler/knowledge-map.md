@@ -7,7 +7,7 @@ generated from `.ruler/`; managed runner forks may be produced from `.ruler/skil
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
 under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
 implementations; Codex-only `implement-issue-stack` lives only under `.agents/`. See
-`scripts/direct-provider-skills.mjs` for the authoritative registry.
+`tools/ruler/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -31,7 +31,7 @@ applies or how skills relate.
 **Prefer skills over slash commands.** Reusable agent workflows are normally authored in
 `.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
 packages under `.ruler/skill-forks/<runner>/`; only packages registered in
-`scripts/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
+`tools/ruler/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
 workflows as commands in `.claude/commands/`. A skill with a good `description` is both
 user-invocable (`/name`) and model-invocable, so Claude can reach for it on its own — a plain
 command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
@@ -67,7 +67,7 @@ that must not be missed — invariants, footguns, the thing that makes a wrong r
 Path-scoped **rules** in `.claude/rules/` (Claude Code loads them automatically on path match; other
 agents: read the matching rule before editing those paths): `svelte.md`, `server-api.md`,
 `testing.md`, `ipad-profiling-docs.md`. Nested `CLAUDE.md`/`AGENTS.md` files in `web/src/`,
-`web/tests/`, `android/`, `scripts/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
+`web/tests/`, `android/`, `tools/`, `tools/asset-gen/`, and `docs/handoff/` cover those areas.
 
 The **live backlog is GitHub Issues** — when asked what to work on next, list the open issues and
 filter by label (`area:*`, `type:*`, `priority:*`); don't look for a backlog file. Capture a durable

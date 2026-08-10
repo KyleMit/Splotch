@@ -4,7 +4,7 @@ import { supportEmail } from '../src/lib/supportEmail';
 // /feedback is the standalone, link-shareable twin of Settings' Send
 // Feedback section: the same fields, posted to a form action instead of
 // /api/report so it still works without JavaScript. The endpoint's validation
-// and honeypot are covered by scripts/api-smoke.mjs against the shared core, and
+// and honeypot are covered by tools/api-smoke/api-smoke.mjs against the shared core, and
 // parseDeviceField by report.test.ts; the value here is the page — that it
 // renders, composes the payload the action reads, and can post at all.
 //

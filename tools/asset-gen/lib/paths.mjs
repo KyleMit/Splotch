@@ -1,5 +1,5 @@
 // Path + tree resolution for the asset-gen scripts, self-contained so this
-// project doesn't reach back into scripts/lib/ (docs/architecture.md). The generators are
+// project doesn't reach back into tools/lib/ (docs/architecture.md). The generators are
 // producers for the app's committed assets: source inputs live under tools/asset-gen/,
 // shipped outputs live under web/static/, and review scratch lands in the gitignored
 // .coloring-samples*/.

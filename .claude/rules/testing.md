@@ -34,8 +34,8 @@ paths:
   path 500s in `authorizeGenerationRequest` before the request guards the generate-image specs
   assert. Vite gives that env precedence over `web/.env`, so a developer's real dotenv can't change
   what a spec exercises or reaches. Add each new private var to that object (and to the one
-  `scripts/api-smoke.mjs` spawns its server with) — `scripts/tests/e2e-server-env.test.mjs` fails
-  when either is missing a name. Both Playwright configs disable server reuse and use Vite
+  `tools/api-smoke/api-smoke.mjs` spawns its server with) — `tools/tests/e2e-server-env.test.mjs`
+  fails when either is missing a name. Both Playwright configs disable server reuse and use Vite
   `strictPort`; `tests/global-setup.ts` also probes `/api/verify-access-code` for a harness-only
   access code as defense in depth.
 * `tests/webkit-smoke.spec.ts` is a WebKit critical-path subset (boot, stroke, the two dialogs) run
@@ -46,7 +46,7 @@ paths:
   a new WebKit-only spec the same way — an untagged spec runs under Chromium wherever it lives.
   **Import the tag; never write the string.** Playwright validates no tag, so a typo'd literal
   routes the spec to Chromium silently while the WebKit job stays green on the other specs —
-  `scripts/tests/e2e-engine-tags.test.mjs` rejects tag literals and unknown tags for that reason.
+  `tools/tests/e2e-engine-tags.test.mjs` rejects tag literals and unknown tags for that reason.
 * Adult-facing surfaces (`/privacy`, `/admin`, Settings dialog) get axe-core scans in
   `tests/a11y.spec.ts` — serious/critical violations fail. The toddler-facing canvas chrome is out
   of scope by design; scans of overlays over it are scoped via `AxeBuilder.include()`. Details in
@@ -65,7 +65,7 @@ paths:
   a helper module: a helper is evaluated once per worker, so such a hook attaches only to the first
   spec file that imports it and every later spec file in that worker silently runs with no setup.
   Extend `test` in the helper and import `test`/`expect` from it (`tests/engine-harness.ts`);
-  `scripts/tests/e2e-harness-imports.test.mjs` guards the import.
+  `tools/tests/e2e-harness-imports.test.mjs` guards the import.
 * **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
   there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
   interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or

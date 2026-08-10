@@ -10,7 +10,7 @@ Produce factual reports of what happened in past Claude Code sessions by mining 
 files. The report spec lives in `report-prompt.md` beside this file; the extraction method below
 exists so a 8 MB transcript never lands raw in a context window.
 
-This is a registered direct Claude-only package (`scripts/direct-provider-skills.mjs`) — Codex
+This is a registered direct Claude-only package (`tools/ruler/direct-provider-skills.mjs`) — Codex
 session logs have an entirely different shape, so a Codex analyzer would share nothing with this
 one. Edit this package in place, never through `.ruler/`.
 

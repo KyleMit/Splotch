@@ -31,7 +31,7 @@ them apart before you delegate:
   **Claude Code tooling and cloud-session workflow** rather than to production code: a skill under
   `.ruler/skills/`, a path-scoped rule in `.claude/rules/`, an instruction note in the `.ruler/`
   sources (regenerate `CLAUDE.md`/`AGENTS.md` with `npm run ruler:apply`, ADR-0058), a `docs/*`
-  reference, an ADR, `.claude/cloud/*`, or a small helper script in `scripts/`. These usually have
+  reference, an ADR, `.claude/cloud/*`, or a small helper script in `tools/`. These usually have
   **no product test to turn green** — a Markdown edit has nothing to typecheck. Validate and verify
   against the *tooling itself* (see the per-item loop), and do **not** fabricate or report a passing
   product suite as if it validated a change that never touched product code.
@@ -111,12 +111,12 @@ Process the issues in the sweep order chosen in Setup. For each issue:
       * Prefer several focused commands, each doing one thing, over one command switched by
         arguments. If an issue's proposed solution sketches a broad do-everything script, decompose
         it — build the smallest reusable primitive, then let callers compose primitives.
-      * Reuse before you add: check `scripts/lib/` (`proc.mjs`, `net.mjs`, `vite-server.mjs`,
+      * Reuse before you add: check `tools/lib/` (`proc.mjs`, `net.mjs`, `vite-server.mjs`,
         `smoke.mjs`, `android.mjs`) for glue that already exists rather than re-implementing it.
       * Name and document every new script per ADR-0019: a `namespace:variant` npm script with a
-        matching one-line `scripts-info` entry, plus a `scripts/CLAUDE.md` bullet where it earns
-        one. An undocumented helper is **not** a finished fix — if `npm run info` and the skill /
-        rule that will invoke it don't point at the new command, a future session can't find it, so
+        matching one-line `scripts-info` entry, plus a `tools/CLAUDE.md` bullet where it earns one.
+        An undocumented helper is **not** a finished fix — if `npm run info` and the skill / rule
+        that will invoke it don't point at the new command, a future session can't find it, so
         discoverability is part of the fix, not an extra.
    3. **Implement the chosen fix, then verify it — matched to what the fix touched.**
       * If the fix changed **code or a script** (`.ts`, `.mjs`, config): run `npm run check` and the

@@ -5,9 +5,9 @@ description: Capture and read an automated performance profile of the drawing ap
 
 # Splotch — Performance Profiling
 
-The harness (`scripts/perf/`, ADR-0032) drives a deterministic "toddler session" through the app
-while recording a profile, then writes a machine-readable report. One command per platform; the
-analyzer is pure and re-runnable on any saved trace.
+The harness (`tools/perf/`, ADR-0032) drives a deterministic "toddler session" through the app while
+recording a profile, then writes a machine-readable report. One command per platform; the analyzer
+is pure and re-runnable on any saved trace.
 
 **[`docs/PROFILING.md`](../../../docs/PROFILING.md)** is the reference:
 

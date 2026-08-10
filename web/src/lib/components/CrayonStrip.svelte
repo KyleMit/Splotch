@@ -2,7 +2,7 @@
   import { paletteHex, type PaletteLabel } from '$lib/palette';
 
   // The brand crayon strip, matching the scrapbook pages' masthead
-  // (scripts/lib/scrapbook-chrome.mjs). Decorative — it carries no information
+  // (tools/scrapbook/lib/scrapbook-chrome.mjs). Decorative — it carries no information
   // the surrounding copy doesn't, so it stays out of the accessibility tree.
   //
   // Rainbow order, which is not palette.ts's order: that list is sequenced by

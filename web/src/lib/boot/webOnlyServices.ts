@@ -4,8 +4,8 @@ import { initInstallPrompt } from '$lib/state/install.svelte';
 // The service worker only exists in the web build; the native apps bundle their
 // shell on-device, so there's nothing to update-check there. The install prompt
 // is likewise web-only (the native app is already installed).
-// scripts/check-native-bundle.mjs guards this tree-shaking boundary with these
-// minification-stable source markers; scripts/tests/native-bundle-guard.test.mjs
+// tools/native/check-native-bundle.mjs guards this tree-shaking boundary with these
+// minification-stable source markers; tools/native/tests/native-bundle-guard.test.mjs
 // enforces this duplicated list:
 // - web/src/lib/state/install.svelte.ts: beforeinstallprompt
 // - web/src/lib/state/install.svelte.ts: appinstalled

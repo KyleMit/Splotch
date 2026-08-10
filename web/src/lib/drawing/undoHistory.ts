@@ -740,7 +740,7 @@ export function repaintAll(target: CanvasRenderingContext2D) {
 // Test/profiling seam: how the undo history is currently stored. `liveRasters`
 // counts ENTRIES still holding any patch canvas (≤ the budget's entries plus
 // those whose encode hasn't landed). It is entry-level on purpose: the settle
-// gates in engine-snapshot-tier.spec.ts and scripts/perf/undo-scenarios.mjs
+// gates in engine-snapshot-tier.spec.ts and tools/perf/undo-scenarios.mjs
 // compare it against the budget, and a multi-patch entry would overshoot a
 // patch-level count.
 // `rasterBytes` is the hot patches' actual pixel cost (w × h × 4 —

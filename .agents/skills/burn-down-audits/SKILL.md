@@ -5,8 +5,8 @@ description: Drive the scripted bulk burndown of docs/AUDIT.md with isolated Cod
 
 # Burn down audits with Codex
 
-Drive `scripts/audit-burndown/burndown.mjs` with Codex as every model-backed role. Keep the driver
-as the orchestrator: do not replace its one-shot subprocesses with in-session subagents.
+Drive `tools/audit-burndown/burndown.mjs` with Codex as every model-backed role. Keep the driver as
+the orchestrator: do not replace its one-shot subprocesses with in-session subagents.
 
 Set `AGENT_RUNNER=codex` on every preflight, canary, and relaunch. The runner defaults are:
 
@@ -51,8 +51,8 @@ approval beyond the audit commands.
   `multi_agent=false`.
 * State is `docs/AUDIT.md` plus git. A finding's entry is deleted in the same commit as its approved
   fix. Everything under `.audit-work/` is disposable run state.
-* Never read or edit `docs/AUDIT.md` directly at burndown scale. Use
-  `scripts/audit-burndown/pop.mjs` for count/peek/delete operations; the driver owns deletion.
+* Never read or edit `docs/AUDIT.md` directly at burndown scale. Use `tools/audit-burndown/pop.mjs`
+  for count/peek/delete operations; the driver owns deletion.
 * The driver never talks to GitHub. It pushes commits and appends
   `.audit-work/pending-comments.jsonl`; the supervising Codex agent opens/updates the PR, posts
   comments through the GitHub connector, and watches CI.
@@ -149,7 +149,7 @@ The default gates do not cover bespoke repository ratchets. For this repository 
 
 ```bash
 CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check'
-TEST_CMD='npm run test:unit && npm run test:scripts'
+TEST_CMD='npm run test:unit && npm run test:tools'
 ```
 
 Do not put `npm run ruler:check` in `CHECK_CMD`; it writes by reapplying Ruler. A Codex implementer
@@ -176,7 +176,7 @@ must reach origin before an ephemeral environment can be reclaimed.
 1. Confirm no driver is active. Read process matches rather than trusting a count:
 
    ```bash
-   pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'
+   pgrep -fl 'tools/audit-burndown/(overnight|burndown)\.mjs'
    ```
 
    Run the lookup outside the workspace sandbox. `pgrep -af` is GNU-shaped and can print only a PID
@@ -195,7 +195,7 @@ must reach origin before an ephemeral environment can be reclaimed.
    AGENT_RUNNER=codex \
    BRANCH='<branch>' \
    CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
-   TEST_CMD='npm run test:unit && npm run test:scripts' \
+   TEST_CMD='npm run test:unit && npm run test:tools' \
    npm run audit:preflight
    ```
 
@@ -271,7 +271,7 @@ must reach origin before an ephemeral environment can be reclaimed.
     BRANCH='<branch>' \
     MAX_HANDLED=5 \
     CHECK_CMD='npm run format:check && npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check' \
-    TEST_CMD='npm run test:unit && npm run test:scripts' \
+    TEST_CMD='npm run test:unit && npm run test:tools' \
     npm run audit:burndown:overnight -- 600
     ```
 
@@ -334,7 +334,7 @@ finding is normally under 15 minutes; 15–25 minutes merits one later recheck; 
 diagnosis. Priority and fix rounds skew this: a P1 with two rounds can be healthy at 25 minutes.
 
 ```bash
-pgrep -fl 'scripts/audit-burndown/(overnight|burndown)\.mjs'
+pgrep -fl 'tools/audit-burndown/(overnight|burndown)\.mjs'
 ```
 
 For a liveness recheck, compare role-envelope counts—not HEAD or `run.log`, which the supervisor
@@ -376,10 +376,10 @@ and the cause can be fixed. One cleanly rolled-back deferral is not enough.
 
 Drain comments in an at-least-once loop:
 
-1. `node scripts/audit-burndown/backfill-comments.mjs next`
+1. `node tools/audit-burndown/backfill-comments.mjs next`
 2. Post the body on the draft PR with the GitHub connector and append a short OpenAI Codex
    attribution footer: `Posted by OpenAI Codex while supervising the audit burndown.`
-3. `node scripts/audit-burndown/backfill-comments.mjs done <sha>`
+3. `node tools/audit-burndown/backfill-comments.mjs done <sha>`
 4. Repeat until empty.
 
 Run `capture main..HEAD` before final drain and once after as a completeness check. Never wrap a

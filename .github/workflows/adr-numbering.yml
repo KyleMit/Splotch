@@ -11,7 +11,7 @@
 # advises against path filtering a required workflow. The check itself is
 # unconditional, so the job always runs and always reports.
 #
-# No setup-node step: scripts/check-adr-numbering.mjs imports only node: builtins
+# No setup-node step: tools/adrs/check-adr-numbering.mjs imports only node: builtins
 # and its own siblings, and the runner ships Node, so installing dependencies
 # would cost ~15s to change nothing (setup-node measured at 14-20s in the Quality
 # job, against well under a second for the check itself). node is invoked directly
@@ -44,7 +44,8 @@ jobs:
       # Sparse rather than for speed — the job runs alongside a ~3.5min Tests job,
       # so the few seconds saved reach nobody. It states what this check depends
       # on, so a new dependency fails loudly here instead of working by accident:
-      # docs/adrs for the records themselves, scripts for the checker.
+      # docs/adrs for the records themselves, tools/adrs for the checker, and
+      # tools/lib for the shared proc.mjs it imports.
       #
       # Paths only, no blob filter. The check needs real content on both sides —
       # it reads every record's first line, and -M rename detection compares
@@ -54,7 +55,8 @@ jobs:
         with:
           sparse-checkout: |
             docs/adrs
-            scripts
+            tools/adrs
+            tools/lib
 
       # The base branch as it stands now, not as this run's merge commit
       # remembers it: GitHub stops recomputing the merge ref once a pull request
@@ -71,4 +73,4 @@ jobs:
       # against a tree that already holds duplicates, which is the exact state a
       # workflow_dispatch audit exists to find.
       - name: Check ADR integrity
-        run: node scripts/check-adr-numbering.mjs "--base=origin/${BASE_REF}"
+        run: node tools/adrs/check-adr-numbering.mjs "--base=origin/${BASE_REF}"

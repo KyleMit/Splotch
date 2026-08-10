@@ -1161,7 +1161,7 @@ export function undo(): Promise<void> {
     // timeline export contains marks but no measures, and a deep undo spans
     // multiple tasks (pop, await blob decode, restore blit), so only an
     // explicit end mark at completion lets the export attribute the full
-    // duration (scripts/perf/analyze-webinspector.mjs). The serialized paper
+    // duration (tools/perf/analyze-webinspector.mjs). The serialized paper
     // chain runs one step at a time, so start/end pairs never interleave; the
     // finally guarantees an end mark even when a step's decode fails.
     if (PERF_MARKS) performance.mark('engine.undo:start');

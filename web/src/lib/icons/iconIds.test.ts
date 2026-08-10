@@ -9,7 +9,7 @@ import { describe, it, expect } from 'vitest';
 // own, and the collision only appears in the composed page.
 //
 // The pressure toward collision is mechanical rather than accidental. SVGO's
-// `cleanupIds` (scripts/image-audit.mjs) minifies ids to `a`, `b`, … per file,
+// `cleanupIds` (tools/image-audit.mjs) minifies ids to `a`, `b`, … per file,
 // so two independently authored icons converge on the same short name — which
 // is how more-colors.svg came to hold `id="a"`. An id that must stay stable
 // opts out by starting with `icon-`; this guard is what makes the opt-out

@@ -40,7 +40,7 @@ fi
 # shell that happens to mention the path), and which pid `head -1` returns is down
 # to pid-assignment order rather than anything we control. `^node ` matches the
 # driver alone.
-driver_pid="$(pgrep -f '^node scripts/audit-burndown/burndown.mjs' 2>/dev/null | head -1)"
+driver_pid="$(pgrep -f '^node tools/audit-burndown/burndown.mjs' 2>/dev/null | head -1)"
 
 # Unpushed fixes or an undrained comment store mean a run left work owed even if
 # nothing is executing now — worth snapshotting for the same reason.

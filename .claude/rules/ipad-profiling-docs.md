@@ -22,8 +22,8 @@ The same applies to the UI placeholders in these docs, for the same reason: writ
 `Develop → ⟨your iPad's name⟩ → …/dev/engine`, not `Develop → [your iPad's name] → …`.
 
 **Scope: Markdown only, and only these files.** The `[Mac]` / `[iPad]` comment headers in
-`scripts/perf/ipad-recorder.js` and `ipad-console-driver.js` are JavaScript comments that no
-Markdown renderer ever sees — leave them alone.
+`tools/perf/ipad-recorder.js` and `ipad-console-driver.js` are JavaScript comments that no Markdown
+renderer ever sees — leave them alone.
 
 **`docs/PROFILING-IPAD.md` is authored in place** — it is a document, not a generated skill file, so
 there is nothing to regenerate after editing it. The `profiling` skill points at it (ADR-0107).

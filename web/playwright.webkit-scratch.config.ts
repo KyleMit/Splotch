@@ -1,6 +1,6 @@
 // Scratch config: run selected specs under WebKit to chase Safari-only input
 // bugs. Not part of `npm test` — invoke explicitly with
-//   node scripts/web.mjs playwright test -c playwright.webkit-scratch.config.ts -g "<test>"
+//   node tools/web.mjs playwright test -c playwright.webkit-scratch.config.ts -g "<test>"
 import { defineConfig, devices } from '@playwright/test';
 import {
   commonPlaywrightConfig,

@@ -41,7 +41,7 @@ first version would have missed that too.
 
 Worth noting for anyone extending this: the classification is now the only thing standing between
 sweep A and a silent miss, so `classifyChanges` is pure and unit-tested against raw
-`--name-status` output (`scripts/tests/reconcile-survey.test.mjs`) rather than being reachable only
+`--name-status` output (`tools/tests/reconcile-survey.test.mjs`) rather than being reachable only
 through a live repo.
 
 ## Rejected

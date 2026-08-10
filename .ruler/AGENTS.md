@@ -4,9 +4,9 @@
 > Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
-> the output. Direct provider packages registered in `scripts/direct-provider-skills.mjs` are the
-> exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and Codex
-> implementations, while `implement-issue-stack` is intentionally Codex-only. Edit only the
+> the output. Direct provider packages registered in `tools/ruler/direct-provider-skills.mjs` are
+> the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and
+> Codex implementations, while `implement-issue-stack` is intentionally Codex-only. Edit only the
 > registered provider package and note you intend to change; never manufacture a missing provider by
 > copying another one.
 
@@ -18,9 +18,9 @@ Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two tar
 
 The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, build output); the
 Capacitor native trees (`android/`, `ios/`), `capacitor.config.json`, the single root
-`package.json`/`node_modules`, and `scripts/` stay at the repo root. This keeps netlify-cli's file
+`package.json`/`node_modules`, and `tools/` stay at the repo root. This keeps netlify-cli's file
 watcher (run via `netlify dev --cwd web`) off the large native trees — see ADR-0024. The web
-toolchain runs with `cwd = web/` through `scripts/web.mjs`.
+toolchain runs with `cwd = web/` through `tools/web.mjs`.
 
 The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
 (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be

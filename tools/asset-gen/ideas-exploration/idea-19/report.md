@@ -29,7 +29,7 @@ Full end-to-end, fully offline (0 Gemini calls, as predicted):
    `localStorage splotch-theme=dark`: before/after screenshots of the dark-mode picker (books grid,
    Creatures grid, Shapes grid), owl and circle tiles cropped as evidence.
 4. `npm run check` (0 errors), `books` unit tests (9 passed, tests extended for the new helpers),
-   `scripts/check-assets.mjs` (568 assets, all pass).
+   `tools/check-assets.mjs` (568 assets, all pass).
 
 ## The key simplification: no negation needed anywhere
 
@@ -95,7 +95,7 @@ assets.
    8e471b8).
 2. `npm run gen:coloring-thumbs` — regenerates all 102 pen thumbs (byte-identical) and writes the 94
    new `.chalk.thumb.webp`; commit the new files.
-3. `node scripts/check-assets.mjs`, `npm run check`, `npm test`.
+3. `node tools/check-assets.mjs`, `npm run check`, `npm test`.
 4. Optional follow-up PR for covers: 8× `gen:coloring-chalk -- <book>/cover --apply` (human-review
    the samples first), `Book.coverChalk` + `coverThumb()` wiring, regen thumbs. Consider an ADR note
    amending ADR-0045/0052 that picker thumbs are now theme-forked too.

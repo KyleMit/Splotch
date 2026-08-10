@@ -32,10 +32,10 @@ maps each source path to one of the five real app levels after scaling against t
 or landscape store canvases.
 
 `tools/store-drawings/lib/drawing-instructions.mjs` fits the static coordinates within the canvas
-and delegates every stroke to `scripts/lib/app-driver.mjs`. The driver changes colors and widths
-through visible controls and sends Playwright mouse down/move/up input to `#drawingCanvas`; it does
-not call the engine or paint a canvas directly. An extra held endpoint sample compensates for the
-engine's intentional midpoint smoothing so an authored path reaches its final coordinate.
+and delegates every stroke to `tools/app-driver/lib/app-driver.mjs`. The driver changes colors and
+widths through visible controls and sends Playwright mouse down/move/up input to `#drawingCanvas`;
+it does not call the engine or paint a canvas directly. An extra held endpoint sample compensates
+for the engine's intentional midpoint smoothing so an authored path reaches its final coordinate.
 
 Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
 replaying their shared pointer instructions. Magic skips stored color selections because the brush

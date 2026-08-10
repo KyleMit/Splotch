@@ -5,8 +5,8 @@ description: Draft release notes from the git log, then bump versions and publis
 
 You are cutting a new release of Splotch. The committed `releases/<version>.md` file is the single
 source of truth; everything else (in-app About tab, store changelogs, GitHub release, version
-numbers) is generated from it by `scripts/release.mjs` and `scripts/generate-releases.mjs`. Read
-`releases/README.md` if you need the format.
+numbers) is generated from it by `tools/release/release.mjs` and
+`tools/release/generate-releases.mjs`. Read `releases/README.md` if you need the format.
 
 Optional argument: a target version (e.g. `/release 1.2.0`). If omitted, you will propose one.
 

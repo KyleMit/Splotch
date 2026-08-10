@@ -57,10 +57,10 @@ ships. From the repo root:
 npm run gen:shots
 ```
 
-The script (`scripts/store-shots.mjs`) starts a dev server on port 4173 (or reuses one already
-there), drives the app in headless Chromium at the exact target pixel sizes per store, draws on the
-canvas, opens each dialog, and also renders the Play feature graphic from an inline HTML template
-using `icon-512.png`.
+The script (`tools/app-driver/store-shots.mjs`) starts a dev server on port 4173 (or reuses one
+already there), drives the app in headless Chromium at the exact target pixel sizes per store, draws
+on the canvas, opens each dialog, and also renders the Play feature graphic from an inline HTML
+template using `icon-512.png`.
 
 `icon-512.png` is `assets/icon.png` (the 1024² source) resized to 512².
 

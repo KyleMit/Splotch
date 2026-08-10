@@ -11,8 +11,7 @@ art — AI style covers, light/dark coloring-page fills, picker thumbnails, line
 format utilities — had grown large and technically distinct from serving the app. They carry bespoke
 `sharp` scoring pipelines (outline registration, drift/night/line-color gates), a multi-page runbook
 (`night-fills.md`), and their own retry/temperature machinery. Iterating on them meant scrolling
-past them in `scripts/`, which mixes them with build-path codegen and app-driving Playwright
-scripts.
+past them in `tools/`, which mixes them with build-path codegen and app-driving Playwright scripts.
 
 The goal was **isolation of this code, a dedicated runbook, and fast local iteration** — not a
 change to how assets are served. A key existing property made this tractable: **the app never runs
@@ -54,7 +53,7 @@ What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`,
 coloring-book proof sheet), `gen-coloring-book-proof-sheet`, `png-to-webp`, `lib/pixelate.mjs`
 (since retired along with the Pixel style it served), and the `night-fills.md` runbook.
 
-What stayed in `scripts/`: build-path codegen (`gen:icons`, `gen:releases`) and the app-driving
+What stayed in `tools/`: build-path codegen (`gen:icons`, `gen:releases`) and the app-driving
 Playwright generators (`gen:shots`/`store-shots.mjs`, `gen:large-image`) — those drive the live app
 and are effectively integration tests, not asset producers.
 
@@ -62,7 +61,7 @@ Structure:
 
 * `tools/asset-gen/lib/paths.mjs` centralizes repo-root + tree resolution (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`), so scripts don't hardcode
-  `../../..` walks or import from `scripts/lib/`.
+  `../../..` walks or import from `tools/lib/`.
 * Entry-point scripts in `bin/`, docs (the `README.md` runbook, `pipeline.md`, the decision records)
   in `docs/`, plus `CLAUDE.md` (scoped rules) at the folder root.
 * A **dependency-free** `package.json` (`@splotch/asset-gen`, `private`) whose `scripts` block gives

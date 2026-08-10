@@ -2,7 +2,7 @@
 
 > 2026-08-07 · branch `claude/audit-burn-down-vf4iui` · PR
 > [#830](https://github.com/KyleMit/Splotch/pull/830) **(merged)** · Burn down the post-triage
-> `docs/AUDIT.md` backlog with `scripts/audit-burndown/burndown.mjs`, running unattended.
+> `docs/AUDIT.md` backlog with `tools/audit-burndown/burndown.mjs`, running unattended.
 
 ## Current state — wrapped up, resumable
 
@@ -52,7 +52,7 @@ deferrals.
 ```bash
 BRANCH=claude/audit-burn-down-vf4iui \
 CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check && npm run img:audit:check && npm run check:assets:manifest && npm run lint:dead' \
-TEST_CMD='npm run test:unit && npm run test:scripts && npm run test:asset-gen' \
+TEST_CMD='npm run test:unit && npm run test:tools && npm run test:asset-gen' \
 npm run audit:burndown:overnight -- 600
 ```
 
@@ -69,7 +69,7 @@ line and match it before launching.
 ## State
 
 * Base: 0ac5e76 (`origin/main` at launch), forked clean.
-* Backlog at launch: **72** findings (`node scripts/audit-burndown/pop.mjs --count`).
+* Backlog at launch: **72** findings (`node tools/audit-burndown/pop.mjs --count`).
 * Priority mix: P2 16 · P3 35 · P4 20 · P5 1 · **0 unparsable** → **21 route to
   `MODEL_IMPL_MINOR`**. Tiering was confirmed to parse before launch, not assumed.
 * Backlog groups (triage keep-criteria): silent wrong output 26 · app correctness 16 · cross-file
@@ -102,7 +102,7 @@ hide behind an earlier one:
 | Gate                                                                                                                   | Result |
 | ---------------------------------------------------------------------------------------------------------------------- | ------ |
 | `check`, `lint:tokens`, `gen:tokens:check`, `scrapbook:check`, `img:audit:check`, `check:assets:manifest`, `lint:dead` | all ok |
-| `test:unit`, `test:scripts`, `test:asset-gen`                                                                          | all 0  |
+| `test:unit`, `test:tools`, `test:asset-gen`                                                                            | all 0  |
 
 Preflight OK: deps, auth, clean tree, origin reachable, all three role prompts present, 72 findings
 parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
@@ -152,7 +152,7 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
 * **Never run `npm run ruler:check`, `gen:tokens`, or `gen:assets:manifest` while the driver is
   live** — they mutate the tree and their writes land in the in-flight fix commit.
 * **`pgrep -f` and `pkill -f` match their own command line.** Anchor on
-  `'^node scripts/audit-burndown/burndown.mjs'` or a wait loop never exits.
+  `'^node tools/audit-burndown/burndown.mjs'` or a wait loop never exits.
 * **A `Monitor` clamps to 30 minutes** regardless of `persistent`/`timeout_ms`. Re-arming is a
   routine chore; close the gap with a scoped `awk` catch-up read after each re-arm.
 
@@ -187,7 +187,7 @@ is legible.
 | #835  | Exercise the three PR-552 code-motion fixes CI cannot reach                          |
 | #836  | Finish the `build-review.mjs` rename — two sites still emit `IDEAS.md burn-down`     |
 | #837  | Ratify or revert two judgement calls (the `MODEL` pin, the `keepClass` buckets)      |
-| #838  | Document `crayon-brush-samples`' licence to import from `scripts/lib`                |
+| #838  | Document `crayon-brush-samples`' licence to import from `tools/lib`                  |
 | #839  | Clear the three grandfathered `max-lines` caps by extracting the duplicated helper   |
 | #840  | Diagnose the `drawingSound`/`aiImage` flake instead of masking it with a 20s timeout |
 
@@ -203,4 +203,4 @@ close.
 * `.claude/skills/burn-down-audits/SKILL.md` — the runbook.
 * `.claude/audit-conventions.md` — shared audit-skill conventions (§2 is the log-row format).
 * `docs/AUDIT-LOG.md` § `2026-08-07 · audit-triage` — why these 72 and not the other 271.
-* `scripts/audit-burndown/lib.mjs` — `LAUNCH_KNOBS` (which env vars survive a detached launch).
+* `tools/audit-burndown/lib.mjs` — `LAUNCH_KNOBS` (which env vars survive a detached launch).

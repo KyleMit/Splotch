@@ -10,7 +10,7 @@ import { dragStroke } from './helpers';
 // Specs import `test` (and `expect`) from HERE, not from '@playwright/test':
 // the navigate-and-wait-for-`__engineReady` step is a `page` fixture override,
 // so a spec that imports the plain `test` silently runs against about:blank.
-// scripts/tests/e2e-harness-imports.test.mjs enforces the import.
+// tools/tests/e2e-harness-imports.test.mjs enforces the import.
 
 /** Drag a stroke through the given canvas-space points using real mouse input. */
 export async function drawStroke(

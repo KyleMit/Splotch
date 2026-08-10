@@ -9037,7 +9037,7 @@ async function renderRegionMap(seg, outPath, { numbered = true } = {}) {
       </header>
       <p class="summary">Extended gen-coloring-thumbs to also thumbnail every *.chalk.webp (94 files, offline, seconds) and added a theme-aware pageThumb() to books.ts plus a resolvedTheme() swap in ColoringBook.svelte — verified with real-app dark-mode screenshots (owl tile now previews the solid-sclera chalk it applies). No negation was needed anywhere: chalks are stored ink-on-white and the picker tile's existing --lineart-filter invert+screen renders the chalk thumb correctly, so the tile and canvas share one render path. Covers have no chalk assets (the gap), but gen-coloring-chalk already accepts explicit 'book/cover' args with gates intact, so cover chalks cost 8 Gemini calls plus a small Book.coverChalk wiring — no tooling changes.</p>
       <div class="findings">
-        <div class="finding-group "><h4>Tried</h4><ul><li>gen-coloring-thumbs.mjs extended to thumbnail .chalk.webp sources as {page}.chalk.thumb.webp (full-catalog run: 94 chalk thumbs, 0 Gemini calls)</li><li>books.ts: chalkThumbPath() + theme-aware pageThumb(); bookAssetPaths() lists chalk thumbs for check-assets/strip-native-assets</li><li>ColoringBook.svelte: page tiles + prefetch swap to pageThumb(page, orientation, resolvedTheme())</li><li>Before/after dark-mode screenshots of the live app (run-splotch driver + Playwright, splotch-theme=dark) for creatures, shapes, and the covers grid</li><li>svelte-check, extended books unit tests, and scripts/check-assets.mjs over the result</li><li>Assessed cover-chalk generation path in gen-coloring-chalk.mjs without burning API calls</li></ul></div>
+        <div class="finding-group "><h4>Tried</h4><ul><li>gen-coloring-thumbs.mjs extended to thumbnail .chalk.webp sources as {page}.chalk.thumb.webp (full-catalog run: 94 chalk thumbs, 0 Gemini calls)</li><li>books.ts: chalkThumbPath() + theme-aware pageThumb(); bookAssetPaths() lists chalk thumbs for check-assets/strip-native-assets</li><li>ColoringBook.svelte: page tiles + prefetch swap to pageThumb(page, orientation, resolvedTheme())</li><li>Before/after dark-mode screenshots of the live app (run-splotch driver + Playwright, splotch-theme=dark) for creatures, shapes, and the covers grid</li><li>svelte-check, extended books unit tests, and tools/check-assets.mjs over the result</li><li>Assessed cover-chalk generation path in gen-coloring-chalk.mjs without burning API calls</li></ul></div>
         <div class="finding-group good"><h4>Worked</h4><ul><li>Chalk thumbs are a plain resize — chalks stay ink-on-white and the tile's existing --lineart-filter invert(1)+screen renders them as white chalk, identical to the canvas overlay path (the idea's 'negate appropriately' step is unnecessary)</li><li>Owl dark-mode tile now previews the actual chalk (solid white sclera, catchlights, wand star) instead of the hollow inverted pen; circle confirms the harmless minimal-delta case</li><li>check-assets validates all 568 assets including the 94 new chalk thumbs; regenerating existing pen thumbs is byte-identical, so full regen is safe</li><li>npm run check 0 errors; 9/9 books unit tests pass (tests extended for chalkThumbPath/pageThumb)</li></ul></div>
         
         <div class="finding-group warn"><h4>Limitations</h4><ul><li>Cover half not delivered: no cover.chalk.webp exists for any of the 8 books, so book tiles keep the inverted-pen cover in dark mode</li><li>Generating cover chalks needs 8 Gemini calls (gen-coloring-chalk -- &lt;book&gt;/cover works as-is; eye gate auto-skips, no night-fill follow-up since covers have no fills) plus small Book.coverChalk + coverThumb() app wiring</li><li>+94 committed webp files (~600KB) added to web/static and native bundles</li><li>Two uncataloged stray assets on disk (shapes/heart-tall, objects/umbrella-wide) also get chalk thumbs — harmless but worth noting</li></ul></div>
@@ -11262,12 +11262,12 @@ index 32fb485..f3fde5f 100644
 --- a/package.json
 +++ b/package.json
 @@ -22,6 +22,7 @@
-     &quot;check&quot;: &quot;node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json&quot;,
-     &quot;check:watch&quot;: &quot;node scripts/web.mjs svelte-check --tsconfig ./tsconfig.json --watch&quot;,
-     &quot;check:assets&quot;: &quot;node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/check-assets.mjs&quot;,
+     &quot;check&quot;: &quot;node tools/web.mjs svelte-check --tsconfig ./tsconfig.json&quot;,
+     &quot;check:watch&quot;: &quot;node tools/web.mjs svelte-check --tsconfig ./tsconfig.json --watch&quot;,
+     &quot;check:assets&quot;: &quot;node --experimental-strip-types --disable-warning=ExperimentalWarning tools/check-assets.mjs&quot;,
 +    &quot;check:assets:manifest&quot;: &quot;node tools/asset-gen/gen-asset-manifest.mjs --check&quot;,
-     &quot;img:audit&quot;: &quot;node scripts/image-audit.mjs&quot;,
-     &quot;img:audit:check&quot;: &quot;node scripts/image-audit.mjs --check&quot;,
+     &quot;img:audit&quot;: &quot;node tools/image-audit.mjs&quot;,
+     &quot;img:audit:check&quot;: &quot;node tools/image-audit.mjs --check&quot;,
      &quot;lint&quot;: &quot;eslint .&quot;,
 @@ -70,6 +71,7 @@
      &quot;gen:coloring-punch&quot;: &quot;node tools/asset-gen/punch-fill-outlines.mjs&quot;,

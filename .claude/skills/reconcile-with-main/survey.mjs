@@ -20,7 +20,7 @@
 // and merge another.
 
 import { execFileSync } from 'node:child_process';
-import { isMain } from '../../../scripts/lib/proc.mjs';
+import { isMain } from '../../../tools/lib/proc.mjs';
 
 const FILE_LIST_LIMIT = 40;
 const BASE_REF = 'origin/main';

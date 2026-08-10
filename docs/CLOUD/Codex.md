@@ -9,7 +9,7 @@ version-controlled source of truth that must be manually synced into that UI.
 * Select the latest available Node 22 patch. The required floor is declared once in the root
   `package.json` `engines.node`; `.codex/cloud/setup.sh` derives its version check from it, so an
   unsupported selection fails fast at setup. (The "22" here is drift-guarded against `engines` by
-  `scripts/tests/workflow-hygiene.test.mjs`.)
+  `tools/tests/workflow-hygiene.test.mjs`.)
 * Enable container caching and internet access for both setup and maintenance.
 * Set `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers` as a non-secret environment variable so the
   browser cache survives resumes and is found by the Playwright configuration.
@@ -88,5 +88,5 @@ installation or preview tunnelling into Codex, which does not need them.
 * [`.codex/cloud/setup.sh`](../../.codex/cloud/setup.sh) — one-time cached environment setup.
 * [`.codex/cloud/maintenance.sh`](../../.codex/cloud/maintenance.sh) — cached-container refresh.
 * [`web/playwright.config.ts`](../../web/playwright.config.ts) — browser cache lookup for E2E.
-* [`scripts/web.mjs`](../../scripts/web.mjs) — invokes SvelteKit and Playwright from `web/`.
+* [`tools/web.mjs`](../../tools/web.mjs) — invokes SvelteKit and Playwright from `web/`.
 * [`docs/COMPATIBILITY.md`](../COMPATIBILITY.md) — supported browser and device floor.
