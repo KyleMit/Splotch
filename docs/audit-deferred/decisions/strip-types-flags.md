@@ -13,15 +13,15 @@ Every TypeScript-importing script invocation carries the identical 60-character 
 silence the warning the first flag used to trigger).
 
 The burndown attempt did two solid rounds (raise `engines.node` to `>=22.18`, strip the flags from
-all root scripts, then from the asset-gen aliases, sync the lockfile, update the `tools/` guidance)
-but was rejected with five unresolved objections — all "you missed a site" sweep items:
+all root scripts, then from the asset-gen aliases, sync the lockfile, update the `scripts/`
+guidance) but was rejected with five unresolved objections — all "you missed a site" sweep items:
 
 1. `tools/asset-gen/package.json:8-14` aliases still carry the flags. *(Actually addressed by the
    draft's second commit — the patch on file removes them.)*
 2. `package-lock.json:63` still records `>=22.13`. *(Also addressed in the draft.)*
-3. Guidance still claims the flags are required: `tools/.ruler/AGENTS.md:19-20`,
-   `tools/api-smoke/api-smoke.mjs:15`, `tools/native/strip-native-assets.mjs:10-11`. *(Also
-   addressed in the draft.)*
+3. Guidance still claims the flags are required: `scripts/.ruler/AGENTS.md:19-20`,
+   `scripts/api-smoke.mjs:15`, `scripts/strip-native-assets.mjs:10-11`. *(Also addressed in the
+   draft.)*
 4. Flags remain in `tools/asset-gen/tests/cli.test.mjs:209,244`, `crayon-brush-samples`, and
    `legacy`. **(Genuinely missing from the draft.)**
 5. `.ruler/skills/architecture/SKILL.md`, `.ruler/skills/design/SKILL.md`, and ADRs 0003/0029/0047
@@ -37,7 +37,7 @@ floor, not just delete flags.
 
 Empirical checks run in this triage session (Node v22.22.2):
 
-* `node tools/tokens/gen-tokens.mjs --check` (imports `web/src/lib/design/tokens.ts`) — exits 0
+* `node scripts/gen-tokens.mjs --check` (imports `web/src/lib/design/tokens.ts`) — exits 0
   flag-free, no warning on stderr.
 * `GEMINI_API_KEY=test node tools/asset-gen/bin/gen-coloring-chalk.mjs nature/ant-tall --dry-run
   --invented-max invalid`
@@ -48,11 +48,10 @@ Empirical checks run in this triage session (Node v22.22.2):
   **still applies cleanly at HEAD** (`git apply --check` passes).
 
 > **Addendum (2026-07-28, at 30f0c7ef3068):** the patch **no longer applies** — `git apply --check`
-> now fails on `package.json` and `tools/api-smoke/api-smoke.mjs`, which both moved on after
-> 63a7aa49. Treat it as a reference for *which* sites to touch, not as something to apply.
-> Everything else in this section re-verified true at 30f0c7ef3068: `engines.node` is still
-> `>=22.13`, with 16 flagged script lines in the root `package.json` and 5 in
-> `tools/asset-gen/package.json`.
+> now fails on `package.json` and `scripts/api-smoke.mjs`, which both moved on after 63a7aa49. Treat
+> it as a reference for *which* sites to touch, not as something to apply. Everything else in this
+> section re-verified true at 30f0c7ef3068: `engines.node` is still `>=22.13`, with 16 flagged
+> script lines in the root `package.json` and 5 in `tools/asset-gen/package.json`.
 
 Node-floor bump safety, checked at every site the reviewer never mentioned:
 
@@ -78,10 +77,10 @@ just run"), and it removes the friction ADR-0029 recorded (bun rejects these Nod
 raises the local-dev floor by five 22.x patch releases; npm only warns, so an out-of-date dev learns
 at runtime. Empirically verified to work (above).
 
-**Option B — keep the floor, factor the pair into a shared runner (`tools/run-ts.mjs` re-exec, or a
-`$npm_package_config_*` interpolation).** Pros: no floor change. Cons: adds a real indirection layer
-(re-exec costs a process, obscures `node` argv in every alias), keeps stale "experimental" flags
-alive indefinitely, still needs a second copy or a `../..`-relative path for the
+**Option B — keep the floor, factor the pair into a shared runner (`scripts/run-ts.mjs` re-exec, or
+a `$npm_package_config_*` interpolation).** Pros: no floor change. Cons: adds a real indirection
+layer (re-exec costs a process, obscures `node` argv in every alias), keeps stale "experimental"
+flags alive indefinitely, still needs a second copy or a `../..`-relative path for the
 `tools/asset-gen/package.json` aliases (different cwd), and none of the doc/skill/ADR text gets any
 simpler. Strictly worse unless some supported environment is stuck below 22.18 — and none was found:
 CI is 24, the cloud session is 22.22, Netlify doesn't run these scripts.
@@ -101,13 +100,12 @@ patch, then add the genuinely missing sites. The complete checklist at HEAD (fro
 2. `package-lock.json:63` — sync the root package's `engines.node` (run
    `npm install --package-lock-only` rather than hand-editing).
 3. `tools/asset-gen/package.json:8,9,10,11,14` — drop the pair from the five aliases.
-4. `tools/.ruler/AGENTS.md:19-20` — reword to "TypeScript-flavored scripts run directly via `node`;
-   the `>=22.18` engine floor strips types by default", then `npm run ruler:apply` to regenerate
-   `tools/AGENTS.md` + `tools/CLAUDE.md` (the draft hand-edited the generated files consistently;
-   re-running ruler and `npm run ruler:check` confirms zero drift).
-5. Comment-only updates: `tools/api-smoke/api-smoke.mjs:15`,
-   `tools/app-driver/gen-large-image.mjs:12`, `tools/model-eval/model-eval-fixtures.mjs:7`,
-   `tools/native/strip-native-assets.mjs:10-11`,
+4. `scripts/.ruler/AGENTS.md:19-20` — reword to "TypeScript-flavored scripts run directly via
+   `node`; the `>=22.18` engine floor strips types by default", then `npm run ruler:apply` to
+   regenerate `scripts/AGENTS.md` + `scripts/CLAUDE.md` (the draft hand-edited the generated files
+   consistently; re-running ruler and `npm run ruler:check` confirms zero drift).
+5. Comment-only updates: `scripts/api-smoke.mjs:15`, `scripts/gen-large-image.mjs:12`,
+   `scripts/model-eval-fixtures.mjs:7`, `scripts/strip-native-assets.mjs:10-11`,
    `tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs:6`,
    `tools/asset-gen/bin/gen-style-covers.mjs:5`, `web/src/lib/ai/prompt.ts:3`,
    `web/src/lib/server/ai/geminiSafety.ts:8`, `web/tsconfig.json:10`.
@@ -153,7 +151,7 @@ patch, then add the genuinely missing sites. The complete checklist at HEAD (fro
   record they exist to preserve.
 * `docs/AUDIT-DEFERRED.md`, `docs/AUDIT-LOG.md`, `docs/audit-deferred/*.patch` — audit history.
 * `docs/AUDIT.md:317` — a separate pending finding (missing `.nvmrc`); interaction noted above.
-* `tools/tokens/lint-token-styles.mjs:75` — references Node ≥ 20.12 for recursive `readdir`, still
+* `scripts/lint-token-styles.mjs:75` — references Node ≥ 20.12 for recursive `readdir`, still
   factually true and unrelated to type stripping.
 
 **Verification for the implementing session:**

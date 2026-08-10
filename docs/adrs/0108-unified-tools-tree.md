@@ -99,10 +99,12 @@ found.
 * The migration touched ~370 files. Nearly all of it is renames plus path updates, but the breadth
   is the cost: workflows, hooks, permission allowlists, generated instruction trees, direct-provider
   skill packages, ignore files, and docs all encoded `scripts/`.
-* Existing ADRs still say `scripts/`, and are deliberately left that way. An ADR records what was
-  decided when it was written; annotating every record a rename touches turns the log into a
-  changelog and costs every future reader of those records more than the stale path costs the rare
-  reader who follows one. This record is the forward-facing one, reachable from the index. Two
-  exceptions earn their note by carrying information a reader cannot recover from the path alone:
-  ADR-0017, whose location this supersedes, and ADR-0008, whose `test:scripts` command no longer
-  exists under that name.
+* **Dated records keep their old paths.** Existing ADRs, `docs/AUDIT-LOG.md`, `docs/scratchpad/`,
+  and `docs/audit-deferred/` all still say `scripts/`, deliberately. Each records what was true when
+  it was written, and several cite evidence from a named commit — rewriting those paths would make a
+  record assert something that was never true, and would desync prose from the immutable `.patch`
+  files it describes. Annotating every record a rename touches turns a decision log into a
+  changelog, and costs every future reader more than a stale path costs the rare reader who follows
+  one. This record is the forward-facing one, reachable from the index. Two ADRs earn a note by
+  carrying information the path alone does not: ADR-0017, whose location this supersedes, and
+  ADR-0008, whose `test:scripts` command no longer exists under that name.
