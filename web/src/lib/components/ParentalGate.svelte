@@ -400,14 +400,22 @@
     }
   }
 
-  /* ── Tablet-class viewports ─────────────────────────────────────────────
+  /* ── Roomy viewports: tablets, and desktop windows alike ─────────────────
      A gate that stays phone-sized on a tablet reads as incidental rather than
      as the boundary it is, so the card, the equation and the keypad take one
-     step up once both axes clear the tablet-class floor. Both axes on purpose:
-     a landscape phone is wide but short, and keeps the compact treatment above.
-     600px is TABLET_MIN_SIDE_PX, which a CSS media query cannot import — the
-     agreement with it, and with AiImagePrompt's matching steps, is held by
-     dialogTabletScaling.test.ts. */
+     step up once both axes clear the tablet-class floor. Classifying by
+     viewport rather than by pointer is what the app already does
+     (`isTabletViewport()`), so a roomy desktop window takes this step too.
+     Both axes on purpose: a landscape phone is wide but short, and keeps the
+     compact treatment above. 600px is TABLET_MIN_SIDE_PX, which a CSS media
+     query cannot import — the agreement with it, and with AiImagePrompt's
+     matching steps, is held by dialogTabletScaling.test.ts.
+
+     The splats and keys grow only as far as the type ramp can follow: the
+     digits inside them are capped at --font-size-xl (ADR-0098 removed the step
+     above it), so sizes past roughly 60px would leave the numerals stranded in
+     their targets. Geometry is tuned to hold the phone card's ~0.39 glyph-to-
+     target ratio rather than to fill the available room. */
   @media (min-width: 600px) and (min-height: 600px) {
     .parental-gate {
       width: min(92vw, 420px);
@@ -431,13 +439,13 @@
     }
 
     .gate-operand {
-      width: 64px;
-      height: 64px;
+      width: 58px;
+      height: 58px;
     }
 
     .gate-dab {
-      width: 58px;
-      height: 64px;
+      width: 52px;
+      height: 58px;
     }
 
     .gate-error {
@@ -465,8 +473,11 @@
   }
 
   /* ── Large tablets ───────────────────────────────────────────────────────
-     A 13-inch iPad carries one more step. The scale stops here: past this the
-     card starts reading as a page rather than as a focused, dismissible gate. */
+     A 13-inch iPad carries one more step (LARGE_TABLET_MIN_SIDE_PX). The scale
+     stops here: past this the card starts reading as a page rather than as a
+     focused, dismissible gate. The card and its surrounding space carry most
+     of this step — the splats and keys move only as far as the capped digits
+     inside them can follow. */
   @media (min-width: 1000px) and (min-height: 1000px) {
     .parental-gate {
       width: min(92vw, 480px);
@@ -481,14 +492,18 @@
       height: 76px;
     }
 
+    .gate-equation {
+      gap: var(--space-4);
+    }
+
     .gate-operand {
-      width: 72px;
-      height: 72px;
+      width: 60px;
+      height: 60px;
     }
 
     .gate-dab {
-      width: 62px;
-      height: 72px;
+      width: 54px;
+      height: 60px;
     }
 
     .gate-keypad {
@@ -496,7 +511,7 @@
     }
 
     .gate-key {
-      height: 64px;
+      height: 60px;
     }
 
     :global(.gate-key-icon) {

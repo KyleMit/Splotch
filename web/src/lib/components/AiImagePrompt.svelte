@@ -232,13 +232,15 @@
     }
   }
 
-  /* ── Tablet-class viewports ─────────────────────────────────────────────
-     Picking a style is a visual comparison, so a tablet spends its room on
-     bigger previews rather than on backdrop — the grid keeps its four columns
-     and the tiles grow into the wider card. Both axes on purpose: a landscape
-     phone is wide but short, and keeps the compact treatment above. 600px is
-     TABLET_MIN_SIDE_PX, which a CSS media query cannot import — the agreement
-     with it, and with ParentalGate's matching steps, is held by
+  /* ── Roomy viewports: tablets, and desktop windows alike ─────────────────
+     Picking a style is a visual comparison, so a roomy viewport spends its
+     room on bigger previews rather than on backdrop — the grid keeps its four
+     columns and the tiles grow into the wider card. Classifying by viewport
+     rather than by pointer is what the app already does (`isTabletViewport()`),
+     so a roomy desktop window takes this step too. Both axes on purpose: a
+     landscape phone is wide but short, and keeps the compact treatment above.
+     600px is TABLET_MIN_SIDE_PX, which a CSS media query cannot import — the
+     agreement with it, and with ParentalGate's matching steps, is held by
      dialogTabletScaling.test.ts. */
   @media (min-width: 600px) and (min-height: 600px) {
     .ai-prompt-modal {
@@ -270,8 +272,9 @@
   }
 
   /* ── Large tablets ───────────────────────────────────────────────────────
-     A 13-inch iPad carries one more step. The scale stops here: the card stays
-     a focused chooser over the drawing rather than becoming the page. */
+     A 13-inch iPad carries one more step (LARGE_TABLET_MIN_SIDE_PX). The scale
+     stops here: the card stays a focused chooser over the drawing rather than
+     becoming the page. */
   @media (min-width: 1000px) and (min-height: 1000px) {
     .ai-prompt-modal {
       max-width: 820px;
