@@ -5,6 +5,19 @@
   import releases from '$lib/releases.json';
   import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
 
+  // Called once the staged reveal below has no more blocks to add. A parent that
+  // stages this section's own mount needs to know it keeps growing after it is
+  // attached, or its idea of a complete pane is wrong by however many frames
+  // that takes — WideShell's aria-busy is exactly that idea.
+  //
+  // Deliberately a line comment: a JSDoc block anywhere in this component's
+  // props makes knip stop seeing the CurrentReleaseNotes import, and report the
+  // generated file as unused (npm run lint:dead).
+  interface Props {
+    onSettled?: () => void;
+  }
+  let { onSettled }: Props = $props();
+
   const INITIAL_RELEASE_SECTION_COUNT = 1;
   const currentRelease = releases[0];
   let visibleReleaseSections = $state(INITIAL_RELEASE_SECTION_COUNT);
@@ -15,8 +28,15 @@
       visibleReleaseSections += 1;
       if (visibleReleaseSections < RELEASE_NOTE_SECTION_COUNT) {
         frame = requestAnimationFrame(revealNext);
+        return;
       }
+      frame = 0;
+      onSettled?.();
     };
+    if (visibleReleaseSections >= RELEASE_NOTE_SECTION_COUNT) {
+      onSettled?.();
+      return;
+    }
     frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(revealNext);
     });

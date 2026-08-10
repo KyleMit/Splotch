@@ -13,11 +13,16 @@
   import AboutSection from './AboutSection.svelte';
   import type { SectionId } from './sections';
 
-  // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
+  // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do) or
+  // `onSettled` (only WhatsNewSection, which keeps growing after it mounts); passing both
   // uniformly is fine — Svelte drops props a component doesn't declare — but the generated types
-  // can't express that, so the map admits both prop shapes and the render site widens to the one
-  // that carries `open`.
-  type SectionComponent = Component<Record<string, never>> | Component<{ open?: boolean }>;
+  // can't express that, so the map admits every prop shape and the render site widens to the one
+  // that carries them all.
+  type SectionProps = { open?: boolean; onSettled?: () => void };
+  type SectionComponent =
+    | Component<Record<string, never>>
+    | Component<{ open?: boolean }>
+    | Component<{ onSettled?: () => void }>;
 
   const SECTION_CONTENT: Record<SectionId, SectionComponent> = {
     appearance: AppearanceSection,
@@ -38,11 +43,13 @@
   interface Props {
     id: SectionId;
     open: boolean;
+    /** Forwarded to the one section that keeps staging content after it mounts. */
+    onSettled?: () => void;
   }
 
-  let { id, open }: Props = $props();
+  let { id, open, onSettled }: Props = $props();
 
-  const Content = $derived(SECTION_CONTENT[id] as Component<{ open?: boolean }>);
+  const Content = $derived(SECTION_CONTENT[id] as Component<SectionProps>);
 </script>
 
-<Content {open} />
+<Content {open} {onSettled} />

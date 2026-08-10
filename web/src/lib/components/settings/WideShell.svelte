@@ -6,6 +6,7 @@
   import { SECTIONS, sectionHeading, type SectionId } from './sections';
   import { settingsModal } from '$lib/state/ui.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
+  import { registerElement } from '$lib/actions/elementRegistry';
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
 
@@ -47,7 +48,16 @@
   // reopen keeps whatever the last open finished mounting and pays nothing again.
   let mountedCount = $state(SECTIONS_PER_FRAME);
   const mountedSections = $derived(SECTIONS.slice(0, mountedCount));
-  const fullyMounted = $derived(mountedCount >= SECTIONS.length);
+
+  // Attaching the last section is not the same as the pane being whole. What's
+  // New reveals its release-note blocks over frames of its own — ADR-0061 chose
+  // that after measuring 43-47ms for mounting them together on desktop WebKit —
+  // so the pane goes on growing behind a wrapper that is already in. Waiting for
+  // it too is what keeps `fullyMounted` a true statement rather than a nearly
+  // true one, and the scroll-end election below depends on that being exact.
+  // One flag because one section stages; a second would make this a count.
+  let stagedContentSettled = $state(false);
+  const fullyMounted = $derived(mountedCount >= SECTIONS.length && stagedContentSettled);
 
   // How far past the pane's top edge the reading line sits. The highlight flips
   // as a heading approaches that line rather than after it has scrolled away.
@@ -80,6 +90,16 @@
   const sectionHeadingId = (id: SectionId) => `settingsSection-${id}`;
 
   const sectionIndex = (id: SectionId) => SECTIONS.findIndex((section) => section.id === id);
+
+  // Paired with `use:registerElement` in place of `bind:this={table[id]}`, which
+  // warns once per list item because these tables are deliberately not `$state`
+  // (see the refs above).
+  const registerIn =
+    (table: Partial<Record<SectionId, HTMLElement>>, id: SectionId) =>
+    (element: HTMLElement | undefined) => {
+      if (element) table[id] = element;
+      else delete table[id];
+    };
 
   // Raise the watermark to cover `count` sections, reporting whether anything
   // new is on its way in. The read is untracked so the frame pump and the click
@@ -296,7 +316,7 @@
         class:active={section.id === spiedSection}
         aria-current={section.id === spiedSection ? 'location' : undefined}
         onclick={(event) => jumpToSection(section.id, event.currentTarget)}
-        bind:this={navRowEls[section.id]}
+        use:registerElement={registerIn(navRowEls, section.id)}
       >
         <SectionIcon icon={section.icon} class="settings-nav-icon" />
         <span>{section.label}</span>
@@ -315,7 +335,7 @@
           class="settings-section"
           data-section={section.id}
           aria-labelledby={sectionHeadingId(section.id)}
-          bind:this={sectionEls[section.id]}
+          use:registerElement={registerIn(sectionEls, section.id)}
         >
           <h3 class="settings-pane-title" id={sectionHeadingId(section.id)}>
             {sectionHeading(section.id)}
@@ -323,7 +343,11 @@
           {#if section.id === 'parentCenter' && !parentCenterRevealed}
             <ParentCenterLock onUnlock={unlockParentCenter} />
           {:else}
-            <SectionBody id={section.id} open={settingsModal.open} />
+            <SectionBody
+              id={section.id}
+              open={settingsModal.open}
+              onSettled={() => (stagedContentSettled = true)}
+            />
           {/if}
         </section>
       {/each}

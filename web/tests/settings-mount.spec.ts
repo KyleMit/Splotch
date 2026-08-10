@@ -62,6 +62,74 @@ test('the pane fills a section at a time rather than all at once', async ({ page
   expect(sections).toEqual([...sections].sort((a, b) => a - b));
 });
 
+// Frames to keep watching the pane after it has said it is ready. A nested pump
+// costs a frame per step, so this covers several of them.
+const POST_READY_FRAMES = 15;
+
+test('a scroll the moment the pane reports ready keeps the last section elected', async ({
+  page,
+}) => {
+  // `aria-busy` clearing is the promise that every section is mounted, and the
+  // scroll-end election only means anything once that is true. A section staging
+  // content of its own past that transition broke both at once: the pane kept
+  // growing, so scrolling to the bottom no longer left you at the bottom, and
+  // About lost the election a frame later.
+  //
+  // Driven entirely in the page and anchored on the attribute flipping, because
+  // the margin is a frame or two: a round trip to the test process to read the
+  // flag and another to scroll is enough slack for a nested pump to finish, and
+  // the race then passes on luck. That is why the suite stayed green through it.
+  await gotoApp(page);
+
+  const outcome = await page.evaluate(
+    (frames) =>
+      new Promise<{ grewAfterReady: number; lastRowActive: boolean }>((resolve) => {
+        const settle = (pane: Element) => {
+          pane.scrollTo({ top: pane.scrollHeight });
+          const heightAtReady = pane.scrollHeight;
+          let seen = 0;
+          const step = () => {
+            seen += 1;
+            if (seen < frames) {
+              requestAnimationFrame(step);
+              return;
+            }
+            const rows = document.querySelectorAll('.settings-nav .settings-nav-item');
+            resolve({
+              grewAfterReady: pane.scrollHeight - heightAtReady,
+              lastRowActive: rows[rows.length - 1]!.classList.contains('active'),
+            });
+          };
+          requestAnimationFrame(step);
+        };
+
+        const ready = (pane: Element) => pane.getAttribute('aria-busy') === 'false';
+        const waitForPane = () => {
+          const pane = document.querySelector('.settings-pane');
+          if (!pane) {
+            document.querySelector<HTMLElement>('#settingsButton')!.click();
+            requestAnimationFrame(waitForPane);
+            return;
+          }
+          if (ready(pane)) {
+            settle(pane);
+            return;
+          }
+          new MutationObserver((_, observer) => {
+            if (!ready(pane)) return;
+            observer.disconnect();
+            settle(pane);
+          }).observe(pane, { attributes: true, attributeFilter: ['aria-busy'] });
+        };
+        requestAnimationFrame(waitForPane);
+      }),
+    POST_READY_FRAMES
+  );
+
+  expect(outcome.grewAfterReady).toBe(0);
+  expect(outcome.lastRowActive).toBe(true);
+});
+
 test('the pane reports itself busy until the last section is in', async ({ page }) => {
   // The flag is what every harness and helper waits on to know the offsets it is
   // about to read are final, so it has to clear exactly when the pane is whole.
