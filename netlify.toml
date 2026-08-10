@@ -34,6 +34,10 @@
   # inverted split + --omit=dev halves the install (ADR-0070). GitHub Actions and
   # local dev run a plain `npm ci` and are unaffected.
   NPM_FLAGS = "--omit=dev --no-audit --no-fund"
+  # The engines floor major from package.json engines.node, pinned so a Netlify
+  # platform-default bump can't move the deploy off the major CI tests.
+  # scripts/tests/workflow-hygiene.test.mjs guards this agreement.
+  NODE_VERSION = "22"
 
 # Edge deny-rules (issue #347). The site is one catch-all SSR function
 # (adapter-netlify emits `config.path = ["/*"]`), so every junk path a scanner
