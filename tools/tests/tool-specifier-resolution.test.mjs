@@ -94,17 +94,27 @@ describe('repo-root walks under tools/', () => {
     return existsSync(manifest) && JSON.parse(readFileSync(manifest, 'utf8')).name === 'splotch';
   };
 
+  // Both spellings of "this file's directory". tools/lib/proc.mjs — whose ROOT
+  // most of the tooling imports — uses the second, so a guard that knows only
+  // the first covers every file except the one that matters.
+  const HERE = String.raw`(?:import\.meta\.dirname|dirname\(fileURLToPath\(import\.meta\.url\)\))`;
+
+  // Only a walk the closing paren ends is a root: `join(HERE, '..', 'sheet.html')`
+  // is a path *through* a parent, not a claim about where the repo starts.
   const walkers = toolFiles.flatMap((file) => {
     const source = code(file);
     const walks = [
-      ...source.matchAll(/join\(import\.meta\.dirname((?:,\s*'\.\.')+)\)/g),
-      ...source.matchAll(/resolve\(import\.meta\.dirname,\s*'((?:\.\.\/?)+)'\)/g),
-    ].map((match) => (match[0].match(/\.\./g) ?? []).length);
+      ...source.matchAll(new RegExp(String.raw`join\(\s*${HERE}((?:,\s*'\.\.')+)\s*\)`, 'g')),
+      ...source.matchAll(new RegExp(String.raw`resolve\(\s*${HERE},\s*'((?:\.\.\/?)+)'\s*\)`, 'g')),
+    ].map((match) => (match[1].match(/\.\./g) ?? []).length);
     return walks.map((ups) => ({ file, ups }));
   });
 
-  it('finds the walks it is meant to guard', () => {
+  it('finds the walks it is meant to guard, in both spellings', () => {
     expect(walkers.length).toBeGreaterThan(0);
+    // Named explicitly: this is the walk whose omission the guard was blind to,
+    // and a sentinel counting only totals would not have noticed.
+    expect(walkers.map(({ file }) => file)).toContain('tools/lib/proc.mjs');
   });
 
   it.each(walkers)('$file walks $ups levels to the repo root', ({ file, ups }) => {
