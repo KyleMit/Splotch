@@ -14,3 +14,11 @@
 // sits, or default orientation, native lock capability and shell selection
 // disagree on the same device.
 export const TABLET_MIN_SIDE_PX = 600;
+
+// The large-tablet floor, one step above it: a 13-inch iPad measures 1024 CSS
+// px on its short side (1032 on the M4), so this is the smallest side that
+// admits only the biggest tablets — an 11-inch iPad stays below it in either
+// orientation (834). The bespoke dialogs that scale for roomy viewports take
+// their second step here; a CSS media query cannot import it, so each one
+// restates it and dialogTabletScaling.test.ts holds them to this value.
+export const LARGE_TABLET_MIN_SIDE_PX = 1000;
