@@ -1,6 +1,7 @@
 ---
 name: analyze-session-transcripts
 description: Mine local Codex CLI and Desktop rollout transcripts, including archived sessions, into factual evidence-anchored reports. Use only when the user explicitly asks to analyze, debrief, or report on past Codex sessions; Claude Code transcripts use an independent provider package.
+disable-model-invocation: true
 ---
 
 # Analyze Codex session transcripts
@@ -48,7 +49,11 @@ synthetic AGENTS/environment user envelope, preserves actual user/assistant mess
 tool call/result, flags suspected failures for inspection, marks compaction, and emits `L<n>` raw
 record anchors. It looks up title/archive/surface/model metadata from the thread database. The
 database lookup uses the exact rollout path before `session_meta.session_id`; historical subagent
-rollouts can retain their parent's id in that envelope.
+rollouts can retain their parent's id in that envelope. The skeleton records `metadata_source` and
+`metadata_path_mismatch`. When an id fallback points to a different rollout, it withholds that row's
+identity metadata and marks the mismatch for the report's coverage limitations; `session_id_source`
+records that the identity came from the rollout filename instead of the known-wrong parent envelope
+id.
 
 Read the skeleton end to end. Then drill only into relevant raw records:
 

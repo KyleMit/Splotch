@@ -18,7 +18,10 @@ branches the core design rather than an exception.
   title, archive state, and cross-surface recency. The rollout supplies the lossless event record
   and identifies CLI (`codex-tui`) versus Desktop (`Codex Desktop`). Metadata lookup keys by exact
   rollout path before envelope id because measured historical subagent rollouts carry the parent
-  session's id in `session_meta` while the database row and filename carry the child id.
+  session's id in `session_meta` while the database row and filename carry the child id. An id
+  fallback records its provenance, canonicalizes symlink aliases, and withholds database identity
+  when it resolves to a genuinely different rollout. That mismatch takes its session identity from
+  the rollout filename and records the identity source rather than repeating the known parent id.
 * **User surface sources by default.** Local databases also contain exec, guardian, and subagent
   threads whose titles can be entire delegated prompts. The catalog defaults to `cli` and `vscode`
   and checks older CLI rollouts for an initial `Message Type: NEW_TASK` marker, so a request for
@@ -43,5 +46,7 @@ branches the core design rather than an exception.
   counts, and fixture tests are the early warning rather than a promise of stable upstream schema.
 * Cloud-only sessions are absent until Codex writes a local rollout and database row; this package
   has not established a remote retrieval path.
-* Failure heuristics intentionally over-select. Future measured false negatives should add narrow
-  patterns; false positives are resolved by mandatory raw drilling rather than aggressive parsing.
+* Failure heuristics intentionally over-select only failure-shaped fields and phrases. Generic
+  `status` values are not signals because successful HTTP statuses otherwise produce routine false
+  positives. Future measured false negatives should add narrow patterns; remaining false positives
+  are resolved by mandatory raw drilling rather than aggressive parsing.

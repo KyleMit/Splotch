@@ -9,10 +9,11 @@ recommendations, retrospective judgment, or speculation. State a cause only when
 establishes it. Do not expose or infer hidden reasoning; reasoning records are deliberately absent
 from the skeleton and are not evidence.
 
-Copy the skeleton's YAML front matter into the report. Preserve at least: session id, title and its
-truncation flag, agent, interface, source, originator, model, reasoning effort, CLI version, git
-branch/commit, working directory, archived status, start/end timestamps, transcript path/bytes,
-compaction count, parse failures, and skipped record types.
+Copy the skeleton's YAML front matter into the report. Preserve at least: session id and its source,
+title and its truncation flag, agent, interface, source, originator, model, reasoning effort, CLI
+version, git branch/commit, working directory, archived status, start/end timestamps, transcript
+path/bytes, metadata source/path mismatch, compaction count, parse failures, and skipped record
+types.
 
 Every substantive claim must cite raw evidence as `L<record-line> <timestamp>` and include the tool
 call id when one exists. Drill into the raw JSONL before writing a claim whenever the skeleton is
@@ -51,10 +52,10 @@ Write these sections:
   For each, report symptom, evidence, and the workaround used in-session.
 
 For a category with no evidenced instances, write `none found`. That means no instance was found in
-the inspected record, not that none existed outside it. If `parse_failures` is nonzero, a transcript
-file is missing, or the session ends mid-operation, add a `Coverage limitations` section stating the
-exact gap. Compaction alone is not a coverage loss: the raw pre-compaction JSONL records remain and
-must still be inspected.
+the inspected record, not that none existed outside it. If `parse_failures` is nonzero,
+`metadata_path_mismatch` is true, a transcript file is missing, or the session ends mid-operation,
+add a `Coverage limitations` section stating the exact gap. Compaction alone is not a coverage loss:
+the raw pre-compaction JSONL records remain and must still be inspected.
 
 Never reproduce credentials, tokens, cookies, private keys, or secret values. Replace only the
 secret value with `[REDACTED: secret]` and note that the report performed a redaction.

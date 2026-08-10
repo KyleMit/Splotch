@@ -1,9 +1,16 @@
 import { createReadStream, existsSync, statSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { basename, join, resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { parseArgs } from 'node:util';
 import { DatabaseSync } from 'node:sqlite';
+import {
+  availableThreadColumns,
+  interfaceName,
+  lookupThreadMetadata,
+  resolveCodexHome,
+  sessionIdFromRolloutPath,
+  threadDatabasePath,
+} from './codexStore.mjs';
 
 const USER_PREVIEW_CHARS = 3000;
 const TITLE_PREVIEW_CHARS = 400;
@@ -22,7 +29,7 @@ function parseOptions() {
   }
   return {
     transcript: resolve(positionals[0]),
-    codexHome: resolve(values['codex-home'] ?? process.env.CODEX_HOME ?? join(homedir(), '.codex')),
+    codexHome: resolveCodexHome(values['codex-home']),
   };
 }
 
@@ -80,7 +87,7 @@ function outputText(output) {
 
 function looksLikeFailure(text) {
   return [
-    /\b(?:exit[_ ]code|status)["'\s:=]+[1-9]\d*\b/i,
+    /\bexit[_ ]code["'\s:=]+[1-9]\d*\b/i,
     /\b(?:script failed|command failed|tool failed)\b/i,
     /\b(?:fatal|error|failure):/i,
     /\b(?:permission denied|operation not permitted|command not found|no such file|timed out|requires approval)\b/i,
@@ -88,43 +95,15 @@ function looksLikeFailure(text) {
   ].some((pattern) => pattern.test(text));
 }
 
-function interfaceName(source, originator) {
-  if (typeof source === 'string' && source.startsWith('{"subagent"')) return 'subagent';
-  if (source === 'vscode' || originator === 'Codex Desktop') return 'desktop';
-  if (source === 'cli' || originator === 'codex-tui') return 'cli';
-  return source || originator || 'unknown';
-}
-
 function loadThread(codexHome, sessionId, transcript) {
-  const path = join(codexHome, 'state_5.sqlite');
-  if (!sessionId || !existsSync(path)) return null;
+  const path = threadDatabasePath(codexHome);
+  if (!existsSync(path)) {
+    return { thread: null, metadataSource: 'none', metadataPathMismatch: false };
+  }
 
   const database = new DatabaseSync(path, { readOnly: true });
   try {
-    const columns = new Set(
-      database
-        .prepare('PRAGMA table_info(threads)')
-        .all()
-        .map(({ name }) => name)
-    );
-    const selected = ['id', 'title', 'source', 'cwd', 'archived', 'rollout_path'];
-    for (const optional of [
-      'name',
-      'model',
-      'reasoning_effort',
-      'cli_version',
-      'git_branch',
-      'git_sha',
-      'agent_path',
-      'agent_nickname',
-    ]) {
-      if (columns.has(optional)) selected.push(optional);
-    }
-    const query = `SELECT ${selected.join(', ')} FROM threads`;
-    return (
-      database.prepare(`${query} WHERE rollout_path = ?`).get(transcript) ??
-      database.prepare(`${query} WHERE id = ?`).get(sessionId)
-    );
+    return lookupThreadMetadata(database, availableThreadColumns(database), sessionId, transcript);
   } finally {
     database.close();
   }
@@ -336,28 +315,42 @@ async function buildSkeleton(options) {
     }
   }
 
-  const thread = loadThread(options.codexHome, state.meta.sessionId, options.transcript);
+  const metadata = loadThread(options.codexHome, state.meta.sessionId, options.transcript);
+  const thread = metadata.metadataPathMismatch ? null : metadata.thread;
   const source = thread?.source ?? state.meta.source;
   const rawTitle = thread?.name || thread?.title || thread?.agent_path || '(untitled)';
   const title = trunc(rawTitle, TITLE_PREVIEW_CHARS);
   const models = thread?.model ? [thread.model] : [...state.models];
   const efforts = thread?.reasoning_effort ? [thread.reasoning_effort] : [...state.efforts];
+  const sessionId = metadata.metadataPathMismatch
+    ? sessionIdFromRolloutPath(options.transcript)
+    : (thread?.id ?? state.meta.sessionId ?? sessionIdFromRolloutPath(options.transcript));
+  const sessionIdSource = metadata.metadataPathMismatch
+    ? 'rollout_filename'
+    : thread?.id
+      ? metadata.metadataSource
+      : state.meta.sessionId
+        ? 'session_meta'
+        : 'rollout_filename';
   const header = [
     '---',
-    `session_id: ${yamlString(thread?.id ?? state.meta.sessionId, basename(options.transcript))}`,
+    `session_id: ${yamlString(sessionId, basename(options.transcript))}`,
+    `session_id_source: ${yamlString(sessionIdSource)}`,
     `title: ${yamlString(title)}`,
     `title_truncated: ${rawTitle.length > TITLE_PREVIEW_CHARS}`,
     'agent: "codex"',
     `interface: ${yamlString(interfaceName(source, state.meta.originator))}`,
     `source: ${yamlString(source)}`,
     `originator: ${yamlString(state.meta.originator)}`,
+    `metadata_source: ${yamlString(metadata.metadataSource)}`,
+    `metadata_path_mismatch: ${metadata.metadataPathMismatch}`,
     `model: ${yamlString(models.join(', '))}`,
     `reasoning_effort: ${yamlString(efforts.join(', '))}`,
     `cli_version: ${yamlString(thread?.cli_version ?? state.meta.cliVersion)}`,
     `git_branch: ${yamlString(thread?.git_branch)}`,
     `git_commit: ${yamlString(thread?.git_sha ?? state.meta.gitCommit)}`,
     `cwd: ${yamlString(thread?.cwd ?? state.meta.cwd)}`,
-    `archived: ${Boolean(thread?.archived)}`,
+    `archived: ${thread ? Boolean(thread.archived) : yamlString(null)}`,
     `started: ${yamlString(state.started)}`,
     `ended: ${yamlString(state.ended)}`,
     `transcript: ${yamlString(options.transcript)}`,

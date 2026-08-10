@@ -1,8 +1,12 @@
 import { closeSync, existsSync, openSync, readSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { DatabaseSync } from 'node:sqlite';
+import {
+  availableThreadColumns,
+  interfaceName,
+  resolveCodexHome,
+  threadDatabasePath,
+} from './codexStore.mjs';
 
 const TITLE_PREVIEW_CHARS = 240;
 const ROLLOUT_PREFIX_BYTES = 256 * 1024;
@@ -32,36 +36,22 @@ function parseOptions() {
     cwd: values.cwd ?? process.cwd(),
     allCwds: values['all-cwds'],
     includeAutomated: values['include-automated'],
-    codexHome: resolve(values['codex-home'] ?? process.env.CODEX_HOME ?? join(homedir(), '.codex')),
+    codexHome: resolveCodexHome(values['codex-home']),
     json: values.json,
   };
 }
 
-function availableColumns(database) {
-  return new Set(
-    database
-      .prepare('PRAGMA table_info(threads)')
-      .all()
-      .map(({ name }) => name)
-  );
-}
-
 function recencyExpression(columns) {
-  if (columns.has('recency_at_ms')) {
-    return 'COALESCE(NULLIF(recency_at_ms, 0), updated_at_ms, updated_at * 1000)';
-  }
-  if (columns.has('updated_at_ms')) return 'COALESCE(updated_at_ms, updated_at * 1000)';
-  return 'updated_at * 1000';
+  const candidates = [];
+  if (columns.has('recency_at_ms')) candidates.push('NULLIF(recency_at_ms, 0)');
+  if (columns.has('updated_at_ms')) candidates.push('updated_at_ms');
+  if (columns.has('updated_at')) candidates.push('updated_at * 1000');
+  if (!candidates.length) throw new Error('threads table has no recognized recency column');
+  return candidates.length === 1 ? candidates[0] : `COALESCE(${candidates.join(', ')})`;
 }
 
 function optionalColumn(columns, name, fallback) {
   return columns.has(name) ? name : `${fallback} AS ${name}`;
-}
-
-function interfaceName(source) {
-  if (source === 'vscode') return 'desktop';
-  if (source === 'cli') return 'cli';
-  return source;
 }
 
 function isoTimestamp(value) {
@@ -98,7 +88,7 @@ function isDelegatedThread(path) {
 }
 
 function sessionRows(database, options) {
-  const columns = availableColumns(database);
+  const columns = availableThreadColumns(database);
   const recency = recencyExpression(columns);
   const title = columns.has('name')
     ? "COALESCE(NULLIF(name, ''), NULLIF(title, ''), '(untitled)')"
@@ -153,6 +143,18 @@ function sessionRows(database, options) {
     }));
 }
 
+function countOtherSessions(database, options) {
+  const filters = ['cwd <> ?'];
+  const parameters = [options.cwd];
+  if (!options.includeAutomated) filters.push("source IN ('cli', 'vscode')");
+  const rows = database
+    .prepare(`SELECT rollout_path FROM threads WHERE ${filters.join(' AND ')}`)
+    .all(...parameters);
+  return options.includeAutomated
+    ? rows.length
+    : rows.filter((row) => !isDelegatedThread(row.rollout_path)).length;
+}
+
 function markdownCell(value) {
   return String(value ?? '')
     .replaceAll('|', '\\|')
@@ -178,13 +180,21 @@ function printRows(rows, json) {
 
 function main() {
   const options = parseOptions();
-  const databasePath = join(options.codexHome, 'state_5.sqlite');
+  const databasePath = threadDatabasePath(options.codexHome);
   if (!existsSync(databasePath))
     throw new Error(`Codex thread database not found: ${databasePath}`);
 
   const database = new DatabaseSync(databasePath, { readOnly: true });
   try {
-    printRows(sessionRows(database, options), options.json);
+    const rows = sessionRows(database, options);
+    printRows(rows, options.json);
+    if (!rows.length && !options.allCwds) {
+      const otherSessions = countOtherSessions(database, options);
+      const sessionKind = options.includeAutomated ? 'indexed' : 'CLI/Desktop';
+      console.error(
+        `0 sessions for ${JSON.stringify(options.cwd)}; ${otherSessions} ${sessionKind} sessions exist under other working directories. Re-run with --all-cwds.`
+      );
+    }
   } finally {
     database.close();
   }
