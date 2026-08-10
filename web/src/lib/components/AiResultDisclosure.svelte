@@ -37,14 +37,38 @@
     padding: 0 14px;
     border-radius: var(--radius-pill);
     /* The strip sits on the dimmed backdrop, which is dark in both themes
-       (--modal-dialog::backdrop), so these fills are literal rather than theme
-       tokens that would flip to dark ink on dark glass in light mode. */
-    background: rgba(23, 23, 29, 0.55);
+       (--modal-dialog::backdrop), so these colors are literal rather than theme
+       tokens that would flip to dark ink on dark glass in light mode.
+
+       Whatever is on the page is still showing through that backdrop, though,
+       and under 12px text its bleed reads as muddiness rather than depth. So
+       the pill lays down its own quiet ground: blur to erase the shape still
+       coming through, saturate to drop the color cast bright artwork throws
+       over the ink, and brightness to floor the ground dark however light that
+       artwork is — the fill alone leaves the ink riding whatever is behind it.
+       The ground itself is applied below; this fill is heavy enough to stay
+       legible on its own where the engine can't paint it. */
+    background: rgba(23, 23, 29, 0.72);
     color: #b3b1bf;
     font-size: var(--font-size-xs);
     font-weight: var(--font-weight-semibold);
     line-height: 1;
     white-space: nowrap;
+  }
+
+  /* The strip's ground, in an @supports block rather than a plain declaration
+     beside `background` above, and unprefixed with no -webkit- twin beside it.
+     Both are load-bearing: esbuild collapses an adjacent prefixed/unprefixed
+     pair down to whichever single form `build.target` implies, and
+     browserTargets.ts's safari16.4 implies the -webkit- one, which neither Blink
+     nor Gecko ever aliased — a hand-written pair therefore ships a filter only
+     WebKit can see. Left alone here, esbuild instead widens the condition to
+     `(-webkit-backdrop-filter: …) or (backdrop-filter: …)` and emits both
+     declarations inside it, which is the output every engine can use. */
+  @supports (backdrop-filter: blur(1px)) {
+    .ai-result-disclosure {
+      backdrop-filter: blur(12px) saturate(0.6) brightness(0.55);
+    }
   }
 
   .ai-disclosure-separator {

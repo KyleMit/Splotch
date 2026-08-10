@@ -155,12 +155,16 @@ test.describe('AI render timer', () => {
           const icon = button.querySelector('svg') as SVGElement;
           return {
             fill: getComputedStyle(strip).backgroundColor,
+            ground: getComputedStyle(strip).backdropFilter,
             text: getComputedStyle(strip).color,
             report: getComputedStyle(button).color,
             iconFill: getComputedStyle(icon).fill,
           };
         });
-      expect(chrome.fill).toBe('rgba(23, 23, 29, 0.55)');
+      expect(chrome.fill).toBe('rgba(23, 23, 29, 0.72)');
+      // The fill alone leaves the drawing showing through under 12px text; the
+      // brightness floor is what keeps the ink legible over light artwork.
+      expect(chrome.ground).toContain('brightness');
       expect(chrome.text).toBe('rgb(179, 177, 191)');
       expect(chrome.report).toBe('rgb(224, 147, 147)');
       // Beats the modal shell's icon re-ink, which would repaint it dark on dark.
