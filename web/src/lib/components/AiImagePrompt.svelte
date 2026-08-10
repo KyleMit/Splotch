@@ -231,4 +231,59 @@
       gap: 8px;
     }
   }
+
+  /* ── Tablet-class viewports ─────────────────────────────────────────────
+     Picking a style is a visual comparison, so a tablet spends its room on
+     bigger previews rather than on backdrop — the grid keeps its four columns
+     and the tiles grow into the wider card. Both axes on purpose: a landscape
+     phone is wide but short, and keeps the compact treatment above. 600px is
+     TABLET_MIN_SIDE_PX, which a CSS media query cannot import — the agreement
+     with it, and with ParentalGate's matching steps, is held by
+     dialogTabletScaling.test.ts. */
+  @media (min-width: 600px) and (min-height: 600px) {
+    .ai-prompt-modal {
+      max-width: 660px;
+    }
+
+    .ai-prompt-content {
+      padding: var(--space-7) var(--space-6) var(--space-6);
+      gap: var(--space-5);
+    }
+
+    .ai-prompt-close {
+      top: var(--space-4);
+      right: var(--space-4);
+    }
+
+    .ai-prompt-styles legend {
+      font-size: var(--font-size-md);
+      margin-bottom: var(--space-4);
+    }
+
+    .ai-style-options {
+      gap: var(--space-4);
+    }
+
+    .ai-style-label {
+      font-size: var(--font-size-md);
+    }
+  }
+
+  /* ── Large tablets ───────────────────────────────────────────────────────
+     A 13-inch iPad carries one more step. The scale stops here: the card stays
+     a focused chooser over the drawing rather than becoming the page. */
+  @media (min-width: 1000px) and (min-height: 1000px) {
+    .ai-prompt-modal {
+      max-width: 820px;
+    }
+
+    .ai-prompt-content {
+      padding: var(--space-8) var(--space-7) var(--space-7);
+      gap: var(--space-6);
+    }
+
+    .ai-style-options {
+      gap: var(--space-5);
+    }
+  }
 </style>

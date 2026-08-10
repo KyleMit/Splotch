@@ -400,6 +400,115 @@
     }
   }
 
+  /* ── Tablet-class viewports ─────────────────────────────────────────────
+     A gate that stays phone-sized on a tablet reads as incidental rather than
+     as the boundary it is, so the card, the equation and the keypad take one
+     step up once both axes clear the tablet-class floor. Both axes on purpose:
+     a landscape phone is wide but short, and keeps the compact treatment above.
+     600px is TABLET_MIN_SIDE_PX, which a CSS media query cannot import — the
+     agreement with it, and with AiImagePrompt's matching steps, is held by
+     dialogTabletScaling.test.ts. */
+  @media (min-width: 600px) and (min-height: 600px) {
+    .parental-gate {
+      width: min(92vw, 420px);
+    }
+
+    .gate-content {
+      padding: var(--space-6) var(--space-7);
+    }
+
+    :global(.gate-mascot) {
+      width: 64px;
+      height: 64px;
+    }
+
+    .gate-subtitle {
+      font-size: var(--font-size-md);
+    }
+
+    .gate-equation {
+      gap: var(--space-3);
+    }
+
+    .gate-operand {
+      width: 64px;
+      height: 64px;
+    }
+
+    .gate-dab {
+      width: 58px;
+      height: 64px;
+    }
+
+    .gate-error {
+      height: 20px;
+      font-size: var(--font-size-sm);
+    }
+
+    .gate-keypad {
+      gap: var(--space-3);
+    }
+
+    .gate-key {
+      height: 56px;
+      font-size: var(--font-size-xl);
+    }
+
+    :global(.gate-key-icon) {
+      width: 26px;
+      height: 26px;
+    }
+
+    .gate-success {
+      min-height: 340px;
+    }
+  }
+
+  /* ── Large tablets ───────────────────────────────────────────────────────
+     A 13-inch iPad carries one more step. The scale stops here: past this the
+     card starts reading as a page rather than as a focused, dismissible gate. */
+  @media (min-width: 1000px) and (min-height: 1000px) {
+    .parental-gate {
+      width: min(92vw, 480px);
+    }
+
+    .gate-content {
+      padding: var(--space-7) var(--space-8);
+    }
+
+    :global(.gate-mascot) {
+      width: 76px;
+      height: 76px;
+    }
+
+    .gate-operand {
+      width: 72px;
+      height: 72px;
+    }
+
+    .gate-dab {
+      width: 62px;
+      height: 72px;
+    }
+
+    .gate-keypad {
+      gap: var(--space-4);
+    }
+
+    .gate-key {
+      height: 64px;
+    }
+
+    :global(.gate-key-icon) {
+      width: 28px;
+      height: 28px;
+    }
+
+    .gate-success {
+      min-height: 380px;
+    }
+  }
+
   /* ── Reduced motion: fades instead of fly/shake/pop (polaroid pattern) ──── */
   @media (prefers-reduced-motion: reduce) {
     .parental-gate.modal-fly-in[open] {
