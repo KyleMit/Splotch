@@ -145,7 +145,45 @@ export async function openSettingsModal(page: Page) {
     page.getByRole('button', { name: 'Settings' }).click({ timeout: 3000 })
   );
   await settleFlyIn(modal);
+  // The wide shell mounts its sections a frame at a time (issue #910), so on a
+  // wide viewport the pane is still growing when the card lands — every offset a
+  // spec reads off it, and every section an axe scan walks, is only final once
+  // the pane stops reporting itself busy. The fly-in is no proxy for it: that is
+  // wall-clock, this is frames, and a starved worker separates the two.
+  const pane = modal.locator('.settings-pane');
+  if (await pane.count()) await expect(pane).toHaveAttribute('aria-busy', 'false');
   return modal;
+}
+
+// The highlighted Settings row's own seat, measured against the column that
+// holds it. Read off the nav rather than the browser viewport: the column is its
+// own scroller wherever the section list outgrows it, and that clipping is the
+// thing at stake.
+export function activeNavRowInsideColumn(page: Page) {
+  return page.locator('.settings-nav .settings-nav-item.active').evaluate((row) => {
+    const box = row.parentElement!.getBoundingClientRect();
+    const seat = row.getBoundingClientRect();
+    return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
+  });
+}
+
+// The widest a jumped-to heading may sit below the pane's top edge and still
+// count as landed. Deliberately looser than the shell's own
+// `SECTION_JUMP_INSET_PX` so retuning that inset stays a design decision rather
+// than a spec edit — a tolerance, not a mirrored copy of it. A section that did
+// not scroll at all sits hundreds of pixels away.
+export const SECTION_LANDED_MAX_PX = 24;
+
+// How far a Settings section's heading sits below the scrolling pane's top edge
+// — the measurement the wide shell's click-to-jump landing and its scrollspy are
+// both specified in.
+export function headingOffsetFromPaneTop(page: Page, section: string) {
+  return page
+    .locator(`.settings-section[data-section="${section}"]`)
+    .evaluate(
+      (el) =>
+        el.getBoundingClientRect().top - el.closest('.settings-pane')!.getBoundingClientRect().top
+    );
 }
 
 // How much of the engine's dropped-pointer jump threshold one dispatched sample

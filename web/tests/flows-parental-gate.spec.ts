@@ -111,7 +111,11 @@ test('Parent Center is gated before its controls appear and persists every featu
 
   const gate = page.locator('#parentalGate');
   await expect(gate).toBeVisible();
+  // The wide shell stacks every section in one scroll, so the controls are not
+  // merely un-navigated-to: a lock card stands in their place until the gate is
+  // solved, and scrolling past cannot reveal them.
   await expect(settings.getByText(/Choose when Splotch should ask/)).not.toBeVisible();
+  await expect(settings.getByRole('button', { name: 'Unlock these settings' })).toBeVisible();
   await solveParentalGate(page);
   await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
 

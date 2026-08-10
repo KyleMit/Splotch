@@ -113,11 +113,16 @@ test('Settings has no serious accessibility violations', async ({ page }) => {
   await expectNoSeriousViolations(page, '#settingsModal');
 });
 
-test('Parent Center has no serious accessibility violations', async ({ page }) => {
-  await gotoApp(page);
+test('the locked Parent Center card has no serious accessibility violations', async ({ page }) => {
+  // The scan above runs with every gate seeded Never, so it already covers Parent
+  // Center's controls — the wide shell mounts them with the rest of the sections,
+  // and a nav click there only moves the scroll position. What it never sees is
+  // the lock card the shell stands in for those controls while the gate is still
+  // required, so that is what this scans.
+  await gotoApp(page, '/', { gateUnlocked: false });
   const settings = await openSettingsModal(page);
-  await settings.getByRole('button', { name: 'Parent Center' }).click();
-  await expect(settings.getByRole('heading', { name: 'Parent Center', exact: true })).toBeVisible();
+  await expect(settings.getByRole('button', { name: 'Unlock these settings' })).toBeVisible();
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toHaveCount(0);
 
   await expectNoSeriousViolations(page, '#settingsModal');
 });

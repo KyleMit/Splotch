@@ -154,3 +154,148 @@ Art, Parent Center, Install, Feedback, What's New, About) — additions and word
 within the same structure, listed here because the Decision names the original order. Parent Center
 uses the same section navigation but gates entry at its own operation boundary under ADR-0094;
 Settings and the other sections remain directly accessible.
+
+## Amendment (2026-08): the wide shell is a table of contents over one continuous scroll
+
+The Decision's wide shell swapped one section's content into the Pane per Sidebar click. Sections
+differ enormously in length, so a light one (Sound is a switch and a slider) left most of an 860px
+card empty and read as broken rather than short.
+
+The wide Pane now stacks **every** section in nav order in one scroller, each behind its own pane
+title, separated by whitespace alone (`--section-gap`, 60px — deliberately past the `--space-8`
+ceiling, so no divider rule is needed). The card fills to its existing `max-height` cap and the Pane
+is the scroller it already was. The phone hub/drill-in shell and the compact landscape-phone shell
+are unchanged, which is why the wide shell moved to its own `settings/WideShell.svelte` and both
+shells now render a section through the shared `settings/SectionBody.svelte`.
+
+The Sidebar becomes a scrollspy-driven table of contents: same rows, icons, and order, but the
+highlight follows a reading line 130px past the Pane's top edge (last section wins at the scroll
+end), a click smooth-scrolls that section's heading to `SECTION_JUMP_INSET_PX` (12px) below the top
+edge, and a deep link scrolls rather than swaps. The Sidebar also **scrolls the spied row back into
+its own column**: a click can only ever highlight a row already on screen, but the Pane's scroll
+elects rows the parent never scrolled the column to, and the column overflows on every viewport
+shorter than ~800px — without it the table of contents simply shows no highlight for the bottom of
+the Pane. The glide honours `prefers-reduced-motion`, which Chrome does not apply to programmatic
+smooth scrolls on its own. That jump is **arithmetic on the Pane's own `scrollTop`, never
+`scrollIntoView`** — the latter scrolls every scrollable ancestor, and both the card and the
+`<dialog>` are `overflow: hidden` boxes, so it dragged the Settings header and the close button
+clean out of the top of the card on every open. Dividing the rect delta by the Pane's visual scale
+keeps the arithmetic in layout pixels under the fly-in transform and a pinch-zoomed pane alike. The
+spy re-reads live rects on scroll *and* on a `ResizeObserver` of the Pane content, because a
+conditional reveal inside a section (the volume slider, advanced controls, the force-landscape row,
+the AI toggles) moves every section below it. Because the highlight is now an indicator rather than
+a page state — several sections can be on-screen at once — the active row softened from the solid
+`--brand-solid` pill to a `--brand-wash`/`--brand-text` fill with a `--brand` left rail, and carries
+`aria-current="location"` instead of `"page"`.
+
+Two consequences of "everything is mounted at once" are load-bearing:
+
+* **Parent Center can no longer be protected by not navigating to it.** ADR-0094 puts the gate at
+  the operation boundary, and in this shell reaching those controls *is* that boundary — so
+  `ParentCenterLock.svelte` stands in for the section's body until the gate is solved, and the
+  Sidebar's Parent Center row still runs the gate before it jumps.
+* **A spec that proved navigation by asserting the other sections were absent now passes
+  vacuously.** Such assertions were rewritten to measure the heading's offset from the Pane's top
+  edge (`headingOffsetFromPaneTop`/`SECTION_LANDED_MAX_PX` in `tests/helpers.ts`) or scoped to one
+  `.settings-section`.
+
+The whole suite sailed past the ancestor-scroll defect above, because every spec read section
+content rather than the card's own chrome; `settings-toc.spec.ts` now holds that invariant directly
+("a jump scrolls the pane and never the card itself"), alongside the scrollspy band, the bottom
+election, the nav reveal, and the glide.
+
+A third consequence is a cost rather than a hazard, and is accepted rather than solved here. Eleven
+section bodies mount on the first open instead of one. On the production build under a `longtask`
+observer that is a single 329 ms task at 4x CPU throttle against 93 ms for the phone hub (same modal
+chrome, eleven rows, no section bodies) — roughly 240 ms of section construction, first-open only
+and off the drawing hot path that ADR-0049 protects. `content-visibility: auto` does not help, for
+the reason this ADR already records for the release cards: the browser still parses and constructs
+the DOM. A deferred mount would also have to preserve each section's true height, since the
+scrollspy's live offsets and the jump arithmetic both read it. Tracked as issue 910.
+
+The reopen reset from the previous amendment also had to move a frame later. A closed `<dialog>` is
+`display: none`, so both the nav and the Pane report `scrollTop` 0 and ignore a `scrollTo` — and the
+browser restores the offsets it kept the moment the card gets a layout box. Both resets now run in
+the `requestAnimationFrame` after `open` flips, which is what makes them stick.
+
+Pinch-text-zoom (ADR-0076) is unchanged on the phone shell, where drilling into a section still
+resets it. The wide Pane deliberately drops that reset: a table-of-contents jump stays inside one
+continuous document, so only closing the overlay returns the text to its normal size.
+
+Superseded from the original Consequences: "reopening always lands on the hub / first section" now
+reads "the hub (phone) / the top of the Pane, or the deep-linked section scrolled into place".
+
+## Amendment (2026-08): the wide Pane fills a section per frame
+
+The cost the amendment above accepted — eleven section bodies constructed in the one task that opens
+the dialog — is now paid a frame at a time. The Pane mounts the run of sections from the first up to
+whichever one this open lands on (one, for a default open; a deep link pays for its own prefix,
+since a section's offset depends only on what stacks above it), and a `requestAnimationFrame` pump
+appends the rest in nav order. This is the same shape as the idle overlay pump ADR-0049 established,
+for the same reason: batching the work only relocates the long task.
+
+Nothing is mounted at a fake height. Every section is either absent or laid out in full, so the
+scrollspy's live offsets and the jump arithmetic stay exact for whatever exists — which is why
+`content-visibility: auto` and a placeholder-height scheme were both still rejected. Three
+adjustments make that hold while the Pane is filling:
+
+* The scroll-end fallback that elects the last section is gated on the Pane being whole. Until then
+  the end of the scroll is merely the end of what has arrived, and electing About there would strobe
+  the highlight down the column on open.
+* A table-of-contents row is live from the first frame, so a click mounts through the section it
+  names before scrolling to it — never a silent no-op.
+* Because that click can raise the watermark past where the pump had reached, the pump asks each
+  frame for one more than the watermark currently holds rather than counting up privately, which
+  would leave every section below a jumped-to one stranded.
+
+**The fill waits for the card to land.** The dialog flies in over its own run of frames, and the
+first version of this spent them — the one section body too big to construct inside a frame dropped
+one of the animation's, ~120 ms into an open. The pump now starts on the card's
+`Animation.finished`, so the fill and the fly-in never contend. Nothing may read the Pane before
+then in any case, which is what `aria-busy` states.
+
+The cost is not spread evenly across the eleven, and the shape is worth recording because it is
+where any further work goes. Frame cost per section at 4x, median of five, sampled a reading per
+frame from inside the page:
+
+| section                                       | 4x     |
+| --------------------------------------------- | ------ |
+| the tap itself: card, Sidebar, Appearance     | 106 ms |
+| Buttons (`ControlsSection`)                   | 62 ms  |
+| AI Art (`AiKeyManager`)                       | 42 ms  |
+| Install, Feedback, Updates                    | ~30 ms |
+| Sound, Saving, Coloring, Parent Center, About | ~20 ms |
+
+A section that fits inside its frame reads as ~17–25 ms because that *is* one frame — the pump
+mounts one per frame — so only Buttons clearly overruns, and it is the one task still over the
+long-task threshold. It is not a large component: `advancedControlsEnabled` defaults **on**, so it
+renders the Button Size slider plus two chip pickers carrying six icon-bearing chips, which is the
+densest body in the dialog. Install is mid-pack despite rendering both OS checklists.
+
+The Pane carries `aria-busy` until the last section is in. That is what `tests/helpers.ts`'s
+`openSettingsModal` and `gen-page-inventory.mjs` wait on before reading an offset or taking a shot;
+the fly-in is no substitute, since it is wall-clock and this is frames.
+`scripts/tests/perf-actions.test.mjs` guards the token, and `npm run perf:settings`
+(`scripts/perf/settings-open.mjs`) is the measurement, scoring both shells on the production build
+under a `longtask` observer, with both timings taken in the page — read from the driver, a
+`waitForSelector` plus a round trip lands ~150 ms of its own polling on numbers this small.
+
+Median of five, this host, production build. The phone hub is the floor: same modal chrome, same
+eleven rows, no section bodies.
+
+| viewport, CPU     | before                | after                                     |
+| ----------------- | --------------------- | ----------------------------------------- |
+| wide 1280x800, 1x | 53 ms on the tap      | none over 50 ms                           |
+| wide 1280x800, 4x | **281 ms** on the tap | **89 ms** on the tap, 60 ms at ~475 ms in |
+| phone hub, 4x     | 67 ms                 | 67 ms — untouched                         |
+
+The tap's own task is within ~22 ms of that floor; the residue is the Sidebar plus the first
+section. The one task still over the threshold at 4x is a *single* section body — Buttons, per the
+per-section table above — that does not fit in one frame on its own; thinning it is a separate
+change.
+
+The trade is wall clock. Click to all-eleven-attached goes 287 ms → 798 ms at 4x (53 ms → 549 ms at
+1x), of which ~460 ms is the fly-in the fill now waits out rather than works through; the fill
+itself is one frame per section either way. That buys a card that is interactive on its first
+painted frame and an open animation nothing competes with, at the price of the *bottom* of a
+settings list nobody has scrolled to yet arriving half a second later.

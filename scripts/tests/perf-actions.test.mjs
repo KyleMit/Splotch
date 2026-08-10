@@ -24,6 +24,12 @@ const SETTINGS_MODAL = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'SettingsModal.svelte'),
   'utf8'
 );
+const SETTINGS_WIDE_SHELL = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'WideShell.svelte'),
+  'utf8'
+);
+const IPAD_ACTIONS = readFileSync(join(ROOT, 'scripts', 'perf', 'ipad-actions.mjs'), 'utf8');
+const PAGE_INVENTORY = readFileSync(join(ROOT, 'scripts', 'gen-page-inventory.mjs'), 'utf8');
 
 const frame = (startFromActionMs, gapMs, visualEffectsActive = false) => ({
   startFromActionMs,
@@ -81,8 +87,43 @@ describe('trusted action setup', () => {
     expect(expression).not.toContain('#undoButton');
   });
 
-  it('keeps Settings navigation semantic and restores observed settings', () => {
-    expect(SETTINGS_MODAL.match(/data-section=\{section\.id\}/g)).toHaveLength(2);
+  // Both harnesses address a Settings row as `<shell class>[data-section=<id>]`,
+  // and the two shells live in different files: the wide sidebar in WideShell,
+  // the phone hub in SettingsModal. Matched as one opening tag rather than as
+  // two independent greps, so a shell that renamed the class or stopped stamping
+  // its section id is caught here rather than by a harness that silently finds
+  // nothing. The pane's own `.settings-section` wrappers carry the same
+  // attribute for the Playwright specs; only the row templates are this
+  // contract.
+  it('keeps a section id on the row template of both Settings shells', () => {
+    expect(SETTINGS_WIDE_SHELL).toMatch(
+      /class="settings-nav-item"[^>]*data-section=\{section\.id\}/
+    );
+    expect(SETTINGS_MODAL).toMatch(/class="hub-row"[^>]*data-section=\{section\.id\}/);
+    for (const harness of [IPAD_ACTIONS, PAGE_INVENTORY]) {
+      expect(harness).toContain('data-section');
+    }
+  });
+
+  // The wide sidebar is a table of contents, so its highlight is a reading
+  // position rather than an open page, and the ARIA token says so. Both
+  // harnesses wait on that token to know a section click landed; a token they
+  // no longer match would hang them at the ready poll with nothing to read.
+  it('waits on the aria-current token the wide sidebar sets', () => {
+    const token = /aria-current=\{[^}]*\?\s*'([a-z]+)'/.exec(SETTINGS_WIDE_SHELL)?.[1];
+    expect(token).toBeTruthy();
+    expect(IPAD_ACTIONS).toContain(`getAttribute('aria-current') === '${token}'`);
+    expect(PAGE_INVENTORY).toContain(`[aria-current="${token}"]`);
+  });
+
+  // The wide pane fills a section per frame (issue #910) and reports itself busy
+  // until the last one lands. The inventory shoots every Settings surface, so it
+  // waits on that flag going quiet; were the pane to stop carrying it, the wait
+  // would resolve on an element that never had it and the shots would go back to
+  // catching a half-built page — silently, since a screenshot always succeeds.
+  it('shoots the wide pane only once it stops reporting itself busy', () => {
+    expect(SETTINGS_WIDE_SHELL).toMatch(/class="settings-pane"[^>]*aria-busy=\{/);
+    expect(PAGE_INVENTORY).toContain('.settings-pane[aria-busy="false"]');
   });
 });
 
