@@ -160,19 +160,22 @@ function main() {
     skippedTypes[record.type ?? 'unknown'] = (skippedTypes[record.type ?? 'unknown'] ?? 0) + 1;
   }
 
+  // JSON string encoding is a valid YAML double-quoted scalar, so quoting every
+  // string field keeps values like `#916` from parsing as YAML comments.
+  const yamlString = (value) => JSON.stringify(String(value));
   const frontMatter = [
     '---',
-    `session_id: ${meta.sessionId ?? basename(path, '.jsonl')}`,
-    `title: ${JSON.stringify(meta.title ?? '(untitled)')}`,
-    'agent: claude',
-    `model: ${meta.model ?? 'unknown'}`,
-    `cli_version: ${meta.version ?? 'unknown'}`,
-    `entrypoint: ${meta.entrypoint ?? 'unknown'}`,
-    `git_branch: ${meta.gitBranch ?? 'unknown'}`,
-    `cwd: ${meta.cwd ?? 'unknown'}`,
-    `pr: ${meta.pr ?? 'none'}`,
-    `started: ${shortTimestamp(meta.started) || 'unknown'}`,
-    `ended: ${shortTimestamp(meta.ended) || 'unknown'}`,
+    `session_id: ${yamlString(meta.sessionId ?? basename(path, '.jsonl'))}`,
+    `title: ${yamlString(meta.title ?? '(untitled)')}`,
+    `agent: ${yamlString('claude')}`,
+    `model: ${yamlString(meta.model ?? 'unknown')}`,
+    `cli_version: ${yamlString(meta.version ?? 'unknown')}`,
+    `entrypoint: ${yamlString(meta.entrypoint ?? 'unknown')}`,
+    `git_branch: ${yamlString(meta.gitBranch ?? 'unknown')}`,
+    `cwd: ${yamlString(meta.cwd ?? 'unknown')}`,
+    `pr: ${yamlString(meta.pr ?? 'none')}`,
+    `started: ${yamlString(shortTimestamp(meta.started) || 'unknown')}`,
+    `ended: ${yamlString(shortTimestamp(meta.ended) || 'unknown')}`,
     `transcript_bytes: ${raw.length}`,
     `user_records: ${counts.user}`,
     `assistant_records: ${counts.assistant}`,
