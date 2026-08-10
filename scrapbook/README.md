@@ -78,19 +78,21 @@ then `npm run scrapbook:index`.
 
 The responsive app inventory lives at `https://kylemit.github.io/Splotch/page-inventory/`. It is
 built from a real Playwright session across four canonical Apple devices in both portrait and
-landscape. The generator discovers routes and Settings sections from source, then captures the app's
-dialogs, flyouts, and other notable transient states. Regenerate its eight-view matrix in place with
-`npm run gen:page-inventory`. Every WebP must decode at its expected dimensions and pass the
-ready-content/blankness guards before the run atomically replaces the keeper. The run writes
-`capture-manifest.json`, whose per-image SHA-256 values bind later feedback to the exact pixels that
+landscape, with every surface captured in light and night mode. The generator discovers routes and
+Settings sections from source, then captures the app's dialogs, flyouts, and other notable transient
+states. Regenerate its sixteen-view matrix in place with `npm run gen:page-inventory`. Every WebP
+must decode at its expected dimensions and pass the ready-content/blankness guards before the run
+atomically replaces the keeper. The run writes `capture-manifest.json`, whose stable review IDs,
+standalone descriptions, and per-image SHA-256 values bind later feedback to the exact pixels that
 were reviewed.
 
-Critique work is checkpointed by surface and orientation under the gitignored
-`.scrapbook-scratch/page-inventory-critique/checkpoints/`. Finalize it with
-`npm run gen:page-inventory:critique`; the command refuses missing, duplicate, unknown, or stale
-entries and derives the coverage and severity totals rather than trusting model-authored counts.
-When `design-critique.json` is present, capture preserves it but attaches it only when every hash
-matches the new manifest. To update feedback without recapturing images, run
+Critique work is one independently generated checkpoint per review ID under the gitignored
+`.scrapbook-scratch/page-inventory-critique/reviews/`. Run `npm run gen:page-inventory:review` to
+create or resume the fresh image-only reviews, then finalize them with
+`npm run gen:page-inventory:critique`; the command refuses missing, duplicate, unknown, grouped, or
+stale reviews and derives the coverage and severity totals rather than trusting model-authored
+counts. When `design-critique.json` is present, capture preserves it but attaches it only when every
+hash matches the new manifest. To update feedback without recapturing images, run
 `npm run gen:page-inventory:feedback` (optionally `-- --critique FILE`). Then run
 `npm run scrapbook:index`.
 

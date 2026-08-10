@@ -108,15 +108,17 @@ describe('trusted action setup', () => {
     }
   });
 
-  // The wide sidebar is a table of contents, so its highlight is a reading
-  // position rather than an open page, and the ARIA token says so. Both
-  // harnesses wait on that token to know a section click landed; a token they
-  // no longer match would hang them at the ready poll with nothing to read.
-  it('waits on the aria-current token the wide sidebar sets', () => {
+  // The performance harness measures the sidebar's highlighted reading position.
+  // The inventory accepts any visible intersection because scroll-end clamping can
+  // reveal the requested section without making it the highlighted leading section.
+  it('uses the appropriate wide Settings readiness signal in each harness', () => {
     const token = /aria-current=\{[^}]*\?\s*'([a-z]+)'/.exec(SETTINGS_WIDE_SHELL)?.[1];
     expect(token).toBeTruthy();
     expect(IPAD_ACTIONS).toContain(`getAttribute('aria-current') === '${token}'`);
-    expect(PAGE_INVENTORY).toContain(`[aria-current="${token}"]`);
+    expect(PAGE_INVENTORY).toContain('.settings-section[data-section="${sectionId}"]');
+    expect(PAGE_INVENTORY).toContain(
+      'targetRect.bottom > paneRect.top && targetRect.top < paneRect.bottom'
+    );
   });
 
   // The wide pane fills a section per frame (issue #910) and reports itself busy

@@ -26,6 +26,7 @@ import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import {
   PAGE_INVENTORY_VIEWPORTS,
+  PAGE_INVENTORY_THEMES,
   attachExpectedCapturePaths,
   inventoryCapturePath,
   renderPageInventoryReport,
@@ -40,6 +41,7 @@ const TAP_GUARD_MS = 750;
 const WEBP_QUALITY = 84;
 const SUSPICIOUS_BLANK_ENTROPY = 0.01;
 const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
+const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 
 const PHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -51,7 +53,6 @@ const STORAGE = {
   'splotch-advanced-controls': 'true',
   'splotch-drawer-open': 'false',
   'splotch-lock-rotation': 'false',
-  'splotch-theme': 'light',
   'splotch-install-dismissed': 'false',
   'splotch-install-completed': 'false',
   'splotch-parental-gate-ai-image-mode': 'never',
@@ -293,24 +294,33 @@ function settingsSurfaces() {
           await freshHome(page);
           const modal = await openSettings(page);
           if (await modal.locator('.quick-toggles').isVisible()) return;
-          const row = modal.locator(`[data-section="${section.id}"]`);
+          const row = modal.locator(settingsSectionRowSelector(section.id, viewport.width));
           await row.evaluate((element) => element.click());
-          if (viewport.width < 700) {
+          if (viewport.width < SETTINGS_WIDE_MIN_WIDTH_PX) {
             await modal
               .getByRole('heading', { name: section.title ?? section.label, exact: true })
               .waitFor();
           } else {
-            // A wide-shell click scrolls the pane instead of swapping it, so the
-            // row reports a reading position. tools/perf/tests/perf-actions.test.mjs
-            // holds this token against the shell that sets it.
-            await modal
-              .locator(`[data-section="${section.id}"][aria-current="location"]`)
-              .waitFor();
+            await page.waitForFunction((sectionId) => {
+              const pane = document.querySelector('#settingsModal .settings-pane');
+              const target = document.querySelector(
+                `#settingsModal .settings-section[data-section="${sectionId}"]`
+              );
+              if (!(pane instanceof HTMLElement) || !(target instanceof HTMLElement)) return false;
+              const paneRect = pane.getBoundingClientRect();
+              const targetRect = target.getBoundingClientRect();
+              return targetRect.bottom > paneRect.top && targetRect.top < paneRect.bottom;
+            }, section.id);
           }
         }
       )
     ),
   ];
+}
+
+export function settingsSectionRowSelector(sectionId, viewportWidth) {
+  const rowClass = viewportWidth < SETTINGS_WIDE_MIN_WIDTH_PX ? 'hub-row' : 'settings-nav-item';
+  return `.${rowClass}[data-section="${sectionId}"]`;
 }
 
 async function coloringDialog(page) {
@@ -334,17 +344,6 @@ function controlSurfaces() {
       'DrawingCanvas',
       async (page) => {
         await freshHome(page);
-        await draw(page);
-      }
-    ),
-    surface(
-      'controls',
-      'dark-canvas',
-      'Drawing canvas · dark theme',
-      'The canvas, palette, and resting controls on dark paper.',
-      'DrawingCanvas/theme=dark',
-      async (page) => {
-        await freshHome(page, { 'splotch-theme': 'dark' });
         await draw(page);
       }
     ),
@@ -707,18 +706,18 @@ async function validateCaptureFile(target, item, viewport) {
   }
 }
 
-async function capture(page, item, viewport, out) {
+async function capture(page, item, viewport, theme, out) {
   await item.prepare(page, viewport);
   await settle(page);
   await assertSurfaceReady(page, item);
-  const path = inventoryCapturePath(item, viewport);
+  const path = inventoryCapturePath(item, viewport, theme);
   const target = join(out, path);
   mkdirSync(resolve(target, '..'), { recursive: true });
   const png = await page.screenshot({ type: 'png' });
   await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
   await validateCaptureFile(target, item, viewport);
   await item.cleanup?.(page);
-  return captureRecord(item, viewport, path, sha256File(target));
+  return captureRecord(item, viewport, theme, path, sha256File(target));
 }
 
 function options(argv) {
@@ -795,27 +794,33 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
       const captures = [];
-      for (const view of PAGE_INVENTORY_VIEWPORTS) {
-        const context = await browser.newContext({
-          baseURL: `http://localhost:${port}`,
-          viewport: { width: view.width, height: view.height },
-          deviceScaleFactor: 1,
-          hasTouch: true,
-          userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
-          colorScheme: 'light',
-          reducedMotion: 'reduce',
-        });
-        await context.addInitScript((defaults) => {
-          for (const [key, value] of Object.entries(defaults)) {
-            if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+      for (const theme of PAGE_INVENTORY_THEMES) {
+        for (const view of PAGE_INVENTORY_VIEWPORTS) {
+          const context = await browser.newContext({
+            baseURL: `http://localhost:${port}`,
+            viewport: { width: view.width, height: view.height },
+            deviceScaleFactor: 1,
+            hasTouch: true,
+            userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
+            colorScheme: theme.id,
+            reducedMotion: 'reduce',
+          });
+          await context.addInitScript(
+            ({ defaults, themeId }) => {
+              for (const [key, value] of Object.entries(defaults)) {
+                if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+              }
+              localStorage.setItem('splotch-theme', themeId);
+            },
+            { defaults: STORAGE, themeId: theme.id }
+          );
+          const page = await context.newPage();
+          for (const item of items) {
+            console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
+            captures.push(await capture(page, item, view, theme, staging));
           }
-        }, STORAGE);
-        const page = await context.newPage();
-        for (const item of items) {
-          console.log(`${view.id.padEnd(21)} ${item.id}`);
-          captures.push(await capture(page, item, view, staging));
+          await context.close();
         }
-        await context.close();
       }
       const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
       writeFileSync(join(staging, CAPTURE_MANIFEST_NAME), `${JSON.stringify(manifest, null, 2)}\n`);
