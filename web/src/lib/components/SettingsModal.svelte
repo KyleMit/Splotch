@@ -11,6 +11,7 @@
   import ControlsSection from './settings/ControlsSection.svelte';
   import AiKeyManager from './settings/AiKeyManager.svelte';
   import ParentCenterSection from './settings/ParentCenterSection.svelte';
+  import ParentCenterLock from './settings/ParentCenterLock.svelte';
   import SetupInstructions from './settings/SetupInstructions.svelte';
   import WhatsNewSection from './settings/WhatsNewSection.svelte';
   import ReportForm from './settings/ReportForm.svelte';
@@ -20,7 +21,7 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
-  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
+  import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
 
   // Not every section takes `open` (only AiKeyManager/SetupInstructions/ReportForm do); passing it
@@ -85,18 +86,73 @@
   const COMPACT_QUERY = `(orientation: landscape) and (max-height: ${TABLET_MIN_SIDE_PX - 1}px)`;
   const compact = mediaQueryFlag(COMPACT_QUERY);
 
-  // 'hub' = the phone top-level list; a section id = that section is open.
+  // 'hub' = the phone top-level list; a section id = that section is drilled
+  // into. Only the phone shell navigates: the wide shell stacks every section in
+  // one scroll, so its sidebar moves the scroll position instead of this.
   let view = $state<'hub' | SectionId>('hub');
 
-  // The section whose content the pane shows. The tablet pane always shows one
-  // (the hub itself never renders there), defaulting to the first section.
+  // The section whose content the drilled-in phone view shows.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
   let activeMeta = $derived(SECTION_BY_ID[activeSection]);
 
-  // Each reopen lands on the hub (phone) / first section (tablet). The dialog is
-  // closed, never unmounted, so a nav the parent scrolled stays where they left
-  // it — and since the section resets to the first one, that would reopen with
-  // the selected row above the visible top and no highlight anywhere in view.
+  // The wide sidebar is a table of contents over the continuous pane: this is
+  // the section the reading position currently sits in, an indicator rather than
+  // a page state.
+  let spiedSection = $state<SectionId>(SECTIONS[0].id);
+
+  // The phone shell gates the drill-in, but the wide shell stacks every section
+  // in reach of a scroll, so Parent Center's own controls stay behind the lock
+  // card until the gate this open is solved.
+  let parentCenterUnlocked = $state(false);
+  let parentCenterRevealed = $derived(
+    parentCenterUnlocked || !requiresParentalGate('parentCenter')
+  );
+
+  // How far past the pane's top edge the reading line sits. The highlight flips
+  // as a heading approaches that line rather than after it has scrolled away.
+  const SCROLLSPY_LINE_INSET_PX = 130;
+  // Fractional device pixels and pinch-zoomed content leave scrollTop a hair
+  // short of the true end, so "scrolled to the bottom" needs a tolerance.
+  const SCROLL_END_EPSILON_PX = 2;
+
+  let paneEl = $state<HTMLElement>();
+  // Read only by the scrollspy and the jump, both of which run off events.
+  const sectionEls: Partial<Record<SectionId, HTMLElement>> = {};
+
+  const sectionHeadingId = (id: SectionId) => `settingsSection-${id}`;
+
+  // The card flies in scaled from its opening button, so a rect read while that
+  // animation runs is not in CSS pixels. The pane's own visual-to-layout ratio
+  // converts the reading line into whatever space the current frame is in.
+  function paneVisualScale(pane: HTMLElement): number {
+    const height = pane.clientHeight;
+    return height ? pane.getBoundingClientRect().height / height : 1;
+  }
+
+  function spiedSectionAt(pane: HTMLElement): SectionId {
+    if (pane.scrollTop + pane.clientHeight >= pane.scrollHeight - SCROLL_END_EPSILON_PX) {
+      return SECTIONS[SECTIONS.length - 1].id;
+    }
+    const line = pane.getBoundingClientRect().top + SCROLLSPY_LINE_INSET_PX * paneVisualScale(pane);
+    let current: SectionId = SECTIONS[0].id;
+    for (const section of SECTIONS) {
+      const el = sectionEls[section.id];
+      if (el && el.getBoundingClientRect().top <= line) current = section.id;
+    }
+    return current;
+  }
+
+  // scrollIntoView rather than arithmetic on scrollTop: the browser does the
+  // measurement in layout space, so neither the fly-in's transform nor a
+  // pinch-zoomed pane can skew where the jump lands.
+  function scrollToSection(id: SectionId, behavior: ScrollBehavior) {
+    sectionEls[id]?.scrollIntoView({ behavior, block: 'start' });
+  }
+
+  // Each reopen lands on the hub (phone) / the top of the pane (tablet). The
+  // dialog is closed, never unmounted, so both the nav and the pane keep the
+  // offsets the parent left them at — which would reopen with the first section
+  // highlighted while the pane still shows wherever they stopped reading.
   let navEl = $state<HTMLElement>();
   $effect(() => {
     if (!settingsModal.open) return;
@@ -105,7 +161,16 @@
     const requestedSection = untrack(() => ui.requestedSettingsSection);
     view = requestedSection ?? 'hub';
     ui.requestedSettingsSection = null;
+    parentCenterUnlocked = false;
     navEl?.scrollTo({ top: 0 });
+
+    // A deep-linked section scrolls into place instead of swapping in. The
+    // dialog has no layout until the frame after `open` flips, so the pane
+    // cannot be scrolled from here.
+    const landing = requestedSection ?? SECTIONS[0].id;
+    spiedSection = landing;
+    const frame = requestAnimationFrame(() => scrollToSection(landing, 'auto'));
+    return () => cancelAnimationFrame(frame);
   });
 
   function openSection(id: SectionId, trigger: HTMLElement) {
@@ -114,6 +179,25 @@
       return;
     }
     requireParentalGate('parentCenter', () => (view = id), buttonCenter(trigger));
+  }
+
+  function unlockParentCenter(trigger: HTMLElement, then?: () => void) {
+    requireParentalGate(
+      'parentCenter',
+      () => {
+        parentCenterUnlocked = true;
+        then?.();
+      },
+      buttonCenter(trigger)
+    );
+  }
+
+  function jumpToSection(id: SectionId, trigger: HTMLElement) {
+    if (id !== 'parentCenter' || parentCenterRevealed) {
+      scrollToSection(id, 'smooth');
+      return;
+    }
+    unlockParentCenter(trigger, () => scrollToSection(id, 'smooth'));
   }
 
   function backToHub() {
@@ -125,12 +209,39 @@
   // (wide sidebar pane, phone hub/section scroll) bind it. The compact
   // landscape-phone shell is deliberately excluded — it has no vertical room to zoom
   // into; rotate to portrait for the full zoomable settings. Zoom resets to normal
-  // whenever the overlay closes or the parent navigates to another section.
+  // whenever the overlay closes and whenever the phone shell drills into another
+  // section; a wide table-of-contents jump keeps it, since that stays inside one
+  // continuous document.
   let zoomTarget = $state<HTMLElement>();
   const textZoom = () => ({
     target: zoomTarget,
     enabled: settingsModal.open,
     resetKey: view,
+  });
+
+  $effect(() => {
+    const pane = paneEl;
+    const content = zoomTarget;
+    if (!pane || !content) return;
+    let frame = 0;
+    const spy = () => {
+      frame = 0;
+      spiedSection = spiedSectionAt(pane);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(spy);
+    };
+    pane.addEventListener('scroll', schedule, { passive: true });
+    // A conditional reveal inside a section (volume slider, advanced controls,
+    // force-landscape row, AI toggles) moves every section below it, so the spy
+    // re-reads on content growth as well as on scroll.
+    const growth = new ResizeObserver(schedule);
+    growth.observe(content);
+    return () => {
+      pane.removeEventListener('scroll', schedule);
+      growth.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
   });
 </script>
 
@@ -159,7 +270,7 @@
     {#if compact.current}
       <CompactShell />
     {:else if wide.current}
-      <!-- Tablet / desktop: persistent sidebar + scrolling content pane. -->
+      <!-- Tablet / desktop: table of contents + one continuously scrolling pane. -->
       <header class="settings-header">
         <h2>Settings</h2>
       </header>
@@ -169,19 +280,35 @@
             <button
               class="settings-nav-item"
               data-section={section.id}
-              class:active={section.id === activeSection}
-              aria-current={section.id === activeSection ? 'page' : undefined}
-              onclick={(event) => openSection(section.id, event.currentTarget)}
+              class:active={section.id === spiedSection}
+              aria-current={section.id === spiedSection ? 'location' : undefined}
+              onclick={(event) => jumpToSection(section.id, event.currentTarget)}
             >
               <SectionIcon icon={section.icon} class="settings-nav-icon" />
               <span>{section.label}</span>
             </button>
           {/each}
         </nav>
-        <div class="settings-pane" use:pinchTextZoom={textZoom}>
+        <div class="settings-pane" use:pinchTextZoom={textZoom} bind:this={paneEl}>
           <div class="settings-zoom" bind:this={zoomTarget}>
-            <h3 class="settings-pane-title">{activeMeta.title ?? activeMeta.label}</h3>
-            {@render sectionContent(activeSection)}
+            {#each SECTIONS as section (section.id)}
+              {@const meta = SECTION_BY_ID[section.id]}
+              <section
+                class="settings-section"
+                data-section={section.id}
+                aria-labelledby={sectionHeadingId(section.id)}
+                bind:this={sectionEls[section.id]}
+              >
+                <h3 class="settings-pane-title" id={sectionHeadingId(section.id)}>
+                  {meta.title ?? meta.label}
+                </h3>
+                {#if section.id === 'parentCenter' && !parentCenterRevealed}
+                  <ParentCenterLock onUnlock={unlockParentCenter} />
+                {:else}
+                  {@render sectionContent(section.id)}
+                {/if}
+              </section>
+            {/each}
           </div>
         </div>
       </div>
@@ -505,21 +632,20 @@
     }
   }
 
-  /* --brand-solid, not --brand: the fill carries the item's label, and
-     --brand is only 3.4:1 against --on-brand (fails WCAG AA at this size). */
+  /* The nav indicates where the reading position is, not which page is open, and
+     several sections can be on screen at once — so the current one takes a soft
+     brand wash with a rail rather than a solid filled pill. --brand-text on
+     --brand-wash clears WCAG AA; --brand carries the rail, which holds no text. */
   .settings-nav-item.active {
-    background: var(--brand-solid);
-    color: var(--on-brand);
+    background: var(--brand-wash);
+    color: var(--brand-text);
+    box-shadow: inset 3px 0 0 var(--brand);
   }
 
   :global(.settings-nav-icon) {
     width: 34px;
     height: 34px;
     flex-shrink: 0;
-  }
-
-  .settings-nav-item.active :global(.settings-nav-icon svg) {
-    fill: var(--on-brand);
   }
 
   .settings-pane {
@@ -530,6 +656,19 @@
        too; at rest the content is pane-width, so no horizontal bar shows. */
     overflow: auto;
     padding: 4px 8px 4px 16px;
+  }
+
+  /* Every section is stacked in the one pane, so the whitespace and the headings
+     do the separating — deliberately more air than any gap inside a section, and
+     well past the --space-8 ceiling, so no divider rule is needed. */
+  .settings-section + .settings-section {
+    margin-top: 60px;
+  }
+
+  /* Where a table-of-contents jump parks the heading: just clear of the pane's
+     top edge rather than flush against it. scrollIntoView reads this. */
+  .settings-section {
+    scroll-margin-top: 12px;
   }
 
   .settings-pane-title {

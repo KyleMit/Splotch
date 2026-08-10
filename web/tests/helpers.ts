@@ -148,6 +148,18 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
+// How far a Settings section's heading sits below the scrolling pane's top edge
+// — the measurement the wide shell's click-to-jump landing and its scrollspy are
+// both specified in.
+export function headingOffsetFromPaneTop(page: Page, section: string) {
+  return page
+    .locator(`.settings-section[data-section="${section}"]`)
+    .evaluate(
+      (el) =>
+        el.getBoundingClientRect().top - el.closest('.settings-pane')!.getBoundingClientRect().top
+    );
+}
+
 // How much of the engine's dropped-pointer jump threshold one dispatched sample
 // may cover. The engine reads "far from the previous sample AND more than
 // POINTER_RESUME_GAP_MS after it" as a finger that lifted and set down
