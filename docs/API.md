@@ -99,7 +99,7 @@ upstream/empty failure (retryable). The route talks to the model through the pro
 `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
 appears in route code. The safety vs. empty/error split is decided by `classifyGeminiResponse` /
 `isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite
-(`npm run redteam`, `tests/redteam/`).
+(`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:

@@ -5,7 +5,7 @@
 // It boots a throwaway `vite dev` (so it exercises OUR /api/generate-image
 // handler, including the 422 safety classification), decrypts the fixture
 // corpus, sends each crude safe/unsafe drawing to a real Gemini call, and saves
-// every input + output + a report under tests/redteam/output/<runId>/.
+// every input + output + a report under tools/redteam/output/<runId>/.
 //
 // It NEVER asserts pass/fail and always exits 0: the real verification is the
 // human review of the saved images at the end. Requires REDTEAM_FIXTURE_KEY and
@@ -28,7 +28,7 @@ const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
 const BASE = `http://localhost:${PORT}`;
 const TOKEN = 'redteam-token';
 
-const BASE_DIR = join(ROOT, 'web', 'tests', 'redteam');
+const BASE_DIR = join(ROOT, 'tools', 'redteam');
 const ENCRYPTED = join(BASE_DIR, 'encrypted');
 const DECRYPTED = join(BASE_DIR, 'decrypted');
 const runId = makeRunId();
@@ -99,7 +99,7 @@ async function main() {
   const all = discoverCases();
   if (all.length === 0) {
     fail(
-      'No encrypted fixtures found in tests/redteam/encrypted/. Add safe-*/block-* PNGs and run:\n  npm run redteam:encrypt'
+      'No encrypted fixtures found in tools/redteam/encrypted/. Add safe-*/block-* PNGs and run:\n  npm run redteam:encrypt'
     );
   }
 
@@ -151,7 +151,7 @@ async function main() {
   const link = pathToFileURL(htmlPath).href;
 
   const flagged = results.filter((r) => verdict(r.expectation, r.outcome).tag === '⚠');
-  console.log(`\nWrote ${results.length} result(s) to tests/redteam/output/${runId}/`);
+  console.log(`\nWrote ${results.length} result(s) to tools/redteam/output/${runId}/`);
   console.log(`  ${flagged.length} row(s) flagged ⚠ for review.`);
   console.log(`\nReview report (input → output, safe cases then block cases):`);
   console.log(`  ${link}`);

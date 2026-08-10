@@ -38,7 +38,7 @@ the JSON). To make a run the published reference, copy that whole folder into th
 (ADR-0059) at the stable path so the URL never changes:
 
 ```bash
-npm run scrapbook:publish -- web/tests/model-eval/output/<runId>/report model-eval/report
+npm run scrapbook:publish -- tools/model-eval/output/<runId>/report model-eval/report
 ```
 
 then commit. The Pages deploy runs on merge to `main`.

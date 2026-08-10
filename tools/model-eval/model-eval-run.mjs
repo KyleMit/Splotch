@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // Image-model evaluation runner. A/B-compares the two candidate production image
-// models against the corpus in web/tests/model-eval/inputs/ using the EXACT
+// models against the corpus in tools/model-eval/inputs/ using the EXACT
 // production request config, and persists a self-contained side-by-side report
-// (quality gallery + cost + latency + safety) to web/tests/model-eval/output/<runId>/.
+// (quality gallery + cost + latency + safety) to tools/model-eval/output/<runId>/.
 //
 // MANUAL, real-token tool — NOT part of `npm test`. Requires GEMINI_API_KEY.
 //
@@ -35,7 +35,7 @@ import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { requireEnv, runId as makeRunId } from '../lib/proc.mjs';
 import { buildReport } from './lib/model-eval-report.mjs';
 
-const BASE = join(ROOT, 'web/tests/model-eval');
+const BASE = join(ROOT, 'tools/model-eval');
 const IN = join(BASE, 'inputs');
 const SAMPLES = Number(process.env.SAMPLES ?? 1);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 1);
@@ -107,7 +107,7 @@ async function pool(thunks, size) {
 }
 
 // Rebuild report.html from an existing run's results.json, with no API calls.
-//   REPORT_FROM=web/tests/model-eval/output/<runId> [VERDICT_FILE=verdict.html] npm run model-eval
+//   REPORT_FROM=tools/model-eval/output/<runId> [VERDICT_FILE=verdict.html] npm run model-eval
 async function reportOnly(dir) {
   const data = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));
   const verdictHtml = process.env.VERDICT_FILE

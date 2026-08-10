@@ -3,7 +3,7 @@
 // toddler art (solid fills, medium palette strokes, minimal squiggles) that could
 // realistically have come off the Splotch drawing canvas. These complement the
 // synthetic + asset-composite fixtures with model-drawn variety. Saved with a `gen`
-// prefix into web/tests/model-eval/inputs/ and left untouched by model-eval:fixtures.
+// prefix into tools/model-eval/inputs/ and left untouched by model-eval:fixtures.
 //
 //   npm run model-eval:gen-inputs        # (re)generate the gen__* inputs
 //
@@ -17,7 +17,7 @@ import { ROOT, PALETTE, PAPER, imageFormat } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { requireEnv } from '../lib/proc.mjs';
 
-const OUT = join(ROOT, 'web/tests/model-eval/inputs');
+const OUT = join(ROOT, 'tools/model-eval/inputs');
 const AUTHOR_MODEL = 'gemini-3.1-flash-image';
 
 const paletteList = PALETTE.map((c) => `${c.label} ${c.hex}`).join(', ');

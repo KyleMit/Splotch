@@ -26,7 +26,7 @@ import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { fail } from '../lib/proc.mjs';
 
-const OUT = join(ROOT, 'web/tests/model-eval/inputs');
+const OUT = join(ROOT, 'tools/model-eval/inputs');
 const COLORING = join(ROOT, 'web/static/coloring');
 
 // --- deterministic RNG + stroke geometry (node side, seeded per fixture) ---
@@ -402,7 +402,7 @@ async function main() {
     else if (n % 8 === 0) console.log(`  …${n}/${list.length}`);
   }
   await browser.close();
-  console.log(`Generated ${n} local fixtures → web/tests/model-eval/inputs/`);
+  console.log(`Generated ${n} local fixtures → tools/model-eval/inputs/`);
 }
 
 await main();

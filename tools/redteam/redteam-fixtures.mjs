@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { ROOT, fail } from '../lib/proc.mjs';
 import { encryptDir, decryptDir } from './lib/fixtureCrypto.mjs';
 
-const BASE = join(ROOT, 'web', 'tests', 'redteam');
+const BASE = join(ROOT, 'tools', 'redteam');
 const SOURCE = join(BASE, 'source');
 const ENCRYPTED = join(BASE, 'encrypted');
 const DECRYPTED = join(BASE, 'decrypted');
@@ -22,15 +22,15 @@ if (command === 'encrypt') {
   const count = encryptDir(SOURCE, ENCRYPTED);
   console.log(
     count
-      ? `\nEncrypted ${count} file(s) into tests/redteam/encrypted/. Commit the .enc files.`
-      : `\nNothing to encrypt — add source PNGs to tests/redteam/source/ first.`
+      ? `\nEncrypted ${count} file(s) into tools/redteam/encrypted/. Commit the .enc files.`
+      : `\nNothing to encrypt — add source PNGs to tools/redteam/source/ first.`
   );
 } else if (command === 'decrypt') {
   const count = decryptDir(ENCRYPTED, DECRYPTED);
   console.log(
     count
-      ? `\nDecrypted ${count} file(s) into tests/redteam/decrypted/ (gitignored).`
-      : `\nNothing to decrypt — tests/redteam/encrypted/ has no .enc files yet.`
+      ? `\nDecrypted ${count} file(s) into tools/redteam/decrypted/ (gitignored).`
+      : `\nNothing to decrypt — tools/redteam/encrypted/ has no .enc files yet.`
   );
 } else {
   fail('Usage: node tools/redteam/redteam-fixtures.mjs <encrypt|decrypt>');

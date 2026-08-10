@@ -1,6 +1,6 @@
 // Promote a keeper run output into the committed /scrapbook tree and regenerate
 // the landing page (ADR-0059). Ephemeral tool outputs stay gitignored
-// (lighthouse-reports/, .coloring-samples/, web/tests/redteam/output/, …); this
+// (lighthouse-reports/, .coloring-samples/, tools/redteam/output/, …); this
 // copies a chosen keeper in so it survives and gets a live GitHub Pages URL.
 //
 //   node tools/scrapbook/publish-scrapbook.mjs <source> <type>/<name>   publish a file or dir
