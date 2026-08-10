@@ -32,10 +32,21 @@ const toolFiles = execFileSync('git', ['ls-files', 'tools'], { cwd: repoRoot, en
 const RELATIVE_SPECIFIER =
   /(?:from\s*|import\s*\(\s*|vi\.(?:mock|doMock|unmock)\(\s*|new URL\(\s*)(['"])(\.\.?\/[^'"]*)\1/g;
 
+/**
+ * Source with whole-line comments removed. Prose quoting a specifier — including
+ * this file's own explanation of the `?query` case — is documentation, not a
+ * module reference. Only full-line comments are dropped, so no code can be.
+ */
+function code(file) {
+  return readFileSync(join(repoRoot, file), 'utf8')
+    .split('\n')
+    .filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+    .join('\n');
+}
+
 /** Every relative specifier in `file`, paired with the repo path it resolves to. */
 function resolvedSpecifiers(file) {
-  const source = readFileSync(join(repoRoot, file), 'utf8');
-  return [...source.matchAll(RELATIVE_SPECIFIER)]
+  return [...code(file).matchAll(RELATIVE_SPECIFIER)]
     .map((match) => match[2])
     .filter((spec) => !FIXTURE_SPECIFIERS.has(spec))
     .map((spec) => ({
@@ -84,7 +95,7 @@ describe('repo-root walks under tools/', () => {
   };
 
   const walkers = toolFiles.flatMap((file) => {
-    const source = readFileSync(join(repoRoot, file), 'utf8');
+    const source = code(file);
     const walks = [
       ...source.matchAll(/join\(import\.meta\.dirname((?:,\s*'\.\.')+)\)/g),
       ...source.matchAll(/resolve\(import\.meta\.dirname,\s*'((?:\.\.\/?)+)'\)/g),
