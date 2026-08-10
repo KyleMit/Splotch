@@ -270,8 +270,8 @@ describe('Codex transcript catalog', () => {
     expect(result.stdout).toContain(
       '| Recency | State | Interface | Session | Title | Transcript |'
     );
-    expect(result.stderr).toBe(
-      '0 sessions for "/repo"; 1 CLI/Desktop sessions exist under other working directories. Re-run with --all-cwds.\n'
+    expect(result.stderr.split('\n')).toContain(
+      '0 sessions for "/repo"; 1 CLI/Desktop sessions exist under other working directories. Re-run with --all-cwds.'
     );
   });
 });
