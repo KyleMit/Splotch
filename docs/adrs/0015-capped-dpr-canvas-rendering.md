@@ -78,7 +78,7 @@ Non-obvious invariants:
   sync) that also paid this multiplier are **both removed** — by ADR-0033 (no snapshot) and ADR-0034
   (no virtual-canvas sync). The live fill rate was expected to be absorbed by the GPU
   post-perf-work, but **not yet verified on a real device** — the `chrome://inspect` profiling
-  workflow in the mobile guide (`.claude/skills/mobile/android.md`) is the follow-up.
+  workflow in the mobile guide (`docs/MOBILE/android.md`) is the follow-up.
 * **-** Mid-session DPR changes render at the stale scale until reload.
 
 ## Amendment (ADR-0066, 2026-07)

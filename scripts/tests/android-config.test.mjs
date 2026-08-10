@@ -18,8 +18,8 @@ const read = (p) => readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8')
 const ENFORCED = [
   'package.json',
   '.github/workflows/android-deploy.yml',
-  '.ruler/skills/mobile/android.md',
-  '.ruler/skills/testing/SKILL.md',
+  'docs/MOBILE/android.md',
+  'docs/TESTING.md',
   'docs/COMPATIBILITY.md',
 ];
 
@@ -91,7 +91,7 @@ const SUPPORT_FLOOR_CLAIMS = [
   ],
   [
     'minimum supported OS statement',
-    '.ruler/skills/mobile/android.md',
+    'docs/MOBILE/android.md',
     /Minimum supported OS: \*\*Android (?<release>\d+\.\d+) \/ API (?<api>\d+)\*\*/,
   ],
 ];

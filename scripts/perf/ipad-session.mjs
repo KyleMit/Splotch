@@ -7,7 +7,7 @@
 // is ready, and which global they wait for — everything else here is protocol
 // and device behaviour that cost real debugging sessions to learn, and must not
 // be reimplemented per entry point. See `webkit-inspector.mjs` for the protocol
-// itself and the profiling skill's ipad-device-profiling.md for the runbook.
+// itself and docs/PROFILING-IPAD.md for the runbook.
 
 import { fail, hasCommand, pollUntil, sleep } from '../lib/proc.mjs';
 import { lanAddresses, waitForUrl } from '../lib/net.mjs';

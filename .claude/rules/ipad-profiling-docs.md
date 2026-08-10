@@ -1,8 +1,6 @@
 ---
 paths:
-  - ".ruler/skills/profiling/ipad-device-profiling.md"
-  - ".claude/skills/profiling/ipad-device-profiling.md"
-  - ".agents/skills/profiling/ipad-device-profiling.md"
+  - "docs/PROFILING-IPAD.md"
 ---
 
 # iPad profiling doc rules
@@ -27,5 +25,5 @@ The same applies to the UI placeholders in these docs, for the same reason: writ
 `scripts/perf/ipad-recorder.js` and `ipad-console-driver.js` are JavaScript comments that no
 Markdown renderer ever sees — leave them alone.
 
-**Reminder:** the `.claude/` and `.agents/` copies are generated. Edit
-`.ruler/skills/profiling/ipad-device-profiling.md`, then run `npm run ruler:apply`.
+**`docs/PROFILING-IPAD.md` is authored in place** — it is a document, not a generated skill file, so
+there is nothing to regenerate after editing it. The `profiling` skill points at it (ADR-0107).

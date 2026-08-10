@@ -12,8 +12,7 @@ const scenarioKeys = (source) => [...source.matchAll(/^\s*key: '([a-z-]+)',$/gm)
 
 // The driver's only interface is globals an operator types into the Safari
 // console before pasting it, so one that isn't in the runbook is one nobody can
-// find. The runbook is the .ruler/ source; ruler:check gates the two generated
-// copies.
+// find.
 const perfGlobals = (source) =>
   [...new Set([...source.matchAll(/window\.(__perf[A-Za-z]+)/g)].map((m) => m[1]))].sort();
 
@@ -21,7 +20,7 @@ describe('iPad console driver operator globals', () => {
   const driver = read('scripts/perf/ipad-console-driver.js');
   // __perfRows is an output the driver writes, not an input to document.
   const inputs = perfGlobals(driver).filter((g) => g !== '__perfRows');
-  const runbook = read('.ruler/skills/profiling/ipad-device-profiling.md');
+  const runbook = read('docs/PROFILING-IPAD.md');
 
   // Guards the extraction itself: if the regex stops matching, `inputs` empties
   // and the per-global cases below silently vanish instead of failing.

@@ -28,19 +28,22 @@ function xcodeBundleIdentifier(source, configuration) {
   }
 }
 
-const skillChecks = ['.ruler/skills', '.claude/skills', '.agents/skills'].flatMap((root) => [
+// These five documents name the native app id or app name. Each is authored once
+// under docs/ (ADR-0107); the list used to fan out over the three skill trees
+// back when the same prose was copied into each of them.
+const docChecks = [
   {
-    path: `${root}/profiling/SKILL.md`,
+    path: 'docs/PROFILING.md',
     values: [
       ['documented Android launch target', /`am start -n ([A-Za-z0-9._-]+)\/\.MainActivity`/],
     ],
   },
   {
-    path: `${root}/testing/SKILL.md`,
+    path: 'docs/TESTING.md',
     values: [['documented Maestro appId', /^appId:\s*([^\s#]+)\s*$/m]],
   },
   {
-    path: `${root}/mobile/android.md`,
+    path: 'docs/MOBILE/android.md',
     values: [
       ['installed-package troubleshooting target', /a copy of `([^`]+)`\s*$/m],
       [
@@ -51,19 +54,19 @@ const skillChecks = ['.ruler/skills', '.claude/skills', '.agents/skills'].flatMa
     ],
   },
   {
-    path: `${root}/mobile/ios.md`,
+    path: 'docs/MOBILE/ios.md',
     values: [
       ['release-checklist bundle ID', /^\* \[x\] Bundle ID `([^`]+)`, display name/m],
       ['App Store Connect bundle ID', /bundle ID `([^`]+)`, SKU `splotch`/],
     ],
   },
   {
-    path: `${root}/mobile/native.md`,
+    path: 'docs/MOBILE/native.md',
     values: [
       ['documented fastlane bundle ID', /iOS bundle ID `([^`]+)`, the Android package name/],
     ],
   },
-]);
+];
 
 const checks = [
   {
@@ -109,7 +112,7 @@ const checks = [
     path: '.maestro/smoke.yaml',
     values: [['appId', /^appId:\s*([^\s#]+)\s*$/m]],
   },
-  ...skillChecks,
+  ...docChecks,
 ];
 
 // The installed-app display name is declared independently in the same three-way

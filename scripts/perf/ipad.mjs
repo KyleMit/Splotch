@@ -9,7 +9,7 @@
 //   npm run perf:ipad --ignore-scripts        (skip the rebuild)
 //
 // This is the automated form of Approach A in the profiling skill's
-// ipad-device-profiling.md, which stays the fallback and still owns the
+// docs/PROFILING-IPAD.md, which stays the fallback and still owns the
 // Timeline run — the protocol's Timeline domain is not the shape
 // `npm run perf:ios:analyze` parses, so recording stays manual. For what the
 // gates structurally cannot see — compositor cost and frame pacing on the real

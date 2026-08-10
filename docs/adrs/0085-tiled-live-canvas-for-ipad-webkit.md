@@ -307,7 +307,7 @@ npm run perf:build
 
 Start Appium 3 with its XCUITest driver, connect the iPad over USB, and keep MobileSafari in the
 foreground. The complete setup, trust checks, provisioning alternatives, and failure recovery are in
-the profiling skill's `ipad-device-profiling.md`. A representative trusted-touch capture is:
+`docs/PROFILING-IPAD.md`. A representative trusted-touch capture is:
 
 ```sh
 npm run perf:ipad:xcuitest --ignore-scripts -- \
