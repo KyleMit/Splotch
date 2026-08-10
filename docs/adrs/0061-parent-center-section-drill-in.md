@@ -254,6 +254,24 @@ one of the animation's, ~120 ms into an open. The pump now starts on the card's
 `Animation.finished`, so the fill and the fly-in never contend. Nothing may read the Pane before
 then in any case, which is what `aria-busy` states.
 
+The cost is not spread evenly across the eleven, and the shape is worth recording because it is
+where any further work goes. Frame cost per section at 4x, median of five, sampled a reading per
+frame from inside the page:
+
+| section                                       | 4x     |
+| --------------------------------------------- | ------ |
+| the tap itself: card, Sidebar, Appearance     | 106 ms |
+| Buttons (`ControlsSection`)                   | 62 ms  |
+| AI Art (`AiKeyManager`)                       | 42 ms  |
+| Install, Feedback, Updates                    | ~30 ms |
+| Sound, Saving, Coloring, Parent Center, About | ~20 ms |
+
+A section that fits inside its frame reads as ~17–25 ms because that *is* one frame — the pump
+mounts one per frame — so only Buttons clearly overruns, and it is the one task still over the
+long-task threshold. It is not a large component: `advancedControlsEnabled` defaults **on**, so it
+renders the Button Size slider plus two chip pickers carrying six icon-bearing chips, which is the
+densest body in the dialog. Install is mid-pack despite rendering both OS checklists.
+
 The Pane carries `aria-busy` until the last section is in. That is what `tests/helpers.ts`'s
 `openSettingsModal` and `gen-page-inventory.mjs` wait on before reading an offset or taking a shot;
 the fly-in is no substitute, since it is wall-clock and this is frames.
@@ -272,9 +290,9 @@ eleven rows, no section bodies.
 | phone hub, 4x     | 67 ms                 | 67 ms — untouched                         |
 
 The tap's own task is within ~22 ms of that floor; the residue is the Sidebar plus the first
-section. The one task still over the threshold at 4x is a *single* section body — Install, the
-longest in the app — that does not fit in one frame on its own, and splitting a section is a
-separate change.
+section. The one task still over the threshold at 4x is a *single* section body — Buttons, per the
+per-section table above — that does not fit in one frame on its own; thinning it is a separate
+change.
 
 The trade is wall clock. Click to all-eleven-attached goes 287 ms → 798 ms at 4x (53 ms → 549 ms at
 1x), of which ~460 ms is the fly-in the fill now waits out rather than works through; the fill
