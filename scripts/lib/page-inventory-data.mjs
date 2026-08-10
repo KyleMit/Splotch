@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
-export const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 1;
-export const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 2;
+const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 1;
+const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 2;
 export const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
@@ -122,7 +122,7 @@ export function readCaptureManifest(path) {
   return manifest;
 }
 
-export function validateCaptureManifest(manifest) {
+function validateCaptureManifest(manifest) {
   if (!manifest || typeof manifest !== 'object') {
     throw new Error('Page inventory capture manifest must be an object');
   }
@@ -171,13 +171,15 @@ export function validateCaptureManifest(manifest) {
   }
 }
 
+export class StaleCritiqueHashError extends Error {}
+
 function validateCritiqueEntry(entry, location, capture) {
   if (!entry || typeof entry !== 'object') throw new Error(`${location} must be an object`);
   requireString(entry.image, `${location}.image`);
   requireString(entry.sha256, `${location}.sha256`);
   if (!capture) throw new Error(`${location} references an unknown image: ${entry.image}`);
   if (entry.sha256 !== capture.sha256) {
-    throw new Error(`${location} has a stale image hash for ${entry.image}`);
+    throw new StaleCritiqueHashError(`${location} has a stale image hash for ${entry.image}`);
   }
   if (!PAGE_INVENTORY_SEVERITIES.includes(entry.severity)) {
     throw new Error(`${location} has invalid severity: ${entry.severity}`);
@@ -237,6 +239,18 @@ export function expectedCritiqueBatches(manifest) {
 
 export function finalizeDesignCritique(manifest, entries, { allowPartial = false } = {}) {
   const validated = validateCritiqueEntries(entries, manifest, { allowPartial });
+  const critiqueByDigest = new Map();
+  for (const capture of manifest.captures) {
+    const entry = validated.get(capture.image);
+    if (!entry) continue;
+    const previous = critiqueByDigest.get(capture.sha256);
+    if (previous && previous.severity !== entry.severity) {
+      throw new Error(
+        `Design critique assigns different severities to identical captures: ${previous.image} (${previous.severity}) and ${entry.image} (${entry.severity})`
+      );
+    }
+    critiqueByDigest.set(capture.sha256, entry);
+  }
   const orderedEntries = manifest.captures
     .filter((capture) => validated.has(capture.image))
     .map((capture) => ({

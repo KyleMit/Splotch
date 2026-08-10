@@ -33,7 +33,8 @@ Critique work is split into one checkpoint per surface and orientation under the
 `.scrapbook-scratch/page-inventory-critique/checkpoints/`. Each checkpoint contains all four device
 assessments for that batch and copies the manifest digest for every image. The
 `critique-page-inventory` skill defines the review loop so interrupted sessions resume from the
-strictly derived missing-batch queue.
+strictly derived missing- and stale-batch queues. An assessment may be reused when another capture
+has the same digest, and finalization rejects different severities for pixel-identical captures.
 
 `scripts/finalize-page-inventory-critique.mjs` is the only path for producing the committed
 `design-critique.json`. It rejects unknown, duplicate, missing, or stale entries and derives

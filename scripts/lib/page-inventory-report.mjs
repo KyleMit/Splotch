@@ -157,7 +157,7 @@ export function renderPageInventoryReport(items, critique = new Map()) {
               ? ` data-severity="${feedback?.severity ?? 'unreviewed'}"`
               : '';
             const orientation = `${view.orientation[0].toUpperCase()}${view.orientation.slice(1)}`;
-            return `<figure class="shot${severityClass}" data-orientation="${view.orientation}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback)}</figure>`;
+            return `<figure class="shot${severityClass}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback)}</figure>`;
           }).join('');
           return `<article class="surface" id="${esc(item.id)}"><header class="surface-head"><div><h3>${esc(item.title)}</h3><p>${esc(item.description)}</p></div><span class="surface-source">${esc(item.source)}</span></header><div class="shots">${shots}</div></article>`;
         })

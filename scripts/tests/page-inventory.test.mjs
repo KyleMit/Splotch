@@ -9,7 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { writePageInventoryFeedback } from '../attach-page-inventory-feedback.mjs';
 import { finalizePageInventoryCritique } from '../finalize-page-inventory-critique.mjs';
 import { generateOutputAtomically } from '../gen-page-inventory.mjs';
@@ -17,6 +17,7 @@ import {
   captureRecord,
   createCaptureManifest,
   critiqueBatchKey,
+  finalizeDesignCritique,
   readDesignCritique,
   sha256File,
 } from '../lib/page-inventory-data.mjs';
@@ -73,6 +74,21 @@ function critiqueEntries(manifest) {
   });
 }
 
+function writeCheckpoints(checkpoints, manifest, entries) {
+  mkdirSync(checkpoints);
+  for (const captures of Map.groupBy(manifest.captures, critiqueBatchKey).values()) {
+    const batchKey = critiqueBatchKey(captures[0]);
+    writeFileSync(
+      join(checkpoints, `${batchKey}.json`),
+      JSON.stringify({
+        schema_version: 1,
+        batch_key: batchKey,
+        entries: entries.filter((entry) => captures.some(({ image }) => image === entry.image)),
+      })
+    );
+  }
+}
+
 afterEach(() => {
   for (const root of fixtures.splice(0)) rmSync(root, { recursive: true, force: true });
 });
@@ -120,12 +136,12 @@ describe('page inventory output', () => {
     expect(readdirSync(root)).toEqual(['page-inventory']);
   });
 
-  it('writes the inventory without feedback when no critique is present', async () => {
+  it('writes the inventory without feedback when no critique is present', () => {
     const out = join(fixture(), 'page-inventory');
     const item = inventoryItem();
     writeCaptures(out, item);
 
-    await expect(writePageInventoryFeedback(out, undefined, [item])).resolves.toBe(0);
+    expect(writePageInventoryFeedback(out, undefined, [item])).toBe(0);
 
     const html = readFileSync(join(out, 'index.html'), 'utf8');
     expect(html).toContain('Drawing canvas');
@@ -134,7 +150,7 @@ describe('page inventory output', () => {
     expect(html).not.toContain('data-severity-filter');
   });
 
-  it('attaches complete hash-bound feedback without changing images', async () => {
+  it('attaches complete hash-bound feedback without changing images', () => {
     const root = fixture();
     const out = join(root, 'page-inventory');
     const item = inventoryItem();
@@ -145,7 +161,7 @@ describe('page inventory output', () => {
     const firstImage = join(out, entries[0].image);
     const originalImage = readFileSync(firstImage, 'utf8');
 
-    await expect(writePageInventoryFeedback(out, critique, [item])).resolves.toBe(8);
+    expect(writePageInventoryFeedback(out, critique, [item])).toBe(8);
 
     const html = readFileSync(join(out, 'index.html'), 'utf8');
     for (const severity of ['pass', 'low', 'medium', 'high']) {
@@ -202,18 +218,7 @@ describe('page inventory output', () => {
     const manifest = writeCaptures(out, inventoryItem());
     const entries = critiqueEntries(manifest);
     const checkpoints = join(root, 'checkpoints');
-    mkdirSync(checkpoints);
-    for (const captures of Map.groupBy(manifest.captures, critiqueBatchKey).values()) {
-      const batchKey = critiqueBatchKey(captures[0]);
-      writeFileSync(
-        join(checkpoints, `${batchKey}.json`),
-        JSON.stringify({
-          schema_version: 1,
-          batch_key: batchKey,
-          entries: entries.filter((entry) => captures.some(({ image }) => image === entry.image)),
-        })
-      );
-    }
+    writeCheckpoints(checkpoints, manifest, entries);
     const critique = join(root, 'final.json');
 
     await finalizePageInventoryCritique([
@@ -237,5 +242,55 @@ describe('page inventory output', () => {
       summary: { severity_counts: { pass: 2, low: 2, medium: 2, high: 2 } },
     });
     expect(document.entries).toHaveLength(8);
+  });
+
+  it('reports stale batches without treating them as missing or finalizable', async () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    const entries = critiqueEntries(manifest);
+    const checkpoints = join(root, 'checkpoints');
+    writeCheckpoints(checkpoints, manifest, entries);
+    const staleBatch = critiqueBatchKey(manifest.captures[0]);
+    const stalePath = join(checkpoints, `${staleBatch}.json`);
+    const staleDocument = JSON.parse(readFileSync(stalePath, 'utf8'));
+    staleDocument.entries[0].sha256 = '0'.repeat(64);
+    writeFileSync(stalePath, JSON.stringify(staleDocument));
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const args = ['--manifest', join(out, 'capture-manifest.json'), '--checkpoints', checkpoints];
+
+    await finalizePageInventoryCritique([...args, '--status']);
+
+    expect(JSON.parse(log.mock.calls.at(-1)[0])).toMatchObject({
+      completed_batches: 1,
+      expected_batches: 2,
+      missing_batches: [],
+      stale_batches: [staleBatch],
+    });
+    log.mockRestore();
+    await expect(
+      finalizePageInventoryCritique([...args, '--out', join(root, 'final.json')])
+    ).rejects.toThrow('stale image hash');
+  });
+
+  it('keeps partial critique output outside the committed scrapbook', async () => {
+    await expect(
+      finalizePageInventoryCritique([
+        '--allow-partial',
+        '--out',
+        'scrapbook/page-inventory/partial.json',
+      ])
+    ).rejects.toThrow('--allow-partial requires an explicit scratch --out path');
+  });
+
+  it('rejects different severities for pixel-identical captures', () => {
+    const out = join(fixture(), 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    manifest.captures[1].sha256 = manifest.captures[0].sha256;
+    const entries = critiqueEntries(manifest);
+
+    expect(() => finalizeDesignCritique(manifest, entries)).toThrow(
+      'different severities to identical captures'
+    );
   });
 });

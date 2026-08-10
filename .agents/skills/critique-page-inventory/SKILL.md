@@ -27,7 +27,10 @@ Each batch is one surface in one orientation and must contain the four canonical
 2. Open all four WebPs with `view_image`. Review them together for responsive behavior: hierarchy,
    space use, text fit, clipping or overlap, touch-target reachability, modal scrolling, visual
    consistency, and orientation-specific failures. Treat blank harness or content captures as a
-   capture failure, not a design finding; rerun capture after fixing the ready condition.
+   capture failure, not a design finding; rerun capture after fixing the ready condition. When a
+   capture's SHA-256 exactly matches an already-checkpointed capture, reuse that capture's
+   assessment instead of reviewing identical pixels again. Identical digests must carry the same
+   severity; finalization rejects a disagreement.
 3. Write `<batch_key>.json` in the checkpoint directory with this shape:
 
    ```json
@@ -50,7 +53,9 @@ Each batch is one surface in one orientation and must contain the four canonical
 4. Use only `pass`, `low`, `medium`, or `high`. A pass has `recommendation: null`; every non-pass
    has a specific, non-empty recommendation. Describe visible evidence rather than guessing at
    implementation.
-5. Rerun the status command. Fix an invalid checkpoint immediately; do not advance past it.
+5. Rerun the status command. A post-recapture hash mismatch appears under `stale_batches`; rereview
+   and replace that checkpoint. Fix any malformed checkpoint error immediately; do not advance past
+   it.
 
 Continue until `missing_batches` is empty. A changed image hash invalidates only the checkpoint that
 contains it; rereview that batch instead of discarding valid work.

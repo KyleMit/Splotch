@@ -33,16 +33,16 @@ function options(argv) {
   return { out, critique: existsSync(critique) ? critique : undefined };
 }
 
-export async function attachPageInventoryFeedback(argv = process.argv.slice(2)) {
+export function attachPageInventoryFeedback(argv = process.argv.slice(2)) {
   const { out, critique: critiquePath } = options(argv);
   const items = attachExpectedCapturePaths(allSurfaces());
-  const critiqueCount = await writePageInventoryFeedback(out, critiquePath, items);
+  const critiqueCount = writePageInventoryFeedback(out, critiquePath, items);
   console.log(
     `Attached ${critiqueCount} feedback entr${critiqueCount === 1 ? 'y' : 'ies'} to ${relative(ROOT, join(out, 'index.html'))}`
   );
 }
 
-export async function writePageInventoryFeedback(out, critiquePath, items) {
+export function writePageInventoryFeedback(out, critiquePath, items) {
   const manifestPath = join(out, 'capture-manifest.json');
   if (!existsSync(manifestPath)) {
     throw new Error('Page inventory has no capture-manifest.json; run npm run gen:page-inventory');
@@ -77,4 +77,6 @@ export async function writePageInventoryFeedback(out, critiquePath, items) {
   return critique.size;
 }
 
-if (isMain(import.meta.url)) runMain(attachPageInventoryFeedback);
+if (isMain(import.meta.url)) {
+  runMain(() => Promise.resolve().then(() => attachPageInventoryFeedback()));
+}

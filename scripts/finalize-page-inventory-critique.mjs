@@ -8,13 +8,13 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import {
-  critiqueBatchKey,
   expectedCritiqueBatches,
   finalizeDesignCritique,
   readCaptureManifest,
+  StaleCritiqueHashError,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
@@ -23,6 +23,7 @@ const CHECKPOINT_SCHEMA_VERSION = 1;
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
 const CHECKPOINTS_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique/checkpoints');
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory/design-critique.json');
+const SCRAPBOOK_ROOT = resolve(ROOT, 'scrapbook');
 
 function options(argv) {
   const values = parseArgs({
@@ -37,7 +38,10 @@ function options(argv) {
     strict: true,
   }).values;
   const out = resolve(ROOT, values.out);
-  if (values['allow-partial'] && out === OUT_DEFAULT) {
+  if (
+    values['allow-partial'] &&
+    (out === SCRAPBOOK_ROOT || out.startsWith(`${SCRAPBOOK_ROOT}${sep}`))
+  ) {
     throw new Error('--allow-partial requires an explicit scratch --out path');
   }
   return {
@@ -76,18 +80,25 @@ function validateCheckpoint(document, manifest, expectedBatches) {
   for (const capture of expected) {
     if (!entries.has(capture.image)) throw new Error(`batch is missing ${capture.image}`);
   }
-  for (const entry of entries.values()) {
-    if (
-      critiqueBatchKey(manifest.captures.find((capture) => capture.image === entry.image)) !==
-      document.batch_key
-    ) {
-      throw new Error(`${entry.image} belongs to a different batch`);
-    }
-  }
   return [...entries.values()];
 }
 
-function loadCheckpointEntries(checkpoints, manifest, allowPartial) {
+function checkpointWithCurrentHashes(document, manifest) {
+  const captures = new Map(manifest.captures.map((capture) => [capture.image, capture]));
+  return {
+    ...document,
+    entries: document.entries.map((entry) => {
+      const capture = captures.get(entry?.image);
+      return capture ? { ...entry, sha256: capture.sha256 } : entry;
+    }),
+  };
+}
+
+function loadCheckpointEntries(
+  checkpoints,
+  manifest,
+  { allowPartial = false, reportStatus = false } = {}
+) {
   if (!existsSync(checkpoints))
     throw new Error(`Checkpoint directory does not exist: ${checkpoints}`);
   const expectedBatches = expectedCritiqueBatches(manifest);
@@ -95,18 +106,36 @@ function loadCheckpointEntries(checkpoints, manifest, allowPartial) {
     .filter((file) => file.endsWith('.json'))
     .sort((a, b) => a.localeCompare(b));
   const errors = [];
+  const encounteredBatches = new Set();
   const seenBatches = new Set();
+  const staleBatches = new Set();
   const entries = [];
   for (const file of files) {
+    let document;
     try {
-      const document = readCheckpoint(join(checkpoints, file));
-      if (seenBatches.has(document.batch_key)) {
+      document = readCheckpoint(join(checkpoints, file));
+      if (encounteredBatches.has(document.batch_key)) {
         throw new Error(`duplicate batch_key ${document.batch_key}`);
       }
+      encounteredBatches.add(document.batch_key);
       const batchEntries = validateCheckpoint(document, manifest, expectedBatches);
       seenBatches.add(document.batch_key);
       entries.push(...batchEntries);
     } catch (error) {
+      if (reportStatus && document && error instanceof StaleCritiqueHashError) {
+        try {
+          validateCheckpoint(
+            checkpointWithCurrentHashes(document, manifest),
+            manifest,
+            expectedBatches
+          );
+          staleBatches.add(document.batch_key);
+          continue;
+        } catch (normalizedError) {
+          errors.push(`${file}: ${normalizedError.message}`);
+          continue;
+        }
+      }
       errors.push(`${file}: ${error.message}`);
     }
   }
@@ -124,6 +153,7 @@ function loadCheckpointEntries(checkpoints, manifest, allowPartial) {
   return {
     entries,
     completedBatchKeys: seenBatches,
+    staleBatchKeys: staleBatches,
     completedBatches: seenBatches.size,
     expectedBatches: expectedBatches.size,
   };
@@ -145,10 +175,13 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
   const { manifest: manifestPath, checkpoints, out, allowPartial, status } = options(argv);
   const manifest = readCaptureManifest(manifestPath);
   if (status) mkdirSync(checkpoints, { recursive: true });
-  const loaded = loadCheckpointEntries(checkpoints, manifest, status || allowPartial);
+  const loaded = loadCheckpointEntries(checkpoints, manifest, {
+    allowPartial: status || allowPartial,
+    reportStatus: status,
+  });
   if (status) {
     const missing = [...expectedCritiqueBatches(manifest).keys()].filter(
-      (key) => !loaded.completedBatchKeys.has(key)
+      (key) => !loaded.completedBatchKeys.has(key) && !loaded.staleBatchKeys.has(key)
     );
     console.log(
       JSON.stringify(
@@ -156,6 +189,7 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
           completed_batches: loaded.completedBatches,
           expected_batches: loaded.expectedBatches,
           missing_batches: missing,
+          stale_batches: [...loaded.staleBatchKeys],
         },
         null,
         2
