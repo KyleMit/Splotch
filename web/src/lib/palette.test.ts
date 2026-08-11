@@ -37,13 +37,29 @@ function hueDegrees(hex: string): number {
 
 describe('palette display order', () => {
   it('walks one way around the color wheel', () => {
-    const hues = PALETTE_COLORS.filter(({ label }) => !isNeutral(label)).map(({ hex }) =>
-      hueDegrees(hex)
-    );
-    // Descending all the way but for the single wrap past red, so every swatch
-    // sits between the two hues nearest it rather than on the end of the bar.
-    const climbs = hues.filter((hue, index) => index > 0 && hue > hues[index - 1]);
-    expect(climbs).toHaveLength(1);
+    const hued = PALETTE_COLORS.filter(({ label }) => !isNeutral(label));
+    // How far the wheel turns to reach the next swatch, always measured in the
+    // one direction the bar walks, so the wrap past red is an ordinary step and
+    // a swatch out of place is a huge one. Every step is a real move and the
+    // whole bar is under one turn: a swatch dropped on the end (or between the
+    // wrong two neighbours) has to be walked back to, which either laps the
+    // wheel or doubles back past the rest of the bar. That's what makes each
+    // swatch sit between the two hues nearest it rather than clumping.
+    const steps = hued.slice(1).map(({ hex }, index) => ({
+      between: `${hued[index].label} → ${hued[index + 1].label}`,
+      degrees: (hueDegrees(hued[index].hex) - hueDegrees(hex) + 360) % 360,
+    }));
+    for (const { between, degrees } of steps) {
+      expect(degrees, `${between} moves around the wheel`).toBeGreaterThan(0);
+    }
+    // The arc the bar never walks — the last swatch back around to the first —
+    // is the seam a ring is cut at to lay it out in a line. Keeping it wider
+    // than a typical step is what makes the two ends read as ends: a swatch
+    // dropped on the end rather than between the two hues nearest it lands
+    // inside the seam, leaving the bar to start and finish on neighbouring
+    // hues. Lapping the wheel outright makes the seam negative.
+    const walked = steps.reduce((total, { degrees }) => total + degrees, 0);
+    expect(360 - walked).toBeGreaterThan(walked / steps.length);
   });
 
   it('closes with the neutrals', () => {

@@ -66,15 +66,26 @@ type PaletteTier = (typeof PALETTE_TIERS)[number];
 /**
  * Trim priority within each box — first listed is the first to be hidden. Among
  * the core hues red goes first, then orange, green, yellow; blue and purple (the
- * default selection) hang on longer, and black is kept the longest. The Record
- * makes the compiler demand a list for every tier, so a new swatch can't join
- * the display order without being given a place in the trim order.
+ * default selection) hang on longer, and black is kept the longest.
  */
-const TIER_TRIM_PRIORITY: Record<PaletteTier, readonly PaletteLabel[]> = {
+const TIER_TRIM_PRIORITY = {
   core: ['Red', 'Orange', 'Green', 'Yellow', 'Blue', 'Purple', 'Black'],
   bonus: ['Brown', 'Teal', 'Pink'],
   deluxe: ['Grey', 'Lime', 'Indigo', 'Magenta', 'Mint'],
-};
+} as const satisfies Record<PaletteTier, readonly PaletteLabel[]>;
+
+/** A swatch no box gave a place to; `never` once every one has one. */
+type UnrankedSwatch = Exclude<PaletteLabel, (typeof TIER_TRIM_PRIORITY)[PaletteTier][number]>;
+
+/**
+ * The compiler's half of "every swatch has exactly one place in the trim order":
+ * a swatch added to PALETTE_SOURCE and to no box above fails this assignment,
+ * naming itself. The `satisfies` alone only demands a list per *tier*, which any
+ * table already has — an unranked swatch would typecheck, get no trim rank, and
+ * simply never be trimmed. The other half, no swatch listed twice, is
+ * palette.test.ts's "gives every swatch exactly one place".
+ */
+const _everySwatchHasATrimRank: [UnrankedSwatch] extends [never] ? true : UnrankedSwatch = true;
 
 /**
  * Every swatch by trim priority: first listed is the first to be hidden, last is
