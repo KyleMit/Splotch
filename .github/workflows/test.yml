@@ -306,9 +306,8 @@ jobs:
           This tier gates a millisecond P95 on a shared macOS runner, so before treating it as
           product evidence read the raw commit P95 against the normalized gate value in the
           report — ADR-0093 records why those differ and PR 729 records what happens when the
-          difference is ignored. The structural half of the gate runs pre-merge as
-          "Commit path guard", so a failure here is a timing regression that guard cannot see,
-          or it is host noise.
+          difference is ignored. The legacy renderer's structural blob-encoding half retired with
+          that implementation, so a failure here is a timing regression or host noise.
           EOF
           )"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"

@@ -14,13 +14,15 @@ on GitHub's shared `macos-latest` runner. Its sibling `multi-finger` costs 7–9
 
 That asymmetry refutes the pre-scoped fix. Splitting the two fast-set scenarios into parallel
 one-scenario jobs was estimated at a ~1m40s floor; measured, the crayon job would land at ~2m20s and
-the whole change would buy **5–10 seconds** while doubling macOS runner consumption and requiring a
-per-scenario fast mode plus a relocated encode-coverage invariant.
+the whole change would buy **5–10 seconds** while doubling macOS runner consumption and, under the
+renderer then in production, requiring a per-scenario fast mode plus relocation of its
+encode-coverage invariant.
 
 The draw phase is not harness overhead — it is the product's crayon deposition path rendering six
 pattern-filled surfaces per op. Nothing in the workflow, the caching, or the harness can move it.
 The only lever left changes the scenario's op count, which is what ADR-0093's gate calibration rests
-on.
+on. The encode-coverage invariant required by the original split was retired with the legacy
+snapshot/blob renderer in ADR-0100's 2026-08-11 amendment.
 
 ## Method
 
@@ -151,12 +153,17 @@ independent of wall clock.
 
 ## Outcome
 
-Neither lever above was taken.
-[ADR-0100](../adrs/0100-split-the-commit-gate-by-what-each-half-can-decide.md) resolved this by
-splitting the gate on what each half can decide rather than by making the run cheaper: the #635
-defect class is a *count* — an `engine.encode` measure inside the commit window — which any engine
-can read, so it moved pre-merge onto Chromium on Ubuntu, while the millisecond P95 that genuinely
-needs WebKit and a quiet host moved to pushes on `main`.
+Neither lever above was taken. The original
+[ADR-0100](../adrs/0100-split-the-commit-gate-by-what-each-half-can-decide.md) decision resolved
+this by splitting the gate on what each half can decide rather than by making the run cheaper: the
+#635 defect class was a *count* — an `engine.encode` measure inside the commit window — which any
+engine could read, so it moved pre-merge onto Chromium on Ubuntu, while the millisecond P95 that
+genuinely needs WebKit and a quiet host moved to pushes on `main`.
+
+ADR-0100's 2026-08-11 amendment records the later tiled-renderer consolidation. Tiled history has no
+cold blob-encoding path or `engine.encode` measure, so the structural Chromium half and its
+encode-coverage invariant retired with the legacy renderer instead of remaining as a vacuous gate.
+The post-merge WebKit timing half remains active.
 
 That removes the macOS job from the pull-request path entirely, so a PR run drops to the e2e shard
 floor. The numbers above stop being a wall-clock problem and become the standing cost of the

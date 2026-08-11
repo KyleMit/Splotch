@@ -13,8 +13,10 @@
 //
 // We recover an engine op's cost two ways:
 //   1. Paired-mark duration for the legacy `engine.encode` and
-//      `engine.reinflate` sub-slices. Tiled history no longer emits them, but
-//      retaining support keeps old exported recordings readable.
+//      `engine.reinflate` sub-slices, plus `engine.undo` when those marks
+//      identify an archived snapshot/blob recording whose deep undo crossed
+//      tasks while awaiting decode. Tiled history no longer emits those marks,
+//      but retaining support keeps old exported recordings readable.
 //   2. Enclosing record (every current op):
 //      each synthetic pointer event is its own `event-dispatched` script
 //      record, so the smallest record spanning the mark's timestamp bounds a
@@ -91,7 +93,15 @@ const fmt = (s) =>
 
 // Ops reporting paired-mark duration instead of the enclosing record's — see
 // the header comment for why each needs it.
-const PAIRED_DURATION_OPS = new Set(['engine.encode', 'engine.reinflate']);
+const hasLegacyHistoryMarks = markers.some(
+  (marker) =>
+    marker.details === 'engine.encode:start' || marker.details === 'engine.reinflate:start'
+);
+const PAIRED_DURATION_OPS = new Set([
+  'engine.encode',
+  'engine.reinflate',
+  ...(hasLegacyHistoryMarks ? ['engine.undo'] : []),
+]);
 
 // Pairing each start with the first end before the next start is exact because
 // every `:end`-emitting op is non-reentrant. A start whose end is missing is

@@ -117,6 +117,7 @@ describe('WebKit performance CI', () => {
     expect(packageJson.scripts['perf:undo:encode-path']).toBeUndefined();
     expect(workflow).not.toContain('commit-path-guard:');
     expect(workflow).not.toContain('perf:undo:encode-path');
+    expect(workflow).not.toContain('Commit path guard');
   });
 
   it('normalizes shared-runner crayon slowdown while preserving the 25 ms work-shape gate', () => {
