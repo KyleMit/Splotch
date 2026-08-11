@@ -7,6 +7,7 @@
     install,
     promptInstall,
     installDeviceOs,
+    isIosOutsideSafari,
     type InstallDeviceOs,
   } from '$lib/state/install.svelte';
 
@@ -50,6 +51,9 @@
   // install module's shared detection (never re-sniffed here). The other
   // families' steps are not something this parent can act on.
   let deviceOs = $state<InstallDeviceOs>('desktop');
+  // Whether the iOS steps need their "open it in Safari" lead-in, from the same
+  // shared detection. Re-read on open beside deviceOs.
+  let outsideSafari = $state(false);
   // True when Guided Access (iOS) / App Pinning (Android) is currently engaged. Native
   // only — the web can't observe either, so it stays false there. Re-checked on open.
   let deviceLocked = $state(false);
@@ -75,6 +79,7 @@
   $effect(() => {
     if (!open) return;
     deviceOs = installDeviceOs();
+    outsideSafari = isIosOutsideSafari();
     platform = getPlatform();
 
     // Lock state is a native-only async query, so reset and re-detect each open. The
@@ -106,6 +111,14 @@
 {#snippet installSteps(os: InstallDeviceOs)}
   {#if os === 'ios'}
     <ol class="steps">
+      <!-- The steps below are Safari's — its Share sheet, its button placement.
+           A third-party iOS browser may have Add to Home Screen of its own
+           (iOS 16.4+) but reaches it differently, and an in-app webview has none
+           at all, so send those parents to Safari rather than describing a
+           screen they aren't looking at. -->
+      {#if outsideSafari}
+        <li>Open this page in <strong>Safari</strong> — the steps below are Safari's</li>
+      {/if}
       <li>
         Tap the <Icon name="share-ios" class="step-icon" aria-label="Share" />
         <strong>Share</strong> button at the bottom

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ANDROID_UA, gotoApp, IPAD_UA, openSettingsModal } from './helpers';
+import { ANDROID_UA, gotoApp, IPAD_UA, IPHONE_CHROME_UA, openSettingsModal } from './helpers';
 
 // The Install section shows the one checklist this device can act on — an iPad
 // has no App Pinning to enable, and a laptop has neither. Which one it is comes
@@ -31,6 +31,20 @@ test.describe('an iOS device', () => {
     ]);
     await expect(setup).toContainText('Add to Home Screen');
     await expect(setup).not.toContainText('Recent Apps');
+    // Safari is the screen the steps describe, so they start at the Share button.
+    await expect(setup).not.toContainText('Open this page in Safari');
+  });
+});
+
+test.describe('an iOS device outside Safari', () => {
+  test.use({ userAgent: IPHONE_CHROME_UA });
+
+  test('is sent to Safari before the steps that describe it', async ({ page }) => {
+    const setup = await openSetupSection(page);
+
+    await expect(setup.locator('.os-heading')).toHaveText('iOS');
+    await expect(setup.locator('.steps li').first()).toContainText('Open this page in Safari');
+    await expect(setup).toContainText('Add to Home Screen');
   });
 });
 

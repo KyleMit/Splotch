@@ -15,6 +15,10 @@ export const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36';
 export const IPAD_UA =
   'Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+// Chrome on iOS — an iOS device whose Share sheet is not the one the manual
+// install steps describe (the CriOS token is what marks it).
+export const IPHONE_CHROME_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124 Mobile/15E148 Safari/604.1';
 
 export const TEST_PALETTE = {
   purple: '#AB71E1',

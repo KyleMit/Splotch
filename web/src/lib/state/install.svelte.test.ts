@@ -106,6 +106,36 @@ describe('initInstallPrompt — mode detection', () => {
   });
 });
 
+// The Settings checklist's Safari steps are written for Safari's Share sheet, so
+// this is the signal that decides whether they need an "open it in Safari" lead-in.
+describe('isIosOutsideSafari', () => {
+  it('is false in iOS Safari, which the steps already describe', async () => {
+    setUA(IOS_SAFARI_UA);
+    const { isIosOutsideSafari } = await freshModule();
+    expect(isIosOutsideSafari()).toBe(false);
+  });
+
+  it('is true in a third-party iOS browser, which reaches install its own way', async () => {
+    setUA(IOS_CHROME_UA);
+    const { isIosOutsideSafari } = await freshModule();
+    expect(isIosOutsideSafari()).toBe(true);
+  });
+
+  it('is true in an in-app webview, which cannot install at all', async () => {
+    setUA(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS]'
+    );
+    const { isIosOutsideSafari } = await freshModule();
+    expect(isIosOutsideSafari()).toBe(true);
+  });
+
+  it('is false off iOS entirely, where Safari is not the path', async () => {
+    setUA(ANDROID_UA);
+    const { isIosOutsideSafari } = await freshModule();
+    expect(isIosOutsideSafari()).toBe(false);
+  });
+});
+
 describe('initInstallPrompt — already installed', () => {
   it('suppresses everything when running standalone', async () => {
     setUA(ANDROID_UA);
