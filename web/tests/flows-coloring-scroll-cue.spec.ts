@@ -47,7 +47,7 @@ test.describe('coloring picker scroll cues on a phone', () => {
 
     const dialog = dialogOf(page);
     await settleFlyIn(dialog);
-    const fade = dialog.locator('.coloring-scroll-fade');
+    const fade = dialog.locator('.scroll-cue');
 
     await expect
       .poll(() => dialog.evaluate((node) => node.scrollHeight > node.clientHeight))
@@ -76,7 +76,7 @@ test.describe('coloring picker scroll cues on a phone', () => {
 
     const dialog = dialogOf(page);
     await settleFlyIn(dialog);
-    const fade = dialog.locator('.coloring-scroll-fade');
+    const fade = dialog.locator('.scroll-cue');
     await expect.poll(() => fadeOpacity(fade)).toBe(1);
 
     await dialog.getByRole('button', { name: 'Farm coloring book' }).click();
@@ -111,7 +111,7 @@ test.describe('coloring picker with room for the whole catalog', () => {
     await expect
       .poll(() => dialog.evaluate((node) => node.scrollHeight <= node.clientHeight))
       .toBe(true);
-    await expect.poll(() => fadeOpacity(dialog.locator('.coloring-scroll-fade'))).toBe(0);
+    await expect.poll(() => fadeOpacity(dialog.locator('.scroll-cue'))).toBe(0);
     expect(await tileStraddlingTheFold(dialog)).toBeUndefined();
   });
 });

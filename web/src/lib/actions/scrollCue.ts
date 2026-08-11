@@ -1,14 +1,16 @@
-// Scroll affordances for a tile grid that outgrows the dialog it scrolls in
-// (issue #907: the coloring picker's opening viewport read as the whole
-// catalog). Two independent cues, each attached as an action:
+// Scroll affordances for content that outgrows the box it scrolls in (issue
+// #907: the coloring picker's opening viewport read as the whole catalog). Two
+// independent cues, each attached as an action:
 //
 //   cutTrailingRow budgets the dialog's height so the fold lands *inside* a row
 //                  instead of between two, making the clipped tile itself the
 //                  signal that the list continues — the one cue a pre-reader can
-//                  act on.
-//   retireAtScrollEnd reports whether the end of the scrollable content is
-//                  reached, so a bottom fade can stand down at the boundary
-//                  instead of reading as permanent chrome.
+//                  act on. Tile grids only, and only where the height is ours to
+//                  set.
+//   observeContentEnd reports whether the end of the scrollable content is on
+//                  screen, so a bottom fade can stand down both at the boundary
+//                  and on content short enough never to have crossed it. Any
+//                  scroller — it is what ScrollCue is built on.
 //
 // Both re-evaluate off a ResizeObserver rather than a reactive open flag: a
 // closed <dialog> is display:none, so every open resizes the elements involved
@@ -20,10 +22,6 @@
  *  enough artwork to recognise as a tile and far too little to mistake for the
  *  last row. */
 const TRAILING_ROW_PEEK_FRACTION = 0.5;
-
-/** Sub-pixel scroll offsets and fractional layout keep the arithmetic from
- *  landing exactly on the end. */
-const SCROLL_END_EPSILON_PX = 1;
 
 /** The most of the scrollport the cut may cost. Rows are a large share of a
  *  phone's picker and a small one of a roomy window, so this spends a few
@@ -123,47 +121,56 @@ export function cutTrailingRow(node: HTMLElement) {
   };
 }
 
+/** An element with no layout box at all — the reading a closed `<dialog>`'s
+ *  contents give, since it is `display: none`. */
+function unrendered(box: DOMRectReadOnly): boolean {
+  return box.width === 0 && box.height === 0;
+}
+
 /**
- * Reports whether the node's `<dialog>` scrollport is showing the end of its
- * content — true both at the bottom of a long list and throughout a list short
- * enough not to overflow at all.
+ * Attaches to a zero-height sentinel sitting at the end of a scroller's
+ * content, and reports whether that end is on screen. True covers both states
+ * that need no continuation cue — content short enough never to overflow, and a
+ * scroller already at its end — leaving false for the one state that does.
  *
- * An IntersectionObserver on a trailing sentinel was the first shape here and
- * doesn't work: a closed dialog and a below-the-fold sentinel both read as "not
- * intersecting", so opening the picker is not an intersection change and the
- * observer stays silent exactly when the answer is first needed. Resizing from
- * zero *is* observable, so the ResizeObserver drives the reading and the scroll
- * listener only tracks movement within a scrollport already sized.
+ * The whole three-state answer is that one intersection, so the browser
+ * recomputes it as the scroller moves, the content grows, or the device
+ * rotates: no scroll listener, and nothing measuring the DOM per frame. The
+ * root is left implicit on purpose — an intersection is clipped by every
+ * scrollable ancestor on the way up to it, so one observer serves a dialog's
+ * scrollport, a settings pane, and the document itself without being told which
+ * it is standing in.
  */
-export function retireAtScrollEnd(node: HTMLElement, onChange: (atEnd: boolean) => void) {
-  const scrollport = node.closest('dialog');
-  if (!scrollport) return;
-
+export function observeContentEnd(node: HTMLElement, onChange: (atEnd: boolean) => void) {
   let atEnd = true;
-  function read() {
-    if (!scrollport) return;
-    // A closed dialog measures zero and would read as "at the end"; adopting
-    // that would retire the cue before the next open has been looked at.
-    if (!scrollport.open) return;
-    const next =
-      scrollport.scrollTop + scrollport.clientHeight >=
-      scrollport.scrollHeight - SCROLL_END_EPSILON_PX;
-    if (next === atEnd) return;
-    atEnd = next;
-    onChange(next);
-  }
 
-  // Watching the scrollport rather than the content: it resizes on open, on
-  // rotation, and whenever `cutTrailingRow` applies its budget, so the reading
-  // is taken after the height it depends on has settled.
-  const observer = new ResizeObserver(read);
-  observer.observe(scrollport);
-  scrollport.addEventListener('scroll', read, { passive: true });
+  const intersection = new IntersectionObserver(([entry]) => {
+    // A surface nobody is looking at reads as "more below": it has no box, so
+    // nothing intersects. Adopting that would arm the cue while it is hidden
+    // and then visibly retire it a frame into the next open, on content that
+    // never needed one.
+    if (unrendered(entry.boundingClientRect)) return;
+    if (entry.isIntersecting === atEnd) return;
+    atEnd = entry.isIntersecting;
+    onChange(atEnd);
+  });
+  intersection.observe(node);
+
+  // Showing a hidden surface resizes it from zero without changing an
+  // intersection that was already false, so the observer above stays silent on
+  // exactly the open that first needs a reading. Re-observing forces a fresh
+  // one; the sentinel spans its container, so its width tracks every show,
+  // hide, and rotation without a second element to watch.
+  const resize = new ResizeObserver(() => {
+    intersection.unobserve(node);
+    intersection.observe(node);
+  });
+  resize.observe(node);
 
   return {
     destroy() {
-      observer.disconnect();
-      scrollport.removeEventListener('scroll', read);
+      intersection.disconnect();
+      resize.disconnect();
     },
   };
 }
