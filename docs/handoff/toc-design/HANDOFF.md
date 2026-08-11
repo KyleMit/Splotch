@@ -198,12 +198,12 @@ settings shells ("One section list, two responsive shells").
 
 ---
 
-## Open question — palette
+## Settled — palette
 
-`/changelog` pins a light-only `--page-*` palette (matching `/privacy`), while Settings and
-`/design` are themed. The component should read `var(--page-link, var(--brand-text))`-style
-fallbacks so one implementation serves both, **or** the changelog adopts the theme. Worth settling
-before this ships — it changes the component's public surface.
+The open question here was whether `SidebarToc` should carry `var(--page-link, var(--brand-text))`
+fallbacks because `/changelog` pinned a light-only `--page-*` palette. It no longer does: every page
+follows night mode (ADR-0071's 2026-08-10 amendment). So no fallbacks — one themed component reading
+`--page-*`, three hosts.
 
 ---
 

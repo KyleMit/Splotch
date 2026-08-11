@@ -97,14 +97,15 @@ band.
 
 **Rail item, current** (the release whose article is in view):
 
-| Property    | Value                                                                                                                                                                                                                                               |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Left border | `2px solid var(--page-link)` (#7c4dcf)                                                                                                                                                                                                              |
-| Background  | `#f6f2fd` — a tint of the pinned link color. Add it to the `.changelog-palette` block as a new `--page-link-wash` rather than writing the hex inline. Do **not** use `--brand-wash`: that token is themed and this page is deliberately light-only. |
+| Property    | Value                                                                                                                                                                                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Left border | `2px solid var(--page-link)`                                                                                                                                                                                                                                                    |
+| Background  | `var(--brand-wash)`. This packet originally specced a pinned `#f6f2fd` and warned off `--brand-wash` because the page was light-only; `/changelog` follows night mode now (ADR-0071's 2026-08-10 amendment), so the themed wash is the right answer and no new token is needed. |
 
 **Rail item, hover** (`@media (hover: hover)` only, matching the existing guard):
-`color: var(--page-link-hover)` + `text-decoration: underline` on the version line only — the date
-stays unmarked.
+`text-decoration: underline` on the version line only — the date stays unmarked. There is no
+`--page-link-hover` any more: the themed link ramp has no deeper step, so the underline is the whole
+hover signal.
 
 **Focus:** keep the app's default focus ring; do not suppress it.
 
@@ -205,20 +206,19 @@ imported at build time and `ReleaseHistory.svelte` is generated from `releases/*
 
 ## Design tokens
 
-All existing. The pinned palette lives in the `.changelog-palette` block of
-`web/src/routes/changelog/+page.svelte`:
+All existing, and all themed — `/changelog` no longer pins a palette, so read them from
+`PageShell.svelte` and never restate a value:
 
-| Token               | Value     | Used for                              |
-| ------------------- | --------- | ------------------------------------- |
-| `--page-ground`     | `#f0efed` | ground behind the sheet               |
-| `--page-sheet`      | `#ffffff` | sheet                                 |
-| `--page-ink`        | `#26262e` | h1, h2, h3                            |
-| `--page-body`       | `#55555f` | lede, list copy                       |
-| `--page-muted`      | `#6c6c76` | dates, rule labels                    |
-| `--page-rule`       | `#eeeae4` | hairlines, item borders               |
-| `--page-link`       | `#7c4dcf` | version links, active rail border     |
-| `--page-link-hover` | `#6b3fbf` | link hover                            |
-| `--page-link-wash`  | `#f6f2fd` | **new** — active rail item background |
+| Token           | Used for                          |
+| --------------- | --------------------------------- |
+| `--page-ground` | ground behind the sheet           |
+| `--page-sheet`  | sheet                             |
+| `--page-ink`    | h1, h2, h3                        |
+| `--page-body`   | lede, list copy                   |
+| `--page-muted`  | dates, rule labels                |
+| `--page-rule`   | hairlines, item borders           |
+| `--page-link`   | version links, active rail border |
+| `--brand-wash`  | active rail item background       |
 
 From `web/src/tokens.css`: `--space-1..8` (4/8/12/16/20/24/32/40), `--radius-sm` 8px,
 `--border-width` 1px, `--font-size-xs..xl` (12/14/16/18/22), `--font-size-display`
@@ -260,7 +260,7 @@ headings (✨ 🚀 🛠) come from the generated `ReleaseHistory.svelte` and are
   working.
 * `web/src/lib/releases.json` — the six entries the contents is built from.
 * `web/src/tokens.css` — generated from `web/src/lib/design/tokens.ts`. If a new token is genuinely
-  needed, edit the `.ts` source and regenerate; the `--page-link-wash` above belongs in the route's
-  palette block instead.
+  needed, edit the `.ts` source and regenerate. A route may not pin a color of its own: no page opts
+  out of night mode.
 
 Repo: `KyleMit/Splotch`, branch `main`.
