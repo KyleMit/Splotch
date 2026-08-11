@@ -818,6 +818,28 @@ function options(argv) {
   };
 }
 
+async function openThemedPage(browser, port, view, theme) {
+  const context = await browser.newContext({
+    baseURL: `http://localhost:${port}`,
+    viewport: { width: view.width, height: view.height },
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
+    colorScheme: theme.id,
+    reducedMotion: 'reduce',
+  });
+  await context.addInitScript(
+    ({ defaults, themeId }) => {
+      for (const [key, value] of Object.entries(defaults)) {
+        if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+      }
+      localStorage.setItem('splotch-theme', themeId);
+    },
+    { defaults: STORAGE, themeId: theme.id }
+  );
+  return { theme, context, page: await context.newPage() };
+}
+
 export async function generateOutputAtomically(out, generate) {
   const parent = dirname(out);
   mkdirSync(parent, { recursive: true });
@@ -880,35 +902,29 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
       const captures = [];
-      for (const theme of themes) {
-        for (const view of views) {
-          const context = await browser.newContext({
-            baseURL: `http://localhost:${port}`,
-            viewport: { width: view.width, height: view.height },
-            deviceScaleFactor: 1,
-            hasTouch: true,
-            userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
-            colorScheme: theme.id,
-            reducedMotion: 'reduce',
-          });
-          await context.addInitScript(
-            ({ defaults, themeId }) => {
-              for (const [key, value] of Object.entries(defaults)) {
-                if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
-              }
-              localStorage.setItem('splotch-theme', themeId);
-            },
-            { defaults: STORAGE, themeId: theme.id }
-          );
-          const page = await context.newPage();
-          for (const item of items) {
-            console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
-            captures.push(await capture(page, item, view, theme, staging));
+      // A viewport holds one page per theme at once, so a surface is shot in
+      // every theme before the run moves on and the theme comparison below can
+      // reject a page that stopped following night mode within seconds of
+      // reaching it — rather than after the last of hundreds of captures.
+      for (const view of views) {
+        const themedPages = [];
+        try {
+          for (const theme of themes) {
+            themedPages.push(await openThemedPage(browser, port, view, theme));
           }
-          await context.close();
+          for (const item of items) {
+            const themeCaptures = [];
+            for (const { theme, page } of themedPages) {
+              console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
+              themeCaptures.push(await capture(page, item, view, theme, staging));
+            }
+            validateThemeCaptureDifferences(themeCaptures, [item]);
+            captures.push(...themeCaptures);
+          }
+        } finally {
+          for (const { context } of themedPages) await context.close();
         }
       }
-      validateThemeCaptureDifferences(captures, items);
       if (spotCheck) {
         writeFileSync(
           join(staging, SPOT_CHECK_RECORDS_NAME),
