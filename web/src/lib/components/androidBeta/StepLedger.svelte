@@ -30,25 +30,24 @@
   // installing, and the store listing stays a 404 until it is done — and step 4
   // is the optional ask afterwards.
   //
-  // Each step carries its own crayon hue on the rail of its callout, tying the
-  // list back to the masthead strip. Read out of palette.ts rather than written
-  // as hexes here, which palette-source.test.mjs requires and which makes a
-  // renamed swatch fail loudly.
+  // Each step carries its own crayon hue, tying the list back to the masthead
+  // strip: at full strength on its callout's rail, and mixed down into the wash
+  // and ink of its numeral and callout label. Read out of palette.ts rather than
+  // written as hexes here, which palette-source.test.mjs requires and which
+  // makes a renamed swatch fail loudly.
   //
-  // Nothing that carries text uses these: three of the four raw hues are
-  // 2.0-2.7:1 on the sheet. The numeral and the callout label take the darkened
-  // --step-*-ink of the same step instead, over its --step-*-wash.
-  const CARD_ACCENT_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
-  const CARD_ACCENT = CARD_ACCENT_LABELS.map(paletteHex);
+  // Nothing that carries text uses the raw hue: three of the four are 2.0-2.7:1
+  // on the light sheet. The style block derives the text colors from it.
+  const STEP_HUE_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
+  const STEP_HUES = STEP_HUE_LABELS.map(paletteHex);
 
   // Ink, body, muted, link and measure come from the --page-* palette PageShell
-  // declares and /android-beta pins to light-only values; they inherit through
-  // the component boundary. The step washes below are this ledger's own, so
-  // they live in its style block rather than on the route.
+  // declares from the themed app tokens; they inherit through the component
+  // boundary, so this ledger follows night mode with the page it renders on.
 </script>
 
 <ol class="steps">
-  <li class="step-1">
+  <li class="step-1" style="--step-hue:{STEP_HUES[0]}">
     <div class="head">
       <span class="num">1</span>
       <h3>Join the testers group</h3>
@@ -63,7 +62,7 @@
       </a>
       <p class="fine">Google may ask you to sign in first. There's nobody to wait on after that.</p>
     </div>
-    <div class="card" style="--card-accent:{CARD_ACCENT[0]}">
+    <div class="card">
       <p class="card-label">Double check your account</p>
       <p class="card-body">
         Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
@@ -72,7 +71,7 @@
     </div>
   </li>
 
-  <li class="step-2">
+  <li class="step-2" style="--step-hue:{STEP_HUES[1]}">
     <div class="head">
       <span class="num">2</span>
       <h3>Opt in on Google Play</h3>
@@ -88,7 +87,7 @@
       </a>
       <p class="fine">Sign in with the same account you used in step 1.</p>
     </div>
-    <div class="card" style="--card-accent:{CARD_ACCENT[1]}">
+    <div class="card">
       <p class="card-label">If a link doesn't work yet</p>
       <p class="card-body">
         None of this is instant, and Google Play doesn't always recognize a new group membership
@@ -98,7 +97,7 @@
     </div>
   </li>
 
-  <li class="step-3">
+  <li class="step-3" style="--step-hue:{STEP_HUES[2]}">
     <div class="head">
       <span class="num">3</span>
       <h3>Install Splotch</h3>
@@ -117,7 +116,7 @@
         (API {MIN_ANDROID_API_LEVEL}) or newer.
       </p>
     </div>
-    <div class="card" style="--card-accent:{CARD_ACCENT[2]}">
+    <div class="card">
       <p class="card-label">Please stay for 14 days</p>
       <p class="card-body">
         Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
@@ -129,7 +128,7 @@
     </div>
   </li>
 
-  <li class="step-4">
+  <li class="step-4" style="--step-hue:{STEP_HUES[3]}">
     <div class="head">
       <span class="num">4</span>
       <h3>Tell us what you think</h3>
@@ -151,7 +150,7 @@
       </p>
     </div>
     {#if support}
-      <div class="card" style="--card-accent:{CARD_ACCENT[3]}">
+      <div class="card">
         <p class="card-label">Or just email me</p>
         <p class="card-body">
           Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all… something
@@ -169,26 +168,18 @@
      rail's geometry is derived from these, which is why they are named — the
      segment under each step has to land exactly on the next step's numeral. */
   .steps {
-    /* Each step is a crayon hue in two strengths: a 5% wash behind its numeral
-       and under its callout, and a darkened ink for the numeral and the callout
-       label. The raw palette hues are ~2.6:1 and carry no text; these deeper
-       shades measure 5.3, 4.9, 4.7, 4.9:1 on their own wash. Neither is a
-       palette value, so palette-source.test.mjs does not own them — the full
-       hues on the callout rails are read out of lib/palette.ts instead.
-       Light-only, like the page they render on. */
-    --step-1-wash: #fdf3f2; /* Red */
-    --step-1-ink: #b03f3b;
-    --step-2-wash: #fdf7ef; /* Orange */
-    --step-2-ink: #a35a00;
-    --step-3-wash: #f3f9ef; /* Green */
-    --step-3-ink: #4f7a36;
-    --step-4-wash: #f0f6fc; /* Blue */
-    --step-4-ink: #2a6db8;
-    /* The connector between the step numerals. Decorative — the numerals and
-       their order carry the sequence, so this sits below the 3:1 floor by
-       design. */
-    --rail-color: #efeced;
-    --callout-ink: #4a4a54; /* ~ --text on a callout wash */
+    /* Each step's crayon hue (--step-hue, set per <li> from lib/palette.ts) in
+       two strengths, both mixed against a themed token so the pair follows the
+       theme from one declaration: a wash of it over the sheet behind the numeral
+       and under the callout, and an ink of it carried toward --page-ink — which
+       darkens the hue on the light sheet and lightens it on the dark one.
+
+       The wash strength reproduces the light sheet's hand-tuned tints; the ink
+       strength is the most hue that still clears WCAG AA on that wash for all
+       four crayons in both themes (the tightest is green at 4.8:1).
+       android-beta.spec.ts measures every numeral and callout label on both. */
+    --step-wash-strength: 9%;
+    --step-ink-strength: 45%;
 
     --step-gap: 52px;
     --num-size: 32px;
@@ -207,28 +198,11 @@
   }
 
   .steps > li {
+    --step-wash: color-mix(in srgb, var(--step-hue) var(--step-wash-strength), var(--page-sheet));
+    --step-ink: color-mix(in srgb, var(--step-hue) var(--step-ink-strength), var(--page-ink));
+
     position: relative;
     padding-left: var(--num-gutter);
-  }
-
-  .step-1 {
-    --step-wash: var(--step-1-wash);
-    --step-ink: var(--step-1-ink);
-  }
-
-  .step-2 {
-    --step-wash: var(--step-2-wash);
-    --step-ink: var(--step-2-ink);
-  }
-
-  .step-3 {
-    --step-wash: var(--step-3-wash);
-    --step-ink: var(--step-3-ink);
-  }
-
-  .step-4 {
-    --step-wash: var(--step-4-wash);
-    --step-ink: var(--step-4-ink);
   }
 
   /* One segment per step rather than one rail down the whole list: the bottom
@@ -241,7 +215,10 @@
     top: calc(var(--num-size) + var(--rail-inset));
     bottom: calc(var(--rail-inset) - var(--step-gap));
     width: var(--rail-width);
-    background: var(--rail-color);
+    /* Decorative — the numerals and their order carry the sequence, so the
+       sheet's own hairline is enough and it sits below the 3:1 floor by
+       design. */
+    background: var(--page-rule);
   }
 
   /* The head is exactly one numeral tall, so the numeral it holds on desktop can
@@ -349,7 +326,7 @@
     max-width: var(--page-measure);
     margin-top: 22px;
     padding: 14px 18px;
-    border-left: 3px solid var(--card-accent);
+    border-left: 3px solid var(--step-hue);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
     background: var(--step-wash);
   }
@@ -368,7 +345,7 @@
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
     line-height: 1.6;
-    color: var(--callout-ink);
+    color: var(--page-body);
   }
 
   .card-body strong {
@@ -382,14 +359,15 @@
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
+     keep it stuck until the next tap elsewhere. A link's underline thickens
+     rather than its color deepening — the themed link ramp has no deeper step. */
   @media (hover: hover) {
     .btn:hover {
       background: var(--page-accent-hover);
     }
 
     a:not(.btn):hover {
-      color: var(--page-link-hover);
+      text-decoration-thickness: 2px;
     }
   }
 

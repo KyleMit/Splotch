@@ -14,7 +14,7 @@
 </svelte:head>
 
 <div class="changelog">
-  <PageShell class="changelog-palette" title="Changelog" wordmark="Splotch">
+  <PageShell title="Changelog" wordmark="Splotch">
     {#snippet lede()}
       Every public Splotch release, newest first, with the notes that shipped alongside it.
     {/snippet}
@@ -38,23 +38,6 @@
 </div>
 
 <style>
-  /* Deliberately light-only, matching /privacy. The legal and release-history
-     pages use one stable reading palette in both app themes. */
-  .changelog :global(.changelog-palette) {
-    --page-ground: #f0efed;
-    --page-sheet: #ffffff;
-    --page-ink: #26262e;
-    --page-body: #55555f;
-    --page-muted: #6c6c76;
-    --page-rule: #eeeae4;
-    --page-link: #7c4dcf;
-    --page-link-hover: #6b3fbf;
-    --page-accent: #7c4dcf;
-    --page-accent-hover: #6b3fbf;
-    --page-on-accent: #ffffff;
-    --page-shadow: 0 1px 2px rgba(93, 84, 68, 0.05), 0 10px 30px rgba(93, 84, 68, 0.07);
-  }
-
   .contents {
     margin-bottom: var(--space-8);
   }
@@ -144,9 +127,10 @@
     margin-bottom: var(--space-2);
   }
 
+  /* The entries rest without an underline, so its arrival is the hover signal —
+     the themed link ramp has no deeper shade to move to. */
   @media (hover: hover) {
     .contents a:hover {
-      color: var(--page-link-hover);
       text-decoration: underline;
     }
   }
