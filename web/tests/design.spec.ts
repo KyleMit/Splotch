@@ -269,6 +269,30 @@ test.describe('phone contents', () => {
   });
 });
 
+// A deep link is the one jump the contents does not compute for itself, so it
+// rides on scroll-margin-top — which has to agree with a header that carries a
+// row more chrome below the breakpoint. The section components each used to
+// declare that number, which is how it came to disagree with the header.
+for (const [label, viewport] of [
+  ['a phone', { width: 390, height: 844 }],
+  ['a desktop', { width: 1280, height: 900 }],
+] as const) {
+  test(`a deep link parks its heading clear of the sticky header on ${label}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/design#motion');
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const header = document.querySelector('.site-header')!.getBoundingClientRect();
+          const section = document.getElementById('motion')!.getBoundingClientRect();
+          return Math.round(section.top - header.bottom);
+        })
+      )
+      .toBeGreaterThanOrEqual(0);
+  });
+}
+
 // 390 is the common phone width; 320 is the narrowest supported one, where a
 // grid column floor wider than the padded viewport once forced sideways scroll.
 for (const width of [320, 390]) {

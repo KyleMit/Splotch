@@ -257,10 +257,15 @@
 
 <style>
   /* Page-local layout constants (from the design handoff): 980px is the one
-     wide/narrow breakpoint, the shell runs to 1200px with a 216px sidebar and
-     an 820px content column, and sections park 96px under the sticky header. */
+     wide/narrow breakpoint, and the shell runs to 1200px with a 216px sidebar
+     and an 820px content column. */
 
   .page {
+    /* Where a jumped-to heading parks: clear of the sticky header, plus air.
+       Declared here rather than in each section component — the value has to
+       agree with this page's chrome, and this route is what owns that. */
+    --heading-park: 96px;
+
     /* The shallowest the scrollspy's line ever sits: the header alone, at the
        wide breakpoint, plus its arrival band. Reserving against the shallowest
        is what makes the tail below sufficient at every width. */
@@ -389,6 +394,10 @@
      Reserving a scrollport's worth from the last section's top is what lets it —
      and every section above it — climb to the line; min-height adds nothing once
      a section's own content is that tall. */
+  .styleguide :global([data-sg-section]) {
+    scroll-margin-top: var(--heading-park);
+  }
+
   .styleguide :global(section[data-sg-section]:last-of-type) {
     min-height: calc(100dvh - var(--spy-shallowest-line) - var(--shell-tail));
   }
@@ -492,6 +501,14 @@
     color: var(--brand-text);
     font-weight: var(--font-weight-semibold);
     text-decoration: none;
+  }
+
+  /* Below the breakpoint the header carries the contents row too, so a heading
+     has a row more chrome to clear. */
+  @media (max-width: 979px) {
+    .page {
+      --heading-park: 160px;
+    }
   }
 
   @media (min-width: 980px) {

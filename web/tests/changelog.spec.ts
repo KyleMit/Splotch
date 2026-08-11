@@ -116,6 +116,29 @@ test.describe('phone', () => {
   });
 });
 
+// The jumps the contents doesn't compute for itself — a deep link, and the
+// browser's own hash navigation — ride on scroll-margin-top, which below the
+// breakpoint has a pinned row to clear rather than only the rail's offset. Only
+// the narrow treatment can occlude a release; the wide rail is a side column.
+test.describe('phone deep link', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('parks its release clear of the pinned contents row', async ({ page }) => {
+    const target = releases[2];
+    await page.goto(`/changelog#${target.id}`);
+
+    await expect
+      .poll(() =>
+        page.evaluate((id) => {
+          const row = document.querySelector('.contents-disclosure')!.getBoundingClientRect();
+          const release = document.getElementById(id)!.getBoundingClientRect();
+          return Math.round(release.top - row.bottom);
+        }, target.id)
+      )
+      .toBeGreaterThanOrEqual(0);
+  });
+});
+
 test('the complete changelog is present in prerendered HTML', async ({ request }) => {
   const response = await request.get('/changelog');
   expect(response.ok()).toBeTruthy();

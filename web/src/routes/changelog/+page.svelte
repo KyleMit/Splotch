@@ -136,11 +136,11 @@
     display: none;
   }
 
-  /* Clears the sticky rail's top edge when a jump parks a heading. The
-     disclosure's own jumps measure their target against its collapsed row
-     instead, so this stays the rail's number. */
+  /* Where a jumped-to release parks. The disclosure computes its own jumps, so
+     this is for the jumps it doesn't make: the rail's anchors and a deep link
+     into the page. On wide that only has to clear the rail's top offset. */
   .changelog :global(.release) {
-    scroll-margin-top: var(--space-6);
+    scroll-margin-top: var(--release-park, var(--space-6));
     padding: var(--space-8) 0;
     border-top: var(--border-width) solid var(--page-rule);
   }
@@ -206,6 +206,13 @@
      is pinned only as far as its containing block reaches, and a grid item's
      area is exactly its own height. */
   @media (max-width: 920px) {
+    /* The contents row pins at --space-6 and stands ~52px tall, so a heading has
+       to clear both of them plus air. The gap is asserted in changelog.spec.ts,
+       which reads the row and the heading rather than this number. */
+    .changelog {
+      --release-park: 96px;
+    }
+
     .changelog-body {
       display: block;
     }
