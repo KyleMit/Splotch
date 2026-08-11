@@ -46,12 +46,17 @@ function stripTokens(page: Page) {
 test.describe('AI render timer', () => {
   test('plays the dial and reveals the result image', async ({ page }) => {
     await page.goto('/dev/ai-timer');
+    await expect(page.locator('.ai-loading-caption')).toHaveCount(0);
 
     await triggerAiTimer(page, /fast/i);
 
     // Loading state: the progress dial sits over the blurred drawing preview.
     await expect(page.locator('.dial')).toBeVisible();
     await expect(page.locator('.stage-img.preview')).toBeVisible();
+    const loadingStatus = page.getByRole('status');
+    await expect(loadingStatus).toHaveAttribute('aria-live', 'polite');
+    await expect(loadingStatus).toContainText('Making your picture…');
+    await expect(loadingStatus).toContainText('This takes about 10 seconds');
 
     // When the (mock) image arrives the dial races to full, then the result
     // cross-fades in and the download button pops in.
@@ -71,7 +76,35 @@ test.describe('AI render timer', () => {
 
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
+    await expect(loadingStatus).toHaveCount(0);
   });
+
+  for (const viewport of [
+    { width: 390, height: 480, label: '390px phone portrait at 480px high' },
+    { width: 844, height: 390, label: '390px phone landscape' },
+  ]) {
+    test(`keeps the loading caption inside the card on ${viewport.label}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await page.goto('/dev/ai-timer');
+      await triggerAiTimer(page, /realistic/i);
+
+      const caption = page.getByRole('status');
+      await expect(caption).toBeVisible();
+      const [card, content, captionBox] = await Promise.all([
+        page.locator('dialog.ai-result-modal').boundingBox(),
+        page.locator('.ai-result-content').boundingBox(),
+        caption.boundingBox(),
+      ]);
+      if (!card || !content || !captionBox) {
+        throw new Error('AI loading geometry was not measurable');
+      }
+
+      expect(card.y).toBeGreaterThanOrEqual(-1);
+      expect(card.y + card.height).toBeLessThanOrEqual(viewport.height + 1);
+      expect(content.y + content.height).toBeLessThanOrEqual(card.y + card.height + 1);
+      expect(captionBox.y + captionBox.height).toBeLessThanOrEqual(card.y + card.height + 1);
+    });
+  }
 
   test('confirms and sends an AI picture report from the result', async ({ page }) => {
     let reportRequests = 0;
@@ -205,6 +238,7 @@ test.describe('AI render timer', () => {
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
+    await expect(page.getByRole('status')).toHaveCount(0);
   });
 
   // Action-level coverage for the scoped pinchZoom (aiPreview.ts math is unit-

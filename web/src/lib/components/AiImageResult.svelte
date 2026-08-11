@@ -8,6 +8,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
+  import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/drawing/aiImage';
   import {
     timestamp,
     triggerDownload,
@@ -125,6 +126,7 @@
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   class:report-expanded={reportExpanded}
+  class:loading={aiResult.open && !revealed && !aiResult.error}
   bind:this={dialogEl}
   use:modalDialog={() => ({
     open: aiResult.open,
@@ -218,6 +220,13 @@
         {/if}
       </div>
 
+      {#if aiResult.open && !revealed}
+        <div class="ai-loading-caption" role="status" aria-live="polite">
+          <p class="ai-loading-title">{AI_LOADING_TITLE}</p>
+          <p class="ai-loading-subtitle">{AI_LOADING_SUBTITLE}</p>
+        </div>
+      {/if}
+
       {#if revealed && aiResult.resultUrl}
         <div class="ai-result-footer">
           {#if settings.autoSaveAiEnabled}
@@ -254,6 +263,7 @@
   .ai-result-modal {
     --result-footer-reserve: 89px;
     --result-autosave-footer-reserve: 95px;
+    --result-loading-reserve: 58px;
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
@@ -335,6 +345,13 @@
     max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-strip-reserve));
   }
 
+  .ai-result-modal.loading .stage-sizer {
+    max-height: calc(
+      100dvh - var(--result-footer-reserve) - var(--result-loading-reserve) -
+        var(--report-strip-reserve)
+    );
+  }
+
   .ai-result-modal.report-expanded .stage-sizer {
     /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
        ordinary footer above needs much less room. */
@@ -379,6 +396,33 @@
   .result.shown {
     opacity: 1;
     transform: scale(1);
+  }
+
+  .ai-loading-caption {
+    min-height: 46px;
+    padding: 0 var(--space-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+    font-family: var(--font-family);
+  }
+
+  .ai-loading-caption p {
+    margin: 0;
+  }
+
+  .ai-loading-title {
+    color: var(--text);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ai-loading-subtitle {
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
   }
 
   /* ── Error state ── */
