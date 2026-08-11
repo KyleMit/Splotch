@@ -1,6 +1,7 @@
 import { expect, type JSHandle, type Locator, type Page } from '@playwright/test';
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
+import { compositeVisibleLiveTiles } from '../src/lib/drawing/liveTileComposite';
 import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 import { paletteHex } from '../src/lib/palette';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -329,31 +330,7 @@ export async function draw(page: Page, points: { x: number; y: number }[]) {
 }
 
 export function renderedCanvasHandle(page: Page): Promise<JSHandle<HTMLCanvasElement>> {
-  return page.evaluateHandle(() => {
-    const input = document.getElementById('drawingCanvas') as HTMLCanvasElement;
-    const tiles = Array.from(
-      document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')
-    );
-    if (tiles.length === 0) return input;
-    const rendered = document.createElement('canvas');
-    const scaleX = tiles[0].width / Number.parseFloat(tiles[0].style.width);
-    const scaleY = tiles[0].height / Number.parseFloat(tiles[0].style.height);
-    rendered.width = Math.max(
-      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.left) * scaleX) + tile.width)
-    );
-    rendered.height = Math.max(
-      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.top) * scaleY) + tile.height)
-    );
-    const target = rendered.getContext('2d')!;
-    for (const tile of tiles) {
-      target.drawImage(
-        tile,
-        Math.round(Number.parseFloat(tile.style.left) * scaleX),
-        Math.round(Number.parseFloat(tile.style.top) * scaleY)
-      );
-    }
-    return rendered;
-  });
+  return page.evaluateHandle(compositeVisibleLiveTiles, undefined);
 }
 
 /** First non-transparent pixel on the canvas as [r,g,b,a], or null if blank. */

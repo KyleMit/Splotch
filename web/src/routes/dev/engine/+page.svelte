@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import LiveSurface from '$lib/components/LiveSurface.svelte';
+  import { compositeVisibleLiveTiles } from '$lib/drawing/liveTileComposite';
   import {
     INITIAL_ENGINE_VIEW_STATE,
     initDrawingCanvas,
@@ -73,28 +74,7 @@
   }
 
   function renderedCanvas() {
-    const tiles = Array.from(
-      wrapperEl.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')
-    );
-    const rendered = document.createElement('canvas');
-    if (tiles.length === 0) return rendered;
-    const scaleX = tiles[0].width / Number.parseFloat(tiles[0].style.width);
-    const scaleY = tiles[0].height / Number.parseFloat(tiles[0].style.height);
-    rendered.width = Math.max(
-      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.left) * scaleX) + tile.width)
-    );
-    rendered.height = Math.max(
-      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.top) * scaleY) + tile.height)
-    );
-    const target = rendered.getContext('2d')!;
-    for (const tile of tiles.filter((tile) => !tile.hidden)) {
-      target.drawImage(
-        tile,
-        Math.round(Number.parseFloat(tile.style.left) * scaleX),
-        Math.round(Number.parseFloat(tile.style.top) * scaleY)
-      );
-    }
-    return rendered;
+    return compositeVisibleLiveTiles(wrapperEl);
   }
 
   // Every synchronous input seam below dispatches through here, onto the canvas

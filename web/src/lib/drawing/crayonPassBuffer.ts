@@ -170,11 +170,7 @@ function clearCrayonBounds(buf: CrayonPassBuffer) {
   if (buf.mirror) buf.mirror.canvas.hidden = true;
 }
 
-export function stampSubtractiveGlaze(
-  target: CanvasRenderingContext2D,
-  mix: number,
-  blit: () => void
-) {
+function stampSubtractiveGlaze(target: CanvasRenderingContext2D, mix: number, blit: () => void) {
   target.globalCompositeOperation = 'darken';
   target.globalAlpha = 1;
   blit();

@@ -130,7 +130,7 @@ The alternatives were:
 ## Decision
 
 The production tiled renderer keeps live tile pixels in upright paper coordinates through a locked
-rotation. `DrawingCanvas.svelte` wraps all ink and crayon tiles in `.live-paper-view`, sized to the
+rotation. `LiveSurface.svelte` wraps all ink and crayon tiles in `.live-paper-view`, sized to the
 paper and transformed with the same CSS matrix used by the paper sheet and coloring overlay.
 `engine.ts` continues computing `paperView` and inverse-mapping pointer coordinates, but it does not
 resize, transform, or replay tiled surfaces while the paper is locked. The product and `/dev/engine`

@@ -84,6 +84,10 @@ Non-obvious invariants:
   (`web/tests/startup-bundle.spec.ts`, issue 461).
 * `LiveSurface.svelte` is the single source for the engine's live DOM and blend-isolation contract.
   A consumer must render that component; the engine must never synthesize missing surfaces.
+* An incomplete live surface is a fail-stop boot error. The engine throws through early boot rather
+  than hydrating controls around a broken primary drawing surface. The unit topology contract and
+  hydration E2E guard catch repository-owned markup drift; DOM-mutating extensions are outside the
+  supported boot contract.
 
 ## Consequences
 

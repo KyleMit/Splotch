@@ -215,26 +215,3 @@ export function viewToPaper(view: PaperView, x: number, y: number): Point {
       return { x: -v, y: u };
   }
 }
-
-export function visiblePaperBounds(paper: Size, viewport: Size, view: PaperView) {
-  if (isIdentityView(view)) return { x: 0, y: 0, width: paper.width, height: paper.height };
-  let minX = 0;
-  let minY = 0;
-  let maxX = paper.width;
-  let maxY = paper.height;
-  for (const [x, y] of [
-    [0, 0],
-    [viewport.width, 0],
-    [0, viewport.height],
-    [viewport.width, viewport.height],
-  ]) {
-    const point = viewToPaper(view, x, y);
-    minX = Math.min(minX, point.x);
-    minY = Math.min(minY, point.y);
-    maxX = Math.max(maxX, point.x);
-    maxY = Math.max(maxY, point.y);
-  }
-  const x = Math.floor(minX);
-  const y = Math.floor(minY);
-  return { x, y, width: Math.ceil(maxX) - x, height: Math.ceil(maxY) - y };
-}
