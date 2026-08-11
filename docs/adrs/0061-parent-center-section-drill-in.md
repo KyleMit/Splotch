@@ -352,11 +352,26 @@ So the hub stays hub-and-drill, and the investment goes into the row:
 The switch itself is now `settings/ToggleSwitch.svelte`, shared by `ToggleRow` and the hub, and the
 tools the chip grid shows and hides are one exported list (`settings/drawingTools.ts`) — the hub row
 summarizes it ("2 tools hidden"), and a second copy would let the summary and the grid disagree
-about what a tool is.
+about what a tool is. The shared switch also takes taps past its own box: the track is deliberately
+32px tall, under the 44px floor, and a ToggleRow's label makes up the difference where the hub row's
+switch stands alone.
 
-One thing this amendment does **not** fix, surfaced by the reorder: a table-of-contents jump made
-while the wide Pane is still filling computes its scroll from offsets that the conditional reveals
-above (persisted state, the free-generation fetch) then invalidate, so the section lands in view but
-several hundred pixels below the reading line. `tests/settings-mount.spec.ts` scores that jump on
-the section coming into view; it used to score it on the highlight, which held only because the
-section it drifted to was the one being jumped to.
+**Both hub summaries of the Tool Drawer answer to Advanced Controls first.** That setting is the
+umbrella over every tool below it — with it off the drawer cannot be opened at all, because its own
+toggle is hidden too (`data-off-adv` in `ActionsPanel`) — so the row reads "All tools hidden" rather
+than counting per-tool flags that describe a panel the child cannot reach. Saving's camera row is
+the same story from the other side: every action button lives inside that drawer, so the row's help
+line says what it can actually deliver in the state the parent is in rather than promising a button
+Advanced Controls is currently suppressing.
+
+**A jump made while the Pane is still filling now re-aims until it lands.** The reorder surfaced
+this rather than causing it: such a jump computes its scroll from offsets the sections above it then
+invalidate (the fill mounting them, their own conditional reveals landing), and until enough content
+exists *below* the target there is no scroll extent to reach it with, so the first attempt lands
+clamped however correct its arithmetic was. The section could finish several hundred pixels below
+the reading line with the table of contents naming a section the parent never chose. So a mid-fill
+jump is held in `pendingJump` and re-applied on every content resize, with one last aim when the
+Pane reports itself whole; from there the position belongs to whoever moves it next, and any hand on
+the Pane (pointer, wheel, key) ends it sooner. Such a jump is also instant rather than glided — an
+animation in flight leaves nothing to re-aim against. A jump on a finished Pane is untouched: its
+offsets are already final, and re-aiming there would fight the parent's own scrolling.

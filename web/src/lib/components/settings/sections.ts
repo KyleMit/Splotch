@@ -91,6 +91,11 @@ export function sectionSubtitle(id: SectionId): string {
         ? `${Math.max(0, coloringPackState.installedBookIds.length - 1)} extra books ready`
         : 'Coloring books off';
     case 'controls': {
+      // Advanced Controls is the umbrella over every tool below it: with it off
+      // the drawer cannot be opened at all — its toggle is hidden too — so no
+      // per-tool flag is reachable, and counting them would describe a panel
+      // the child cannot see.
+      if (!settings.advancedControlsEnabled) return 'All tools hidden';
       const hidden = hiddenDrawingToolCount();
       if (!hidden) return ALL_TOOLS_SHOWING;
       return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;

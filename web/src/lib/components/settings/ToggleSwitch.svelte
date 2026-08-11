@@ -83,6 +83,17 @@
     cursor: default;
   }
 
+  /* Nothing interactive goes below 44px, and the track is deliberately 32 tall,
+     so the button takes taps past its own box rather than growing the row it
+     sits in. A ToggleRow's label activates the switch as well; on a hub row
+     this button is the whole target on its side of the split, which is where a
+     32px-tall hit box would be felt. */
+  .toggle-switch::before {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+
   .toggle-switch-thumb {
     position: absolute;
     top: 3px;

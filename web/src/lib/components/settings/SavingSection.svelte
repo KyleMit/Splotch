@@ -14,10 +14,14 @@
 <section class="setting-group">
   <!-- The camera button's visibility lives with saving rather than with the
        Tool Drawer's chip grid, the way Coloring and AI Art each own their own
-       button: it is the other way a drawing gets saved, and it is not something
-       Advanced Controls should be able to hide. It leads the section because
-       it is the deliberate save — the two rows under it govern what happens
-       without anyone asking. -->
+       button: it is the other way a drawing gets saved. It leads the section
+       because it is the deliberate save — the two rows under it govern what
+       happens without anyone asking.
+
+       Every action button lives inside the drawer, which Advanced Controls
+       gates (see ActionsPanel's data-off-adv rule), so this row states what it
+       can actually deliver in the state the parent is in rather than promising
+       a button that setting is currently suppressing. -->
   <div class="setting">
     <ToggleRow
       icon="camera"
@@ -25,7 +29,9 @@
       id="screenshotToggle"
       checked={settings.screenshotEnabled}
       onToggle={setScreenshot}
-      help="Shows the button that saves a photo of the drawing"
+      help={settings.advancedControlsEnabled
+        ? 'Shows the camera button in the tool drawer'
+        : 'The tool drawer is off, so the camera button stays hidden'}
     />
   </div>
 
