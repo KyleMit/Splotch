@@ -86,6 +86,6 @@ as static files, and the header they get in production comes from the `netlify.t
 Netlify's CDN reads — so the whole suite runs unpoliced, and a client behaviour the CSP forbids
 passes locally and in CI. `enforceProductionCsp` (`web/tests/helpers.ts`) stamps `SECURITY_HEADERS`'
 policy onto document responses for a spec that needs the real thing; `ai-result.spec.ts`'s report
-flow uses it and fails without the `blob:` grant. Applying it suite- wide would turn every
+flow uses it and fails without the `blob:` grant. Applying it suite-wide would turn every
 CSP-violating behaviour into a local failure and is worth considering, but it is a broad change to
 every spec's environment and was left out of the fix.
