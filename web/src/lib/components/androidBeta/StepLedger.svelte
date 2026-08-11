@@ -165,8 +165,9 @@
 <style>
   /* No rules between steps: the numeral gutter carries a hairline rail instead,
      so the four read as one sequence rather than four unrelated blocks. The
-     rail's geometry is derived from these, which is why they are named — the
-     segment under each step has to land exactly on the next step's numeral. */
+     rail's geometry is derived from the sizes below, which is why they are
+     named — the segment under each step has to land exactly on the next step's
+     numeral. */
   .steps {
     /* Each step's crayon hue (--step-hue, set per <li> from lib/palette.ts) in
        two strengths, both mixed against a themed token so the pair follows the
