@@ -96,7 +96,14 @@
   </div>
 </div>
 
-<div role="cell" class="row-actions" class:open id={revealId}>
+<!-- inert, not a visibility flip: a transitioned visibility keeps the closing
+     subtree focusable in legacy-interpolation engines (WebKit at the floor,
+     Firefox) for the whole close animation — a Tab right after Enter-to-close
+     moved focus into "Copy link" and the transition's end then dumped it to
+     <body>. inert drops the tab stops and accessibility entries the moment
+     `open` flips, in every engine, while the height animation still plays;
+     the collapsed line's paint is clipped by the height/overflow below. -->
+<div role="cell" class="row-actions" class:open inert={!open} id={revealId}>
   <div class="row-actions-line">
     <button
       type="button"
@@ -255,7 +262,7 @@
   :global(.expand-btn .expand-icon) {
     width: 20px;
     height: 20px;
-    transition: transform var(--duration-fast) ease;
+    transition: transform var(--duration-fast) var(--ease-glide);
   }
 
   /* One chevron glyph, rotated open — never a reactive {@html} icon swap
@@ -341,24 +348,23 @@
       display: inline-flex;
     }
 
+    /* Collapsed = clipped to zero height; the markup's inert gate owns the
+       tab order and accessibility tree, so no visibility flip is needed —
+       and none is wanted: engines disagree on how visibility rides a
+       transition (Chromium flips it discretely, WebKit/Firefox hold it for
+       the duration), which is what let focus into the closing line. */
     .row-actions {
       display: block;
       flex-basis: 100%;
       height: 0;
       overflow: hidden;
-      /* Keeps the collapsed line's buttons out of the tab order and the
-         accessibility tree; the transition holds it visible while closing. */
-      visibility: hidden;
-      transition:
-        height var(--duration-fast) ease,
-        visibility var(--duration-fast);
+      transition: height var(--duration-fast) var(--ease-glide);
     }
 
     /* 44px action line plus the 14px gap the first line's bottom padding
        provides in the mock; the row's own bottom padding closes the block. */
     .row-actions.open {
       height: calc(var(--ledger-target-min) + 14px);
-      visibility: visible;
     }
 
     .row-actions-line {
