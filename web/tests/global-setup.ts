@@ -52,9 +52,9 @@ async function assertHarnessServer(baseURL: string) {
 // during which in-flight module requests 504 ("Outdated Optimize Dep") and the
 // page transiently errors before Vite auto-reloads it. With the suite's workers
 // all hitting that at once it's a reload storm that flakes tests whose
-// interactions can't ride it out (e.g. the ai-timer click-retry). Loading each
-// route here — sequentially, polling through the auto-reload until it actually
-// settles — means every worker afterwards gets an already-optimized server.
+// interactions can't ride it out. Loading each route here — sequentially,
+// polling through the auto-reload until it actually settles — means every
+// worker afterwards gets an already-optimized server.
 //
 // The optimizer only exists under `vite dev` (DEV_SERVER=1). The default/CI run
 // serves the production build via `vite preview`, which has no optimizer and no
@@ -71,7 +71,6 @@ export default async function globalSetup(config: FullConfig) {
   const routes: [string, () => boolean][] = [
     ['/', () => !!document.getElementById('drawingCanvas')],
     ['/dev/engine', () => window.__engineReady === true],
-    ['/dev/ai-timer', () => document.querySelectorAll('button').length > 0],
   ];
   const deadline = Date.now() + 180_000;
 

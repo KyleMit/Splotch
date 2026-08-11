@@ -10,9 +10,4 @@ export const DEV_HARNESSES: DevHarness[] = [
     name: 'Drawing engine',
     blurb: 'Bare canvas harness driven by the Playwright specs.',
   },
-  {
-    href: '/dev/ai-timer',
-    name: 'AI render timer',
-    blurb: 'Debug view for the generation timer animation.',
-  },
 ];

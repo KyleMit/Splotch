@@ -18,7 +18,8 @@ to be available in client-side code without a runtime server request:
   literal so Rollup can remove their chunks from the web build.
 * **`__PERF_MARKS__`** — whether profiling builds retain `engine.*` user-timing marks and the native
   screenshot persistence sink.
-* **`__DEV_HARNESS__`** — whether client-side read-only test/profiling seams are retained. This is
+* **`__DEV_HARNESS__`** — whether client-side test/profiling seams are retained. Inspection seams
+  stay read-only; ADR-0109 permits a narrowly constrained production-function invoke handle. This is
   separate from the runtime server gate for `/dev/*` routes.
 
 Options:

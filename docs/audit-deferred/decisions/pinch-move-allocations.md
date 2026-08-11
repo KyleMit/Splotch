@@ -83,7 +83,7 @@ standalone change, and bundling it here would be option 2 by another name.
 Every reviewer objection targeted the implementation's attempt to clear an absolute
 allocation-freedom bar (residual option-object and string allocations, the WAAPI leak and compat
 gap, the weakened E2E assertions). Dropping the finding moots them all: the current code keeps its
-direct transform-string assertions in `ai-timer.spec.ts`, its exact numeric behavior, its single
+direct transform-string assertions in `ai-result.spec.ts`, its exact numeric behavior, its single
 clamp implementation, and no new browser-API surface. The rolled-back draft patch is deleted with
 this decision — its centroid running-sum and clamp inlining are the parts a future implementer
 should specifically *not* reuse.

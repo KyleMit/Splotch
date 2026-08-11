@@ -1,19 +1,91 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { draw, gotoApp } from './helpers';
 
-// Exercises the AI render timer animation via the dev-only debug harness at
-// /dev/ai-timer, which feeds AiImageResult.svelte the sample artifacts through
-// the real generation state seam — no Gemini call. Watch it run with:
-//   npm run test:e2e:headed -- ai-timer
+// Exercises AiImageResult through the production generation flow. The endpoint
+// is mocked below the client pipeline, so each case still covers canvas export,
+// upload encoding, response parsing, and response application without Gemini.
+// Watch it run with:
+//   npm run test:e2e:headed -- ai-result
 
-// Playwright waits for elements but not for Svelte to hydrate, so a click fired
-// right after navigation can hit the SSR'd button before its handler is wired.
-// Retry the trigger until the modal actually opens.
-async function triggerAiTimer(page: Page, name: RegExp) {
-  await expect(async () => {
-    await page.getByRole('button', { name }).click({ timeout: 1000 });
-    await expect(page.locator('dialog.ai-result-modal')).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 10000 });
+const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
+
+interface AiMockResponse {
+  status: number;
+  contentType: string;
+  body: string | Buffer;
+}
+
+async function mockAiEndpoint(page: Page) {
+  const queued: AiMockResponse[] = [];
+  const waiters: ((response: AiMockResponse) => void)[] = [];
+  const respond = (response: AiMockResponse) => {
+    const waiter = waiters.shift();
+    if (waiter) waiter(response);
+    else queued.push(response);
+  };
+
+  await page.route('**/api/generate-image*', async (route) => {
+    const response =
+      queued.shift() ??
+      (await new Promise<AiMockResponse>((resolve) => {
+        waiters.push(resolve);
+      }));
+    await route.fulfill(response);
+  });
+
+  return {
+    succeed: () => respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT }),
+    fail: (status = 500) =>
+      respond({
+        status,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: false, error: 'Mock generation failure' }),
+      }),
+  };
+}
+
+async function invokeAiGeneration(page: Page) {
+  await expect
+    .poll(() => page.evaluate(() => typeof window.__aiGenerate === 'function'))
+    .toBe(true);
+  await page.evaluate(() => {
+    void window.__aiGenerate?.({ style: 'Magical' });
+  });
+}
+
+async function drawPreview(page: Page) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('Drawing canvas has no bounds');
+  await draw(page, [
+    { x: box.width * 0.24, y: box.height * 0.45 },
+    { x: box.width * 0.5, y: box.height * 0.62 },
+    { x: box.width * 0.76, y: box.height * 0.4 },
+  ]);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const history = window.__drawingDebug?.getUndoDebug();
+        return Boolean(history && history.snapshots > 0 && history.pendingCommands === 0);
+      })
+    )
+    .toBe(true);
+}
+
+async function openAiResult(page: Page) {
+  const endpoint = await mockAiEndpoint(page);
+  await gotoApp(page, '/?ai_access_token=test-token');
+  await drawPreview(page);
+  await invokeAiGeneration(page);
+  await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
+  return endpoint;
+}
+
+async function revealAiResult(page: Page) {
+  const endpoint = await openAiResult(page);
+  endpoint.succeed();
+  await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
 }
 
 async function resultBoxes(page: Page) {
@@ -43,19 +115,19 @@ function stripTokens(page: Page) {
   });
 }
 
-test.describe('AI render timer', () => {
+test.describe('AI result modal', () => {
   test('plays the dial and reveals the result image', async ({ page }) => {
-    await page.goto('/dev/ai-timer');
+    const endpoint = await openAiResult(page);
 
-    await triggerAiTimer(page, /fast/i);
-
-    // Loading state: the progress dial sits over the blurred drawing preview.
+    // Loading state: the progress dial sits over the real canvas export.
     await expect(page.locator('.dial')).toBeVisible();
     await expect(page.locator('.stage-img.preview')).toBeVisible();
 
-    // When the (mock) image arrives the dial races to full, then the result
+    endpoint.succeed();
+
+    // When the mocked image arrives the dial races to full, then the result
     // cross-fades in and the download button pops in.
-    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: /download/i })).toBeVisible();
 
     // The disclosure lives on the strip below the card, not in the card footer.
@@ -90,9 +162,7 @@ test.describe('AI render timer', () => {
         body: JSON.stringify({ ok: true, reportId: 'test-report-id' }),
       });
     });
-    await page.goto('/dev/ai-timer');
-    await triggerAiTimer(page, /fast/i);
-    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+    await revealAiResult(page);
 
     const report = page.getByRole('button', { name: 'Report this picture' });
     // The Report control is deliberately fine print; the tap target around it
@@ -126,9 +196,7 @@ test.describe('AI render timer', () => {
       page,
     }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto('/dev/ai-timer');
-      await triggerAiTimer(page, /fast/i);
-      await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+      await revealAiResult(page);
 
       const { card, strip, report } = await resultBoxes(page);
       const tokens = await stripTokens(page);
@@ -147,9 +215,7 @@ test.describe('AI render timer', () => {
   for (const colorScheme of ['light', 'dark'] as const) {
     test(`paints the strip on backdrop colors in ${colorScheme} mode`, async ({ page }) => {
       await page.emulateMedia({ colorScheme });
-      await page.goto('/dev/ai-timer');
-      await triggerAiTimer(page, /fast/i);
-      await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+      await revealAiResult(page);
 
       const chrome = await page
         .getByRole('button', { name: 'Report this picture' })
@@ -183,9 +249,7 @@ test.describe('AI render timer', () => {
       page,
     }) => {
       await page.setViewportSize(viewport);
-      await page.goto('/dev/ai-timer');
-      await triggerAiTimer(page, /fast/i);
-      await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+      await revealAiResult(page);
 
       const { card, content, report } = await resultBoxes(page);
       expect(content.y + content.height).toBeLessThanOrEqual(card.y + card.height + 1);
@@ -199,9 +263,8 @@ test.describe('AI render timer', () => {
   }
 
   test('shows the error state', async ({ page }) => {
-    await page.goto('/dev/ai-timer');
-
-    await triggerAiTimer(page, /error/i);
+    const endpoint = await openAiResult(page);
+    endpoint.fail();
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
@@ -212,9 +275,7 @@ test.describe('AI render timer', () => {
   // spread scales the .zoom-layer and marks the stage .zoomed, while a lone
   // finger on the un-zoomed preview passes straight through (ADR-0076).
   test('the revealed result pinch-zooms, and a lone finger passes through', async ({ page }) => {
-    await page.goto('/dev/ai-timer');
-    await triggerAiTimer(page, /fast/i);
-    await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
+    await revealAiResult(page);
 
     const result = await page.locator('.ai-stage').evaluate((node) => {
       const r = node.getBoundingClientRect();
@@ -279,33 +340,29 @@ test.describe('AI render timer', () => {
         .evaluate((el) => getComputedStyle(el).getPropertyValue('--stage-h').trim());
 
     test('reflects the stage element’s real rendered height', async ({ page }) => {
-      await page.goto('/dev/ai-timer');
-      await triggerAiTimer(page, /fast/i);
+      await openAiResult(page);
 
-      await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
-
-      const { stageH, rectHeight } = await page.locator('.ai-stage').evaluate((el) => ({
-        stageH: parseFloat(getComputedStyle(el).getPropertyValue('--stage-h')),
-        rectHeight: el.getBoundingClientRect().height,
-      }));
-      expect(stageH).toBeCloseTo(rectHeight, 0);
+      await expect
+        .poll(() =>
+          page.locator('.ai-stage').evaluate((el) => {
+            const stageH = parseFloat(getComputedStyle(el).getPropertyValue('--stage-h'));
+            return Math.abs(stageH - el.getBoundingClientRect().height);
+          })
+        )
+        .toBeLessThan(0.5);
     });
 
     // The error state's {:else} unmounts .ai-stage; a retry mounts a fresh
     // element. Regression coverage for the observer staying bound to the old,
     // now-detached element instead of following aiStageEl to the new one.
     test('re-observes a fresh .ai-stage after an error-then-retry', async ({ page }) => {
-      await page.goto('/dev/ai-timer');
-      await triggerAiTimer(page, /fast/i);
+      const endpoint = await openAiResult(page);
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
 
-      // The open <dialog> is modal, so the button row below it is inert —
-      // drive the error + retry via the harness's global hotkeys instead
-      // (same reason `triggerAiTimer()` above only works before the dialog opens).
-      await page.keyboard.press('e');
+      endpoint.fail();
       await expect(page.getByText(/didn't work/i)).toBeVisible();
 
-      await page.keyboard.press('p');
+      await invokeAiGeneration(page);
       await expect(page.locator('.dial')).toBeVisible();
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
     });
