@@ -15,9 +15,10 @@ infer completion from counts in a critique file.
 2. Run `npm run gen:page-inventory` when the manifest or any expected image is absent. A complete
    capture contains light and night variants for four devices in portrait and landscape. A capture
    that comes back near-uniform, or at dimensions other than its viewport's, is retried and then
-   fails the run by name; a surface whose light and night captures are pixel-identical fails it too.
-   No manifest is written from a run that had a failed capture, so a green run means every image
-   rendered.
+   fails the run by name; a surface whose light and night captures are pixel-identical fails it too,
+   as do two captures sharing both their digest and their review description, which would be one
+   review paid for twice. No manifest is written from a run that had a failed capture, so a green
+   run means every image rendered.
 3. To check one surface without a full run, filter with `--surface` (`group/id` or a bare id),
    `--viewport`, or `--theme`, all repeatable. Any filter makes it a spot check: output goes to
    `.scrapbook-scratch/page-inventory-spot-check` as `spot-check-captures.json`, and neither the
@@ -35,6 +36,10 @@ capture, disables inherited user and repository context, and gives that reviewer
 semantic inputs: the manifest's `review_description` and its one image. Never combine captures in a
 prompt, ask a reviewer to compare with another viewport/theme, or seed a review from prior findings.
 Pixel-identical captures remain independent because their descriptions and review scopes may differ.
+Several surfaces legitimately share pixels — the wide Settings shell opens on Appearance, and
+compact phone landscape collapses every `settings-*` section into one quick-toggle shell — and the
+same pixels mean different things to reviewers told to expect different surfaces. Their severities
+are allowed to diverge and are never reconciled.
 
 The capture description owns the rubric:
 
@@ -98,6 +103,10 @@ npm run gen:page-inventory:feedback
 npm run scrapbook:check
 ```
 
-Finalization refuses missing, duplicate, unknown, grouped, or stale reviews and derives coverage and
-severity totals from the manifest-bound entries. Never publish an `--allow-partial` result; that
-flag requires an explicit scratch `--out` and exists only for work-in-progress inspection.
+Finalization refuses missing, duplicate, unknown, or stale reviews and derives coverage and severity
+totals from the manifest-bound entries. It also lists every set of entries sharing a digest and a
+theme under `pixel_identical_groups`, flagging the ones whose severities diverge, and the report
+marks those shots — the sharing is reported, never reconciled, so read a `divergent: true` group as
+two expectations of one shell rather than as a defect to fix. Never publish an `--allow-partial`
+result; that flag requires an explicit scratch `--out` and exists only for work-in-progress
+inspection.

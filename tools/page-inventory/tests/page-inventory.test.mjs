@@ -177,6 +177,26 @@ function writeCaptures(out, item) {
   return manifest;
 }
 
+// The wide Settings hub opening on its first section, and the compact landscape
+// shell every section collapses into: several surfaces capture byte-identically
+// at the same viewport and theme, under their own names and descriptions.
+function writeSharedShellCaptures(out, items) {
+  const captures = [];
+  for (const theme of PAGE_INVENTORY_THEMES) {
+    for (const viewport of PAGE_INVENTORY_VIEWPORTS) {
+      for (const item of items) {
+        const path = item.captures[inventoryCaptureKey(viewport, theme)];
+        mkdirSync(join(out, path, '..'), { recursive: true });
+        writeFileSync(join(out, path), `shared shell ${viewport.id} ${theme.id}\n`);
+        captures.push(captureRecord(item, viewport, theme, path, sha256File(join(out, path))));
+      }
+    }
+  }
+  const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
+  writeFileSync(join(out, 'capture-manifest.json'), JSON.stringify(manifest));
+  return manifest;
+}
+
 function critiqueEntries(manifest) {
   return manifest.captures.map((capture, index) => {
     const severity = ['pass', 'low', 'medium', 'high'][index % 4];
@@ -516,7 +536,7 @@ describe('page inventory output', () => {
     const manifest = writeCaptures(out, item);
     const entries = critiqueEntries(manifest);
     const critique = join(root, 'design-critique.json');
-    writeFileSync(critique, JSON.stringify({ schema_version: 3, entries }));
+    writeFileSync(critique, JSON.stringify({ schema_version: 4, entries }));
     const firstImage = join(out, entries[0].image);
     const originalImage = readFileSync(firstImage, 'utf8');
 
@@ -551,13 +571,13 @@ describe('page inventory output', () => {
     const entries = critiqueEntries(manifest);
     const critique = join(root, 'design-critique.json');
 
-    writeFileSync(critique, JSON.stringify({ schema_version: 3, entries: entries.slice(1) }));
+    writeFileSync(critique, JSON.stringify({ schema_version: 4, entries: entries.slice(1) }));
     expect(() => readDesignCritique(critique, manifest)).toThrow('15 of 16 required entries');
 
     writeFileSync(
       critique,
       JSON.stringify({
-        schema_version: 3,
+        schema_version: 4,
         entries: [{ ...entries[0], review_id: 'routes--unknown' }, ...entries.slice(1)],
       })
     );
@@ -566,7 +586,7 @@ describe('page inventory output', () => {
     writeFileSync(
       critique,
       JSON.stringify({
-        schema_version: 3,
+        schema_version: 4,
         entries: [{ ...entries[0], sha256: '0'.repeat(64) }, ...entries.slice(1)],
       })
     );
@@ -593,7 +613,7 @@ describe('page inventory output', () => {
 
     const document = JSON.parse(readFileSync(critique, 'utf8'));
     expect(document).toMatchObject({
-      schema_version: 3,
+      schema_version: 4,
       scope: {
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
         surfaces_reviewed: 1,
@@ -601,7 +621,12 @@ describe('page inventory output', () => {
         expected_screenshots: 16,
         completeness: 'complete',
       },
-      summary: { severity_counts: { pass: 4, low: 4, medium: 4, high: 4 } },
+      summary: {
+        severity_counts: { pass: 4, low: 4, medium: 4, high: 4 },
+        pixel_identical_groups: 0,
+        divergent_pixel_identical_groups: 0,
+      },
+      pixel_identical_groups: [],
     });
     expect(document.entries).toHaveLength(16);
   });
@@ -666,15 +691,99 @@ describe('page inventory output', () => {
     expect(() => finalizeDesignCritique(manifest, entries)).not.toThrow();
   });
 
-  it('rejects different severities for pixel-identical captures in the same theme', () => {
+  it('keeps divergent severities across pixel-identical captures and records the group', () => {
     const out = join(fixture(), 'page-inventory');
     const manifest = writeCaptures(out, inventoryItem());
-    const sameTheme = manifest.captures.filter(({ theme }) => theme === 'light').slice(0, 2);
-    sameTheme[1].sha256 = sameTheme[0].sha256;
+    const [shell, twin] = manifest.captures.filter(({ theme }) => theme === 'light').slice(0, 2);
+    twin.sha256 = shell.sha256;
     const entries = critiqueEntries(manifest);
 
-    expect(() => finalizeDesignCritique(manifest, entries)).toThrow(
-      'have conflicting severities pass and low'
+    const critique = finalizeDesignCritique(manifest, entries);
+
+    expect(critique.summary).toMatchObject({
+      pixel_identical_groups: 1,
+      divergent_pixel_identical_groups: 1,
+    });
+    expect(critique.pixel_identical_groups).toEqual([
+      {
+        sha256: shell.sha256,
+        theme: 'light',
+        divergent: true,
+        reviews: [
+          { review_id: shell.review_id, severity: 'pass' },
+          { review_id: twin.review_id, severity: 'low' },
+        ],
+      },
+    ]);
+    const severities = new Map(
+      critique.entries.map(({ review_id: reviewId, severity }) => [reviewId, severity])
     );
+    expect(severities.get(shell.review_id)).toBe('pass');
+    expect(severities.get(twin.review_id)).toBe('low');
+  });
+
+  it('rejects two captures whose pixels and review description are both identical', () => {
+    const out = join(fixture(), 'page-inventory');
+    const shared = { group: 'settings', title: 'Settings', description: 'The settings hub.' };
+    const items = [
+      inventoryItem({ ...shared, id: 'settings-overview' }),
+      inventoryItem({ ...shared, id: 'settings-appearance' }),
+    ];
+
+    expect(() => writeSharedShellCaptures(out, items)).toThrow(
+      /entries settings--settings-overview--\S+ and settings--settings-appearance--\S+ are indistinguishable reviews/
+    );
+  });
+
+  it('refuses a design critique written against the previous schema version', () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    const critique = join(root, 'design-critique.json');
+    writeFileSync(
+      critique,
+      JSON.stringify({ schema_version: 3, entries: critiqueEntries(manifest) })
+    );
+
+    expect(() => readDesignCritique(critique, manifest)).toThrow('schema_version must be 4');
+  });
+
+  it('marks the shots of a shared shell as pixel-identical in the report', () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const items = [
+      inventoryItem({
+        group: 'settings',
+        id: 'settings-overview',
+        title: 'Settings',
+        description: 'The settings hub.',
+      }),
+      inventoryItem({
+        group: 'settings',
+        id: 'settings-appearance',
+        title: 'Appearance settings',
+        description: 'The appearance section.',
+      }),
+    ];
+    const manifest = writeSharedShellCaptures(out, items);
+    const entries = critiqueEntries(manifest);
+    const agreed = manifest.captures.slice(-2).map(({ review_id: reviewId }) => reviewId);
+    for (const entry of entries.filter(({ review_id: reviewId }) => agreed.includes(reviewId))) {
+      entry.severity = 'pass';
+      entry.recommendation = null;
+    }
+    const critique = join(root, 'design-critique.json');
+    writeFileSync(critique, JSON.stringify(finalizeDesignCritique(manifest, entries)));
+
+    expect(writePageInventoryFeedback(out, critique, items)).toBe(32);
+
+    const document = JSON.parse(readFileSync(critique, 'utf8'));
+    expect(document.summary).toMatchObject({
+      pixel_identical_groups: 16,
+      divergent_pixel_identical_groups: 15,
+    });
+    const html = readFileSync(join(out, 'index.html'), 'utf8');
+    expect(html).toContain('Pixel-identical to 1 other capture in this theme, judged differently.');
+    expect(html).toContain('Pixel-identical to 1 other capture in this theme.');
   });
 });

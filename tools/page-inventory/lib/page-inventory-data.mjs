@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { GENERAL_DESIGN_NOTES, surfaceDesignNote } from './page-inventory-design-notes.mjs';
 
 const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 3;
-const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 3;
+const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 4;
 export const PAGE_INVENTORY_REVIEW_CONTRACT = 'isolated-image-description-v1';
 export const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
 export const PAGE_INVENTORY_THEMES = [
@@ -236,6 +236,13 @@ function validateCaptureManifest(manifest) {
   }
   const images = new Set();
   const reviewIds = new Set();
+  // An isolated reviewer receives exactly two semantic inputs: the image and
+  // the review description. Two captures that share both are the same review
+  // twice — one of them buys nothing, and any severity difference between them
+  // is reviewer nondeterminism rather than a judgement about a named surface.
+  // Divergence across captures that share only pixels is legitimate and is
+  // recorded by pixelIdenticalReviewGroups instead.
+  const reviewInputs = new Map();
   const surfaceCaptures = new Map();
   for (const [index, capture] of manifest.captures.entries()) {
     const location = `Capture manifest entry ${index + 1}`;
@@ -246,6 +253,14 @@ function validateCaptureManifest(manifest) {
       throw new Error(`${location} duplicates review_id ${capture.review_id}`);
     }
     reviewIds.add(capture.review_id);
+    const reviewInput = `${capture.sha256} ${capture.review_description}`;
+    const twinReviewId = reviewInputs.get(reviewInput);
+    if (twinReviewId) {
+      throw new Error(
+        `Capture manifest entries ${twinReviewId} and ${capture.review_id} are indistinguishable reviews: identical pixels and an identical review description`
+      );
+    }
+    reviewInputs.set(reviewInput, capture.review_id);
     const surfaceKey = `${capture.group}/${capture.surface_id}`;
     const ids = surfaceCaptures.get(surfaceKey) ?? new Set();
     const captureKey = `${capture.viewport_id}/${capture.theme}`;
@@ -326,22 +341,35 @@ export function validateCritiqueEntries(entries, manifest, { allowPartial = fals
   return validated;
 }
 
-export function validateCritiqueConsistency(entries, manifest, { allowPartial = false } = {}) {
-  const validated = validateCritiqueEntries(entries, manifest, { allowPartial });
+// A surface that renders a shared shell — the wide Settings hub opening on its
+// first section, or the compact landscape quick toggles every section collapses
+// into — captures byte-identically under more than one name. Each of those is
+// still its own review, because the reviewer also read a description naming the
+// surface it expected, and the same pixels mean different things against
+// different expectations. So the severities are kept apart and the sharing is
+// reported rather than reconciled.
+export function pixelIdenticalReviewGroups(captures, reviews) {
   const groups = new Map();
-  for (const capture of manifest.captures) {
-    const entry = validated.get(capture.review_id);
-    if (!entry) continue;
+  for (const capture of captures) {
+    const review = reviews.get(capture.review_id);
+    if (!review) continue;
     const groupKey = `${capture.sha256}--${capture.theme}`;
-    const previous = groups.get(groupKey);
-    if (previous && previous.entry.severity !== entry.severity) {
-      throw new Error(
-        `Pixel-identical ${capture.theme} reviews ${previous.capture.review_id} and ${capture.review_id} have conflicting severities ${previous.entry.severity} and ${entry.severity}`
-      );
-    }
-    groups.set(groupKey, { capture, entry });
+    const group = groups.get(groupKey) ?? {
+      sha256: capture.sha256,
+      theme: capture.theme,
+      reviews: [],
+    };
+    group.reviews.push({ review_id: capture.review_id, severity: review.severity });
+    groups.set(groupKey, group);
   }
-  return validated;
+  return [...groups.values()]
+    .filter((group) => group.reviews.length > 1)
+    .map(({ sha256, theme, reviews: grouped }) => ({
+      sha256,
+      theme,
+      divergent: new Set(grouped.map((review) => review.severity)).size > 1,
+      reviews: grouped,
+    }));
 }
 
 export function readDesignCritique(path, manifest, options) {
@@ -360,7 +388,7 @@ export function expectedCritiqueReviews(manifest) {
 }
 
 export function finalizeDesignCritique(manifest, entries, { allowPartial = false } = {}) {
-  const validated = validateCritiqueConsistency(entries, manifest, { allowPartial });
+  const validated = validateCritiqueEntries(entries, manifest, { allowPartial });
   const orderedEntries = manifest.captures
     .filter((capture) => validated.has(capture.review_id))
     .map((capture) => ({
@@ -379,6 +407,7 @@ export function finalizeDesignCritique(manifest, entries, { allowPartial = false
       orderedEntries.filter((entry) => entry.severity === severity).length,
     ])
   );
+  const pixelIdenticalGroups = pixelIdenticalReviewGroups(manifest.captures, validated);
   return {
     schema_version: PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION,
     report_type: 'light-dark-responsive-page-inventory-design-critique',
@@ -391,7 +420,13 @@ export function finalizeDesignCritique(manifest, entries, { allowPartial = false
       themes: manifest.themes,
       viewports: manifest.viewports,
     },
-    summary: { severity_counts: severityCounts },
+    summary: {
+      severity_counts: severityCounts,
+      pixel_identical_groups: pixelIdenticalGroups.length,
+      divergent_pixel_identical_groups: pixelIdenticalGroups.filter((group) => group.divergent)
+        .length,
+    },
+    pixel_identical_groups: pixelIdenticalGroups,
     entries: orderedEntries,
   };
 }

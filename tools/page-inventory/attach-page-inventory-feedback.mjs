@@ -2,7 +2,12 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { allSurfaces } from './gen-page-inventory.mjs';
-import { readCaptureManifest, readDesignCritique, sha256File } from './lib/page-inventory-data.mjs';
+import {
+  pixelIdenticalReviewGroups,
+  readCaptureManifest,
+  readDesignCritique,
+  sha256File,
+} from './lib/page-inventory-data.mjs';
 import {
   attachExpectedCapturePaths,
   renderPageInventoryReport,
@@ -73,7 +78,14 @@ export function writePageInventoryFeedback(out, critiquePath, items) {
   }
   const critique = readDesignCritique(critiquePath, manifest);
   const index = join(out, 'index.html');
-  writeFileSync(index, renderPageInventoryReport(items, critique));
+  writeFileSync(
+    index,
+    renderPageInventoryReport(
+      items,
+      critique,
+      pixelIdenticalReviewGroups(manifest.captures, critique)
+    )
+  );
   return critique.size;
 }
 

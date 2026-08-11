@@ -18,6 +18,7 @@ import sharp from 'sharp';
 import {
   captureRecord,
   createCaptureManifest,
+  pixelIdenticalReviewGroups,
   readDesignCritique,
   sha256File,
   validateThemeCaptureDifferences,
@@ -957,7 +958,14 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
             console.warn(`Preserved but detached stale design critique: ${error.message}`);
           }
         }
-        writeFileSync(join(staging, 'index.html'), renderPageInventoryReport(items, critique));
+        writeFileSync(
+          join(staging, 'index.html'),
+          renderPageInventoryReport(
+            items,
+            critique,
+            pixelIdenticalReviewGroups(manifest.captures, critique)
+          )
+        );
       }
       return {
         snapshots: captures.length,

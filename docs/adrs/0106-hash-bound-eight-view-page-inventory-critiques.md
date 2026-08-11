@@ -11,6 +11,10 @@
 > light-only theme-support opt-out is retired, capture failures are loud, and stated design intent
 > is an input to every review. See the amendment at the end.
 
+> **Amendment (2026-08-11):** divergent severities across pixel-identical captures are recorded
+> rather than refused, the indistinguishable-review guard moved to the capture manifest, and the
+> critique `schema_version` moves 3 → 4. See the amendment at the end.
+
 ## Context
 
 The committed page inventory is both a responsive UI record and the evidence behind its design
@@ -112,3 +116,46 @@ committed inventory partially rewritten — the coverage authority stays all-or-
   it, which is the point but does make a flaky surface block the whole inventory.
 * − A design note is unfalsifiable by the tool. A wrong note suppresses a real finding on every
   future run, and only a human reading the notes file will catch it.
+
+## Amendment (2026-08-11): pixel-identical captures are reported, not reconciled
+
+Finalization used to refuse a critique in which two captures sharing a digest and a theme carried
+different severities. That guard contradicted the decision above it: a reviewer's input is the image
+**plus** its `review_description`, and pixel-identical captures are separate reviews precisely
+because those descriptions name different surfaces.
+
+The first full 672-review pass settled it. Eleven groups of captures shared pixels — the wide
+Settings shell opens on Appearance, so `settings-overview` and `settings-appearance` shoot
+byte-identically, and on compact phone landscape all twelve `settings-*` sections collapse into the
+same quick-toggle shell. Six of those groups were judged differently, and in every one the
+descriptions differed. The divergence carries meaning: for `settings-overview` a quick-toggle shell
+*is* the expected content, so `pass` is right, while for `settings-sound` the same pixels mean that
+section never rendered its own content, so a finding is right. Flattening them to one severity
+destroys information rather than protecting it.
+
+So each entry keeps its own severity and critique, and `finalizeDesignCritique` reports the sharing
+instead. `pixel_identical_groups` lists every group of two or more entries with the same digest and
+theme: its digest, its theme, whether the severities diverge, and each `review_id` with the severity
+it received. `summary` carries the group and divergent-group totals beside `severity_counts`. The
+generated report marks each affected shot with one line inside its critique note, so two identical
+shots carrying different severities read as one shared shell judged against two expectations rather
+than as reviewer inconsistency. The critique `schema_version` moves 3 → 4, so an earlier file is
+refused by `readDesignCritique` — a stale critique is preserved and detached rather than misread.
+
+What was genuinely load-bearing moved to where it can be checked deterministically. Two captures
+that share **both** their digest and their `review_description` are the same review twice: those
+reviewers received identical inputs, so a severity difference between them is model nondeterminism,
+and failing a finished review pass over a coin flip is not a repair. `validateCaptureManifest`
+rejects that pair at capture time naming both review IDs, because it means two surfaces carry the
+same title and description — an authoring defect, catchable before any review is paid for.
+`validateCritiqueConsistency` is gone: with the conflict throw removed its body was a pass-through
+to `validateCritiqueEntries`, and the `--status` path's call re-validated entries
+`loadCheckpointEntries` had already validated one checkpoint at a time.
+
+* \+ A surface that legitimately shares a shell is still judged on what that shell means for it.
+* \+ The sharing is visible in the committed JSON and in the report, so a human can audit the groups
+  the tool used to hide.
+* \+ The indistinguishable-review defect fails at capture time rather than after the review spend.
+* − The critique no longer asserts internal consistency of any kind. Two genuinely inconsistent
+  reviewers now produce two entries and a `divergent: true` group that only a human reading both
+  critiques can adjudicate.

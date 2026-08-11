@@ -16,7 +16,6 @@ import {
   PAGE_INVENTORY_REVIEW_CONTRACT,
   readCaptureManifest,
   StaleCritiqueHashError,
-  validateCritiqueConsistency,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
@@ -195,7 +194,6 @@ export async function finalizePageInventoryCritique(argv = process.argv.slice(2)
     reportStatus: status,
   });
   if (status) {
-    validateCritiqueConsistency(loaded.entries, manifest, { allowPartial: true });
     const expectedReviews = expectedCritiqueReviews(manifest);
     const missing = [...expectedReviews.values()].filter(
       (capture) =>
