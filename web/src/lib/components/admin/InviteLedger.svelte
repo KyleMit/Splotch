@@ -1,14 +1,15 @@
 <script lang="ts">
   import Icon from '../Icon.svelte';
-  import { copyKey, type Invite } from './AdminConsole.svelte';
+  import { type Invite } from './AdminConsole.svelte';
+  import InviteRowActions from './InviteRowActions.svelte';
   import { timeAgo, usageDetail } from '$lib/adminFormat';
 
   // The console's bordered "Access codes" block: an empty state, or the
   // columned table of invite rows with their Copy / Copy link / Remove
-  // actions. Copy feedback and the busy guard stay with AdminConsole (the
-  // row surfaces share them); this component owns the ledger's markup and
-  // styles, including the phone-width disclosure that expands a row's
-  // remaining actions in place.
+  // actions (per-row markup and styles: InviteRowActions). Copy feedback and
+  // the busy guard stay with AdminConsole (the row surfaces share them); this
+  // component owns the ledger shell and which row's phone-width disclosure is
+  // open.
   let {
     invites,
     busy,
@@ -29,31 +30,10 @@
   // centered modal sheet dimmed the page and hid the row being acted on).
   // One row open at a time; the token identifies it.
   let expandedToken = $state<string | null>(null);
-  // Intentionally untracked: read only imperatively, to return focus to the
-  // open row's chevron when Escape collapses it from a revealed button.
-  let expandedToggle: HTMLButtonElement | null = null;
 
-  function toggleRow(invite: Invite, toggle: HTMLButtonElement) {
-    if (expandedToken === invite.token) {
-      collapseRow();
-    } else {
-      expandedToken = invite.token;
-      expandedToggle = toggle;
-    }
+  function toggleRow(token: string) {
+    expandedToken = expandedToken === token ? null : token;
   }
-
-  function collapseRow() {
-    expandedToken = null;
-    expandedToggle = null;
-  }
-
-  function onEscapeCollapse(event: KeyboardEvent) {
-    if (event.key !== 'Escape' || expandedToken === null) return;
-    expandedToggle?.focus();
-    collapseRow();
-  }
-
-  const rowActionsId = (index: number) => `invite-row-actions-${index}`;
 
   // The native front door has no usage tracking (every invite's `usage` is
   // undefined there — see the Invite doc in AdminConsole), so the ledger
@@ -61,17 +41,6 @@
   // permanently blank cells.
   let showUsage = $derived(invites.some((invite) => invite.usage !== undefined));
 </script>
-
-{#snippet copyCodeButton(invite: Invite)}
-  <button
-    type="button"
-    class="copy-btn"
-    class:copied={copied === copyKey(invite.token, 'code')}
-    onclick={() => oncopy(copyKey(invite.token, 'code'), invite.token)}
-  >
-    {copied === copyKey(invite.token, 'code') ? 'Copied!' : 'Copy'}
-  </button>
-{/snippet}
 
 {#if invites.length === 0}
   <div class="ledger">
@@ -130,77 +99,17 @@
             {/if}
           {/if}
 
-          <div role="cell" class="cell-actions">
-            <div class="wide-actions">
-              {@render copyCodeButton(invite)}
-              <button
-                type="button"
-                class="link-action"
-                class:copied={copied === copyKey(invite.token, 'url')}
-                onclick={() => oncopy(copyKey(invite.token, 'url'), invite.url)}
-              >
-                {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
-              </button>
-              <button
-                type="button"
-                class="link-action link-action-danger"
-                disabled={busy}
-                aria-label={`Remove ${invite.token}`}
-                onclick={() => onremove(invite.token)}
-              >
-                Remove
-              </button>
-            </div>
-
-            <div class="compact-actions">
-              {@render copyCodeButton(invite)}
-              <button
-                type="button"
-                class="expand-btn"
-                class:open={expandedToken === invite.token}
-                aria-expanded={expandedToken === invite.token}
-                aria-controls={rowActionsId(index)}
-                aria-label={`More options for ${invite.token}`}
-                onclick={(event) => toggleRow(invite, event.currentTarget)}
-                onkeydown={onEscapeCollapse}
-              >
-                <Icon name="chevron-down" class="expand-icon" />
-              </button>
-            </div>
-          </div>
-
-          <div
-            role="cell"
-            class="row-actions"
-            class:open={expandedToken === invite.token}
-            id={rowActionsId(index)}
-          >
-            <div class="row-actions-line">
-              <button
-                type="button"
-                class="row-action"
-                class:copied={copied === copyKey(invite.token, 'url')}
-                aria-label={`Copy link for ${invite.token}`}
-                onclick={() => oncopy(copyKey(invite.token, 'url'), invite.url)}
-                onkeydown={onEscapeCollapse}
-              >
-                {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
-              </button>
-              <button
-                type="button"
-                class="row-action row-action-danger"
-                disabled={busy}
-                aria-label={`Remove ${invite.token}`}
-                onclick={() => {
-                  collapseRow();
-                  onremove(invite.token);
-                }}
-                onkeydown={onEscapeCollapse}
-              >
-                Remove
-              </button>
-            </div>
-          </div>
+          <InviteRowActions
+            {invite}
+            {busy}
+            {copied}
+            {oncopy}
+            {onremove}
+            open={expandedToken === invite.token}
+            revealId={`invite-row-actions-${index}`}
+            ontoggle={() => toggleRow(invite.token)}
+            onclose={() => (expandedToken = null)}
+          />
         </div>
       {/each}
     </div>
@@ -324,206 +233,6 @@
     font-size: var(--font-size-sm);
   }
 
-  .wide-actions {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-  }
-
-  /* Copy — the row's one outlined button. */
-  .copy-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: var(--ledger-target-min);
-    padding: 7px 14px;
-    color: var(--brand-text);
-    background: transparent;
-    border: 1px solid var(--brand-text);
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: var(--ledger-meta-size);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .copy-btn:hover {
-      background: var(--brand-wash);
-    }
-  }
-
-  .copy-btn.copied {
-    color: var(--success-text);
-    border-color: var(--success-text);
-    background: var(--success-wash);
-  }
-
-  /* Copy link / Remove — quiet link-shaped buttons. The box is invisible, so
-     the 44px floor costs nothing visually. */
-  .link-action {
-    display: inline-flex;
-    align-items: center;
-    min-height: var(--ledger-target-min);
-    padding: 0;
-    color: var(--brand-text);
-    background: transparent;
-    border: none;
-    font-family: inherit;
-    font-size: var(--ledger-meta-size);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  @media (hover: hover) {
-    .link-action:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .link-action.copied {
-    color: var(--success-text);
-  }
-
-  .link-action-danger {
-    color: var(--danger-text);
-  }
-
-  .link-action:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
-  /* Compact Copy + chevron pair — phone layout only. */
-  .compact-actions {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-
-  /* The disclosure chevron: transparent at rest, so it reads as "there's more
-     of this row" rather than a separate control surface. */
-  .expand-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--ledger-target-min);
-    height: var(--ledger-target-min);
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: background var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .expand-btn:hover {
-      background: var(--surface-hover);
-    }
-  }
-
-  /* Press and open sit below the hover block so they win on a hover-capable
-     pointer too: the compact layout is reached by narrow desktop windows and
-     trackpad hybrids, not only by touch, and there an earlier :active would
-     lose to :hover for the whole press — leaving the button with no press
-     feedback on exactly the devices this rule exists to serve. */
-  .expand-btn:active,
-  .expand-btn.open {
-    background: var(--brand-wash);
-  }
-
-  .expand-btn:focus-visible {
-    outline: 2px solid var(--brand);
-    outline-offset: 2px;
-  }
-
-  :global(.expand-btn .expand-icon) {
-    width: 20px;
-    height: 20px;
-    transition: transform var(--duration-fast) ease;
-  }
-
-  /* One chevron glyph, rotated open — never a reactive {@html} icon swap
-     (see .claude/rules/svelte.md on {@html} and hydration). */
-  .expand-btn.open :global(.expand-icon) {
-    transform: rotate(180deg);
-  }
-
-  /* Re-inked via fill (not a filter chain), the modal-close-icon pattern:
-     CSS fill beats the SVG's baked near-black presentation attribute. */
-  :global(.expand-btn .expand-icon svg) {
-    fill: var(--icon-muted);
-  }
-
-  :global(.expand-btn:active .expand-icon svg),
-  .expand-btn.open :global(.expand-icon svg) {
-    fill: var(--brand-text);
-  }
-
-  /* The revealed Copy link / Remove line — phone layout only; the wide grid
-     never renders it as a track. */
-  .row-actions {
-    display: none;
-  }
-
-  .row-action {
-    flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: var(--ledger-target-min);
-    padding: 7px 14px;
-    color: var(--brand-text);
-    background: var(--surface);
-    border: var(--border-width) solid var(--border);
-    border-radius: var(--radius-sm);
-    font-family: inherit;
-    font-size: var(--ledger-meta-size);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    white-space: nowrap;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease,
-      border-color var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .row-action:hover {
-      background: var(--brand-wash);
-    }
-
-    .row-action-danger:hover {
-      background: var(--danger-wash);
-    }
-  }
-
-  .row-action.copied {
-    color: var(--success-text);
-    border-color: var(--success-text);
-    background: var(--success-wash);
-  }
-
-  .row-action-danger {
-    color: var(--danger-text);
-  }
-
-  .row-action:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
   /* Empty state */
   .empty {
     text-align: center;
@@ -576,17 +285,10 @@
 
   /* Below 560px three inline actions no longer fit beside a real token, so
      the row keeps Copy plus the disclosure chevron and the remaining actions
-     expand in place — a second line inside the row that pushes the list down.
-     No overlay: nothing is covered and nothing needs dismissing. */
+     expand in place — a second line inside the row that pushes the list down
+     (the action cells themselves: InviteRowActions, which carries the same
+     560px breakpoint). */
   @media (max-width: 560px) {
-    .wide-actions {
-      display: none;
-    }
-
-    .compact-actions {
-      display: inline-flex;
-    }
-
     /* Row-gap stays 0: the collapsed reveal line is a zero-height flex item
        on its own wrap line and must not open a gap under the first line. */
     .invite {
@@ -597,39 +299,6 @@
     /* The open row reads as one block against the white rows around it. */
     .invite.open {
       background: var(--surface-2);
-    }
-
-    .row-actions {
-      display: block;
-      flex-basis: 100%;
-      height: 0;
-      overflow: hidden;
-      /* Keeps the collapsed line's buttons out of the tab order and the
-         accessibility tree; the transition holds it visible while closing. */
-      visibility: hidden;
-      transition:
-        height var(--duration-fast) ease,
-        visibility var(--duration-fast);
-    }
-
-    /* 44px action line plus the 14px gap the first line's bottom padding
-       provides in the mock; the row's own bottom padding closes the block. */
-    .row-actions.open {
-      height: calc(var(--ledger-target-min) + 14px);
-      visibility: visible;
-    }
-
-    .row-actions-line {
-      display: flex;
-      gap: 10px;
-      padding-top: 14px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .row-actions,
-    :global(.expand-btn .expand-icon) {
-      transition: none;
     }
   }
 </style>
