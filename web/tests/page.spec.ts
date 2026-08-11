@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { draw, gotoApp, renderedCanvasHandle } from './helpers';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { resolveTheme, THEME_COLORS, THEME_DEFAULT, type ThemePreference } from '../src/lib/theme';
 
 async function opaquePixelCount(page: Page) {
   const canvas = await renderedCanvasHandle(page);
@@ -83,32 +85,88 @@ test('non-canvas routes are normal documents by default (/privacy, /admin)', asy
   expect(admin.userSelect).not.toBe('none');
 });
 
+// Drive a real SvelteKit client-side navigation (no full reload), so it's a
+// component's effect cleanup — not the boot script, which only runs on load —
+// that has to put the document right. The sentinel a reload would wipe rides
+// along, so the caller can prove the page never reloaded.
+async function spaNavigate(page: Page, href: string) {
+  await page.evaluate(() => ((window as unknown as { __spa: boolean }).__spa = true));
+  await page.evaluate((target) => {
+    const a = document.createElement('a');
+    a.href = target;
+    document.body.appendChild(a);
+    a.click();
+  }, href);
+}
+
+async function expectNoReload(page: Page) {
+  const noReload = await page.evaluate(
+    () => (window as unknown as { __spa?: boolean }).__spa === true
+  );
+  expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
+}
+
 test('client-side nav off the drawing route drops the app-surface locks (effect cleanup)', async ({
   page,
 }) => {
   await page.goto('/');
   expect((await bodySurface(page)).touchAction).toBe('none');
 
-  // Drive a real SvelteKit client-side navigation (no full reload), so it's the
-  // / page's effect cleanup — not the boot script, which only runs on load — that
-  // must clear the flag. The sentinel proves the page never reloaded.
-  await page.evaluate(() => ((window as unknown as { __spa: boolean }).__spa = true));
-  await page.evaluate(() => {
-    const a = document.createElement('a');
-    a.href = '/privacy';
-    document.body.appendChild(a);
-    a.click();
-  });
+  await spaNavigate(page, '/privacy');
   await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
 
-  const noReload = await page.evaluate(
-    () => (window as unknown as { __spa?: boolean }).__spa === true
-  );
-  expect(noReload, 'expected a client-side navigation, not a full reload').toBe(true);
+  await expectNoReload(page);
   const after = await bodySurface(page);
   expect(after.touchAction).toBe('auto');
   expect(after.userSelect).not.toBe('none');
 });
+
+// <meta name="theme-color"> is the browser address bar and the PWA status bar.
+// The drawing route is the one page that overrides it — NotchBand tints it with
+// the active drawing color — so leaving that route has to hand the tag back, or
+// the standalone page that replaces it renders under an address bar still
+// wearing the drawing color. app.html's pre-paint script can't cover this: it
+// runs on load only.
+const themeColor = (page: Page) => page.getAttribute('meta[name="theme-color"]', 'content');
+
+const THEME_PREFERENCE_CASES = [
+  { label: 'the system preference under a light OS', preference: 'system', systemDark: false },
+  { label: 'the system preference under a dark OS', preference: 'system', systemDark: true },
+  { label: 'an explicit light preference under a dark OS', preference: 'light', systemDark: true },
+  { label: 'an explicit dark preference under a light OS', preference: 'dark', systemDark: false },
+] satisfies { label: string; preference: ThemePreference; systemDark: boolean }[];
+
+for (const { label, preference, systemDark } of THEME_PREFERENCE_CASES) {
+  test(`the drawing route hands theme-color back on client-side nav, and takes it again (${label})`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: systemDark ? 'dark' : 'light' });
+    if (preference !== THEME_DEFAULT) {
+      await page.addInitScript(([key, value]) => localStorage.setItem(key, value), [
+        STORAGE_KEYS.theme,
+        preference,
+      ] as const);
+    }
+
+    await page.goto('/');
+    await expect(page.locator('#drawingCanvas')).toBeVisible();
+
+    const pageColor = THEME_COLORS[resolveTheme(preference, systemDark)];
+    const drawingColor = await themeColor(page);
+    expect(drawingColor, 'NotchBand tints the tag with the active drawing color on /').not.toBe(
+      pageColor
+    );
+
+    await spaNavigate(page, '/privacy');
+    await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
+    await expect.poll(() => themeColor(page)).toBe(pageColor);
+
+    await spaNavigate(page, '/');
+    await expect(page.locator('#drawingCanvas')).toBeVisible();
+    await expect.poll(() => themeColor(page)).toBe(drawingColor);
+    await expectNoReload(page);
+  });
+}
 
 test('drawing survives a real-route remount and the fresh tiled canvas accepts more ink', async ({
   page,

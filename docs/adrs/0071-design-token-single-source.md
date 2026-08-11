@@ -240,6 +240,9 @@ none of that state. Instead `app.html`'s pre-paint script resolves the theme its
 first paint, and in system mode keeps a `matchMedia` listener so the chrome follows an OS switch
 made while the page is open. That listener stands down whenever `data-app-surface` is present: on
 the drawing route `NotchBand` tints the same tag with the active drawing color, and the two must not
-fight over it. The script's copies of the colors and of `resolveTheme`'s three-state rule are
-guarded the way the rest of that script is — `app.html.test.ts` now runs the shipped script against
-the shipped tag for every preference under both OS preferences.
+fight over it. Taking the tag is also what obliges `NotchBand` to hand it back — an `$effect`
+cleanup restores `THEME_COLORS[resolvedTheme()]` when it unmounts, because a client-side navigation
+to a standalone page runs no boot script and would otherwise leave that page under an address bar
+still wearing the drawing color. The script's copies of the colors and of `resolveTheme`'s
+three-state rule are guarded the way the rest of that script is — `app.html.test.ts` now runs the
+shipped script against the shipped tag for every preference under both OS preferences.
