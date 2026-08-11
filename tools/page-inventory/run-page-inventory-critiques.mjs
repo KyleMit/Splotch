@@ -16,6 +16,7 @@ import {
   readCaptureManifest,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
+import { CHECKPOINT_SCHEMA_VERSION } from './finalize-page-inventory-critique.mjs';
 import { ROOT, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
@@ -212,7 +213,7 @@ function currentCheckpoint(path, capture, manifest) {
   try {
     const document = JSON.parse(readFileSync(path, 'utf8'));
     if (
-      document.schema_version !== 3 ||
+      document.schema_version !== CHECKPOINT_SCHEMA_VERSION ||
       document.review_contract !== PAGE_INVENTORY_REVIEW_CONTRACT ||
       document.review_id !== capture.review_id ||
       document.entry?.review_id !== capture.review_id
@@ -256,7 +257,7 @@ async function reviewCapture(context, capture) {
       };
       validateCritiqueEntries([entry], context.manifest, { allowPartial: true });
       writeJsonAtomically(checkpoint, {
-        schema_version: 3,
+        schema_version: CHECKPOINT_SCHEMA_VERSION,
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
         review_id: capture.review_id,
         entry,

@@ -21,7 +21,7 @@ import {
 } from './lib/page-inventory-data.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
-const CHECKPOINT_SCHEMA_VERSION = 3;
+export const CHECKPOINT_SCHEMA_VERSION = 3;
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');
 const CHECKPOINTS_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-critique/reviews');
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory/design-critique.json');

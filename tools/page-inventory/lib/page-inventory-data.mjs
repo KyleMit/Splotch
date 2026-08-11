@@ -115,7 +115,11 @@ export function captureReviewId(item, viewport, theme) {
   return `${item.group}--${item.id}--${viewport.id}--${theme.id}`;
 }
 
-const GENERAL_DESIGN_NOTE_BRIEF = `Settled design decisions in this app, correct as shown rather than defects: ${GENERAL_DESIGN_NOTES.join(' ')}`;
+// The framing carries the same obligation as the notes themselves: it may state
+// what was decided, never how the image measures up to it. A reviewer told the
+// verdict before looking stops assessing, and this sentence reaches the
+// night-mode reviewers whose whole remit is contrast and legibility.
+const GENERAL_DESIGN_NOTE_BRIEF = `Design decisions already settled for this app, given as context for what you are looking at rather than as a judgement of it: ${GENERAL_DESIGN_NOTES.join(' ')}`;
 
 function captureReviewDescription(item, viewport, theme) {
   const note = surfaceDesignNote(item.group, item.id);
