@@ -10,12 +10,15 @@
     summary: Snippet;
     children: Snippet;
     class?: string;
+    /** Bindable so a caller can close the panel itself — TocDisclosure has to
+        collapse before it measures a jump. */
+    open?: boolean;
   }
 
-  let { summary, children, class: className }: Props = $props();
+  let { summary, children, class: className, open = $bindable(false) }: Props = $props();
 </script>
 
-<details class={['disclosure', className]}>
+<details class={['disclosure', className]} bind:open>
   <summary>{@render summary()}</summary>
   {@render children()}
 </details>

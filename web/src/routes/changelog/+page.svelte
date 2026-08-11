@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Disclosure from '$lib/components/design/Disclosure.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import ReleaseHistory from '$lib/components/page/ReleaseHistory.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
+  import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import releases from '$lib/releases.json';
 
   const contents: SidebarTocItem[] = releases.map((release) => ({
@@ -17,6 +17,12 @@
   // is never blank at the top of the page.
   let activeRelease = $state(releases[0].id);
 
+  // Whether the reader has reached the history at all. The collapsed contents
+  // row states how many releases there are until then and names the one being
+  // read after — so it is derived apart from activeRelease, which is seeded and
+  // therefore can't say "nowhere yet".
+  let inHistory = $state(false);
+
   // Plain ref would do for the observer, but the effect below has to start once
   // the history is in the document.
   let historyEl = $state<HTMLElement>();
@@ -24,15 +30,26 @@
   // A release becomes the current one once it has climbed into the top third of
   // the viewport; while it is still below that line the reader is reading the
   // one above it.
-  const SPY_ROOT_MARGIN = '0px 0px -70% 0px';
+  const SPY_BAND_BOTTOM_PERCENT = 70;
+  const SPY_ROOT_MARGIN = `0px 0px -${SPY_BAND_BOTTOM_PERCENT}% 0px`;
 
   $effect(() => {
     const host = historyEl;
     if (!host) return;
+    const newest = releases[0].id;
     const inBand: Record<string, boolean> = {};
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) inBand[entry.target.id] = entry.isIntersecting;
+        for (const entry of entries) {
+          inBand[entry.target.id] = entry.isIntersecting;
+          // Read off the band's own bottom edge rather than latched, so the row
+          // goes back to the count when the reader scrolls up to the hero: the
+          // newest release's top is above that line for the whole history and
+          // below it only above the history.
+          if (entry.target.id === newest && entry.rootBounds) {
+            inHistory = entry.boundingClientRect.top <= entry.rootBounds.bottom;
+          }
+        }
         // Releases run newest first, so the last one in the band is the one
         // being scrolled into. An empty band means the reader is between two
         // releases — hold the last reading rather than blanking the rail.
@@ -54,7 +71,7 @@
   />
 </svelte:head>
 
-<div class="changelog">
+<div class="changelog" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
   <PageShell title="Changelog" wordmark="Splotch">
     {#snippet lede()}
       Every public Splotch release, newest first, with the notes that shipped alongside it.
@@ -70,15 +87,15 @@
            release clears the fold instead of sitting under a wall of contents.
            Closed on every load: a reader who opened it once should still land
            on the newest release next visit. -->
-      <Disclosure class="contents-disclosure">
-        {#snippet summary()}
-          <span class="contents-eyebrow">Contents</span>
-          <span class="contents-count">{releases.length} releases</span>
-        {/snippet}
-        <div class="contents-open">
-          <SidebarToc items={contents} active={activeRelease} label="Changelog contents" />
-        </div>
-      </Disclosure>
+      <TocDisclosure
+        class="contents-disclosure"
+        items={contents}
+        active={activeRelease}
+        showCount={!inHistory}
+        label="Changelog contents"
+        noun="releases"
+        stickyTop="var(--space-6)"
+      />
 
       <div class="releases" bind:this={historyEl}>
         <ReleaseHistory />
@@ -119,44 +136,21 @@
     display: none;
   }
 
-  .changelog-body :global(.contents-disclosure summary) {
-    gap: var(--space-2);
-    /* The whole row is the tap target. */
-    min-height: 48px;
-    padding: var(--space-3) var(--space-4);
-  }
-
-  .changelog-body :global(.contents-disclosure summary::after) {
-    color: var(--page-link);
-    font-weight: var(--font-weight-bold);
-  }
-
-  .contents-eyebrow {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--page-muted);
-  }
-
-  /* Takes the row's free space so the count and the chevron read as one pair
-     against the right edge. */
-  .contents-count {
-    margin-left: auto;
-    color: var(--page-link);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-  }
-
-  .contents-open {
-    padding: var(--space-2) var(--space-2) var(--space-3);
-  }
-
-  /* Clears the sticky rail's top edge when a jump parks a heading. */
+  /* Clears the sticky rail's top edge when a jump parks a heading. The
+     disclosure's own jumps measure their target against its collapsed row
+     instead, so this stays the rail's number. */
   .changelog :global(.release) {
     scroll-margin-top: var(--space-6);
     padding: var(--space-8) 0;
     border-top: var(--border-width) solid var(--page-rule);
+  }
+
+  /* Nothing follows the oldest release, so without a reserve the scroll clamps
+     while it is still below the spy band and it can never become the reading
+     position. A band's worth of room under its own top is exactly what it needs
+     to climb in; min-height adds nothing once its notes are that long. */
+  .changelog :global(.release:last-of-type) {
+    min-height: var(--spy-reserve);
   }
 
   .changelog :global(.release-header) {
@@ -206,21 +200,14 @@
     margin-bottom: var(--space-2);
   }
 
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .changelog-body :global(.contents-disclosure:hover) {
-      border-color: var(--page-link);
-    }
-  }
-
   /* A 232px rail beside a fluid sheet squeezes the notes, so the whole tablet
      and phone range takes the disclosure instead — the same breakpoint the
-     shell drops its fixed sheet width at. */
+     shell drops its fixed sheet width at. The grid goes with it: a sticky row
+     is pinned only as far as its containing block reaches, and a grid item's
+     area is exactly its own height. */
   @media (max-width: 920px) {
     .changelog-body {
-      grid-template-columns: 1fr;
-      gap: var(--space-6);
+      display: block;
     }
 
     .contents-rail {
@@ -229,6 +216,7 @@
 
     .changelog-body :global(.contents-disclosure) {
       display: block;
+      margin-bottom: var(--space-6);
     }
   }
 

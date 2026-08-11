@@ -10,6 +10,7 @@
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
+  import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import SegmentedPicker, {
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
@@ -83,18 +84,22 @@
   }));
 
   let active = $state<SectionId>('color');
+  // Whether any section has crossed the line yet. The collapsed contents row
+  // names what the page holds until then and the section being read after — so
+  // it is derived apart from `active`, which is seeded and can't say "the hero".
+  let entered = $state(false);
   // Plain element ref: only the scrollspy handler reads it, nothing reacts.
-  let chipNav: HTMLElement | undefined;
+  let siteHeader: HTMLElement | undefined;
 
-  // A section is "current" once its top clears the sticky header band.
-  const SCROLLSPY_TOP_PX = 140;
-  // Keeps the active chip's left edge clear of the nav's fade-out region.
-  const CHIP_SCROLL_INSET_PX = 24;
+  // How far under the sticky header a heading may sit and still count as the
+  // one being read. Deeper than the clearance TocDisclosure parks a jumped-to
+  // heading at, so arriving from the contents marks the section it landed on.
+  const SPY_BAND_PX = 56;
 
   $effect(() => {
-    // Anchor jumps and the chip auto-scroll glide instead of teleporting.
-    // Stamped on <html> imperatively rather than via :global(html) CSS, which
-    // would leak past this page once its chunk loads.
+    // Anchor jumps glide instead of teleporting. Stamped on <html>
+    // imperatively rather than via :global(html) CSS, which would leak past
+    // this page once its chunk loads.
     const root = document.documentElement;
     root.style.scrollBehavior = 'smooth';
 
@@ -102,20 +107,20 @@
     let raf = 0;
     const spy = () => {
       raf = 0;
+      // Measured rather than declared: the header is a row taller below the
+      // 980px breakpoint, where it carries the contents row as well.
+      const line = (siteHeader?.getBoundingClientRect().bottom ?? 0) + SPY_BAND_PX;
       let next: SectionId = sections[0].id;
+      let crossed = false;
       for (const { id } of sections) {
         const el = document.getElementById(id);
-        if (el && el.getBoundingClientRect().top <= SCROLLSPY_TOP_PX) next = id;
+        if (el && el.getBoundingClientRect().top <= line) {
+          next = id;
+          crossed = true;
+        }
       }
-      if (next === active) return;
       active = next;
-      const chip = chipNav?.querySelector<HTMLElement>(`a[href="#${next}"]`);
-      if (chip && chipNav) {
-        chipNav.scrollTo({
-          left: Math.max(0, chip.offsetLeft - CHIP_SCROLL_INSET_PX),
-          behavior: 'smooth',
-        });
-      }
+      entered = crossed;
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(spy);
@@ -139,7 +144,7 @@
 </svelte:head>
 
 <div class="page">
-  <header class="site-header">
+  <header class="site-header" bind:this={siteHeader}>
     <div class="header-row">
       <div class="header-left">
         <div class="theme-toggle">
@@ -157,12 +162,16 @@
         <BrandMark wordmark="Splotch" />
       </a>
     </div>
-    <nav class="chip-nav" aria-label="Sections" bind:this={chipNav}>
-      {#each sections as section (section.id)}
-        <a href="#{section.id}" class="chip" class:active={active === section.id}>{section.label}</a
-        >
-      {/each}
-    </nav>
+    <!-- The second row of the sticky header, so the contents needs no offset of
+         its own: it is already inside the block that pins. -->
+    <TocDisclosure
+      class="header-toc"
+      items={tocItems}
+      {active}
+      showCount={!entered}
+      label="Contents"
+      noun="sections"
+    />
   </header>
 
   <div class="shell" id="top">
@@ -252,6 +261,11 @@
      an 820px content column, and sections park 96px under the sticky header. */
 
   .page {
+    /* The shallowest the scrollspy's line ever sits: the header alone, at the
+       wide breakpoint, plus its arrival band. Reserving against the shallowest
+       is what makes the tail below sufficient at every width. */
+    --spy-shallowest-line: 140px;
+
     min-height: 100vh;
     background: var(--app-bg);
     color: var(--text-strong);
@@ -322,34 +336,11 @@
     text-decoration: none;
   }
 
-  .chip-nav {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding: 0 var(--space-4) 10px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .chip-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .chip {
-    flex-shrink: 0;
-    padding: 5px var(--space-3);
-    border-radius: var(--radius-pill);
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    text-decoration: none;
-    white-space: nowrap;
-    background: var(--surface-2);
-    color: var(--text-soft);
-  }
-
-  .chip.active {
-    background: var(--brand-wash);
-    color: var(--brand-text);
+  /* Lines the contents row up on the header's own gutter and measure. */
+  .site-header :global(.header-toc) {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 28px) 10px;
   }
 
   .shell {
@@ -385,6 +376,17 @@
     flex: 1;
     min-width: 0;
     max-width: 820px;
+  }
+
+  /* A scrollspy keyed on "the heading's top has crossed the line" cannot promote
+     a section with less below it than a scrollport: the scroll clamps while the
+     last headings are still under the line, so they can never be read out and
+     picking one from the contents names a different section on arrival.
+     Reserving a scrollport's worth from the last section's top is what lets it —
+     and every section above it — climb to the line; min-height adds nothing once
+     a section's own content is that tall. */
+  .styleguide :global(section[data-sg-section]:last-of-type) {
+    min-height: calc(100dvh - var(--spy-shallowest-line));
   }
 
   .hero {
@@ -489,7 +491,7 @@
   }
 
   @media (min-width: 980px) {
-    .chip-nav {
+    .site-header :global(.header-toc) {
       display: none;
     }
 
