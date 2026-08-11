@@ -53,10 +53,14 @@
 
   // A sticky element taller than its scrollport can never be scrolled to its
   // own bottom — the pin outlives the scroll — so the panel takes the room left
-  // under the row and scrolls inside itself. Measured from where the panel
-  // actually sits — unlike the jump below, which needs where the row will come
-  // to rest, a cap taken from the panel's present position always fits the
-  // viewport it is opened in, and it only grows as the block pins.
+  // under the row and scrolls inside itself.
+  //
+  // The cap is taken from the panel's own top edge as it opens, and again on
+  // resize, so it always fits the viewport it was opened in. It is deliberately
+  // not recomputed on scroll: that would re-lay-out the panel under a reader
+  // mid-flick to win back room they can already reach by scrolling it. The cost
+  // is that a panel opened before its block has pinned keeps the shorter cap it
+  // was opened with, and sits above unused viewport once the block does pin.
   $effect(() => {
     if (!open) return;
     const cap = () => {
@@ -74,6 +78,11 @@
   // while the jump itself waits for the panel to leave the flow. Attached
   // imperatively because this is delegation over real anchors, not a click
   // handler on a static element.
+  //
+  // The <details> toggles natively, so before this listener exists a pick gets
+  // the browser's own jump and lands a panel-height short. Accepted rather than
+  // fixed: it takes an open-and-click inside the hydration window, and the
+  // alternative is making the row's disclosure wait on JS.
   $effect(() => {
     const host = panel;
     if (!host) return;

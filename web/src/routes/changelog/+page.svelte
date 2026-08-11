@@ -46,6 +46,9 @@
           // returns the row to the count. Reading the same thing off the newest
           // release instead would miss it, because a jump that skips a crossing
           // outright leaves that release's own state unchanged and unreported.
+          // The reading holds only while the container reaches the band at the
+          // bottom of the page: enough content below the history would lift its
+          // bottom edge clear, and the row would revert to the count there.
           if (entry.target === host) inHistory = entry.isIntersecting;
           else inBand[entry.target.id] = entry.isIntersecting;
         }
