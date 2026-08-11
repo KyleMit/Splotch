@@ -1,8 +1,9 @@
 # ADR-0045: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
 
 **Status:** Active — the 2026-07-31 thumbnail decode bridge is superseded by the 2026-08-01
-amendment, the 2026-08-02 issue #621 amendment adds responsive web presentation, and the 2026-08-08
-amendment reuses the derivatives for screen-sized web/native packs. **Date:** 2026-07
+amendment, the 2026-08-02 issue #621 amendment adds responsive web presentation, the 2026-08-08
+amendment reuses the derivatives for screen-sized web/native packs, and the 2026-08-11 issue #892
+amendment qualifies when the selected request's high priority reaches the network. **Date:** 2026-07
 
 ## Context
 
@@ -133,6 +134,32 @@ receives either the correct composition or no overlay during the decode window. 
 catalog no longer produce or ship alpha overlay thumbnails; picker thumbnails remain unchanged. The
 next amendment separates the ready element's presentation candidate from the canonical bytes used
 once export begins.
+
+**Amendment (2026-08-11, issue #892) — the selected request's high priority reaches the network only
+when the picker has not already started it.** "Decodes the overlay off-DOM at high fetch priority"
+above describes the element, not always the transfer. On a cold constrained visit the picker's own
+`pointerenter`/`pointerdown` warm has usually started that exact URL first, and a detached `Image()`
+issues at the engine's default image priority — `Low` in Chromium. `DrawingCanvas.svelte`'s
+high-priority image then **reuses that in-flight request** rather than issuing one, so the hint
+never reaches the wire: a slow-4g trace shows the 111 KB overlay as a single `Low` request spanning
+the whole 6.9 s apply. The prioritization is real when the warm has finished (memory-cache hit) or
+never ran; it is inert in exactly the constrained case it was written for.
+
+Trial 08 above (`fetchPriority=low` on speculative picker images) was re-run against today's code,
+which now also carries ADR-0103's pack downloader — `fetch()`, and therefore `High` by default —
+competing for the same pipe. Three findings, none of which changed the code:
+
+* The low hint is not weak, it is absent: `Low` is already where a detached image starts, so the arm
+  reproduced the baseline's priorities and timings exactly.
+* Lowering the pack downloader to `priority: 'low'` *does* change 30 requests' priority and still
+  recovers no time, re-confirming this ADR's "priority does not interrupt requests that already own
+  connection slots" against traffic that postdates it.
+* Promoting the picker's overlay warm to `high` — the repair the first finding suggests — halves
+  apply on a mouse (6,973 → 3,611 ms, slow-4g) by starving the picker's own thumbnails, which
+  doubles time-to-first-painted-tile (7,253 → 14,475 ms); on touch, the flagship path with no hover,
+  it buys 0.7%. Rejected: the child must see the tiles to choose a page.
+
+Evidence and a re-runnable probe: `docs/scratchpad/fetch-priority-prefetch-eval-2026-08.md`.
 
 ### 5. Responsive web presentation; canonical export and offline authority
 
