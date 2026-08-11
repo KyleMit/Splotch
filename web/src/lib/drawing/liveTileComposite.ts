@@ -1,3 +1,7 @@
+/**
+ * Diagnostics/test seam for `/dev/engine` and Playwright pixel readers. Playwright serializes the
+ * function body into the page through `evaluateHandle`, so it cannot reference module-scope values.
+ */
 export function compositeVisibleLiveTiles(root: ParentNode = document): HTMLCanvasElement {
   const tiles = Array.from(root.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]'));
   const rendered = document.createElement('canvas');
@@ -9,18 +13,21 @@ export function compositeVisibleLiveTiles(root: ParentNode = document): HTMLCanv
   const tops = [...new Set(tiles.map((tile) => Number.parseFloat(tile.style.top)))].sort(
     (first, second) => first - second
   );
+  const currentBackingSpan = (alignedTiles: HTMLCanvasElement[], dimension: 'width' | 'height') => {
+    const visibleTiles = alignedTiles.filter((tile) => !tile.hidden);
+    const candidates = visibleTiles.length > 0 ? visibleTiles : alignedTiles;
+    return Math.max(...candidates.map((tile) => tile[dimension]));
+  };
   const columnWidths = lefts.map((left) =>
-    Math.max(
-      ...tiles
-        .filter((tile) => Number.parseFloat(tile.style.left) === left)
-        .map((tile) => tile.width)
+    currentBackingSpan(
+      tiles.filter((tile) => Number.parseFloat(tile.style.left) === left),
+      'width'
     )
   );
   const rowHeights = tops.map((top) =>
-    Math.max(
-      ...tiles
-        .filter((tile) => Number.parseFloat(tile.style.top) === top)
-        .map((tile) => tile.height)
+    currentBackingSpan(
+      tiles.filter((tile) => Number.parseFloat(tile.style.top) === top),
+      'height'
     )
   );
   const columnOffsets = columnWidths.map((_, index) =>
