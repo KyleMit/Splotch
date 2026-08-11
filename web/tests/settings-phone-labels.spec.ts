@@ -81,12 +81,15 @@ for (const { device, width, height, chipColumns } of PHONE_VIEWPORTS) {
     // asserts the state rather than toggling into it — a blind click would
     // reveal nothing and leave the assertions below racing the slide-away.
     await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'true');
+    // One per entry in DRAWING_TOOL_CHIPS, stated rather than imported: that
+    // module reaches the rune-based settings store, which a spec can't load
+    // (the same reason settings-mount.spec.ts reads its count off the DOM).
     const labels = page.locator('.control-chips .option-label');
-    await expect(labels).toHaveCount(6);
+    await expect(labels).toHaveCount(5);
     expect(await clippedText(page, '.control-chips .option')).toEqual([]);
     // Every name on one line: this grid holds short labels, and the fallback
     // that keeps a long one readable — wrapping — would break these mid-word
-    // ("Screensh/ot") rather than at a space.
+    // ("Stroke wid/th") rather than at a space.
     expect(await wrappedText(page, '.control-chips .option-label')).toEqual([]);
 
     // Which is what the column count buys: the labels only fit beside their

@@ -163,8 +163,13 @@
 
   // A long jump is animated, but the parent may have asked the OS for less
   // motion — and Chrome does not apply that preference to programmatic smooth
-  // scrolls on its own.
+  // scrolls on its own. A jump made while the pane is still filling is instant
+  // for a second reason: it will have to be re-aimed as the sections above it
+  // settle, and an animation still in flight leaves nothing to re-aim against —
+  // scrollTop sits between the two positions, which reads exactly like the
+  // parent having scrolled the pane themselves.
   function jumpBehavior(): ScrollBehavior {
+    if (!fullyMounted) return 'auto';
     return matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
   }
 
@@ -186,6 +191,23 @@
     }
     return current;
   }
+
+  // The section a jump asked for while the pane was still filling. A jump can
+  // only be computed from the offsets that exist when the row is tapped, and
+  // everything above the target goes on changing height afterwards — the fill
+  // mounting those sections, and their own conditional reveals landing
+  // (persisted state, the free-generation fetch). Each one moves the target
+  // under a pane that has already scrolled, which is how a tap on Saving
+  // settles with the reading line back inside AI Art and the table of contents
+  // naming a section the parent did not choose. Worse, until enough of the pane
+  // exists *below* the target there is no scroll extent to reach it with, so
+  // the first attempt lands clamped however correct its arithmetic was.
+  //
+  // So a jump made mid-fill stays pending: it re-aims on every content resize,
+  // and once more when the pane is finally whole. From there the position is
+  // the parent's — and any hand on the pane ends it sooner.
+  // Deliberately untracked: only the handlers below read it, nothing renders it.
+  let pendingJump: SectionId | null = null;
 
   // Arithmetic on each scroller's own scrollTop, never `scrollIntoView`: that
   // method scrolls *every* scrollable ancestor, and the card, the split and the
@@ -246,6 +268,9 @@
     const frame = requestAnimationFrame(() => {
       navEl?.scrollTo({ top: 0 });
       revealNavRow(landing, 'auto');
+      // A deep-linked landing is a jump like any other, and pays the same way:
+      // the sections above it are still arriving when this scroll is computed.
+      if (!fullyMounted) pendingJump = landing;
       scrollToSection(landing, 'auto');
       stopFill = fillAfterFlyIn();
     });
@@ -253,6 +278,17 @@
       cancelAnimationFrame(frame);
       stopFill?.();
     };
+  });
+
+  // The last word on a pending jump, and the end of it. Until the pane is whole
+  // there may not be enough content below the target to scroll it into place at
+  // all — the arithmetic is right and the scroll lands clamped — so the jump
+  // gets one final aim at the moment the extent exists. From here the scroll
+  // position belongs to whoever moves it next.
+  $effect(() => {
+    if (!fullyMounted || !pendingJump) return;
+    scrollToSection(pendingJump, 'auto');
+    pendingJump = null;
   });
 
   $effect(() => {
@@ -277,11 +313,25 @@
     pane.addEventListener('scroll', schedule, { passive: true });
     // A conditional reveal inside a section (volume slider, advanced controls,
     // force-landscape row, AI toggles) moves every section below it, so the spy
-    // re-reads on content growth as well as on scroll.
-    const growth = new ResizeObserver(schedule);
+    // re-reads on content growth as well as on scroll — and an unsettled jump
+    // re-aims at what it was asked for before the spy elects off the new
+    // offsets, rather than leaving the parent parked between two sections.
+    const growth = new ResizeObserver(() => {
+      if (pendingJump) scrollToSection(pendingJump, 'auto');
+      schedule();
+    });
     growth.observe(content);
+    // Any hand on the pane ends the jump: from here the scroll position is the
+    // parent's, and re-aiming it would take the pane back out from under them.
+    const releaseJump = () => (pendingJump = null);
+    pane.addEventListener('pointerdown', releaseJump);
+    pane.addEventListener('wheel', releaseJump, { passive: true });
+    pane.addEventListener('keydown', releaseJump);
     return () => {
       pane.removeEventListener('scroll', schedule);
+      pane.removeEventListener('pointerdown', releaseJump);
+      pane.removeEventListener('wheel', releaseJump);
+      pane.removeEventListener('keydown', releaseJump);
       growth.disconnect();
       if (frame) cancelAnimationFrame(frame);
     };
@@ -304,11 +354,19 @@
     // has to exist before there is an offset to scroll to.
     if (mountAtLeast(sectionIndex(id) + 1)) await tick();
     const behavior = jumpBehavior();
+    // Only a mid-fill jump is left pending: on a whole pane the offsets this
+    // reads are already final, and re-aiming later would fight the parent's own
+    // scrolling instead of the fill.
+    const hold = !fullyMounted;
     if (id !== 'parentCenter' || parentCenterRevealed) {
+      if (hold) pendingJump = id;
       scrollToSection(id, behavior);
       return;
     }
-    unlockParentCenter(trigger, () => scrollToSection(id, behavior));
+    unlockParentCenter(trigger, () => {
+      if (hold) pendingJump = id;
+      scrollToSection(id, behavior);
+    });
   }
 
   // Tier-2 accessibility (ADR-0076). No `resetKey`: a table-of-contents jump

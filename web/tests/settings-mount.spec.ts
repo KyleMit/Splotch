@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { gotoApp, SETTINGS_FILL_FRAME_BUDGET, settleSettingsPane } from './helpers';
+import {
+  gotoApp,
+  headingOffsetFromPaneTop,
+  SECTION_LANDED_MAX_PX,
+  SETTINGS_FILL_FRAME_BUDGET,
+  settleSettingsPane,
+} from './helpers';
 
 // The wide Settings shell stages its section bodies a frame at a time instead of
 // mounting all eleven in the tap that opens the dialog (issue #910). Everything
@@ -146,10 +152,12 @@ test('a jump to a section that has not arrived yet still reaches it', async ({ p
   // second frame the pane exists for: the first belongs to the open reset, which
   // parks the pane on the landing section and would scroll over an earlier tap.
   //
-  // Scored on the reading position reaching the section rather than on the exact
-  // landing offset settings-toc.spec.ts pins: a tap this early also races the
-  // conditional reveals that persisted state and the free-generation fetch open
-  // in the sections above, and each one shifts a heading already scrolled for.
+  // A tap this early also races the conditional reveals that persisted state and
+  // the free-generation fetch open in the sections *above* the target, each of
+  // which pushes a heading the pane has already scrolled for further down. The
+  // jump re-aims on every content resize until the parent takes the pane over
+  // (WideShell's `pendingJump`), so the section is still the one being read once
+  // everything has landed — which is what the highlight is asserted on here.
   //
   // A row from the middle of the column — far enough down that the pane has not
   // reached it, and not the last, which is too short to reach the reading line
@@ -182,7 +190,12 @@ test('a jump to a section that has not arrived yet still reaches it', async ({ p
   await expect(
     page.locator(`.settings-pane .settings-section[data-section="${jumpedTo}"]`)
   ).toHaveCount(1);
-  await expect(page.locator(`.settings-nav [data-section="${jumpedTo}"]`)).toHaveClass(/active/);
   // And the fill carries on past the section the jump pulled forward.
   await settleSettingsPane(page.locator('.settings-pane'));
+  await expect(page.locator(`.settings-nav [data-section="${jumpedTo}"]`)).toHaveClass(/active/);
+  // The highlight follows the reading position, so pin that position too: the
+  // section is parked at the top of the pane, not merely somewhere in view.
+  await expect
+    .poll(() => headingOffsetFromPaneTop(page, jumpedTo))
+    .toBeLessThan(SECTION_LANDED_MAX_PX);
 });

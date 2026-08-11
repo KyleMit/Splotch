@@ -320,7 +320,7 @@ media queries + the head-script stamp in `app.html`).
   away, so `ParentCenterLock.svelte` stands in for that section's controls until the gate is solved.
 * **Settings Button** - Floating button that opens Settings
   * **Settings** - Modal for app settings, install guides, and about info. Its body is one flat list
-    of **Sections** (ADR-0061), not tabs: Appearance, Sound, Buttons, Saving, Coloring, AI Art,
+    of **Sections** (ADR-0061), not tabs: Appearance, Sound, Tool Drawer, Coloring, AI Art, Saving,
     Parent Center, Install, Feedback, What's New (drilled-in header: "Updates"), About. Both shells
     render from the same `SECTIONS` list in `settings/sections.ts`, chosen by viewport width
     (`SettingsModal.svelte`): below ~700px a **Hub** list drills into a full-page section with a
@@ -334,14 +334,23 @@ media queries + the head-script stamp in `app.html`).
     (ADR-0061). Each section component lives in `settings/` (`AppearanceSection`, `SoundSection`,
     `SavingSection`, `ColoringSection`, `ControlsSection`, `AiKeyManager`, `ParentCenterSection`,
     `SetupInstructions`, `WhatsNewSection`, `ReportForm`, `AboutSection`).
+    * **Hub Row** - one section per row: icon, title, and a live status subtitle
+      (`sectionSubtitle`). No chevrons. The two rows a parent flips mid-session — Appearance's
+      **Night Mode** and Sound — are split rows instead: the body still drills in, and a trailing
+      switch (`settings/ToggleSwitch.svelte`, shared with `ToggleRow`) acts on the spot, separated
+      by a hairline. Those two lead the list, and an extra gap sets them off from the drill-ins
+      below (ADR-0061 amendment).
     * **Install Guide** - step-by-step PWA setup inside the **Install** section, for the one device
       family `installDeviceOs()` detects (iOS, Android, or desktop — the last with no app-lock
       steps, since neither Guided Access nor App Pinning has a desktop analogue), plus the one-tap
       install button when the browser supports it
-    * **Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider that rescales
-      the Actions Panel buttons (dragging it melts the rest of Settings away so the buttons resize
-      in full view), and a 2-column **button chip grid** ("Show these buttons") that toggles each
-      Actions Panel button on/off.
+    * **Tool Drawer Section** - Enable Advanced Controls toggle, a **Button Size** slider that
+      rescales the Actions Panel buttons (dragging it melts the rest of Settings away so the buttons
+      resize in full view), and one 2-column **chip grid** ("Drawing Tools") that toggles each brush
+      and Actions Panel button on/off — brushes first, then the controls beside them. The chips are
+      one exported list (`settings/drawingTools.ts`), which the hub row's "n tools hidden" subtitle
+      counts. The camera button's own visibility lives in **Saving** instead, leading that section
+      above Auto-Save on Delete.
       * **Appearance Control** - Light / Dark / System segmented control at the top of the
         **Appearance** section. Dark mode themes the chrome (app background, palette bar, modals,
         Install Banner), the paper (a near-black warm tone under the same low-alpha texture), and

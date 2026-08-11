@@ -1,11 +1,13 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
+  import type { CommonIconName } from './iconTypes';
   import SectionIcon from './SectionIcon.svelte';
   import { ui, settingsModal } from '$lib/state/ui.svelte';
   import SectionBody from './settings/SectionBody.svelte';
   import CompactShell from './settings/CompactShell.svelte';
   import WideShell from './settings/WideShell.svelte';
+  import ToggleSwitch from './settings/ToggleSwitch.svelte';
   import ScrollCue from './design/ScrollCue.svelte';
   import { SECTIONS, sectionHeading, sectionSubtitle, type SectionId } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -13,6 +15,8 @@
   import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
+  import { settings, setSound } from '$lib/state/settings.svelte';
+  import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
 
   // Seeds from the live viewport at construction time (before first paint) so
   // a flag that's already true on open renders its shell on the first frame —
@@ -100,6 +104,44 @@
     view = 'hub';
   }
 
+  // A hub row answers its section inline, with a switch beside the drill-in,
+  // only where the boolean is legible from the row's own name *and* worth
+  // flipping mid-session. That is these two and no others: Auto-Save is
+  // set-and-forget, and "Tool Drawer" doesn't say what Advanced Controls would
+  // be turning on. Night Mode is binary over the *resolved* theme — the same
+  // quick toggle CompactShell and /design's header carry, with the same
+  // accepted trade that flipping it while on System pins the preference; the
+  // three-way choice including System stays in the Appearance section.
+  interface HubToggle {
+    id: string;
+    label: string;
+    checked: () => boolean;
+    onToggle: (next: boolean) => void;
+    /** Rides in the thumb where the switch has no label of its own beside it. */
+    thumbIcon?: () => CommonIconName;
+  }
+
+  const HUB_TOGGLES: Partial<Record<SectionId, HubToggle>> = {
+    appearance: {
+      id: 'hubNightToggle',
+      label: 'Night Mode',
+      checked: () => resolvedTheme() === 'dark',
+      onToggle: (next) => setResolvedTheme(next ? 'dark' : 'light'),
+      thumbIcon: () => (resolvedTheme() === 'dark' ? 'theme-dark' : 'theme-light'),
+    },
+    sound: {
+      id: 'hubSoundToggle',
+      label: 'Sound',
+      checked: () => settings.soundEnabled,
+      onToggle: setSound,
+    },
+  };
+
+  // The switch rows cluster at the top of the list, so the first row without one
+  // opens the drill-ins and takes the extra gap that reads as a group break.
+  const firstDrillIn = SECTIONS.findIndex((section) => !HUB_TOGGLES[section.id]);
+  const groupBreakIndex = firstDrillIn > 0 ? firstDrillIn : -1;
+
   // Tier-2 accessibility (ADR-0076): let a low-vision parent pinch to enlarge the
   // reading content. The bound element gets CSS `zoom`; the phone hub/section
   // scroll binds it here and the wide pane binds its own. The compact
@@ -147,22 +189,36 @@
       <div class="settings-scroll" use:pinchTextZoom={textZoom}>
         <div class="settings-zoom" bind:this={zoomTarget}>
           <ul class="hub-list">
-            {#each SECTIONS as section (section.id)}
-              <li>
-                <button
-                  class="hub-row"
-                  data-section={section.id}
-                  onclick={(event) => openSection(section.id, event.currentTarget)}
-                >
-                  <span class="hub-icon">
-                    <SectionIcon icon={section.icon} class="hub-icon-svg" />
-                  </span>
-                  <span class="hub-text">
-                    <span class="hub-title">{section.label}</span>
-                    <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
-                  </span>
-                  <Icon name="chevron-right" class="hub-chevron" />
-                </button>
+            {#each SECTIONS as section, index (section.id)}
+              {@const toggle = HUB_TOGGLES[section.id]}
+              <li class:group-break={index === groupBreakIndex}>
+                <div class="hub-tile">
+                  <button
+                    class="hub-row"
+                    data-section={section.id}
+                    onclick={(event) => openSection(section.id, event.currentTarget)}
+                  >
+                    <span class="hub-icon">
+                      <SectionIcon icon={section.icon} class="hub-icon-svg" />
+                    </span>
+                    <span class="hub-text">
+                      <span class="hub-title">{section.label}</span>
+                      <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
+                    </span>
+                  </button>
+                  {#if toggle}
+                    <span class="hub-action">
+                      <span class="hub-split"></span>
+                      <ToggleSwitch
+                        id={toggle.id}
+                        label={toggle.label}
+                        checked={toggle.checked()}
+                        onToggle={toggle.onToggle}
+                        thumbIcon={toggle.thumbIcon?.()}
+                      />
+                    </span>
+                  {/if}
+                </div>
               </li>
             {/each}
           </ul>
@@ -323,18 +379,50 @@
     gap: 10px;
   }
 
+  /* The two switch rows lead the list; this reads the gap after them as the
+     break between "flip it here" and "go configure". */
+  .hub-list .group-break {
+    margin-top: 10px;
+  }
+
+  /* Android's split row: the body still drills in, and the trailing switch acts
+     on the spot. The tile carries the surface so both halves sit on one card,
+     with a hairline between them saying they are two targets. A row without a
+     switch is the same tile with the body filling it. */
+  .hub-tile {
+    display: flex;
+    align-items: center;
+    border-radius: var(--radius-lg);
+    background: var(--surface-2);
+  }
+
   .hub-row {
     display: flex;
     align-items: center;
     gap: 14px;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     padding: 16px;
     border: none;
     border-radius: var(--radius-lg);
-    background: var(--surface-2);
+    background: transparent;
     cursor: pointer;
     text-align: left;
     transition: background var(--duration-fast) ease;
+  }
+
+  .hub-action {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .hub-split {
+    width: var(--border-width);
+    height: 36px;
+    background: var(--border);
   }
 
   @media (hover: hover) {
@@ -384,7 +472,7 @@
 
   /* Wraps rather than ellipsizing on one line: the summary is what says what a
      section does, and the longest of them ("Choose when grown-up checks appear",
-     a theme plus a rotation lock) lose that meaning mid-word at phone widths.
+     the tools in the drawer) lose that meaning mid-word at phone widths.
      Two lines is the ceiling — a third would push the row past the icon column
      it is set beside. */
   .hub-subtitle {
@@ -395,16 +483,6 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
-  }
-
-  :global(.hub-chevron) {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-
-  :global(.hub-chevron svg) {
-    fill: var(--text-soft);
   }
 
   /* Shared setting-card tokens for the section bodies. The sections only ever

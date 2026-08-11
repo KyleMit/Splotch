@@ -3,24 +3,18 @@
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
-  import type { CommonIconName } from '../iconTypes';
   import {
     settings,
     setActionButtonScale,
     ACTION_BUTTON_SCALE_MIN,
     ACTION_BUTTON_SCALE_DEFAULT,
-    setScreenshot,
-    setUndoButton,
-    setStrokeWidthControl,
-    setCrayon,
-    setMagicBrush,
-    setEraser,
     setAdvancedControls,
     setPencilEraserEnabled,
   } from '$lib/state/settings.svelte';
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
+  import { DRAWING_TOOL_CHIPS, type DrawingToolId } from './drawingTools';
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap
@@ -32,90 +26,22 @@
   const scaleCeiling = $derived(maxActionButtonScale());
   const displayedScale = $derived(Math.min(settings.actionButtonScale, scaleCeiling));
 
-  // The per-button on/off list is a 2-column chip grid: tap a chip to show or
-  // hide that Actions Panel button. Each chip reads live `settings` so its
-  // on-state stays reactive.
-  interface SettingChip {
-    id: string;
-    label: string;
-    icon: CommonIconName;
-    section: 'button' | 'brush';
-    checked: () => boolean;
-    toggle: (next: boolean) => void;
-  }
+  // The per-tool on/off list is a 2-column chip grid: tap a chip to show or hide
+  // that brush or Actions Panel button. One grid rather than a split between the
+  // two — a parent turning something off is choosing what a child can reach, and
+  // whether it lives in the brush menu or on the panel isn't the distinction
+  // they're acting on. Each chip reads live `settings` so its on-state stays
+  // reactive.
+  const toolOptions: SegmentedPickerOption<DrawingToolId>[] = DRAWING_TOOL_CHIPS.map(
+    ({ id, label, icon }) => ({ value: id, label, icon, id })
+  );
 
-  const controlChips = [
-    {
-      id: 'strokeWidthToggle',
-      label: 'Stroke width',
-      icon: 'line-weight-brush',
-      section: 'button',
-      checked: () => settings.strokeWidthControlEnabled,
-      toggle: setStrokeWidthControl,
-    },
-    {
-      id: 'crayonToggle',
-      label: 'Crayon',
-      icon: 'brush-crayon',
-      section: 'brush',
-      checked: () => settings.crayonEnabled,
-      toggle: setCrayon,
-    },
-    {
-      id: 'magicBrushToggle',
-      label: 'Magic brush',
-      icon: 'brush-magic',
-      section: 'brush',
-      checked: () => settings.magicBrushEnabled,
-      toggle: setMagicBrush,
-    },
-    {
-      id: 'eraserToggle',
-      label: 'Eraser',
-      icon: 'brush-eraser',
-      section: 'brush',
-      checked: () => settings.eraserEnabled,
-      toggle: setEraser,
-    },
-    {
-      id: 'screenshotToggle',
-      label: 'Screenshot',
-      icon: 'camera',
-      section: 'button',
-      checked: () => settings.screenshotEnabled,
-      toggle: setScreenshot,
-    },
-    {
-      id: 'undoToggle',
-      label: 'Undo',
-      icon: 'undo',
-      section: 'button',
-      checked: () => settings.undoButtonEnabled,
-      toggle: setUndoButton,
-    },
-  ] as const satisfies readonly SettingChip[];
+  const shownTools = $derived(
+    DRAWING_TOOL_CHIPS.filter((chip) => chip.checked()).map((chip) => chip.id)
+  );
 
-  type ControlChip = (typeof controlChips)[number];
-  type ChipId = ControlChip['id'];
-
-  const buttonChips = controlChips.filter((chip) => chip.section === 'button');
-  const brushChips = controlChips.filter((chip) => chip.section === 'brush');
-
-  function optionsFor(chips: readonly ControlChip[]): SegmentedPickerOption<ChipId>[] {
-    return chips.map(({ id, label, icon }) => ({ value: id, label, icon, id }));
-  }
-
-  function activeFor(chips: readonly ControlChip[]): ChipId[] {
-    return chips.filter((chip) => chip.checked()).map((chip) => chip.id);
-  }
-
-  const buttonOptions = optionsFor(buttonChips);
-  const brushOptions = optionsFor(brushChips);
-  const activeButtons = $derived(activeFor(buttonChips));
-  const activeBrushes = $derived(activeFor(brushChips));
-
-  function toggleChip(id: ChipId) {
-    const chip = controlChips.find((entry) => entry.id === id);
+  function toggleChip(id: DrawingToolId) {
+    const chip = DRAWING_TOOL_CHIPS.find((entry) => entry.id === id);
     chip?.toggle(!chip.checked());
   }
 
@@ -158,27 +84,14 @@
       </div>
 
       <div class="chip-block">
-        <h4 class="chip-heading">Show these buttons</h4>
+        <h4 class="chip-heading">Drawing Tools</h4>
         <SegmentedPicker
           variant="chip"
           mode="toggle"
           class="control-chips"
-          label="Show these buttons"
-          options={buttonOptions}
-          selected={activeButtons}
-          onSelect={toggleChip}
-        />
-      </div>
-
-      <div class="chip-block">
-        <h4 class="chip-heading">Brushes</h4>
-        <SegmentedPicker
-          variant="chip"
-          mode="toggle"
-          class="control-chips"
-          label="Brushes"
-          options={brushOptions}
-          selected={activeBrushes}
+          label="Drawing Tools"
+          options={toolOptions}
+          selected={shownTools}
           onSelect={toggleChip}
         />
       </div>
@@ -215,7 +128,7 @@
 
   /* A chip spends ~84px of its box on furniture — padding, the 26px icon, the
      two gaps, the check mark — so two columns need roughly this much room
-     before the longest option names ("Screenshot", "Magic brush") start
+     before the longest option names ("Stroke width", "Magic brush") start
      breaking across lines. Below it the grid drops to one column, which every
      label clears with room to spare. Measured off the block rather than the
      viewport, so the phone hub and the wide shell's pane each get the column

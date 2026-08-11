@@ -4,10 +4,10 @@ import { gotoApp, openSettingsModal, retryOpen } from './helpers';
 import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-async function openButtonsSettings(page: Page) {
+async function openToolDrawerSettings(page: Page) {
   await openSettingsModal(page);
   await retryOpen(page.locator('#crayonToggle'), () =>
-    page.getByRole('button', { name: 'Buttons' }).click({ timeout: 3000 })
+    page.getByRole('button', { name: 'Tool Drawer' }).click({ timeout: 3000 })
   );
 }
 
@@ -83,7 +83,7 @@ test('disabling the active optional brush in Settings returns to Pen', async ({ 
   await pickBrush(page, '#magicBrushButton');
   await expectCommittedBrush(page, 'magic');
 
-  await openButtonsSettings(page);
+  await openToolDrawerSettings(page);
   await page.locator('#magicBrushToggle').click();
 
   await expectCommittedBrush(page, 'pen');
@@ -98,7 +98,7 @@ test('disabling Eraser hides its Apple Pencil gesture setting', async ({ page })
     { applePencilSeen: STORAGE_KEYS.applePencilSeen }
   );
   await gotoApp(page);
-  await openButtonsSettings(page);
+  await openToolDrawerSettings(page);
 
   await expect(page.locator('#pencilEraserToggle')).toBeVisible();
   await page.locator('#eraserToggle').click();

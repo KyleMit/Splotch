@@ -299,3 +299,79 @@ The trade is wall clock. Click to all-eleven-attached goes 287 ms → 798 ms at 
 itself is one frame per section either way. That buys a card that is interactive on its first
 painted frame and an open animation nothing competes with, at the price of the *bottom* of a
 settings list nobody has scrolled to yet arriving half a second later.
+
+## Amendment (2026-08): the phone hub answers its two most-flipped booleans in place
+
+A hub row was a uniform "go somewhere else": icon, title, live subtitle, chevron. That is the right
+shape for a section a parent goes to configure, and the wrong one for a boolean they flip mid-play —
+Night Mode and Sound both cost a drill-in, a tap, and a trip back for a state the row was already
+reporting in words.
+
+The alternative considered first was porting the `/design` styleguide's `TocDisclosure` to phone
+Settings: one continuous pane behind a collapsed expander, the same document the wide shell shows.
+It was **rejected**. A Settings visit is task-oriented and usually one section deep, so a table of
+contents that must be opened before it can be read is a step backwards from a hub that names every
+section and reports its state without being asked; and the continuous pane's mount cost is the one
+the amendment above exists to manage — the phone hub is the floor precisely because it mounts no
+section bodies at all.
+
+So the hub stays hub-and-drill, and the investment goes into the row:
+
+* **A split row where — and only where — the boolean is legible from the row's own name and worth
+  flipping mid-session.** That test admits exactly two: Night Mode (Appearance) and Sound. The row
+  body keeps the drill-in; a hairline separates it from a trailing switch that acts on the spot.
+  Auto-Save fails the second half of the test (set-and-forget) and Advanced Controls the first
+  ("Tool Drawer" doesn't say what it would be turning on), so both stay drill-ins. The switch is
+  binary over the *resolved* theme, the quick toggle `CompactShell` and `/design`'s header already
+  carry, with the same accepted trade: flipping it while on System pins the preference. The
+  three-way choice including System stays in the Appearance section.
+* **No chevrons anywhere.** With a switch on some rows, a chevron on the rest read as two kinds of
+  row rather than one. The tile already says tappable — `SidebarToc` and `CompactShell` carry no
+  chevron either — and dropping it returns ~32px of subtitle width to every row.
+* **A subtitle that names the boolean instead of stating it.** A row with a switch drops the on/off
+  word the switch now carries: Appearance reads "Night Mode", Sound reads "Volume 40%" or "Muted".
+  The rotation lock stays appended, shortened to two words, because the switch leaves that row the
+  least subtitle width in the hub and a summary that wraps past two lines is clipped.
+* **`SECTIONS` reordered** so the switch rows lead, the drill-ins follow by how often a parent goes
+  configuring, and Saving — set once, then left alone — sits below the feature sections. One list
+  drives both shells and the wide sidebar, so the order moves everywhere at once; that is the point.
+* **"Buttons" became "Tool Drawer"** — the nav row and the drilled-in heading alike, so the heading
+  echoes the row that was tapped. A `title` override putting the literal "Drawing Tools" at the top
+  of the section was drafted and then dropped: the literal name went to the chip grid below it
+  instead, and carrying both would stack the same two words twice on one screen — the exact thing
+  that mechanism (the "What's New" → "Updates" split) exists to avoid.
+* **The camera button moved to Saving**, where it leads the section above Auto-Save on Delete. It is
+  the other way a drawing gets saved — and the deliberate one, above the two rows that govern what
+  happens without anyone asking — and Coloring and AI Art already own their own buttons' visibility
+  in their feature sections rather than in the chip grid behind Advanced Controls.
+* **The two chip grids became one**, headed "Drawing Tools": brushes first, then the controls beside
+  them. The old split named an implementation boundary — a brush lives in the brush menu, a button
+  on the panel — and not the one a parent is acting on, which is what a child can reach. Losing it
+  also retires a two-chip group, which read as a stub next to the three-chip one.
+
+The switch itself is now `settings/ToggleSwitch.svelte`, shared by `ToggleRow` and the hub, and the
+tools the chip grid shows and hides are one exported list (`settings/drawingTools.ts`) — the hub row
+summarizes it ("2 tools hidden"), and a second copy would let the summary and the grid disagree
+about what a tool is. The shared switch also takes taps past its own box: the track is deliberately
+32px tall, under the 44px floor, and a ToggleRow's label makes up the difference where the hub row's
+switch stands alone.
+
+**Both hub summaries of the Tool Drawer answer to Advanced Controls first.** That setting is the
+umbrella over every tool below it — with it off the drawer cannot be opened at all, because its own
+toggle is hidden too (`data-off-adv` in `ActionsPanel`) — so the row reads "All tools hidden" rather
+than counting per-tool flags that describe a panel the child cannot reach. Saving's camera row is
+the same story from the other side: every action button lives inside that drawer, so the row's help
+line says what it can actually deliver in the state the parent is in rather than promising a button
+Advanced Controls is currently suppressing.
+
+**A jump made while the Pane is still filling now re-aims until it lands.** The reorder surfaced
+this rather than causing it: such a jump computes its scroll from offsets the sections above it then
+invalidate (the fill mounting them, their own conditional reveals landing), and until enough content
+exists *below* the target there is no scroll extent to reach it with, so the first attempt lands
+clamped however correct its arithmetic was. The section could finish several hundred pixels below
+the reading line with the table of contents naming a section the parent never chose. So a mid-fill
+jump is held in `pendingJump` and re-applied on every content resize, with one last aim when the
+Pane reports itself whole; from there the position belongs to whoever moves it next, and any hand on
+the Pane (pointer, wheel, key) ends it sooner. Such a jump is also instant rather than glided — an
+animation in flight leaves nothing to re-aim against. A jump on a finished Pane is untouched: its
+offsets are already final, and re-aiming there would fight the parent's own scrolling.

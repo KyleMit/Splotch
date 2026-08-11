@@ -82,12 +82,12 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
 
   // Clicking an entry scrolls its heading to just below the pane's top edge and
   // moves the highlight — while the first section stays mounted behind it.
-  await nav.getByRole('button', { name: 'Buttons' }).click();
+  await nav.getByRole('button', { name: 'Tool Drawer' }).click();
   await expect
     .poll(() => headingOffsetFromPaneTop(page, 'controls'))
     .toBeLessThan(SECTION_LANDED_MAX_PX);
   expect(await headingOffsetFromPaneTop(page, 'controls')).toBeGreaterThanOrEqual(0);
-  await expect(nav.getByRole('button', { name: 'Buttons' })).toHaveClass(/active/);
+  await expect(nav.getByRole('button', { name: 'Tool Drawer' })).toHaveClass(/active/);
   await expect(nav.getByRole('button', { name: 'Appearance' })).not.toHaveAttribute('aria-current');
   // In viewport, not merely visible: every section is mounted at all times, and
   // `toBeVisible` ignores the pane's scroll clipping — it would pass without the
@@ -114,7 +114,7 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   // tracks the reading position rather than the last thing clicked.
   await scrollPaneToTop(page);
   await expect(nav.getByRole('button', { name: 'Appearance' })).toHaveClass(/active/);
-  await expect(nav.getByRole('button', { name: 'Buttons' })).not.toHaveClass(/active/);
+  await expect(nav.getByRole('button', { name: 'Tool Drawer' })).not.toHaveClass(/active/);
 });
 
 test('the theme picker is one tab stop and the arrow keys move the selection', async ({ page }) => {
@@ -299,28 +299,6 @@ test('setting card spacing only applies to direct section siblings', async ({ pa
   await expect(quickToggleCells.nth(3)).toHaveCSS('margin-top', '0px');
 });
 
-test('Settings hub drills into a section and back (phone layout)', async ({ page }) => {
-  await page.setViewportSize({ width: 460, height: 852 });
-  await gotoApp(page);
-
-  const modal = await openSettingsModal(page);
-  // Below the breakpoint the hub renders instead of the sidebar.
-  await expect(modal).not.toHaveClass(/wide/);
-  await expect(page.locator('.hub-list')).toBeVisible();
-  // Nothing is drilled in yet, so a section's own controls aren't mounted.
-  await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
-
-  // Tapping a row opens the full-page section.
-  await page.getByRole('button', { name: 'Buttons' }).click();
-  await expect(page.locator('#advancedControlsToggle')).toBeVisible();
-  await expect(page.locator('.hub-list')).toHaveCount(0);
-
-  // The back arrow returns to the hub.
-  await page.getByRole('button', { name: 'Back' }).click();
-  await expect(page.locator('.hub-list')).toBeVisible();
-  await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
-});
-
 async function openSettingsModalCompact(page: Page) {
   await page.setViewportSize({ width: 852, height: 390 });
   await gotoApp(page);
@@ -396,7 +374,7 @@ test('quick-toggle changes persist into the full portrait Settings', async ({ pa
   await page.setViewportSize({ width: 390, height: 852 });
   await expect(page.locator('.hub-list')).toBeVisible();
   await expect(page.locator('#quickSoundToggle')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Buttons' }).click();
+  await page.getByRole('button', { name: 'Tool Drawer' }).click();
   await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'false');
 
   // The Appearance section shows the lock we set, now forced to portrait.
