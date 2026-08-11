@@ -1,8 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { gotoApp, openSettingsModal } from './helpers';
+import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 
-// ScrollCue's contract on the two surfaces it was applied to beyond the picker
+// ScrollCue's contract on every surface it was applied to beyond the picker
 // (which flows-coloring-scroll-cue.spec.ts covers): the fade is a reading of
 // live scroll state, not decoration. It is absent while the content fits,
 // present while there is more of it below the fold, and absent again once the
@@ -19,6 +19,12 @@ const TALLER_THAN_THE_PAGE = { width: 1100, height: 3200 };
 // under the tablet-class floor that elects the shell in the first place.
 const CROPPED_LANDSCAPE = { width: 740, height: 250 };
 const ROOMY_LANDSCAPE = { width: 740, height: 320 };
+
+// The narrowest phone in the responsive page inventory. Its portrait Settings
+// shell is one scroller — the hub list, or a section drilled into — and the
+// eleven-section list runs well past the card there while a short section sits
+// in it whole, so both states are reachable on the one real device.
+const PHONE_PORTRAIT_SETTINGS = { width: 375, height: 812 };
 
 // A landscape tablet, which elects the two-column shell. There is no "it fits"
 // counterpart for that pane: it stacks every section in one scroll under a card
@@ -104,6 +110,45 @@ test.describe('the landscape-phone settings shell with room for every toggle', (
 
   test('leaves a pane that fits uncued', async ({ page }) => {
     const scroller = await openCompactSettings(page);
+    await expect.poll(() => overflows(scroller)).toBe(false);
+    await expect.poll(() => cueOpacity(scroller.locator('.scroll-cue'))).toBe(0);
+  });
+});
+
+test.describe('the portrait-phone settings shell', () => {
+  test.use({ viewport: PHONE_PORTRAIT_SETTINGS });
+
+  async function openPhoneSettings(page: Page) {
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await expect(modal).not.toHaveClass(/wide|compact/);
+    return modal;
+  }
+
+  test('cues the hub sections below the card, then stands down at the last one', async ({
+    page,
+  }) => {
+    const modal = await openPhoneSettings(page);
+    const scroller = modal.locator('.settings-scroll');
+    await expect.poll(() => overflows(scroller)).toBe(true);
+
+    const cue = scroller.locator('.scroll-cue');
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+
+    await scrollToEnd(scroller);
+    await expect.poll(() => cueOpacity(cue)).toBe(0);
+
+    await scroller.evaluate((node) => node.scrollTo({ top: 0 }));
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+  });
+
+  // The drilled-in section is the shell's other scroller, and Sound is the one
+  // that fits on this phone whole — so it pins the state the hub can't reach.
+  test('leaves a drilled-in section that fits uncued', async ({ page }) => {
+    const modal = await openPhoneSettings(page);
+    await openHubSection(page, 'sound', '#soundToggle');
+
+    const scroller = modal.locator('.settings-scroll');
     await expect.poll(() => overflows(scroller)).toBe(false);
     await expect.poll(() => cueOpacity(scroller.locator('.scroll-cue'))).toBe(0);
   });

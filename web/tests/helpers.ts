@@ -227,6 +227,17 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
+// Drill the phone Settings hub into one of its sections, identified by a field
+// only that section renders. The rows sit on a scroller that idle-mounts and
+// flies in, so the first tap can land before the section is wired — the hazard
+// openSettingsModal itself rides out.
+export async function openHubSection(page: Page, section: string, expectedField: string) {
+  await expect(async () => {
+    await page.locator(`.hub-row[data-section="${section}"]`).click({ timeout: 1000 });
+    await expect(page.locator(expectedField)).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+}
+
 // The highlighted Settings row's own seat, measured against the column that
 // holds it. Read off the nav rather than the browser viewport: the column is its
 // own scroller wherever the section list outgrows it, and that clipping is the
