@@ -19,6 +19,7 @@ import {
   discoverPageRoutes,
   generateOutputAtomically,
   generatePageInventory,
+  SECTION_LANDED_BAND_PX,
   selectSpotCheckItems,
   settingsSectionRowSelector,
 } from '../gen-page-inventory.mjs';
@@ -395,6 +396,23 @@ describe('page inventory output', () => {
     expect(matching('SettingsModal.svelte')).toHaveLength(1);
     // The pane wrappers the section-landed wait reads, which are not rows.
     expect(matching('settings/WideShell.svelte')).toHaveLength(0);
+  });
+
+  // The wide shell parks a jumped section below the pane's top edge — its own
+  // jump inset, or the pane's padding for the first section, which cannot scroll
+  // any higher. A capture that waits for the section flush against that edge
+  // waits forever, so the band has to clear whichever inset the shell uses.
+  it('waits within a band that covers where the wide shell parks a section', () => {
+    const shell = readFileSync(join(COMPONENTS, 'settings/WideShell.svelte'), 'utf8');
+    const jumpInsetPx = Number(/SECTION_JUMP_INSET_PX = (\d+)/.exec(shell)?.[1]);
+    const panePaddingTopPx = Number(
+      /\.settings-pane\s*\{[^}]*?\bpadding:\s*(\d+)px/s.exec(shell)?.[1]
+    );
+
+    expect(jumpInsetPx).toBeGreaterThan(0);
+    expect(panePaddingTopPx).toBeGreaterThan(0);
+    expect(jumpInsetPx).toBeLessThan(SECTION_LANDED_BAND_PX);
+    expect(panePaddingTopPx).toBeLessThan(SECTION_LANDED_BAND_PX);
   });
 
   it('passes exactly one description and one image to an ephemeral reviewer', () => {

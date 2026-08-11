@@ -114,14 +114,15 @@ describe('trusted action setup', () => {
   });
 
   // The performance harness measures the sidebar's highlighted reading position.
-  // The inventory accepts the requested section at the pane lead or the clamped scroll end.
+  // The inventory accepts the requested section parked below the pane's top edge
+  // or held at the clamped scroll end.
   it('uses the appropriate wide Settings readiness signal in each harness', () => {
     const token = /aria-current=\{[^}]*\?\s*'([a-z]+)'/.exec(SIDEBAR_TOC)?.[1];
     expect(token).toBeTruthy();
     expect(IPAD_ACTIONS).toContain(`getAttribute('aria-current') === '${token}'`);
     expect(PAGE_INVENTORY).toContain('.settings-section[data-section="${sectionId}"]');
     expect(PAGE_INVENTORY).toContain('pane.scrollTop + pane.clientHeight');
-    expect(PAGE_INVENTORY).toContain('Math.abs(targetRect.top - paneRect.top)');
+    expect(PAGE_INVENTORY).toContain('targetRect.top - paneRect.top');
   });
 
   // The wide pane fills a section per frame (issue #910) and reports itself busy

@@ -47,7 +47,13 @@ const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
 const SPOT_CHECK_RECORDS_NAME = 'spot-check-captures.json';
 const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 const SCROLL_END_EPSILON_PX = 1;
-const SECTION_LANDED_TOLERANCE_PX = 1;
+// The wide shell parks a jumped-to section just clear of the pane's top edge
+// rather than flush against it, and the pane's own padding holds the first
+// section clear of it too — so a landed section sits in a band below that edge,
+// never on it. The band stays far under one section's height so it cannot
+// accept the section above the requested one; tests/page-inventory.test.mjs
+// checks it against the insets the shell actually parks at.
+export const SECTION_LANDED_BAND_PX = 40;
 
 const PHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -309,7 +315,7 @@ function settingsSurfaces() {
               .waitFor();
           } else {
             await page.waitForFunction(
-              ({ sectionId, scrollEndEpsilonPx, landedTolerancePx }) => {
+              ({ sectionId, scrollEndEpsilonPx, landedBandPx }) => {
                 const pane = document.querySelector('#settingsModal .settings-pane');
                 const target = document.querySelector(
                   `#settingsModal .settings-section[data-section="${sectionId}"]`
@@ -320,12 +326,13 @@ function settingsSurfaces() {
                 const targetRect = target.getBoundingClientRect();
                 const atEnd =
                   pane.scrollTop + pane.clientHeight >= pane.scrollHeight - scrollEndEpsilonPx;
-                return atEnd || Math.abs(targetRect.top - paneRect.top) < landedTolerancePx;
+                const belowPaneTop = targetRect.top - paneRect.top;
+                return atEnd || (belowPaneTop >= 0 && belowPaneTop <= landedBandPx);
               },
               {
                 sectionId: section.id,
                 scrollEndEpsilonPx: SCROLL_END_EPSILON_PX,
-                landedTolerancePx: SECTION_LANDED_TOLERANCE_PX,
+                landedBandPx: SECTION_LANDED_BAND_PX,
               }
             );
           }
@@ -837,7 +844,12 @@ async function openThemedPage(browser, port, view, theme) {
     },
     { defaults: STORAGE, themeId: theme.id }
   );
-  return { theme, context, page: await context.newPage() };
+  const page = await context.newPage();
+  // A page that has not navigated yet has no origin, so localStorage is
+  // unreachable from it. Every surface that seeds storage before navigating
+  // reaches for it, and a filtered run can open on one of those.
+  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: ACTION_MS });
+  return { theme, context, page };
 }
 
 export async function generateOutputAtomically(out, generate) {
