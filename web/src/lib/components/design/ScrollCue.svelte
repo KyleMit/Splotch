@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { observeContentEnd } from '$lib/actions/scrollCue';
+  import { coverScrollportPadding, observeContentEnd } from '$lib/actions/scrollCue';
 
   // The continuation cue for a scroller: a fade over its bottom strip saying the
   // content carries on below. Render it as the *last child of the scrolling
@@ -22,7 +22,7 @@
   aria-hidden="true"
   use:observeContentEnd={(reached) => (atEnd = reached)}
 ></div>
-<div class="scroll-cue" class:retired={atEnd} aria-hidden="true"></div>
+<div class="scroll-cue" class:retired={atEnd} aria-hidden="true" use:coverScrollportPadding></div>
 
 <style>
   .scroll-cue-sentinel {
@@ -48,7 +48,13 @@
     --cue-opaque-from: 80%;
 
     position: sticky;
-    bottom: 0;
+    /* The scrollport clips at its padding box but seats its children in its
+       content box, and a sticky inset resolves against the latter — so
+       `bottom: 0` lands one bottom-padding short of the edge and leaves the
+       content still showing through that strip undimmed, under a hard line where
+       the ramp turns opaque. `coverScrollportPadding` measures the strip; the
+       0px fallback only ever applies before the cue has armed. */
+    bottom: calc(-1 * var(--scrollport-bottom-padding, 0px));
     height: var(--cue-height);
     /* Pulled back over the content it dims: the cue travels with the scrollport
        and must not add a strip of its own to the scroll range. */
