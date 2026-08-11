@@ -42,6 +42,7 @@ import { spawnViteServer } from '../lib/vite-server.mjs';
 const PORT_DEFAULT = 4319;
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory');
 const SPOT_CHECK_OUT_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-spot-check');
+const SCRAPBOOK_ROOT = join(ROOT, 'scrapbook');
 const SERVER_BOOT_MS = 120_000;
 const ACTION_MS = 15_000;
 const TAP_GUARD_MS = 750;
@@ -785,15 +786,24 @@ function options(argv) {
   const themes = parsed.theme ?? [];
   const spotCheck = Boolean(surfaces.length || viewports.length || themes.length);
   const out = resolve(ROOT, parsed.out ?? (spotCheck ? SPOT_CHECK_OUT_DEFAULT : OUT_DEFAULT));
-  const scrapbook = resolve(ROOT, 'scrapbook');
-  const insideScrapbook = out.startsWith(`${scrapbook}${sep}`);
+  // generateOutputAtomically replaces --out wholesale: the directory is renamed
+  // aside, staging takes its name, and the original is then deleted. So the
+  // target must be a directory that holds this run's output and nothing else,
+  // whatever the filters say — `.`, `..`, and `scrapbook/page-inventory/..` are
+  // ordinary paths that resolve onto a tree owning everything else in it.
+  if (out === ROOT || ROOT.startsWith(`${out}${sep}`) || out === SCRAPBOOK_ROOT) {
+    throw new Error(
+      `--out is replaced wholesale, so it cannot be the repository root, an ancestor of it, or the scrapbook root: ${out}`
+    );
+  }
+  const insideScrapbook = out.startsWith(`${SCRAPBOOK_ROOT}${sep}`);
   if (spotCheck && insideScrapbook) {
     throw new Error(
-      `A --surface/--viewport/--theme spot check captures only part of the inventory, so it must stay out of scrapbook/ where a partial manifest would be read as the coverage authority: ${parsed.out}`
+      `A --surface/--viewport/--theme spot check captures only part of the inventory, so it must stay out of scrapbook/ where a partial manifest would be read as the coverage authority: ${out}`
     );
   }
   if (!spotCheck && !insideScrapbook) {
-    throw new Error(`--out must stay inside scrapbook/: ${parsed.out}`);
+    throw new Error(`--out must stay inside scrapbook/: ${out}`);
   }
   if (spotCheck && parsed.critique) {
     throw new Error('--critique attaches feedback to a full inventory and cannot filter captures');

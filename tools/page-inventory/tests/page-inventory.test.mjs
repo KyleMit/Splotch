@@ -343,6 +343,20 @@ describe('page inventory output', () => {
     );
   });
 
+  // The run replaces --out wholesale, so a target that owns anything else is a
+  // deletion the flags asked for by accident. Each of these resolves onto such a
+  // tree, and a spot check reaches the rename with its guard already satisfied.
+  it('refuses an --out that owns more than one run of output', async () => {
+    for (const out of ['scrapbook', 'scrapbook/page-inventory/..', '.', '..']) {
+      await expect(generatePageInventory(['--surface', 'home', '--out', out])).rejects.toThrow(
+        '--out is replaced wholesale'
+      );
+      await expect(generatePageInventory(['--out', out])).rejects.toThrow(
+        '--out is replaced wholesale'
+      );
+    }
+  });
+
   // The generator waits on this selector at every viewport, so a Settings shell
   // that renames or re-tags its rows costs a multi-hour run rather than a test.
   // Matching the selector against the row templates the app really ships is what
