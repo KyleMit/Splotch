@@ -43,6 +43,7 @@ import {
   finalizeDesignCritique,
   PAGE_INVENTORY_REVIEW_CONTRACT,
   readDesignCritique,
+  reviewDescriptionDigest,
   sha256File,
   validateThemeCaptureDifferences,
 } from '../lib/page-inventory-data.mjs';
@@ -222,6 +223,7 @@ function writeCheckpoints(checkpoints, manifest, entries) {
         schema_version: 3,
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
         review_id: capture.review_id,
+        review_description_sha256: reviewDescriptionDigest(capture.review_description),
         entry,
       })
     );
@@ -749,6 +751,35 @@ describe('page inventory output', () => {
     await expect(
       finalizePageInventoryCritique([...args, '--out', join(root, 'final.json')])
     ).rejects.toThrow('stale image hash');
+  });
+
+  it('reports a review whose description changed as stale rather than as current', async () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    const checkpoints = join(root, 'checkpoints');
+    writeCheckpoints(checkpoints, manifest, critiqueEntries(manifest));
+    const edited = manifest.captures[0];
+    const path = join(checkpoints, `${edited.review_id}.json`);
+    const document = JSON.parse(readFileSync(path, 'utf8'));
+    document.review_description_sha256 = reviewDescriptionDigest(
+      `${edited.review_description} A design note this review never saw.`
+    );
+    writeFileSync(path, JSON.stringify(document));
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const args = ['--manifest', join(out, 'capture-manifest.json'), '--checkpoints', checkpoints];
+
+    await finalizePageInventoryCritique([...args, '--status']);
+
+    expect(JSON.parse(log.mock.calls.at(-1)[0])).toMatchObject({
+      completed_reviews: 15,
+      stale_review_ids: [edited.review_id],
+      next_review: { review_id: edited.review_id, description: edited.review_description },
+    });
+    log.mockRestore();
+    await expect(
+      finalizePageInventoryCritique([...args, '--out', join(root, 'final.json')])
+    ).rejects.toThrow('reviewed against a different description');
   });
 
   it('keeps partial critique output outside the committed scrapbook', async () => {

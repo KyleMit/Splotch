@@ -63,6 +63,21 @@ description has nothing else to reconcile it against. A key naming no captured s
 Add a note when a reviewer flags something the design intends, not to suppress a finding you
 disagree with: the notes travel with every future run.
 
+A checkpoint binds the description it was reviewed against, so editing a note is not free and is not
+silent: it makes every review whose description changed stale. Regenerate the inventory first
+(`npm run gen:page-inventory`) — the binding compares the manifest's stored description, so a
+re-review against an un-regenerated manifest faithfully re-runs the old wording — then `-- --status`
+reports the affected reviews under `stale_reviews` and the review command re-runs them. General
+notes reach every capture, so editing one restages the whole inventory.
+
+A note about deliberately quiet styling still has to leave a floor the reviewer can fail, and how
+that floor is worded decides whether the note works. Write it as a state checkable in the image —
+"report it only when you cannot locate its shape anywhere in this image" — never as a judgement of
+degree phrased the way the finding would be phrased. The first quiet-controls note closed with
+"report them if they are genuinely hard to make out", and 168 of that run's 256 non-pass reviews
+came back on the chevron and the settings button, most echoing that clause as their justification.
+The file's header comment carries this rule and the three before it; read them before adding a note.
+
 The runner writes `<review_id>.json` with exactly one entry:
 
 ```json
@@ -70,6 +85,7 @@ The runner writes `<review_id>.json` with exactly one entry:
   "schema_version": 3,
   "review_contract": "isolated-image-description-v1",
   "review_id": "routes--privacy--iphone-13-mini-landscape--dark",
+  "review_description_sha256": "<sha256 of the manifest's review_description>",
   "entry": {
     "review_id": "routes--privacy--iphone-13-mini-landscape--dark",
     "image": "assets/routes/privacy--iphone-13-mini-landscape--dark.webp",
@@ -82,8 +98,12 @@ The runner writes `<review_id>.json` with exactly one entry:
 }
 ```
 
-The filename, document `review_id`, and entry `review_id` must agree. The finalizer also checks the
-image path and digest against the manifest, so a recapture invalidates only that one review.
+The filename, document `review_id`, and entry `review_id` must agree. The finalizer also checks both
+of the reviewer's inputs against the manifest — the entry's image path and digest, and the
+document's `review_description_sha256` — so a recapture invalidates only that one review, and a
+notes edit invalidates only the reviews whose description it changed. A checkpoint written without
+the description digest is stale by definition, so hand-authoring one from this shape means computing
+it from that capture's `review_description`.
 
 The review command is resumable: current checkpoints are skipped and missing/stale ones are run. Use
 `-- --limit N` for a bounded segment or `-- --review-id ID` for a canary. A complete requested run
