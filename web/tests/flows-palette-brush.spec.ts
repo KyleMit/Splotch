@@ -642,3 +642,43 @@ test('a keyboard pick closes the flyout and restores focus to its trigger', asyn
   await expect(page.locator('.stroke-width-menu')).toBeHidden();
   await expect(page.locator('#strokeWidthButton')).toBeFocused();
 });
+
+// Tapping the trigger again is the third path that closes a flyout, and the
+// only one whose focus handling a real Chromium click hides: the click focuses
+// the trigger before the handler runs, so focus has already left the menu.
+// Where activation does not focus the button — Safari's behavior, and the whole
+// reason scribbleTap activates on pointerup (ADR-0038) — the app has to hand
+// focus back itself. These synthetic events are exactly the pair scribbleTap
+// listens for, minus that focus side effect.
+async function tapTriggerWithoutFocusing(page: Page, triggerId: string) {
+  await page.locator(triggerId).evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const init = {
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      bubbles: true,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+    };
+    node.dispatchEvent(new PointerEvent('pointerdown', init));
+    window.dispatchEvent(new PointerEvent('pointerup', init));
+  });
+}
+
+test('a second tap on the trigger closes the flyout and restores focus to it', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await openBrushMenu(page);
+  await page.locator('#penBrushButton').focus();
+  await tapTriggerWithoutFocusing(page, '#brushButton');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await openStrokeMenu(page);
+  await page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]').focus();
+  await tapTriggerWithoutFocusing(page, '#strokeWidthButton');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});

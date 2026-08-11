@@ -276,7 +276,7 @@
 
   function handleStrokeBtnClick() {
     if (openFlyout === 'stroke') {
-      closeFlyout();
+      closeFlyout({ restoreFocus: true });
       return;
     }
     openFlyout = 'stroke';
