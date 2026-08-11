@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 
-import { expect, test, type Download, type Page } from '@playwright/test';
+import { expect, test, type Download } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import {
@@ -8,9 +8,9 @@ import {
   SCREENSHOT_COOLDOWN_MS,
 } from '../src/lib/drawing/screenshotTiming';
 
-import { draw, firstOpaquePixel, gotoApp, retryOpen } from './helpers';
+import { draw, firstOpaquePixel, gotoApp } from './helpers';
 
-import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
+import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-harness';
 
 // How long a second screenshot save gets to show up after the first has landed,
 // for the burst test's negative half. It only has to outlast the coalescing
@@ -22,16 +22,6 @@ async function downloadedPngWidth(download: Download) {
   const path = await download.path();
   if (!path) throw new Error('Downloaded screenshot has no local path');
   return (await readFile(path)).readUInt32BE(16);
-}
-
-// Open the stroke-width flyout robustly. Its sentinel is present whenever the
-// menu is open — the label is tool-aware (issue #286).
-async function openStrokeMenu(page: Page) {
-  await retryOpen(
-    page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]'),
-    () => page.locator('#strokeWidthButton').click({ timeout: 1000 }),
-    { settle: 1000 }
-  );
 }
 
 // ── undo / empty-state gating ───────────────────────────────────────────────
