@@ -46,8 +46,13 @@
   let coloringBtnEl: HTMLButtonElement | undefined = $state();
   let aiBtnEl: HTMLButtonElement | undefined = $state();
   let panelEl: HTMLDivElement | undefined = $state();
-  // Intentionally untracked: this ref is read only by imperative tap and animation handlers.
+  // Only the focus-restore path reads this, but a bound component prop has to be
+  // reactive for the child's write to land.
+  let brushTriggerEl: HTMLButtonElement | undefined = $state();
+  // Intentionally untracked: these refs are read only by imperative tap, focus,
+  // and animation handlers.
   let undoBtnEl: HTMLButtonElement | undefined;
+  let strokeTriggerEl: HTMLButtonElement | undefined;
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
@@ -194,8 +199,9 @@
   function toggleDrawer() {
     const next = !settings.drawerOpen;
     setDrawerOpen(next);
-    // Tidy up any open flyout as the controls tuck away.
-    if (!next) openFlyout = null;
+    // Tidy up any open flyout as the controls tuck away. No focus restore: the
+    // trigger is on its way to visibility:hidden with the rest of the drawer.
+    if (!next) closeFlyout();
   }
 
   function finishDrawerMotion(event: TransitionEvent) {
@@ -203,17 +209,45 @@
       drawerMotion = false;
   }
 
+  function openFlyoutWrapper() {
+    if (!openFlyout) return undefined;
+    return openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
+  }
+
+  // Every close path runs through here so they can't drift apart. restoreFocus
+  // covers the two that close while the keyboard is inside the menu — Escape and
+  // picking an option — where the focused option is about to be display:none and
+  // focus would land on <body>; the trigger is where a keyboard user expects to
+  // resume. It stays inert for a close driven from outside the flyout (an outside
+  // tap, the drawer collapsing), and where a mouse click did focus an option,
+  // moving focus to the trigger paints no ring — :focus-visible doesn't match
+  // pointer focus. Browser-managed dismissal and focus restoration are what
+  // popover="auto" would own for free — docs/COMPATIBILITY.md's Popover API row
+  // records why the flyouts still coordinate both themselves.
+  function closeFlyout({ restoreFocus = false } = {}) {
+    const wrapper = openFlyoutWrapper();
+    const trigger = openFlyout === 'brush' ? brushTriggerEl : strokeTriggerEl;
+    const holdsFocus = restoreFocus && !!wrapper?.contains(document.activeElement);
+    openFlyout = null;
+    if (holdsFocus) trigger?.focus();
+  }
+
   onMount(() => {
     // Click outside closes the open flyout
     const onDocPointerDown = (e: PointerEvent) => {
-      if (!openFlyout) return;
-      const wrapper = openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
-      if (wrapper && !wrapper.contains(e.target as Node)) openFlyout = null;
+      const wrapper = openFlyoutWrapper();
+      if (wrapper && !wrapper.contains(e.target as Node)) closeFlyout();
+    };
+    const onDocKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !openFlyout) return;
+      closeFlyout({ restoreFocus: true });
     };
     document.addEventListener('pointerdown', onDocPointerDown);
+    document.addEventListener('keydown', onDocKeyDown);
 
     return () => {
       document.removeEventListener('pointerdown', onDocPointerDown);
+      document.removeEventListener('keydown', onDocKeyDown);
     };
   });
 
@@ -241,16 +275,24 @@
   }
 
   function handleStrokeBtnClick() {
-    openFlyout = openFlyout === 'stroke' ? null : 'stroke';
+    if (openFlyout === 'stroke') {
+      closeFlyout({ restoreFocus: true });
+      return;
+    }
+    openFlyout = 'stroke';
   }
 
   function setBrushFlyout(open: boolean) {
-    openFlyout = open ? 'brush' : null;
+    if (!open) {
+      closeFlyout({ restoreFocus: true });
+      return;
+    }
+    openFlyout = 'brush';
   }
 
   function handleStrokeSizeClick(size: StrokeSize) {
     setStrokeSize(size);
-    openFlyout = null;
+    closeFlyout({ restoreFocus: true });
   }
 
   function handleColoringBookClick() {
@@ -307,6 +349,7 @@
     <div class="actions-drawer-inner">
       <BrushControl
         bind:wrapperEl={brushWrapperEl}
+        bind:triggerEl={brushTriggerEl}
         open={openFlyout === 'brush'}
         activeColor={colors.activeColor}
         {inkWhite}
@@ -323,6 +366,7 @@
           aria-label="Stroke width"
           aria-expanded={openFlyout === 'stroke'}
           use:scribbleTap={handleStrokeBtnClick}
+          bind:this={strokeTriggerEl}
           style:color={colors.activeColor}
         >
           {#if erasing}

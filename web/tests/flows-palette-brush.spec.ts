@@ -18,7 +18,7 @@ import {
   type Rgba,
 } from './helpers';
 
-import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
+import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-harness';
 
 async function canvasInkStats(
   page: Page,
@@ -600,4 +600,85 @@ test('the eraser bubble tracks the pointer and hides on leave or brush switch', 
   await expect(bubble).toHaveCount(1);
   await pickBrush(page, '#penBrushButton');
   await expect(bubble).toHaveCount(0);
+});
+
+// A flyout closing under a keyboard user's focus has to hand that focus back to
+// the trigger: the focused option is about to be display:none, which drops focus
+// on <body>. Both close paths that can fire from inside the menu get their own
+// test — the two flyouts share one open-state slot but have separate triggers,
+// so each is checked in both.
+test('Escape closes an Actions Panel flyout and restores focus to its trigger', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await openBrushMenu(page);
+  await page.locator('#penBrushButton').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await openStrokeMenu(page);
+  await page.locator('button[aria-label="Size 3"]').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});
+
+test('a keyboard pick closes the flyout and restores focus to its trigger', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await openBrushMenu(page);
+  await page.locator('#crayonBrushButton').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await openStrokeMenu(page);
+  await page.locator('button[aria-label="Size 1"], button[aria-label="Eraser size 1"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});
+
+// Tapping the trigger again is the third path that closes a flyout, and the
+// only one whose focus handling a real Chromium click hides: the click focuses
+// the trigger before the handler runs, so focus has already left the menu.
+// Where activation does not focus the button — Safari's behavior, and the whole
+// reason scribbleTap activates on pointerup (ADR-0038) — the app has to hand
+// focus back itself. These synthetic events are exactly the pair scribbleTap
+// listens for, minus that focus side effect.
+async function tapTriggerWithoutFocusing(page: Page, triggerId: string) {
+  await page.locator(triggerId).evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    const init = {
+      pointerId: 1,
+      pointerType: 'touch',
+      isPrimary: true,
+      bubbles: true,
+      clientX: rect.x + rect.width / 2,
+      clientY: rect.y + rect.height / 2,
+    };
+    node.dispatchEvent(new PointerEvent('pointerdown', init));
+    window.dispatchEvent(new PointerEvent('pointerup', init));
+  });
+}
+
+test('a second tap on the trigger closes the flyout and restores focus to it', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await openBrushMenu(page);
+  await page.locator('#penBrushButton').focus();
+  await tapTriggerWithoutFocusing(page, '#brushButton');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await openStrokeMenu(page);
+  await page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]').focus();
+  await tapTriggerWithoutFocusing(page, '#strokeWidthButton');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
 });

@@ -11,6 +11,7 @@
     inkWhite,
     inkDark,
     wrapperEl = $bindable(),
+    triggerEl = $bindable(),
     onOpenChange,
   }: {
     open: boolean;
@@ -18,6 +19,7 @@
     inkWhite: boolean;
     inkDark: boolean;
     wrapperEl?: HTMLDivElement;
+    triggerEl?: HTMLButtonElement;
     onOpenChange: (open: boolean) => void;
   } = $props();
 
@@ -57,6 +59,7 @@
     aria-expanded={optionalBrushes.length > 1 ? open : undefined}
     aria-pressed={singleOptionalBrush ? toolState.brush === singleOptionalBrush : undefined}
     use:scribbleTap={handleTrigger}
+    bind:this={triggerEl}
     style:color={activeColor}
   >
     <BrushButtonFaces />

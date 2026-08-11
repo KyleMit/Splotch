@@ -135,6 +135,17 @@ export async function openBrushMenu(page: Page) {
   );
 }
 
+// Open the Stroke Width flyout and leave it open. Its sentinel is present
+// whenever the menu is open — the label is tool-aware (issue #286), so both
+// spellings are matched rather than assuming the pen is the held brush.
+export async function openStrokeMenu(page: Page) {
+  await retryOpen(
+    page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]'),
+    () => page.locator('#strokeWidthButton').click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
+}
+
 // The Brush Menu's four entries, and the engine mode each one commits. Closed
 // as a union so a call site can't name a button that has no expected mode.
 type BrushButtonId = keyof typeof ENGINE_MODE_BY_BUTTON;
