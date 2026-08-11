@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { observeContentEnd, trailingRowCutHeight, type RowCutMeasurements } from './scrollCue';
+import {
+  coverScrollportPadding,
+  observeContentEnd,
+  trailingRowCutHeight,
+  type RowCutMeasurements,
+} from './scrollCue';
 
 // A two-column phone picker: eight tiles over four 150px rows, an 8px gap, and
 // a header block above the grid.
@@ -110,11 +115,14 @@ class FakeIntersectionObserver {
 
 class FakeResizeObserver {
   static live: FakeResizeObserver[] = [];
+  observed: unknown[] = [];
   disconnected = false;
   constructor(private callback: () => void) {
     FakeResizeObserver.live.push(this);
   }
-  observe() {}
+  observe(target?: unknown) {
+    this.observed.push(target);
+  }
   disconnect() {
     this.disconnected = true;
   }
@@ -204,5 +212,110 @@ describe('observeContentEnd', () => {
     handle.destroy();
     expect(intersection.disconnected).toBe(true);
     expect(resize.disconnected).toBe(true);
+  });
+});
+
+// A stand-in for the slice of the DOM the action walks and writes to: an
+// ancestor chain, the two computed values it reads off each link, and the one
+// custom property it sets.
+interface FakeElement {
+  parentElement: FakeElement | null;
+  overflowY: string;
+  paddingBottom: string;
+  properties: Record<string, string>;
+  style: { setProperty(name: string, value: string): void; removeProperty(name: string): void };
+}
+
+function element(overflowY: string, paddingBottom: string): FakeElement {
+  const properties: Record<string, string> = {};
+  return {
+    parentElement: null,
+    overflowY,
+    paddingBottom,
+    properties,
+    style: {
+      setProperty: (name, value) => (properties[name] = value),
+      removeProperty: (name) => delete properties[name],
+    },
+  };
+}
+
+/** Links each element to the next as its parent and hands back the innermost. */
+function chain(...elements: FakeElement[]): FakeElement {
+  elements.forEach((el, index) => (el.parentElement = elements[index + 1] ?? null));
+  return elements[0];
+}
+
+describe('coverScrollportPadding', () => {
+  const realResizeObserver = globalThis.ResizeObserver;
+  const realGetComputedStyle = globalThis.getComputedStyle;
+  const realDocument = globalThis.document;
+  // The page's own scroller, for the surfaces where nothing between the cue and
+  // the root scrolls — the sign-up page rather than a dialog.
+  const documentScroller = element('visible', '0px');
+
+  beforeEach(() => {
+    FakeResizeObserver.live = [];
+    globalThis.ResizeObserver = FakeResizeObserver as unknown as typeof ResizeObserver;
+    globalThis.getComputedStyle = ((el: FakeElement) => el) as unknown as typeof getComputedStyle;
+    globalThis.document = { scrollingElement: documentScroller } as unknown as Document;
+  });
+
+  afterEach(() => {
+    globalThis.ResizeObserver = realResizeObserver;
+    globalThis.getComputedStyle = realGetComputedStyle;
+    globalThis.document = realDocument;
+  });
+
+  const PROPERTY = '--scrollport-bottom-padding';
+
+  function cover(node: FakeElement) {
+    return coverScrollportPadding(node as unknown as HTMLElement);
+  }
+
+  it('publishes the padding a bottom-stuck fade would otherwise stop short of', () => {
+    const cue = element('visible', '0px');
+    cover(chain(cue, element('auto', '28px')));
+    expect(cue.properties[PROPERTY]).toBe('28px');
+  });
+
+  it('reads the scroller, not the wrapper the cue happens to sit in', () => {
+    // The coloring picker's shape: a padded content block inside the dialog that
+    // actually scrolls. Only the scroller's padding sits inside the clip.
+    const cue = element('visible', '0px');
+    cover(chain(cue, element('visible', '32px'), element('auto', '0px')));
+    expect(cue.properties[PROPERTY]).toBe('0px');
+  });
+
+  it('counts a clipped ancestor as the scrollport, since sticky is bounded by it too', () => {
+    const cue = element('visible', '0px');
+    cover(chain(cue, element('hidden', '12px'), element('auto', '28px')));
+    expect(cue.properties[PROPERTY]).toBe('12px');
+  });
+
+  it('falls back to the page scroller where no ancestor scrolls', () => {
+    const cue = element('visible', '0px');
+    cover(chain(cue, element('visible', '40px'), element('clip', '72px')));
+    expect(cue.properties[PROPERTY]).toBe('0px');
+  });
+
+  it('re-reads on a resize, so a breakpoint that retunes the padding is picked up', () => {
+    const cue = element('visible', '0px');
+    const scrollport = element('auto', '28px');
+    cover(chain(cue, scrollport));
+
+    const observer = FakeResizeObserver.live[0];
+    expect(observer.observed).toEqual([scrollport]);
+    scrollport.paddingBottom = '24px';
+    observer.resize();
+    expect(cue.properties[PROPERTY]).toBe('24px');
+  });
+
+  it('takes the observer and the property back down with it', () => {
+    const cue = element('visible', '0px');
+    const handle = cover(chain(cue, element('auto', '28px')));
+    handle!.destroy();
+    expect(FakeResizeObserver.live[0].disconnected).toBe(true);
+    expect(cue.properties[PROPERTY]).toBeUndefined();
   });
 });
