@@ -123,19 +123,21 @@ whole job is read-your-writes within one invocation. The strong-read hazard that
 (`BlobsConsistencyError` when the Blobs context has no `uncachedEdgeURL`) belongs to the V1-function
 era it also documents, and was re-verified against a real Netlify deploy before this shipped.
 
-**Two rejected alternatives are now accepted**, because the original reasoning weighed a cost the
-daily provider-start ceiling already bounds:
+**One rejected alternative is now accepted.** *A provider success followed by an unconfirmable
+accounting write is withheld from the client.* The route now logs the failure, omits
+`X-Free-Generations-Remaining`, and returns the image. The rejected alternative feared uncounted
+successes under repeated write contention; the durable UTC-day ceiling this same ADR establishes is
+what actually bounds project spend, and it is charged before the provider call, so uncounted
+successes cost availability accuracy rather than money. Destroying a picture a child waited for, to
+protect a count the daily ceiling already backstops, was the worse trade.
 
-* *An expired lease is recorded as abandoned.* Completing a lapsed reservation now spends the slot
-  rather than throwing. The caller only reaches that code holding a reservation id its own request
-  minted, and a generation slower than the one-minute lease is still a generation the child
-  received. `successful` is clamped to the limit on read, so a lapsed settlement cannot hand out
-  extra allowance, and the reservation being settled is no longer also counted as an abandoned
-  failure.
-* *A provider success followed by an unconfirmable accounting write is withheld from the client.*
-  The route now logs the failure, omits `X-Free-Generations-Remaining`, and returns the image. The
-  rejected alternative feared uncounted successes under repeated write contention; the durable
-  UTC-day ceiling this same ADR establishes is what actually bounds project spend, and it is charged
-  before the provider call, so uncounted successes cost availability accuracy rather than money.
-  Destroying a picture a child waited for, to protect a count the daily ceiling already backstops,
-  was the worse trade.
+**Holding a live reservation stays the proof that a completion owns a slot**, and the review of this
+amendment is why. Spending the slot for a lapsed lease as well was drafted here and rejected: a
+reclaimed lease can already have been re-reserved and spent by a later request, so two completions
+would claim one slot and store `successful = 11`, which `normalizeGrant`'s clamp then hides rather
+than prevents. The motivating case does not exist either — ADR-0063's ladder aborts the provider
+call at `GENERATE_DEADLINE_MS` and the platform kills the invocation at `NETLIFY_SYNC_TIMEOUT_MS`,
+both far below `RESERVATION_LEASE_MS`, so no live invocation can reach completion with an expired
+lease. `completeFreeGeneration` therefore still rejects a missing or reclaimed reservation; the
+fail-open above is what keeps the child's image in that anomalous case, and the expire → reuse →
+both-complete interleaving is pinned by a test.

@@ -128,49 +128,37 @@ describe('free generation grants', () => {
     );
   });
 
-  it('spends the slot for a generation that outlived its reservation lease', async () => {
+  it('refuses a completion whose lapsed slot another request already spent', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-08-09T12:00:00Z'));
     const id = installation('e');
-    const reservation = await reserveFreeGeneration(id);
-    if (!reservation.reserved) throw new Error('Expected a reservation');
+    for (let spent = 1; spent < FREE_GENERATION_LIMIT; spent++) {
+      const used = await reserveFreeGeneration(id);
+      if (!used.reserved) throw new Error('Expected a reservation');
+      await completeFreeGeneration(id, used.reservationId);
+    }
+    const lapsing = await reserveFreeGeneration(id);
+    if (!lapsing.reserved) throw new Error('Expected a reservation');
+    await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 0 });
 
+    // The lease expires, so the last slot is reclaimed and re-reserved by a
+    // later request that completes it — leaving the first completion with an id
+    // whose slot is gone.
     vi.setSystemTime(new Date('2026-08-09T12:05:00Z'));
-    await expect(completeFreeGeneration(id, reservation.reservationId)).resolves.toEqual({
-      remaining: 9,
-    });
-
-    const stats = await getFreeGenerationGrantAdminStats();
-    expect(stats).toMatchObject({
-      sampledSuccessful: 1,
-      sampledAttempts: 1,
-      sampledFailures: 0,
-      sampledActiveReservations: 0,
-    });
-  });
-
-  it('never hands back allowance beyond the limit when a lapsed slot is settled', async () => {
-    const id = installation('f');
-    entries.set(id, {
-      data: {
-        version: 1,
-        successful: FREE_GENERATION_LIMIT,
-        attempts: FREE_GENERATION_LIMIT,
-        failures: 0,
-        createdAt: '2026-08-09T12:00:00.000Z',
-        lastAttemptAt: '2026-08-09T12:00:00.000Z',
-        lastSuccessAt: '2026-08-09T12:00:00.000Z',
-        lastFailureAt: null,
-        lastFailureKind: null,
-        reservations: {},
-      },
-      etag: 'grant-v1',
-    });
-
-    await expect(completeFreeGeneration(id, 'lapsed-reservation')).resolves.toEqual({
+    const reusing = await reserveFreeGeneration(id);
+    if (!reusing.reserved) throw new Error('Expected the lapsed slot to be reusable');
+    await expect(completeFreeGeneration(id, reusing.reservationId)).resolves.toEqual({
       remaining: 0,
     });
-    await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 0 });
+
+    await expect(completeFreeGeneration(id, lapsing.reservationId)).rejects.toThrow(
+      'Free generation reservation expired'
+    );
+    // Read the stored counter, not the normalized view: normalizeGrant clamps to
+    // the limit on read, so an 11th success would be invisible through the
+    // status and admin surfaces that this hard invariant most needs to hold for.
+    const stored = entries.get(id)?.data as { successful: number };
+    expect(stored.successful).toBe(FREE_GENERATION_LIMIT);
   });
 
   it('atomically refuses provider starts after the durable daily ceiling', async () => {

@@ -84,13 +84,13 @@ after a function crash, and compare-and-set writes prevent concurrent requests f
 remaining slot twice. That grant store reads with **strong consistency**, unlike the other Blobs
 stores: one request writes the reservation and then reads it back after the model call, so an
 eventually-consistent read of its own write loses the reservation and fails a generation that
-succeeded (ADR-0105's 2026-08-11 amendment). Finalizing is also never allowed to destroy a delivered
-image — a reservation whose lease lapsed during a slow generation still spends its slot, and a
-ledger write that fails outright is logged and the image returned without the remaining-count
-header, leaving the daily ceiling as the spending boundary. A separate durable compare-and-set
-counter reserves every free provider start before Gemini is called and caps project-funded traffic
-across all installations and function instances at 500 calls per UTC day. Provider failures and
-safety refusals are not refunded from that daily ceiling.
+succeeded (ADR-0105's 2026-08-11 amendment). Finalizing still requires a live reservation — a
+missing or already-reclaimed one is refused, so two completions can never claim one slot — but it is
+no longer allowed to destroy a delivered image: a ledger write that fails is logged and the image
+returned without the remaining-count header, leaving the daily ceiling as the spending boundary. A
+separate durable compare-and-set counter reserves every free provider start before Gemini is called
+and caps project-funded traffic across all installations and function instances at 500 calls per UTC
+day. Provider failures and safety refusals are not refunded from that daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
 `X-Free-Generations-Remaining`. Exhaustion is `403` with
