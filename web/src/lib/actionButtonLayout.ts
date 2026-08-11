@@ -42,6 +42,16 @@ export const ACTION_BUTTON_BASE_PX = {
 // the render-time cap below reads the property rather than resolving a number.
 export const ACTION_BUTTON_BASE_PROPERTY = '--action-btn-base';
 
+// The floor under a Brush Menu / Stroke Width Menu option, whatever step the
+// action button beside it takes. The panel goes smaller than this on a phone to
+// hand the canvas back; a popover that closes on the next tap hands nothing
+// back, so the same step there would cost touch target and buy no room. Above
+// the floor an option squares with the button that opened it. app.css owns the
+// rendered size (see .flyout-option); actionButtonLayout.fallback.test.ts holds
+// the two together, and actionButtonLayout.test.ts pins what a parent's smallest
+// Button Size leaves of it.
+export const FLYOUT_OPTION_MIN_BASE_PX = 60;
+
 // A `max-*` bound sits just below the threshold it excludes, so a fractional
 // viewport side between the two doesn't fall through both queries.
 const BREAKPOINT_EPSILON_PX = 0.02;

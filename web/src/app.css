@@ -503,10 +503,19 @@ body {
 }
 
 .flyout-option {
-  /* Square with the action button that opened the menu, so it takes the same
-     size-class step. */
-  width: calc(var(--action-btn-base) * var(--action-btn-scale, 1));
-  height: calc(var(--action-btn-base) * var(--action-btn-scale, 1));
+  /* Squares with the action button that opened the menu, floored at the step a
+     popover has no reason to go below. The action panel takes a smaller step on
+     a phone to hand the canvas back to the drawing; a flyout is gone on the next
+     tap and hands nothing back, so shrinking it there buys no room and only
+     costs a two-year-old touch target. It does still follow the Button Size
+     slider — the menu is an extension of the button that opened it, and has to
+     stay its size while a parent drags (issue #317) — which leaves the floor as
+     what a parent's smallest setting is measured down from. Mirrors
+     FLYOUT_OPTION_MIN_BASE_PX, drift-guarded by
+     actionButtonLayout.fallback.test.ts. */
+  --flyout-option-base: max(var(--action-btn-base), 60px);
+  width: calc(var(--flyout-option-base) * var(--action-btn-scale, 1));
+  height: calc(var(--flyout-option-base) * var(--action-btn-scale, 1));
   background: var(--float-surface);
   border: 2px solid var(--float-border);
   border-radius: 14px;

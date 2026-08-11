@@ -15,6 +15,7 @@ import {
   ACTION_PANEL_LIVE_ATTRIBUTE,
   FIRST_PAINT_ACTION_BUTTON_COUNT_DEFAULT,
   FIRST_PAINT_ACTION_BUTTON_GAP_TOTAL_DEFAULT,
+  FLYOUT_OPTION_MIN_BASE_PX,
   LANDSCAPE_FIXED_RESERVE,
   MAX_ACTION_BUTTON_COUNT,
   PANEL_FIXED_CHROME,
@@ -27,6 +28,21 @@ import {
 
 const appCssSource = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
 const appHtmlSource = readFileSync(resolve(process.cwd(), 'src/app.html'), 'utf8');
+
+// The declarations of one top-level rule. A `toContain` over the whole
+// stylesheet answers "somewhere", which is not the question when the point is
+// that a particular control is sized a particular way — a hardcoded size in the
+// rule under test passes it as long as the expected expression survives
+// anywhere else in the file. Top-level rules are the ones starting in column 0
+// and closing on one, so a nested `@media` copy of the same selector can't be
+// mistaken for the base rule.
+function cssRuleBody(selector: string): string {
+  const opening = `\n${selector} {`;
+  const start = appCssSource.indexOf(opening);
+  expect(start, `app.css has no top-level \`${selector}\` rule`).toBeGreaterThan(-1);
+  const bodyStart = start + opening.length;
+  return appCssSource.slice(bodyStart, appCssSource.indexOf('\n}', bodyStart));
+}
 
 // The CSS `--action-btn-fallback` in app.css owns the action-button
 // size at first paint (before any TS loads — ADR-0040), so it bakes the sizing
@@ -145,11 +161,22 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(portrait).toMatch(new RegExp(`/\\s*${MAX_ACTION_BUTTON_COUNT}\\b`));
   });
 
-  it('flyout options and the action button take the same size-class step', () => {
-    expect(appCssSource).toContain(`width: calc(${scaledBase})`);
-    expect(appCssSource).toContain(`height: calc(${scaledBase})`);
-    expect(appCssSource).toContain(
+  it('pads the action button by a share of its own size-class step', () => {
+    expect(cssRuleBody('.actions-panel .action-button')).toContain(
       `padding: calc(var(${ACTION_BUTTON_BASE_PROPERTY}) / 6 * var(--action-btn-scale, 1))`
     );
+  });
+
+  it('floors a flyout option at FLYOUT_OPTION_MIN_BASE_PX and squares it above', () => {
+    const flyoutOption = cssRuleBody('.flyout-option');
+    const optionBase = '--flyout-option-base';
+    expect(flyoutOption).toContain(
+      `${optionBase}: max(var(${ACTION_BUTTON_BASE_PROPERTY}), ${FLYOUT_OPTION_MIN_BASE_PX}px)`
+    );
+    for (const axis of ['width', 'height']) {
+      expect(flyoutOption).toContain(
+        `${axis}: calc(var(${optionBase}) * var(--action-btn-scale, 1))`
+      );
+    }
   });
 });
