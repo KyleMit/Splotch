@@ -51,7 +51,8 @@
         <p class="recipe-tokens">
           <code>--font-size-sm</code> <code>--font-weight-medium</code> label ·
           <code>--input-font-size</code> input on <code>--surface</code> with a
-          <code>--border</code> hairline at <code>--radius-sm</code> ·
+          <code>--border</code> hairline at <code>--radius-sm</code>, typing in
+          <code>--text-strong</code> over a <code>--text-soft</code> placeholder ·
           <code>--font-size-xs</code> <code>--text-soft</code> help
         </p>
       </figcaption>

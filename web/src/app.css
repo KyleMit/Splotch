@@ -29,6 +29,21 @@ body {
   background: var(--app-bg);
 }
 
+/* Every text input in the app types in --text-strong on --surface and leaves
+   the placeholder to the UA. That default ink is a fixed mid-gray that ignores
+   color-scheme — Chromium paints #757575 on both papers — so it scrapes 4.6:1
+   on the light surface and drops to 3.4:1 on the dark one, under the 4.5:1 AA
+   floor a placeholder owes as informative text. --text-soft is the token that
+   already claims the placeholder role and is pinned to hold that floor on the
+   app grounds in both themes; the placeholder still reads as the duller of the
+   two, a full --text-strong step below entered text. Firefox dims placeholders
+   with its own opacity on top, hence the reset. a11y.spec.ts measures both
+   papers. */
+::placeholder {
+  color: var(--text-soft);
+  opacity: 1;
+}
+
 /* Shared first-paint width of the landscape Color Palette. The palette and
    Actions Panel both consume it before ResizeObserver can publish the measured
    width; actionButtonLayout.fallback.test.ts guards these literals against the
