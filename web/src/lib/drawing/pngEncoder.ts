@@ -106,6 +106,11 @@ function createPngEncoder(): PngEncoder {
     encoder.terminate(error);
     if (cachedEncoder === encoder) cachedEncoder = null;
   });
+  worker.addEventListener('messageerror', () => {
+    const error = new Error('PNG encoder worker response could not be decoded');
+    encoder.terminate(error);
+    if (cachedEncoder === encoder) cachedEncoder = null;
+  });
 
   return encoder;
 }

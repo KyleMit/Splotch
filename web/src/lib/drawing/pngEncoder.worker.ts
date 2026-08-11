@@ -1,4 +1,13 @@
-import { composeTiledPngCanvas, createTiledPngPreview } from './tiledPngCompositor';
+import {
+  CanvasContextRecoveryError,
+  createOffscreenCanvas2dSurface,
+  runWithCanvasContextRecovery,
+} from './canvasContextRecovery';
+import {
+  createTiledPngPreview,
+  createTiledPngSurface,
+  paintTiledPngSurface,
+} from './tiledPngCompositor';
 import type { EncodePngRequest, EncodePngResponse } from './pngEncoderProtocol';
 
 interface EncoderWorkerScope {
@@ -12,30 +21,49 @@ encoderWorker.onmessage = async ({ data }) => {
   const { id } = data;
   try {
     if (data.kind === 'tiles') {
-      const canvas = composeTiledPngCanvas(data);
-      const encoded = canvas.convertToBlob({ type: 'image/png' });
-      if (data.previewWidth) {
-        let preview: ImageBitmap | null = null;
-        try {
-          preview = createTiledPngPreview(canvas, data.previewWidth);
-          encoderWorker.postMessage({ id, preview }, [preview]);
-          preview = null;
-        } catch {
-          // Preview feedback is optional; its failure must not cancel the already-started PNG save.
-          preview?.close();
+      let previewSent = false;
+      const blob = await runWithCanvasContextRecovery(
+        () => createTiledPngSurface(data),
+        ({ canvas, context }) => {
+          paintTiledPngSurface({ canvas, context }, data);
+          const encoded = canvas.convertToBlob({ type: 'image/png' });
+          if (data.previewWidth && !previewSent) {
+            let preview: ImageBitmap | null = null;
+            try {
+              preview = createTiledPngPreview(canvas, data.previewWidth);
+              encoderWorker.postMessage({ id, preview }, [preview]);
+              preview = null;
+              previewSent = true;
+            } catch {
+              // Preview feedback is optional; its failure must not cancel the already-started PNG save.
+              preview?.close();
+            }
+          }
+          return encoded;
         }
-      }
-      encoderWorker.postMessage({ id, blob: await encoded });
+      );
+      encoderWorker.postMessage({ id, blob });
       return;
     }
-    const canvas = new OffscreenCanvas(data.bitmap.width, data.bitmap.height);
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('PNG encoder could not allocate a 2D context');
-    context.drawImage(data.bitmap, 0, 0);
-    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    const blob = await runWithCanvasContextRecovery(
+      () =>
+        createOffscreenCanvas2dSurface(
+          data.bitmap.width,
+          data.bitmap.height,
+          'PNG encoder could not allocate a 2D context'
+        ),
+      ({ canvas, context }) => {
+        context.drawImage(data.bitmap, 0, 0);
+        return canvas.convertToBlob({ type: 'image/png' });
+      }
+    );
     encoderWorker.postMessage({ id, blob });
   } catch (error) {
-    encoderWorker.postMessage({ id, error: String(error) });
+    encoderWorker.postMessage({
+      id,
+      error: String(error),
+      ...(error instanceof CanvasContextRecoveryError ? { code: error.code } : {}),
+    });
   } finally {
     if (data.kind === 'tiles') {
       for (const tile of data.tiles) tile.bitmap.close();

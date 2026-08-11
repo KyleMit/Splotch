@@ -2,7 +2,8 @@
 
 **Status:** Active — amends [ADR-0043](0043-magic-brush-color-sheet-reveal.md),
 [ADR-0052](0052-dark-mode-theme-tokens.md), and
-[ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md)
+[ADR-0087](0087-frame-bound-theme-switch-on-ipad-webkit.md); worker context-loss recovery added by
+[ADR-0110](0110-single-replay-worker-canvas-context-recovery.md)
 
 **Date:** 2026-07
 

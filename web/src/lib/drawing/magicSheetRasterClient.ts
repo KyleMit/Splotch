@@ -42,6 +42,10 @@ function magicSheetRasterWorker() {
       if ('bitmap' in data) data.bitmap.close();
       return;
     }
+    if ('error' in data && data.code !== undefined) {
+      failRasterWorker(worker, new Error(data.error));
+      return;
+    }
     pendingWorkerRasters.delete(data.id);
     clearTimeout(request.timeoutId);
     if ('error' in data) request.reject(new Error(data.error));
@@ -59,18 +63,16 @@ function magicSheetRasterWorker() {
 
 export function rasterizeMagicSheetInWorker(request: Omit<MagicSheetWorkerRequest, 'id'>) {
   const id = ++nextRasterRequestId;
+  const worker = magicSheetRasterWorker();
   return new Promise<ImageBitmap>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
-      pendingWorkerRasters.delete(id);
-      reject(new Error('Magic sheet worker timed out'));
+      failRasterWorker(worker, new Error('Magic sheet worker timed out'));
     }, MAGIC_SHEET_WORKER_TIMEOUT_MS);
     pendingWorkerRasters.set(id, { resolve, reject, timeoutId });
     try {
-      magicSheetRasterWorker().postMessage({ ...request, id });
+      worker.postMessage({ ...request, id });
     } catch (error) {
-      clearTimeout(timeoutId);
-      pendingWorkerRasters.delete(id);
-      reject(error instanceof Error ? error : new Error(String(error)));
+      failRasterWorker(worker, error instanceof Error ? error : new Error(String(error)));
     }
   });
 }

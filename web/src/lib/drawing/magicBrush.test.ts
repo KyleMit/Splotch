@@ -404,6 +404,35 @@ describe('magic sheet worker raster', () => {
     expect(workers[0].terminate).toHaveBeenCalledOnce();
   });
 
+  it('settles pending rasters and replaces the worker after repeated context loss', async () => {
+    (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
+      ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
+    const { magic } = await mountedWorkerBrush();
+    magic.setColorSheet('/coloring/first.light.webp');
+    requestedImages[0].onload!();
+    magic.setColorSheet('/coloring/second.light.webp');
+    requestedImages[1].onload!();
+    const failedWorker = workers[0];
+    const firstRequestId = failedWorker.posted[0].id;
+    const secondRequestId = failedWorker.posted[1].id;
+
+    failedWorker.respond({
+      id: firstRequestId,
+      error: 'CanvasContextRecoveryError: Canvas 2D context recovery failed after one retry',
+      code: 'canvas-context-recovery-failed',
+    });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()).not.toBeNull());
+
+    expect(failedWorker.terminate).toHaveBeenCalledOnce();
+    const lateBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    failedWorker.respond({ id: secondRequestId, bitmap: lateBitmap });
+    expect(lateBitmap.close).toHaveBeenCalledOnce();
+
+    magic.setColorSheet('/coloring/third.light.webp');
+    requestedImages[2].onload!();
+    expect(workers).toHaveLength(2);
+  });
+
   it('falls back when posting the raster request throws', async () => {
     (HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = () =>
       ({ clearRect() {}, drawImage() {} }) as unknown as CanvasRenderingContext2D;
@@ -426,6 +455,7 @@ describe('magic sheet worker raster', () => {
     await vi.advanceTimersByTimeAsync(15_000);
 
     expect(magic.captureMagicSheet()).not.toBeNull();
+    expect(workers[0].terminate).toHaveBeenCalledOnce();
   });
 });
 
