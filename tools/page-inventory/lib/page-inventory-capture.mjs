@@ -31,17 +31,3 @@ export async function assertCaptureRendered(path, viewport) {
     );
   }
 }
-
-export function createViewportDigestLedger() {
-  const viewportByDigest = new Map();
-  return {
-    record(item, viewport, theme, digest) {
-      const key = `${item.group}/${item.id}--${theme.id}--${digest}`;
-      const previous = viewportByDigest.get(key);
-      if (previous && previous !== viewport.id) {
-        throw new Error(`pixel-identical to the ${previous} capture; the viewport never applied`);
-      }
-      viewportByDigest.set(key, viewport.id);
-    },
-  };
-}

@@ -22,11 +22,7 @@ import {
   sha256File,
   validateThemeCaptureDifferences,
 } from './lib/page-inventory-data.mjs';
-import {
-  CAPTURE_ATTEMPTS,
-  assertCaptureRendered,
-  createViewportDigestLedger,
-} from './lib/page-inventory-capture.mjs';
+import { CAPTURE_ATTEMPTS, assertCaptureRendered } from './lib/page-inventory-capture.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { waitForUrl } from '../lib/net.mjs';
@@ -713,7 +709,7 @@ async function assertSurfaceReady(page) {
   if (!hasVisibleContent) throw new Error('reached no visible ready content');
 }
 
-async function captureOnce(page, item, viewport, theme, out, ledger) {
+async function captureOnce(page, item, viewport, theme, out) {
   try {
     await item.prepare(page, viewport);
     await settle(page);
@@ -724,20 +720,18 @@ async function captureOnce(page, item, viewport, theme, out, ledger) {
     const png = await page.screenshot({ type: 'png' });
     await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
     await assertCaptureRendered(target, viewport);
-    const digest = sha256File(target);
-    ledger.record(item, viewport, theme, digest);
-    return captureRecord(item, viewport, theme, path, digest);
+    return captureRecord(item, viewport, theme, path, sha256File(target));
   } finally {
     await item.cleanup?.(page);
   }
 }
 
-async function capture(page, item, viewport, theme, out, ledger) {
+async function capture(page, item, viewport, theme, out) {
   const label = `${item.group}/${item.id} at ${viewport.id} in ${theme.id}`;
   let failure;
   for (let attempt = 1; attempt <= CAPTURE_ATTEMPTS; attempt += 1) {
     try {
-      return await captureOnce(page, item, viewport, theme, out, ledger);
+      return await captureOnce(page, item, viewport, theme, out);
     } catch (error) {
       failure = error;
       console.warn(`${label} attempt ${attempt}/${CAPTURE_ATTEMPTS} failed: ${error.message}`);
@@ -886,7 +880,6 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
       const captures = [];
-      const ledger = createViewportDigestLedger();
       for (const theme of themes) {
         for (const view of views) {
           const context = await browser.newContext({
@@ -910,7 +903,7 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           const page = await context.newPage();
           for (const item of items) {
             console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
-            captures.push(await capture(page, item, view, theme, staging, ledger));
+            captures.push(await capture(page, item, view, theme, staging));
           }
           await context.close();
         }

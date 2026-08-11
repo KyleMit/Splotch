@@ -28,10 +28,7 @@ import {
   reviewerArgs,
   runReviewerProcess,
 } from '../run-page-inventory-critiques.mjs';
-import {
-  assertCaptureRendered,
-  createViewportDigestLedger,
-} from '../lib/page-inventory-capture.mjs';
+import { assertCaptureRendered } from '../lib/page-inventory-capture.mjs';
 import {
   GENERAL_DESIGN_NOTES,
   SURFACE_DESIGN_NOTES,
@@ -302,20 +299,13 @@ describe('page inventory output', () => {
     ).rejects.toThrow('expected WebP 61×40');
   });
 
-  it('rejects one surface producing byte-identical captures at two viewports', () => {
-    const item = inventoryItem();
-    const [portrait, landscape] = PAGE_INVENTORY_VIEWPORTS;
-    const [theme] = PAGE_INVENTORY_THEMES;
-    const digest = 'a'.repeat(64);
-    const ledger = createViewportDigestLedger();
-
-    ledger.record(item, portrait, theme, digest);
-    expect(() => ledger.record(item, portrait, theme, digest)).not.toThrow();
-    expect(() => ledger.record(item, landscape, theme, digest)).toThrow(
-      `pixel-identical to the ${portrait.id} capture`
-    );
-    expect(() => ledger.record(item, landscape, PAGE_INVENTORY_THEMES[1], digest)).not.toThrow();
-    expect(() => ledger.record({ ...item, id: 'other' }, landscape, theme, digest)).not.toThrow();
+  // Every viewport has its own width × height, and a capture is checked against
+  // its own before it is recorded — so a shot that came back at another
+  // viewport's size cannot reach the manifest, and two captures of one surface
+  // cannot be byte-identical across viewports for a cross-capture check to find.
+  it('gives every viewport dimensions no other viewport shares', () => {
+    const sizes = PAGE_INVENTORY_VIEWPORTS.map(({ width, height }) => `${width}x${height}`);
+    expect(new Set(sizes).size).toBe(PAGE_INVENTORY_VIEWPORTS.length);
   });
 
   it('selects a spot-check subset and names the valid choices for a typo', () => {

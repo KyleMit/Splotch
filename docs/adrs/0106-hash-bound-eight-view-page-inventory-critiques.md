@@ -85,10 +85,11 @@ two rubrics, and the opt-out is what let it through.
 
 **Capture failure is loud.** Blankness is measured as peak channel standard deviation rather than
 inferred from file size, which is not a usable proxy — the quietest legitimate capture and an empty
-harness page overlap in bytes. A surface+theme that yields the same digest at two viewports is
-rejected as a viewport that never applied. Either failure retries a bounded number of times and then
-fails the whole run naming the surface, viewport, theme, and failing check. No manifest is written
-from a run that had a failed capture, so a green run means every image rendered.
+harness page overlap in bytes. Every image is also checked against the dimensions of the viewport it
+was shot at, which is what catches a viewport that never applied. Either failure retries a bounded
+number of times and then fails the whole run naming the surface, viewport, theme, and failing check.
+No manifest is written from a run that had a failed capture, so a green run means every image
+rendered.
 
 **Design intent is a review input.** `lib/page-inventory-design-notes.mjs` holds general notes that
 reach every `review_description` and per-surface notes keyed by `group/surface_id` that become that

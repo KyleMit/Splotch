@@ -14,9 +14,10 @@ infer completion from counts in a critique file.
 1. Read the `design` skill for Splotch's visual criteria.
 2. Run `npm run gen:page-inventory` when the manifest or any expected image is absent. A complete
    capture contains light and night variants for four devices in portrait and landscape. A capture
-   that comes back blank, near-uniform, or pixel-identical to the same surface at another viewport
-   is retried and then fails the run by name; no manifest is written from a run that had a failed
-   capture, so a green run means every image rendered.
+   that comes back near-uniform, or at dimensions other than its viewport's, is retried and then
+   fails the run by name; a surface whose light and night captures are pixel-identical fails it too.
+   No manifest is written from a run that had a failed capture, so a green run means every image
+   rendered.
 3. To check one surface without a full run, filter with `--surface` (`group/id` or a bare id),
    `--viewport`, or `--theme`, all repeatable. Any filter makes it a spot check: output goes to
    `.scrapbook-scratch/page-inventory-spot-check` as `spot-check-captures.json`, and neither the
