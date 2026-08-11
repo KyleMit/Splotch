@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import ParentalGateManageFooter from './ParentalGateManageFooter.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { paletteHex } from '$lib/palette';
@@ -9,8 +10,27 @@
     dismissGate,
     pressGateDigit,
     pressGateBackspace,
+    redirectGateToParentCenter,
     GATE_SHAKE_MS,
   } from '$lib/state/parentalGate.svelte';
+
+  // Parent Center is where these checks are managed, so a challenge standing in
+  // front of it is already at that destination: it names it in the subtitle and
+  // drops the footer that would otherwise offer the trip the parent is on.
+  const managingPolicies = $derived(gate.feature === 'parentCenter');
+
+  // The keypad, for the focus handoff below.
+  let keypadEl = $state<HTMLDivElement>();
+
+  // Retargeting unmounts the footer this was activated from, and a removed
+  // element hands focus back to <body> — outside the dialog, where the keydown
+  // handler above never sees another digit, leaving a keyboard user stranded on
+  // a card that looks ready for one. So focus moves onto the keypad first, while
+  // the element that owns it is still there to give it up.
+  function manageGatePolicies() {
+    keypadEl?.querySelector('button')?.focus();
+    redirectGateToParentCenter();
+  }
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
   // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
@@ -75,7 +95,11 @@
           <SplotchyIcon class="gate-mascot" />
           <div class="gate-heading">
             <h2 class="gate-title" id="parentalGateTitle">Grown-Ups Only</h2>
-            <p class="gate-subtitle">Solve the problem to continue</p>
+            <p class="gate-subtitle">
+              {managingPolicies
+                ? 'Solve the problem to manage grown-up checks'
+                : 'Solve the problem to continue'}
+            </p>
           </div>
         </header>
         <!-- The row's label carries the whole equation for assistive tech (and
@@ -101,7 +125,7 @@
           {/each}
         </div>
         <p class="gate-error" role="status">{gate.error ?? ''}</p>
-        <div class="gate-keypad">
+        <div class="gate-keypad" bind:this={keypadEl}>
           {#each KEYPAD_DIGITS as digit (digit)}
             <button class="gate-key" onclick={() => pressGateDigit(digit)}>{digit}</button>
           {/each}
@@ -109,6 +133,9 @@
             <Icon name="backspace" class="gate-key-icon" />
           </button>
         </div>
+        {#if !managingPolicies}
+          <ParentalGateManageFooter onManage={manageGatePolicies} />
+        {/if}
       </div>
     {/if}
   </div>

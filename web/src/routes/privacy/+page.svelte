@@ -13,7 +13,7 @@
   // Splotch has no email; questions/concerns go through GitHub issues.
   import { GITHUB_NEW_ISSUE_URL as CONTACT_URL } from '$lib/githubRepo';
 
-  const LAST_UPDATED = 'August 9, 2026';
+  const LAST_UPDATED = 'August 11, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -173,11 +173,12 @@
     no advertising or analytics SDKs. When the app opens online, it checks the free allowance using
     the one-way installation code described above; it does not send drawing content during that
     check. Sending feedback and reporting an AI-generated picture each has its own grown-up-check
-    policy in Parent Center, defaulting to Every time. Splotch does not ask for a child's name,
-    email address, account, or location, and the submitted content is not used to identify a child.
-    We handle these deliberate flows in line with children's privacy laws, including COPPA and the
-    GDPR's protections for children. There are no social features, comments, chat, advertising, or
-    in-app purchases.
+    policy in Parent Center. The App Store and Google Play versions ask every time to begin with; on
+    the web those checks start off, and you turn on the ones you want. Splotch does not ask for a
+    child's name, email address, account, or location, and the submitted content is not used to
+    identify a child. We handle these deliberate flows in line with children's privacy laws,
+    including COPPA and the GDPR's protections for children. There are no social features, comments,
+    chat, advertising, or in-app purchases.
   </p>
 
   <h3>Changes to this policy</h3>

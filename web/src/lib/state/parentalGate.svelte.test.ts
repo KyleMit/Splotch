@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
+import { settingsModal, ui } from './ui.svelte';
 import {
   gate,
   parentalGatePolicies,
@@ -8,6 +9,7 @@ import {
   pressGateDigit,
   pressGateBackspace,
   dismissGate,
+  redirectGateToParentCenter,
   setParentalGateMode,
   reloadParentalGate,
   isParentalGateModeAvailable,
@@ -44,6 +46,8 @@ describe('parental gate', () => {
     localStorage.clear();
     globalThis.Capacitor = undefined;
     dismissGate();
+    settingsModal.hide();
+    ui.requestedSettingsSection = null;
     for (const feature of PARENTAL_GATE_FEATURES) {
       parentalGatePolicies[feature] = 'always';
       gate.sessionSolved[feature] = false;
@@ -56,10 +60,26 @@ describe('parental gate', () => {
     vi.restoreAllMocks();
   });
 
-  it('defaults every protected feature to asking every time', () => {
+  it('asks every time for every feature set to that mode', () => {
     for (const feature of PARENTAL_GATE_FEATURES) {
       expect(parentalGatePolicies[feature]).toBe('always');
       expect(requiresParentalGate(feature)).toBe(true);
+    }
+  });
+
+  // Which mode that default *is* comes from the build: gates are an app-store
+  // requirement, so the store build arms them and the web build ships with every
+  // check off. This suite compiles with __IS_CAPACITOR__ true (vitest.config.ts),
+  // so it can only pin the fallback's shape, not the web value — that is pinned
+  // against the real web bundle by flows-parental-gate.spec.ts, "the web build
+  // ships every grown-up check off".
+  it('starts every protected feature at the build default when nothing is stored', async () => {
+    localStorage.clear();
+    vi.resetModules();
+    const fresh = await import('./parentalGate.svelte');
+
+    for (const feature of fresh.PARENTAL_GATE_FEATURES) {
+      expect(fresh.parentalGatePolicies[feature]).toBe(fresh.DEFAULT_PARENTAL_GATE_MODE);
     }
   });
 
@@ -172,6 +192,43 @@ describe('parental gate', () => {
     requireParentalGate('feedback', destination);
     expect(destination).toHaveBeenCalledOnce();
     expect(gate.open).toBe(false);
+  });
+
+  it('retargets the open challenge at Parent Center, keeping the problem on screen', () => {
+    const destination = vi.fn();
+    requireParentalGate('externalLinks', destination, { x: 10, y: 20 }, { immediate: true });
+    const problem = [gate.x, gate.y];
+    pressGateDigit(4);
+
+    redirectGateToParentCenter();
+
+    expect(gate.open).toBe(true);
+    expect(gate.feature).toBe('parentCenter');
+    expect([gate.x, gate.y]).toEqual(problem);
+    expect(gate.input).toBe('');
+
+    // The link's immediate handoff went with the link: this solve earns the
+    // success card, then Settings opens on Parent Center itself.
+    typeAnswer(correctAnswer());
+    expect(gate.unlocked).toBe(true);
+    vi.advanceTimersByTime(GATE_SUCCESS_HOLD_MS);
+    expect(destination).not.toHaveBeenCalled();
+    expect(ui.requestedSettingsSection).toBe('parentCenter');
+    expect(settingsModal.open).toBe(true);
+    expect(settingsModal.origin).toEqual({ x: 10, y: 20 });
+  });
+
+  it('hands straight over when Parent Center asks for no check of its own', () => {
+    setParentalGateMode('parentCenter', 'never');
+    const destination = vi.fn();
+    requireParentalGate('feedback', destination);
+
+    redirectGateToParentCenter();
+
+    expect(gate.open).toBe(false);
+    expect(destination).not.toHaveBeenCalled();
+    expect(ui.requestedSettingsSection).toBe('parentCenter');
+    expect(settingsModal.open).toBe(true);
   });
 
   it('persists an independent mode for every protected feature', () => {
