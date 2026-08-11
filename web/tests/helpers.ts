@@ -192,7 +192,7 @@ export async function settleSettingsPane(pane: Locator) {
             resolve();
           } else if (++frames > budget) {
             const sections = el.querySelectorAll('.settings-section').length;
-            const rows = document.querySelectorAll('.settings-nav-item').length;
+            const rows = document.querySelectorAll('.settings-nav .toc-row').length;
             reject(
               new Error(
                 `Settings pane still busy after ${budget} frames — ${sections} of ${rows} sections in`
@@ -232,8 +232,8 @@ export async function openSettingsModal(page: Page) {
 // own scroller wherever the section list outgrows it, and that clipping is the
 // thing at stake.
 export function activeNavRowInsideColumn(page: Page) {
-  return page.locator('.settings-nav .settings-nav-item.active').evaluate((row) => {
-    const box = row.parentElement!.getBoundingClientRect();
+  return page.locator('.settings-nav .toc-row.active').evaluate((row) => {
+    const box = row.closest('.settings-nav')!.getBoundingClientRect();
     const seat = row.getBoundingClientRect();
     return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
   });

@@ -207,7 +207,7 @@ test('Parent Center reads as a mode matrix once the settings pane is wide enough
   const settings = await openSettingsModal(page);
   // The table of contents unlocks Parent Center on the way to it, and gotoApp
   // seeds the gate to Never, so the jump reveals the policies outright.
-  await settings.locator('.settings-nav-item[data-section="parentCenter"]').click();
+  await settings.locator('.settings-nav .toc-row[data-section="parentCenter"]').click();
 
   // The shared column headings replace the per-option labels, which stay in the
   // DOM as each radio's accessible name.

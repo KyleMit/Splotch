@@ -163,7 +163,7 @@ test('the active Settings nav item holds WCAG AA contrast', async ({ page }) => 
   await gotoApp(page);
   await openSettingsModal(page);
 
-  const active = page.locator('.settings-nav-item.active').first();
+  const active = page.locator('.settings-nav .toc-row.active').first();
   await expect(active).toBeVisible();
   const { color, backgroundColor } = await active.evaluate((el) => {
     const style = getComputedStyle(el);

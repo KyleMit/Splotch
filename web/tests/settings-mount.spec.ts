@@ -23,7 +23,7 @@ function paneFillPerFrame(page: Page, frameLimit: number) {
     (frameLimit) =>
       new Promise<{ rows: number; sections: number[] }>((resolve) => {
         const sections: number[] = [];
-        const rows = () => document.querySelectorAll('.settings-nav-item').length;
+        const rows = () => document.querySelectorAll('.settings-nav .toc-row').length;
         const step = () => {
           const pane = document.querySelector('.settings-pane');
           if (!pane) {
@@ -91,7 +91,7 @@ test('a scroll the moment the pane reports ready keeps the last section elected'
               requestAnimationFrame(step);
               return;
             }
-            const rows = document.querySelectorAll('.settings-nav .settings-nav-item');
+            const rows = document.querySelectorAll('.settings-nav .toc-row');
             resolve({
               grewAfterReady: pane.scrollHeight - heightAtReady,
               lastRowActive: rows[rows.length - 1]!.classList.contains('active'),
@@ -135,7 +135,7 @@ test('the pane reports itself busy until the last section is in', async ({ page 
 
   const pane = page.locator('.settings-pane');
   await settleSettingsPane(pane);
-  const rows = await page.locator('.settings-nav-item').count();
+  const rows = await page.locator('.settings-nav .toc-row').count();
   await expect(pane.locator('.settings-section')).toHaveCount(rows);
 });
 
@@ -170,7 +170,7 @@ test('a jump to a section that has not arrived yet still reaches it', async ({ p
             requestAnimationFrame(step);
             return;
           }
-          const rows = document.querySelectorAll<HTMLElement>('.settings-nav .settings-nav-item');
+          const rows = document.querySelectorAll<HTMLElement>('.settings-nav .toc-row');
           const row = rows[Math.floor(rows.length / 2)]!;
           row.click();
           resolve(row.dataset.section!);
