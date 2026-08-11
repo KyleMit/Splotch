@@ -1,13 +1,14 @@
 # ADR-0071: Design Tokens from One Generated Source (In-Repo Design System)
 
-**Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are permanently
-light-only — see the amendment at the end. Amended 2026-08-03: the styleguide is now the public
-`/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
+**Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are light-only —
+**reversed 2026-08-10**, see the last amendment. Amended 2026-08-03: the styleguide is now the
+public `/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
 controls now share the `SegmentedPicker` primitive — see the amendment at the end. Amended
 2026-08-04: `/admin` left the light-only set — the console redesign moved it onto the themed tokens
 — see the amendment at the end. Amended 2026-08-06: `Button`'s `ghost` variant was removed — see the
 amendment at the end. Amended 2026-08-08: `/changelog` adopted the pinned light-only reading
-palette.
+palette. Amended 2026-08-10: **no page opts out of night mode** — the light-only set is empty and
+the concept retired; see the amendment at the end.
 
 ## Context
 
@@ -88,8 +89,9 @@ swaps.
 
 ## Amendment (2026-07-22): light-only surfaces
 
-> Superseded for `/admin` by the 2026-08-04 admin-redesign amendment below; still in force for
-> `/privacy` (plus `/android-beta` and `/changelog`, which adopted the same pinned palette).
+> **Fully superseded.** `/admin` left by the 2026-08-04 admin-redesign amendment below; `/privacy`,
+> `/android-beta` and `/changelog` by the 2026-08-10 night-mode amendment at the end, which reverses
+> this one outright. Kept for the record — do not act on it.
 
 `/admin` and `/privacy` will **not** get a dark theme — a dark theme was considered and declined
 (owner decision, 2026-07-22). Both keep self-contained, WCAG-tuned light palettes that are exempt
@@ -181,8 +183,8 @@ along with the console's `--page-*` pins — `PageShell` runs on its themed defa
 * The one raw-hex survivor is the persistence banner's warning amber (no warn token pair exists — it
   is the product's only warning surface); it stays light-pinned on both themes with its own
   self-contained contrast, allowlisted in the ratchet.
-* `/privacy`, `/android-beta`, and `/changelog` remain light-only per the 2026-07-22 amendment;
-  their shared `--page-shadow` drift guard (`pinnedPalette.test.ts`) covers all three pages.
+* `/privacy`, `/android-beta`, and `/changelog` remained light-only at the time of this amendment;
+  the 2026-08-10 amendment below moved them onto the themed defaults too, emptying the set.
 
 ## Amendment (2026-08-06): `Button`'s `ghost` variant is removed
 
@@ -194,3 +196,42 @@ adding a real border), so a `ghost` button in a row with `brand`/`wash`/`danger`
 `2 × var(--border-width)`. Per the root convention that a variant needs a production caller to
 justify its surface, `ghost` is deleted: `Button`'s `variant` prop is now `brand`/`wash`/`danger`,
 and the specimen row lists only those three.
+
+## Amendment (2026-08-10): no page opts out of night mode
+
+The 2026-07-22 light-only amendment is **fully reversed** (owner decision, 2026-08-10). Its last
+three holdouts — `/privacy`, `/android-beta`, `/changelog` — each pinned every one of `PageShell`'s
+`--page-*` properties to a light ground, so a parent with Night Mode on still got a white sheet on
+the pages a store listing and a Settings link hand out. All three now run on the shell's themed
+defaults, as `/feedback`, `/admin` and `/design` already did, and `pinnedPalette.test.ts` — the
+drift guard over the shared `--page-shadow` those pins had to agree on — is deleted with them.
+
+No new tokens were needed; the light appearance is preserved by the tokens the pins already
+approximated (`--app-bg`, `--surface`, the text ramp, `--border`, `--brand-text`, `--brand-solid`).
+Three details are worth carrying forward, because each one is a place where "just delete the pin"
+was not enough:
+
+* **`--page-link-hover` is deleted, not themed.** It existed so a pinned page could point at a
+  deeper shade of its own link color; the themed ramp has no such step, and left in place it would
+  have resolved to `--page-link` and turned four `:hover { color }` rules into silent no-ops. Links
+  now signal hover with their underline — the treatment `/feedback` already used.
+* **Per-item accents are mixed against themed tokens rather than tabulated.** `StepLedger`'s four
+  crayon steps needed a wash and an ink each; eight themed token pairs with one consumer apiece
+  would have failed the "earn its place" bar the ADR-0097 pruning set. Instead each `<li>` carries
+  its palette hue and the CSS derives both with `color-mix()` against `--page-sheet` and
+  `--page-ink` — one declaration that darkens the hue on the light sheet and lightens it on the dark
+  one. One mix strength has to clear WCAG AA for four crayons on two grounds (the tightest is green
+  at 4.8:1), which is why `android-beta.spec.ts` now measures every numeral and callout label under
+  both color schemes instead of assuming the light reading covers both.
+* **A derived color computes in a different notation.** `getComputedStyle` returns
+  `color(srgb r g b)` with 0-1 channels for a `color-mix()` and `rgb(r g b)` with 0-255 ones for a
+  plain token. The contrast helper in that spec scaled everything by 255 and so read every derived
+  ink as near-black — passing at a ratio just above 1. It reads its channels off a 1x1 canvas fill
+  now, which is notation-agnostic.
+
+Still outside this reversal: the `<meta name="theme-color">` seeded by `app.html` stays
+`THEME_COLORS.light` on every route except `/`, because `lib/state/appearance.svelte.ts` — the one
+owner of the resolved-theme subscription that repaints it — is imported only by the drawing route.
+The pages render dark correctly; the browser chrome above them does not follow. Fixing it means
+either pulling the drawing app's state modules into the marketing-page bundles or teaching
+`app.html`'s pre-paint script to resolve the theme itself, and neither was in scope here.

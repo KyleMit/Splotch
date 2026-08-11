@@ -61,6 +61,18 @@
   </p>
 
   <div class="policy-list">
+    <!-- Names the three mode columns once for the matrix layout. Decorative:
+         every option keeps its own label as its accessible name, hidden
+         visually there rather than removed. -->
+    <div class="policy-header" aria-hidden="true">
+      <span>Action</span>
+      <div class="policy-header-modes">
+        {#each PARENTAL_GATE_MODES as mode (mode)}
+          <span>{MODE_LABELS[mode]}</span>
+        {/each}
+      </div>
+    </div>
+
     {#each PARENTAL_GATE_FEATURES as featureId (featureId)}
       {@const feature = PROTECTED_FEATURES[featureId]}
       {@const helpId = `parental-gate-${featureId}-help`}
@@ -74,6 +86,7 @@
         </div>
 
         <SegmentedPicker
+          class="policy-picker"
           label={`${feature.label} parental gate frequency`}
           describedBy={[helpId, unavailableHelpId].filter(Boolean).join(' ')}
           options={optionsFor(featureId)}
@@ -114,10 +127,23 @@
   }
 
   .policy-list {
+    /* Widths the matrix layout below is built from. The mode column holds the
+       three options at the 44px minimum target plus the segmented track's own
+       4px gaps and padding; the copy column is the narrowest width that keeps
+       a protection's name to two lines. */
+    --policy-copy-min: 176px;
+    --policy-modes-column: 148px;
+    --policy-columns: minmax(var(--policy-copy-min), 1fr) var(--policy-modes-column);
+
+    container-type: inline-size;
     display: flex;
     min-width: 0;
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .policy-header {
+    display: none;
   }
 
   .protection-copy h3,
@@ -177,5 +203,83 @@
   .mode-note strong {
     color: var(--text-strong);
     font-weight: var(--font-weight-semibold);
+  }
+
+  /* Matrix layout: the protection on the left, one shared column per mode on
+     the right, so five policies read as a table instead of five stacked cards.
+     It turns on once the list can give a card the copy column, the mode
+     column, the gap between them and the card's own 32px of padding —
+     176 + 148 + 16 + 32 = 372. A *container* query, not a viewport one: the
+     same viewport hands this list wildly different widths depending on which
+     settings shell it lands in, and only the width it actually gets decides
+     whether the matrix fits without scrolling sideways. */
+  @container (min-width: 372px) {
+    .policy-header,
+    .policy-card {
+      display: grid;
+      grid-template-columns: var(--policy-columns);
+      align-items: center;
+      column-gap: var(--space-4);
+    }
+
+    .policy-header {
+      align-items: end;
+      padding: 0 var(--space-4);
+      color: var(--text-soft);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    /* Same track geometry as the segmented picker below it, so each heading
+       sits over the option it names. */
+    .policy-header-modes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-1);
+      padding: 0 var(--space-1);
+      text-align: center;
+    }
+
+    .protection-copy {
+      margin-bottom: 0;
+    }
+
+    .unavailable-explanation {
+      grid-column: 1 / -1;
+    }
+
+    /* The column heading names the mode, so each option shows a radio mark
+       instead of repeating it. The label stays in the DOM — it is still the
+       option's accessible name — just out of view. */
+    .policy-card :global(.policy-picker .option-label) {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+
+    .policy-card :global(.policy-picker .option) {
+      position: relative;
+    }
+
+    .policy-card :global(.policy-picker .option::after) {
+      content: '';
+      width: 22px;
+      height: 22px;
+      box-sizing: border-box;
+      border: 3px solid var(--border-warm-strong);
+      border-radius: var(--radius-pill);
+    }
+
+    /* Textless fill, so the identity hue rather than the label-bearing ramp. */
+    .policy-card :global(.policy-picker .option.active::after) {
+      border-color: var(--brand);
+      background: var(--brand);
+      box-shadow: inset 0 0 0 4px var(--surface);
+    }
   }
 </style>
