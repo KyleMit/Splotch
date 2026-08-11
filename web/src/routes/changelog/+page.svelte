@@ -36,19 +36,18 @@
   $effect(() => {
     const host = historyEl;
     if (!host) return;
-    const newest = releases[0].id;
     const inBand: Record<string, boolean> = {};
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          inBand[entry.target.id] = entry.isIntersecting;
-          // Read off the band's own bottom edge rather than latched, so the row
-          // goes back to the count when the reader scrolls up to the hero: the
-          // newest release's top is above that line for the whole history and
-          // below it only above the history.
-          if (entry.target.id === newest && entry.rootBounds) {
-            inHistory = entry.boundingClientRect.top <= entry.rootBounds.bottom;
-          }
+          // The history as a whole, observed alongside its releases: it is in
+          // the band for exactly as long as the reader is somewhere inside it,
+          // which makes the answer symmetric — scrolling back to the hero
+          // returns the row to the count. Reading the same thing off the newest
+          // release instead would miss it, because a jump that skips a crossing
+          // outright leaves that release's own state unchanged and unreported.
+          if (entry.target === host) inHistory = entry.isIntersecting;
+          else inBand[entry.target.id] = entry.isIntersecting;
         }
         // Releases run newest first, so the last one in the band is the one
         // being scrolled into. An empty band means the reader is between two
@@ -58,6 +57,7 @@
       },
       { rootMargin: SPY_ROOT_MARGIN }
     );
+    observer.observe(host);
     for (const article of host.querySelectorAll('.release')) observer.observe(article);
     return () => observer.disconnect();
   });

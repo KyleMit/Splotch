@@ -92,17 +92,33 @@
     void jumpTo(decodeURIComponent(href.slice(1)));
   }
 
+  // Where the collapsed row's bottom edge comes to rest once the block it rides
+  // in is pinned — which is not where the row is right now, since a reader at
+  // the top of the page has not yet scrolled it up to its offset. Walking to the
+  // sticky ancestor covers both hosts: /changelog's row is itself the sticky
+  // block, /design's is the last line of a sticky header. The distance between
+  // the two is layout-invariant, so it reads correctly pinned or not.
+  function pinnedLine(bounds: DOMRect): number {
+    for (let el: HTMLElement | null = row!; el; el = el.parentElement) {
+      const style = getComputedStyle(el);
+      if (style.position !== 'sticky') continue;
+      const offset = Number.parseFloat(style.top);
+      if (Number.isFinite(offset)) {
+        return offset + bounds.bottom - el.getBoundingClientRect().top;
+      }
+    }
+    return bounds.bottom;
+  }
+
   // The row sits in the flow above every section it links to, so the panel's
   // height has to leave the document before the target's position means
-  // anything — measuring while open lands a full panel-height short. The
-  // collapsed row's own bottom edge is the sticky chrome the heading has to
-  // clear, whether this row is the chrome or merely its last line.
+  // anything — measuring while open lands a full panel-height short.
   async function jumpTo(id: string) {
     open = false;
     await tick();
     const target = document.getElementById(id);
     if (!target || !row) return;
-    const line = row.getBoundingClientRect().bottom + JUMP_CLEARANCE_PX;
+    const line = pinnedLine(row.getBoundingClientRect()) + JUMP_CLEARANCE_PX;
     window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top - line });
   }
 </script>

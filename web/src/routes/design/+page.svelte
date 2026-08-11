@@ -265,6 +265,10 @@
        wide breakpoint, plus its arrival band. Reserving against the shallowest
        is what makes the tail below sufficient at every width. */
     --spy-shallowest-line: 140px;
+    /* Room that already exists past the last section and counts toward its
+       reserve. The shell's own bottom padding only — the footer's height varies
+       with wrapping, and undercounting is the safe direction to be wrong in. */
+    --shell-tail: 80px;
 
     min-height: 100vh;
     background: var(--app-bg);
@@ -349,7 +353,7 @@
     display: flex;
     align-items: flex-start;
     gap: 40px;
-    padding: 0 clamp(16px, 4vw, 28px) 80px;
+    padding: 0 clamp(16px, 4vw, 28px) var(--shell-tail);
   }
 
   .toc {
@@ -386,7 +390,7 @@
      and every section above it — climb to the line; min-height adds nothing once
      a section's own content is that tall. */
   .styleguide :global(section[data-sg-section]:last-of-type) {
-    min-height: calc(100dvh - var(--spy-shallowest-line));
+    min-height: calc(100dvh - var(--spy-shallowest-line) - var(--shell-tail));
   }
 
   .hero {
