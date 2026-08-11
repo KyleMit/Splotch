@@ -8,6 +8,7 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
+  import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
   import {
     timestamp,
     triggerDownload,
@@ -42,6 +43,7 @@
 
   let revealed = $state(false);
   let progress = $state(0);
+  const loading = $derived(aiResult.open && !revealed && !aiResult.error);
   let exiting = $state(false);
   let reportExpanded = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
@@ -125,6 +127,7 @@
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   class:report-expanded={reportExpanded}
+  class:loading
   bind:this={dialogEl}
   use:modalDialog={() => ({
     open: aiResult.open,
@@ -218,6 +221,13 @@
         {/if}
       </div>
 
+      {#if loading}
+        <div class="ai-loading-caption">
+          <p class="ai-loading-title">{AI_LOADING_TITLE}</p>
+          <p class="ai-loading-subtitle">{AI_LOADING_SUBTITLE}</p>
+        </div>
+      {/if}
+
       {#if revealed && aiResult.resultUrl}
         <div class="ai-result-footer">
           {#if settings.autoSaveAiEnabled}
@@ -252,8 +262,14 @@
 
 <style>
   .ai-result-modal {
-    --result-footer-reserve: 89px;
     --result-autosave-footer-reserve: 95px;
+    --loading-caption-height: 46px;
+    --result-sizing-air: 1px;
+    --result-loading-reserve: calc(
+      var(--space-4) + var(--space-4) + var(--space-3) + var(--loading-caption-height) +
+        var(--result-sizing-air)
+    );
+    --result-footer-reserve: var(--result-loading-reserve);
     /* A definite width (not shrink-to-fit, which browsers resolve differently
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
@@ -271,12 +287,12 @@
   }
 
   .ai-result-content {
-    padding: 16px;
+    padding: var(--space-4);
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-3);
   }
 
   .ai-result-close {
@@ -329,10 +345,12 @@
     max-height: calc(100dvh - var(--result-footer-reserve) - var(--report-strip-reserve));
   }
 
-  /* Auto-save on: no Download button, so the freed vertical space goes to the
-     image — only a slim "Saved" caption is reserved below it. */
   .ai-result-modal.autosave .stage-sizer {
     max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-strip-reserve));
+  }
+
+  .ai-result-modal.loading:not(.autosave) .stage-sizer {
+    max-height: calc(100dvh - var(--result-loading-reserve) - var(--report-strip-reserve));
   }
 
   .ai-result-modal.report-expanded .stage-sizer {
@@ -381,6 +399,33 @@
     transform: scale(1);
   }
 
+  .ai-loading-caption {
+    min-height: var(--loading-caption-height);
+    padding: 0 var(--space-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-align: center;
+    font-family: var(--font-family);
+  }
+
+  .ai-loading-caption p {
+    margin: 0;
+  }
+
+  .ai-loading-title {
+    color: var(--text);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .ai-loading-subtitle {
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+  }
+
   /* ── Error state ── */
   .ai-result-error {
     width: min(86vw, 380px);
@@ -419,6 +464,7 @@
   }
 
   .ai-result-footer {
+    min-height: var(--loading-caption-height);
     width: 100%;
     display: flex;
     flex-direction: column;

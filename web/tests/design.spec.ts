@@ -252,13 +252,16 @@ test.describe('phone contents', () => {
     const contents = page.locator('.header-toc');
     await contents.locator('summary').click();
 
-    const clipped = await page.evaluate(() => {
-      const panel = document.querySelector('.header-toc .panel')!;
-      return panel.scrollHeight - panel.clientHeight;
-    });
-    expect(clipped, 'the list has to outrun the panel for this to test anything').toBeGreaterThan(
-      0
-    );
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const panel = document.querySelector('.header-toc .panel')!;
+            return panel.scrollHeight - panel.clientHeight;
+          }),
+        { message: 'the list has to outrun the panel for this to test anything' }
+      )
+      .toBeGreaterThan(0);
 
     const last = contents.getByRole('link').last();
     await last.scrollIntoViewIfNeeded();
