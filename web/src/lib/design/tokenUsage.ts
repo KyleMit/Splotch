@@ -95,7 +95,8 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
   sliderNotch: 'The snap-detent tick over a slider track.',
   textStrong: 'Headings and emphasized copy.',
   text: 'Body copy — the default ink.',
-  textSoft: 'De-emphasized copy: help text, metadata, separators. Holds 4.5:1 even at small sizes.',
+  textSoft:
+    'De-emphasized copy: help text, metadata, separators, input placeholders. Holds 4.5:1 even at small sizes.',
   iconInk:
     'Monochrome icon fill on themed surfaces — and the hover state of --icon-muted: quiet icons hover to full ink.',
   iconMuted: 'Quiet chrome icons at rest.',
