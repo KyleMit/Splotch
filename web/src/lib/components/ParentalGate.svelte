@@ -1,5 +1,6 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
+  import ParentalGateManageFooter from './ParentalGateManageFooter.svelte';
   import SplotchyIcon from './SplotchyIcon.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { paletteHex } from '$lib/palette';
@@ -11,6 +12,11 @@
     pressGateBackspace,
     GATE_SHAKE_MS,
   } from '$lib/state/parentalGate.svelte';
+
+  // Parent Center is where these checks are managed, so a challenge standing in
+  // front of it is already at that destination: it names it in the subtitle and
+  // drops the footer that would otherwise offer the trip the parent is on.
+  const managingPolicies = $derived(gate.feature === 'parentCenter');
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
   // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
@@ -75,7 +81,11 @@
           <SplotchyIcon class="gate-mascot" />
           <div class="gate-heading">
             <h2 class="gate-title" id="parentalGateTitle">Grown-Ups Only</h2>
-            <p class="gate-subtitle">Solve the problem to continue</p>
+            <p class="gate-subtitle">
+              {managingPolicies
+                ? 'Solve the problem to manage grown-up checks'
+                : 'Solve the problem to continue'}
+            </p>
           </div>
         </header>
         <!-- The row's label carries the whole equation for assistive tech (and
@@ -109,6 +119,9 @@
             <Icon name="backspace" class="gate-key-icon" />
           </button>
         </div>
+        {#if !managingPolicies}
+          <ParentalGateManageFooter />
+        {/if}
       </div>
     {/if}
   </div>

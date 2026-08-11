@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
   import { browser } from '$app/environment';
   import Icon from './Icon.svelte';
   import SectionIcon from './SectionIcon.svelte';
@@ -61,15 +60,32 @@
   // on when it opens.
   let activeSection = $derived<SectionId>(view === 'hub' ? SECTIONS[0].id : view);
 
-  // Each reopen lands on the hub (phone) / the requested section, else the top
-  // of the pane (tablet).
+  // Whether the overlay was open the last time the landing effect ran.
+  // Deliberately untracked: nothing renders it, and tracking it would make the
+  // effect below its own dependency.
+  let wasOpen = false;
+
+  // The landing view, for both ways a section is reached. Opening Settings lands
+  // on the hub (phone) / the deep-linked section, never wherever the last visit
+  // stopped reading. A request can also arrive while the overlay is already open,
+  // with no open transition behind it: a Grown-Ups Only challenge raised over a
+  // Settings action (sending feedback, following a link out) offers its own way
+  // into Parent Center. The open transition is latched rather than read from a
+  // second effect so both cases stay in one place — consuming the request reruns
+  // this, and without the latch that rerun would read "nothing requested, still
+  // open" and bounce the parent straight back to the hub.
   $effect(() => {
-    if (!settingsModal.open) return;
-    // Clearing a consumed request must not rerun this open-transition effect and
-    // immediately replace the requested section with the default hub.
-    const requestedSection = untrack(() => ui.requestedSettingsSection);
-    view = requestedSection ?? 'hub';
-    ui.requestedSettingsSection = null;
+    const open = settingsModal.open;
+    const requestedSection = ui.requestedSettingsSection;
+    const opening = open && !wasOpen;
+    wasOpen = open;
+    if (!open) return;
+    if (requestedSection) {
+      view = requestedSection;
+      ui.requestedSettingsSection = null;
+      return;
+    }
+    if (opening) view = 'hub';
   });
 
   function openSection(id: SectionId, trigger: HTMLElement) {

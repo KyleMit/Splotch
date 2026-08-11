@@ -7,6 +7,7 @@ import {
   type StorageKey,
 } from '../storage';
 import { getPlatform, type Platform } from '$lib/platform';
+import { openParentCenterSettings } from './ui.svelte';
 import type { Origin } from './modal.svelte';
 
 // The Grown-Ups Only gate (App Store Guideline 5.1.4): an adult solves a
@@ -54,25 +55,40 @@ function isAllowedParentalGateMode(
   return isParentalGateMode(value) && isParentalGateModeAvailable(feature, value, getPlatform());
 }
 
-function legacyAiImageMode(): ParentalGateMode {
-  const rememberMode = readString(STORAGE_KEYS.legacyGateRememberMode, 'always');
+// Gates are an app-store requirement (App Store Guideline 5.1.4 and the Kids
+// Category, Google Play Families), so only a store build ships with them armed.
+// The web app is distributed by URL rather than reviewed by a store: it starts
+// with every check off and treats each one as an opt-in a parent switches on in
+// Parent Center, so a toddler's first tap on the web is never a math problem.
+// Build-time, not runtime — CAPACITOR=true is the single web-vs-native signal.
+export const DEFAULT_PARENTAL_GATE_MODE: ParentalGateMode = __IS_CAPACITOR__ ? 'always' : 'never';
+
+// The single remember-this-choice gate that predates Parent Center's per-feature
+// policies. With neither key written there is nothing to migrate, so the caller
+// falls through to the build's default instead of inventing a stricter one.
+function legacyAiImageMode(): ParentalGateMode | null {
   if (readBool(STORAGE_KEYS.legacyGateUnlockedForever, false)) return 'never';
+  const rememberMode = readString(STORAGE_KEYS.legacyGateRememberMode, null);
+  if (rememberMode === null) return null;
   return rememberMode === 'session' ? 'session' : 'always';
 }
 
 function readFeatureMode(
   feature: ParentalGateFeature,
-  fallback: ParentalGateMode
+  fallback: ParentalGateMode = DEFAULT_PARENTAL_GATE_MODE
 ): ParentalGateMode {
   const stored = readString(POLICY_STORAGE_KEYS[feature], null);
   if (isAllowedParentalGateMode(feature, stored)) return stored;
-  if (feature === 'aiImage') return legacyAiImageMode();
+  if (feature === 'aiImage') {
+    const legacy = legacyAiImageMode();
+    if (legacy) return legacy;
+  }
   return isAllowedParentalGateMode(feature, fallback) ? fallback : 'always';
 }
 
 export const parentalGatePolicies: Record<ParentalGateFeature, ParentalGateMode> = $state(
   Object.fromEntries(
-    PARENTAL_GATE_FEATURES.map((feature) => [feature, readFeatureMode(feature, 'always')])
+    PARENTAL_GATE_FEATURES.map((feature) => [feature, readFeatureMode(feature)])
   ) as Record<ParentalGateFeature, ParentalGateMode>
 );
 
@@ -180,6 +196,31 @@ export function requireParentalGate(
   gate.immediate = immediate;
   gate.origin = origin;
   gate.open = true;
+}
+
+/**
+ * The open challenge's other way out: stop asking for this operation and go
+ * change the policy instead. Parent Center is itself a protected operation, so
+ * rather than closing this challenge and stacking a second one over it, the
+ * dialog is retargeted in place — same card, same problem, new destination — and
+ * the solve that follows is Parent Center's own. Where Parent Center is set to
+ * Never there is nothing left to solve, so the handoff runs immediately.
+ */
+export function redirectGateToParentCenter() {
+  const origin = gate.origin;
+  const destination = () => openParentCenterSettings(origin);
+  if (!requiresParentalGate('parentCenter')) {
+    dismissGate();
+    destination();
+    return;
+  }
+  clearTimers();
+  pendingDestination = destination;
+  gate.feature = 'parentCenter';
+  gate.immediate = false;
+  gate.input = '';
+  gate.error = null;
+  gate.shaking = false;
 }
 
 function succeed() {

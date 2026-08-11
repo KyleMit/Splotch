@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { draw, gotoApp, openSettingsModal } from './helpers';
+import { draw, gotoApp, openSettingsModal, retryOpen } from './helpers';
 import { openDrawer, openParentalGate, solveParentalGate } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
@@ -9,19 +9,38 @@ import { STORAGE_KEYS } from '../src/lib/storageKeys';
 // Parent Center persists an independent policy for each protected feature.
 // External links offer all three modes on web and Android; native iOS keeps
 // Never visible but unavailable, with its App Store rationale disclosed inline.
-// Every other spec seeds Never through gotoApp's default, so this file is the
-// one place the real flow runs — gate tests navigate with `gateUnlocked: false`.
+// This suite drives the web build, which ships every policy at Never, so the
+// specs that exercise a real challenge arm it with `gates: 'always'` — and the
+// one below that seeds nothing is what pins those shipped defaults.
 
 const AI_PROMPT = 'dialog.ai-prompt-modal';
 const AI_RESULT_WEBP = readFileSync(
   new URL('../static/icons/handmade-paper.webp', import.meta.url)
 );
 
+// Every operation Parent Center holds a policy for, by the name it carries there.
+const PROTECTED_FEATURES = [
+  'Generating an AI image',
+  'Reporting an AI picture',
+  'Viewing external links',
+  'Sending feedback',
+  'Opening Parent Center',
+];
+
+// The gate's footer, and the copy the same card switches to once that footer has
+// pointed it at Parent Center.
+const MANAGE_FOOTER = /Manage these checks in/;
+const MANAGE_SUBTITLE = 'Solve the problem to manage grown-up checks';
+
+function policyPicker(settings: Locator, feature: string) {
+  return settings.getByRole('radiogroup', { name: `${feature} parental gate frequency` });
+}
+
 // A couple of strokes so the AI button is enabled (it's disabled on a blank
 // canvas), then the gate opens from it. The access-code param reveals the AI
 // button (it stays hidden with no credential).
 async function gotoGatedAiButton(page: Page) {
-  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await draw(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
@@ -29,9 +48,107 @@ async function gotoGatedAiButton(page: Page) {
 }
 
 test('Settings opens directly — entry is not the gate (ADR-0094)', async ({ page }) => {
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   await openSettingsModal(page);
   await expect(page.locator('#parentalGate')).not.toBeVisible();
+});
+
+// Seeds nothing: the point is what the web build itself ships. The gate is an
+// app-store requirement, so on the web every check starts off and each one is a
+// parent's opt-in — Parent Center included, which is why it opens unasked here.
+// The native build arms them all, and only its own suites can see that.
+test('the web build ships every grown-up check off', async ({ page }) => {
+  await gotoApp(page, '/', { gates: 'default' });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
+
+  await expect(page.locator('#parentalGate')).not.toBeVisible();
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible();
+  for (const feature of PROTECTED_FEATURES) {
+    await expect(
+      policyPicker(settings, feature).getByRole('radio', { name: 'Never' })
+    ).toHaveAttribute('aria-checked', 'true');
+  }
+});
+
+test('a gated action points at Parent Center, and one solve lands there', async ({ page }) => {
+  await gotoGatedAiButton(page);
+  const gate = await openParentalGate(page);
+
+  // Parent Center asks for its own check, so the footer retargets this card
+  // rather than stacking a second one: the offer goes away and the subtitle
+  // names where the solve now leads.
+  await retryOpen(gate.getByText(MANAGE_SUBTITLE), () =>
+    gate.getByRole('button', { name: MANAGE_FOOTER }).click({ timeout: 2000 })
+  );
+  await expect(gate.getByRole('button', { name: MANAGE_FOOTER })).toHaveCount(0);
+
+  await solveParentalGate(page);
+
+  const settings = page.locator('#settingsModal');
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
+  // The operation the parent left behind stayed behind.
+  await expect(page.locator(AI_PROMPT)).not.toBeVisible();
+});
+
+test('the footer hands straight over when Parent Center asks for no check of its own', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ aiImageKey, parentCenterKey }) => {
+      localStorage.setItem(aiImageKey, 'always');
+      localStorage.setItem(parentCenterKey, 'never');
+    },
+    {
+      aiImageKey: STORAGE_KEYS.parentalGateAiImageMode,
+      parentCenterKey: STORAGE_KEYS.parentalGateParentCenterMode,
+    }
+  );
+  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'default' });
+  await draw(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+  const gate = await openParentalGate(page);
+
+  const settings = page.locator('#settingsModal');
+  await retryOpen(settings.getByText(/Choose when Splotch should ask/), () =>
+    gate.getByRole('button', { name: MANAGE_FOOTER }).click({ timeout: 2000 })
+  );
+  await expect(gate).not.toBeVisible();
+});
+
+test('the footer reaches Parent Center from a gate raised over Settings itself', async ({
+  page,
+}) => {
+  await gotoApp(page, '/', { gates: 'always' });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Feedback' }).click();
+  await page.locator('#reportMessage').fill('The purple crayon draws green');
+  await page.getByRole('button', { name: 'Send report' }).click();
+
+  const gate = page.locator('#parentalGate');
+  await expect(gate).toBeVisible();
+  await retryOpen(gate.getByText(MANAGE_SUBTITLE), () =>
+    gate.getByRole('button', { name: MANAGE_FOOTER }).click({ timeout: 2000 })
+  );
+  await solveParentalGate(page);
+
+  // Settings never closed, so the section arrives with no open transition behind
+  // it — and unlocked, since the solve that got here was Parent Center's own.
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
+});
+
+test('the Parent Center challenge names its destination instead of offering the trip', async ({
+  page,
+}) => {
+  await gotoApp(page, '/', { gates: 'always' });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
+
+  const gate = page.locator('#parentalGate');
+  await expect(gate.getByText(MANAGE_SUBTITLE)).toBeVisible();
+  await expect(gate.getByRole('button', { name: MANAGE_FOOTER })).toHaveCount(0);
 });
 
 test('the AI button is gated; solving opens the AI prompt', async ({ page }) => {
@@ -105,7 +222,7 @@ test('closing the gate discards the attempt without unlocking', async ({ page })
 test('Parent Center is gated before its controls appear and persists every feature policy', async ({
   page,
 }) => {
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'Parent Center' }).click();
 
@@ -119,29 +236,17 @@ test('Parent Center is gated before its controls appear and persists every featu
   await solveParentalGate(page);
   await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
 
-  const features = [
-    'Generating an AI image',
-    'Reporting an AI picture',
-    'Viewing external links',
-    'Sending feedback',
-    'Opening Parent Center',
-  ];
-  for (const feature of features) {
-    await expect(
-      settings.getByRole('radiogroup', { name: `${feature} parental gate frequency` })
-    ).toBeVisible();
+  for (const feature of PROTECTED_FEATURES) {
+    await expect(policyPicker(settings, feature)).toBeVisible();
   }
 
-  await settings
-    .getByRole('radiogroup', { name: 'Generating an AI image parental gate frequency' })
+  await policyPicker(settings, 'Generating an AI image')
     .getByRole('radio', { name: 'Per session' })
     .click();
-  await settings
-    .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
+  await policyPicker(settings, 'Viewing external links')
     .getByRole('radio', { name: 'Never' })
     .click();
-  await settings
-    .getByRole('radiogroup', { name: 'Opening Parent Center parental gate frequency' })
+  await policyPicker(settings, 'Opening Parent Center')
     .getByRole('radio', { name: 'Never' })
     .click();
 
@@ -152,14 +257,10 @@ test('Parent Center is gated before its controls appear and persists every featu
   await reopened.getByRole('button', { name: 'Parent Center' }).click();
   await expect(gate).not.toBeVisible();
   await expect(
-    reopened
-      .getByRole('radiogroup', { name: 'Generating an AI image parental gate frequency' })
-      .getByRole('radio', { name: 'Per session' })
+    policyPicker(reopened, 'Generating an AI image').getByRole('radio', { name: 'Per session' })
   ).toHaveAttribute('aria-checked', 'true');
   await expect(
-    reopened
-      .getByRole('radiogroup', { name: 'Viewing external links parental gate frequency' })
-      .getByRole('radio', { name: 'Never' })
+    policyPicker(reopened, 'Viewing external links').getByRole('radio', { name: 'Never' })
   ).toHaveAttribute('aria-checked', 'true');
 });
 
@@ -212,9 +313,7 @@ test('Parent Center reads as a mode matrix once the settings pane is wide enough
   // The shared column headings replace the per-option labels, which stay in the
   // DOM as each radio's accessible name.
   await expect(settings.locator('.policy-header')).toBeVisible();
-  const aiImage = settings.getByRole('radiogroup', {
-    name: 'Generating an AI image parental gate frequency',
-  });
+  const aiImage = policyPicker(settings, 'Generating an AI image');
   await expect(aiImage.getByRole('radio', { name: 'Per session' })).toBeVisible();
 
   // Every policy's controls land in one shared column — that is what the matrix
@@ -241,14 +340,12 @@ test('iOS explains why external links cannot use Never without changing the poli
       getPlatform: () => 'ios',
     };
   });
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'Parent Center' }).click();
   await solveParentalGate(page);
 
-  const externalLinks = settings.getByRole('radiogroup', {
-    name: 'Viewing external links parental gate frequency',
-  });
+  const externalLinks = policyPicker(settings, 'Viewing external links');
   const never = externalLinks.getByRole('radio', { name: 'Never' });
   await expect(never).toBeDisabled();
   await never.click({ force: true });
@@ -286,7 +383,7 @@ test('external links inside Settings follow the Every time policy', async ({ pag
     route.fulfill({ status: 200, contentType: 'text/html', body: '<html>stub</html>' })
   );
 
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
 
@@ -311,7 +408,7 @@ test('external links can skip a second gate only within a solved session', async
     (externalLinksKey) => localStorage.setItem(externalLinksKey, 'session'),
     STORAGE_KEYS.parentalGateExternalLinksMode
   );
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'About' }).click();
   const link = page.getByRole('link', { name: 'View source on GitHub' });
@@ -340,7 +437,7 @@ test('sending feedback waits for its parental gate before posting', async ({ pag
       body: JSON.stringify({ ok: true }),
     });
   });
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await settings.getByRole('button', { name: 'Feedback' }).click();
   await page.locator('#reportMessage').fill('The purple crayon draws green');
@@ -371,7 +468,7 @@ test('reporting an AI picture waits for its own parental gate before posting', a
       body: JSON.stringify({ ok: true, reportId: 'test-report-id' }),
     });
   });
-  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openDrawer(page);
   await draw(page, [
     { x: 120, y: 120 },

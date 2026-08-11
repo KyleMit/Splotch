@@ -239,7 +239,7 @@ test("What's New formats the current release date without runtime locale initial
 });
 
 test("What's New opens the internal changelog without a parental gate", async ({ page }) => {
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
 
   await openSettingsModal(page);
   await retryOpen(page.getByRole('link', { name: 'See all releases' }), () =>
@@ -253,7 +253,7 @@ test("What's New opens the internal changelog without a parental gate", async ({
 });
 
 test('About opens the bundled privacy policy without a parental gate', async ({ page }) => {
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
 
   await openSettingsModal(page);
   await retryOpen(page.getByRole('link', { name: 'Privacy Policy' }), () =>
