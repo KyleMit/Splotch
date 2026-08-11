@@ -18,12 +18,58 @@ import {
   landscapeSingleColumnMediaQuery,
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from '$lib/design/trimGeometry';
+import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 
 export const ACTION_BUTTON_GAP = 12;
 
-// Unscaled button size (matches the Color Swatch touch target per orientation).
-export const ACTION_BUTTON_BASE_LANDSCAPE = 60;
-export const ACTION_BUTTON_BASE_PORTRAIT = 55;
+// The unscaled button size steps with how much screen the child is drawing on.
+// A phone has to spend its scarce canvas edge carefully; beside a 13-inch
+// tablet's canvas the same button reads as a small target. The Button Size
+// slider multiplies whichever step applies (ACTION_BUTTON_SCALE_*), so every
+// screen still starts at the slider's centre with its whole range either way —
+// the step decides what that centre is worth in pixels.
+export type ActionButtonSizeClass = 'phone' | 'tablet' | 'largeTablet';
+
+// The tablet step is also the Color Swatch touch target per orientation.
+export const ACTION_BUTTON_BASE_PX = {
+  phone: { landscape: 54, portrait: 50 },
+  tablet: { landscape: 60, portrait: 55 },
+  largeTablet: { landscape: 68, portrait: 62 },
+} as const satisfies Record<ActionButtonSizeClass, Record<Orientation, number>>;
+
+// The CSS custom property carrying the step above. app.css owns its value —
+// it has to be right at first paint, before any of this loads (ADR-0040) — so
+// the render-time cap below reads the property rather than resolving a number.
+export const ACTION_BUTTON_BASE_PROPERTY = '--action-btn-base';
+
+// A `max-*` bound sits just below the threshold it excludes, so a fractional
+// viewport side between the two doesn't fall through both queries.
+const BREAKPOINT_EPSILON_PX = 0.02;
+
+// The media queries app.css switches ACTION_BUTTON_BASE_PROPERTY on; the
+// tablet step is the unqualified default neither one claims.
+// actionButtonLayout.fallback.test.ts holds the committed CSS to these.
+export const ACTION_BUTTON_SIZE_CLASS_MEDIA_QUERIES = {
+  phone: `(max-width: ${TABLET_MIN_SIDE_PX - BREAKPOINT_EPSILON_PX}px), (max-height: ${
+    TABLET_MIN_SIDE_PX - BREAKPOINT_EPSILON_PX
+  }px)`,
+  largeTablet: `(min-width: ${LARGE_TABLET_MIN_SIDE_PX}px) and (min-height: ${LARGE_TABLET_MIN_SIDE_PX}px)`,
+} as const satisfies Partial<Record<ActionButtonSizeClass, string>>;
+
+// Classified by the viewport's *shorter* side, so a device keeps its step
+// through a rotation.
+export function actionButtonSizeClass(shorterViewportSidePx: number): ActionButtonSizeClass {
+  if (shorterViewportSidePx >= LARGE_TABLET_MIN_SIDE_PX) return 'largeTablet';
+  return shorterViewportSidePx >= TABLET_MIN_SIDE_PX ? 'tablet' : 'phone';
+}
+
+// The step the slider ceiling measures against. It reads the visible viewport
+// while the CSS above reads the layout one, which can disagree by the height of
+// a mobile URL bar; that only ever shifts the ceiling, never the rendered size.
+export function actionButtonBase(orientation: Orientation): number {
+  const sizeClass = actionButtonSizeClass(Math.min(layout.viewportWidth, layout.viewportHeight));
+  return ACTION_BUTTON_BASE_PX[sizeClass][orientation];
+}
 
 // Space the landscape row must leave at the right edge for the Settings
 // Button: its 8px inset + 48px button + 8px breathing room.
@@ -152,30 +198,28 @@ export type ActionButtonSizeInputs =
   | { orientation: 'landscape'; buttonCount: number; paletteWidth: number };
 
 // The hydrated render cap as a CSS length: the scaled base size, capped by the
-// same budget availablePerButton computes. Two terms stay symbolic because the
+// same budget availablePerButton computes. Three terms stay symbolic because the
 // browser resolves them at paint time — the safe-area insets, where
-// availablePerButton subtracts the measured layout.safeArea instead, and the
-// landscape viewport width. Portrait takes the measured viewportHeight rather
-// than 100vh (see ActionsPanel).
+// availablePerButton subtracts the measured layout.safeArea instead, the
+// landscape viewport width, and the size-class base. Portrait takes the measured
+// viewportHeight rather than 100vh (see ActionsPanel).
 export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
   const { orientation, buttonCount } = inputs;
   const axis =
     inputs.orientation === 'portrait'
       ? {
-          base: ACTION_BUTTON_BASE_PORTRAIT,
           viewportExtent: `${inputs.viewportHeight}px`,
           paletteExtent: inputs.paletteHeight,
           insets: 'env(safe-area-inset-top) - env(safe-area-inset-bottom)',
         }
       : {
-          base: ACTION_BUTTON_BASE_LANDSCAPE,
           viewportExtent: '100vw',
           paletteExtent: inputs.paletteWidth,
           insets: 'env(safe-area-inset-left) - env(safe-area-inset-right)',
         };
   const fixedCost = fixedRowCost(orientation, buttonCount, axis.paletteExtent);
   const budget = `${axis.viewportExtent} - ${fixedCost}px - ${axis.insets}`;
-  return `min(calc(${axis.base}px * var(--action-btn-scale, 1)), calc((${budget}) / ${buttonCount}))`;
+  return `min(calc(var(${ACTION_BUTTON_BASE_PROPERTY}) * var(--action-btn-scale, 1)), calc((${budget}) / ${buttonCount}))`;
 }
 
 // Largest Button Size percentage the current screen can show without the
@@ -184,8 +228,7 @@ export function buttonSizeCssExpr(inputs: ActionButtonSizeInputs): string {
 // slider's static range: on an absurdly small viewport the render cap (below)
 // still bounds the actual size.
 export function maxActionButtonScale(): number {
-  const base =
-    layout.orientation === 'portrait' ? ACTION_BUTTON_BASE_PORTRAIT : ACTION_BUTTON_BASE_LANDSCAPE;
+  const base = actionButtonBase(layout.orientation);
   const pct = Math.floor((availablePerButton(visibleActionButtonCount()) / base) * 100);
   return Math.min(ACTION_BUTTON_SCALE_MAX, Math.max(ACTION_BUTTON_SCALE_MIN, pct));
 }

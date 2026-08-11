@@ -303,6 +303,39 @@ body {
   fill: var(--icon-ink);
 }
 
+/* The unscaled action-button size, stepped by the viewport's size class: a
+   phone spends less of its scarce canvas edge on chrome, and beside a 13-inch
+   tablet's canvas the middle step reads as a small target. The Button Size
+   slider multiplies this, so the slider's own range is untouched. Owned here
+   rather than in TypeScript because first paint of the prerendered page
+   depends on it (ADR-0040); mirrors ACTION_BUTTON_BASE_PX and its size-class
+   media queries, drift-guarded by actionButtonLayout.fallback.test.ts. */
+:root {
+  --action-btn-base-landscape: 60px;
+  --action-btn-base-portrait: 55px;
+  --action-btn-base: var(--action-btn-base-landscape);
+}
+
+@media (max-width: 599.98px), (max-height: 599.98px) {
+  :root {
+    --action-btn-base-landscape: 54px;
+    --action-btn-base-portrait: 50px;
+  }
+}
+
+@media (min-width: 1000px) and (min-height: 1000px) {
+  :root {
+    --action-btn-base-landscape: 68px;
+    --action-btn-base-portrait: 62px;
+  }
+}
+
+@media (orientation: portrait) {
+  :root {
+    --action-btn-base: var(--action-btn-base-portrait);
+  }
+}
+
 /* ActionsPanel and BrushControl share these paper-floating action buttons. */
 .actions-panel .action-button {
   position: relative;
@@ -310,7 +343,7 @@ body {
      for the first-paint row seeded by app.html. Its literals mirror
      actionButtonLayout.ts and are drift-guarded by its fallback test. */
   --action-btn-fallback: min(
-    calc(60px * var(--action-btn-scale, 1)),
+    calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
     calc(
       (
           100vw - var(--palette-landscape-width) - 128px - var(--action-btn-first-paint-gap-total) -
@@ -336,17 +369,18 @@ body {
     transform var(--duration-base) ease,
     opacity var(--duration-base) ease;
   touch-action: manipulation;
-  padding: calc(10px * var(--action-btn-scale, 1));
+  /* A sixth of the button, so the icon keeps its share of the face as
+     --action-btn-base steps between size classes. */
+  padding: calc(var(--action-btn-base) / 6 * var(--action-btn-scale, 1));
 }
 
 @media (orientation: portrait) {
   .actions-panel .action-button {
     /* 208px = palette clearance + worst-case panel chrome + palette bar. */
     --action-btn-fallback: min(
-      calc(55px * var(--action-btn-scale, 1)),
+      calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
       calc((100vh - 208px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 6)
     );
-    padding: calc(9px * var(--action-btn-scale, 1));
   }
 }
 
@@ -454,10 +488,10 @@ body {
 }
 
 .flyout-option {
-  /* Mirrors ACTION_BUTTON_BASE_LANDSCAPE, drift-guarded by
-     actionButtonLayout.fallback.test.ts. */
-  width: calc(60px * var(--action-btn-scale, 1));
-  height: calc(60px * var(--action-btn-scale, 1));
+  /* Square with the action button that opened the menu, so it takes the same
+     size-class step. */
+  width: calc(var(--action-btn-base) * var(--action-btn-scale, 1));
+  height: calc(var(--action-btn-base) * var(--action-btn-scale, 1));
   background: var(--float-surface);
   border: 2px solid var(--float-border);
   border-radius: 14px;
