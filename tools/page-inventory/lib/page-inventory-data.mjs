@@ -1,14 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { GENERAL_DESIGN_NOTES, surfaceDesignNote } from './page-inventory-design-notes.mjs';
 
-const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 2;
+const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 3;
 const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 3;
 export const PAGE_INVENTORY_REVIEW_CONTRACT = 'isolated-image-description-v1';
 export const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
-export const PAGE_INVENTORY_THEME_SUPPORT = {
-  THEMED: 'themed',
-  LIGHT_ONLY: 'light-only',
-};
 export const PAGE_INVENTORY_THEMES = [
   {
     id: 'light',
@@ -26,7 +23,6 @@ export const PAGE_INVENTORY_THEMES = [
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const ORIENTATIONS = ['portrait', 'landscape'];
-const THEME_SUPPORT_VALUES = Object.values(PAGE_INVENTORY_THEME_SUPPORT);
 
 function readJson(path, label) {
   try {
@@ -91,9 +87,6 @@ function validateCaptureRecord(record, location, viewports, themes) {
   if (!themes.has(record.theme)) {
     throw new Error(`${location} references unknown theme ${record.theme}`);
   }
-  if (record.theme_support !== undefined && !THEME_SUPPORT_VALUES.includes(record.theme_support)) {
-    throw new Error(`${location}.theme_support is invalid: ${record.theme_support}`);
-  }
   if (record.surface_intent !== undefined) {
     requireString(record.surface_intent, `${location}.surface_intent`);
   }
@@ -122,16 +115,16 @@ export function captureReviewId(item, viewport, theme) {
   return `${item.group}--${item.id}--${viewport.id}--${theme.id}`;
 }
 
+const GENERAL_DESIGN_NOTE_BRIEF = `Settled design decisions in this app, correct as shown rather than defects: ${GENERAL_DESIGN_NOTES.join(' ')}`;
+
 function captureReviewDescription(item, viewport, theme) {
-  const intent = item.intent ? ` Design intent: ${item.intent}` : '';
-  const reviewFocus =
-    item.themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY && theme.id === 'dark'
-      ? 'This route intentionally remains light in night mode. Assess only the pinned light palette’s contrast and legibility; do not flag the absence of a dark ground. Ignore layout and responsive composition.'
-      : theme.reviewFocus;
-  return `${item.title}. ${item.description}${intent} Captured in ${theme.label.toLowerCase()} on ${viewport.device} in ${viewport.orientation} at ${viewport.width} × ${viewport.height}. ${reviewFocus} Judge only visible evidence. Use severity pass, low, medium, or high. A pass means there is no actionable visible issue and requires a null recommendation; otherwise give one specific recommendation. Return concise issue-category tags.`;
+  const note = surfaceDesignNote(item.group, item.id);
+  const intent = note ? ` Design intent: ${note}` : '';
+  return `${item.title}. ${item.description}${intent} Captured in ${theme.label.toLowerCase()} on ${viewport.device} in ${viewport.orientation} at ${viewport.width} × ${viewport.height}. ${theme.reviewFocus} ${GENERAL_DESIGN_NOTE_BRIEF} Judge only visible evidence. Use severity pass, low, medium, or high. A pass means there is no actionable visible issue and requires a null recommendation; otherwise give one specific recommendation. Return concise issue-category tags.`;
 }
 
 export function captureRecord(item, viewport, theme, image, sha256) {
+  const note = surfaceDesignNote(item.group, item.id);
   return {
     review_id: captureReviewId(item, viewport, theme),
     review_description: captureReviewDescription(item, viewport, theme),
@@ -141,8 +134,7 @@ export function captureRecord(item, viewport, theme, image, sha256) {
     surface_id: item.id,
     surface_title: item.title,
     surface_description: item.description,
-    ...(item.intent ? { surface_intent: item.intent } : {}),
-    theme_support: item.themeSupport ?? PAGE_INVENTORY_THEME_SUPPORT.THEMED,
+    ...(note ? { surface_intent: note } : {}),
     source: item.source,
     viewport_id: viewport.id,
     viewport_label: viewport.category,
@@ -156,29 +148,23 @@ export function captureRecord(item, viewport, theme, image, sha256) {
 }
 
 export function validateThemeCaptureDifferences(captures, surfaces) {
-  const surfaceByKey = new Map(surfaces.map((item) => [`${item.group}/${item.id}`, item]));
+  const surfaceKeys = new Set(surfaces.map((item) => `${item.group}/${item.id}`));
   const pairs = new Map();
   for (const capture of captures) {
     const surfaceKey = `${capture.group}/${capture.surface_id}`;
-    const item = surfaceByKey.get(surfaceKey);
-    if (!item) throw new Error(`Capture references unknown surface ${surfaceKey}`);
-    const themeSupport = item.themeSupport ?? PAGE_INVENTORY_THEME_SUPPORT.THEMED;
-    if (!THEME_SUPPORT_VALUES.includes(themeSupport)) {
-      throw new Error(`Surface ${surfaceKey} has invalid theme support: ${themeSupport}`);
+    if (!surfaceKeys.has(surfaceKey)) {
+      throw new Error(`Capture references unknown surface ${surfaceKey}`);
     }
     const pairKey = `${surfaceKey}/${capture.viewport_id}`;
-    const pair = pairs.get(pairKey) ?? { item, captures: new Map() };
-    pair.captures.set(capture.theme, capture);
-    pairs.set(pairKey, pair);
+    const themeCaptures = pairs.get(pairKey) ?? new Map();
+    themeCaptures.set(capture.theme, capture);
+    pairs.set(pairKey, themeCaptures);
   }
-  for (const [pairKey, { item, captures: themeCaptures }] of pairs) {
-    if (item.themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY) continue;
+  for (const [pairKey, themeCaptures] of pairs) {
     const light = themeCaptures.get('light');
     const dark = themeCaptures.get('dark');
-    if (light?.sha256 === dark?.sha256) {
-      throw new Error(
-        `Themed surface ${pairKey} produced pixel-identical light and night captures`
-      );
+    if (light && dark && light.sha256 === dark.sha256) {
+      throw new Error(`Surface ${pairKey} produced pixel-identical light and night captures`);
     }
   }
 }

@@ -18,11 +18,15 @@ import sharp from 'sharp';
 import {
   captureRecord,
   createCaptureManifest,
-  PAGE_INVENTORY_THEME_SUPPORT,
   readDesignCritique,
   sha256File,
   validateThemeCaptureDifferences,
 } from './lib/page-inventory-data.mjs';
+import {
+  CAPTURE_ATTEMPTS,
+  assertCaptureRendered,
+  createViewportDigestLedger,
+} from './lib/page-inventory-capture.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { waitForUrl } from '../lib/net.mjs';
@@ -37,12 +41,13 @@ import { spawnViteServer } from '../lib/vite-server.mjs';
 
 const PORT_DEFAULT = 4319;
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory');
+const SPOT_CHECK_OUT_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-spot-check');
 const SERVER_BOOT_MS = 120_000;
 const ACTION_MS = 15_000;
 const TAP_GUARD_MS = 750;
 const WEBP_QUALITY = 84;
-const SUSPICIOUS_BLANK_ENTROPY = 0.01;
 const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
+const SPOT_CHECK_RECORDS_NAME = 'spot-check-captures.json';
 const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 const SCROLL_END_EPSILON_PX = 1;
 const SECTION_LANDED_TOLERANCE_PX = 1;
@@ -81,12 +86,13 @@ const ROUTES = {
   '/android-beta': ['Android beta', 'Google Play closed-test sign-up instructions.'],
   '/changelog': ['Changelog', 'The complete release history at its opening position.'],
   '/design': ['Design system', 'The public living styleguide at its opening position.'],
-  '/dev': ['Dev harness index', 'The development-only index of interactive harnesses.'],
-  '/dev/ai-timer': ['AI timer harness', 'The AI animation harness before a run starts.'],
-  '/dev/engine': ['Drawing engine harness', 'The development-only engine control surface.'],
   '/feedback': ['Feedback', 'The standalone bug report and feature idea form.'],
   '/privacy': ['Privacy policy', 'The public privacy policy at its opening position.'],
 };
+
+// The /dev tree is internal tooling nobody ships or design-reviews; the AI flow still
+// drives /dev/ai-timer as a harness, it just never becomes a reviewed surface.
+const INTERNAL_ROUTE_ROOTS = ['/dev'];
 
 function filesBelow(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -103,6 +109,10 @@ export function discoverPageRoutes() {
       const dir = relative(routesDir, resolve(file, '..'));
       return dir ? `/${dir.split(sep).join('/')}` : '/';
     })
+    .filter(
+      (route) =>
+        !INTERNAL_ROUTE_ROOTS.some((root) => route === root || route.startsWith(`${root}/`))
+    )
     .sort((a, b) => a.localeCompare(b));
 }
 
@@ -121,46 +131,20 @@ export function discoverSettingsSections() {
   return sections;
 }
 
-const surface = (
+const surface = (group, id, title, description, source, prepare, { cleanup } = {}) => ({
   group,
   id,
   title,
   description,
-  source,
-  prepare,
-  { cleanup, intent, themeSupport = PAGE_INVENTORY_THEME_SUPPORT.THEMED } = {}
-) => ({
-  group,
-  id,
-  title,
-  description,
-  intent,
-  themeSupport,
   source,
   prepare,
   cleanup,
 });
 
-const LIGHT_ONLY_ROUTE_METADATA = {
-  intent: 'This route deliberately uses one stable light reading palette in both app themes.',
-  themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-};
-
-const ROUTE_SURFACE_METADATA = {
-  '/android-beta': LIGHT_ONLY_ROUTE_METADATA,
-  '/changelog': LIGHT_ONLY_ROUTE_METADATA,
-  '/dev/engine': {
-    intent:
-      'This development-only harness intentionally exposes a bare canvas; the unframed canvas is expected.',
-  },
-  '/privacy': LIGHT_ONLY_ROUTE_METADATA,
-};
-
 async function navigate(page, route) {
   const response = await page.goto(route, { waitUntil: 'domcontentloaded', timeout: ACTION_MS });
   if (!response?.ok()) throw new Error(`${route} returned HTTP ${response?.status()}`);
   if (route === '/') await waitForCanvas(page);
-  else if (route === '/dev/engine') await page.waitForFunction(() => window.__engineReady === true);
   else if (route === '/admin') {
     await page
       .locator('input[placeholder="Admin access key"], input[placeholder="Add a code…"]')
@@ -228,8 +212,8 @@ async function openDrawer(page) {
   }
 }
 
-async function draw(page, yFraction = 0.5, selector = '#drawingCanvas') {
-  const box = await page.locator(selector).boundingBox();
+async function draw(page, yFraction = 0.5) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('Drawing canvas has no bounds');
   const y = box.y + box.height * yFraction;
   await page.mouse.move(box.x + box.width * 0.24, y);
@@ -270,11 +254,7 @@ function routeSurfaces() {
       title,
       description,
       route,
-      async (page) => {
-        await navigate(page, route);
-        if (route === '/dev/engine') await draw(page, 0.5, '#engineCanvas');
-      },
-      ROUTE_SURFACE_METADATA[route]
+      (page) => navigate(page, route)
     );
   });
   return [
@@ -712,7 +692,7 @@ async function settle(page) {
   });
 }
 
-async function assertSurfaceReady(page, item) {
+async function assertSurfaceReady(page) {
   await page.waitForFunction(() => document.readyState === 'complete');
   const hasVisibleContent = await page.evaluate(() => {
     const candidates = document.querySelectorAll(
@@ -724,66 +704,109 @@ async function assertSurfaceReady(page, item) {
       return box.width > 0 && box.height > 0 && style.visibility !== 'hidden';
     });
   });
-  if (!hasVisibleContent) throw new Error(`${item.id} reached no visible ready content`);
+  if (!hasVisibleContent) throw new Error('reached no visible ready content');
 }
 
-async function validateCaptureFile(target, item, viewport) {
-  const metadata = await sharp(target).metadata();
-  if (
-    metadata.format !== 'webp' ||
-    metadata.width !== viewport.width ||
-    metadata.height !== viewport.height
-  ) {
-    throw new Error(
-      `${item.id} at ${viewport.id} produced ${metadata.format} ${metadata.width}×${metadata.height}; expected WebP ${viewport.width}×${viewport.height}`
-    );
-  }
-  const stats = await sharp(target).stats();
-  if (stats.entropy < SUSPICIOUS_BLANK_ENTROPY) {
-    throw new Error(
-      `${item.id} at ${viewport.id} looks blank (entropy ${stats.entropy.toFixed(4)})`
-    );
+async function captureOnce(page, item, viewport, theme, out, ledger) {
+  try {
+    await item.prepare(page, viewport);
+    await settle(page);
+    await assertSurfaceReady(page);
+    const path = inventoryCapturePath(item, viewport, theme);
+    const target = join(out, path);
+    mkdirSync(resolve(target, '..'), { recursive: true });
+    const png = await page.screenshot({ type: 'png' });
+    await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
+    await assertCaptureRendered(target, viewport);
+    const digest = sha256File(target);
+    ledger.record(item, viewport, theme, digest);
+    return captureRecord(item, viewport, theme, path, digest);
+  } finally {
+    await item.cleanup?.(page);
   }
 }
 
-async function capture(page, item, viewport, theme, out) {
-  await item.prepare(page, viewport);
-  await settle(page);
-  await assertSurfaceReady(page, item);
-  const path = inventoryCapturePath(item, viewport, theme);
-  const target = join(out, path);
-  mkdirSync(resolve(target, '..'), { recursive: true });
-  const png = await page.screenshot({ type: 'png' });
-  await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
-  await validateCaptureFile(target, item, viewport);
-  await item.cleanup?.(page);
-  return captureRecord(item, viewport, theme, path, sha256File(target));
+async function capture(page, item, viewport, theme, out, ledger) {
+  const label = `${item.group}/${item.id} at ${viewport.id} in ${theme.id}`;
+  let failure;
+  for (let attempt = 1; attempt <= CAPTURE_ATTEMPTS; attempt += 1) {
+    try {
+      return await captureOnce(page, item, viewport, theme, out, ledger);
+    } catch (error) {
+      failure = error;
+      console.warn(`${label} attempt ${attempt}/${CAPTURE_ATTEMPTS} failed: ${error.message}`);
+    }
+  }
+  throw new Error(
+    `Capture ${label} failed after ${CAPTURE_ATTEMPTS} attempts: ${failure.message}`,
+    {
+      cause: failure,
+    }
+  );
+}
+
+export function selectSpotCheckItems(candidates, requested, flag, describe) {
+  if (!requested.length) return candidates;
+  const chosen = new Set();
+  for (const name of requested) {
+    const matches = candidates.filter((candidate) => describe(candidate).includes(name));
+    if (!matches.length) {
+      const known = candidates.map((candidate) => describe(candidate)[0]).join(', ');
+      throw new Error(`${flag} names nothing in this inventory: ${name}. Choose from: ${known}`);
+    }
+    for (const match of matches) chosen.add(match);
+  }
+  return candidates.filter((candidate) => chosen.has(candidate));
 }
 
 function options(argv) {
   const parsed = parseArgs({
     args: argv,
     options: {
-      out: { type: 'string', default: OUT_DEFAULT },
+      out: { type: 'string' },
       port: { type: 'string', default: String(PORT_DEFAULT) },
       critique: { type: 'string' },
+      surface: { type: 'string', multiple: true },
+      viewport: { type: 'string', multiple: true },
+      theme: { type: 'string', multiple: true },
     },
     strict: true,
   }).values;
   const port = Number(parsed.port);
   if (!Number.isInteger(port) || port < 1 || port > 65_535)
     throw new Error(`Invalid --port: ${parsed.port}`);
-  const out = resolve(ROOT, parsed.out);
+  const surfaces = parsed.surface ?? [];
+  const viewports = parsed.viewport ?? [];
+  const themes = parsed.theme ?? [];
+  const spotCheck = Boolean(surfaces.length || viewports.length || themes.length);
+  const out = resolve(ROOT, parsed.out ?? (spotCheck ? SPOT_CHECK_OUT_DEFAULT : OUT_DEFAULT));
   const scrapbook = resolve(ROOT, 'scrapbook');
-  if (!out.startsWith(`${scrapbook}${sep}`)) {
+  const insideScrapbook = out.startsWith(`${scrapbook}${sep}`);
+  if (spotCheck && insideScrapbook) {
+    throw new Error(
+      `A --surface/--viewport/--theme spot check captures only part of the inventory, so it must stay out of scrapbook/ where a partial manifest would be read as the coverage authority: ${parsed.out}`
+    );
+  }
+  if (!spotCheck && !insideScrapbook) {
     throw new Error(`--out must stay inside scrapbook/: ${parsed.out}`);
+  }
+  if (spotCheck && parsed.critique) {
+    throw new Error('--critique attaches feedback to a full inventory and cannot filter captures');
   }
   const defaultCritique = join(out, 'design-critique.json');
   const critique = parsed.critique ? resolve(ROOT, parsed.critique) : defaultCritique;
   if (parsed.critique && !existsSync(critique)) {
     throw new Error(`--critique does not exist: ${parsed.critique}`);
   }
-  return { out, port, critique: existsSync(critique) ? critique : undefined };
+  return {
+    out,
+    port,
+    spotCheck,
+    surfaces,
+    viewports,
+    themes,
+    critique: !spotCheck && existsSync(critique) ? critique : undefined,
+  };
 }
 
 export async function generateOutputAtomically(out, generate) {
@@ -813,8 +836,22 @@ export async function generateOutputAtomically(out, generate) {
 }
 
 export async function generatePageInventory(argv = process.argv.slice(2)) {
-  const { out, port, critique: critiquePath } = options(argv);
-  const items = attachExpectedCapturePaths(allSurfaces());
+  const { out, port, spotCheck, critique: critiquePath, ...filters } = options(argv);
+  const items = attachExpectedCapturePaths(
+    selectSpotCheckItems(allSurfaces(), filters.surfaces, '--surface', (item) => [
+      `${item.group}/${item.id}`,
+      item.id,
+    ])
+  );
+  const views = selectSpotCheckItems(
+    PAGE_INVENTORY_VIEWPORTS,
+    filters.viewports,
+    '--viewport',
+    (view) => [view.id]
+  );
+  const themes = selectSpotCheckItems(PAGE_INVENTORY_THEMES, filters.themes, '--theme', (theme) => [
+    theme.id,
+  ]);
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: ROOT,
     env: { ...process.env, ...SERVER_ENV },
@@ -834,8 +871,9 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
       const captures = [];
-      for (const theme of PAGE_INVENTORY_THEMES) {
-        for (const view of PAGE_INVENTORY_VIEWPORTS) {
+      const ledger = createViewportDigestLedger();
+      for (const theme of themes) {
+        for (const view of views) {
           const context = await browser.newContext({
             baseURL: `http://localhost:${port}`,
             viewport: { width: view.width, height: view.height },
@@ -857,24 +895,34 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
           const page = await context.newPage();
           for (const item of items) {
             console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
-            captures.push(await capture(page, item, view, theme, staging));
+            captures.push(await capture(page, item, view, theme, staging, ledger));
           }
           await context.close();
         }
       }
-      const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
-      validateThemeCaptureDifferences(manifest.captures, items);
-      writeFileSync(join(staging, CAPTURE_MANIFEST_NAME), `${JSON.stringify(manifest, null, 2)}\n`);
-      let critique = new Map();
-      if (critiquePath) {
-        copyFileSync(critiquePath, join(staging, 'design-critique.json'));
-        try {
-          critique = readDesignCritique(critiquePath, manifest);
-        } catch (error) {
-          console.warn(`Preserved but detached stale design critique: ${error.message}`);
+      validateThemeCaptureDifferences(captures, items);
+      if (spotCheck) {
+        writeFileSync(
+          join(staging, SPOT_CHECK_RECORDS_NAME),
+          `${JSON.stringify({ captures }, null, 2)}\n`
+        );
+      } else {
+        const manifest = createCaptureManifest(views, captures);
+        writeFileSync(
+          join(staging, CAPTURE_MANIFEST_NAME),
+          `${JSON.stringify(manifest, null, 2)}\n`
+        );
+        let critique = new Map();
+        if (critiquePath) {
+          copyFileSync(critiquePath, join(staging, 'design-critique.json'));
+          try {
+            critique = readDesignCritique(critiquePath, manifest);
+          } catch (error) {
+            console.warn(`Preserved but detached stale design critique: ${error.message}`);
+          }
         }
+        writeFileSync(join(staging, 'index.html'), renderPageInventoryReport(items, critique));
       }
-      writeFileSync(join(staging, 'index.html'), renderPageInventoryReport(items, critique));
       return {
         snapshots: captures.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
@@ -884,9 +932,13 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       server.stop();
     }
   });
+  const wrote = spotCheck ? SPOT_CHECK_RECORDS_NAME : 'index.html';
   console.log(
-    `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, 'index.html'))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
+    `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, wrote))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
   );
+  if (spotCheck) {
+    console.log('Spot check: no capture manifest was written, so the committed inventory stands.');
+  }
 }
 
 if (isMain(import.meta.url)) runMain(generatePageInventory);

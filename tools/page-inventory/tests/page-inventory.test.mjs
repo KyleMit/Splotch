@@ -9,12 +9,16 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { writePageInventoryFeedback } from '../attach-page-inventory-feedback.mjs';
 import { finalizePageInventoryCritique } from '../finalize-page-inventory-critique.mjs';
 import {
   allSurfaces,
+  discoverPageRoutes,
   generateOutputAtomically,
+  generatePageInventory,
+  selectSpotCheckItems,
   settingsSectionRowSelector,
 } from '../gen-page-inventory.mjs';
 import {
@@ -24,12 +28,20 @@ import {
   runReviewerProcess,
 } from '../run-page-inventory-critiques.mjs';
 import {
+  assertCaptureRendered,
+  createViewportDigestLedger,
+} from '../lib/page-inventory-capture.mjs';
+import {
+  GENERAL_DESIGN_NOTES,
+  SURFACE_DESIGN_NOTES,
+  designNoteKey,
+} from '../lib/page-inventory-design-notes.mjs';
+import {
   captureRecord,
   captureReviewId,
   createCaptureManifest,
   finalizeDesignCritique,
   PAGE_INVENTORY_REVIEW_CONTRACT,
-  PAGE_INVENTORY_THEME_SUPPORT,
   readDesignCritique,
   sha256File,
   validateThemeCaptureDifferences,
@@ -40,6 +52,7 @@ import {
   attachExpectedCapturePaths,
   inventoryCaptureKey,
 } from '../lib/page-inventory-report.mjs';
+import { ROOT } from '../../lib/proc.mjs';
 
 const fixtures = [];
 
@@ -47,6 +60,20 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), 'splotch-page-inventory-'));
   fixtures.push(root);
   return root;
+}
+
+function writeFlatWebp(path, { width, height }) {
+  return sharp({ create: { width, height, channels: 3, background: '#ffffff' } })
+    .webp()
+    .toFile(path);
+}
+
+function writeTexturedWebp(path, { width, height }) {
+  const pixels = Buffer.alloc(width * height * 3);
+  for (let index = 0; index < pixels.length; index += 1) pixels[index] = (index * 37) % 256;
+  return sharp(pixels, { raw: { width, height, channels: 3 } })
+    .webp()
+    .toFile(path);
 }
 
 function inventoryItem(overrides = {}) {
@@ -140,7 +167,7 @@ describe('page inventory output', () => {
     const item = inventoryItem();
     expect(Object.values(item.captures)).toHaveLength(16);
     const manifest = writeCaptures(fixture(), item);
-    expect(manifest.schema_version).toBe(2);
+    expect(manifest.schema_version).toBe(3);
     expect(manifest.captures).toHaveLength(16);
     expect(new Set(manifest.captures.map(({ review_id: reviewId }) => reviewId)).size).toBe(16);
     const night = manifest.captures.find(({ theme }) => theme === 'dark');
@@ -152,55 +179,106 @@ describe('page inventory output', () => {
     expect(night.review_description).toContain('Ignore layout and responsive composition');
   });
 
-  it('includes design intent and light-only night guidance in standalone review inputs', () => {
-    const item = inventoryItem({
-      intent: 'This route deliberately keeps its light reading palette.',
-      themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-    });
+  it('omits the internal /dev harnesses the app still ships', () => {
+    expect(existsSync(join(ROOT, 'web/src/routes/dev/+page.svelte'))).toBe(true);
+    expect(discoverPageRoutes().filter((route) => route.startsWith('/dev'))).toEqual([]);
+    expect(allSurfaces().filter(({ id }) => id.startsWith('dev'))).toEqual([]);
+  });
+
+  it('carries the general design notes and the per-surface note into every review input', () => {
+    const item = inventoryItem({ group: 'controls', id: 'clear-coachmark' });
+    const note = SURFACE_DESIGN_NOTES[designNoteKey('controls', 'clear-coachmark')];
     const manifest = writeCaptures(fixture(), item);
-    const night = manifest.captures.find(({ theme }) => theme === 'dark');
 
-    expect(night).toMatchObject({
-      surface_intent: item.intent,
-      theme_support: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-    });
-    expect(night.review_description).toContain(`Design intent: ${item.intent}`);
-    expect(night.review_description).toContain('intentionally remains light in night mode');
-    expect(night.review_description).toContain('do not flag the absence of a dark ground');
+    for (const capture of manifest.captures) {
+      expect(capture.surface_intent).toBe(note);
+      expect(capture.review_description).toContain(`Design intent: ${note}`);
+      for (const general of GENERAL_DESIGN_NOTES) {
+        expect(capture.review_description).toContain(general);
+      }
+    }
+    const plain = writeCaptures(fixture(), inventoryItem()).captures[0];
+    expect(plain.surface_intent).toBeUndefined();
+    expect(plain.review_description).not.toContain('Design intent:');
+    expect(plain.review_description).toContain(GENERAL_DESIGN_NOTES[0]);
   });
 
-  it('declares the intentional light-only routes and bare engine harness', () => {
-    const surfaces = allSurfaces();
-    expect(
-      surfaces
-        .filter(({ themeSupport }) => themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY)
-        .map(({ id }) => id)
-    ).toEqual(['android-beta', 'changelog', 'privacy']);
-    expect(surfaces.find(({ id }) => id === 'dev-engine')?.intent).toContain(
-      'bare canvas; the unframed canvas is expected'
-    );
+  it('keys every per-surface design note to a surface the inventory captures', () => {
+    const captured = new Set(allSurfaces().map((item) => designNoteKey(item.group, item.id)));
+    expect(Object.keys(SURFACE_DESIGN_NOTES).filter((key) => !captured.has(key))).toEqual([]);
+    expect(Object.keys(SURFACE_DESIGN_NOTES).length).toBeGreaterThan(0);
   });
 
-  it('rejects pixel-identical theme pairs unless the surface is declared light-only', () => {
+  it('rejects pixel-identical theme pairs for every surface', () => {
     const themed = inventoryItem();
-    const themedManifest = writeCaptures(fixture(), themed);
-    const themedLight = themedManifest.captures.find(({ theme }) => theme === 'light');
-    const themedDark = themedManifest.captures.find(
-      ({ theme, viewport_id: viewportId }) =>
-        theme === 'dark' && viewportId === themedLight.viewport_id
+    const manifest = writeCaptures(fixture(), themed);
+    const light = manifest.captures.find(({ theme }) => theme === 'light');
+    const dark = manifest.captures.find(
+      ({ theme, viewport_id: viewportId }) => theme === 'dark' && viewportId === light.viewport_id
     );
-    themedDark.sha256 = themedLight.sha256;
+    dark.sha256 = light.sha256;
 
-    expect(() => validateThemeCaptureDifferences(themedManifest.captures, [themed])).toThrow(
+    expect(() => validateThemeCaptureDifferences(manifest.captures, [themed])).toThrow(
       'produced pixel-identical light and night captures'
     );
+  });
 
-    const lightOnly = inventoryItem({
-      themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-    });
+  it('rejects a capture whose pixels never rendered', async () => {
+    const root = fixture();
+    const viewport = { id: 'iphone-13-mini', width: 60, height: 40 };
+    const blank = join(root, 'blank.webp');
+    const drawn = join(root, 'drawn.webp');
+    await writeFlatWebp(blank, viewport);
+    await writeTexturedWebp(drawn, viewport);
+
+    await expect(assertCaptureRendered(blank, viewport)).rejects.toThrow(
+      'near-uniform pixels (peak channel stddev'
+    );
+    await expect(assertCaptureRendered(drawn, viewport)).resolves.toBeUndefined();
+    await expect(
+      assertCaptureRendered(drawn, { ...viewport, width: viewport.width + 1 })
+    ).rejects.toThrow('expected WebP 61×40');
+  });
+
+  it('rejects one surface producing byte-identical captures at two viewports', () => {
+    const item = inventoryItem();
+    const [portrait, landscape] = PAGE_INVENTORY_VIEWPORTS;
+    const [theme] = PAGE_INVENTORY_THEMES;
+    const digest = 'a'.repeat(64);
+    const ledger = createViewportDigestLedger();
+
+    ledger.record(item, portrait, theme, digest);
+    expect(() => ledger.record(item, portrait, theme, digest)).not.toThrow();
+    expect(() => ledger.record(item, landscape, theme, digest)).toThrow(
+      `pixel-identical to the ${portrait.id} capture`
+    );
+    expect(() => ledger.record(item, landscape, PAGE_INVENTORY_THEMES[1], digest)).not.toThrow();
+    expect(() => ledger.record({ ...item, id: 'other' }, landscape, theme, digest)).not.toThrow();
+  });
+
+  it('selects a spot-check subset and names the valid choices for a typo', () => {
+    const surfaces = allSurfaces();
+    expect(
+      selectSpotCheckItems(surfaces, ['controls/clear-coachmark', 'home'], '--surface', (item) => [
+        `${item.group}/${item.id}`,
+        item.id,
+      ]).map(({ id }) => id)
+    ).toEqual(['home', 'clear-coachmark']);
+    expect(selectSpotCheckItems(surfaces, [], '--surface', (item) => [item.id])).toHaveLength(
+      surfaces.length
+    );
     expect(() =>
-      validateThemeCaptureDifferences(themedManifest.captures, [lightOnly])
-    ).not.toThrow();
+      selectSpotCheckItems(PAGE_INVENTORY_THEMES, ['night'], '--theme', (theme) => [theme.id])
+    ).toThrow('--theme names nothing in this inventory: night. Choose from: light, dark');
+  });
+
+  it('refuses to write a filtered spot check into the committed scrapbook', async () => {
+    await expect(
+      generatePageInventory(['--surface', 'home', '--out', 'scrapbook/page-inventory'])
+    ).rejects.toThrow('must stay out of scrapbook/');
+    await expect(generatePageInventory(['--surface', 'dev-engine'])).rejects.toThrow(
+      '--surface names nothing in this inventory: dev-engine'
+    );
   });
 
   it('targets only the responsive Settings navigation row for section captures', () => {
