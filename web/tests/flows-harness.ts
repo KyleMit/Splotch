@@ -188,8 +188,13 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
-// A whole extra manifest fetch, store scan and page load past the dialog's own
-// open, on a worker sharing the CPU with the rest of the suite.
+// The bound on a picker that never lands on the grid — not a wait any healthy
+// open spends: measured readiness is 181ms median, 386ms worst over 80 opens on
+// two contending workers, and a reopen adds ~150ms. It is sized off the *inner*
+// open instead: `openColoringDialog` may spend its own 10s re-clicking a
+// launcher whose handler isn't wired yet, so a cap anywhere near that number
+// would cut the first attempt short before this helper ever reached its second
+// one — truncating the very tolerance it is built on. Three of those budgets.
 const COLORING_BOOK_GRID_TIMEOUT_MS = 30_000;
 
 // Open the picker on its Coloring Book Grid — the cover menu, which only exists
