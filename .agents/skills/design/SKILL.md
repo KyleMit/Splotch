@@ -124,6 +124,13 @@ don't offer.
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
+| `ScrollCue.svelte`       | The fade that says a scroller's content carries on below. No props — render it as the       |
+|                          | **last child of the scrolling content** and it plants its own end-of-content sentinel       |
+|                          | there; one IntersectionObserver gives all three states, so it is absent when the content    |
+|                          | fits, absent at the end of the scroll, and present only in between. Depth is the inherited  |
+|                          | `--scroll-cue-height` (default 72px), set by the call site on any ancestor. A scroller that |
+|                          | already paints its own edge affordance (the settings sidebar's `local` shades) does not     |
+|                          | take one as well                                                                            |
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 
