@@ -515,15 +515,24 @@
     }
   }
 
-  /* ── Roomy portrait: the covers go tall instead of wide ──────────────────
-     Same floor the four-column layout starts at, because this replaces it: a
-     portrait viewport that roomy is far taller than it is wide, and four small
-     covers in a short, wide card leave the height unspent. Two columns turn
-     that height into cover art. The orphan selector is restated so this beats
-     it on order at equal specificity — its three-column fallback is a
-     four-column repair, and at two columns it would only shrink the tiles this
-     step exists to grow. */
-  @media (orientation: portrait) and (min-width: 741px) {
+  /* ── Tall portrait: the covers go tall instead of wide ───────────────────
+     Same width floor the four-column layout starts at, because this replaces
+     it: four small covers in a short, wide card leave the height unspent, and
+     two columns turn that height into cover art.
+
+     The gate is an aspect ratio rather than `orientation: portrait` because the
+     grid below is capped by the dialog's height. On a barely-portrait viewport
+     that cap is tighter than the width four columns already had, so the swap
+     would shrink the very covers it exists to grow; the two layouts draw the
+     same tile where height is about 1.06 times width, and 4:5 clears that at
+     every width this rule can see. Every tablet held upright is 3:4 or taller,
+     so none of them loses the treatment. flows-coloring-book.spec.ts measures
+     the covers across that band rather than trusting the arithmetic.
+
+     The orphan selector is restated so this beats it on order at equal
+     specificity — its three-column fallback is a four-column repair, and at two
+     columns it would only shrink the tiles this step exists to grow. */
+  @media (max-aspect-ratio: 4 / 5) and (min-width: 741px) {
     .coloring-books-grid,
     .coloring-books-grid.book-grid-has-orphan {
       --book-cols: 2;

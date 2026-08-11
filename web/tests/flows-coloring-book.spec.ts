@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
 import { draw, gotoApp, openSettingsModal, settleFlyIn } from './helpers';
@@ -6,6 +6,7 @@ import { COLORING_IMAGE_SIZES } from '../src/lib/state/books';
 
 import {
   applyFarmPage,
+  gotoAppWithAllColoringBooksInstalled,
   gotoAppWithInstalledColoringBook,
   opaqueCanvasPixelCount,
   openColoringDialog,
@@ -192,6 +193,71 @@ test.describe('responsive coloring selection at DPR 3', () => {
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
       .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.webp$/);
   });
+});
+
+// ── cover grid geometry ─────────────────────────────────────────────────────
+
+// A tall viewport swaps the four cover columns for two and caps the grid by the
+// dialog's height. That cap is what turns the height into cover art, and on a
+// viewport only slightly taller than it is wide it is *tighter* than the width
+// four columns already had — so the swap only ever helps above a crossover, and
+// the gate has to sit above it. These viewports walk both sides of that
+// crossover, including the barely-portrait windows a desktop resize or Stage
+// Manager can produce.
+const COVER_GRID_VIEWPORTS = [
+  { width: 741, height: 745 },
+  { width: 741, height: 800 },
+  { width: 741, height: 926 },
+  { width: 760, height: 800 },
+  { width: 800, height: 900 },
+  { width: 768, height: 1024 },
+  { width: 820, height: 1180 },
+  { width: 1024, height: 1366 },
+];
+
+// The cover as drawn, beside the cover the four-column layout would have drawn
+// in the same row. Both come off the live grid — the row it is laid in, and its
+// own gap — so the comparison tracks the dialog's padding and gap instead of
+// carrying a copy of them.
+async function coverGeometry(page: Page) {
+  const dialog = page.locator('#coloring-book-dialog');
+  await settleFlyIn(dialog);
+  return page.evaluate(() => {
+    const grid = document.querySelector('.coloring-books-grid') as HTMLElement;
+    const row = grid.parentElement as HTMLElement;
+    const gap = parseFloat(getComputedStyle(grid).columnGap);
+    return {
+      coverWidth: (grid.querySelector('.coloring-tile') as HTMLElement).offsetWidth,
+      fourColumnCoverWidth: (row.clientWidth - 3 * gap) / 4,
+    };
+  });
+}
+
+async function openCoverGrid(page: Page) {
+  await gotoAppWithAllColoringBooksInstalled(page);
+  await openDrawer(page);
+  await openColoringDialog(page);
+  await expect(page.locator('.coloring-books-grid .coloring-tile').first()).toBeVisible();
+}
+
+test('no viewport draws a cover smaller than four columns would', async ({ page }) => {
+  test.slow();
+  for (const viewport of COVER_GRID_VIEWPORTS) {
+    await page.setViewportSize(viewport);
+    await openCoverGrid(page);
+    const { coverWidth, fourColumnCoverWidth } = await coverGeometry(page);
+    expect(
+      coverWidth,
+      `cover width at ${viewport.width}x${viewport.height}`
+    ).toBeGreaterThanOrEqual(Math.floor(fourColumnCoverWidth));
+  }
+});
+
+test('a tablet held upright spends its height on bigger covers', async ({ page }) => {
+  await page.setViewportSize({ width: 820, height: 1180 });
+  await openCoverGrid(page);
+  const { coverWidth, fourColumnCoverWidth } = await coverGeometry(page);
+  expect(coverWidth).toBeGreaterThan(fourColumnCoverWidth);
 });
 
 test('a selected page stays hidden while browser-selected art decodes', async ({ page }) => {
