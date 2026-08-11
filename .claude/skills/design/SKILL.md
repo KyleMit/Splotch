@@ -236,8 +236,9 @@ form row, callout, CTA — showing tokens assembled into real surfaces), **Compo
 primitives, the settings furniture `ToggleRow`/`SliderRow`, specimens of the shared `app.css` chrome
 classes, and a named index of the bespoke canvas/page chrome), and **Brand & voice** (the copy rules
 and brand marks), under a sticky header with a binary light/dark preview toggle (the 3-way choice
-with System stays with the app Settings) and a scrollspy-driven table of contents — a sidebar on
-wide screens, a horizontally scrolling chip row on narrow ones. Each part's sections are partials in
+with System stays with the app Settings) and a scrollspy-driven table of contents — the shared
+`SidebarToc` rail on wide screens, and on narrow ones the `TocDisclosure` row that opens onto that
+same rail, its collapsed state naming the section being read. Each part's sections are partials in
 `lib/components/styleguide/` (`ColorSections` + `TypeSections` + `ScaleSections` + `AssetSections` +
 `RecipeSections`, `PrimitiveSections` + `ChromeSections`, `VoiceSections`); because everything is
 imported from `tokens.ts`, `palette.ts`, and the icon glob, the page cannot drift from the
