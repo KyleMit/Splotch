@@ -61,16 +61,22 @@
 
   // A pointed Apple Pencil tip often lands in the clip-path gap between
   // hexagons, where an element hit-test sees only the picker background. Snap
-  // to the nearest hexagon center within this radius (px) so gap hits still
-  // resolve — for the pointerdown that starts the gesture (a tap in a gap
-  // otherwise selects nothing at all), the hover highlight while dragging, and
-  // the committed color alike. The radius reaches half the hexagon height plus
-  // enough slop to bridge its gaps, so nearest-center also covers direct hits
-  // without a DOM hit-test. Centers are snapshotted once per drag: per-move rect
-  // reads after each hover-class flip forced a reflow per hexagon per pointer
-  // event.
+  // to the nearest hexagon center within a radius of half the hexagon height
+  // plus this slop, so gap hits still resolve — for the pointerdown that starts
+  // the gesture (a tap in a gap otherwise selects nothing at all), the hover
+  // highlight while dragging, and the committed color alike. The slop bridges
+  // the gaps, and reaching half the height means nearest-center also covers
+  // direct hits without a DOM hit-test — which the drag path has no way to run
+  // anyway, since pointer capture retargets every move to the picker. Centers
+  // are snapshotted once per drag: per-move rect reads after each hover-class
+  // flip forced a reflow per hexagon per pointer event.
   const HEX_SNAP_GAP_SLOP_PX = 5.5;
-  const HEX_SNAP_RADIUS = HEX_GRID_GEOMETRY.firstRowPx / 2 + HEX_SNAP_GAP_SLOP_PX;
+
+  // Measured from the live grid rather than fixed at the base geometry: roomy
+  // viewports scale the honeycomb up (see --hex-scale), and a radius pinned to
+  // an unscaled hexagon stops reaching a scaled one's ends. Untracked on
+  // purpose — a snapshot input, nothing renders from it.
+  let hexSnapRadiusPx = HEX_GRID_GEOMETRY.firstRowPx / 2 + HEX_SNAP_GAP_SLOP_PX;
 
   function snapshotHexCenters() {
     const centers: HexCenter[] = [];
@@ -79,6 +85,7 @@
       if (!color) continue;
       const rect = hex.getBoundingClientRect();
       if (rect.width === 0) continue;
+      if (centers.length === 0) hexSnapRadiusPx = rect.height / 2 + HEX_SNAP_GAP_SLOP_PX;
       centers.push({ color, cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 });
     }
     return centers;
@@ -87,7 +94,7 @@
   function findHexagonInPicker(x: number, y: number): string | null {
     hexCenters ??= snapshotHexCenters();
     let nearest: string | null = null;
-    let nearestDistance = HEX_SNAP_RADIUS;
+    let nearestDistance = hexSnapRadiusPx;
     for (const { color, cx, cy } of hexCenters) {
       const distance = Math.hypot(x - cx, y - cy);
       if (distance < nearestDistance) {
@@ -207,10 +214,36 @@
     display: inline-flex;
     padding: var(--space-4);
     margin-top: var(--hex-first-row-overlap);
-    --hex-offset: 31px;
-    --hex-first-row-overlap: 15px;
-    --hex-row-overlap: 18px;
+    /* One factor over the whole honeycomb — hexagon, indent and both overlaps —
+       so a scaled grid stays interlocked instead of drifting apart. The values
+       below are the geometry design/trimGeometry.ts derives every trim step
+       from, so they are the values at scale 1 and only the roomy step past the
+       ladders may raise it. */
+    --hex-scale: 1;
+    --hex-offset: calc(31px * var(--hex-scale));
+    --hex-first-row-overlap: calc(15px * var(--hex-scale));
+    --hex-row-overlap: calc(18px * var(--hex-scale));
     --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  }
+
+  /* ── Roomy viewports: large tablets, and desktop windows alike ────────────
+     A 13-inch iPad shows the untrimmed grid in a card that leaves most of the
+     screen to backdrop, so the room goes into the swatches rather than around
+     them — same count, bigger targets for small fingers. Both axes on purpose,
+     and only above the large-tablet floor: every trim rung below is a
+     max-width/max-height in the 675px-and-under range, so nothing here can
+     reach one and the ladders stay derived from the scale-1 geometry.
+     Classifying by viewport rather than by pointer is what the app already does
+     (`isTabletViewport()`), so a roomy desktop window takes this step too.
+     1000px is LARGE_TABLET_MIN_SIDE_PX, which a CSS media query cannot import —
+     the agreement with it, and with the other roomy dialogs' matching steps, is
+     held by dialogTabletScaling.test.ts. The factor is the fit at the corner of
+     that floor: a 1000px-wide window caps the grid at 90vw, which the widest
+     row reaches at 1.52. */
+  @media (min-width: 1000px) and (min-height: 1000px) {
+    .picker {
+      --hex-scale: 1.3;
+    }
   }
 
   .grid {
@@ -400,8 +433,8 @@
 
   .hexagon {
     position: relative;
-    width: 60px;
-    height: 69px; /* For a regular hexagon, height = width * 1.15 */
+    width: calc(60px * var(--hex-scale));
+    height: calc(69px * var(--hex-scale)); /* For a regular hexagon, height = width * 1.15 */
     flex-shrink: 0;
     clip-path: var(--hex-clip);
     padding: 0;
