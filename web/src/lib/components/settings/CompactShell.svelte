@@ -2,6 +2,7 @@
   import Icon from '../Icon.svelte';
   import SplotchyIcon from '../SplotchyIcon.svelte';
   import ToggleRow from './ToggleRow.svelte';
+  import ScrollCue from '../design/ScrollCue.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
   import { APP_VERSION } from '$lib/appVersion';
   import {
@@ -54,59 +55,62 @@
 <header class="settings-header-compact">
   <h2>Settings</h2>
 </header>
-<div class="quick-toggles">
-  <div class="setting">
-    <ToggleRow
-      icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
-      label="Sound"
-      id="quickSoundToggle"
-      checked={settings.soundEnabled}
-      onToggle={setSound}
-    />
-  </div>
-  <div class="setting">
-    <ToggleRow
-      icon={resolvedTheme() === 'dark' ? 'theme-dark' : 'theme-light'}
-      label="Night Mode"
-      id="quickNightToggle"
-      checked={resolvedTheme() === 'dark'}
-      onToggle={(next) => setResolvedTheme(next ? 'dark' : 'light')}
-    />
-  </div>
-  <div class="setting">
-    <ToggleRow
-      icon="dashboard-customize"
-      label="Advanced Controls"
-      id="quickAdvancedControlsToggle"
-      checked={settings.advancedControlsEnabled}
-      onToggle={setAdvancedControls}
-    />
-  </div>
-  <!-- The bottom-right cell is the only one that varies by device: the
-       orientation lock selector, or — where the OS owns orientation (see
-       supportsOrientationLock) — a mini About cell so the 2×2 stays
-       flush instead of leaving a hole. -->
-  {#if showOrientationControls}
-    <!-- Matches the Theme picker in AppearanceSection, at the compact size so
-         the cell's height lines up with the toggle rows beside it. No segment
-         is active while rotation is unlocked, so the pair reads as "off" until
-         the parent picks a side. -->
-    <div class="setting orientation-cell">
-      <SegmentedPicker
-        label="Lock screen orientation"
-        mode="toggle"
-        size="sm"
-        options={orientationOptions}
-        selected={lockedOrientation}
-        onSelect={lockOrientation}
+<div class="quick-toggles-scroll">
+  <div class="quick-toggles">
+    <div class="setting">
+      <ToggleRow
+        icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
+        label="Sound"
+        id="quickSoundToggle"
+        checked={settings.soundEnabled}
+        onToggle={setSound}
       />
     </div>
-  {:else}
-    <div class="setting about-cell">
-      <SplotchyIcon class="about-cell-icon" aria-label="Splotch" role="img" />
-      <span class="about-cell-version">Version {APP_VERSION}</span>
+    <div class="setting">
+      <ToggleRow
+        icon={resolvedTheme() === 'dark' ? 'theme-dark' : 'theme-light'}
+        label="Night Mode"
+        id="quickNightToggle"
+        checked={resolvedTheme() === 'dark'}
+        onToggle={(next) => setResolvedTheme(next ? 'dark' : 'light')}
+      />
     </div>
-  {/if}
+    <div class="setting">
+      <ToggleRow
+        icon="dashboard-customize"
+        label="Advanced Controls"
+        id="quickAdvancedControlsToggle"
+        checked={settings.advancedControlsEnabled}
+        onToggle={setAdvancedControls}
+      />
+    </div>
+    <!-- The bottom-right cell is the only one that varies by device: the
+         orientation lock selector, or — where the OS owns orientation (see
+         supportsOrientationLock) — a mini About cell so the 2×2 stays
+         flush instead of leaving a hole. -->
+    {#if showOrientationControls}
+      <!-- Matches the Theme picker in AppearanceSection, at the compact size so
+           the cell's height lines up with the toggle rows beside it. No segment
+           is active while rotation is unlocked, so the pair reads as "off" until
+           the parent picks a side. -->
+      <div class="setting orientation-cell">
+        <SegmentedPicker
+          label="Lock screen orientation"
+          mode="toggle"
+          size="sm"
+          options={orientationOptions}
+          selected={lockedOrientation}
+          onSelect={lockOrientation}
+        />
+      </div>
+    {:else}
+      <div class="setting about-cell">
+        <SplotchyIcon class="about-cell-icon" aria-label="Splotch" role="img" />
+        <span class="about-cell-version">Version {APP_VERSION}</span>
+      </div>
+    {/if}
+  </div>
+  <ScrollCue />
 </div>
 <p class="portrait-note">
   <Icon name="mobile-portrait" class="portrait-note-icon" />
@@ -137,15 +141,25 @@
     font-weight: var(--font-weight-semibold);
   }
 
-  .quick-toggles {
+  /* The grid sits inside its scroller rather than being one, so the continuation
+     cue can be a plain last child of the scrolling content instead of a cell the
+     2×2 has to make room for. */
+  .quick-toggles-scroll {
+    /* Shallower than the picker's default: this pane is only a couple of rows
+       tall on the landscape phone it exists for, and a 72px fade would dim most
+       of what is left to read. */
+    --scroll-cue-height: 32px;
+
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    padding: 0 24px;
+  }
+
+  .quick-toggles {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    align-content: start;
-    padding: 0 24px;
   }
 
   /* Orientation fourth cell: a Portrait / Landscape segmented control in place

@@ -128,14 +128,28 @@ export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COL
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );
 const BOOK_GRID_DEFAULT_COLUMNS = 4;
+/**
+ * A tall viewport drops the cover grid to two columns and caps its width by the
+ * dialog's height, so the width-only clauses below all under-report the tile
+ * there. The condition has to be the one ColoringBook.svelte's media query
+ * takes that layout under, or the browser reads a tile size for a layout the
+ * page isn't wearing; books.test.ts holds the two sides together, since a media
+ * query can't read this constant.
+ */
+const TALL_COVER_GRID_MEDIA = '(max-aspect-ratio: 4 / 5) and (min-width: 741px)';
+/**
+ * Deliberately over-estimates rather than restating the grid's height
+ * arithmetic: `sizes` is a hint, and the source covers are 400px with 240w/400w
+ * candidates, so rounding up only ever picks the candidate a retina tablet would
+ * pick anyway — while rounding down would ship a soft cover.
+ */
+const TALL_COVER_SIZE = `${TALL_COVER_GRID_MEDIA} 25vh`;
 export const COLORING_IMAGE_SIZES = {
   overlay: '100vw',
   activePageThumbnail: '36px',
   coverThumbnail: {
-    standard:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px',
-    orphan:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
+    standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
+    orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px`,
   },
   pageThumbnail: {
     portrait:

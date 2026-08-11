@@ -9,11 +9,10 @@
   // recognisably Splotch either way.
   //
   // The palette is the --page-* custom properties declared in the style block
-  // below, defaulting to the themed app tokens; everything nested inside — the
+  // below, resolved from the themed app tokens; everything nested inside — the
   // page's own body copy, RuleLabel, StepLedger — reads them rather than
-  // restating a color. A page that must not follow the theme overrides them on
-  // the forwarded `class` (see /android-beta, /changelog, and /privacy, whose
-  // link and button contrast is measured against a light ground).
+  // restating a color. Every page wearing this shell follows the parent's
+  // night-mode preference: no route pins the palette to one theme.
   interface Props {
     /** The <h1>. Also the only heading the shell owns. */
     title: string;
@@ -23,14 +22,12 @@
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
     children: Snippet;
-    /** Lands on the palette-bearing root, so a page can override --page-*. */
-    class?: string;
   }
 
-  let { title, wordmark, lede, actions, children, class: className }: Props = $props();
+  let { title, wordmark, lede, actions, children }: Props = $props();
 </script>
 
-<main class={['page', className]}>
+<main class="page">
   <div class="sheet">
     <div class="topbar">
       <a class="back" href="/">← Back to drawing</a>
@@ -68,12 +65,10 @@
     --page-muted: var(--text-soft);
     --page-rule: var(--border);
     /* --brand itself is 3.4:1 on the light sheet and fails WCAG AA for body-size
-       text; --brand-text is the ramp's accessible step in both themes. */
+       text; --brand-text is the ramp's accessible step in both themes. The ramp
+       has no deeper step, so a link signals hover with its underline (weight or
+       presence) rather than a color change — see /feedback. */
     --page-link: var(--brand-text);
-    /* A page with a pinned palette points this at a deeper shade of its own link
-       color. The themed ramp has no such step, so a page on the defaults should
-       signal hover with the underline instead of a color change. */
-    --page-link-hover: var(--page-link);
     /* The solid call-to-action fill and the ink it carries — the beta page's
        step buttons and the feedback page's submit are the same shape wearing
        these. --brand itself is not an option: white on it is 3.4:1. */
@@ -83,9 +78,8 @@
     /* The reading measure: 62 characters, so each block resolves it against its
        own font size (the 18px lede runs wider in px than the 16px body). */
     --page-measure: 62ch;
-    /* Themed, because the light sheet's warm lift is invisible on a dark ground
-       — --float-shadow is the app's paper-card elevation and already carries a
-       dark value. A page with a pinned palette pins this too. */
+    /* The app's one paper-card elevation: the light sheet's warm lift is
+       invisible on a dark ground, so the dark value trades it for a hairline. */
     --page-shadow: var(--float-shadow);
     /* Inside the sheet every band lines up on one horizontal padding. */
     --page-gutter: clamp(20px, 5vw, 34px);

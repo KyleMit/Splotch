@@ -121,6 +121,35 @@ test('the disclosure chevron rotates open', async ({ page }) => {
     .not.toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\)|matrix\(1,0,0,1,0,0\))$/);
 });
 
+// The scroll-cue specimens are the one place the primitive stands in a plain
+// box — no dialog, no settings pane — so they are where its positional contract
+// is observable with nothing else in the way. Lift a cue out of the scroller it
+// belongs to and it still paints a gradient; what changes is only which end it
+// reads, so the caption and the specimen part company in silence.
+test('the scroll cue specimens show the state each one is captioned with', async ({ page }) => {
+  await page.goto('/design');
+  const scrollers = page.locator('.cue-scroller');
+  await expect(scrollers).toHaveCount(2);
+  // Read them where a reader reads them. The primitive leaves its observer root
+  // implicit, so an intersection is clipped by every scrollable ancestor — the
+  // document included. A specimen still below the page's own fold therefore has
+  // its end off screen for that reason, and reports the same "more below" the
+  // app's dialogs only ever get from their own scrollport.
+  await page.locator('.cue-demo').scrollIntoViewIfNeeded();
+
+  const cueOpacity = (index: number) =>
+    scrollers
+      .nth(index)
+      .locator('.scroll-cue')
+      .evaluate((el) => Number(getComputedStyle(el).opacity));
+
+  await expect.poll(() => cueOpacity(0)).toBe(1);
+  await expect.poll(() => cueOpacity(1)).toBe(0);
+
+  await scrollers.first().evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
+  await expect.poll(() => cueOpacity(0)).toBe(0);
+});
+
 // The icon column a settings row hangs off — the icon's box, the gap to its
 // label, and the indent that lines a help line (and an icon-less SliderRow) up
 // under that label — comes from custom properties declared outside the row

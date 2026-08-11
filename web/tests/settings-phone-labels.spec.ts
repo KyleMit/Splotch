@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { gotoApp, openSettingsModal } from './helpers';
+import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 
 // The phone Settings shell used to truncate the very text that carries its
 // meaning: hub summaries ellipsized on one line ("Choose when grown-up c…"),
@@ -25,16 +25,6 @@ async function openHub(page: Page, width: number, height: number) {
   await expect(modal).not.toHaveClass(/wide|compact/);
   await expect(page.locator('.hub-list')).toBeVisible();
   return modal;
-}
-
-// The hub row taps land on a scroller that idle-mounts and flies in, so the
-// first click can arrive before the section is wired (the hazard
-// openSettingsModal itself rides out).
-async function openHubSection(page: Page, section: string, expectedField: string) {
-  await expect(async () => {
-    await page.locator(`.hub-row[data-section="${section}"]`).click({ timeout: 1000 });
-    await expect(page.locator(expectedField)).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 10_000 });
 }
 
 // Text whose box can't hold it, whichever way it was cut: an ellipsized line
@@ -119,19 +109,6 @@ for (const { device, width, height, chipColumns } of PHONE_VIEWPORTS) {
     expect(shortestChip).toBeGreaterThanOrEqual(44);
   });
 }
-
-test('the hub fades its bottom edge while rows remain below it', async ({ page }) => {
-  const { width, height } = PHONE_VIEWPORTS[0];
-  await openHub(page, width, height);
-
-  const fade = page.locator('.settings-scroll-fade');
-  // The section list outruns the card at this height, so the opening view has
-  // more below it — the cue the inventory found missing.
-  await expect(fade).toHaveClass(/visible/);
-
-  await page.locator('.settings-scroll').evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
-  await expect(fade).not.toHaveClass(/visible/);
-});
 
 test('the save-folder row seats its label and its action without collision', async ({ page }) => {
   const { width, height } = PHONE_VIEWPORTS[0];

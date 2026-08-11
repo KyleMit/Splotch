@@ -2,6 +2,7 @@
   import { BETA_OPT_IN_URL, TESTERS_GROUP_URL } from '$lib/components/androidBeta/androidBeta';
   import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
+  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
@@ -25,134 +26,96 @@
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<div class="beta">
-  <PageShell class="beta-palette" title="Join the Android beta" wordmark="Splotch for Android">
-    {#snippet lede()}
-      Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
-      feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
-      can't catch on our own.
-    {/snippet}
+<PageShell title="Join the Android beta" wordmark="Splotch for Android">
+  {#snippet lede()}
+    Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+    feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
+    can't catch on our own.
+  {/snippet}
 
-    <RuleLabel>How to join</RuleLabel>
+  <RuleLabel>How to join</RuleLabel>
 
-    <StepLedger />
+  <StepLedger />
 
-    <div class="trouble">
-      <Disclosure class="beta-disclosure">
-        {#snippet summary()}
-          <span class="trouble-heading">
-            <h2 class="trouble-label">Troubleshooting</h2>
-            <span class="trouble-sub">
-              Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or
-              stuck on step 2?
-            </span>
+  <div class="trouble">
+    <Disclosure class="beta-disclosure">
+      {#snippet summary()}
+        <span class="trouble-heading">
+          <h2 class="trouble-label">Troubleshooting</h2>
+          <span class="trouble-sub">
+            Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or
+            stuck on step 2?
           </span>
-          <span class="chev-disc">
-            <Icon name="chevron-right" class="chev" aria-hidden="true" />
-          </span>
-        {/snippet}
+        </span>
+        <span class="chev-disc">
+          <Icon name="chevron-right" class="chev" aria-hidden="true" />
+        </span>
+      {/snippet}
 
-        <div class="rows">
-          <div class="row">
-            <h3>“Item not found” on the store link</h3>
-            <p>
-              You aren't opted in yet, or the browser is signed in to a different Google account. Go
-              back to <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
-                >the tester page</a
-              >, check the account shown in the top-right corner, and opt in there first.
-            </p>
-          </div>
-          <div class="row">
-            <h3>The tester page says you're not a member</h3>
-            <p>
-              Joining is instant and there's no approval to wait on, so either the join never went
-              through or it went through on a different Google account. Open <a
-                href={TESTERS_GROUP_URL}
-                target="_blank"
-                rel="noopener noreferrer">the group page</a
-              > again, check the account in the top-right corner, and join from there.
-            </p>
-          </div>
-          <div class="row">
-            <h3>The phone can't find the app but your computer can</h3>
-            <p>
-              The two are signed in to different accounts. In the Play Store app, tap your profile
-              picture in the top-right to see which account is active.
-            </p>
-          </div>
-          <div class="row">
-            <h3>Everything looks right and Play still disagrees</h3>
-            <p>
-              Close and reopen the Play Store, check the active account, and try the store link
-              again. As a last resort, open Android Settings → Apps → Google Play Store → Storage
-              and clear its cache; the exact menu names vary by device.
-            </p>
-          </div>
-          <div class="row">
-            <h3>Leaving the beta</h3>
-            <p>
-              Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
-                >the tester page</a
-              > again and press “Leave the program”, which stops the beta updates. If a public Android
-              version is out by then, you may need to uninstall Splotch and reinstall it from Google Play
-              to switch over; until there is one, leaving the beta also means you won't be able to reinstall
-              the Android app. No hard feelings.
-            </p>
-          </div>
+      <div class="rows">
+        <div class="row">
+          <h3>“Item not found” on the store link</h3>
+          <p>
+            You aren't opted in yet, or the browser is signed in to a different Google account. Go
+            back to <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+              >the tester page</a
+            >, check the account shown in the top-right corner, and opt in there first.
+          </p>
         </div>
-      </Disclosure>
-    </div>
-  </PageShell>
-</div>
+        <div class="row">
+          <h3>The tester page says you're not a member</h3>
+          <p>
+            Joining is instant and there's no approval to wait on, so either the join never went
+            through or it went through on a different Google account. Open <a
+              href={TESTERS_GROUP_URL}
+              target="_blank"
+              rel="noopener noreferrer">the group page</a
+            > again, check the account in the top-right corner, and join from there.
+          </p>
+        </div>
+        <div class="row">
+          <h3>The phone can't find the app but your computer can</h3>
+          <p>
+            The two are signed in to different accounts. In the Play Store app, tap your profile
+            picture in the top-right to see which account is active.
+          </p>
+        </div>
+        <div class="row">
+          <h3>Everything looks right and Play still disagrees</h3>
+          <p>
+            Close and reopen the Play Store, check the active account, and try the store link again.
+            As a last resort, open Android Settings → Apps → Google Play Store → Storage and clear
+            its cache; the exact menu names vary by device.
+          </p>
+        </div>
+        <div class="row">
+          <h3>Leaving the beta</h3>
+          <p>
+            Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
+              >the tester page</a
+            > again and press “Leave the program”, which stops the beta updates. If a public Android version
+            is out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch
+            over; until there is one, leaving the beta also means you won't be able to reinstall the Android
+            app. No hard feelings.
+          </p>
+        </div>
+      </div>
+    </Disclosure>
+  </div>
+
+  <!-- Last thing in the sheet, so its sentinel marks the end of the page's own
+       content: the document is the scroller here, and the cue fades the sheet
+       into itself at the foot of the viewport for as long as there are steps
+       still below. Nothing about the page's height is ours to set, so the
+       trailing-row cut the picker uses has no counterpart on this surface. -->
+  <ScrollCue />
+</PageShell>
 
 <style>
-  /* Deliberately light-only, like /privacy and /admin: the themed color tokens
-     flip with data-theme / prefers-color-scheme (tokens.css sets them on :root,
-     which reaches this route too), so adopting them would half-dark-theme a
-     page whose link and button contrast is pinned to a light ground. PageShell
-     defaults its --page-* palette to those themed tokens, so this route pins
-     every one of them instead, each value commented with the light-theme token
-     it approximates. Theme-invariant tokens (--duration-*, --radius-*) are used
-     directly.
-
-     The overrides land on PageShell's own root via the forwarded class, which is
-     the only element they can sit on: a custom property declared on .page would
-     otherwise win over the same property inherited from an ancestor. */
-  .beta :global(.beta-palette) {
-    --page-ground: #f0efed; /* ~ --app-bg (#f5f5f5), warmed */
-    --page-sheet: #ffffff; /* = --surface, light */
-    --page-ink: #26262e; /* ~ --text-strong (#333), light */
-    --page-body: #55555f; /* ~ --text (#555), light */
-    /* The external spec proposed #9a98a3 for the muted ink. That is 2.8:1 on
-       the sheet and fails WCAG AA everywhere it carries text — the wordmark,
-       the hero note, fine print, and callout labels. This is the darkest value
-       that still reads as recessive and clears 4.5:1. */
-    --page-muted: #6c6c76; /* ~ --text-soft (#666), light */
-    --page-rule: #eeeae4; /* ~ --border-warm (#ddd6cc), lightened */
-    /* Darker than --brand, whose 3.4:1 fails WCAG AA for body-size text; this
-       clears 4.5:1 as a link and as a white-on-purple button fill. Same value
-       /privacy pins for the same reason. */
-    --page-link: #7c4dcf;
-    --page-link-hover: #6b3fbf;
-    /* The step buttons' fill. Same pinning reason as the link: --brand-solid's
-       dark value would flip under prefers-color-scheme. */
-    --page-accent: #7c4dcf;
-    --page-accent-hover: #6b3fbf;
-    --page-on-accent: #ffffff;
-    /* The sheet's lift, pinned for the same reason: --float-shadow's dark value
-       is a light keyline that would show as a halo on this white sheet. */
-    --page-shadow: 0 1px 2px rgba(93, 84, 68, 0.05), 0 10px 30px rgba(93, 84, 68, 0.07);
-  }
-
-  /* Chrome the Troubleshooting panel owns rather than the shell: everything here
-     is one collapsed <details> and the rows inside it. */
-  .beta {
-    --beta-row: #f7f6f5;
-    --beta-row-hover: #f2f0ef;
-    --beta-row-border: #eeecec;
-    --beta-row-border-hover: #e2dfdf;
-    --beta-disc-border: #e8e6e6;
-  }
+  /* Everything colored here reads PageShell's --page-* palette or a themed app
+     token, so the sign-up page follows the parent's night-mode preference like
+     every other page. Theme-invariant tokens (--duration-*, --radius-*) are
+     used directly. */
 
   .trouble {
     margin-top: 48px;
@@ -163,9 +126,9 @@
      chevron icon, which rotates rather than swapping glyphs — Icon renders via
      {@html}, which hydration does not reconcile (.claude/rules/svelte.md). */
   .trouble :global(.beta-disclosure) {
-    border: 1px solid var(--beta-row-border);
+    border: var(--border-width) solid var(--page-rule);
     border-radius: var(--radius-lg);
-    background: var(--beta-row);
+    background: var(--surface-2);
     transition:
       background var(--duration-base) ease,
       border-color var(--duration-base) ease;
@@ -204,15 +167,16 @@
     color: var(--page-muted);
   }
 
-  /* The disc is the tappable affordance: a raised white target rather than a
-     glyph floating on the panel. */
+  /* The disc is the tappable affordance: the sheet's own tone ringed by a
+     hairline, so it reads as a target rather than a glyph floating on the
+     panel — lighter than the panel on the white paper, darker on the dark one. */
   .chev-disc {
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 32px;
     height: 32px;
-    border: 1px solid var(--beta-disc-border);
+    border: var(--border-width) solid var(--page-rule);
     border-radius: 50%;
     background: var(--page-sheet);
   }
@@ -225,8 +189,8 @@
 
   /* The rotation is the only visual signal of the panel's state, so this is a
      non-text contrast case (WCAG 1.4.11, 3:1) rather than a decorative one.
-     --page-muted is 5.2:1 on the disc it sits in, and clears the floor against
-     the panel behind it too (4.8:1, 4.6:1 hovered). */
+     --page-muted clears the floor on the disc and on the panel behind it in
+     both themes — android-beta.spec.ts measures it on each. */
   .trouble :global(.chev svg) {
     fill: var(--page-muted);
   }
@@ -240,7 +204,7 @@
   }
 
   .row {
-    border-top: 1px solid var(--page-rule);
+    border-top: var(--border-width) solid var(--page-rule);
     margin-top: 20px;
     padding-top: 20px;
   }
@@ -267,15 +231,19 @@
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
+     keep it stuck until the next tap elsewhere. A surface and its hover step are
+     a hair apart on the light paper, so the panel's border carries the hover as
+     much as its fill — the pairing app.css already gives the modal close disc.
+     A link has no deeper step in the themed ramp at all, so its underline
+     thickens instead. */
   @media (hover: hover) {
     .trouble :global(.beta-disclosure:hover) {
-      background: var(--beta-row-hover);
-      border-color: var(--beta-row-border-hover);
+      background: var(--surface-hover);
+      border-color: var(--border-warm-strong);
     }
 
     a:hover {
-      color: var(--page-link-hover);
+      text-decoration-thickness: 2px;
     }
   }
 

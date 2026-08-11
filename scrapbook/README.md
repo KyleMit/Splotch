@@ -89,10 +89,11 @@ were reviewed.
 Critique work is one independently generated checkpoint per review ID under the gitignored
 `.scrapbook-scratch/page-inventory-critique/reviews/`. Run `npm run gen:page-inventory:review` to
 create or resume the fresh image-only reviews, then finalize them with
-`npm run gen:page-inventory:critique`; the command refuses missing, duplicate, unknown, grouped, or
-stale reviews and derives the coverage and severity totals rather than trusting model-authored
-counts. When `design-critique.json` is present, capture preserves it but attaches it only when every
-hash matches the new manifest. To update feedback without recapturing images, run
+`npm run gen:page-inventory:critique`; the command refuses missing, duplicate, unknown, or stale
+reviews, derives the coverage and severity totals rather than trusting model-authored counts, and
+records every group of captures that share a digest and a theme along with whether their severities
+diverge. When `design-critique.json` is present, capture preserves it but attaches it only when
+every hash matches the new manifest. To update feedback without recapturing images, run
 `npm run gen:page-inventory:feedback` (optionally `-- --critique FILE`). Then run
 `npm run scrapbook:index`.
 

@@ -28,6 +28,12 @@ const SETTINGS_WIDE_SHELL = readFileSync(
   join(ROOT, 'web', 'src', 'lib', 'components', 'settings', 'WideShell.svelte'),
   'utf8'
 );
+// The wide shell's rows are the shared guide-rail table of contents, so the row
+// template both harnesses address lives here rather than in the shell.
+const SIDEBAR_TOC = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'nav', 'SidebarToc.svelte'),
+  'utf8'
+);
 const IPAD_ACTIONS = readFileSync(join(ROOT, 'tools', 'perf', 'ipad-actions.mjs'), 'utf8');
 const PAGE_INVENTORY = readFileSync(
   join(ROOT, 'tools', 'page-inventory', 'gen-page-inventory.mjs'),
@@ -90,33 +96,33 @@ describe('trusted action setup', () => {
     expect(expression).not.toContain('#undoButton');
   });
 
-  // Both harnesses address a Settings row as `<shell class>[data-section=<id>]`,
-  // and the two shells live in different files: the wide sidebar in WideShell,
-  // the phone hub in SettingsModal. Matched as one opening tag rather than as
-  // two independent greps, so a shell that renamed the class or stopped stamping
-  // its section id is caught here rather than by a harness that silently finds
-  // nothing. The pane's own `.settings-section` wrappers carry the same
-  // attribute for the Playwright specs; only the row templates are this
-  // contract.
-  it('keeps a section id on the row template of both Settings shells', () => {
-    expect(SETTINGS_WIDE_SHELL).toMatch(
-      /class="settings-nav-item"[^>]*data-section=\{section\.id\}/
-    );
-    expect(SETTINGS_MODAL).toMatch(/class="hub-row"[^>]*data-section=\{section\.id\}/);
+  // Both harnesses address a Settings row as `button[data-section=<id>]`, and
+  // the two row templates live in different files: the wide sidebar's in the
+  // shared SidebarToc, the phone hub's in SettingsModal. Matched as one opening
+  // tag rather than as two independent greps, so a shell that stopped rendering
+  // its rows as buttons or stopped stamping the section id is caught here rather
+  // than by a harness that silently finds nothing. The wide pane's own
+  // `.settings-section` wrappers carry the same attribute and are not buttons,
+  // which is why the tag is part of the selector.
+  it('keeps a section id on the button row template of both Settings shells', () => {
+    expect(SIDEBAR_TOC).toMatch(/<button\b[^<>]*data-section=\{item\.id\}/);
+    expect(SETTINGS_MODAL).toMatch(/<button\b[^<>]*data-section=\{section\.id\}/);
+    expect(SETTINGS_WIDE_SHELL).toMatch(/id: section\.id/);
     for (const harness of [IPAD_ACTIONS, PAGE_INVENTORY]) {
-      expect(harness).toContain('data-section');
+      expect(harness).toContain('button[data-section');
     }
   });
 
   // The performance harness measures the sidebar's highlighted reading position.
-  // The inventory accepts the requested section at the pane lead or the clamped scroll end.
+  // The inventory accepts the requested section parked below the pane's top edge
+  // or held at the clamped scroll end.
   it('uses the appropriate wide Settings readiness signal in each harness', () => {
-    const token = /aria-current=\{[^}]*\?\s*'([a-z]+)'/.exec(SETTINGS_WIDE_SHELL)?.[1];
+    const token = /aria-current=\{[^}]*\?\s*'([a-z]+)'/.exec(SIDEBAR_TOC)?.[1];
     expect(token).toBeTruthy();
     expect(IPAD_ACTIONS).toContain(`getAttribute('aria-current') === '${token}'`);
     expect(PAGE_INVENTORY).toContain('.settings-section[data-section="${sectionId}"]');
     expect(PAGE_INVENTORY).toContain('pane.scrollTop + pane.clientHeight');
-    expect(PAGE_INVENTORY).toContain('Math.abs(targetRect.top - paneRect.top)');
+    expect(PAGE_INVENTORY).toContain('targetRect.top - paneRect.top');
   });
 
   // The wide pane fills a section per frame (issue #910) and reports itself busy
@@ -124,9 +130,12 @@ describe('trusted action setup', () => {
   // waits on that flag going quiet; were the pane to stop carrying it, the wait
   // would resolve on an element that never had it and the shots would go back to
   // catching a half-built page — silently, since a screenshot always succeeds.
+  // The pane is also how the performance harness tells the two shells apart,
+  // since only the wide one stacks its sections in a scrolling pane.
   it('shoots the wide pane only once it stops reporting itself busy', () => {
     expect(SETTINGS_WIDE_SHELL).toMatch(/class="settings-pane"[^>]*aria-busy=\{/);
     expect(PAGE_INVENTORY).toContain('.settings-pane[aria-busy="false"]');
+    expect(IPAD_ACTIONS).toContain("#settingsModal .settings-pane') !== null");
   });
 });
 

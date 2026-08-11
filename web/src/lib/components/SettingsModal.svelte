@@ -7,6 +7,7 @@
   import SectionBody from './settings/SectionBody.svelte';
   import CompactShell from './settings/CompactShell.svelte';
   import WideShell from './settings/WideShell.svelte';
+  import ScrollCue from './design/ScrollCue.svelte';
   import { SECTIONS, sectionHeading, sectionSubtitle, type SectionId } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
@@ -96,34 +97,6 @@
     enabled: settingsModal.open,
     resetKey: view,
   });
-
-  // The phone shell's scroll region outruns the card far more often than not,
-  // and a row ending flush with the card's edge reads as the end of the list.
-  // A fade over the bottom strip says otherwise — but only while there is
-  // something below to reach, so it never dims a list that has already ended.
-  let scrollEl = $state<HTMLElement>();
-  let moreBelow = $state(false);
-  // Fractional scroll geometry (pinch zoom, fractional device pixels) never
-  // lands exactly on the end of the range.
-  const SCROLL_END_SLACK_PX = 2;
-  $effect(() => {
-    const el = scrollEl;
-    if (!el) return;
-    const sync = () => {
-      moreBelow = el.scrollHeight - el.clientHeight - el.scrollTop > SCROLL_END_SLACK_PX;
-    };
-    sync();
-    el.addEventListener('scroll', sync, { passive: true });
-    // The content can grow without the scroller resizing: a section reveals a
-    // sub-panel, or a pinch rescales `.settings-zoom`.
-    const growth = new ResizeObserver(sync);
-    growth.observe(el);
-    for (const child of el.children) growth.observe(child);
-    return () => {
-      el.removeEventListener('scroll', sync);
-      growth.disconnect();
-    };
-  });
 </script>
 
 <dialog
@@ -155,7 +128,7 @@
       <header class="settings-header">
         <h2>Settings</h2>
       </header>
-      <div class="settings-scroll" bind:this={scrollEl} use:pinchTextZoom={textZoom}>
+      <div class="settings-scroll" use:pinchTextZoom={textZoom}>
         <div class="settings-zoom" bind:this={zoomTarget}>
           <ul class="hub-list">
             {#each SECTIONS as section (section.id)}
@@ -178,8 +151,11 @@
             {/each}
           </ul>
         </div>
+        <!-- Last child of the scroller, and outside the zoom target: the cue
+             plants its sentinel at the end of the scrolling content, and keeps
+             its own size while a pinch rescales the reading content under it. -->
+        <ScrollCue />
       </div>
-      <div class="settings-scroll-fade" class:visible={moreBelow} aria-hidden="true"></div>
     {:else}
       <!-- Phone: drilled into a single section, with a back arrow. -->
       <header class="settings-header settings-header-sub">
@@ -188,12 +164,12 @@
         </button>
         <h2>{sectionHeading(activeSection)}</h2>
       </header>
-      <div class="settings-scroll" bind:this={scrollEl} use:pinchTextZoom={textZoom}>
+      <div class="settings-scroll" use:pinchTextZoom={textZoom}>
         <div class="settings-zoom" bind:this={zoomTarget}>
           <SectionBody id={activeSection} open={settingsModal.open} />
         </div>
+        <ScrollCue />
       </div>
-      <div class="settings-scroll-fade" class:visible={moreBelow} aria-hidden="true"></div>
     {/if}
   </div>
 </dialog>
@@ -319,23 +295,6 @@
     min-height: 0;
     overflow: auto;
     padding: 0 24px 28px;
-  }
-
-  /* The scroll region's continuation cue, painted over its bottom strip and
-     carried only while `moreBelow` says there is something under it. */
-  .settings-scroll-fade {
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    height: var(--space-6);
-    background: linear-gradient(to top, var(--surface), transparent);
-    opacity: 0;
-    transition: opacity var(--duration-fast) var(--ease-glide);
-    pointer-events: none;
-  }
-
-  .settings-scroll-fade.visible {
-    opacity: 1;
   }
 
   /* ── Phone hub list ─────────────────────────────────────────────────────── */

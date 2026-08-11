@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
-  import SectionIcon from '../SectionIcon.svelte';
+  import SidebarToc, { type SidebarTocItem } from '../nav/SidebarToc.svelte';
+  import ScrollCue from '../design/ScrollCue.svelte';
   import SectionBody from './SectionBody.svelte';
   import ParentCenterLock from './ParentCenterLock.svelte';
   import { SECTIONS, sectionHeading, type SectionId } from './sections';
@@ -76,13 +77,19 @@
   // value and same purpose as `/design`'s `CHIP_SCROLL_INSET_PX`.
   const NAV_ROW_CLEARANCE_PX = 24;
 
+  // The table of contents is the shared guide-rail sidebar; only the icon and
+  // the label differ per section, so the list is the whole configuration.
+  const navItems: SidebarTocItem<SectionId>[] = SECTIONS.map((section) => ({
+    id: section.id,
+    label: section.label,
+    icon: section.icon,
+  }));
+
   // Plain refs, deliberately untracked: the reopen reset reads the nav inside a
-  // frame callback and the scrollspy reads the sections and rows off events, so
-  // nothing re-renders when any of them arrives. The pane and its zoom target
-  // are `$state` because the scrollspy effect below has to start once they
-  // exist.
+  // frame callback and the scrollspy reads the sections off events, so nothing
+  // re-renders when any of them arrives. The pane and its zoom target are
+  // `$state` because the scrollspy effect below has to start once they exist.
   let navEl: HTMLElement | undefined;
-  const navRowEls: Partial<Record<SectionId, HTMLElement>> = {};
   const sectionEls: Partial<Record<SectionId, HTMLElement>> = {};
   let paneEl = $state<HTMLElement>();
   let zoomTarget = $state<HTMLElement>();
@@ -200,7 +207,7 @@
   // leaves the table of contents showing no highlight at all.
   function revealNavRow(id: SectionId, behavior: ScrollBehavior) {
     const nav = navEl;
-    const row = navRowEls[id];
+    const row = nav?.querySelector<HTMLElement>(`[data-section="${id}"]`);
     if (!nav || !row) return;
     const scale = visualScale(nav);
     const navRect = nav.getBoundingClientRect();
@@ -308,21 +315,14 @@
 
 <!-- Tablet / desktop: table of contents + one continuously scrolling pane. -->
 <div class="settings-split">
-  <nav class="settings-nav" aria-label="Settings sections" bind:this={navEl}>
-    {#each SECTIONS as section (section.id)}
-      <button
-        class="settings-nav-item"
-        data-section={section.id}
-        class:active={section.id === spiedSection}
-        aria-current={section.id === spiedSection ? 'location' : undefined}
-        onclick={(event) => jumpToSection(section.id, event.currentTarget)}
-        use:registerElement={registerIn(navRowEls, section.id)}
-      >
-        <SectionIcon icon={section.icon} class="settings-nav-icon" />
-        <span>{section.label}</span>
-      </button>
-    {/each}
-  </nav>
+  <div class="settings-nav" bind:this={navEl}>
+    <SidebarToc
+      items={navItems}
+      active={spiedSection}
+      label="Settings sections"
+      onSelect={jumpToSection}
+    />
+  </div>
   <div
     class="settings-pane"
     aria-busy={!fullyMounted}
@@ -352,6 +352,10 @@
         </section>
       {/each}
     </div>
+    <!-- Outside the zoom target: the cue is pane chrome, so it keeps its own
+         size while the reading content scales under it, and its sentinel still
+         marks the end of however tall that content has become. -->
+    <ScrollCue />
   </div>
 </div>
 
@@ -374,17 +378,19 @@
      browser chrome reduces the available height. Contained, so scrolling past
      either end never chains out to the pane.
 
-     The edge shades are the affordance for it, since a row clipped at a gap
+     The edge shades are the affordance for it, since a row clipped mid-height
      leaves the column looking finished and touch scrollbars don't paint until
      the flick starts. The two `local` covers scroll with the list and sit over
      the shade at whichever end is already at rest, so each shade appears only
-     while there is more list that way — the pattern needs no scroll listener. */
+     while there is more list that way — the pattern needs no scroll listener.
+     Both are backgrounds of this column, so they paint behind SidebarToc's
+     track rather than over it. This is the column's whole scroll cue and the
+     reason it carries no ScrollCue: the pair already says "more this way" at
+     each end, where the primitive speaks only for the bottom, so adding it
+     would stack a second fade on an edge that has one. */
   .settings-nav {
     flex-shrink: 0;
     width: 232px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
     overflow-y: auto;
     overflow-x: hidden;
     overscroll-behavior: contain;
@@ -393,51 +399,6 @@
       linear-gradient(transparent, var(--surface) 60%) bottom / 100% 24px no-repeat local,
       linear-gradient(var(--border), transparent) top / 100% 9px no-repeat scroll,
       linear-gradient(transparent, var(--border)) bottom / 100% 9px no-repeat scroll;
-  }
-
-  .settings-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    /* Tighter vertically than the hub rows: the taller icon carries most of the
-       row height on its own. */
-    padding: 8px 14px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--text-soft);
-    font-family: inherit;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    cursor: pointer;
-    text-align: left;
-    transition:
-      background var(--duration-fast) ease,
-      color var(--duration-fast) ease;
-  }
-
-  @media (hover: hover) {
-    .settings-nav-item:not(.active):hover {
-      background: var(--surface-hover);
-      color: var(--text-strong);
-    }
-  }
-
-  /* The nav indicates where the reading position is, not which page is open, and
-     several sections can be on screen at once — so the current one takes a soft
-     brand wash with a rail rather than a solid filled pill. --brand-text on
-     --brand-wash clears WCAG AA; --brand carries the rail, which holds no text. */
-  .settings-nav-item.active {
-    background: var(--brand-wash);
-    color: var(--brand-text);
-    box-shadow: inset 3px 0 0 var(--brand);
-  }
-
-  :global(.settings-nav-icon) {
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
   }
 
   .settings-pane {

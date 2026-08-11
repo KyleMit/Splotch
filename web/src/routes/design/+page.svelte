@@ -9,6 +9,7 @@
   import TypeSections from '$lib/components/styleguide/TypeSections.svelte';
   import VoiceSections from '$lib/components/styleguide/VoiceSections.svelte';
   import BrandMark from '$lib/components/page/BrandMark.svelte';
+  import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
   import SegmentedPicker, {
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
@@ -66,11 +67,20 @@
 
   type SectionId = (typeof sections)[number]['id'];
 
-  const tocGroups = [
-    { part: 'foundations', label: 'Foundations' },
-    { part: 'components', label: 'Components & chrome' },
-    { part: 'brand', label: 'Brand & voice' },
-  ] as const;
+  const PART_LABELS = {
+    foundations: 'Foundations',
+    components: 'Components & chrome',
+    brand: 'Brand & voice',
+  } as const satisfies Record<(typeof sections)[number]['part'], string>;
+
+  // The sidebar is the shared guide-rail table of contents; every item names
+  // its part and the component opens each run with that heading.
+  const tocItems: SidebarTocItem<SectionId>[] = sections.map((section) => ({
+    id: section.id,
+    label: section.label,
+    href: `#${section.id}`,
+    group: PART_LABELS[section.part],
+  }));
 
   let active = $state<SectionId>('color');
   // Plain element ref: only the scrollspy handler reads it, nothing reacts.
@@ -156,19 +166,10 @@
   </header>
 
   <div class="shell" id="top">
-    <nav class="toc" aria-label="Contents">
+    <div class="toc">
       <a class="back" href="/">← Back to drawing</a>
-      {#each tocGroups as group (group.part)}
-        <div class="toc-group">
-          <div class="toc-label">{group.label}</div>
-          <div class="toc-items">
-            {#each sections.filter((section) => section.part === group.part) as section (section.id)}
-              <a href="#{section.id}" class:active={active === section.id}>{section.label}</a>
-            {/each}
-          </div>
-        </div>
-      {/each}
-    </nav>
+      <SidebarToc items={tocItems} {active} label="Contents" />
+    </div>
 
     <main class="styleguide">
       <div class="hero">
@@ -378,42 +379,6 @@
     color: var(--brand-text);
     text-decoration: none;
     margin-bottom: var(--space-5);
-  }
-
-  .toc-group {
-    margin-bottom: 18px;
-  }
-
-  .toc-label {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-bold);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-soft);
-    padding: 0 10px;
-    margin-bottom: 6px;
-  }
-
-  .toc-items {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-
-  .toc-items a {
-    display: block;
-    padding: 6px 10px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-    text-decoration: none;
-    line-height: 1.3;
-    color: var(--text-soft);
-  }
-
-  .toc-items a.active {
-    background: var(--brand-wash);
-    color: var(--brand-text);
   }
 
   .styleguide {

@@ -1,16 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { PALETTE_COLORS } from '../palette';
 import {
   HEX_GRID_GEOMETRY,
   PALETTE_COLUMN_GEOMETRY,
   PALETTE_ROW_GEOMETRY,
+  type TrimStep,
   hexGridColumnLadderPx,
   hexGridRowLadderPx,
-  landscapeBonusRevealLadderPx,
   landscapeSingleColumnFloorPx,
-  landscapeSingleColumnTrimLadderPx,
-  landscapeTwoColumnLadderPx,
-  portraitLadderPx,
+  landscapeSingleColumnTrimSteps,
+  landscapeTwoColumnTrimSteps,
+  portraitTrimSteps,
 } from './trimGeometry';
 
 // The ladders are CSS, so the only thing that makes trimGeometry.ts a source of
@@ -45,8 +46,12 @@ function blockAfter(css: string, header: string, from = 0): string {
   throw new Error(`unbalanced braces after \`${header}\``);
 }
 
+/** The leading term of a `calc(<n><unit> * …)` counts, so a value the component
+ *  scales for roomy viewports is still read at its unscaled size. */
 function declaration(body: string, property: string, unit: string): number {
-  const match = body.match(new RegExp(`(?:^|[\\s;{])${property}:\\s*(-?\\d+(?:\\.\\d+)?)${unit}`));
+  const match = body.match(
+    new RegExp(`(?:^|[\\s;{])${property}:\\s*(?:calc\\(\\s*)?(-?\\d+(?:\\.\\d+)?)${unit}`)
+  );
   expect(match, `expected a \`${property}\` declaration in ${unit}`).not.toBeNull();
   return Number(match![1]);
 }
@@ -86,14 +91,22 @@ const has = (rule: MediaRule, name: string) => feature(rule, name) !== null;
 /** Rules a ladder could own — the rest select a layout or a hover capability. */
 const thresholdRules = (rules: MediaRule[]) => rules.filter((rule) => /px\)/.test(rule.condition));
 
+const hiddenRanks = (rule: MediaRule) =>
+  [...rule.body.matchAll(/data-trim-rank='(\d+)'/g)].map((match) => Number(match[1]));
+
+/** A ladder rule read back as the step it implements. */
+function trimStep(rule: MediaRule, threshold: 'max-width' | 'max-height'): TrimStep {
+  return { thresholdPx: feature(rule, threshold)!, ranks: hiddenRanks(rule) };
+}
+
 describe('ColorPalette', () => {
   const css = styleBlock('../components/ColorPalette.svelte');
   const rules = mediaRules(css);
+  const colorCount = PALETTE_COLORS.length;
 
   const landscape = rules.filter((rule) => rule.condition.includes('orientation: landscape'));
-  const bonusReveal = landscape.filter((rule) => rule.body.includes('.color-swatch.bonus'));
   const singleColumnTrim = landscape.filter(
-    (rule) => !bonusReveal.includes(rule) && has(rule, 'min-height') && has(rule, 'max-height')
+    (rule) => has(rule, 'min-height') && has(rule, 'max-height')
   );
   const layoutSwitch = landscape.filter((rule) => rule.body.includes('grid-template-columns'));
   const twoColumnTrim = landscape.filter(
@@ -104,13 +117,7 @@ describe('ColorPalette', () => {
   );
 
   it('classifies every @media rule, so no ladder is silently skipped', () => {
-    const classified = [
-      ...bonusReveal,
-      ...singleColumnTrim,
-      ...layoutSwitch,
-      ...twoColumnTrim,
-      ...portraitTrim,
-    ];
+    const classified = [...singleColumnTrim, ...layoutSwitch, ...twoColumnTrim, ...portraitTrim];
     expect(new Set(classified).size).toBe(classified.length);
     expect(classified).toHaveLength(thresholdRules(rules).length);
     expect(layoutSwitch).toHaveLength(1);
@@ -146,29 +153,34 @@ describe('ColorPalette', () => {
     expect(feature(layoutSwitch[0], 'min-height')).toBe(landscapeSingleColumnFloorPx());
   });
 
-  it('trims the single column, floored at that same height', () => {
-    expect(singleColumnTrim.map((rule) => feature(rule, 'max-height'))).toEqual(
-      landscapeSingleColumnTrimLadderPx()
+  it('trims the single column a swatch at a time, floored at that same height', () => {
+    expect(singleColumnTrim.map((rule) => trimStep(rule, 'max-height'))).toEqual(
+      landscapeSingleColumnTrimSteps(colorCount)
     );
     for (const rule of singleColumnTrim) {
       expect(feature(rule, 'min-height')).toBe(landscapeSingleColumnFloorPx());
     }
   });
 
-  it('opens the bonus slots above the core eight', () => {
-    expect(bonusReveal.map((rule) => feature(rule, 'min-height'))).toEqual(
-      landscapeBonusRevealLadderPx()
-    );
-  });
-
   it('drops a landscape two-column row at a time', () => {
-    expect(twoColumnTrim.map((rule) => feature(rule, 'max-height'))).toEqual(
-      landscapeTwoColumnLadderPx()
+    expect(twoColumnTrim.map((rule) => trimStep(rule, 'max-height'))).toEqual(
+      landscapeTwoColumnTrimSteps(colorCount)
     );
   });
 
-  it('drops a portrait core swatch at a time', () => {
-    expect(portraitTrim.map((rule) => feature(rule, 'max-width'))).toEqual(portraitLadderPx());
+  it('drops a portrait swatch at a time', () => {
+    expect(portraitTrim.map((rule) => trimStep(rule, 'max-width'))).toEqual(
+      portraitTrimSteps(colorCount)
+    );
+  });
+
+  it('gives every swatch below the roomiest step a rank to be trimmed by', () => {
+    const trimmed = new Set(
+      [...singleColumnTrim, ...twoColumnTrim, ...portraitTrim].flatMap(hiddenRanks)
+    );
+    expect([...trimmed].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: colorCount }, (_, rank) => rank)
+    );
   });
 });
 
@@ -178,11 +190,26 @@ describe('ColorPicker', () => {
   const rules = mediaRules(css);
   const rowTrim = rules.filter((rule) => has(rule, 'max-height'));
   const columnTrim = rules.filter((rule) => has(rule, 'max-width'));
+  const roomyScale = rules.filter((rule) => has(rule, 'min-width') && has(rule, 'min-height'));
 
   it('classifies every @media rule, so no ladder is silently skipped', () => {
-    const classified = [...rowTrim, ...columnTrim];
+    const classified = [...rowTrim, ...columnTrim, ...roomyScale];
     expect(new Set(classified).size).toBe(classified.length);
     expect(classified).toHaveLength(thresholdRules(rules).length);
+  });
+
+  // The ladders are derived from the unscaled geometry, so a scale step that
+  // reached down into one would silently invalidate every breakpoint below it.
+  // Its floor has to clear the widest rung — which the step is only free to
+  // ignore because it is above every one of them. dialogTabletScaling.test.ts
+  // owns the other half: that the floor is the shared large-tablet one.
+  it('keeps the roomy scale step clear of every trim rung', () => {
+    expect(roomyScale).toHaveLength(1);
+    const floor = Math.min(
+      feature(roomyScale[0], 'min-width')!,
+      feature(roomyScale[0], 'min-height')!
+    );
+    expect(floor).toBeGreaterThan(Math.max(...hexGridRowLadderPx(), ...hexGridColumnLadderPx()));
   });
 
   it('restates the honeycomb geometry', () => {

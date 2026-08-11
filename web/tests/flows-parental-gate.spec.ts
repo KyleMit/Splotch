@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { draw, gotoApp, openSettingsModal } from './helpers';
 import { openDrawer, openParentalGate, solveParentalGate } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -163,6 +163,27 @@ test('Parent Center is gated before its controls appear and persists every featu
   ).toHaveAttribute('aria-checked', 'true');
 });
 
+// Widest overrun any box in the Parent Center forces on its own content.
+// Degenerate boxes are skipped: a visually-hidden label is a clipped 1px square
+// holding a whole word, so it always overruns itself without ever being able to
+// push the layout sideways.
+const VISUALLY_HIDDEN_MAX_PX = 1;
+
+function worstHorizontalOverflow(settings: Locator) {
+  return settings
+    .locator('.parent-center')
+    .evaluate(
+      (root, degeneratePx) =>
+        [root, ...root.querySelectorAll<HTMLElement>('*')]
+          .filter((element) => element.clientWidth > degeneratePx)
+          .reduce(
+            (worst, element) => Math.max(worst, element.scrollWidth - element.clientWidth),
+            0
+          ),
+      VISUALLY_HIDDEN_MAX_PX
+    );
+}
+
 test('Parent Center card toggles fit a small mobile screen without horizontal scrolling', async ({
   page,
 }) => {
@@ -175,18 +196,40 @@ test('Parent Center card toggles fit a small mobile screen without horizontal sc
   await expect(cards).toHaveCount(5);
   await expect(cards.getByRole('radiogroup')).toHaveCount(5);
   await expect(cards.first().getByRole('radio')).toHaveCount(3);
+  await expect.poll(() => worstHorizontalOverflow(settings)).toBeLessThanOrEqual(1);
+});
+
+test('Parent Center reads as a mode matrix once the settings pane is wide enough', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1133, height: 744 });
+  await gotoApp(page);
+  const settings = await openSettingsModal(page);
+  // The table of contents unlocks Parent Center on the way to it, and gotoApp
+  // seeds the gate to Never, so the jump reveals the policies outright.
+  await settings.locator('.settings-nav .toc-row[data-section="parentCenter"]').click();
+
+  // The shared column headings replace the per-option labels, which stay in the
+  // DOM as each radio's accessible name.
+  await expect(settings.locator('.policy-header')).toBeVisible();
+  const aiImage = settings.getByRole('radiogroup', {
+    name: 'Generating an AI image parental gate frequency',
+  });
+  await expect(aiImage.getByRole('radio', { name: 'Per session' })).toBeVisible();
+
+  // Every policy's controls land in one shared column — that is what the matrix
+  // buys over the stacked cards, and it is only honest if nothing scrolls sideways.
   await expect
-    .poll(() =>
-      settings
-        .locator('.parent-center')
-        .evaluate((root) =>
-          [root, ...root.querySelectorAll<HTMLElement>('*')].reduce(
-            (worst, element) => Math.max(worst, element.scrollWidth - element.clientWidth),
-            0
-          )
-        )
-    )
-    .toBeLessThanOrEqual(1);
+    .poll(async () => {
+      const lefts = await settings
+        .locator('.policy-card .picker')
+        .evaluateAll((tracks) =>
+          tracks.map((track) => Math.round(track.getBoundingClientRect().x))
+        );
+      return new Set(lefts).size;
+    })
+    .toBe(1);
+  await expect.poll(() => worstHorizontalOverflow(settings)).toBeLessThanOrEqual(1);
 });
 
 test('iOS explains why external links cannot use Never without changing the policy', async ({

@@ -88,9 +88,10 @@ function clampVolume(v: number) {
   return Math.max(SOUND_VOLUME_MIN, Math.min(SOUND_VOLUME_MAX, Math.round(v)));
 }
 
-// Action-center button size, expressed as a percentage of the authored size
-// (100 = the default 60px/55px buttons). The range is symmetric around the
-// default so the slider sits half-filled at 100%.
+// Action-center button size, expressed as a percentage of whichever size-class
+// step the screen takes (ACTION_BUTTON_BASE_PX in actionButtonLayout.ts), so
+// 100% means the step rather than any one pixel size. The range is symmetric
+// around the default, so the slider sits half-filled at 100% on every screen.
 export const ACTION_BUTTON_SCALE_MIN = 70;
 export const ACTION_BUTTON_SCALE_MAX = 130;
 export const ACTION_BUTTON_SCALE_DEFAULT = 100;

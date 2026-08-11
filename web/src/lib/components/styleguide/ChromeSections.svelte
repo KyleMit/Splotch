@@ -127,6 +127,13 @@
       zone: 'settings',
     },
     {
+      name: 'Sidebar TOC',
+      file: 'nav/SidebarToc.svelte',
+      blurb:
+        'The guide-rail table of contents the wide Settings sidebar, /design and /changelog all wear — one hairline track down the list, with the reading position thickening and tinting its own segment. Each host keeps its own scrollspy; the component takes the answer and renders it.',
+      zone: 'settings',
+    },
+    {
       name: 'Error Screen',
       file: 'ErrorScreen.svelte',
       blurb: 'The crash boundary’s friendly restart surface.',

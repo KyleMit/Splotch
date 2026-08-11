@@ -62,8 +62,8 @@ test('scrolling to the very bottom highlights the last section', async ({ page }
 
   // The final section is usually too short to reach the reading line on its own,
   // so the end of the scroll is what elects it.
-  await expect(nav.locator('.settings-nav-item').last()).toHaveClass(/active/);
-  await expect(nav.locator('.settings-nav-item.active')).toHaveCount(1);
+  await expect(nav.locator('.toc-row').last()).toHaveClass(/active/);
+  await expect(nav.locator('.toc-row.active')).toHaveCount(1);
 });
 
 test('a highlight the pane elected is scrolled into the column', async ({ page }) => {
@@ -78,7 +78,7 @@ test('a highlight the pane elected is scrolled into the column', async ({ page }
   expect(await nav.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
   await page.locator('.settings-pane').evaluate((el) => el.scrollTo({ top: el.scrollHeight }));
 
-  await expect(nav.locator('.settings-nav-item').last()).toHaveClass(/active/);
+  await expect(nav.locator('.toc-row').last()).toHaveClass(/active/);
   await expect.poll(() => activeNavRowInsideColumn(page)).toBe(true);
 });
 

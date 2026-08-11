@@ -2,6 +2,7 @@ import { expect, type JSHandle, type Locator, type Page } from '@playwright/test
 
 import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
+import { paletteHex } from '../src/lib/palette';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
@@ -20,17 +21,24 @@ export const IPAD_UA =
 export const IPHONE_CHROME_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/124 Mobile/15E148 Safari/604.1';
 
+// Looked up rather than copied, so a retuned hue can't leave a spec clicking a
+// selector that matches nothing (the swatch carries its hex as data-color).
 export const TEST_PALETTE = {
-  purple: '#AB71E1',
-  blue: '#62A2E9',
-  teal: '#4FC4C0',
-  green: '#8CC864',
-  yellow: '#F9D24F',
-  orange: '#F89C45',
-  brown: '#B5835A',
-  red: '#EC534E',
-  pink: '#F47CB0',
-  black: '#0a0b10',
+  purple: paletteHex('Purple'),
+  indigo: paletteHex('Indigo'),
+  blue: paletteHex('Blue'),
+  teal: paletteHex('Teal'),
+  mint: paletteHex('Mint'),
+  green: paletteHex('Green'),
+  lime: paletteHex('Lime'),
+  yellow: paletteHex('Yellow'),
+  orange: paletteHex('Orange'),
+  brown: paletteHex('Brown'),
+  red: paletteHex('Red'),
+  pink: paletteHex('Pink'),
+  magenta: paletteHex('Magenta'),
+  grey: paletteHex('Grey'),
+  black: paletteHex('Black'),
 };
 
 export const PICKER_GREEN = COLOR_FAMILIES.find((family) => family.name === 'greens')!.shades[4];
@@ -184,7 +192,7 @@ export async function settleSettingsPane(pane: Locator) {
             resolve();
           } else if (++frames > budget) {
             const sections = el.querySelectorAll('.settings-section').length;
-            const rows = document.querySelectorAll('.settings-nav-item').length;
+            const rows = document.querySelectorAll('.settings-nav .toc-row').length;
             reject(
               new Error(
                 `Settings pane still busy after ${budget} frames — ${sections} of ${rows} sections in`
@@ -219,13 +227,24 @@ export async function openSettingsModal(page: Page) {
   return modal;
 }
 
+// Drill the phone Settings hub into one of its sections, identified by a field
+// only that section renders. The rows sit on a scroller that idle-mounts and
+// flies in, so the first tap can land before the section is wired — the hazard
+// openSettingsModal itself rides out.
+export async function openHubSection(page: Page, section: string, expectedField: string) {
+  await expect(async () => {
+    await page.locator(`.hub-row[data-section="${section}"]`).click({ timeout: 1000 });
+    await expect(page.locator(expectedField)).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 10_000 });
+}
+
 // The highlighted Settings row's own seat, measured against the column that
 // holds it. Read off the nav rather than the browser viewport: the column is its
 // own scroller wherever the section list outgrows it, and that clipping is the
 // thing at stake.
 export function activeNavRowInsideColumn(page: Page) {
-  return page.locator('.settings-nav .settings-nav-item.active').evaluate((row) => {
-    const box = row.parentElement!.getBoundingClientRect();
+  return page.locator('.settings-nav .toc-row.active').evaluate((row) => {
+    const box = row.closest('.settings-nav')!.getBoundingClientRect();
     const seat = row.getBoundingClientRect();
     return seat.top >= box.top - 0.5 && seat.bottom <= box.bottom + 0.5;
   });

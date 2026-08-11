@@ -1,14 +1,11 @@
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { GENERAL_DESIGN_NOTES, surfaceDesignNote } from './page-inventory-design-notes.mjs';
 
-const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 2;
-const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 3;
+const PAGE_INVENTORY_MANIFEST_SCHEMA_VERSION = 3;
+const PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION = 4;
 export const PAGE_INVENTORY_REVIEW_CONTRACT = 'isolated-image-description-v1';
 export const PAGE_INVENTORY_SEVERITIES = ['pass', 'low', 'medium', 'high'];
-export const PAGE_INVENTORY_THEME_SUPPORT = {
-  THEMED: 'themed',
-  LIGHT_ONLY: 'light-only',
-};
 export const PAGE_INVENTORY_THEMES = [
   {
     id: 'light',
@@ -26,7 +23,6 @@ export const PAGE_INVENTORY_THEMES = [
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const ORIENTATIONS = ['portrait', 'landscape'];
-const THEME_SUPPORT_VALUES = Object.values(PAGE_INVENTORY_THEME_SUPPORT);
 
 function readJson(path, label) {
   try {
@@ -91,9 +87,6 @@ function validateCaptureRecord(record, location, viewports, themes) {
   if (!themes.has(record.theme)) {
     throw new Error(`${location} references unknown theme ${record.theme}`);
   }
-  if (record.theme_support !== undefined && !THEME_SUPPORT_VALUES.includes(record.theme_support)) {
-    throw new Error(`${location}.theme_support is invalid: ${record.theme_support}`);
-  }
   if (record.surface_intent !== undefined) {
     requireString(record.surface_intent, `${location}.surface_intent`);
   }
@@ -122,16 +115,20 @@ export function captureReviewId(item, viewport, theme) {
   return `${item.group}--${item.id}--${viewport.id}--${theme.id}`;
 }
 
+// The framing carries the same obligation as the notes themselves: it may state
+// what was decided, never how the image measures up to it. A reviewer told the
+// verdict before looking stops assessing, and this sentence reaches the
+// night-mode reviewers whose whole remit is contrast and legibility.
+const GENERAL_DESIGN_NOTE_BRIEF = `Design decisions already settled for this app, given as context for what you are looking at rather than as a judgement of it: ${GENERAL_DESIGN_NOTES.join(' ')}`;
+
 function captureReviewDescription(item, viewport, theme) {
-  const intent = item.intent ? ` Design intent: ${item.intent}` : '';
-  const reviewFocus =
-    item.themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY && theme.id === 'dark'
-      ? 'This route intentionally remains light in night mode. Assess only the pinned light palette’s contrast and legibility; do not flag the absence of a dark ground. Ignore layout and responsive composition.'
-      : theme.reviewFocus;
-  return `${item.title}. ${item.description}${intent} Captured in ${theme.label.toLowerCase()} on ${viewport.device} in ${viewport.orientation} at ${viewport.width} × ${viewport.height}. ${reviewFocus} Judge only visible evidence. Use severity pass, low, medium, or high. A pass means there is no actionable visible issue and requires a null recommendation; otherwise give one specific recommendation. Return concise issue-category tags.`;
+  const note = surfaceDesignNote(item.group, item.id);
+  const intent = note ? ` Design intent: ${note}` : '';
+  return `${item.title}. ${item.description}${intent} Captured in ${theme.label.toLowerCase()} on ${viewport.device} in ${viewport.orientation} at ${viewport.width} × ${viewport.height}. ${theme.reviewFocus} ${GENERAL_DESIGN_NOTE_BRIEF} Judge only visible evidence. Use severity pass, low, medium, or high. A pass means there is no actionable visible issue and requires a null recommendation; otherwise give one specific recommendation. Return concise issue-category tags.`;
 }
 
 export function captureRecord(item, viewport, theme, image, sha256) {
+  const note = surfaceDesignNote(item.group, item.id);
   return {
     review_id: captureReviewId(item, viewport, theme),
     review_description: captureReviewDescription(item, viewport, theme),
@@ -141,8 +138,7 @@ export function captureRecord(item, viewport, theme, image, sha256) {
     surface_id: item.id,
     surface_title: item.title,
     surface_description: item.description,
-    ...(item.intent ? { surface_intent: item.intent } : {}),
-    theme_support: item.themeSupport ?? PAGE_INVENTORY_THEME_SUPPORT.THEMED,
+    ...(note ? { surface_intent: note } : {}),
     source: item.source,
     viewport_id: viewport.id,
     viewport_label: viewport.category,
@@ -156,29 +152,23 @@ export function captureRecord(item, viewport, theme, image, sha256) {
 }
 
 export function validateThemeCaptureDifferences(captures, surfaces) {
-  const surfaceByKey = new Map(surfaces.map((item) => [`${item.group}/${item.id}`, item]));
+  const surfaceKeys = new Set(surfaces.map((item) => `${item.group}/${item.id}`));
   const pairs = new Map();
   for (const capture of captures) {
     const surfaceKey = `${capture.group}/${capture.surface_id}`;
-    const item = surfaceByKey.get(surfaceKey);
-    if (!item) throw new Error(`Capture references unknown surface ${surfaceKey}`);
-    const themeSupport = item.themeSupport ?? PAGE_INVENTORY_THEME_SUPPORT.THEMED;
-    if (!THEME_SUPPORT_VALUES.includes(themeSupport)) {
-      throw new Error(`Surface ${surfaceKey} has invalid theme support: ${themeSupport}`);
+    if (!surfaceKeys.has(surfaceKey)) {
+      throw new Error(`Capture references unknown surface ${surfaceKey}`);
     }
     const pairKey = `${surfaceKey}/${capture.viewport_id}`;
-    const pair = pairs.get(pairKey) ?? { item, captures: new Map() };
-    pair.captures.set(capture.theme, capture);
-    pairs.set(pairKey, pair);
+    const themeCaptures = pairs.get(pairKey) ?? new Map();
+    themeCaptures.set(capture.theme, capture);
+    pairs.set(pairKey, themeCaptures);
   }
-  for (const [pairKey, { item, captures: themeCaptures }] of pairs) {
-    if (item.themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY) continue;
+  for (const [pairKey, themeCaptures] of pairs) {
     const light = themeCaptures.get('light');
     const dark = themeCaptures.get('dark');
-    if (light?.sha256 === dark?.sha256) {
-      throw new Error(
-        `Themed surface ${pairKey} produced pixel-identical light and night captures`
-      );
+    if (light && dark && light.sha256 === dark.sha256) {
+      throw new Error(`Surface ${pairKey} produced pixel-identical light and night captures`);
     }
   }
 }
@@ -246,6 +236,13 @@ function validateCaptureManifest(manifest) {
   }
   const images = new Set();
   const reviewIds = new Set();
+  // An isolated reviewer receives exactly two semantic inputs: the image and
+  // the review description. Two captures that share both are the same review
+  // twice — one of them buys nothing, and any severity difference between them
+  // is reviewer nondeterminism rather than a judgement about a named surface.
+  // Divergence across captures that share only pixels is legitimate and is
+  // recorded by pixelIdenticalReviewGroups instead.
+  const reviewInputs = new Map();
   const surfaceCaptures = new Map();
   for (const [index, capture] of manifest.captures.entries()) {
     const location = `Capture manifest entry ${index + 1}`;
@@ -256,6 +253,14 @@ function validateCaptureManifest(manifest) {
       throw new Error(`${location} duplicates review_id ${capture.review_id}`);
     }
     reviewIds.add(capture.review_id);
+    const reviewInput = `${capture.sha256} ${capture.review_description}`;
+    const twinReviewId = reviewInputs.get(reviewInput);
+    if (twinReviewId) {
+      throw new Error(
+        `Capture manifest entries ${twinReviewId} and ${capture.review_id} are indistinguishable reviews: identical pixels and an identical review description`
+      );
+    }
+    reviewInputs.set(reviewInput, capture.review_id);
     const surfaceKey = `${capture.group}/${capture.surface_id}`;
     const ids = surfaceCaptures.get(surfaceKey) ?? new Set();
     const captureKey = `${capture.viewport_id}/${capture.theme}`;
@@ -336,22 +341,35 @@ export function validateCritiqueEntries(entries, manifest, { allowPartial = fals
   return validated;
 }
 
-export function validateCritiqueConsistency(entries, manifest, { allowPartial = false } = {}) {
-  const validated = validateCritiqueEntries(entries, manifest, { allowPartial });
+// A surface that renders a shared shell — the wide Settings hub opening on its
+// first section, or the compact landscape quick toggles every section collapses
+// into — captures byte-identically under more than one name. Each of those is
+// still its own review, because the reviewer also read a description naming the
+// surface it expected, and the same pixels mean different things against
+// different expectations. So the severities are kept apart and the sharing is
+// reported rather than reconciled.
+export function pixelIdenticalReviewGroups(captures, reviews) {
   const groups = new Map();
-  for (const capture of manifest.captures) {
-    const entry = validated.get(capture.review_id);
-    if (!entry) continue;
+  for (const capture of captures) {
+    const review = reviews.get(capture.review_id);
+    if (!review) continue;
     const groupKey = `${capture.sha256}--${capture.theme}`;
-    const previous = groups.get(groupKey);
-    if (previous && previous.entry.severity !== entry.severity) {
-      throw new Error(
-        `Pixel-identical ${capture.theme} reviews ${previous.capture.review_id} and ${capture.review_id} have conflicting severities ${previous.entry.severity} and ${entry.severity}`
-      );
-    }
-    groups.set(groupKey, { capture, entry });
+    const group = groups.get(groupKey) ?? {
+      sha256: capture.sha256,
+      theme: capture.theme,
+      reviews: [],
+    };
+    group.reviews.push({ review_id: capture.review_id, severity: review.severity });
+    groups.set(groupKey, group);
   }
-  return validated;
+  return [...groups.values()]
+    .filter((group) => group.reviews.length > 1)
+    .map(({ sha256, theme, reviews: grouped }) => ({
+      sha256,
+      theme,
+      divergent: new Set(grouped.map((review) => review.severity)).size > 1,
+      reviews: grouped,
+    }));
 }
 
 export function readDesignCritique(path, manifest, options) {
@@ -370,7 +388,7 @@ export function expectedCritiqueReviews(manifest) {
 }
 
 export function finalizeDesignCritique(manifest, entries, { allowPartial = false } = {}) {
-  const validated = validateCritiqueConsistency(entries, manifest, { allowPartial });
+  const validated = validateCritiqueEntries(entries, manifest, { allowPartial });
   const orderedEntries = manifest.captures
     .filter((capture) => validated.has(capture.review_id))
     .map((capture) => ({
@@ -389,6 +407,7 @@ export function finalizeDesignCritique(manifest, entries, { allowPartial = false
       orderedEntries.filter((entry) => entry.severity === severity).length,
     ])
   );
+  const pixelIdenticalGroups = pixelIdenticalReviewGroups(manifest.captures, validated);
   return {
     schema_version: PAGE_INVENTORY_CRITIQUE_SCHEMA_VERSION,
     report_type: 'light-dark-responsive-page-inventory-design-critique',
@@ -401,7 +420,13 @@ export function finalizeDesignCritique(manifest, entries, { allowPartial = false
       themes: manifest.themes,
       viewports: manifest.viewports,
     },
-    summary: { severity_counts: severityCounts },
+    summary: {
+      severity_counts: severityCounts,
+      pixel_identical_groups: pixelIdenticalGroups.length,
+      divergent_pixel_identical_groups: pixelIdenticalGroups.filter((group) => group.divergent)
+        .length,
+    },
+    pixel_identical_groups: pixelIdenticalGroups,
     entries: orderedEntries,
   };
 }

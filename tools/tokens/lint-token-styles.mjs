@@ -56,27 +56,10 @@ const BASELINE = new Map(
     // the Brush/Stroke Width popovers (black reads against every pen color and
     // both papers).
     'app.css': 3,
-    // Light-only page (ADR-0071 amendment) — pins PageShell's themed
-    // --page-* defaults to the same light values /android-beta pins (eleven),
-    // plus the highlight panel's brand-tinted border and row hairline (two).
-    'routes/privacy/+page.svelte': 13,
-    // Light-only full release history, matching /privacy's PageShell palette.
-    'routes/changelog/+page.svelte': 11,
-    // Light-only page (ADR-0071 amendment) — a palette pinned to a light
-    // ground, declared once as custom properties at the top of its <style>
-    // block. Its eleven pin PageShell's themed --page-* defaults (whose dark
-    // values would half-dark-theme the page), including /privacy's AA-safe
-    // #7c4dcf link and the step buttons' fill; the other five are the
-    // troubleshooting panel's fill, border, hover pair, and chevron disc border.
-    'routes/android-beta/+page.svelte': 16,
-    // The beta page's step ledger, light-only with the page it renders on: each
-    // step's crayon hue in two strengths — a wash behind the numeral and under
-    // the callout, and a darkened ink for both of those texts (the raw palette
-    // hues fail contrast on either ground) — plus the connector rail and the
-    // callout body ink. The crayon chips and the callout accent rails are NOT
-    // here: those read their hexes out of lib/palette.ts at render, which
-    // palette-source.test.mjs requires.
-    'lib/components/androidBeta/StepLedger.svelte': 10,
+    // /privacy, /changelog, /android-beta and its StepLedger are absent on
+    // purpose: they pinned a light-only --page-* palette until every page was
+    // made to follow night mode, and now hold zero raw hexes. A new one there
+    // is a page opting out of the theme again.
     // Photographic stage/polaroid whites.
     'lib/components/AiImageResult.svelte': 2,
     // The AI disclosure strip's ink and its Report accent. The strip is the one

@@ -102,6 +102,16 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
   });
 }
 
+// Both Settings shells render a section row as a button stamped with the section
+// id — the phone hub's list and the wide sidebar's table of contents — so the
+// attribute addresses either without naming a shell's classes, which are styling
+// and get renamed with it. The tag separates a row from the wide pane's own
+// `.settings-section` wrappers, which carry the same attribute.
+// tools/perf/tests/perf-actions.test.mjs holds this contract against both shells.
+const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
+const settingsSectionRow = (section) =>
+  `#settingsModal button[data-section=${JSON.stringify(section)}]`;
+
 export function profilingUrl(appUrl, repeat) {
   const url = new URL(appUrl);
   url.searchParams.set('perf-actions', `${Date.now()}-${repeat}`);
@@ -144,16 +154,11 @@ async function setNativeRotationLock(execute, locked) {
     'Settings for rotation setup'
   );
   if (!(await execute(`return document.querySelector('#lockRotationToggle') !== null;`))) {
-    const appearanceSelector = await execute(`
-      if (document.querySelector('#settingsModal .settings-nav-item')) {
-        return '#settingsModal .settings-nav-item:first-child';
-      }
-      if (document.querySelector('#settingsModal .hub-row')) {
-        return '#settingsModal .hub-list li:first-child .hub-row';
-      }
-      return null;
-    `);
-    if (appearanceSelector) {
+    const appearanceSelector = settingsSectionRow('appearance');
+    const appearanceRowExists = await execute(
+      `return document.querySelector(${JSON.stringify(appearanceSelector)}) !== null;`
+    );
+    if (appearanceRowExists) {
       await clickSetupElement(execute, appearanceSelector);
       await waitForReady(
         execute,
@@ -733,17 +738,16 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   ) {
     await waitForReady(
       execute,
-      `document.querySelector('#settingsModal .settings-nav-item') !== null || document.querySelector('#settingsModal .hub-list') !== null`,
+      `document.querySelector('${SETTINGS_SECTION_ROWS}') !== null`,
       'Settings navigation'
     );
   }
+  // The wide shell is the one that stacks every section in a single scrolling
+  // pane, so the pane's presence is what says which shell is up — the rows
+  // themselves are addressed identically in both.
   const settingsModalUsesSidebar = await execute(
-    `return document.querySelector('#settingsModal .settings-nav-item') !== null;`
+    `return document.querySelector('#settingsModal .settings-pane') !== null;`
   );
-  const settingsSectionSelector = (section) =>
-    settingsModalUsesSidebar
-      ? `#settingsModal .settings-nav-item[data-section=${JSON.stringify(section)}]`
-      : `#settingsModal .hub-row[data-section=${JSON.stringify(section)}]`;
   const ensureSettingsHub = async () => {
     if (
       settingsModalUsesSidebar ||
@@ -756,21 +760,18 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   };
   const openSettingsSection = async (section, ready, hint) => {
     await ensureSettingsHub();
-    await clickSetupElement(execute, settingsSectionSelector(section));
+    await clickSetupElement(execute, settingsSectionRow(section));
     await waitForReady(execute, ready, hint);
   };
 
   if (actions.has('settings-sections')) {
     const sectionIds = await execute(`
-      return [...document.querySelectorAll(
-        ${JSON.stringify(
-          settingsModalUsesSidebar ? '#settingsModal .settings-nav-item' : '#settingsModal .hub-row'
-        )}
-      )].map((element) => element.dataset.section).filter(Boolean);
+      return [...document.querySelectorAll('${SETTINGS_SECTION_ROWS}')]
+        .map((element) => element.dataset.section).filter(Boolean);
     `);
     for (const section of sectionIds.slice(1)) {
       await ensureSettingsHub();
-      const selector = settingsSectionSelector(section);
+      const selector = settingsSectionRow(section);
       const label = await execute(
         `return document.querySelector(${JSON.stringify(
           settingsModalUsesSidebar ? selector : `${selector} .hub-title`

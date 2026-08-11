@@ -7,14 +7,21 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { Window } from 'happy-dom';
+import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { writePageInventoryFeedback } from '../attach-page-inventory-feedback.mjs';
 import { finalizePageInventoryCritique } from '../finalize-page-inventory-critique.mjs';
 import {
   allSurfaces,
+  discoverPageRoutes,
   generateOutputAtomically,
+  generatePageInventory,
+  parsePageInventoryOptions,
+  SECTION_LANDED_BAND_PX,
+  selectSpotCheckItems,
   settingsSectionRowSelector,
 } from '../gen-page-inventory.mjs';
 import {
@@ -23,13 +30,18 @@ import {
   reviewerArgs,
   runReviewerProcess,
 } from '../run-page-inventory-critiques.mjs';
+import { assertCaptureRendered } from '../lib/page-inventory-capture.mjs';
+import {
+  GENERAL_DESIGN_NOTES,
+  SURFACE_DESIGN_NOTES,
+  designNoteKey,
+} from '../lib/page-inventory-design-notes.mjs';
 import {
   captureRecord,
   captureReviewId,
   createCaptureManifest,
   finalizeDesignCritique,
   PAGE_INVENTORY_REVIEW_CONTRACT,
-  PAGE_INVENTORY_THEME_SUPPORT,
   readDesignCritique,
   sha256File,
   validateThemeCaptureDifferences,
@@ -40,6 +52,7 @@ import {
   attachExpectedCapturePaths,
   inventoryCaptureKey,
 } from '../lib/page-inventory-report.mjs';
+import { ROOT } from '../../lib/proc.mjs';
 
 const fixtures = [];
 
@@ -47,6 +60,92 @@ function fixture() {
   const root = mkdtempSync(join(tmpdir(), 'splotch-page-inventory-'));
   fixtures.push(root);
   return root;
+}
+
+function writeFlatWebp(path, { width, height }) {
+  return sharp({ create: { width, height, channels: 3, background: '#ffffff' } })
+    .webp()
+    .toFile(path);
+}
+
+function writeTexturedWebp(path, { width, height }) {
+  const pixels = Buffer.alloc(width * height * 3);
+  for (let index = 0; index < pixels.length; index += 1) pixels[index] = (index * 37) % 256;
+  return sharp(pixels, { raw: { width, height, channels: 3 } })
+    .webp()
+    .toFile(path);
+}
+
+const COMPONENTS = join(ROOT, 'web/src/lib/components');
+
+// A Svelte expression can contain `>` — an arrow function in an event handler —
+// so an opening tag ends at the first `>` outside braces, not the first one.
+function openingTagAround(source, index) {
+  const start = source.lastIndexOf('<', index);
+  let depth = 0;
+  for (let cursor = start; cursor < source.length; cursor += 1) {
+    if (source[cursor] === '{') depth += 1;
+    else if (source[cursor] === '}') depth -= 1;
+    else if (source[cursor] === '>' && depth === 0) return source.slice(start, cursor + 1);
+  }
+  throw new Error(`Unterminated opening tag at ${index}`);
+}
+
+// Every `{…}` value becomes a plain string so an HTML parser can take the tag;
+// the one under test becomes the id the selector asks for.
+function staticizeExpressions(tag, attribute, value) {
+  let html = '';
+  let cursor = 0;
+  while (cursor < tag.length) {
+    const open = tag.indexOf('{', cursor);
+    if (open === -1) return html + tag.slice(cursor);
+    let depth = 0;
+    let close = open;
+    while (close < tag.length) {
+      if (tag[close] === '{') depth += 1;
+      else if (tag[close] === '}' && (depth -= 1) === 0) break;
+      close += 1;
+    }
+    html += tag.slice(cursor, open);
+    html += html.endsWith(`${attribute}=`) ? `"${value}"` : '"expression"';
+    cursor = close + 1;
+  }
+  return html;
+}
+
+// Every element a component stamps `attribute` on, parsed out of the component
+// the app actually ships, so a selector can be matched against real markup.
+function markupElementsStamping(component, attribute, value) {
+  const source = readFileSync(join(COMPONENTS, component), 'utf8');
+  const { document } = new Window();
+  const elements = [];
+  for (
+    let anchor = source.indexOf(`${attribute}={`);
+    anchor !== -1;
+    anchor = source.indexOf(`${attribute}={`, anchor + 1)
+  ) {
+    const html = staticizeExpressions(openingTagAround(source, anchor), attribute, value);
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    const element = container.firstElementChild;
+    if (element?.getAttribute(attribute) !== value) {
+      throw new Error(`${component} did not parse into a ${attribute} element: ${html}`);
+    }
+    elements.push(element);
+  }
+  if (!elements.length) throw new Error(`${component} stamps no ${attribute} expression`);
+  return elements;
+}
+
+// Two flat halves, at 0 and at `peakLevel`, put each channel's standard
+// deviation at exactly half the level — a spread that can be placed either side
+// of the blankness floor. Lossless, so the encoder cannot move it.
+function writeTwoLevelWebp(path, { width, height }, peakLevel) {
+  const pixels = Buffer.alloc(width * height * 3);
+  pixels.fill(peakLevel, 0, Math.floor(pixels.length / 2));
+  return sharp(pixels, { raw: { width, height, channels: 3 } })
+    .webp({ lossless: true })
+    .toFile(path);
 }
 
 function inventoryItem(overrides = {}) {
@@ -72,6 +171,26 @@ function writeCaptures(out, item) {
     for (const viewport of PAGE_INVENTORY_VIEWPORTS) {
       const path = item.captures[inventoryCaptureKey(viewport, theme)];
       captures.push(captureRecord(item, viewport, theme, path, sha256File(join(out, path))));
+    }
+  }
+  const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
+  writeFileSync(join(out, 'capture-manifest.json'), JSON.stringify(manifest));
+  return manifest;
+}
+
+// The wide Settings hub opening on its first section, and the compact landscape
+// shell every section collapses into: several surfaces capture byte-identically
+// at the same viewport and theme, under their own names and descriptions.
+function writeSharedShellCaptures(out, items) {
+  const captures = [];
+  for (const theme of PAGE_INVENTORY_THEMES) {
+    for (const viewport of PAGE_INVENTORY_VIEWPORTS) {
+      for (const item of items) {
+        const path = item.captures[inventoryCaptureKey(viewport, theme)];
+        mkdirSync(join(out, path, '..'), { recursive: true });
+        writeFileSync(join(out, path), `shared shell ${viewport.id} ${theme.id}\n`);
+        captures.push(captureRecord(item, viewport, theme, path, sha256File(join(out, path))));
+      }
     }
   }
   const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
@@ -140,7 +259,7 @@ describe('page inventory output', () => {
     const item = inventoryItem();
     expect(Object.values(item.captures)).toHaveLength(16);
     const manifest = writeCaptures(fixture(), item);
-    expect(manifest.schema_version).toBe(2);
+    expect(manifest.schema_version).toBe(3);
     expect(manifest.captures).toHaveLength(16);
     expect(new Set(manifest.captures.map(({ review_id: reviewId }) => reviewId)).size).toBe(16);
     const night = manifest.captures.find(({ theme }) => theme === 'dark');
@@ -152,64 +271,254 @@ describe('page inventory output', () => {
     expect(night.review_description).toContain('Ignore layout and responsive composition');
   });
 
-  it('includes design intent and light-only night guidance in standalone review inputs', () => {
-    const item = inventoryItem({
-      intent: 'This route deliberately keeps its light reading palette.',
-      themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-    });
+  it('omits the internal /dev harnesses the app still ships', () => {
+    expect(existsSync(join(ROOT, 'web/src/routes/dev/+page.svelte'))).toBe(true);
+    expect(discoverPageRoutes().filter((route) => route.startsWith('/dev'))).toEqual([]);
+    expect(allSurfaces().filter(({ id }) => id.startsWith('dev'))).toEqual([]);
+  });
+
+  it('carries the general design notes and the per-surface note into every review input', () => {
+    const item = inventoryItem({ group: 'controls', id: 'clear-coachmark' });
+    const note = SURFACE_DESIGN_NOTES[designNoteKey('controls', 'clear-coachmark')];
     const manifest = writeCaptures(fixture(), item);
-    const night = manifest.captures.find(({ theme }) => theme === 'dark');
 
-    expect(night).toMatchObject({
-      surface_intent: item.intent,
-      theme_support: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-    });
-    expect(night.review_description).toContain(`Design intent: ${item.intent}`);
-    expect(night.review_description).toContain('intentionally remains light in night mode');
-    expect(night.review_description).toContain('do not flag the absence of a dark ground');
+    for (const capture of manifest.captures) {
+      expect(capture.surface_intent).toBe(note);
+      expect(capture.review_description).toContain(`Design intent: ${note}`);
+      for (const general of GENERAL_DESIGN_NOTES) {
+        expect(capture.review_description).toContain(general);
+      }
+    }
+    const plain = writeCaptures(fixture(), inventoryItem()).captures[0];
+    expect(plain.surface_intent).toBeUndefined();
+    expect(plain.review_description).not.toContain('Design intent:');
+    expect(plain.review_description).toContain(GENERAL_DESIGN_NOTES[0]);
   });
 
-  it('declares the intentional light-only routes and bare engine harness', () => {
-    const surfaces = allSurfaces();
-    expect(
-      surfaces
-        .filter(({ themeSupport }) => themeSupport === PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY)
-        .map(({ id }) => id)
-    ).toEqual(['android-beta', 'changelog', 'privacy']);
-    expect(surfaces.find(({ id }) => id === 'dev-engine')?.intent).toContain(
-      'bare canvas; the unframed canvas is expected'
-    );
+  it('keys every per-surface design note to a surface the inventory captures', () => {
+    const captured = new Set(allSurfaces().map((item) => designNoteKey(item.group, item.id)));
+    expect(Object.keys(SURFACE_DESIGN_NOTES).filter((key) => !captured.has(key))).toEqual([]);
+    expect(Object.keys(SURFACE_DESIGN_NOTES).length).toBeGreaterThan(0);
   });
 
-  it('rejects pixel-identical theme pairs unless the surface is declared light-only', () => {
+  it('rejects pixel-identical theme pairs for every surface', () => {
     const themed = inventoryItem();
-    const themedManifest = writeCaptures(fixture(), themed);
-    const themedLight = themedManifest.captures.find(({ theme }) => theme === 'light');
-    const themedDark = themedManifest.captures.find(
-      ({ theme, viewport_id: viewportId }) =>
-        theme === 'dark' && viewportId === themedLight.viewport_id
+    const manifest = writeCaptures(fixture(), themed);
+    const light = manifest.captures.find(({ theme }) => theme === 'light');
+    const dark = manifest.captures.find(
+      ({ theme, viewport_id: viewportId }) => theme === 'dark' && viewportId === light.viewport_id
     );
-    themedDark.sha256 = themedLight.sha256;
+    dark.sha256 = light.sha256;
 
-    expect(() => validateThemeCaptureDifferences(themedManifest.captures, [themed])).toThrow(
+    expect(() => validateThemeCaptureDifferences(manifest.captures, [themed])).toThrow(
       'produced pixel-identical light and night captures'
     );
-
-    const lightOnly = inventoryItem({
-      themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-    });
-    expect(() =>
-      validateThemeCaptureDifferences(themedManifest.captures, [lightOnly])
-    ).not.toThrow();
   });
 
-  it('targets only the responsive Settings navigation row for section captures', () => {
-    expect(settingsSectionRowSelector('appearance', 375)).toBe(
-      '.hub-row[data-section="appearance"]'
+  it('rejects a capture whose pixels never rendered', async () => {
+    const root = fixture();
+    const viewport = { id: 'iphone-13-mini', width: 60, height: 40 };
+    const blank = join(root, 'blank.webp');
+    const drawn = join(root, 'drawn.webp');
+    await writeFlatWebp(blank, viewport);
+    await writeTexturedWebp(drawn, viewport);
+
+    await expect(assertCaptureRendered(blank, viewport)).rejects.toThrow(
+      'near-uniform pixels (peak channel stddev'
     );
-    expect(settingsSectionRowSelector('appearance', 744)).toBe(
-      '.settings-nav-item[data-section="appearance"]'
+    await expect(assertCaptureRendered(drawn, viewport)).resolves.toBeUndefined();
+    await expect(
+      assertCaptureRendered(drawn, { ...viewport, width: viewport.width + 1 })
+    ).rejects.toThrow('expected WebP 61×40');
+  });
+
+  // A page that renders a fraction of itself is the failure the floor is for, and
+  // it lands far closer to flat than to a real surface — so the floor has to be
+  // pinned, not merely somewhere between an empty frame and a busy one. These two
+  // captures score 5.5 and 6.5 levels, which holds it to that band.
+  it('rejects a capture whose spread sits below the blankness floor', async () => {
+    const root = fixture();
+    const viewport = { id: 'iphone-13-mini', width: 60, height: 40 };
+    const belowFloor = join(root, 'below-floor.webp');
+    const aboveFloor = join(root, 'above-floor.webp');
+    await writeTwoLevelWebp(belowFloor, viewport, 11);
+    await writeTwoLevelWebp(aboveFloor, viewport, 13);
+
+    await expect(assertCaptureRendered(belowFloor, viewport)).rejects.toThrow(
+      'near-uniform pixels (peak channel stddev 5.50'
     );
+    await expect(assertCaptureRendered(aboveFloor, viewport)).resolves.toBeUndefined();
+  });
+
+  // Every viewport has its own width × height, and a capture is checked against
+  // its own before it is recorded — so a shot that came back at another
+  // viewport's size cannot reach the manifest, and two captures of one surface
+  // cannot be byte-identical across viewports for a cross-capture check to find.
+  it('gives every viewport dimensions no other viewport shares', () => {
+    const sizes = PAGE_INVENTORY_VIEWPORTS.map(({ width, height }) => `${width}x${height}`);
+    expect(new Set(sizes).size).toBe(PAGE_INVENTORY_VIEWPORTS.length);
+  });
+
+  it('selects a spot-check subset and names the valid choices for a typo', () => {
+    const surfaces = allSurfaces();
+    expect(
+      selectSpotCheckItems(surfaces, ['controls/clear-coachmark', 'home'], '--surface', (item) => [
+        `${item.group}/${item.id}`,
+        item.id,
+      ]).map(({ id }) => id)
+    ).toEqual(['home', 'clear-coachmark']);
+    expect(selectSpotCheckItems(surfaces, [], '--surface', (item) => [item.id])).toHaveLength(
+      surfaces.length
+    );
+    expect(() =>
+      selectSpotCheckItems(PAGE_INVENTORY_THEMES, ['night'], '--theme', (theme) => [theme.id])
+    ).toThrow('--theme names nothing in this inventory: night. Choose from: light, dark');
+  });
+
+  it('refuses to write a filtered spot check into the committed scrapbook', async () => {
+    await expect(
+      generatePageInventory(['--surface', 'home', '--out', 'scrapbook/page-inventory'])
+    ).rejects.toThrow('must stay out of scrapbook/');
+    await expect(generatePageInventory(['--surface', 'dev-engine'])).rejects.toThrow(
+      '--surface names nothing in this inventory: dev-engine'
+    );
+  });
+
+  // The run replaces --out wholesale, so a target that owns anything else is a
+  // deletion the flags asked for by accident. Each of these resolves onto such a
+  // tree, and a spot check reaches the rename with its guard already satisfied.
+  it('refuses an --out that owns more than one run of output', async () => {
+    for (const out of ['scrapbook', 'scrapbook/page-inventory/..', '.', '..']) {
+      await expect(generatePageInventory(['--surface', 'home', '--out', out])).rejects.toThrow(
+        '--out is replaced wholesale'
+      );
+      await expect(generatePageInventory(['--out', out])).rejects.toThrow(
+        '--out is replaced wholesale'
+      );
+    }
+  });
+
+  // The tests below drive the parser rather than generatePageInventory, which
+  // builds the app and then replaces --out — so an accepted path can only be
+  // asserted here, and a refusal asserted here is one the run never reaches
+  // because the tests above prove the parser is what stops it.
+
+  // An --out anywhere outside the worktree used to clear every guard on a spot
+  // check: nothing there is the repo root, an ancestor of it, or inside
+  // scrapbook/, so the run reached the rename and deleted the named directory.
+  it('refuses an --out outside the repository', () => {
+    const outside = [
+      '/tmp',
+      '/private/tmp/splotch-page-inventory-probe',
+      '../splotch-page-inventory-probe',
+      homedir(),
+    ];
+    for (const out of outside) {
+      for (const argv of [
+        ['--out', out],
+        ['--surface', 'home', '--out', out],
+      ]) {
+        expect(() => parsePageInventoryOptions(argv)).toThrow('--out is replaced wholesale');
+        expect(() => parsePageInventoryOptions(argv)).toThrow(resolve(ROOT, out));
+      }
+    }
+  });
+
+  // A full run's only destination is the inventory it publishes. Every sibling
+  // collection in scrapbook/ is committed output owned by another tool, and the
+  // inventory's own assets/ is written as part of the directory above it.
+  it('refuses a full run --out on any directory but the published inventory', () => {
+    const siblings = readdirSync(join(ROOT, 'scrapbook'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name !== 'page-inventory')
+      .map((entry) => `scrapbook/${entry.name}`);
+    expect(siblings.length).toBeGreaterThan(0);
+    for (const out of [
+      ...siblings,
+      'scrapbook/page-inventory/assets',
+      '.scrapbook-scratch/page-inventory-spot-check',
+    ]) {
+      expect(() => parsePageInventoryOptions(['--out', out])).toThrow(
+        '--out is replaced wholesale'
+      );
+      expect(() => parsePageInventoryOptions(['--out', out])).toThrow(join(ROOT, out));
+    }
+  });
+
+  // A spot check writes scratch, but .scrapbook-scratch/ is not all its own: the
+  // critique checkpoints live beside it and are the resumable record of a review
+  // pass that costs hours of reviewer calls to rebuild.
+  it('refuses a spot check --out outside the scratch directory it owns', () => {
+    for (const out of [
+      '.scrapbook-scratch',
+      '.scrapbook-scratch/page-inventory-critique',
+      '.scrapbook-scratch/page-inventory-critique/reviews',
+    ]) {
+      const argv = ['--surface', 'home', '--out', out];
+      expect(() => parsePageInventoryOptions(argv)).toThrow('--out is replaced wholesale');
+      expect(() => parsePageInventoryOptions(argv)).toThrow(join(ROOT, out));
+    }
+  });
+
+  it('accepts the two directories this generator owns, whether or not they exist', () => {
+    const inventory = join(ROOT, 'scrapbook/page-inventory');
+    const scratch = join(ROOT, '.scrapbook-scratch/page-inventory-spot-check');
+    expect(parsePageInventoryOptions([]).out).toBe(inventory);
+    expect(parsePageInventoryOptions(['--out', 'scrapbook/page-inventory']).out).toBe(inventory);
+    expect(parsePageInventoryOptions(['--surface', 'home']).out).toBe(scratch);
+    expect(
+      parsePageInventoryOptions([
+        '--surface',
+        'home',
+        '--out',
+        '.scrapbook-scratch/page-inventory-spot-check',
+      ]).out
+    ).toBe(scratch);
+
+    // A run creates its own output directory, so a first run into a name that
+    // does not exist yet has to be accepted.
+    const unwritten = join(scratch, 'brush-menu-only');
+    expect(existsSync(unwritten)).toBe(false);
+    expect(parsePageInventoryOptions(['--surface', 'brush-menu', '--out', unwritten]).out).toBe(
+      unwritten
+    );
+  });
+
+  // The generator waits on this selector at every viewport, so a Settings shell
+  // that renames or re-tags its rows costs a multi-hour run rather than a test.
+  // Matching the selector against the row templates the app really ships is what
+  // makes that drift fail here — an assertion on the returned string could only
+  // restate the function. The wide pane's own section wrappers are matched too,
+  // because they carry the same attribute and must stay out of the selector.
+  it('matches the row template of both Settings shells and no other section element', () => {
+    const selector = settingsSectionRowSelector('appearance');
+    const matching = (component) =>
+      markupElementsStamping(component, 'data-section', 'appearance').filter((element) =>
+        element.matches(selector)
+      );
+
+    // The wide shell's rows come from the shared guide rail, whose other
+    // template is the anchor row /design and /changelog use.
+    expect(matching('nav/SidebarToc.svelte')).toHaveLength(1);
+    expect(matching('SettingsModal.svelte')).toHaveLength(1);
+    // The pane wrappers the section-landed wait reads, which are not rows.
+    expect(matching('settings/WideShell.svelte')).toHaveLength(0);
+  });
+
+  // The wide shell parks a jumped section below the pane's top edge — its own
+  // jump inset, or the pane's padding for the first section, which cannot scroll
+  // any higher. A capture that waits for the section flush against that edge
+  // waits forever, so the band has to clear whichever inset the shell uses.
+  it('waits within a band that covers where the wide shell parks a section', () => {
+    const shell = readFileSync(join(COMPONENTS, 'settings/WideShell.svelte'), 'utf8');
+    const jumpInsetPx = Number(/SECTION_JUMP_INSET_PX = (\d+)/.exec(shell)?.[1]);
+    const panePaddingTopPx = Number(
+      /\.settings-pane\s*\{[^}]*?\bpadding:\s*(\d+)px/s.exec(shell)?.[1]
+    );
+
+    expect(jumpInsetPx).toBeGreaterThan(0);
+    expect(panePaddingTopPx).toBeGreaterThan(0);
+    expect(jumpInsetPx).toBeLessThan(SECTION_LANDED_BAND_PX);
+    expect(panePaddingTopPx).toBeLessThan(SECTION_LANDED_BAND_PX);
   });
 
   it('passes exactly one description and one image to an ephemeral reviewer', () => {
@@ -313,7 +622,7 @@ describe('page inventory output', () => {
     const manifest = writeCaptures(out, item);
     const entries = critiqueEntries(manifest);
     const critique = join(root, 'design-critique.json');
-    writeFileSync(critique, JSON.stringify({ schema_version: 3, entries }));
+    writeFileSync(critique, JSON.stringify({ schema_version: 4, entries }));
     const firstImage = join(out, entries[0].image);
     const originalImage = readFileSync(firstImage, 'utf8');
 
@@ -348,13 +657,13 @@ describe('page inventory output', () => {
     const entries = critiqueEntries(manifest);
     const critique = join(root, 'design-critique.json');
 
-    writeFileSync(critique, JSON.stringify({ schema_version: 3, entries: entries.slice(1) }));
+    writeFileSync(critique, JSON.stringify({ schema_version: 4, entries: entries.slice(1) }));
     expect(() => readDesignCritique(critique, manifest)).toThrow('15 of 16 required entries');
 
     writeFileSync(
       critique,
       JSON.stringify({
-        schema_version: 3,
+        schema_version: 4,
         entries: [{ ...entries[0], review_id: 'routes--unknown' }, ...entries.slice(1)],
       })
     );
@@ -363,7 +672,7 @@ describe('page inventory output', () => {
     writeFileSync(
       critique,
       JSON.stringify({
-        schema_version: 3,
+        schema_version: 4,
         entries: [{ ...entries[0], sha256: '0'.repeat(64) }, ...entries.slice(1)],
       })
     );
@@ -390,7 +699,7 @@ describe('page inventory output', () => {
 
     const document = JSON.parse(readFileSync(critique, 'utf8'));
     expect(document).toMatchObject({
-      schema_version: 3,
+      schema_version: 4,
       scope: {
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
         surfaces_reviewed: 1,
@@ -398,7 +707,12 @@ describe('page inventory output', () => {
         expected_screenshots: 16,
         completeness: 'complete',
       },
-      summary: { severity_counts: { pass: 4, low: 4, medium: 4, high: 4 } },
+      summary: {
+        severity_counts: { pass: 4, low: 4, medium: 4, high: 4 },
+        pixel_identical_groups: 0,
+        divergent_pixel_identical_groups: 0,
+      },
+      pixel_identical_groups: [],
     });
     expect(document.entries).toHaveLength(16);
   });
@@ -463,15 +777,99 @@ describe('page inventory output', () => {
     expect(() => finalizeDesignCritique(manifest, entries)).not.toThrow();
   });
 
-  it('rejects different severities for pixel-identical captures in the same theme', () => {
+  it('keeps divergent severities across pixel-identical captures and records the group', () => {
     const out = join(fixture(), 'page-inventory');
     const manifest = writeCaptures(out, inventoryItem());
-    const sameTheme = manifest.captures.filter(({ theme }) => theme === 'light').slice(0, 2);
-    sameTheme[1].sha256 = sameTheme[0].sha256;
+    const [shell, twin] = manifest.captures.filter(({ theme }) => theme === 'light').slice(0, 2);
+    twin.sha256 = shell.sha256;
     const entries = critiqueEntries(manifest);
 
-    expect(() => finalizeDesignCritique(manifest, entries)).toThrow(
-      'have conflicting severities pass and low'
+    const critique = finalizeDesignCritique(manifest, entries);
+
+    expect(critique.summary).toMatchObject({
+      pixel_identical_groups: 1,
+      divergent_pixel_identical_groups: 1,
+    });
+    expect(critique.pixel_identical_groups).toEqual([
+      {
+        sha256: shell.sha256,
+        theme: 'light',
+        divergent: true,
+        reviews: [
+          { review_id: shell.review_id, severity: 'pass' },
+          { review_id: twin.review_id, severity: 'low' },
+        ],
+      },
+    ]);
+    const severities = new Map(
+      critique.entries.map(({ review_id: reviewId, severity }) => [reviewId, severity])
     );
+    expect(severities.get(shell.review_id)).toBe('pass');
+    expect(severities.get(twin.review_id)).toBe('low');
+  });
+
+  it('rejects two captures whose pixels and review description are both identical', () => {
+    const out = join(fixture(), 'page-inventory');
+    const shared = { group: 'settings', title: 'Settings', description: 'The settings hub.' };
+    const items = [
+      inventoryItem({ ...shared, id: 'settings-overview' }),
+      inventoryItem({ ...shared, id: 'settings-appearance' }),
+    ];
+
+    expect(() => writeSharedShellCaptures(out, items)).toThrow(
+      /entries settings--settings-overview--\S+ and settings--settings-appearance--\S+ are indistinguishable reviews/
+    );
+  });
+
+  it('refuses a design critique written against the previous schema version', () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const manifest = writeCaptures(out, inventoryItem());
+    const critique = join(root, 'design-critique.json');
+    writeFileSync(
+      critique,
+      JSON.stringify({ schema_version: 3, entries: critiqueEntries(manifest) })
+    );
+
+    expect(() => readDesignCritique(critique, manifest)).toThrow('schema_version must be 4');
+  });
+
+  it('marks the shots of a shared shell as pixel-identical in the report', () => {
+    const root = fixture();
+    const out = join(root, 'page-inventory');
+    const items = [
+      inventoryItem({
+        group: 'settings',
+        id: 'settings-overview',
+        title: 'Settings',
+        description: 'The settings hub.',
+      }),
+      inventoryItem({
+        group: 'settings',
+        id: 'settings-appearance',
+        title: 'Appearance settings',
+        description: 'The appearance section.',
+      }),
+    ];
+    const manifest = writeSharedShellCaptures(out, items);
+    const entries = critiqueEntries(manifest);
+    const agreed = manifest.captures.slice(-2).map(({ review_id: reviewId }) => reviewId);
+    for (const entry of entries.filter(({ review_id: reviewId }) => agreed.includes(reviewId))) {
+      entry.severity = 'pass';
+      entry.recommendation = null;
+    }
+    const critique = join(root, 'design-critique.json');
+    writeFileSync(critique, JSON.stringify(finalizeDesignCritique(manifest, entries)));
+
+    expect(writePageInventoryFeedback(out, critique, items)).toBe(32);
+
+    const document = JSON.parse(readFileSync(critique, 'utf8'));
+    expect(document.summary).toMatchObject({
+      pixel_identical_groups: 16,
+      divergent_pixel_identical_groups: 15,
+    });
+    const html = readFileSync(join(out, 'index.html'), 'utf8');
+    expect(html).toContain('Pixel-identical to 1 other capture in this theme, judged differently.');
+    expect(html).toContain('Pixel-identical to 1 other capture in this theme.');
   });
 });

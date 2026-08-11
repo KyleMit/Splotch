@@ -18,11 +18,12 @@ import sharp from 'sharp';
 import {
   captureRecord,
   createCaptureManifest,
-  PAGE_INVENTORY_THEME_SUPPORT,
+  pixelIdenticalReviewGroups,
   readDesignCritique,
   sha256File,
   validateThemeCaptureDifferences,
 } from './lib/page-inventory-data.mjs';
+import { CAPTURE_ATTEMPTS, assertCaptureRendered } from './lib/page-inventory-capture.mjs';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { waitForUrl } from '../lib/net.mjs';
@@ -37,15 +38,23 @@ import { spawnViteServer } from '../lib/vite-server.mjs';
 
 const PORT_DEFAULT = 4319;
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory');
+const SPOT_CHECK_OUT_DEFAULT = join(ROOT, '.scrapbook-scratch/page-inventory-spot-check');
+const SCRAPBOOK_ROOT = join(ROOT, 'scrapbook');
 const SERVER_BOOT_MS = 120_000;
 const ACTION_MS = 15_000;
 const TAP_GUARD_MS = 750;
 const WEBP_QUALITY = 84;
-const SUSPICIOUS_BLANK_ENTROPY = 0.01;
 const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
+const SPOT_CHECK_RECORDS_NAME = 'spot-check-captures.json';
 const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 const SCROLL_END_EPSILON_PX = 1;
-const SECTION_LANDED_TOLERANCE_PX = 1;
+// The wide shell parks a jumped-to section just clear of the pane's top edge
+// rather than flush against it, and the pane's own padding holds the first
+// section clear of it too — so a landed section sits in a band below that edge,
+// never on it. The band stays far under one section's height so it cannot
+// accept the section above the requested one; tests/page-inventory.test.mjs
+// checks it against the insets the shell actually parks at.
+export const SECTION_LANDED_BAND_PX = 40;
 
 const PHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
@@ -81,12 +90,13 @@ const ROUTES = {
   '/android-beta': ['Android beta', 'Google Play closed-test sign-up instructions.'],
   '/changelog': ['Changelog', 'The complete release history at its opening position.'],
   '/design': ['Design system', 'The public living styleguide at its opening position.'],
-  '/dev': ['Dev harness index', 'The development-only index of interactive harnesses.'],
-  '/dev/ai-timer': ['AI timer harness', 'The AI animation harness before a run starts.'],
-  '/dev/engine': ['Drawing engine harness', 'The development-only engine control surface.'],
   '/feedback': ['Feedback', 'The standalone bug report and feature idea form.'],
   '/privacy': ['Privacy policy', 'The public privacy policy at its opening position.'],
 };
+
+// The /dev tree is internal tooling nobody ships or design-reviews; the AI flow still
+// drives /dev/ai-timer as a harness, it just never becomes a reviewed surface.
+const INTERNAL_ROUTE_ROOTS = ['/dev'];
 
 function filesBelow(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -103,6 +113,10 @@ export function discoverPageRoutes() {
       const dir = relative(routesDir, resolve(file, '..'));
       return dir ? `/${dir.split(sep).join('/')}` : '/';
     })
+    .filter(
+      (route) =>
+        !INTERNAL_ROUTE_ROOTS.some((root) => route === root || route.startsWith(`${root}/`))
+    )
     .sort((a, b) => a.localeCompare(b));
 }
 
@@ -121,46 +135,20 @@ export function discoverSettingsSections() {
   return sections;
 }
 
-const surface = (
+const surface = (group, id, title, description, source, prepare, { cleanup } = {}) => ({
   group,
   id,
   title,
   description,
-  source,
-  prepare,
-  { cleanup, intent, themeSupport = PAGE_INVENTORY_THEME_SUPPORT.THEMED } = {}
-) => ({
-  group,
-  id,
-  title,
-  description,
-  intent,
-  themeSupport,
   source,
   prepare,
   cleanup,
 });
 
-const LIGHT_ONLY_ROUTE_METADATA = {
-  intent: 'This route deliberately uses one stable light reading palette in both app themes.',
-  themeSupport: PAGE_INVENTORY_THEME_SUPPORT.LIGHT_ONLY,
-};
-
-const ROUTE_SURFACE_METADATA = {
-  '/android-beta': LIGHT_ONLY_ROUTE_METADATA,
-  '/changelog': LIGHT_ONLY_ROUTE_METADATA,
-  '/dev/engine': {
-    intent:
-      'This development-only harness intentionally exposes a bare canvas; the unframed canvas is expected.',
-  },
-  '/privacy': LIGHT_ONLY_ROUTE_METADATA,
-};
-
 async function navigate(page, route) {
   const response = await page.goto(route, { waitUntil: 'domcontentloaded', timeout: ACTION_MS });
   if (!response?.ok()) throw new Error(`${route} returned HTTP ${response?.status()}`);
   if (route === '/') await waitForCanvas(page);
-  else if (route === '/dev/engine') await page.waitForFunction(() => window.__engineReady === true);
   else if (route === '/admin') {
     await page
       .locator('input[placeholder="Admin access key"], input[placeholder="Add a code…"]')
@@ -228,8 +216,8 @@ async function openDrawer(page) {
   }
 }
 
-async function draw(page, yFraction = 0.5, selector = '#drawingCanvas') {
-  const box = await page.locator(selector).boundingBox();
+async function draw(page, yFraction = 0.5) {
+  const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('Drawing canvas has no bounds');
   const y = box.y + box.height * yFraction;
   await page.mouse.move(box.x + box.width * 0.24, y);
@@ -270,11 +258,7 @@ function routeSurfaces() {
       title,
       description,
       route,
-      async (page) => {
-        await navigate(page, route);
-        if (route === '/dev/engine') await draw(page, 0.5, '#engineCanvas');
-      },
-      ROUTE_SURFACE_METADATA[route]
+      (page) => navigate(page, route)
     );
   });
   return [
@@ -324,7 +308,7 @@ function settingsSurfaces() {
           await freshHome(page);
           const modal = await openSettings(page);
           if (await modal.locator('.quick-toggles').isVisible()) return;
-          const row = modal.locator(settingsSectionRowSelector(section.id, viewport.width));
+          const row = modal.locator(settingsSectionRowSelector(section.id));
           await row.evaluate((element) => element.click());
           if (viewport.width < SETTINGS_WIDE_MIN_WIDTH_PX) {
             await modal
@@ -332,7 +316,7 @@ function settingsSurfaces() {
               .waitFor();
           } else {
             await page.waitForFunction(
-              ({ sectionId, scrollEndEpsilonPx, landedTolerancePx }) => {
+              ({ sectionId, scrollEndEpsilonPx, landedBandPx }) => {
                 const pane = document.querySelector('#settingsModal .settings-pane');
                 const target = document.querySelector(
                   `#settingsModal .settings-section[data-section="${sectionId}"]`
@@ -343,12 +327,13 @@ function settingsSurfaces() {
                 const targetRect = target.getBoundingClientRect();
                 const atEnd =
                   pane.scrollTop + pane.clientHeight >= pane.scrollHeight - scrollEndEpsilonPx;
-                return atEnd || Math.abs(targetRect.top - paneRect.top) < landedTolerancePx;
+                const belowPaneTop = targetRect.top - paneRect.top;
+                return atEnd || (belowPaneTop >= 0 && belowPaneTop <= landedBandPx);
               },
               {
                 sectionId: section.id,
                 scrollEndEpsilonPx: SCROLL_END_EPSILON_PX,
-                landedTolerancePx: SECTION_LANDED_TOLERANCE_PX,
+                landedBandPx: SECTION_LANDED_BAND_PX,
               }
             );
           }
@@ -358,9 +343,14 @@ function settingsSurfaces() {
   ];
 }
 
-export function settingsSectionRowSelector(sectionId, viewportWidth) {
-  const rowClass = viewportWidth < SETTINGS_WIDE_MIN_WIDTH_PX ? 'hub-row' : 'settings-nav-item';
-  return `.${rowClass}[data-section="${sectionId}"]`;
+// Both Settings shells render a section row as a button stamped with the section
+// id — the phone hub's list and the wide sidebar's table of contents — so the
+// attribute addresses either without naming a shell's classes, which are styling
+// and get renamed with it. The tag is load-bearing rather than decorative: the
+// wide pane's own `.settings-section` wrappers carry the same attribute and are
+// not rows, so a selector without it matches two elements inside the modal.
+export function settingsSectionRowSelector(sectionId) {
+  return `button[data-section="${sectionId}"]`;
 }
 
 async function coloringDialog(page) {
@@ -712,7 +702,7 @@ async function settle(page) {
   });
 }
 
-async function assertSurfaceReady(page, item) {
+async function assertSurfaceReady(page) {
   await page.waitForFunction(() => document.readyState === 'complete');
   const hasVisibleContent = await page.evaluate(() => {
     const candidates = document.querySelectorAll(
@@ -724,66 +714,153 @@ async function assertSurfaceReady(page, item) {
       return box.width > 0 && box.height > 0 && style.visibility !== 'hidden';
     });
   });
-  if (!hasVisibleContent) throw new Error(`${item.id} reached no visible ready content`);
+  if (!hasVisibleContent) throw new Error('reached no visible ready content');
 }
 
-async function validateCaptureFile(target, item, viewport) {
-  const metadata = await sharp(target).metadata();
-  if (
-    metadata.format !== 'webp' ||
-    metadata.width !== viewport.width ||
-    metadata.height !== viewport.height
-  ) {
-    throw new Error(
-      `${item.id} at ${viewport.id} produced ${metadata.format} ${metadata.width}×${metadata.height}; expected WebP ${viewport.width}×${viewport.height}`
-    );
-  }
-  const stats = await sharp(target).stats();
-  if (stats.entropy < SUSPICIOUS_BLANK_ENTROPY) {
-    throw new Error(
-      `${item.id} at ${viewport.id} looks blank (entropy ${stats.entropy.toFixed(4)})`
-    );
+async function captureOnce(page, item, viewport, theme, out) {
+  try {
+    await item.prepare(page, viewport);
+    await settle(page);
+    await assertSurfaceReady(page);
+    const path = inventoryCapturePath(item, viewport, theme);
+    const target = join(out, path);
+    mkdirSync(resolve(target, '..'), { recursive: true });
+    const png = await page.screenshot({ type: 'png' });
+    await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
+    await assertCaptureRendered(target, viewport);
+    return captureRecord(item, viewport, theme, path, sha256File(target));
+  } finally {
+    await item.cleanup?.(page);
   }
 }
 
 async function capture(page, item, viewport, theme, out) {
-  await item.prepare(page, viewport);
-  await settle(page);
-  await assertSurfaceReady(page, item);
-  const path = inventoryCapturePath(item, viewport, theme);
-  const target = join(out, path);
-  mkdirSync(resolve(target, '..'), { recursive: true });
-  const png = await page.screenshot({ type: 'png' });
-  await sharp(png).webp({ quality: WEBP_QUALITY, effort: 5 }).toFile(target);
-  await validateCaptureFile(target, item, viewport);
-  await item.cleanup?.(page);
-  return captureRecord(item, viewport, theme, path, sha256File(target));
+  const label = `${item.group}/${item.id} at ${viewport.id} in ${theme.id}`;
+  let failure;
+  for (let attempt = 1; attempt <= CAPTURE_ATTEMPTS; attempt += 1) {
+    try {
+      return await captureOnce(page, item, viewport, theme, out);
+    } catch (error) {
+      failure = error;
+      console.warn(`${label} attempt ${attempt}/${CAPTURE_ATTEMPTS} failed: ${error.message}`);
+    }
+  }
+  throw new Error(
+    `Capture ${label} failed after ${CAPTURE_ATTEMPTS} attempts: ${failure.message}`,
+    {
+      cause: failure,
+    }
+  );
 }
 
-function options(argv) {
+export function selectSpotCheckItems(candidates, requested, flag, describe) {
+  if (!requested.length) return candidates;
+  const chosen = new Set();
+  for (const name of requested) {
+    const matches = candidates.filter((candidate) => describe(candidate).includes(name));
+    if (!matches.length) {
+      const known = candidates.map((candidate) => describe(candidate)[0]).join(', ');
+      throw new Error(`${flag} names nothing in this inventory: ${name}. Choose from: ${known}`);
+    }
+    for (const match of matches) chosen.add(match);
+  }
+  return candidates.filter((candidate) => chosen.has(candidate));
+}
+
+const isWithin = (root, path) => path === root || path.startsWith(`${root}${sep}`);
+
+// generateOutputAtomically replaces --out wholesale: the directory is renamed
+// aside, staging takes its name, and the original is then deleted recursively.
+// So the flag may only name a directory this generator alone writes — the
+// committed inventory a full run publishes, or a scratch directory under the
+// spot-check root. Every other path it resolves to owns something this run was
+// never asked to delete: `.` and `..` land on the repository, `scrapbook/<name>`
+// on a committed collection, `.scrapbook-scratch` on the critique checkpoints,
+// and an absolute path on whatever it names outside the worktree.
+function assertOwnedOutputDirectory(out, spotCheck) {
+  if (spotCheck && out.startsWith(`${SCRAPBOOK_ROOT}${sep}`)) {
+    throw new Error(
+      `A --surface/--viewport/--theme spot check captures only part of the inventory, so it must stay out of scrapbook/ where a partial manifest would be read as the coverage authority: ${out}`
+    );
+  }
+  const owned = spotCheck ? isWithin(SPOT_CHECK_OUT_DEFAULT, out) : out === OUT_DEFAULT;
+  if (owned) return;
+  const requirement = spotCheck
+    ? `a spot check may only write inside ${relative(ROOT, SPOT_CHECK_OUT_DEFAULT)} — drop --out for that directory, or name one beneath it`
+    : `a full run may only write the inventory it publishes, ${relative(ROOT, OUT_DEFAULT)} — drop --out to write it, or pass --surface/--viewport/--theme to spot check into ${relative(ROOT, SPOT_CHECK_OUT_DEFAULT)}`;
+  throw new Error(
+    `--out is replaced wholesale, so it can only name a directory this generator writes as a whole, and ${out} is not one. Instead, ${requirement}.`
+  );
+}
+
+// Exported as a seam: generatePageInventory builds the app and then replaces the
+// resolved directory, so an accepted --out cannot be asserted through it.
+export function parsePageInventoryOptions(argv) {
   const parsed = parseArgs({
     args: argv,
     options: {
-      out: { type: 'string', default: OUT_DEFAULT },
+      out: { type: 'string' },
       port: { type: 'string', default: String(PORT_DEFAULT) },
       critique: { type: 'string' },
+      surface: { type: 'string', multiple: true },
+      viewport: { type: 'string', multiple: true },
+      theme: { type: 'string', multiple: true },
     },
     strict: true,
   }).values;
   const port = Number(parsed.port);
   if (!Number.isInteger(port) || port < 1 || port > 65_535)
     throw new Error(`Invalid --port: ${parsed.port}`);
-  const out = resolve(ROOT, parsed.out);
-  const scrapbook = resolve(ROOT, 'scrapbook');
-  if (!out.startsWith(`${scrapbook}${sep}`)) {
-    throw new Error(`--out must stay inside scrapbook/: ${parsed.out}`);
+  const surfaces = parsed.surface ?? [];
+  const viewports = parsed.viewport ?? [];
+  const themes = parsed.theme ?? [];
+  const spotCheck = Boolean(surfaces.length || viewports.length || themes.length);
+  const out = resolve(ROOT, parsed.out ?? (spotCheck ? SPOT_CHECK_OUT_DEFAULT : OUT_DEFAULT));
+  assertOwnedOutputDirectory(out, spotCheck);
+  if (spotCheck && parsed.critique) {
+    throw new Error('--critique attaches feedback to a full inventory and cannot filter captures');
   }
   const defaultCritique = join(out, 'design-critique.json');
   const critique = parsed.critique ? resolve(ROOT, parsed.critique) : defaultCritique;
   if (parsed.critique && !existsSync(critique)) {
     throw new Error(`--critique does not exist: ${parsed.critique}`);
   }
-  return { out, port, critique: existsSync(critique) ? critique : undefined };
+  return {
+    out,
+    port,
+    spotCheck,
+    surfaces,
+    viewports,
+    themes,
+    critique: !spotCheck && existsSync(critique) ? critique : undefined,
+  };
+}
+
+async function openThemedPage(browser, port, view, theme) {
+  const context = await browser.newContext({
+    baseURL: `http://localhost:${port}`,
+    viewport: { width: view.width, height: view.height },
+    deviceScaleFactor: 1,
+    hasTouch: true,
+    userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
+    colorScheme: theme.id,
+    reducedMotion: 'reduce',
+  });
+  await context.addInitScript(
+    ({ defaults, themeId }) => {
+      for (const [key, value] of Object.entries(defaults)) {
+        if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
+      }
+      localStorage.setItem('splotch-theme', themeId);
+    },
+    { defaults: STORAGE, themeId: theme.id }
+  );
+  const page = await context.newPage();
+  // A page that has not navigated yet has no origin, so localStorage is
+  // unreachable from it. Every surface that seeds storage before navigating
+  // reaches for it, and a filtered run can open on one of those.
+  await page.goto('/', { waitUntil: 'domcontentloaded', timeout: ACTION_MS });
+  return { theme, context, page };
 }
 
 export async function generateOutputAtomically(out, generate) {
@@ -813,8 +890,28 @@ export async function generateOutputAtomically(out, generate) {
 }
 
 export async function generatePageInventory(argv = process.argv.slice(2)) {
-  const { out, port, critique: critiquePath } = options(argv);
-  const items = attachExpectedCapturePaths(allSurfaces());
+  const {
+    out,
+    port,
+    spotCheck,
+    critique: critiquePath,
+    ...filters
+  } = parsePageInventoryOptions(argv);
+  const items = attachExpectedCapturePaths(
+    selectSpotCheckItems(allSurfaces(), filters.surfaces, '--surface', (item) => [
+      `${item.group}/${item.id}`,
+      item.id,
+    ])
+  );
+  const views = selectSpotCheckItems(
+    PAGE_INVENTORY_VIEWPORTS,
+    filters.viewports,
+    '--viewport',
+    (view) => [view.id]
+  );
+  const themes = selectSpotCheckItems(PAGE_INVENTORY_THEMES, filters.themes, '--theme', (theme) => [
+    theme.id,
+  ]);
   const build = spawnSync('npm', ['run', 'build'], {
     cwd: ROOT,
     env: { ...process.env, ...SERVER_ENV },
@@ -834,47 +931,58 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       await waitForUrl(`http://localhost:${port}`, SERVER_BOOT_MS);
       browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
       const captures = [];
-      for (const theme of PAGE_INVENTORY_THEMES) {
-        for (const view of PAGE_INVENTORY_VIEWPORTS) {
-          const context = await browser.newContext({
-            baseURL: `http://localhost:${port}`,
-            viewport: { width: view.width, height: view.height },
-            deviceScaleFactor: 1,
-            hasTouch: true,
-            userAgent: view.formFactor === 'phone' ? PHONE_UA : TABLET_UA,
-            colorScheme: theme.id,
-            reducedMotion: 'reduce',
-          });
-          await context.addInitScript(
-            ({ defaults, themeId }) => {
-              for (const [key, value] of Object.entries(defaults)) {
-                if (localStorage.getItem(key) === null) localStorage.setItem(key, value);
-              }
-              localStorage.setItem('splotch-theme', themeId);
-            },
-            { defaults: STORAGE, themeId: theme.id }
-          );
-          const page = await context.newPage();
-          for (const item of items) {
-            console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
-            captures.push(await capture(page, item, view, theme, staging));
-          }
-          await context.close();
-        }
-      }
-      const manifest = createCaptureManifest(PAGE_INVENTORY_VIEWPORTS, captures);
-      validateThemeCaptureDifferences(manifest.captures, items);
-      writeFileSync(join(staging, CAPTURE_MANIFEST_NAME), `${JSON.stringify(manifest, null, 2)}\n`);
-      let critique = new Map();
-      if (critiquePath) {
-        copyFileSync(critiquePath, join(staging, 'design-critique.json'));
+      // A viewport holds one page per theme at once, so a surface is shot in
+      // every theme before the run moves on and the theme comparison below can
+      // reject a page that stopped following night mode within seconds of
+      // reaching it — rather than after the last of hundreds of captures.
+      for (const view of views) {
+        const themedPages = [];
         try {
-          critique = readDesignCritique(critiquePath, manifest);
-        } catch (error) {
-          console.warn(`Preserved but detached stale design critique: ${error.message}`);
+          for (const theme of themes) {
+            themedPages.push(await openThemedPage(browser, port, view, theme));
+          }
+          for (const item of items) {
+            const themeCaptures = [];
+            for (const { theme, page } of themedPages) {
+              console.log(`${theme.id.padEnd(5)} ${view.id.padEnd(21)} ${item.id}`);
+              themeCaptures.push(await capture(page, item, view, theme, staging));
+            }
+            validateThemeCaptureDifferences(themeCaptures, [item]);
+            captures.push(...themeCaptures);
+          }
+        } finally {
+          for (const { context } of themedPages) await context.close();
         }
       }
-      writeFileSync(join(staging, 'index.html'), renderPageInventoryReport(items, critique));
+      if (spotCheck) {
+        writeFileSync(
+          join(staging, SPOT_CHECK_RECORDS_NAME),
+          `${JSON.stringify({ captures }, null, 2)}\n`
+        );
+      } else {
+        const manifest = createCaptureManifest(views, captures);
+        writeFileSync(
+          join(staging, CAPTURE_MANIFEST_NAME),
+          `${JSON.stringify(manifest, null, 2)}\n`
+        );
+        let critique = new Map();
+        if (critiquePath) {
+          copyFileSync(critiquePath, join(staging, 'design-critique.json'));
+          try {
+            critique = readDesignCritique(critiquePath, manifest);
+          } catch (error) {
+            console.warn(`Preserved but detached stale design critique: ${error.message}`);
+          }
+        }
+        writeFileSync(
+          join(staging, 'index.html'),
+          renderPageInventoryReport(
+            items,
+            critique,
+            pixelIdenticalReviewGroups(manifest.captures, critique)
+          )
+        );
+      }
       return {
         snapshots: captures.length,
         bytes: filesBelow(assets).reduce((sum, file) => sum + statSync(file).size, 0),
@@ -884,9 +992,13 @@ export async function generatePageInventory(argv = process.argv.slice(2)) {
       server.stop();
     }
   });
+  const wrote = spotCheck ? SPOT_CHECK_RECORDS_NAME : 'index.html';
   console.log(
-    `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, 'index.html'))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
+    `Wrote ${snapshots} snapshots and ${relative(ROOT, join(out, wrote))} (${(bytes / 1024 / 1024).toFixed(1)} MiB)`
   );
+  if (spotCheck) {
+    console.log('Spot check: no capture manifest was written, so the committed inventory stands.');
+  }
 }
 
 if (isMain(import.meta.url)) runMain(generatePageInventory);

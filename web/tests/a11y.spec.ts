@@ -163,7 +163,7 @@ test('the active Settings nav item holds WCAG AA contrast', async ({ page }) => 
   await gotoApp(page);
   await openSettingsModal(page);
 
-  const active = page.locator('.settings-nav-item.active').first();
+  const active = page.locator('.settings-nav .toc-row.active').first();
   await expect(active).toBeVisible();
   const { color, backgroundColor } = await active.evaluate((el) => {
     const style = getComputedStyle(el);
@@ -171,6 +171,28 @@ test('the active Settings nav item holds WCAG AA contrast', async ({ page }) => 
   });
   expect(contrastRatio(parseRgb(color), parseRgb(backgroundColor))).toBeGreaterThanOrEqual(4.5);
 });
+
+// A placeholder is informative text and owes 4.5:1, but it lives on a
+// pseudo-element that axe never inspects, and the UA default ink ignores
+// color-scheme — so an unstyled placeholder scans green while failing on the
+// dark paper. app.css re-inks every one with --text-soft; this measures the
+// rendered result on both papers.
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`the admin sign-in placeholder holds WCAG AA contrast in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/admin');
+    const key = page.getByPlaceholder('Admin access key');
+    await expect(key).toBeVisible();
+
+    const { color, backgroundColor } = await key.evaluate((el) => ({
+      color: getComputedStyle(el, '::placeholder').color,
+      backgroundColor: getComputedStyle(el).backgroundColor,
+    }));
+    expect(contrastRatio(parseRgb(color), parseRgb(backgroundColor))).toBeGreaterThanOrEqual(4.5);
+  });
+}
 
 // The gate's operand digits are aria-hidden (the equation row's label carries
 // the semantics), so axe never contrast-checks them — but they're visible text

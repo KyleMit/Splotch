@@ -209,6 +209,13 @@ export interface ThemeTokens {
    * The single de-emphasized step — help text, metadata, separators,
    * placeholders. Its value is pinned to hold 4.5:1 on the app grounds in
    * both themes, so small soft text never needs a darker exception.
+   *
+   * The 4.5:1 floor alone is not enough to place it, because WCAG 2's ratio
+   * overstates how readable light ink is on a dark ground: the dark value
+   * cleared 8.5:1 on --app-bg and still read as washed out beside the light
+   * theme's 5.3:1. What tracks the eye is the perceptual step down from
+   * --text, so the dark value is set to hold the same APCA step below --text
+   * that the light value holds (~7 Lc on --surface) rather than to a ratio.
    */
   textSoft: string;
   /**
@@ -344,7 +351,7 @@ export const themes: { light: ThemeTokens; dark: ThemeTokens } = {
     sliderNotch: 'rgba(255, 255, 255, 0.4)',
     textStrong: '#eceaf2',
     text: '#c9c7d3',
-    textSoft: '#b3b1bf',
+    textSoft: '#bdbbc8',
     iconInk: '#dedce8',
     iconMuted: '#a8a6b3',
     brandWash: '#3b2f4f',

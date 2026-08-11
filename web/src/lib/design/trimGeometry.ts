@@ -44,78 +44,124 @@ function stackExtentPx(
   return items * swatchPx + (items - 1) * gapPx + paddingPx;
 }
 
+// The custom (gradient) swatch shares the flow but is never trimmed, so every
+// capacity below is a color count plus this.
+const GRADIENT_SLOTS = 1;
+
+/**
+ * Slots the landscape single column holds on for before it gives up and falls
+ * back to the roomier two-column grid. Five colors and the gradient swatch is
+ * the narrowest rainbow worth keeping the one-bar layout — and the narrow bar's
+ * extra canvas — for.
+ */
+const LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS = 6;
+
+/** Columns in the fallback grid below that floor. */
+const LANDSCAPE_FALLBACK_COLUMNS = 2;
+
+/** The portrait row trims all the way down to the untrimmable gradient swatch. */
+const PORTRAIT_FLOOR_SLOTS = GRADIENT_SLOTS;
+
 // The landscape Color Palette and Actions Panel both need this inline extent
 // before hydration. app.css emits the values as a responsive custom property;
 // actionButtonLayout.fallback.test.ts guards that copy against this source.
 export const PALETTE_LANDSCAPE_WIDTHS_PX = {
   singleColumn: stackExtentPx(1, PALETTE_COLUMN_GEOMETRY),
-  twoColumns: stackExtentPx(2, PALETTE_COLUMN_GEOMETRY),
+  twoColumns: stackExtentPx(LANDSCAPE_FALLBACK_COLUMNS, PALETTE_COLUMN_GEOMETRY),
 } as const;
 
-/**
- * Swatch counts the landscape single column is sized for, tallest first. Below
- * the last one a third swatch would have to go, so the layout falls back to the
- * roomier two-column grid instead of trimming further — which is why the trim
- * rules are floored at that count's height.
- */
-const LANDSCAPE_SINGLE_COLUMN_LADDER = [8, 7, 6] as const;
+/** One rule of a trim ladder: what it fires at, and what it takes away. */
+export interface TrimStep {
+  /** The `max-width`/`max-height` the rule is written against. */
+  thresholdPx: number;
+  /** Trim ranks this step hides, on top of everything a roomier step hid. */
+  ranks: number[];
+}
+
+/** A ladder rung before its remaining-color count is turned into ranks. */
+interface TrimRung {
+  thresholdPx: number;
+  /** Colors still on screen once this rung's rule applies. */
+  remainingColors: number;
+}
 
 /**
- * Column slots the three bonus colors reveal into. The core seven plus the
- * gradient swatch fill slots 1–8, so the bonuses start at 9.
+ * Ladders are written as "how many colors survive here"; the CSS needs "which
+ * ranks does this rule hide". Swatches leave in trim-rank order, so each rung
+ * hides the ranks between the last rung's count and its own.
  */
-const LANDSCAPE_BONUS_REVEAL_LADDER = [9, 10, 11] as const;
+function trimSteps(colorCount: number, rungs: readonly TrimRung[]): TrimStep[] {
+  let hidden = 0;
+  return rungs.map(({ thresholdPx, remainingColors }) => {
+    const nowHidden = colorCount - Math.min(remainingColors, colorCount);
+    const ranks = Array.from({ length: nowHidden - hidden }, (_, offset) => hidden + offset);
+    hidden = nowHidden;
+    return { thresholdPx, ranks };
+  });
+}
 
-/** Row counts the landscape two-column grid trims through, tallest first. */
-const LANDSCAPE_TWO_COLUMN_LADDER = [4, 3, 2, 1] as const;
+/**
+ * One rung per swatch for a single flow, roomiest first: just below the extent
+ * that fits `slots`, one more swatch has to go.
+ */
+function stackRungs(
+  colorCount: number,
+  floorSlots: number,
+  geometry: PaletteStackGeometry
+): TrimRung[] {
+  const rungs: TrimRung[] = [];
+  for (let slots = colorCount + GRADIENT_SLOTS; slots > floorSlots; slots--) {
+    rungs.push({
+      thresholdPx: justBelowPx(stackExtentPx(slots, geometry)),
+      remainingColors: slots - 1 - GRADIENT_SLOTS,
+    });
+  }
+  return rungs;
+}
 
-/** Core swatch counts the portrait row trims through, widest first. */
-const PORTRAIT_LADDER = [7, 6, 5, 4, 3, 2, 1] as const;
-
-/** Height at which a landscape single column still holds `swatches`. */
-function landscapeSingleColumnMinHeightPx(swatches: number): number {
-  return stackExtentPx(swatches, PALETTE_COLUMN_GEOMETRY);
+/**
+ * The two-column grid drops a whole row of two at a time. Rows and single-column
+ * slots measure the same way, so its first rung lands exactly on the layout
+ * switch: the height where the single column gives up is the height where that
+ * row count stops fitting, and everything the taller single column showed above
+ * the grid's own capacity goes in that one step.
+ */
+function landscapeTwoColumnRungs(): TrimRung[] {
+  const rungs: TrimRung[] = [];
+  for (let rows = LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS; rows >= 1; rows--) {
+    rungs.push({
+      thresholdPx: justBelowPx(stackExtentPx(rows, PALETTE_COLUMN_GEOMETRY)),
+      remainingColors: Math.max(0, LANDSCAPE_FALLBACK_COLUMNS * (rows - 1) - GRADIENT_SLOTS),
+    });
+  }
+  return rungs;
 }
 
 /** Height below which the single column falls back to the two-column grid. */
 export function landscapeSingleColumnFloorPx(): number {
-  return landscapeSingleColumnMinHeightPx(LANDSCAPE_SINGLE_COLUMN_LADDER.at(-1)!);
+  return stackExtentPx(LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS, PALETTE_COLUMN_GEOMETRY);
 }
 
 export function landscapeSingleColumnMediaQuery(): string {
   return `(orientation: landscape) and (min-height: ${landscapeSingleColumnFloorPx()}px)`;
 }
 
-/**
- * Heights below which the single column loses another swatch. One step shorter
- * than the ladder: its last entry is the floor above, not a trim.
- */
-export function landscapeSingleColumnTrimLadderPx(): number[] {
-  return LANDSCAPE_SINGLE_COLUMN_LADDER.slice(0, -1).map((swatches) =>
-    justBelowPx(landscapeSingleColumnMinHeightPx(swatches))
+/** Heights below which the single column loses another swatch. */
+export function landscapeSingleColumnTrimSteps(colorCount: number): TrimStep[] {
+  return trimSteps(
+    colorCount,
+    stackRungs(colorCount, LANDSCAPE_SINGLE_COLUMN_FLOOR_SLOTS, PALETTE_COLUMN_GEOMETRY)
   );
-}
-
-/** Heights at which the single column opens each bonus color's slot. */
-export function landscapeBonusRevealLadderPx(): number[] {
-  return LANDSCAPE_BONUS_REVEAL_LADDER.map((slot) => landscapeSingleColumnMinHeightPx(slot));
 }
 
 /** Heights below which the landscape two-column grid loses a row of two. */
-export function landscapeTwoColumnLadderPx(): number[] {
-  return LANDSCAPE_TWO_COLUMN_LADDER.map((rows) =>
-    justBelowPx(stackExtentPx(rows, PALETTE_COLUMN_GEOMETRY))
-  );
+export function landscapeTwoColumnTrimSteps(colorCount: number): TrimStep[] {
+  return trimSteps(colorCount, landscapeTwoColumnRungs());
 }
 
-/**
- * Widths below which the portrait row loses a core swatch. The always-present
- * gradient swatch occupies one slot on top of the core count.
- */
-export function portraitLadderPx(): number[] {
-  return PORTRAIT_LADDER.map((coreSwatches) =>
-    justBelowPx(stackExtentPx(coreSwatches + 1, PALETTE_ROW_GEOMETRY))
-  );
+/** Widths below which the portrait row loses another swatch. */
+export function portraitTrimSteps(colorCount: number): TrimStep[] {
+  return trimSteps(colorCount, stackRungs(colorCount, PORTRAIT_FLOOR_SLOTS, PALETTE_ROW_GEOMETRY));
 }
 
 // ── ColorPicker ────────────────────────────────────────────────────────────

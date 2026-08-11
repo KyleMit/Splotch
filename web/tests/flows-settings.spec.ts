@@ -77,7 +77,7 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   // does not choose what is rendered. Counted off the nav so neither side
   // restates how many sections there are.
   await expect(page.locator('.settings-section')).toHaveCount(
-    await nav.locator('.settings-nav-item').count()
+    await nav.locator('.toc-row').count()
   );
 
   // Clicking an entry scrolls its heading to just below the pane's top edge and
@@ -172,7 +172,7 @@ test('the shortest sidebar viewport can still reach every section', async ({ pag
 
   // The last entry jumps for real once scrolled to.
   await nav.getByRole('button').last().click();
-  await expect(nav.locator('.settings-nav-item').last()).toHaveClass(/active/);
+  await expect(nav.locator('.toc-row').last()).toHaveClass(/active/);
   await expect(page.locator('.about-brand')).toBeInViewport();
 });
 
@@ -203,7 +203,7 @@ test('reopening a scrolled sidebar lands back on the active row', async ({ page 
   // one and it has to be in view — read off the nav rather than restating which
   // section that is.
   await expect.poll(() => pane.evaluate((el) => el.scrollTop)).toBe(0);
-  await expect(nav.locator('.settings-nav-item').first()).toHaveClass(/active/);
+  await expect(nav.locator('.toc-row').first()).toHaveClass(/active/);
   await expect.poll(() => activeNavRowInsideColumn(page)).toBe(true);
 });
 

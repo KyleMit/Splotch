@@ -134,7 +134,6 @@ describe('responsive image sources', () => {
       'max-width: min(920px, calc(100vw - 32px))',
       '--book-grid-max-width: 856px',
       '--book-cols: 4',
-      '@media (max-width: 740px)',
       '@media (max-width: 520px)',
     ]) {
       expect(coloringBookComponent).toContain(ownedCssValue);
@@ -154,6 +153,25 @@ describe('responsive image sources', () => {
     expect(activePageChipComponent).toContain(
       `--active-page-thumbnail-size: ${COLORING_IMAGE_SIZES.activePageThumbnail}`
     );
+  });
+
+  // The `sizes` hint's leading clause and the CSS that changes the grid under it
+  // are one decision written twice — a media query can't read the constant — and
+  // a hint that disagrees with the layout hands the browser the wrong candidate
+  // at exactly the widths the CSS moved. Both are derived from the shipped hint
+  // rather than restated, the dialogTabletScaling.test.ts pattern.
+  it('gates the tall cover grid and its size hint on the same condition', () => {
+    const [tallClause] = COLORING_IMAGE_SIZES.coverThumbnail.standard.split(', ');
+    const tallCondition = tallClause.slice(0, tallClause.lastIndexOf(' '));
+    expect(coloringBookComponent).toContain(`@media ${tallCondition} {`);
+
+    // The width floor the tall layout shares with the four-column layout it
+    // replaces, and the complement one pixel below it that the phone columns
+    // take — a gap between them leaves a band of widths with no rule.
+    const floorPx = Number(/min-width: (\d+)px/.exec(tallCondition)?.[1]);
+    expect(floorPx).toBeGreaterThan(0);
+    expect(coloringBookComponent).toContain(`@media (min-width: ${floorPx}px) {`);
+    expect(coloringBookComponent).toContain(`@media (max-width: ${floorPx - 1}px) {`);
   });
 
   it('uses the adopted paper width for overlay selection', () => {

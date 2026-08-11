@@ -124,6 +124,13 @@ don't offer.
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
+| `ScrollCue.svelte`       | The fade that says a scroller's content carries on below. No props — render it as the       |
+|                          | **last child of the scrolling content** and it plants its own end-of-content sentinel       |
+|                          | there; one IntersectionObserver gives all three states, so it is absent when the content    |
+|                          | fits, absent at the end of the scroll, and present only in between. Depth is the inherited  |
+|                          | `--scroll-cue-height` (default 72px), set by the call site on any ancestor. A scroller that |
+|                          | already paints its own edge affordance (the settings sidebar's `local` shades) does not     |
+|                          | take one as well                                                                            |
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 
@@ -167,22 +174,29 @@ shell (sticky header + scrollspy TOC, in its route file); it still signs itself 
 | -------------------- | ------------------------------------------------------------------------------------------- |
 | `PageShell.svelte`   | The whole page frame: ground, centered 880px sheet, masthead (back link + `BrandMark`),     |
 |                      | hero H1 + lede. Exposes the `--page-*` palette (ground/sheet/ink/body/muted/rule/link/      |
-|                      | accent/shadow/measure/gutter, plus hover and on-accent variants), defaulting to the themed  |
-|                      | app tokens                                                                                  |
+|                      | accent/shadow/measure/gutter, plus the accent's hover and on-accent variants), resolved     |
+|                      | from the themed app tokens                                                                  |
 | `RuleLabel.svelte`   | The small-caps section marker with a hairline running to the sheet edge — a real `<h2>`     |
 | `BrandMark.svelte`   | Crayon strip + small-caps wordmark lockup (the masthead's second way home)                  |
 | `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
 
-**Light-only pages pin the whole `--page-*` palette** on the class forwarded to `PageShell`
-(`/privacy`, `/changelog`, and `/android-beta` pin the same values, including a link purple darkened
-past `--brand` to clear 4.5:1). Read the pinned values from each route's own style block — they are
-the documented raw-value exception, not candidates for tokens. The values that must agree across the
-pinned pages — the sheet shadow — are locked by the drift guard
-`web/src/lib/components/page/pinnedPalette.test.ts`, which fails on divergence; extend it when a new
-cross-page agreement appears. Content inside the shell reads `--page-*`, never restates a color. The
-admin console stays on the themed defaults — `/admin` follows light/dark since the 2026-08 redesign
-— so it forwards no palette overrides; `/design` styles itself from the themed app tokens directly,
-so its theme toggle keeps working.
+**No page opts out of night mode.** Every route wearing the shell follows the parent's Appearance
+setting, `/privacy`, `/changelog` and `/android-beta` included — they pinned a light `--page-*`
+palette until 2026-08-10 and no longer do (ADR-0071's amendment records the reversal). Content
+inside the shell reads `--page-*`, never restates a color, and a page that wants a color the palette
+doesn't carry reaches for a themed app token, never a hex; `/design` styles itself from the themed
+tokens directly, so its theme toggle keeps working.
+
+Two consequences worth knowing before styling one:
+
+* **A link hovers on its underline, not a second color.** The themed ramp stops at `--page-link`
+  (`--brand-text`) — there is no deeper accessible step — so hover thickens the underline or brings
+  one in. `/feedback` is the pattern.
+* **A per-item accent gets mixed, not pinned.** A color keyed to content (StepLedger's four crayon
+  hues) derives its wash and ink with `color-mix()` against `--page-sheet` and `--page-ink`, which
+  darkens the hue on the light sheet and lightens it on the dark one from one declaration. The mix
+  strengths are named custom properties; contrast is measured on both grounds by
+  `web/tests/android-beta.spec.ts` rather than assumed from the light reading.
 
 ## Brand & iconography
 
@@ -241,11 +255,9 @@ elsewhere is not** — raw px padding/margin/gap is still the norm in older comp
 hex and font-size ratchets enforce anything, so rule 2 is what governs spacing in new and edited
 styles. What remains raw beyond that is deliberate — documented one-offs (polaroid/photographic
 whites, ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
-ColoringBook's label reserve) and the **deliberately light-only pages** (`/privacy`, `/changelog`,
-`/android-beta`): a dark theme for them was considered and declined (owner decision, recorded in the
-ADR-0071 amendment — don't re-open it; `/admin` left that set in the 2026-08 redesign and is themed
-now). Their self-contained palettes must not use the themed color tokens: those flip with
-`data-theme`/`prefers-color-scheme` and would half-dark-theme them.
+ColoringBook's label reserve). The **light-only pages are gone**: `/admin` left that set in the
+2026-08 redesign and `/privacy`, `/changelog` and `/android-beta` followed on 2026-08-10, so no
+surface pins a palette against `data-theme`/`prefers-color-scheme` any more.
 
 CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
 allowlisted baselines (with per-file reasons) live in `tools/tokens/lint-token-styles.mjs`, plus a

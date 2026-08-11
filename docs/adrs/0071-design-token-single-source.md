@@ -1,13 +1,14 @@
 # ADR-0071: Design Tokens from One Generated Source (In-Repo Design System)
 
-**Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are permanently
-light-only — see the amendment at the end. Amended 2026-08-03: the styleguide is now the public
-`/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
+**Status:** Active. **Date:** 2026-07. Amended 2026-07-22: `/admin` and `/privacy` are light-only —
+**reversed 2026-08-10**, see the last amendment. Amended 2026-08-03: the styleguide is now the
+public `/design` route (ADR-0096) — see the amendment at the end. Amended 2026-08-04: the selection
 controls now share the `SegmentedPicker` primitive — see the amendment at the end. Amended
 2026-08-04: `/admin` left the light-only set — the console redesign moved it onto the themed tokens
 — see the amendment at the end. Amended 2026-08-06: `Button`'s `ghost` variant was removed — see the
 amendment at the end. Amended 2026-08-08: `/changelog` adopted the pinned light-only reading
-palette.
+palette. Amended 2026-08-10: **no page opts out of night mode** — the light-only set is empty and
+the concept retired; see the amendment at the end.
 
 ## Context
 
@@ -88,8 +89,9 @@ swaps.
 
 ## Amendment (2026-07-22): light-only surfaces
 
-> Superseded for `/admin` by the 2026-08-04 admin-redesign amendment below; still in force for
-> `/privacy` (plus `/android-beta` and `/changelog`, which adopted the same pinned palette).
+> **Fully superseded.** `/admin` left by the 2026-08-04 admin-redesign amendment below; `/privacy`,
+> `/android-beta` and `/changelog` by the 2026-08-10 night-mode amendment at the end, which reverses
+> this one outright. Kept for the record — do not act on it.
 
 `/admin` and `/privacy` will **not** get a dark theme — a dark theme was considered and declined
 (owner decision, 2026-07-22). Both keep self-contained, WCAG-tuned light palettes that are exempt
@@ -181,8 +183,8 @@ along with the console's `--page-*` pins — `PageShell` runs on its themed defa
 * The one raw-hex survivor is the persistence banner's warning amber (no warn token pair exists — it
   is the product's only warning surface); it stays light-pinned on both themes with its own
   self-contained contrast, allowlisted in the ratchet.
-* `/privacy`, `/android-beta`, and `/changelog` remain light-only per the 2026-07-22 amendment;
-  their shared `--page-shadow` drift guard (`pinnedPalette.test.ts`) covers all three pages.
+* `/privacy`, `/android-beta`, and `/changelog` remained light-only at the time of this amendment;
+  the 2026-08-10 amendment below moved them onto the themed defaults too, emptying the set.
 
 ## Amendment (2026-08-06): `Button`'s `ghost` variant is removed
 
@@ -194,3 +196,53 @@ adding a real border), so a `ghost` button in a row with `brand`/`wash`/`danger`
 `2 × var(--border-width)`. Per the root convention that a variant needs a production caller to
 justify its surface, `ghost` is deleted: `Button`'s `variant` prop is now `brand`/`wash`/`danger`,
 and the specimen row lists only those three.
+
+## Amendment (2026-08-10): no page opts out of night mode
+
+The 2026-07-22 light-only amendment is **fully reversed** (owner decision, 2026-08-10). Its last
+three holdouts — `/privacy`, `/android-beta`, `/changelog` — each pinned every one of `PageShell`'s
+`--page-*` properties to a light ground, so a parent with Night Mode on still got a white sheet on
+the pages a store listing and a Settings link hand out. All three now run on the shell's themed
+defaults, as `/feedback`, `/admin` and `/design` already did, and `pinnedPalette.test.ts` — the
+drift guard over the shared `--page-shadow` those pins had to agree on — is deleted with them.
+
+No new tokens were needed; the light appearance is preserved by the tokens the pins already
+approximated (`--app-bg`, `--surface`, the text ramp, `--border`, `--brand-text`, `--brand-solid`).
+Three details are worth carrying forward, because each one is a place where "just delete the pin"
+was not enough:
+
+* **`--page-link-hover` is deleted, not themed.** It existed so a pinned page could point at a
+  deeper shade of its own link color; the themed ramp has no such step, and left in place it would
+  have resolved to `--page-link` and turned four `:hover { color }` rules into silent no-ops. Links
+  now signal hover with their underline — the treatment `/feedback` already used.
+* **Per-item accents are mixed against themed tokens rather than tabulated.** `StepLedger`'s four
+  crayon steps needed a wash and an ink each; eight themed token pairs with one consumer apiece
+  would have failed the "earn its place" bar the ADR-0097 pruning set. Instead each `<li>` carries
+  its palette hue and the CSS derives both with `color-mix()` against `--page-sheet` and
+  `--page-ink` — one declaration that darkens the hue on the light sheet and lightens it on the dark
+  one. One mix strength has to clear WCAG AA for four crayons on two grounds (the tightest is green
+  at 4.8:1), which is why `android-beta.spec.ts` now measures every numeral and callout label under
+  both color schemes instead of assuming the light reading covers both.
+* **A derived color computes in a different notation.** `getComputedStyle` returns
+  `color(srgb r g b)` with 0-1 channels for a `color-mix()` and `rgb(r g b)` with 0-255 ones for a
+  plain token. The contrast helper in that spec scaled everything by 255 and so read every derived
+  ink as near-black — passing at a ratio just above 1. It reads its channels off a 1x1 canvas fill
+  now, which is notation-agnostic.
+
+The `<meta name="theme-color">` tag was the last holdout and closed the same day. It shipped as
+`THEME_COLORS.light` on every route except `/`, because `lib/state/appearance.svelte.ts` — the one
+owner of the resolved-theme subscription that repaints it — is imported only by the drawing route,
+so a dark `/privacy` rendered under a white address bar and PWA status bar. Of the two ways to fix
+it, pulling those state modules into the marketing-page bundles was rejected: a static import into a
+startup-path module re-partitions Rollup's chunks, and it would have done so for pages that need
+none of that state. Instead `app.html`'s pre-paint script resolves the theme itself — the explicit
+`splotch-theme` value when there is one, `prefers-color-scheme` otherwise — paints the tag before
+first paint, and in system mode keeps a `matchMedia` listener so the chrome follows an OS switch
+made while the page is open. That listener stands down whenever `data-app-surface` is present: on
+the drawing route `NotchBand` tints the same tag with the active drawing color, and the two must not
+fight over it. Taking the tag is also what obliges `NotchBand` to hand it back — an `$effect`
+cleanup restores `THEME_COLORS[resolvedTheme()]` when it unmounts, because a client-side navigation
+to a standalone page runs no boot script and would otherwise leave that page under an address bar
+still wearing the drawing color. The script's copies of the colors and of `resolveTheme`'s
+three-state rule are guarded the way the rest of that script is — `app.html.test.ts` now runs the
+shipped script against the shipped tag for every preference under both OS preferences.

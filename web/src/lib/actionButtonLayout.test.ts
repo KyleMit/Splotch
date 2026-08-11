@@ -22,9 +22,12 @@ import {
   landscapeSingleColumnMediaQuery,
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from './design/trimGeometry';
+import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from './breakpoints';
 import {
-  ACTION_BUTTON_BASE_LANDSCAPE,
-  ACTION_BUTTON_BASE_PORTRAIT,
+  ACTION_BUTTON_BASE_PX,
+  ACTION_BUTTON_BASE_PROPERTY,
+  actionButtonBase,
+  actionButtonSizeClass,
   ACTION_PANEL_LIVE_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
   NO_ACTIONS_ATTRIBUTE,
@@ -217,23 +220,23 @@ describe('maxActionButtonScale', () => {
   it('caps below 100% on a small landscape phone', () => {
     layout.viewportWidth = 600;
     layout.viewportHeight = 375;
-    // (600 − 156 − 64 − 124) / 6 = 42.67px per button → 71% of the 60px base.
-    expect(maxActionButtonScale()).toBe(71);
+    // (600 − 156 − 64 − 124) / 6 = 42.67px per button → 79% of the phone base.
+    expect(maxActionButtonScale()).toBe(79);
   });
 
   it('never drops below the slider minimum', () => {
     layout.viewportWidth = 520;
     layout.viewportHeight = 320;
-    // 37.6px per button would be 62% — clamped to the static minimum.
+    // 29.33px per button would be 54% — clamped to the static minimum.
     expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
   });
 
-  it('uses the vertical budget and 55px base in portrait', () => {
+  it('uses the vertical budget and the portrait base in portrait', () => {
     layout.orientation = 'portrait';
     layout.viewportWidth = 360;
     layout.viewportHeight = 440;
-    // (440 − 76 − 8 − 124) / 6 = 38.67px per button → below the slider minimum.
-    expect(maxActionButtonScale()).toBe(ACTION_BUTTON_SCALE_MIN);
+    // (440 − 76 − 8 − 124) / 6 = 38.67px per button → 77% of the phone base.
+    expect(maxActionButtonScale()).toBe(77);
   });
 
   it('portrait tall screens clear the static max', () => {
@@ -263,24 +266,68 @@ describe('maxActionButtonScale', () => {
     layout.viewportHeight = 375;
     setScreenshot(false);
     setUndoButton(false);
-    // n=4: (600 − 156 − 64 − 100) / 4 = 70px per button → 116%.
-    expect(maxActionButtonScale()).toBe(116);
+    // n=4: (600 − 156 − 64 − 100) / 4 = 70px per button → 129%.
+    expect(maxActionButtonScale()).toBe(129);
   });
 
   it('budgets for the free AI button without a credential', () => {
     layout.viewportWidth = 680;
     layout.viewportHeight = 360;
-    // n=6: (680 − 156 − 64 − 124) / 6 = 56px per button → 93%.
-    expect(maxActionButtonScale()).toBe(93);
+    // n=6: (680 − 156 − 64 − 124) / 6 = 56px per button → 103%.
+    expect(maxActionButtonScale()).toBe(103);
   });
 
   it('subtracts safe-area insets from the budget', () => {
     layout.viewportWidth = 667;
     layout.viewportHeight = 375;
     Object.assign(layout.safeArea, { left: 30, right: 30 });
-    // 60px of insets off the 323px budget: 263 / 6 = 43.83px → 73%.
-    expect(maxActionButtonScale()).toBe(73);
+    // 60px of insets off the 323px budget: 263 / 6 = 43.83px → 81%.
+    expect(maxActionButtonScale()).toBe(81);
   });
+});
+
+// The slider's own range never moves — every screen opens at
+// ACTION_BUTTON_SCALE_DEFAULT with the same travel either way. What the size
+// class changes is what that centre is worth in pixels.
+describe('action button size class', () => {
+  it.each([
+    { name: 'a small phone', shorterSidePx: 375, expected: 'phone' },
+    { name: 'the largest phone', shorterSidePx: 440, expected: 'phone' },
+    { name: 'the tablet floor', shorterSidePx: TABLET_MIN_SIDE_PX, expected: 'tablet' },
+    { name: 'an 11-inch tablet', shorterSidePx: 834, expected: 'tablet' },
+    {
+      name: 'the large-tablet floor',
+      shorterSidePx: LARGE_TABLET_MIN_SIDE_PX,
+      expected: 'largeTablet',
+    },
+    { name: 'a 13-inch tablet', shorterSidePx: 1032, expected: 'largeTablet' },
+  ])('classifies $name by its shorter side', ({ shorterSidePx, expected }) => {
+    expect(actionButtonSizeClass(shorterSidePx)).toBe(expected);
+  });
+
+  it('keeps its step through a rotation', () => {
+    layout.viewportWidth = 1376;
+    layout.viewportHeight = 1032;
+    expect(actionButtonBase('landscape')).toBe(ACTION_BUTTON_BASE_PX.largeTablet.landscape);
+
+    layout.viewportWidth = 1032;
+    layout.viewportHeight = 1376;
+    expect(actionButtonBase('portrait')).toBe(ACTION_BUTTON_BASE_PX.largeTablet.portrait);
+  });
+
+  it('shrinks on a phone and grows on a large tablet, either way round', () => {
+    for (const orientation of ['landscape', 'portrait'] as const) {
+      expect(ACTION_BUTTON_BASE_PX.phone[orientation]).toBeLessThan(
+        ACTION_BUTTON_BASE_PX.tablet[orientation]
+      );
+      expect(ACTION_BUTTON_BASE_PX.largeTablet[orientation]).toBeGreaterThan(
+        ACTION_BUTTON_BASE_PX.tablet[orientation]
+      );
+    }
+  });
+
+  // What each step is worth to a two-year-old's finger — at the slider default
+  // and at its minimum — is actionButtonLayout.touchTargets.test.ts.
 });
 
 // The hydrated render cap (a CSS length) and the slider ceiling (a number) are
@@ -289,10 +336,11 @@ describe('maxActionButtonScale', () => {
 // on exactly the budget availablePerButton reports.
 const CSS_TOKEN_PATTERN = /min|calc|[-+*/(),]|\d+(?:\.\d+)?/g;
 
-function tokenizeCssLength(expr: string, viewportWidth: number): string[] {
+function tokenizeCssLength(expr: string, viewportWidth: number, basePx: number): string[] {
   const resolved = expr
     .replace(/env\(safe-area-inset-\w+\)/g, '0px')
     .replace('var(--action-btn-scale, 1)', '1')
+    .replace(`var(${ACTION_BUTTON_BASE_PROPERTY})`, `${basePx}px`)
     .replace('100vw', `${viewportWidth}px`)
     .replace(/px\b/g, '');
   return resolved.match(CSS_TOKEN_PATTERN) ?? [];
@@ -300,8 +348,8 @@ function tokenizeCssLength(expr: string, viewportWidth: number): string[] {
 
 // Recursive descent over the CSS subset buttonSizeCssExpr emits: min(), calc(),
 // px lengths, and the four arithmetic operators.
-function evaluateCssLength(expr: string, viewportWidth: number): number {
-  const tokens = tokenizeCssLength(expr, viewportWidth);
+function evaluateCssLength(expr: string, viewportWidth: number, basePx: number): number {
+  const tokens = tokenizeCssLength(expr, viewportWidth, basePx);
   let index = 0;
 
   function operand(): number {
@@ -426,14 +474,11 @@ describe('buttonSizeCssExpr', () => {
               buttonCount,
               paletteWidth: resolvedLandscapePaletteWidth(),
             };
-      const base =
-        fixture.orientation === 'portrait'
-          ? ACTION_BUTTON_BASE_PORTRAIT
-          : ACTION_BUTTON_BASE_LANDSCAPE;
+      const base = actionButtonBase(fixture.orientation);
       const available = availablePerButton(buttonCount);
 
       expect(available < base).toBe(fixture.budgetWins);
-      expect(evaluateCssLength(buttonSizeCssExpr(inputs), layout.viewportWidth)).toBeCloseTo(
+      expect(evaluateCssLength(buttonSizeCssExpr(inputs), layout.viewportWidth, base)).toBeCloseTo(
         Math.min(base, available)
       );
     }

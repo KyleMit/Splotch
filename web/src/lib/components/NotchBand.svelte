@@ -5,7 +5,7 @@
   import { applyStatusBar, computeNotchBandState } from '$lib/platform/notchBand';
   import { layout } from '$lib/state/layout.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import { PAPER_COLORS, setThemeColorMeta } from '$lib/theme';
+  import { PAPER_COLORS, setThemeColorMeta, updateThemeColorMeta } from '$lib/theme';
 
   // Measured env(safe-area-inset-*), in CSS px — we need the number (not just
   // the CSS value) to tell a real notch from a bezel. The top and both sides
@@ -31,6 +31,18 @@
   $effect(() => {
     setThemeColorMeta(band.themeColor);
   });
+
+  // Taking the tag means handing it back. This component is the only thing that
+  // paints the drawing color there, and it lives only on the drawing route — so
+  // on a client-side navigation to a standalone page nothing else would repaint
+  // it, and that page would sit under an address bar wearing the last drawing
+  // color. The pre-paint script in app.html can't help: it runs on load only,
+  // and its OS-change listener stands down while data-app-surface is set.
+  //
+  // A separate effect, reading nothing reactive, so this runs on destroy alone
+  // rather than between every band repaint. resolvedTheme() honors the parent's
+  // three-state preference, so the tag lands on the theme the next page renders.
+  $effect(() => () => updateThemeColorMeta(resolvedTheme()));
 
   // Native: flip the system clock/battery icons light or dark for contrast.
   // The literal __IS_CAPACITOR__ keeps the status-bar plugin out of the web

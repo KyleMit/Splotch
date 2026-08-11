@@ -71,6 +71,7 @@ const REPORT_CSS = `
 .shot.has-critique{--severity-color:var(--hair-strong)}.shot.has-critique img{border:3px solid var(--severity-color)}
 .shot.severity-pass,.severity-filter .severity-pass{--severity-color:var(--c-green)}.shot.severity-low,.severity-filter .severity-low{--severity-color:var(--c-yellow)}.shot.severity-medium,.severity-filter .severity-medium{--severity-color:var(--c-orange)}.shot.severity-high,.severity-filter .severity-high{--severity-color:var(--c-red)}
 .critique-note{margin-top:10px;padding:10px;border-radius:var(--r-sm);background:color-mix(in srgb,var(--severity-color) 10%,var(--card));color:var(--muted);font-size:.76rem;line-height:1.45}.critique-note p{margin:6px 0 0}.critique-note p:first-of-type{color:var(--ink)}.critique-note strong{color:var(--ink)}
+.shared-pixels{color:var(--faint);font-size:.7rem}
 .critique-severity{display:inline-flex;align-items:center;gap:6px;color:var(--ink);font-size:.68rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.critique-severity::before{content:"";width:9px;height:9px;border-radius:99px;background:var(--severity-color)}
 [hidden]{display:none!important}@media(max-width:820px){.shots,.viewport-key{grid-template-columns:repeat(2,minmax(0,1fr))}.surface-head{flex-direction:column}.surface-source{flex:none}}@media(max-width:600px){.severity-filter{align-items:flex-start}.severity-filter fieldset{width:100%}.severity-filter legend{width:100%;line-height:1.4}.severity-filter label{flex:1 1 auto;justify-content:center}}@media(max-width:480px){.shots,.viewport-key{grid-template-columns:1fr}.shot{padding:10px}}
 `;
@@ -120,12 +121,30 @@ export function attachExpectedCapturePaths(items) {
   return items;
 }
 
-function critiqueNote(entry) {
+// Without this line two visually identical shots carrying different severities
+// read as reviewer inconsistency, when what they record is one shared shell
+// judged against two different expectations of what should have been there.
+function sharedPixelsByReviewId(pixelIdenticalGroups) {
+  const shared = new Map();
+  for (const group of pixelIdenticalGroups) {
+    for (const review of group.reviews) {
+      const others = group.reviews.length - 1;
+      shared.set(
+        review.review_id,
+        `Pixel-identical to ${others} other capture${others === 1 ? '' : 's'} in this theme${group.divergent ? ', judged differently' : ''}.`
+      );
+    }
+  }
+  return shared;
+}
+
+function critiqueNote(entry, sharedPixels) {
   if (!entry) return '';
   const recommendation = entry.recommendation?.trim()
     ? `<p><strong>Recommendation:</strong> ${esc(entry.recommendation)}</p>`
     : '';
-  return `<div class="critique-note"><span class="critique-severity">${esc(SEVERITY_LABELS[entry.severity])}</span><p>${esc(entry.critique)}</p>${recommendation}</div>`;
+  const shared = sharedPixels ? `<p class="shared-pixels">${esc(sharedPixels)}</p>` : '';
+  return `<div class="critique-note"><span class="critique-severity">${esc(SEVERITY_LABELS[entry.severity])}</span><p>${esc(entry.critique)}</p>${recommendation}${shared}</div>`;
 }
 
 function severityFilter(critique, snapshotCount) {
@@ -137,7 +156,8 @@ function severityFilter(critique, snapshotCount) {
   return `<form class="severity-filter" data-severity-filter><fieldset><legend>Filter by severity</legend><label class="filter-all"><input type="radio" name="severity" value="all" checked/>All</label>${options}</fieldset><output aria-live="polite">Showing ${snapshotCount} of ${snapshotCount} snapshots</output></form>`;
 }
 
-export function renderPageInventoryReport(items, critique = new Map()) {
+export function renderPageInventoryReport(items, critique, pixelIdenticalGroups) {
+  const sharedPixels = sharedPixelsByReviewId(pixelIdenticalGroups);
   const severityCounts = Object.fromEntries(
     PAGE_INVENTORY_SEVERITIES.map((severity) => [severity, 0])
   );
@@ -166,13 +186,14 @@ export function renderPageInventoryReport(items, critique = new Map()) {
           const themeCaptures = PAGE_INVENTORY_THEMES.map((theme) => {
             const shots = PAGE_INVENTORY_VIEWPORTS.map((view) => {
               const path = item.captures[inventoryCaptureKey(view, theme)];
-              const feedback = critique.get(captureReviewId(item, view, theme));
+              const reviewId = captureReviewId(item, view, theme);
+              const feedback = critique.get(reviewId);
               const severityClass = feedback ? ` has-critique severity-${feedback.severity}` : '';
               const severityData = critique.size
                 ? ` data-severity="${feedback?.severity ?? 'unreviewed'}"`
                 : '';
               const orientation = `${view.orientation[0].toUpperCase()}${view.orientation.slice(1)}`;
-              return `<figure class="shot${severityClass}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} in ${theme.label.toLowerCase()} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback)}</figure>`;
+              return `<figure class="shot${severityClass}"${severityData}><figcaption><strong>${esc(view.category)} · ${orientation}</strong><span>${view.width} × ${view.height}</span></figcaption><a href="${esc(path)}"><img src="${esc(path)}" width="${view.width}" height="${view.height}" loading="lazy" alt="${esc(`${item.title} in ${theme.label.toLowerCase()} at ${view.device} in ${view.orientation}`)}"/></a>${critiqueNote(feedback, sharedPixels.get(reviewId))}</figure>`;
             }).join('');
             return `<section class="theme-captures"><header class="theme-head"><h4>${esc(theme.label)}</h4><p>${esc(theme.reviewFocus)}</p></header><div class="shots">${shots}</div></section>`;
           }).join('');

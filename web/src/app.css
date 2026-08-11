@@ -29,6 +29,21 @@ body {
   background: var(--app-bg);
 }
 
+/* Every text input in the app types in --text-strong on --surface and leaves
+   the placeholder to the UA. That default ink is a fixed mid-gray that ignores
+   color-scheme — Chromium paints #757575 on both papers — so it scrapes 4.6:1
+   on the light surface and drops to 3.4:1 on the dark one, under the 4.5:1 AA
+   floor a placeholder owes as informative text. --text-soft is the token that
+   already claims the placeholder role and is pinned to hold that floor on the
+   app grounds in both themes; the placeholder still reads as the duller of the
+   two, a full --text-strong step below entered text. Firefox dims placeholders
+   with its own opacity on top, hence the reset. a11y.spec.ts measures both
+   papers. */
+::placeholder {
+  color: var(--text-soft);
+  opacity: 1;
+}
+
 /* Shared first-paint width of the landscape Color Palette. The palette and
    Actions Panel both consume it before ResizeObserver can publish the measured
    width; actionButtonLayout.fallback.test.ts guards these literals against the
@@ -303,6 +318,39 @@ body {
   fill: var(--icon-ink);
 }
 
+/* The unscaled action-button size, stepped by the viewport's size class: a
+   phone spends less of its scarce canvas edge on chrome, and beside a 13-inch
+   tablet's canvas the middle step reads as a small target. The Button Size
+   slider multiplies this, so the slider's own range is untouched. Owned here
+   rather than in TypeScript because first paint of the prerendered page
+   depends on it (ADR-0040); mirrors ACTION_BUTTON_BASE_PX and its size-class
+   media queries, drift-guarded by actionButtonLayout.fallback.test.ts. */
+:root {
+  --action-btn-base-landscape: 60px;
+  --action-btn-base-portrait: 55px;
+  --action-btn-base: var(--action-btn-base-landscape);
+}
+
+@media (max-width: 599.98px), (max-height: 599.98px) {
+  :root {
+    --action-btn-base-landscape: 54px;
+    --action-btn-base-portrait: 50px;
+  }
+}
+
+@media (min-width: 1000px) and (min-height: 1000px) {
+  :root {
+    --action-btn-base-landscape: 68px;
+    --action-btn-base-portrait: 62px;
+  }
+}
+
+@media (orientation: portrait) {
+  :root {
+    --action-btn-base: var(--action-btn-base-portrait);
+  }
+}
+
 /* ActionsPanel and BrushControl share these paper-floating action buttons. */
 .actions-panel .action-button {
   position: relative;
@@ -310,7 +358,7 @@ body {
      for the first-paint row seeded by app.html. Its literals mirror
      actionButtonLayout.ts and are drift-guarded by its fallback test. */
   --action-btn-fallback: min(
-    calc(60px * var(--action-btn-scale, 1)),
+    calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
     calc(
       (
           100vw - var(--palette-landscape-width) - 128px - var(--action-btn-first-paint-gap-total) -
@@ -336,17 +384,18 @@ body {
     transform var(--duration-base) ease,
     opacity var(--duration-base) ease;
   touch-action: manipulation;
-  padding: calc(10px * var(--action-btn-scale, 1));
+  /* A sixth of the button, so the icon keeps its share of the face as
+     --action-btn-base steps between size classes. */
+  padding: calc(var(--action-btn-base) / 6 * var(--action-btn-scale, 1));
 }
 
 @media (orientation: portrait) {
   .actions-panel .action-button {
     /* 208px = palette clearance + worst-case panel chrome + palette bar. */
     --action-btn-fallback: min(
-      calc(55px * var(--action-btn-scale, 1)),
+      calc(var(--action-btn-base) * var(--action-btn-scale, 1)),
       calc((100vh - 208px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) / 6)
     );
-    padding: calc(9px * var(--action-btn-scale, 1));
   }
 }
 
@@ -454,10 +503,19 @@ body {
 }
 
 .flyout-option {
-  /* Mirrors ACTION_BUTTON_BASE_LANDSCAPE, drift-guarded by
+  /* Squares with the action button that opened the menu, floored at the step a
+     popover has no reason to go below. The action panel takes a smaller step on
+     a phone to hand the canvas back to the drawing; a flyout is gone on the next
+     tap and hands nothing back, so shrinking it there buys no room and only
+     costs a two-year-old touch target. It does still follow the Button Size
+     slider — the menu is an extension of the button that opened it, and has to
+     stay its size while a parent drags (issue #317) — which leaves the floor as
+     what a parent's smallest setting is measured down from. Mirrors
+     FLYOUT_OPTION_MIN_BASE_PX, drift-guarded by
      actionButtonLayout.fallback.test.ts. */
-  width: calc(60px * var(--action-btn-scale, 1));
-  height: calc(60px * var(--action-btn-scale, 1));
+  --flyout-option-base: max(var(--action-btn-base), 60px);
+  width: calc(var(--flyout-option-base) * var(--action-btn-scale, 1));
+  height: calc(var(--flyout-option-base) * var(--action-btn-scale, 1));
   background: var(--float-surface);
   border: 2px solid var(--float-border);
   border-radius: 14px;

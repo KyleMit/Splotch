@@ -103,14 +103,15 @@
     <h3>Crayon palette</h3>
     <p>
       The drawing inks from <code>lib/palette.ts</code>, in the palette's own order — purple first
-      because it's the default selection; "bonus" swatches only appear when the layout has the most
-      room. Black is near-black ink that presents (and paints) as white on dark paper.
+      because it's the default selection. The bar shows as many of them as the viewport fits and
+      drops the rest by trim priority, so a small phone still gets a rainbow rather than a handful.
+      Black is near-black ink that presents (and paints) as white on dark paper.
     </p>
     <div class="palette-card">
       {#each PALETTE_COLORS as color, index (color.label)}
         <div class="crayon">
           <span class="crayon-dot" class:selected={index === 0} style:background={color.hex}></span>
-          <span class="value">{color.label}{color.bonus ? ' · bonus' : ''}</span>
+          <span class="value">{color.label}</span>
         </div>
       {/each}
     </div>

@@ -22,7 +22,8 @@
   } from '$lib/state/books';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
-  import { cutTrailingRow, retireAtScrollEnd } from '$lib/actions/scrollCue';
+  import ScrollCue from './design/ScrollCue.svelte';
+  import { cutTrailingRow } from '$lib/actions/scrollCue';
   import { guardTapZone } from '$lib/actions/launchGuard';
   import { layout } from '$lib/state/layout.svelte';
   import { canvasState } from '$lib/state/canvas.svelte';
@@ -41,9 +42,6 @@
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
-  // Starts retired so a catalog that fits shows no cue at all; the first
-  // reading arms it only when there is something below the fold.
-  let scrolledToEnd = $state(true);
   let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
@@ -287,15 +285,10 @@
         {/key}
       </div>
     {/if}
-    <!-- Outside the view branches on purpose: one fade serves the book grid and
+    <!-- Outside the view branches on purpose: one cue serves the book grid and
          every page grid, so its observer never ends up watching a node the keyed
          page grid has since replaced. -->
-    <div
-      class="coloring-scroll-fade"
-      class:retired={scrolledToEnd}
-      aria-hidden="true"
-      use:retireAtScrollEnd={(atEnd) => (scrolledToEnd = atEnd)}
-    ></div>
+    <ScrollCue />
   </div>
 </dialog>
 
@@ -522,6 +515,46 @@
     }
   }
 
+  /* ── Tall portrait: the covers go tall instead of wide ───────────────────
+     Same width floor the four-column layout starts at, because this replaces
+     it: four small covers in a short, wide card leave the height unspent, and
+     two columns turn that height into cover art.
+
+     The gate is an aspect ratio rather than `orientation: portrait` because the
+     grid below is capped by the dialog's height. On a barely-portrait viewport
+     that cap is tighter than the width four columns already had, so the swap
+     would shrink the very covers it exists to grow; the two layouts draw the
+     same tile where height is about 1.06 times width, and 4:5 clears that at
+     every width this rule can see. Every tablet held upright is 3:4 or taller,
+     so none of them loses the treatment. flows-coloring-book.spec.ts measures
+     the covers across that band rather than trusting the arithmetic.
+
+     The orphan selector is restated so this beats it on order at equal
+     specificity — its three-column fallback is a four-column repair, and at two
+     columns it would only shrink the tiles this step exists to grow. */
+  @media (max-aspect-ratio: 4 / 5) and (min-width: 741px) {
+    .coloring-books-grid,
+    .coloring-books-grid.book-grid-has-orphan {
+      --book-cols: 2;
+      /* Square tiles that fill the width would run the catalog well past the
+         fold, so the grid is capped at the width whose tiles seat this many
+         rows inside the dialog's height cap instead — the whole catalog today,
+         and a longer one still gets the trailing-row cut cue. */
+      --book-grid-rows-in-view: 4;
+      /* Everything inside that height cap that isn't tile: the content padding
+         above and below, the header row, the gaps between rows, and a little
+         slack so a sub-pixel row can't tip the last one past the fold. */
+      --book-grid-chrome: calc(
+        2 * var(--space-7) + var(--modal-close-size) + var(--space-5) +
+          (var(--book-grid-rows-in-view) - 1) * var(--space-3) + var(--space-4)
+      );
+      --book-grid-max-width: calc(
+        (var(--coloring-book-modal-max-height) - var(--book-grid-chrome)) /
+          var(--book-grid-rows-in-view) * var(--book-cols) + (var(--book-cols) - 1) * var(--space-3)
+      );
+    }
+  }
+
   .coloring-book-label {
     position: absolute;
     left: 0;
@@ -536,39 +569,5 @@
     font-weight: var(--font-weight-semibold);
     color: var(--text);
     text-align: center;
-  }
-
-  /* The dialog is the scroll container, so this cue has to travel with the
-     scrollport rather than sit inside the content: sticky, and pulled back over
-     the grid so it costs no layout height. Short enough to thin the clipped row
-     rather than hide it, and the opaque stop is held down in the bottom fifth so
-     a cover tile's caption band stays readable under it. */
-  .coloring-scroll-fade {
-    --coloring-scroll-fade-height: 72px;
-    --coloring-scroll-fade-opaque-from: 80%;
-    position: sticky;
-    bottom: 0;
-    height: var(--coloring-scroll-fade-height);
-    margin-top: calc(-1 * var(--coloring-scroll-fade-height));
-    pointer-events: none;
-    transition: opacity var(--duration-base) var(--ease-glide);
-    /* rgba fallback precedes the color-mix (docs/COMPATIBILITY.md); painting
-       from --surface rather than white gives dark mode a dark fade. The clear
-       end is a zero-alpha surface, not the `transparent` keyword, which some
-       engines interpolate through gray. */
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 1) var(--coloring-scroll-fade-opaque-from)
-    );
-    background: linear-gradient(
-      to bottom,
-      color-mix(in srgb, var(--surface) 0%, transparent),
-      var(--surface) var(--coloring-scroll-fade-opaque-from)
-    );
-  }
-
-  .coloring-scroll-fade.retired {
-    opacity: 0;
   }
 </style>
