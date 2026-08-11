@@ -351,10 +351,24 @@
     width: var(--ledger-target-min);
     height: var(--ledger-target-min);
     padding: 0;
-    background: transparent;
-    border: none;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: background var(--duration-fast) ease;
+  }
+
+  /* The compact layout only exists at ≤800px, where (hover: hover) never
+     matches — so press feedback, not hover, is this button's only reveal on the
+     devices that see it. Both sit above the hover block so the pointer-only
+     rule keeps winning where it does match. */
+  .more-btn:active {
+    background: var(--brand-wash);
+  }
+
+  .more-btn:focus-visible {
+    outline: 2px solid var(--brand-solid);
+    outline-offset: 2px;
   }
 
   @media (hover: hover) {
@@ -372,6 +386,10 @@
      CSS fill beats the SVG's baked near-black presentation attribute. */
   :global(.more-btn .more-icon svg) {
     fill: var(--icon-muted);
+  }
+
+  :global(.more-btn:active .more-icon svg) {
+    fill: var(--brand-text);
   }
 
   /* Empty state */
