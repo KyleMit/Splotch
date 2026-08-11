@@ -10,6 +10,7 @@
     dismissGate,
     pressGateDigit,
     pressGateBackspace,
+    redirectGateToParentCenter,
     GATE_SHAKE_MS,
   } from '$lib/state/parentalGate.svelte';
 
@@ -17,6 +18,19 @@
   // front of it is already at that destination: it names it in the subtitle and
   // drops the footer that would otherwise offer the trip the parent is on.
   const managingPolicies = $derived(gate.feature === 'parentCenter');
+
+  // The keypad, for the focus handoff below.
+  let keypadEl = $state<HTMLDivElement>();
+
+  // Retargeting unmounts the footer this was activated from, and a removed
+  // element hands focus back to <body> — outside the dialog, where the keydown
+  // handler above never sees another digit, leaving a keyboard user stranded on
+  // a card that looks ready for one. So focus moves onto the keypad first, while
+  // the element that owns it is still there to give it up.
+  function manageGatePolicies() {
+    keypadEl?.querySelector('button')?.focus();
+    redirectGateToParentCenter();
+  }
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.
   // Both fills must hold ≥3:1 against the --on-brand digit (WCAG AA large
@@ -111,7 +125,7 @@
           {/each}
         </div>
         <p class="gate-error" role="status">{gate.error ?? ''}</p>
-        <div class="gate-keypad">
+        <div class="gate-keypad" bind:this={keypadEl}>
           {#each KEYPAD_DIGITS as digit (digit)}
             <button class="gate-key" onclick={() => pressGateDigit(digit)}>{digit}</button>
           {/each}
@@ -120,7 +134,7 @@
           </button>
         </div>
         {#if !managingPolicies}
-          <ParentalGateManageFooter />
+          <ParentalGateManageFooter onManage={manageGatePolicies} />
         {/if}
       </div>
     {/if}

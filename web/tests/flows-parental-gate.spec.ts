@@ -92,6 +92,54 @@ test('a gated action points at Parent Center, and one solve lands there', async 
   await expect(page.locator(AI_PROMPT)).not.toBeVisible();
 });
 
+test('the keyboard keeps the card after the footer retargets it', async ({ page }) => {
+  await gotoGatedAiButton(page);
+  const gate = await openParentalGate(page);
+
+  // Activating the footer unmounts it, and focus has to survive that: a removed
+  // element hands focus to <body>, where the dialog's keydown handler never sees
+  // another digit and the card looks ready for one it will not take.
+  await gate.getByRole('button', { name: MANAGE_FOOTER }).focus();
+  await page.keyboard.press('Enter');
+  await expect(gate.getByText(MANAGE_SUBTITLE)).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.getElementById('parentalGate')?.contains(document.activeElement) ?? false
+      )
+    )
+    .toBe(true);
+
+  // Typed on the keyboard, never on the keypad — and asserted on the
+  // destination rather than on a filled dab, since a one-digit answer (3 × 3)
+  // auto-submits and leaves no dab behind to count.
+  const label = await page.locator('.gate-equation').getAttribute('aria-label');
+  const [x, y] = label!.match(/\d+/g)!.map(Number);
+  for (const digit of String(x * y)) await page.keyboard.press(digit);
+
+  const settings = page.locator('#settingsModal');
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
+});
+
+// Every interactive control holds the app's minimum touch target. This one has
+// to be asserted where the card is widest: the line stops wrapping there, which
+// is exactly where its height stops being carried by a second line of text.
+const MINIMUM_TOUCH_TARGET_PX = 44;
+
+test('the footer holds the minimum touch target where its text stops wrapping', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1200, height: 1200 });
+  await gotoGatedAiButton(page);
+  const gate = await openParentalGate(page);
+
+  const footer = gate.getByRole('button', { name: MANAGE_FOOTER });
+  await expect(footer).toHaveCount(1);
+  await expect
+    .poll(async () => (await footer.boundingBox())?.height ?? 0)
+    .toBeGreaterThanOrEqual(MINIMUM_TOUCH_TARGET_PX);
+});
+
 test('the footer hands straight over when Parent Center asks for no check of its own', async ({
   page,
 }) => {

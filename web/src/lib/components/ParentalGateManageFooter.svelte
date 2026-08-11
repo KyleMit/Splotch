@@ -10,10 +10,18 @@
 -->
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import { redirectGateToParentCenter } from '$lib/state/parentalGate.svelte';
+
+  interface Props {
+    /** Retargets the challenge — the gate owns it, since activating this line
+     *  unmounts the line, and the focus that was on it has to go somewhere the
+     *  keypad's keydown handler can still reach. */
+    onManage: () => void;
+  }
+
+  let { onManage }: Props = $props();
 </script>
 
-<button class="gate-manage" onclick={redirectGateToParentCenter}>
+<button class="gate-manage" onclick={onManage}>
   <span>Manage these checks in</span>
   <span class="gate-manage-path">
     <span class="gate-manage-place">
@@ -36,8 +44,15 @@
     justify-content: center;
     gap: var(--space-1);
     width: 100%;
+    /* One line of fine print is barely half a finger tall, and this line stops
+       wrapping as soon as the card is roomy enough — so the target is held to
+       the app's 44px floor rather than left to whatever the text happens to
+       need. Balanced padding carries it at the tablet step, `min-height` at the
+       phone type size; box-sizing keeps the hairline inside the measure. */
+    box-sizing: border-box;
+    min-height: 44px;
     margin-top: var(--space-4);
-    padding: var(--space-3) 0 0;
+    padding: var(--space-3) 0;
     border: none;
     border-top: var(--border-width) solid var(--border);
     background: none;
