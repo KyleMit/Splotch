@@ -85,6 +85,7 @@ The runner writes `<review_id>.json` with exactly one entry:
   "schema_version": 3,
   "review_contract": "isolated-image-description-v1",
   "review_id": "routes--privacy--iphone-13-mini-landscape--dark",
+  "review_description_sha256": "<sha256 of the manifest's review_description>",
   "entry": {
     "review_id": "routes--privacy--iphone-13-mini-landscape--dark",
     "image": "assets/routes/privacy--iphone-13-mini-landscape--dark.webp",
@@ -97,8 +98,12 @@ The runner writes `<review_id>.json` with exactly one entry:
 }
 ```
 
-The filename, document `review_id`, and entry `review_id` must agree. The finalizer also checks the
-image path and digest against the manifest, so a recapture invalidates only that one review.
+The filename, document `review_id`, and entry `review_id` must agree. The finalizer also checks both
+of the reviewer's inputs against the manifest — the entry's image path and digest, and the
+document's `review_description_sha256` — so a recapture invalidates only that one review, and a
+notes edit invalidates only the reviews whose description it changed. A checkpoint written without
+the description digest is stale by definition, so hand-authoring one from this shape means computing
+it from that capture's `review_description`.
 
 The review command is resumable: current checkpoints are skipped and missing/stale ones are run. Use
 `-- --limit N` for a bounded segment or `-- --review-id ID` for a canary. A complete requested run
