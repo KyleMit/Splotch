@@ -231,3 +231,8 @@ ios/local.xcconfig
 # burn-down-audits skill): per-call Claude JSON / Codex JSONL envelopes, run
 # log, completed list, schemas, STOP sentinel. Durable state is docs/AUDIT.md + git.
 .audit-work/
+
+# Raw per-request traces written by the frozen fetch-priority probe; the
+# distilled marks and waterfall committed beside them are what the evaluation
+# cites.
+docs/scratchpad/fetch-priority-probe/runs/trials.json

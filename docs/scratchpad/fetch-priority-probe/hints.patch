@@ -1,0 +1,29 @@
+diff --git a/web/src/lib/coloringPacks/webStore.ts b/web/src/lib/coloringPacks/webStore.ts
+index daebfa40..c7e73d31 100644
+--- a/web/src/lib/coloringPacks/webStore.ts
++++ b/web/src/lib/coloringPacks/webStore.ts
+@@ -33,7 +33,11 @@ async function verifiedResponse(
+   file: ResolvedColoringPackBookManifest['files'][number],
+   signal: AbortSignal
+ ): Promise<Response> {
+-  const response = await fetch(file.downloadPath, { cache: 'no-store', signal });
++  const response = await fetch(file.downloadPath, {
++    cache: 'no-store',
++    signal,
++    priority: 'low',
++  });
+   if (!response.ok)
+     throw new Error(`Coloring asset download failed (${response.status}): ${file.downloadPath}`);
+   const bytes = await response.arrayBuffer();
+diff --git a/web/src/lib/imagePrefetch.ts b/web/src/lib/imagePrefetch.ts
+index 62214801..7ae219be 100644
+--- a/web/src/lib/imagePrefetch.ts
++++ b/web/src/lib/imagePrefetch.ts
+@@ -31,6 +31,7 @@ export function prefetchImages(requests: Iterable<string | ResponsiveImageReques
+     warmed.add(url);
+     const img = new Image();
+     img.decoding = 'async';
++    img.fetchPriority = 'low';
+     if (typeof request !== 'string') {
+       img.sizes = request.sizes;
+       img.srcset = request.srcset;

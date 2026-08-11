@@ -1,0 +1,189 @@
+{
+  "note": "slow-4g, arm=off, mouse input, trial 0. App scripts under 40 KB elided.",
+  "requests": [
+    {
+      "url": "/",
+      "priority": "VeryHigh",
+      "initiator": "other",
+      "startMs": 0,
+      "endMs": 2313,
+      "bytes": 45736
+    },
+    {
+      "url": "/icons/handmade-paper.webp",
+      "priority": "Low",
+      "initiator": "parser",
+      "startMs": 938,
+      "endMs": 4716,
+      "bytes": 17872
+    },
+    {
+      "url": "/_app/immutable/assets/ErrorScreen.Cc8fNDK2.css",
+      "priority": "VeryHigh",
+      "initiator": "script",
+      "startMs": 3907,
+      "endMs": 4395,
+      "bytes": 1275
+    },
+    {
+      "url": "/sounds/pencil-1.mp3",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 5019,
+      "endMs": 16874,
+      "bytes": 121812
+    },
+    {
+      "url": "/version.json",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 5050,
+      "endMs": 5537,
+      "bytes": 261
+    },
+    {
+      "url": "/_app/immutable/assets/quicksand-latin-wght-normal.Buj9m_3d.woff2",
+      "priority": "VeryHigh",
+      "initiator": "other",
+      "startMs": 5050,
+      "endMs": 8173,
+      "bytes": 28524
+    },
+    {
+      "url": "/sounds/pencil-2.mp3",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 5085,
+      "endMs": 17547,
+      "bytes": 121812
+    },
+    {
+      "url": "/sounds/pencil-3.mp3",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 5085,
+      "endMs": 17606,
+      "bytes": 121812
+    },
+    {
+      "url": "/api/free-generation-grant",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 5720,
+      "endMs": 9931,
+      "bytes": 505
+    },
+    {
+      "url": "/_app/immutable/assets/splotchy.1qKHAmAF.svg",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9642,
+      "endMs": 13798,
+      "bytes": 32483
+    },
+    {
+      "url": "/coloring/farm/duck-wide.overlay.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9681,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/cat-wide.thumb.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9683,
+      "endMs": 12333,
+      "bytes": 14864
+    },
+    {
+      "url": "/coloring/farm/cow-wide.thumb.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9683,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/dog-wide.thumb.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9683,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/duck-wide.thumb.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9683,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/horse-wide.thumb.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9683,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/pig-wide.thumb.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9683,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/horse-wide.overlay.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 9701,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/manifest-1.4.0+2cb21afc.json",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 10198,
+      "endMs": 17460,
+      "bytes": 47450
+    },
+    {
+      "url": "/coloring/farm/cat-wide.overlay.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 12386,
+      "endMs": 19306,
+      "bytes": 111369
+    },
+    {
+      "url": "/coloring/dinosaur/cover.thumb.webp",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 17914,
+      "endMs": 19189,
+      "bytes": 21354
+    },
+    {
+      "url": "/coloring/dinosaur/brachiosaurus-tall.thumb.webp",
+      "priority": "High",
+      "initiator": "script",
+      "startMs": 19214,
+      "endMs": null,
+      "bytes": 0
+    },
+    {
+      "url": "/coloring/farm/cat-wide.light.webp",
+      "priority": "Low",
+      "initiator": "other",
+      "startMs": 19326,
+      "endMs": null,
+      "bytes": 0
+    }
+  ]
+}
