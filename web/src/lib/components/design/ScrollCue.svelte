@@ -25,9 +25,17 @@
 <div class="scroll-cue" class:retired={atEnd} aria-hidden="true"></div>
 
 <style>
-  /* Zero height, so marking the end of the content does not extend it. */
   .scroll-cue-sentinel {
-    height: 0;
+    /* How far the end-of-content marker reaches back over the content it marks.
+       Fractional layout leaves the true end of a scroll a sub-pixel *past* the
+       scrollport's edge, so a marker sitting flush on that end reads as below
+       the fold at the bottom of the scroll and the cue never retires. Overlap
+       absorbs that, and the matching negative margin keeps the marker from
+       lengthening the content it is measuring. */
+    --sentinel-overlap: 2px;
+
+    height: var(--sentinel-overlap);
+    margin-top: calc(-1 * var(--sentinel-overlap));
   }
 
   .scroll-cue {
