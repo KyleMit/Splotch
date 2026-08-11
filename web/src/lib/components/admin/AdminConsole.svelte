@@ -3,9 +3,10 @@
   // server-rendered with form actions + cookie session). The page owns the auth
   // transport and data; this component owns the page chrome, forms, and the
   // interaction state shared across the row surfaces (copy feedback, the busy
-  // guard) — the codes table itself is InviteLedger, its overflow menu
-  // InviteMenu. Callbacks return whether the operation succeeded so the
-  // component knows when to reset.
+  // guard) — the codes table itself is InviteLedger, including the phone-width
+  // disclosure that expands a row's remaining actions in place. Callbacks
+  // return whether the operation succeeded so the component knows when to
+  // reset.
   // Per-token AI generation tally (mirrors $lib/server/usage TokenUsage). Kept
   // structural here so this client component never imports server code.
   // adminFormat.test.ts is the drift guard for that duplication — it reads both
@@ -40,7 +41,6 @@
   import PageShell from '../page/PageShell.svelte';
   import RuleLabel from '../page/RuleLabel.svelte';
   import InviteLedger from './InviteLedger.svelte';
-  import InviteMenu from './InviteMenu.svelte';
 
   let {
     authed,
@@ -144,15 +144,6 @@
       // Clipboard may be unavailable (e.g. non-secure context); ignore.
     }
   }
-
-  // The row the overflow menu belongs to, or null when it's closed.
-  let menuInvite = $state<Invite | null>(null);
-  let inviteMenu = $state<ReturnType<typeof InviteMenu>>();
-
-  function openMenu(invite: Invite) {
-    menuInvite = invite;
-    inviteMenu?.open();
-  }
 </script>
 
 <PageShell title="Admin" wordmark="Splotch Admin">
@@ -230,7 +221,6 @@
       {copied}
       oncopy={copy}
       onremove={(token) => run(() => onremove(token))}
-      onmore={openMenu}
     />
 
     {#if freeGrantStats}
@@ -303,15 +293,6 @@
     {/if}
   {/if}
 </PageShell>
-
-<InviteMenu
-  bind:this={inviteMenu}
-  invite={menuInvite}
-  {busy}
-  oncopy={copy}
-  onremove={(token) => run(() => onremove(token))}
-  onclose={() => (menuInvite = null)}
-/>
 
 <style>
   .grant-metrics {

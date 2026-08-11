@@ -6,15 +6,15 @@
   // The console's bordered "Access codes" block: an empty state, or the
   // columned table of invite rows with their Copy / Copy link / Remove
   // actions. Copy feedback and the busy guard stay with AdminConsole (the
-  // overflow menu shares them); this component owns only the ledger's markup
-  // and styles.
+  // row surfaces share them); this component owns the ledger's markup and
+  // styles, including the phone-width disclosure that expands a row's
+  // remaining actions in place.
   let {
     invites,
     busy,
     copied,
     oncopy,
     onremove,
-    onmore,
   }: {
     invites: Invite[];
     busy: boolean;
@@ -22,8 +22,38 @@
     copied: string;
     oncopy: (key: string, text: string) => void;
     onremove: (token: string) => void;
-    onmore: (invite: Invite) => void;
   } = $props();
+
+  // Phone widths collapse Copy link / Remove behind a per-row chevron that
+  // expands them in place — no overlay, nothing covered (issue: the old
+  // centered modal sheet dimmed the page and hid the row being acted on).
+  // One row open at a time; the token identifies it.
+  let expandedToken = $state<string | null>(null);
+  // Intentionally untracked: read only imperatively, to return focus to the
+  // open row's chevron when Escape collapses it from a revealed button.
+  let expandedToggle: HTMLButtonElement | null = null;
+
+  function toggleRow(invite: Invite, toggle: HTMLButtonElement) {
+    if (expandedToken === invite.token) {
+      collapseRow();
+    } else {
+      expandedToken = invite.token;
+      expandedToggle = toggle;
+    }
+  }
+
+  function collapseRow() {
+    expandedToken = null;
+    expandedToggle = null;
+  }
+
+  function onEscapeCollapse(event: KeyboardEvent) {
+    if (event.key !== 'Escape' || expandedToken === null) return;
+    expandedToggle?.focus();
+    collapseRow();
+  }
+
+  const rowActionsId = (index: number) => `invite-row-actions-${index}`;
 
   // The native front door has no usage tracking (every invite's `usage` is
   // undefined there — see the Invite doc in AdminConsole), so the ledger
@@ -67,8 +97,8 @@
       </div>
     </div>
     <div role="rowgroup" class="invites">
-      {#each invites as invite (invite.token)}
-        <div role="row" class="invite">
+      {#each invites as invite, index (invite.token)}
+        <div role="row" class="invite" class:open={expandedToken === invite.token}>
           <div role="cell" class="invite-info">
             <span class="token">{invite.token}</span>
             {#if invite.usage !== undefined}
@@ -126,11 +156,48 @@
               {@render copyCodeButton(invite)}
               <button
                 type="button"
-                class="more-btn"
+                class="expand-btn"
+                class:open={expandedToken === invite.token}
+                aria-expanded={expandedToken === invite.token}
+                aria-controls={rowActionsId(index)}
                 aria-label={`More options for ${invite.token}`}
-                onclick={() => onmore(invite)}
+                onclick={(event) => toggleRow(invite, event.currentTarget)}
+                onkeydown={onEscapeCollapse}
               >
-                <Icon name="more-horiz" class="more-icon" />
+                <Icon name="chevron-down" class="expand-icon" />
+              </button>
+            </div>
+          </div>
+
+          <div
+            role="cell"
+            class="row-actions"
+            class:open={expandedToken === invite.token}
+            id={rowActionsId(index)}
+          >
+            <div class="row-actions-line">
+              <button
+                type="button"
+                class="row-action"
+                class:copied={copied === copyKey(invite.token, 'url')}
+                aria-label={`Copy link for ${invite.token}`}
+                onclick={() => oncopy(copyKey(invite.token, 'url'), invite.url)}
+                onkeydown={onEscapeCollapse}
+              >
+                {copied === copyKey(invite.token, 'url') ? 'Copied!' : 'Copy link'}
+              </button>
+              <button
+                type="button"
+                class="row-action row-action-danger"
+                disabled={busy}
+                aria-label={`Remove ${invite.token}`}
+                onclick={() => {
+                  collapseRow();
+                  onremove(invite.token);
+                }}
+                onkeydown={onEscapeCollapse}
+              >
+                Remove
               </button>
             </div>
           </div>
@@ -336,7 +403,7 @@
     cursor: default;
   }
 
-  /* Compact Copy + "⋯" pair — narrow layout only. */
+  /* Compact Copy + chevron pair — phone layout only. */
   .compact-actions {
     display: none;
     align-items: center;
@@ -344,53 +411,117 @@
     flex-shrink: 0;
   }
 
-  .more-btn {
+  /* The disclosure chevron: transparent at rest, so it reads as "there's more
+     of this row" rather than a separate control surface. */
+  .expand-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: var(--ledger-target-min);
     height: var(--ledger-target-min);
     padding: 0;
-    background: var(--surface-2);
-    border: var(--border-width) solid var(--border);
+    background: transparent;
+    border: none;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: background var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
-    .more-btn:hover {
+    .expand-btn:hover {
       background: var(--surface-hover);
     }
   }
 
-  /* Press sits below the hover block so it wins on a hover-capable pointer too:
-     the compact layout is reached by narrow desktop windows and trackpad
-     hybrids, not only by touch, and there an earlier :active would lose to
-     :hover for the whole press — leaving the button with no press feedback on
-     exactly the devices this rule exists to serve. */
-  .more-btn:active {
+  /* Press and open sit below the hover block so they win on a hover-capable
+     pointer too: the compact layout is reached by narrow desktop windows and
+     trackpad hybrids, not only by touch, and there an earlier :active would
+     lose to :hover for the whole press — leaving the button with no press
+     feedback on exactly the devices this rule exists to serve. */
+  .expand-btn:active,
+  .expand-btn.open {
     background: var(--brand-wash);
   }
 
-  .more-btn:focus-visible {
+  .expand-btn:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
 
-  :global(.more-btn .more-icon) {
+  :global(.expand-btn .expand-icon) {
     width: 20px;
     height: 20px;
+    transition: transform var(--duration-fast) ease;
+  }
+
+  /* One chevron glyph, rotated open — never a reactive {@html} icon swap
+     (see .claude/rules/svelte.md on {@html} and hydration). */
+  .expand-btn.open :global(.expand-icon) {
+    transform: rotate(180deg);
   }
 
   /* Re-inked via fill (not a filter chain), the modal-close-icon pattern:
      CSS fill beats the SVG's baked near-black presentation attribute. */
-  :global(.more-btn .more-icon svg) {
+  :global(.expand-btn .expand-icon svg) {
     fill: var(--icon-muted);
   }
 
-  :global(.more-btn:active .more-icon svg) {
+  :global(.expand-btn:active .expand-icon svg),
+  .expand-btn.open :global(.expand-icon svg) {
     fill: var(--brand-text);
+  }
+
+  /* The revealed Copy link / Remove line — phone layout only; the wide grid
+     never renders it as a track. */
+  .row-actions {
+    display: none;
+  }
+
+  .row-action {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--ledger-target-min);
+    padding: 7px 14px;
+    color: var(--brand-text);
+    background: var(--surface);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: var(--ledger-meta-size);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background var(--duration-fast) ease,
+      color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+  }
+
+  @media (hover: hover) {
+    .row-action:hover {
+      background: var(--brand-wash);
+    }
+
+    .row-action-danger:hover {
+      background: var(--danger-wash);
+    }
+  }
+
+  .row-action.copied {
+    color: var(--success-text);
+    border-color: var(--success-text);
+    background: var(--success-wash);
+  }
+
+  .row-action-danger {
+    color: var(--danger-text);
+  }
+
+  .row-action:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
 
   /* Empty state */
@@ -415,16 +546,15 @@
   }
 
   /* Where the column grid stops fitting, the header row drops and each row
-     collapses to code-over-usage beside a single Copy plus the "⋯" overflow
-     menu. 800px is where the sheet's content width (viewport minus PageShell's
-     page padding and gutters, ~684px here) still clears the fixed usage/action
-     tracks, gaps, and row padding (~524px) with a useful code column left over;
-     below it the code track gets squeezed toward zero. */
+     collapses to code-over-usage beside the inline action set. 800px is where
+     the sheet's content width (viewport minus PageShell's page padding and
+     gutters, ~684px here) still clears the fixed usage/action tracks, gaps,
+     and row padding (~524px) with a useful code column left over; below it
+     the code track gets squeezed toward zero. */
   @media (max-width: 800px) {
     .ledger-head,
     .cell-gens,
-    .cell-last,
-    .wide-actions {
+    .cell-last {
       display: none;
     }
 
@@ -442,9 +572,64 @@
     .usage-line {
       display: block;
     }
+  }
+
+  /* Below 560px three inline actions no longer fit beside a real token, so
+     the row keeps Copy plus the disclosure chevron and the remaining actions
+     expand in place — a second line inside the row that pushes the list down.
+     No overlay: nothing is covered and nothing needs dismissing. */
+  @media (max-width: 560px) {
+    .wide-actions {
+      display: none;
+    }
 
     .compact-actions {
       display: inline-flex;
+    }
+
+    /* Row-gap stays 0: the collapsed reveal line is a zero-height flex item
+       on its own wrap line and must not open a gap under the first line. */
+    .invite {
+      flex-wrap: wrap;
+      gap: 0 10px;
+    }
+
+    /* The open row reads as one block against the white rows around it. */
+    .invite.open {
+      background: var(--surface-2);
+    }
+
+    .row-actions {
+      display: block;
+      flex-basis: 100%;
+      height: 0;
+      overflow: hidden;
+      /* Keeps the collapsed line's buttons out of the tab order and the
+         accessibility tree; the transition holds it visible while closing. */
+      visibility: hidden;
+      transition:
+        height var(--duration-fast) ease,
+        visibility var(--duration-fast);
+    }
+
+    /* 44px action line plus the 14px gap the first line's bottom padding
+       provides in the mock; the row's own bottom padding closes the block. */
+    .row-actions.open {
+      height: calc(var(--ledger-target-min) + 14px);
+      visibility: visible;
+    }
+
+    .row-actions-line {
+      display: flex;
+      gap: 10px;
+      padding-top: 14px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .row-actions,
+    :global(.expand-btn .expand-icon) {
+      transition: none;
     }
   }
 </style>

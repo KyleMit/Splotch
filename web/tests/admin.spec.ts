@@ -79,20 +79,32 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
     expect(remove!.height).toBeGreaterThanOrEqual(44);
   }
 
-  // Intermediate and phone widths: the columns collapse to the compact pair
+  // Tablet band: the column grid collapses to the stacked code cell, but the
+  // freed width keeps all three actions inline — no overflow control at all —
   // instead of squeezing the code track to nothing and ballooning the row.
-  // The ceiling allows this deliberately long token one wrap on a phone
-  // (~98px) while staying far under the broken state's 206px rows.
-  for (const width of [700, 561, 390]) {
+  // The ceiling allows this deliberately long token one wrap (~98px) while
+  // staying far under the broken state's 206px rows.
+  for (const width of [700, 561]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(row.getByRole('button', { name: `More options for ${token}` })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
+    await expect(row.getByRole('button', { name: `Remove ${token}` })).toBeVisible();
     await expect
       .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
       .toBeLessThan(120);
   }
 
-  await row.getByRole('button', { name: `More options for ${token}` }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
+  // Phone: Copy plus the disclosure chevron; the remaining actions expand in
+  // place inside the row — no centered modal covering the list.
+  await page.setViewportSize({ width: 390, height: 900 });
+  const more = row.getByRole('button', { name: `More options for ${token}` });
+  await expect(more).toBeVisible();
+  await expect
+    .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
+    .toBeLessThan(120);
+
+  await more.click();
+  await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await row.getByRole('button', { name: `Remove ${token}` }).click();
   await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
 });
 
@@ -110,13 +122,16 @@ async function resolveTokenColor(page: Page, name: string) {
   }, name);
 }
 
-// The compact ledger's "⋯" press feedback has to survive the cascade, not just
-// exist: :active and :hover both match while a hover-capable pointer presses
-// the button, so declaring :active before the @media (hover: hover) block lets
-// the hover rule hold the background for the whole press. That shipped once
-// (PR #946) — reachable from any viewport at or under 800px, which includes
-// narrow desktop windows and trackpad hybrids, not just touch.
-test('web /admin ⋯ press feedback beats hover on a hover-capable pointer', async ({ page }) => {
+// The compact ledger's disclosure-chevron press feedback has to survive the
+// cascade, not just exist: :active and :hover both match while a hover-capable
+// pointer presses the button, so declaring :active before the
+// @media (hover: hover) block lets the hover rule hold the background for the
+// whole press. That shipped once (PR #946) — reachable from any viewport under
+// 560px, which includes narrow desktop windows and trackpad hybrids, not just
+// touch.
+test('web /admin chevron press feedback beats hover on a hover-capable pointer', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
   const token = `e2e-press-${Date.now()}`;
@@ -151,7 +166,7 @@ test('web /admin ⋯ press feedback beats hover on a hover-capable pointer', asy
     await expect.poll(background).toBe(pressed);
   } finally {
     // Release away from the button so the press doesn't complete as a click and
-    // open the overflow sheet over the next assertion.
+    // expand the row under the next assertion.
     await page.mouse.move(0, 0);
     await page.mouse.up();
   }
