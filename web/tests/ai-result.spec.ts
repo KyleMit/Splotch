@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { draw, gotoApp } from './helpers';
 
@@ -132,7 +133,24 @@ async function loadingBoxes(page: Page) {
     return {
       card: rectFor('dialog.ai-result-modal'),
       content: rectFor('.ai-result-content'),
+      stage: rectFor('.ai-stage'),
       caption: rectFor('.ai-loading-caption'),
+    };
+  });
+}
+
+async function revealedBoxes(page: Page) {
+  return page.evaluate(() => {
+    function rectFor(selector: string) {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) throw new Error(`AI result element was not found: ${selector}`);
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    }
+
+    return {
+      card: rectFor('dialog.ai-result-modal'),
+      stage: rectFor('.ai-stage'),
     };
   });
 }
@@ -174,10 +192,9 @@ test.describe('AI result modal', () => {
     // Loading state: the progress dial sits over the real canvas export.
     await expect(page.locator('.dial')).toBeVisible();
     await expect(page.locator('.stage-img.preview')).toBeVisible();
-    const loadingStatus = page.getByRole('status');
-    await expect(loadingStatus).toHaveAttribute('aria-live', 'polite');
-    await expect(loadingStatus).toContainText('Making your picture…');
-    await expect(loadingStatus).toContainText('This takes about 10 seconds');
+    const loadingCaption = page.locator('.ai-loading-caption');
+    await expect(loadingCaption).toContainText(AI_LOADING_TITLE);
+    await expect(loadingCaption).toContainText(AI_LOADING_SUBTITLE);
 
     endpoint.succeed();
 
@@ -199,26 +216,48 @@ test.describe('AI result modal', () => {
 
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
-    await expect(loadingStatus).toHaveCount(0);
+    await expect(loadingCaption).toHaveCount(0);
   });
 
   for (const viewport of [
     { width: 390, height: 480, label: '390px phone portrait at 480px high' },
     { width: 844, height: 390, label: '390px phone landscape' },
+    { width: 320, height: 568, label: '320px phone portrait' },
   ]) {
-    test(`keeps the loading caption inside the card on ${viewport.label}`, async ({ page }) => {
-      await page.setViewportSize(viewport);
-      await openAiResult(page);
+    for (const autoSave of [false, true]) {
+      const saveMode = autoSave ? ' with auto-save' : '';
+      test(`keeps loading and reveal geometry stable on ${viewport.label}${saveMode}`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(viewport);
+        if (autoSave) {
+          await page.addInitScript(
+            (key) => localStorage.setItem(key, 'true'),
+            STORAGE_KEYS.autoSaveAi
+          );
+        }
+        const endpoint = await openAiResult(page);
 
-      const caption = page.getByRole('status');
-      await expect(caption).toBeVisible();
-      const { card, content, caption: captionBox } = await loadingBoxes(page);
+        const caption = page.locator('.ai-loading-caption');
+        await expect(caption).toBeVisible();
+        const loading = await loadingBoxes(page);
 
-      expect(card.y).toBeGreaterThanOrEqual(-1);
-      expect(card.y + card.height).toBeLessThanOrEqual(viewport.height + 1);
-      expect(content.y + content.height).toBeLessThanOrEqual(card.y + card.height + 1);
-      expect(captionBox.y + captionBox.height).toBeLessThanOrEqual(card.y + card.height + 1);
-    });
+        expect(loading.card.y).toBeGreaterThanOrEqual(-1);
+        expect(loading.card.y + loading.card.height).toBeLessThanOrEqual(viewport.height + 1);
+        expect(loading.content.y + loading.content.height).toBeLessThanOrEqual(
+          loading.card.y + loading.card.height + 1
+        );
+        expect(loading.caption.y + loading.caption.height).toBeLessThanOrEqual(
+          loading.card.y + loading.card.height + 1
+        );
+
+        endpoint.succeed();
+        await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
+        const revealed = await revealedBoxes(page);
+        expect(revealed.card.height).toBeCloseTo(loading.card.height, 0);
+        expect(revealed.stage.height).toBeCloseTo(loading.stage.height, 0);
+      });
+    }
   }
 
   test('confirms and sends an AI picture report from the result', async ({ page }) => {
@@ -344,7 +383,7 @@ test.describe('AI result modal', () => {
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
-    await expect(page.getByRole('status')).toHaveCount(0);
+    await expect(page.locator('.ai-loading-caption')).toHaveCount(0);
   });
 
   test('shows the safety refusal state', async ({ page }) => {

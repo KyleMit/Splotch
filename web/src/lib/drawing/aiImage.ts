@@ -30,8 +30,6 @@ import type { StyleName } from '$lib/ai/styles';
 
 const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
 const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
-export const AI_LOADING_TITLE = 'Making your picture…';
-export const AI_LOADING_SUBTITLE = 'This takes about 10 seconds';
 
 const UPLOAD_WEBP_QUALITY = 0.85;
 const FIRST_SERVER_ERROR_STATUS = 500;
