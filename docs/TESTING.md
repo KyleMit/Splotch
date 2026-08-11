@@ -165,6 +165,19 @@ specs that can't race in the first place:
   `tests/helpers.ts`) and `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate`
   (`tests/flows-harness.ts`) are all one-liners over it. Reach for it (or wrap open-then-assert in
   `expect(...).toPass()`) rather than repeating a bare click.
+* **A view an overlay picks *at open time* can't be waited into — reopen it.** Retrying an assertion
+  only works while the thing asserted on is still coming; when the open itself chose a different
+  view, no timeout reaches it. `ColoringBook` picks between its book grid and a single book's pages
+  in `onOpen`, from an installed set that resolves asynchronously after load (a manifest fetch plus
+  a store scan), and re-picks only if the active book disappears — so a picker opened a beat too
+  early shows the starter book's pages and *stays* there, which is how "no viewport draws a cover
+  smaller than four columns" came to fail with the cover grid simply absent (issue \#936). The
+  sentinel to retry the open against is the view you need, not the dialog: `openColoringBookGrid`
+  (`tests/flows-harness.ts`) closes and reopens until an open lands on the grid, since each open
+  re-reads the installed set. Prefer it over `openColoringDialog` in any spec that then reads a book
+  cover, and seed the page with `gotoAppWithInstalledColoringBook`/`…AllColoringBooksInstalled` so
+  there is a grid to land on — a spec that means to exercise the fresh-install view drives the
+  dialog directly instead (`coloring-pack-download.spec.ts`).
 * **No fixed `waitForTimeout` to wait for something to *happen*.** Use a web-first assertion that
   retries until the condition holds (`expect(locator).toBeVisible()`, `expect.poll(() => …)`,
   `expect(...).toPass()`). A fixed sleep is only legitimate when it is **monotonic-safe under

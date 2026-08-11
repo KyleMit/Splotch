@@ -9,6 +9,7 @@ import {
   gotoAppWithAllColoringBooksInstalled,
   gotoAppWithInstalledColoringBook,
   opaqueCanvasPixelCount,
+  openColoringBookGrid,
   openColoringDialog,
   openDrawer,
   openFarmPageGrid,
@@ -27,7 +28,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);
 
-  await openColoringDialog(page);
+  await openColoringBookGrid(page);
   const dialog = page.locator('#coloring-book-dialog');
 
   // Farm ships on web and mobile; open it and pick its first page.
@@ -83,7 +84,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
   test('selects the smaller cover, page, and overlay candidates', async ({ page }) => {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
     const dialog = page.locator('#coloring-book-dialog');
     const cover = dialog.getByRole('button', { name: 'Farm coloring book' }).locator('img');
     await expect
@@ -173,7 +174,7 @@ test.describe('responsive coloring selection at DPR 3', () => {
   test('keeps the canonical cover, page, and overlay sources', async ({ page }) => {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
     const dialog = page.locator('#coloring-book-dialog');
     const cover = dialog.getByRole('button', { name: 'Farm coloring book' }).locator('img');
     await expect
@@ -236,8 +237,7 @@ async function coverGeometry(page: Page) {
 async function openCoverGrid(page: Page) {
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await openColoringDialog(page);
-  await expect(page.locator('.coloring-books-grid .coloring-tile').first()).toBeVisible();
+  await openColoringBookGrid(page);
 }
 
 test('no viewport draws a cover smaller than four columns would', async ({ page }) => {
@@ -274,7 +274,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
   try {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
     const dialog = page.locator('#coloring-book-dialog');
     const cat = (await openFarmPageGrid(page)).first();
     await expect
@@ -298,7 +298,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
     await expect(overlay).toHaveClass(/overlay-ready/);
     await expect(overlay).toHaveCSS('opacity', '1');
 
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
     await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();
     await expect(dialog.locator('.coloring-books-grid img').first()).toHaveAttribute(
       'src',
@@ -539,7 +539,7 @@ test('a repeat tap on a book cover does not pick the page that lands under it', 
 }) => {
   await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);
-  await openColoringDialog(page);
+  await openColoringBookGrid(page);
 
   const dialog = page.locator('#coloring-book-dialog');
   // This spec dispatches raw input at a remembered coordinate, so the fly-in has

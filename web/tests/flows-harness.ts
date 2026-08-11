@@ -188,6 +188,38 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
+// A whole extra manifest fetch, store scan and page load past the dialog's own
+// open, on a worker sharing the CPU with the rest of the suite.
+const COLORING_BOOK_GRID_TIMEOUT_MS = 30_000;
+
+// Open the picker on its Coloring Book Grid — the cover menu, which only exists
+// once a second book is installed.
+//
+// That installed set resolves asynchronously after load (a manifest fetch plus
+// a store scan — coloringPacks/manager.ts), and a dialog opened before it lands
+// shows the starter book's pages instead, by design: a fresh install has one
+// book and drills straight into it (coloring-pack-download.spec.ts pins that
+// view). Crucially the dialog then *stays* there — ColoringBook picks the view
+// once per open (`onOpen`) and only re-picks it when the active book goes away
+// — so no amount of waiting on that open reaches the grid, which is how the
+// eight-viewport cover-geometry spec came to fail with the grid simply absent
+// (issue #936). Reopen until an open lands on it: each attempt re-reads the
+// installed set.
+export async function openColoringBookGrid(page: Page) {
+  const dialog = page.locator('#coloring-book-dialog');
+  await retryOpen(
+    dialog.locator('.coloring-books-grid .coloring-tile').first(),
+    async () => {
+      if (await dialog.isVisible().catch(() => false)) {
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden({ timeout: COLORING_DIALOG_CLOSE_SETTLE_MS });
+      }
+      await openColoringDialog(page);
+    },
+    { timeout: COLORING_BOOK_GRID_TIMEOUT_MS }
+  );
+}
+
 // Slack past a lapsed dead-zone window; zones self-clear on the next query, so
 // this only has to cover clock slop.
 const TAP_GUARD_LAPSE_MARGIN_MS = 100;
