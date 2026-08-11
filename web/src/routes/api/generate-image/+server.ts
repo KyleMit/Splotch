@@ -162,6 +162,26 @@ function exhaustedDailyLimit(): Response {
   return Response.json(body, { status: 503 });
 }
 
+// Spend the reserved slot now that an image exists, and answer with what is left.
+// The picture is already made and already paid for, so a ledger write that fails
+// anyway must not turn it into an error the child sees: the reservation lapses on
+// its own, the daily provider-start ceiling still bounds spending, and the
+// response simply omits the remaining-count header.
+async function recordFreeGeneration(
+  installationId: string,
+  reservationId: string
+): Promise<number | null> {
+  try {
+    return (await completeFreeGeneration(installationId, reservationId)).remaining;
+  } catch (cause) {
+    console.warn(
+      '[free-generation] failed to record a completed generation:',
+      cause instanceof Error ? cause.message : cause
+    );
+    return null;
+  }
+}
+
 const generateImage: RequestHandler = async ({ request, url, platform, getClientAddress }) => {
   const source = await readGenerationRequest(request, url);
 
@@ -203,13 +223,9 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
 
     let freeRemaining: number | null = null;
     if (authorization.kind === 'free' && reservationId) {
-      try {
-        freeRemaining = (await completeFreeGeneration(authorization.installationId, reservationId))
-          .remaining;
-        reservationId = undefined;
-      } catch {
-        throw error(503, 'Could not confirm the free generation allowance');
-      }
+      const settled = reservationId;
+      reservationId = undefined;
+      freeRemaining = await recordFreeGeneration(authorization.installationId, settled);
     }
 
     const headers: Record<string, string> = {

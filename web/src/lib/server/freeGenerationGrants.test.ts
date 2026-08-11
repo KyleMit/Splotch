@@ -14,6 +14,7 @@ const { entries, getStoreMock } = vi.hoisted(() => ({
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 vi.mock('$app/environment', () => ({ dev: false }));
 
+import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import {
   ADMIN_GRANT_SAMPLE_LIMIT,
   completeFreeGeneration,
@@ -117,6 +118,47 @@ describe('free generation grants', () => {
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 9 });
     await completeFreeGeneration(id, reservation.reservationId);
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 9 });
+  });
+
+  it('reads strongly so a write is visible to the request that made it', async () => {
+    await reserveFreeGeneration(installation('d'));
+
+    expect(getStoreMock).toHaveBeenCalledWith(
+      expect.objectContaining({ consistency: 'strong' as const })
+    );
+  });
+
+  it('refuses a completion whose lapsed slot another request already spent', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-09T12:00:00Z'));
+    const id = installation('e');
+    for (let spent = 1; spent < FREE_GENERATION_LIMIT; spent++) {
+      const used = await reserveFreeGeneration(id);
+      if (!used.reserved) throw new Error('Expected a reservation');
+      await completeFreeGeneration(id, used.reservationId);
+    }
+    const lapsing = await reserveFreeGeneration(id);
+    if (!lapsing.reserved) throw new Error('Expected a reservation');
+    await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 0 });
+
+    // The lease expires, so the last slot is reclaimed and re-reserved by a
+    // later request that completes it — leaving the first completion with an id
+    // whose slot is gone.
+    vi.setSystemTime(new Date('2026-08-09T12:05:00Z'));
+    const reusing = await reserveFreeGeneration(id);
+    if (!reusing.reserved) throw new Error('Expected the lapsed slot to be reusable');
+    await expect(completeFreeGeneration(id, reusing.reservationId)).resolves.toEqual({
+      remaining: 0,
+    });
+
+    await expect(completeFreeGeneration(id, lapsing.reservationId)).rejects.toThrow(
+      'Free generation reservation expired'
+    );
+    // Read the stored counter, not the normalized view: normalizeGrant clamps to
+    // the limit on read, so an 11th success would be invisible through the
+    // status and admin surfaces that this hard invariant most needs to hold for.
+    const stored = entries.get(id)?.data as { successful: number };
+    expect(stored.successful).toBe(FREE_GENERATION_LIMIT);
   });
 
   it('atomically refuses provider starts after the durable daily ceiling', async () => {

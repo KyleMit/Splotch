@@ -54,6 +54,7 @@ deliberately generous limit (30/minute).
 * **-** In-memory rate limiting resets on Netlify cold starts and does not coordinate across
   concurrent instances — it's a cost guardrail, not a hard boundary.
 * **-** Netlify Blobs is only available in the Netlify runtime; under local `vite dev` token edits
-  and usage fall back to a per-instance in-memory list. Production carries its own constraint —
-  strong-consistency reads are unsupported in the SSR function and degrade silently — both covered
-  by ADR-0025.
+  and usage fall back to a per-instance in-memory list, covered by ADR-0025. That ADR also records
+  the misdiagnosis this line once repeated: strong-consistency reads are *not* unsupported in the
+  SSR function — the V1-function era was, and `free-generation-grants` relies on strong reads today
+  (ADR-0105).

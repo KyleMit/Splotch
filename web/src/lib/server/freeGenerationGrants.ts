@@ -44,9 +44,17 @@ const memoryDailyProviderStarts = new Map<string, DailyProviderStarts>();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Netlify Blobs reads are eventually consistent by default: after a write, an
+// edge node can keep serving the previous copy for up to a minute. Every
+// operation in this module is a read-modify-write against one key, and a single
+// generation does two of them around a multi-second model call — reserve a slot,
+// then finalize it. Under the default mode that second read routinely missed the
+// reservation the same request had just written, so roughly half of all
+// production free generations answered 503 with a finished image in hand. Strong
+// reads bypass the cache; the added latency is noise beside the provider call.
 function grantStore(allowMemoryFallback = false): ReturnType<typeof getStore> | null {
   try {
-    return getStore(STORE_NAME);
+    return getStore({ name: STORE_NAME, consistency: 'strong' });
   } catch (error) {
     if (!dev && !allowMemoryFallback) throw error;
     return null;
@@ -262,6 +270,14 @@ export async function reserveFreeGeneration(
   );
 }
 
+// Holding a live reservation is what proves this completion owns a slot. A
+// reclaimed lease may already have been re-reserved and spent by a later
+// request, so incrementing without it would let two completions claim one slot
+// and push `successful` past the limit. The deadline ladder keeps this
+// unreachable for a live invocation — the platform kills the function at
+// NETLIFY_SYNC_TIMEOUT_MS, less than half the lease (ADR-0063) — so a missing
+// reservation means something anomalous, and the caller decides what to do with
+// the image rather than this ledger guessing.
 export async function completeFreeGeneration(
   installationId: string,
   reservationId: string
