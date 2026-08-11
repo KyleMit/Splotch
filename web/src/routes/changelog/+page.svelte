@@ -94,7 +94,7 @@
         showCount={!inHistory}
         label="Changelog contents"
         noun="releases"
-        stickyTop="var(--space-6)"
+        stickyTop="0px"
       />
 
       <div class="releases" bind:this={historyEl}>
@@ -221,8 +221,16 @@
       display: none;
     }
 
+    /* Pinned, the row needs a ground of its own — /design's rides inside the
+       header and gets one for free, while this one would have the release notes
+       scrolling through the gap above it. So it pins flush to the top and pads
+       itself down to the rail's offset, which puts that gap inside its own box
+       and under its own background. The gutters need no cover: the sheet's
+       padding means nothing is laid out beside the row to show through. */
     .changelog-body :global(.contents-disclosure) {
       display: block;
+      padding-top: var(--space-6);
+      background: var(--page-sheet);
       margin-bottom: var(--space-6);
     }
   }
