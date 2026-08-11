@@ -172,9 +172,14 @@
     </div>
 
     <script>
-      // Two variants of the same markup:
-      //   'custom'  — today's app: [hidden] toggled from a pointerup handler,
-      //               plus a document-level pointerdown outside-close.
+      // Two variants of the same markup. The CSS above and the 'custom' behavior
+      // below are copied from web/src/app.css and
+      // web/src/lib/components/ActionsPanel.svelte at ab2c7c12e0c4 — diff
+      // against that commit to see whether the copy still reproduces the app.
+      //   'custom'  — the shipped app: [hidden] toggled from a pointerup handler,
+      //               a document-level pointerdown outside-close, an Escape close,
+      //               and focus handed back to the trigger on a close that fires
+      //               while focus is inside the menu (closeFlyout's restoreFocus).
       //   'popover' — popover="auto" + showPopover()/hidePopover() from the same
       //               pointerup handler (popovertarget is click-driven, which
       //               ADR-0038's stylus path cannot use).
@@ -264,16 +269,48 @@
         );
       }
 
-      tapActivate(document.getElementById('brushButton'), () => {
-        openFlyout = openFlyout === 'brush' ? null : 'brush';
+      const triggers = {
+        brush: document.getElementById('brushButton'),
+        stroke: document.getElementById('strokeButton'),
+      };
+
+      // ActionsPanel's closeFlyout: restoreFocus only where the menu currently
+      // holds focus, so a close driven from outside it leaves focus alone.
+      function closeFlyout({ restoreFocus = false } = {}) {
+        const wrapper = openFlyout ? wrappers[openFlyout] : undefined;
+        const trigger = openFlyout ? triggers[openFlyout] : undefined;
+        const holdsFocus = restoreFocus && !!wrapper?.contains(document.activeElement);
+        openFlyout = null;
+        render();
+        if (holdsFocus) trigger?.focus();
+      }
+
+      tapActivate(triggers.brush, () => {
+        if (openFlyout === 'brush') {
+          closeFlyout({ restoreFocus: true });
+          return;
+        }
+        openFlyout = 'brush';
         render();
       });
-      tapActivate(document.getElementById('strokeButton'), () => {
-        openFlyout = openFlyout === 'stroke' ? null : 'stroke';
+      tapActivate(triggers.stroke, () => {
+        if (openFlyout === 'stroke') {
+          closeFlyout({ restoreFocus: true });
+          return;
+        }
+        openFlyout = 'stroke';
         render();
       });
 
-      // Today's outside-close handler (custom mode only; popover=auto owns it).
+      // The app's Escape close (custom mode only; popover=auto owns light
+      // dismissal and focus restoration itself).
+      document.addEventListener('keydown', (e) => {
+        if (mode !== 'custom' || e.key !== 'Escape' || !openFlyout) return;
+        log.push('app:escape-close');
+        closeFlyout({ restoreFocus: true });
+      });
+
+      // The app's outside-close handler (custom mode only; popover=auto owns it).
       document.addEventListener('pointerdown', (e) => {
         if (mode !== 'custom' || !openFlyout) return;
         const wrapper = wrappers[openFlyout];

@@ -1,10 +1,14 @@
 // Frozen evidence, not maintained automation: the instrument behind the
 // placement and behavior tables in ../popover-api-flyout-eval-2026-08.md, kept
 // so the decision can be re-measured against a future engine instead of rebuilt
-// from that prose. Nothing imports it and no npm script runs it — it is
-// deliberately outside tools/ (ADR-0108's tree is for repo automation, which
-// this is not). It reads no app code, so it cannot fail when the app changes;
-// re-check harness.html against app.css before trusting a fresh run.
+// from that prose. It lives here rather than in tools/ because the root
+// instructions file "retained investigation narratives and intermediate
+// evidence" under docs/scratchpad/, and this is the evidence's instrument.
+// Nothing imports it and no npm script runs it.
+//
+// It reads no app code, so it cannot fail when the app changes — it copies both
+// the CSS and the custom variant's behavior, pinned in harness.html to a named
+// commit. Diff that commit against HEAD before trusting a fresh run.
 //
 //   node docs/scratchpad/popover-probe/probe.mjs
 import { chromium } from '@playwright/test';
@@ -116,15 +120,19 @@ for (const mode of ['custom', 'popover']) {
   console.log(`  ${mode.padEnd(8)}`, JSON.stringify(state), '|', log.join(' | '));
 }
 
-// === E. Escape dismissal ===
-console.log('\n=== E. Escape dismissal ===');
+// === E. Escape dismissal, and where focus lands after it ===
+console.log('\n=== E. Escape dismissal (focus parked on a menu option first) ===');
 for (const mode of ['custom', 'popover']) {
   await page.evaluate((m) => window.__applyMode(m), mode);
   await page.click('#brushButton');
   await page.waitForTimeout(30);
+  await page.locator('#brushMenu .flyout-option').first().focus();
   await page.keyboard.press('Escape');
   await page.waitForTimeout(30);
-  const state = await page.evaluate(() => window.__state());
+  const state = await page.evaluate(() => ({
+    ...window.__state(),
+    focus: document.activeElement?.id || document.activeElement?.tagName,
+  }));
   console.log(`  ${mode.padEnd(8)}`, JSON.stringify(state));
 }
 

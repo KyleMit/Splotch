@@ -53,9 +53,10 @@ run on iPhone or iPad — the platform the drawing experience is tuned for.
 The harness and its driver are committed beside this document — `popover-probe/harness.html` and
 `popover-probe/probe.mjs`, run with `node docs/scratchpad/popover-probe/probe.mjs` — so the re-entry
 trigger below can be re-measured on that era's engines rather than rebuilt from this prose. They are
-frozen evidence rather than maintained automation: nothing imports them, no npm script runs them,
-and the harness copies the app's CSS rather than importing it, so re-check it against `app.css`
-before trusting a fresh run.
+frozen evidence rather than maintained automation: nothing imports them, and no npm script runs
+them. The harness *copies* the app's CSS and its custom-path behavior rather than importing them, so
+it cannot fail when the app changes — it can only stop resembling it. Its copy is pinned to a named
+commit (ab2c7c12e0c4); diff that against `HEAD` before trusting a fresh run.
 
 The harness reproduced the real flyout DOM and the geometry-relevant CSS verbatim from `app.css` +
 `ActionsPanel.svelte` — `.actions-panel` fixed to the bottom-left, the collapsing
@@ -64,8 +65,10 @@ placements (landscape above the trigger, portrait beside it, phone-portrait besi
 Three variants were driven through the same scripted interactions in Chromium 149 (headless,
 Playwright), at three viewports:
 
-* **custom** — today's app: `hidden` toggled from a `pointerup` activation, plus the document-level
-  `pointerdown` outside-close.
+* **custom** — the shipped app: `hidden` toggled from a `pointerup` activation, the document-level
+  `pointerdown` outside-close, the Escape close, and `closeFlyout`'s focus hand-back. It tracks the
+  component *including* the two fixes below, so the behavior table is a live parity check rather
+  than a record of the pre-fix state.
 * **popover** — the same markup with `popover="auto"`, shown and hidden imperatively from the same
   `pointerup` handler.
 * **popover + anchor** — the popover variant with `anchor-name` / `position-anchor` and `anchor()`
