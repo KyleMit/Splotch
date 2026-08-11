@@ -2,6 +2,7 @@
   import { BETA_OPT_IN_URL, TESTERS_GROUP_URL } from '$lib/components/androidBeta/androidBeta';
   import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
+  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
@@ -101,6 +102,13 @@
       </div>
     </Disclosure>
   </div>
+
+  <!-- Last thing in the sheet, so its sentinel marks the end of the page's own
+       content: the document is the scroller here, and the cue fades the sheet
+       into itself at the foot of the viewport for as long as there are steps
+       still below. Nothing about the page's height is ours to set, so the
+       trailing-row cut the picker uses has no counterpart on this surface. -->
+  <ScrollCue />
 </PageShell>
 
 <style>
