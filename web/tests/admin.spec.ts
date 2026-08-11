@@ -95,6 +95,68 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
   await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
 });
+
+// Resolve a design token to the same rgb() form getComputedStyle reports, by
+// painting it on a throwaway probe — so the expectations below derive from
+// tokens.css instead of re-declaring its hex values here.
+async function resolveTokenColor(page: Page, name: string) {
+  return page.evaluate((token) => {
+    const probe = document.createElement('div');
+    probe.style.background = `var(${token})`;
+    document.body.append(probe);
+    const painted = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return painted;
+  }, name);
+}
+
+// The compact ledger's "⋯" press feedback has to survive the cascade, not just
+// exist: :active and :hover both match while a hover-capable pointer presses
+// the button, so declaring :active before the @media (hover: hover) block lets
+// the hover rule hold the background for the whole press. That shipped once
+// (PR #946) — reachable from any viewport at or under 800px, which includes
+// narrow desktop windows and trackpad hybrids, not just touch.
+test('web /admin ⋯ press feedback beats hover on a hover-capable pointer', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await signInToAdmin(page);
+  const token = `e2e-press-${Date.now()}`;
+  await adminConsole(page).fill(token);
+  await page.getByRole('button', { name: 'Add code' }).click();
+
+  const more = page
+    .getByRole('row')
+    .filter({ hasText: token })
+    .getByRole('button', { name: `More options for ${token}` });
+  await expect(more).toBeVisible();
+  await more.scrollIntoViewIfNeeded();
+
+  const [pressed, hovered] = await Promise.all([
+    resolveTokenColor(page, '--brand-wash'),
+    resolveTokenColor(page, '--surface-hover'),
+  ]);
+  // Without a real pointer the hover rule never applies and the press assertion
+  // below would hold for the wrong reason.
+  expect(await page.evaluate(() => matchMedia('(hover: hover)').matches)).toBe(true);
+  expect(pressed).not.toBe(hovered);
+
+  const background = async () =>
+    more.evaluate((button) => getComputedStyle(button).backgroundColor);
+  const box = (await more.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  // Polled, not slept on: the background crosses --duration-fast to get here.
+  await expect.poll(background).toBe(hovered);
+
+  await page.mouse.down();
+  try {
+    await expect.poll(background).toBe(pressed);
+  } finally {
+    // Release away from the button so the press doesn't complete as a click and
+    // open the overflow sheet over the next assertion.
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
+  }
+});
+
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {
   await signInToAdmin(page);
   await page.route(
