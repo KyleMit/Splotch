@@ -329,8 +329,10 @@ media queries + the head-script stamp in `app.html`).
     (ADR-0061). Each section component lives in `settings/` (`AppearanceSection`, `SoundSection`,
     `SavingSection`, `ColoringSection`, `ControlsSection`, `AiKeyManager`, `ParentCenterSection`,
     `SetupInstructions`, `WhatsNewSection`, `ReportForm`, `AboutSection`).
-    * **Install Guide** - iOS / Android step-by-step PWA setup inside the **Install** section, plus
-      the one-tap install button when the browser supports it
+    * **Install Guide** - step-by-step PWA setup inside the **Install** section, for the one device
+      family `installDeviceOs()` detects (iOS, Android, or desktop — the last with no app-lock
+      steps, since neither Guided Access nor App Pinning has a desktop analogue), plus the one-tap
+      install button when the browser supports it
     * **Buttons Section** - Enable Advanced Controls toggle, a **Button Size** slider that rescales
       the Actions Panel buttons (dragging it melts the rest of Settings away so the buttons resize
       in full view), and a 2-column **button chip grid** ("Show these buttons") that toggles each

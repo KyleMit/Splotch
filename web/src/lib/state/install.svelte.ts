@@ -52,6 +52,17 @@ function isIosSafari() {
   return /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
 }
 
+// True on an iOS device in anything but Safari — a third-party browser or an
+// in-app webview. NOT a claim that install is impossible there: since iOS 16.4
+// (the app's floor) a browser holding com.apple.developer.web-browser can offer
+// Add to Home Screen from its own Share menu, and Chrome does. But it is opt-in
+// per browser, absent from in-app webviews entirely, and reached from a
+// different place — so the Safari-shaped manual checklist in Settings needs a
+// step to get there first.
+export function isIosOutsideSafari(): boolean {
+  return isIosDevice() && !isIosSafari();
+}
+
 // Single source of truth for "what kind of device is this" — consumers (the
 // Install section in Settings) must not re-sniff the UA themselves.
 export function installDeviceOs(): InstallDeviceOs {
