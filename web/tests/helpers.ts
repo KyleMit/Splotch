@@ -95,8 +95,8 @@ export function touchEventPrevented(
  *  `connect-src` blocked for every user.
  *
  *  Call before `gotoApp`, and before any `page.route` a spec needs to win over
- *  this one: Playwright checks the most recently added handler first, and the
- *  non-document requests this one declines fall through to those. */
+ *  this one: Playwright checks the most recently added handler first, so a
+ *  route added later wins, and only requests it declines reach this one. */
 export async function enforceProductionCsp(page: Page) {
   await page.route('**/*', async (route) => {
     if (route.request().resourceType() !== 'document') return route.fallback();
