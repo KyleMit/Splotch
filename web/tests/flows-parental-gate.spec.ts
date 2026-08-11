@@ -38,9 +38,10 @@ function policyPicker(settings: Locator, feature: string) {
 
 // A couple of strokes so the AI button is enabled (it's disabled on a blank
 // canvas), then the gate opens from it. The access-code param reveals the AI
-// button (it stays hidden with no credential).
-async function gotoGatedAiButton(page: Page) {
-  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
+// button (it stays hidden with no credential). `gates` is the seed to leave the
+// policies at: 'default' for a spec that seeded its own before navigating.
+async function gotoGatedAiButton(page: Page, gates: 'always' | 'default' = 'always') {
+  await gotoApp(page, '/?ai_access_token=test-token', { gates });
   await draw(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
@@ -104,11 +105,7 @@ test('the footer hands straight over when Parent Center asks for no check of its
       parentCenterKey: STORAGE_KEYS.parentalGateParentCenterMode,
     }
   );
-  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'default' });
-  await draw(page, [
-    { x: 120, y: 120 },
-    { x: 260, y: 200 },
-  ]);
+  await gotoGatedAiButton(page, 'default');
   const gate = await openParentalGate(page);
 
   const settings = page.locator('#settingsModal');
