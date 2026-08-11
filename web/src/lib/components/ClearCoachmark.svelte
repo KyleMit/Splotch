@@ -169,6 +169,14 @@
     filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
   }
 
+  /* The mime plays over the paper, not a modal shell, so nothing re-inks it
+     there — left at its baked near-black fill the hand's outlines disappear
+     into the dark paper. --icon-ink is that same near-black in light mode, so
+     this only changes what dark mode draws. */
+  :global(.coachmark-hand svg) {
+    fill: var(--icon-ink);
+  }
+
   /* Ghost peels off the real button, drags to the ring edge, gives a little
      release pop, then fades. The flat tail (90–100%) is the pause between loops. */
   @keyframes coachmarkDrag {
