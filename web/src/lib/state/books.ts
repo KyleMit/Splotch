@@ -128,14 +128,21 @@ export const RESPONSIVE_COLORING_TIER_DIRECTORIES = Object.values(RESPONSIVE_COL
   (tier) => `${COLORING_ROOT}/${tier.directory}`
 );
 const BOOK_GRID_DEFAULT_COLUMNS = 4;
+/**
+ * A roomy portrait viewport drops the cover grid to two columns and caps its
+ * width by the dialog's height, so the width-only clauses below all under-report
+ * the tile there. This deliberately over-estimates instead of restating that
+ * height arithmetic: `sizes` is a hint, and the source covers are 400px with
+ * 240w/400w candidates, so rounding up only ever picks the candidate a retina
+ * tablet would pick anyway — while rounding down would ship a soft cover.
+ */
+const ROOMY_PORTRAIT_COVER_SIZE = '(orientation: portrait) and (min-width: 741px) 25vh';
 export const COLORING_IMAGE_SIZES = {
   overlay: '100vw',
   activePageThumbnail: '36px',
   coverThumbnail: {
-    standard:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px',
-    orphan:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
+    standard: `${ROOMY_PORTRAIT_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
+    orphan: `${ROOMY_PORTRAIT_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px`,
   },
   pageThumbnail: {
     portrait:
