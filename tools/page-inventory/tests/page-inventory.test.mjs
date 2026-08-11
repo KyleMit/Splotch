@@ -7,8 +7,8 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { Window } from 'happy-dom';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -19,6 +19,7 @@ import {
   discoverPageRoutes,
   generateOutputAtomically,
   generatePageInventory,
+  parsePageInventoryOptions,
   SECTION_LANDED_BAND_PX,
   selectSpotCheckItems,
   settingsSectionRowSelector,
@@ -395,6 +396,91 @@ describe('page inventory output', () => {
         '--out is replaced wholesale'
       );
     }
+  });
+
+  // The tests below drive the parser rather than generatePageInventory, which
+  // builds the app and then replaces --out — so an accepted path can only be
+  // asserted here, and a refusal asserted here is one the run never reaches
+  // because the tests above prove the parser is what stops it.
+
+  // An --out anywhere outside the worktree used to clear every guard on a spot
+  // check: nothing there is the repo root, an ancestor of it, or inside
+  // scrapbook/, so the run reached the rename and deleted the named directory.
+  it('refuses an --out outside the repository', () => {
+    const outside = [
+      '/tmp',
+      '/private/tmp/splotch-page-inventory-probe',
+      '../splotch-page-inventory-probe',
+      homedir(),
+    ];
+    for (const out of outside) {
+      for (const argv of [
+        ['--out', out],
+        ['--surface', 'home', '--out', out],
+      ]) {
+        expect(() => parsePageInventoryOptions(argv)).toThrow('--out is replaced wholesale');
+        expect(() => parsePageInventoryOptions(argv)).toThrow(resolve(ROOT, out));
+      }
+    }
+  });
+
+  // A full run's only destination is the inventory it publishes. Every sibling
+  // collection in scrapbook/ is committed output owned by another tool, and the
+  // inventory's own assets/ is written as part of the directory above it.
+  it('refuses a full run --out on any directory but the published inventory', () => {
+    const siblings = readdirSync(join(ROOT, 'scrapbook'), { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && entry.name !== 'page-inventory')
+      .map((entry) => `scrapbook/${entry.name}`);
+    expect(siblings.length).toBeGreaterThan(0);
+    for (const out of [
+      ...siblings,
+      'scrapbook/page-inventory/assets',
+      '.scrapbook-scratch/page-inventory-spot-check',
+    ]) {
+      expect(() => parsePageInventoryOptions(['--out', out])).toThrow(
+        '--out is replaced wholesale'
+      );
+      expect(() => parsePageInventoryOptions(['--out', out])).toThrow(join(ROOT, out));
+    }
+  });
+
+  // A spot check writes scratch, but .scrapbook-scratch/ is not all its own: the
+  // critique checkpoints live beside it and are the resumable record of a review
+  // pass that costs hours of reviewer calls to rebuild.
+  it('refuses a spot check --out outside the scratch directory it owns', () => {
+    for (const out of [
+      '.scrapbook-scratch',
+      '.scrapbook-scratch/page-inventory-critique',
+      '.scrapbook-scratch/page-inventory-critique/reviews',
+    ]) {
+      const argv = ['--surface', 'home', '--out', out];
+      expect(() => parsePageInventoryOptions(argv)).toThrow('--out is replaced wholesale');
+      expect(() => parsePageInventoryOptions(argv)).toThrow(join(ROOT, out));
+    }
+  });
+
+  it('accepts the two directories this generator owns, whether or not they exist', () => {
+    const inventory = join(ROOT, 'scrapbook/page-inventory');
+    const scratch = join(ROOT, '.scrapbook-scratch/page-inventory-spot-check');
+    expect(parsePageInventoryOptions([]).out).toBe(inventory);
+    expect(parsePageInventoryOptions(['--out', 'scrapbook/page-inventory']).out).toBe(inventory);
+    expect(parsePageInventoryOptions(['--surface', 'home']).out).toBe(scratch);
+    expect(
+      parsePageInventoryOptions([
+        '--surface',
+        'home',
+        '--out',
+        '.scrapbook-scratch/page-inventory-spot-check',
+      ]).out
+    ).toBe(scratch);
+
+    // A run creates its own output directory, so a first run into a name that
+    // does not exist yet has to be accepted.
+    const unwritten = join(scratch, 'brush-menu-only');
+    expect(existsSync(unwritten)).toBe(false);
+    expect(parsePageInventoryOptions(['--surface', 'brush-menu', '--out', unwritten]).out).toBe(
+      unwritten
+    );
   });
 
   // The generator waits on this selector at every viewport, so a Settings shell

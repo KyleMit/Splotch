@@ -767,7 +767,35 @@ export function selectSpotCheckItems(candidates, requested, flag, describe) {
   return candidates.filter((candidate) => chosen.has(candidate));
 }
 
-function options(argv) {
+const isWithin = (root, path) => path === root || path.startsWith(`${root}${sep}`);
+
+// generateOutputAtomically replaces --out wholesale: the directory is renamed
+// aside, staging takes its name, and the original is then deleted recursively.
+// So the flag may only name a directory this generator alone writes — the
+// committed inventory a full run publishes, or a scratch directory under the
+// spot-check root. Every other path it resolves to owns something this run was
+// never asked to delete: `.` and `..` land on the repository, `scrapbook/<name>`
+// on a committed collection, `.scrapbook-scratch` on the critique checkpoints,
+// and an absolute path on whatever it names outside the worktree.
+function assertOwnedOutputDirectory(out, spotCheck) {
+  if (spotCheck && out.startsWith(`${SCRAPBOOK_ROOT}${sep}`)) {
+    throw new Error(
+      `A --surface/--viewport/--theme spot check captures only part of the inventory, so it must stay out of scrapbook/ where a partial manifest would be read as the coverage authority: ${out}`
+    );
+  }
+  const owned = spotCheck ? isWithin(SPOT_CHECK_OUT_DEFAULT, out) : out === OUT_DEFAULT;
+  if (owned) return;
+  const requirement = spotCheck
+    ? `a spot check may only write inside ${relative(ROOT, SPOT_CHECK_OUT_DEFAULT)} — drop --out for that directory, or name one beneath it`
+    : `a full run may only write the inventory it publishes, ${relative(ROOT, OUT_DEFAULT)} — drop --out to write it, or pass --surface/--viewport/--theme to spot check into ${relative(ROOT, SPOT_CHECK_OUT_DEFAULT)}`;
+  throw new Error(
+    `--out is replaced wholesale, so it can only name a directory this generator writes as a whole, and ${out} is not one. Instead, ${requirement}.`
+  );
+}
+
+// Exported as a seam: generatePageInventory builds the app and then replaces the
+// resolved directory, so an accepted --out cannot be asserted through it.
+export function parsePageInventoryOptions(argv) {
   const parsed = parseArgs({
     args: argv,
     options: {
@@ -788,25 +816,7 @@ function options(argv) {
   const themes = parsed.theme ?? [];
   const spotCheck = Boolean(surfaces.length || viewports.length || themes.length);
   const out = resolve(ROOT, parsed.out ?? (spotCheck ? SPOT_CHECK_OUT_DEFAULT : OUT_DEFAULT));
-  // generateOutputAtomically replaces --out wholesale: the directory is renamed
-  // aside, staging takes its name, and the original is then deleted. So the
-  // target must be a directory that holds this run's output and nothing else,
-  // whatever the filters say — `.`, `..`, and `scrapbook/page-inventory/..` are
-  // ordinary paths that resolve onto a tree owning everything else in it.
-  if (out === ROOT || ROOT.startsWith(`${out}${sep}`) || out === SCRAPBOOK_ROOT) {
-    throw new Error(
-      `--out is replaced wholesale, so it cannot be the repository root, an ancestor of it, or the scrapbook root: ${out}`
-    );
-  }
-  const insideScrapbook = out.startsWith(`${SCRAPBOOK_ROOT}${sep}`);
-  if (spotCheck && insideScrapbook) {
-    throw new Error(
-      `A --surface/--viewport/--theme spot check captures only part of the inventory, so it must stay out of scrapbook/ where a partial manifest would be read as the coverage authority: ${out}`
-    );
-  }
-  if (!spotCheck && !insideScrapbook) {
-    throw new Error(`--out must stay inside scrapbook/: ${out}`);
-  }
+  assertOwnedOutputDirectory(out, spotCheck);
   if (spotCheck && parsed.critique) {
     throw new Error('--critique attaches feedback to a full inventory and cannot filter captures');
   }
@@ -880,7 +890,13 @@ export async function generateOutputAtomically(out, generate) {
 }
 
 export async function generatePageInventory(argv = process.argv.slice(2)) {
-  const { out, port, spotCheck, critique: critiquePath, ...filters } = options(argv);
+  const {
+    out,
+    port,
+    spotCheck,
+    critique: critiquePath,
+    ...filters
+  } = parsePageInventoryOptions(argv);
   const items = attachExpectedCapturePaths(
     selectSpotCheckItems(allSurfaces(), filters.surfaces, '--surface', (item) => [
       `${item.group}/${item.id}`,
