@@ -2,6 +2,22 @@
 
 **Status:** Active (amends [0093](0093-two-tier-webkit-commit-gate-in-ci.md)) **Date:** 2026-08
 
+## Amendment — 2026-08-11: retire the legacy structural half
+
+PR #941 made the tiled renderer (ADR-0085/0086) the sole drawing renderer and removed the legacy
+snapshot/blob history implementation. That renderer retains tile-local before-images, folds old
+commands into base tiles, and has no cold blob-encoding path or `engine.encode` measure. The
+pre-merge `commit-path-guard` and `perf:undo:encode-path` command therefore cannot exercise the
+invariant this ADR assigned them; requiring a blob would fail every run, while removing only the
+coverage check would make the job permanently vacuous.
+
+The structural half is retired with the implementation it guarded. The post-merge WebKit timing half
+remains active: `perf:undo:webkit:fast` continues to gate recurring `engine.commit` P95 over
+`multi-finger` and `crayon-scribbles`, which remain mandatory as the sole exercisers of the
+multi-pointer and mid-stroke crayon pass-split paths. Release tags continue to run all seven
+scenarios. The original decision below records the contract before tiled history became the sole
+implementation.
+
 ## Context
 
 ADR-0093 put `npm run perf:undo:webkit:fast` on every pull request. After the CI split in #761 that

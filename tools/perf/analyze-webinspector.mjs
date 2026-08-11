@@ -12,16 +12,10 @@
 //     below the clock floor — treat <1 ms as "effectively free," not precise.
 //
 // We recover an engine op's cost two ways:
-//   1. Paired-mark duration, for ops the enclosing record cannot bound:
-//      `engine.undo` spans multiple tasks — post-ADR-0066 a deep undo runs
-//      mark + snapshot pop in one slice, awaits createImageBitmap(blob), then
-//      blits in a later continuation, so no single record bounds it.
-//      `engine.encode` and `engine.reinflate` have the opposite problem: they
-//      are sub-slices of the stroke-end task, so the record enclosing them is
-//      the whole of `engine.commit` and would report their cost as its own.
-//      A mark delta is the only correct attribution for both shapes, at the
-//      price of WebKit's ~1 ms `performance.now()` clamp.
-//   2. Enclosing record (every other op, including the paired ones below):
+//   1. Paired-mark duration for the legacy `engine.encode` and
+//      `engine.reinflate` sub-slices. Tiled history no longer emits them, but
+//      retaining support keeps old exported recordings readable.
+//   2. Enclosing record (every current op):
 //      each synthetic pointer event is its own `event-dispatched` script
 //      record, so the smallest record spanning the mark's timestamp bounds a
 //      single-slice op's main-thread cost — unclamped, at full record
@@ -97,15 +91,11 @@ const fmt = (s) =>
 
 // Ops reporting paired-mark duration instead of the enclosing record's — see
 // the header comment for why each needs it.
-const PAIRED_DURATION_OPS = new Set(['engine.undo', 'engine.encode', 'engine.reinflate']);
+const PAIRED_DURATION_OPS = new Set(['engine.encode', 'engine.reinflate']);
 
-// Pairing each start with the first end before the next start is exact
-// whether or not the pairing is used for duration: `engine.undo`'s steps run
-// serialized on the engine's paper chain, and every other `:end`-emitting op
-// is synchronous and non-reentrant (one call completes, end mark included,
-// before the next can start). A start whose end is missing (ring buffer,
-// mid-op stop) is counted as unpaired rather than misattributed — reported
-// as a warning regardless of which cost source is used.
+// Pairing each start with the first end before the next start is exact because
+// every `:end`-emitting op is non-reentrant. A start whose end is missing is
+// counted as unpaired rather than misattributed.
 function engineOp(name) {
   const starts = markers.filter((m) => m.details === `${name}:start`).map((m) => m.time);
   const ends = markers.filter((m) => m.details === `${name}:end`).map((m) => m.time);
@@ -150,14 +140,16 @@ console.log('NOTE: WebKit clamps performance.now() to ~1 ms — treat <1 ms as e
 console.log('## Engine ops (ms — enclosing record unless the row says paired marks)\n');
 for (const name of [
   'engine.undo',
-  'engine.snapshot',
-  'engine.fold',
   'engine.commit',
-  'engine.encode',
-  'engine.reinflate',
   'engine.resize',
   'engine.draw',
   'engine.scanEmpty',
+  // Retained so archived recordings from the snapshot/blob renderer remain
+  // analyzable.
+  'engine.snapshot',
+  'engine.fold',
+  'engine.encode',
+  'engine.reinflate',
 ]) {
   const op = engineOp(name);
   if (op.count)

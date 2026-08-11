@@ -10,7 +10,7 @@
 // canvas to the recorded device, replays the captured pointer stream + UI actions
 // at their recorded timing (so frame pacing matches real drawing — unlike the
 // synchronous synthetic driver), captures a CDP trace + engine marks, and reports
-// how YOUR input landed on the snapshot stack (depth, hot rasters, blob bytes).
+// how YOUR input landed in tiled history (undo depth, patch/base rasters, bytes).
 
 import { chromium } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -181,15 +181,25 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
   let strokes = 0;
   let undos = 0;
 
-  // Track the high-water mark of the snapshot stack, since a session that ends
-  // on undo-to-empty would otherwise report 0/0 at the end. Snapshot after each
-  // stroke commits and before each undo.
-  const peak = { snapshots: 0, blobBytes: 0 };
+  // Track high-water marks because a session that ends on undo-to-empty would
+  // otherwise hide the history exercised earlier in the replay.
+  const peak = {
+    snapshots: 0,
+    liveRasters: 0,
+    rasterBytes: 0,
+    baseRasters: 0,
+    baseRasterBytes: 0,
+    historyLength: 0,
+  };
   const snapPeak = () => {
     const d = E.getUndoDebug && E.getUndoDebug();
     if (!d) return;
     peak.snapshots = Math.max(peak.snapshots, d.snapshots);
-    peak.blobBytes = Math.max(peak.blobBytes, d.blobBytes);
+    peak.liveRasters = Math.max(peak.liveRasters, d.liveRasters);
+    peak.rasterBytes = Math.max(peak.rasterBytes, d.rasterBytes);
+    peak.baseRasters = Math.max(peak.baseRasters, d.baseRasters ?? 0);
+    peak.baseRasterBytes = Math.max(peak.baseRasterBytes, d.baseRasterBytes ?? 0);
+    peak.historyLength = Math.max(peak.historyLength, d.historyLength ?? 0);
   };
 
   const fire = (e) => {
@@ -256,28 +266,9 @@ export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs })
         else if (e.name === 'undo') {
           snapPeak();
           undos++;
-          E.undo();
+          await E.undo();
         } else if (e.name === 'clear') E.clearCanvas();
         await raf();
-      }
-    }
-    // Undos fire app-style above (not awaited), and deep blob-tier restores
-    // settle asynchronously — so drain the undo queue before resolving, or the
-    // tail engine.undo measures land after Tracing.end and vanish from the
-    // hot-path table. One measure lands per completed restore; a no-op undo
-    // (pressed on an empty stack) or a marks-less build never lands one, so a
-    // stall cap (matching undo-scenarios' per-step wait) keeps those moving.
-    if (undos > 0) {
-      const landed = () => performance.getEntriesByName('engine.undo', 'measure').length;
-      let seen = landed();
-      let lastProgress = performance.now();
-      while (landed() < undos && performance.now() - lastProgress < 5000) {
-        await raf();
-        const n = landed();
-        if (n > seen) {
-          seen = n;
-          lastProgress = performance.now();
-        }
       }
     }
     await raf();
@@ -305,22 +296,24 @@ function renderReplayReport({ settings, replayed, debug, summary }) {
   if (peak) {
     out.push(
       `- Strokes (pointerdowns): **${replayed.strokes}**\n` +
-        `- **Peak** snapshot stack (high-water mark): snapshots **${peak.snapshots}** · ` +
-        `blob bytes **${Math.round(peak.blobBytes / 1024)} KB**\n` +
-        `- End of session: snapshots **${debug?.snapshots ?? 'n/a'}** · blob KB ` +
-        `**${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'}** (0 means the session ended on undo-to-empty)`
+        `- **Peak** tiled history: undo entries **${peak.snapshots}** · retained commands ` +
+        `**${peak.historyLength}** · live patch entries **${peak.liveRasters}** · base tiles ` +
+        `**${peak.baseRasters}** · patch **${f1(peak.rasterBytes / 1024 / 1024)} MiB** · ` +
+        `base **${f1(peak.baseRasterBytes / 1024 / 1024)} MiB**\n` +
+        `- End of session: undo entries **${debug?.snapshots ?? 'n/a'}** · retained commands ` +
+        `**${debug?.historyLength ?? 'n/a'}** · patch ` +
+        `**${debug ? f1(debug.rasterBytes / 1024 / 1024) : 'n/a'} MiB** · base ` +
+        `**${debug ? f1((debug.baseRasterBytes ?? 0) / 1024 / 1024) : 'n/a'} MiB**`
     );
   } else {
     out.push('_getUndoDebug unavailable._');
   }
   out.push('\n## Engine cost during replay (user-timing marks)\n');
   out.push(`- engine.draw: ${row(hot['engine.draw'])}`);
-  out.push(`- engine.snapshot: ${row(hot['engine.snapshot'])}`);
-  out.push(`- engine.fold: ${row(hot['engine.fold'])}`);
   out.push(`- engine.undo: ${row(hot['engine.undo'])}`);
   out.push(`- engine.commit: ${row(hot['engine.commit'])}`);
   out.push(
-    '\nSee report.md for full frame health / hot paths; ADR-0066 and the `profiling` skill for interpretation.\n'
+    '\nSee report.md for full frame health / hot paths; ADR-0085/ADR-0086 and the `profiling` skill for interpretation.\n'
   );
   return out.join('\n');
 }

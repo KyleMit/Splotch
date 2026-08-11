@@ -29,7 +29,8 @@
 //              congestion a child feels as lag with no dropped frame anywhere.
 //              `kind` is the pointer type (0 touch, 1 pen, 2 mouse).
 //   measures[] [start, dur, nameIndex]            engine.* performance measures
-//   history[]  [at, snapshots, liveRasters, rasterBytes, patchBytes, blobBytes]
+//   history[]  [at, undoEntries, livePatchEntries, patchBytes, baseRasters,
+//               baseRasterBytes, historyLength]
 //              one row per finger-lift, from the read-only undo-history seam
 //   liftLatencies[] [at, waitedMs, phaseIndex]    finger-up to halo-gone
 //   phases[]   {key, suppress, paperActive, …}   which condition owned which span
@@ -256,8 +257,8 @@
     if ((type === 2 || type === 3) && onCanvas) onLift(event);
   };
 
-  // Sampled at the lift rather than per frame: getUndoDebug walks the whole
-  // snapshot stack, so calling it on the hot path would be measuring the probe.
+  // Sampled at the lift rather than per frame: getUndoDebug walks tiled
+  // history, so calling it on the hot path would be measuring the probe.
   const sampleHistory = (at) => {
     const debug = window.__drawingDebug?.getUndoDebug?.();
     if (!debug) return;
@@ -266,8 +267,9 @@
       debug.snapshots,
       debug.liveRasters,
       debug.rasterBytes,
-      debug.patchBytes ?? -1,
-      debug.blobBytes,
+      debug.baseRasters ?? -1,
+      debug.baseRasterBytes ?? -1,
+      debug.historyLength ?? -1,
     ]);
   };
 

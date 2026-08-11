@@ -25,7 +25,6 @@ describe('undo fast-set coverage', () => {
     expect(uncovered).toEqual([]);
     expect(soleExercisers()).toEqual([
       { path: 'multi-pointer', scenarioKey: 'multi-finger' },
-      { path: 'cold-encode', scenarioKey: 'multi-finger' },
       { path: 'crayon-pass-split', scenarioKey: 'crayon-scribbles' },
     ]);
   });

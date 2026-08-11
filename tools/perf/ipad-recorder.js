@@ -69,7 +69,7 @@
   };
 
   // Engine activity: PERF_MARKS=true builds measure every wipe/rebuild-capable
-  // operation (engine.resize, engine.undo, engine.commit, engine.snapshot…).
+  // operation (engine.resize, engine.undo, engine.commit…).
   // engine.draw is skipped — one per pointermove, pure noise here.
   let perfObs = null;
   try {
