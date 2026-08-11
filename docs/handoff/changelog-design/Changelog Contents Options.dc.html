@@ -1,421 +1,2367 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./support.js"></script>
-</head>
-<body>
-<x-dc>
-<helmet>
-<meta name="design_doc_mode" content="canvas">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
-<style>
-  body { margin: 0; background: #e4e3e0; font-family: 'Quicksand', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  a { color: #7c4dcf; }
-  a:hover { color: #6b3fbf; }
-</style>
-</helmet>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="./support.js"></script>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <meta name="design_doc_mode" content="canvas" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&display=swap"
+          rel="stylesheet"
+        />
+        <style>
+          body {
+            margin: 0;
+            background: #e4e3e0;
+            font-family:
+              'Quicksand',
+              -apple-system,
+              BlinkMacSystemFont,
+              'Segoe UI',
+              Roboto,
+              sans-serif;
+          }
+          a {
+            color: #7c4dcf;
+          }
+          a:hover {
+            color: #6b3fbf;
+          }
+        </style>
+      </helmet>
 
-<section style="padding:56px 64px 40px;display:flex;flex-direction:column;gap:36px">
-  <div style="display:flex;flex-direction:column;gap:8px;max-width:760px">
-    <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Turn 2 · Phone contents</div>
-    <div style="font-size:28px;font-weight:700;color:#26262e;line-height:1.2">Getting the newest release above the fold on a phone</div>
-    <div style="font-size:16px;font-weight:500;color:#55555f;line-height:1.6;text-wrap:pretty">Below 420px each contents row stacks its version over its date, so six of them run about 430px tall — a whole second screen before Version 1.4.0 starts. All three keep the same anchors; they differ in how much of the list is showing when the page loads.</div>
-  </div>
-
-  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
-
-    <div id="2a" style="display:flex;flex-direction:column;gap:14px;width:390px;flex-shrink:0">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;background:#26262e;color:#fff;font-size:13px;font-weight:700">2a</span>
-          <span style="font-size:18px;font-weight:700;color:#26262e">Collapsed by default</span>
-        </div>
-        <div style="font-size:15px;font-weight:500;color:#55555f;line-height:1.5">One tappable row that opens the full list. Costs 48px instead of 430px, and the list is still there for anyone hunting a specific version.</div>
-      </div>
-      <div style="width:390px;background:#ffffff;box-shadow:0 1px 2px rgba(93,84,68,0.05), 0 10px 30px rgba(93,84,68,0.07);padding:0 20px 40px;overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0">
-          <a href="#2a" style="flex-shrink:0;white-space:nowrap;color:#7c4dcf;font-size:14px;font-weight:700;text-decoration:none">← Back to drawing</a>
-          <span style="display:inline-flex;align-items:center;gap:6px">
-            <span style="display:inline-flex;gap:2px">
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#EC534E"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F89C45"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F9D24F"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#8CC864"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#62A2E9"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#AB71E1"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F47CB0"></i>
-            </span>
-            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#55555f">Splotch</span>
-          </span>
-        </div>
-        <div style="padding:8px 0 28px">
-          <h1 style="margin:0;font-size:34px;font-weight:700;line-height:1.08;letter-spacing:-0.015em;color:#26262e">Changelog</h1>
-          <p style="margin:16px 0 0;font-size:16px;font-weight:500;line-height:1.6;color:#55555f">Every public Splotch release, newest first, with the notes that shipped alongside it.</p>
-        </div>
-        <a href="#2a" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border:1px solid #eeeae4;border-radius:8px;text-decoration:none;margin-bottom:24px">
-          <span style="font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Contents</span>
-          <span style="display:inline-flex;align-items:center;gap:8px;color:#7c4dcf;font-size:14px;font-weight:600">6 releases <span style="font-size:11px">▼</span></span>
-        </a>
-        <article style="border-top:1px solid #eeeae4;padding:32px 0 0">
-          <header style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
-            <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.4.0</h2>
-            <time style="color:#6c6c76;font-size:14px;font-weight:500">July 28, 2026</time>
-          </header>
-          <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-          <ul style="margin:0;padding-left:1.2em;color:#55555f;font-size:16px;line-height:1.62">
-            <li style="margin-bottom:8px">Dark mode — Light, Dark, or follow your device.</li>
-            <li style="margin-bottom:8px">A wax crayon brush, from the new Brush Menu.</li>
-            <li style="margin-bottom:8px">The magic brush now works on any drawing.</li>
-          </ul>
-        </article>
-      </div>
-    </div>
-
-    <div id="2b" style="display:flex;flex-direction:column;gap:14px;width:390px;flex-shrink:0">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;background:#26262e;color:#fff;font-size:13px;font-weight:700">2b</span>
-          <span style="font-size:18px;font-weight:700;color:#26262e">Swipeable strip</span>
-        </div>
-        <div style="font-size:15px;font-weight:500;color:#55555f;line-height:1.5">The same six chips on one horizontally scrolling row, bleeding off the right edge so it reads as scrollable. Nothing to tap open, about 70px tall.</div>
-      </div>
-      <div style="width:390px;background:#ffffff;box-shadow:0 1px 2px rgba(93,84,68,0.05), 0 10px 30px rgba(93,84,68,0.07);padding:0 0 40px;overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px">
-          <a href="#2b" style="flex-shrink:0;white-space:nowrap;color:#7c4dcf;font-size:14px;font-weight:700;text-decoration:none">← Back to drawing</a>
-          <span style="display:inline-flex;align-items:center;gap:6px">
-            <span style="display:inline-flex;gap:2px">
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#EC534E"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F89C45"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F9D24F"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#8CC864"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#62A2E9"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#AB71E1"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F47CB0"></i>
-            </span>
-            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#55555f">Splotch</span>
-          </span>
-        </div>
-        <div style="padding:8px 20px 28px">
-          <h1 style="margin:0;font-size:34px;font-weight:700;line-height:1.08;letter-spacing:-0.015em;color:#26262e">Changelog</h1>
-          <p style="margin:16px 0 0;font-size:16px;font-weight:500;line-height:1.6;color:#55555f">Every public Splotch release, newest first, with the notes that shipped alongside it.</p>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;padding:0 20px 12px;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Contents<span style="flex:1;height:1px;background:#eeeae4"></span></div>
-        <div style="display:flex;gap:8px;padding:0 20px 24px;overflow-x:auto">
-          <a href="#2b" style="flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:8px 14px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap">Version 1.4.0<span style="color:#6c6c76;font-weight:500;font-size:13px">July 28, 2026</span></a>
-          <a href="#2b" style="flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:8px 14px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap">Version 1.3.0<span style="color:#6c6c76;font-weight:500;font-size:13px">July 5, 2026</span></a>
-          <a href="#2b" style="flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:8px 14px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap">Version 1.2.0<span style="color:#6c6c76;font-weight:500;font-size:13px">June 22, 2026</span></a>
-          <a href="#2b" style="flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:8px 14px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap">Version 1.1.0<span style="color:#6c6c76;font-weight:500;font-size:13px">June 5, 2026</span></a>
-          <a href="#2b" style="flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:8px 14px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap">Version 1.0.1<span style="color:#6c6c76;font-weight:500;font-size:13px">June 3, 2026</span></a>
-          <a href="#2b" style="flex:0 0 auto;display:flex;flex-direction:column;gap:1px;padding:8px 14px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none;white-space:nowrap">Version 1.0.0<span style="color:#6c6c76;font-weight:500;font-size:13px">June 1, 2026</span></a>
-        </div>
-        <article style="border-top:1px solid #eeeae4;margin:0 20px;padding:32px 0 0">
-          <header style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
-            <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.4.0</h2>
-            <time style="color:#6c6c76;font-size:14px;font-weight:500">July 28, 2026</time>
-          </header>
-          <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-          <ul style="margin:0;padding-left:1.2em;color:#55555f;font-size:16px;line-height:1.62">
-            <li style="margin-bottom:8px">Dark mode — Light, Dark, or follow your device.</li>
-            <li style="margin-bottom:8px">A wax crayon brush, from the new Brush Menu.</li>
-          </ul>
-        </article>
-      </div>
-    </div>
-
-    <div id="2c" style="display:flex;flex-direction:column;gap:14px;width:390px;flex-shrink:0">
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;background:#26262e;color:#fff;font-size:13px;font-weight:700">2c</span>
-          <span style="font-size:18px;font-weight:700;color:#26262e">No contents up top</span>
-        </div>
-        <div style="font-size:15px;font-weight:500;color:#55555f;line-height:1.5">The newest release starts straight after the lede; the index moves to the foot of the page as "Older releases". Best if most phone visitors only want what just shipped.</div>
-      </div>
-      <div style="width:390px;background:#ffffff;box-shadow:0 1px 2px rgba(93,84,68,0.05), 0 10px 30px rgba(93,84,68,0.07);padding:0 20px 40px;overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0">
-          <a href="#2c" style="flex-shrink:0;white-space:nowrap;color:#7c4dcf;font-size:14px;font-weight:700;text-decoration:none">← Back to drawing</a>
-          <span style="display:inline-flex;align-items:center;gap:6px">
-            <span style="display:inline-flex;gap:2px">
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#EC534E"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F89C45"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F9D24F"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#8CC864"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#62A2E9"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#AB71E1"></i>
-              <i style="display:block;width:7px;height:6px;border-radius:999px;background:#F47CB0"></i>
-            </span>
-            <span style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#55555f">Splotch</span>
-          </span>
-        </div>
-        <div style="padding:8px 0 28px">
-          <h1 style="margin:0;font-size:34px;font-weight:700;line-height:1.08;letter-spacing:-0.015em;color:#26262e">Changelog</h1>
-          <p style="margin:16px 0 0;font-size:16px;font-weight:500;line-height:1.6;color:#55555f">Every public Splotch release, newest first, with the notes that shipped alongside it.</p>
-        </div>
-        <article style="border-top:1px solid #eeeae4;padding:32px 0 0">
-          <header style="display:flex;flex-direction:column;gap:4px;margin-bottom:16px">
-            <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.4.0</h2>
-            <time style="color:#6c6c76;font-size:14px;font-weight:500">July 28, 2026</time>
-          </header>
-          <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-          <ul style="margin:0;padding-left:1.2em;color:#55555f;font-size:16px;line-height:1.62">
-            <li style="margin-bottom:8px">Dark mode — Light, Dark, or follow your device.</li>
-            <li style="margin-bottom:8px">A wax crayon brush, from the new Brush Menu.</li>
-            <li style="margin-bottom:8px">The magic brush now works on any drawing.</li>
-            <li style="margin-bottom:8px">Report a bug from Settings.</li>
-          </ul>
-          <h3 style="margin:16px 0 8px;color:#26262e;font-size:18px;font-weight:700">🚀 Improved</h3>
-          <ul style="margin:0;padding-left:1.2em;color:#55555f;font-size:16px;line-height:1.62">
-            <li style="margin-bottom:8px">Rotating your device keeps the paper upright.</li>
-          </ul>
-        </article>
-        <div style="display:flex;align-items:center;gap:10px;padding:24px 0;color:#6c6c76;font-size:13px;font-weight:500;font-style:italic"><span style="flex:1;height:1px;background:#eeeae4"></span>1.3.0 – 1.0.1 continue here<span style="flex:1;height:1px;background:#eeeae4"></span></div>
-        <nav style="border-top:1px solid #eeeae4;padding-top:32px">
-          <div style="display:flex;align-items:center;gap:14px;padding-bottom:12px;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Older releases<span style="flex:1;height:1px;background:#eeeae4"></span></div>
-          <div style="display:flex;flex-direction:column">
-            <a href="#2c" style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:15px;font-weight:600;text-decoration:none">Version 1.3.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">July 5, 2026</span></a>
-            <a href="#2c" style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:15px;font-weight:600;text-decoration:none">Version 1.2.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 22, 2026</span></a>
-            <a href="#2c" style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:15px;font-weight:600;text-decoration:none">Version 1.1.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 5, 2026</span></a>
-            <a href="#2c" style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:15px;font-weight:600;text-decoration:none">Version 1.0.1<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 3, 2026</span></a>
-            <a href="#2c" style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:12px 2px;color:#7c4dcf;font-size:15px;font-weight:600;text-decoration:none">Version 1.0.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 1, 2026</span></a>
+      <section style="padding: 56px 64px 40px; display: flex; flex-direction: column; gap: 36px">
+        <div style="display: flex; flex-direction: column; gap: 8px; max-width: 760px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 600;
+              letter-spacing: 0.14em;
+              text-transform: uppercase;
+              color: #6c6c76;
+            "
+          >
+            Turn 2 · Phone contents
           </div>
-        </nav>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<section style="padding:16px 64px 96px;display:flex;flex-direction:column;gap:36px">
-  <div style="display:flex;flex-direction:column;gap:8px;max-width:760px">
-    <div style="font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Turn 1 · Changelog contents</div>
-    <div style="font-size:28px;font-weight:700;color:#26262e;line-height:1.2">Three ways to replace the two-column contents grid</div>
-    <div style="font-size:16px;font-weight:500;color:#55555f;line-height:1.6;text-wrap:pretty">The two-column grid asks you to read in a Z pattern against a list that is already ordered newest-first. Each option below keeps the same anchors and the same pinned light palette, and only changes how the list is presented at widescreen.</div>
-  </div>
-
-  <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
-
-    <div id="1a" style="display:flex;flex-direction:column;gap:14px;width:1180px;flex-shrink:0">
-      <div style="display:flex;align-items:baseline;gap:12px">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;background:#26262e;color:#fff;font-size:13px;font-weight:700;letter-spacing:0.04em">1a</span>
-        <span style="font-size:18px;font-weight:700;color:#26262e">Sticky rail</span>
-        <span style="font-size:15px;font-weight:500;color:#55555f">Contents moves out of the reading column into a left rail that follows you down the page. My recommendation: it is the only option that earns the extra width instead of spending it.</span>
-      </div>
-      <div style="background:#f0efed;padding:32px 16px 40px;border-radius:20px">
-        <div style="max-width:1148px;margin:0 auto;padding:0 34px 40px;background:#ffffff;border-radius:16px;box-shadow:0 1px 2px rgba(93,84,68,0.05), 0 10px 30px rgba(93,84,68,0.07)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0">
-            <a href="#1a" style="flex-shrink:0;white-space:nowrap;color:#7c4dcf;font-size:14px;font-weight:700;text-decoration:none">← Back to drawing</a>
-            <span style="display:inline-flex;align-items:center;gap:8px">
-              <span style="display:inline-flex;gap:4px">
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#EC534E"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F89C45"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F9D24F"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#8CC864"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#62A2E9"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#AB71E1"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F47CB0"></i>
-              </span>
-              <span style="font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#55555f">Splotch</span>
-            </span>
+          <div style="font-size: 28px; font-weight: 700; color: #26262e; line-height: 1.2">
+            Getting the newest release above the fold on a phone
           </div>
-          <div style="padding:8px 0 34px">
-            <h1 style="margin:0;font-size:46px;font-weight:700;line-height:1.08;letter-spacing:-0.015em;color:#26262e">Changelog</h1>
-            <p style="margin:16px 0 0;max-width:62ch;font-size:18px;font-weight:500;line-height:1.6;color:#55555f">Every public Splotch release, newest first, with the notes that shipped alongside it.</p>
+          <div
+            style="
+              font-size: 16px;
+              font-weight: 500;
+              color: #55555f;
+              line-height: 1.6;
+              text-wrap: pretty;
+            "
+          >
+            Below 420px each contents row stacks its version over its date, so six of them run about
+            430px tall — a whole second screen before Version 1.4.0 starts. All three keep the same
+            anchors; they differ in how much of the list is showing when the page loads.
           </div>
+        </div>
 
-          <div style="display:grid;grid-template-columns:232px minmax(0,1fr);gap:56px;align-items:start">
-            <nav style="position:sticky;top:24px;display:flex;flex-direction:column;gap:4px">
-              <div style="display:flex;align-items:center;gap:14px;padding-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Contents<span style="flex:1;height:1px;background:#eeeae4"></span></div>
-              <a href="#1a" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-left:2px solid #7c4dcf;background:#f6f2fd;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.4.0<span style="color:#6c6c76;font-weight:500;font-size:13px">July 28, 2026</span></a>
-              <a href="#1a" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-left:2px solid #eeeae4;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.3.0<span style="color:#6c6c76;font-weight:500;font-size:13px">July 5, 2026</span></a>
-              <a href="#1a" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-left:2px solid #eeeae4;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.2.0<span style="color:#6c6c76;font-weight:500;font-size:13px">June 22, 2026</span></a>
-              <a href="#1a" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-left:2px solid #eeeae4;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.1.0<span style="color:#6c6c76;font-weight:500;font-size:13px">June 5, 2026</span></a>
-              <a href="#1a" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-left:2px solid #eeeae4;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.0.1<span style="color:#6c6c76;font-weight:500;font-size:13px">June 3, 2026</span></a>
-              <a href="#1a" style="display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-left:2px solid #eeeae4;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.0.0<span style="color:#6c6c76;font-weight:500;font-size:13px">June 1, 2026</span></a>
-            </nav>
-
-            <div>
-              <article style="padding:0 0 40px;border-top:1px solid #eeeae4;padding-top:32px">
-                <header style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px">
-                  <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.4.0</h2>
-                  <time style="flex-shrink:0;color:#6c6c76;font-size:14px;font-weight:500">July 28, 2026</time>
+        <div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+          <div
+            id="2a"
+            style="display: flex; flex-direction: column; gap: 14px; width: 390px; flex-shrink: 0"
+          >
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span
+                  style="
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 34px;
+                    height: 24px;
+                    padding: 0 8px;
+                    border-radius: 999px;
+                    background: #26262e;
+                    color: #fff;
+                    font-size: 13px;
+                    font-weight: 700;
+                  "
+                  >2a</span
+                >
+                <span style="font-size: 18px; font-weight: 700; color: #26262e"
+                  >Collapsed by default</span
+                >
+              </div>
+              <div style="font-size: 15px; font-weight: 500; color: #55555f; line-height: 1.5">
+                One tappable row that opens the full list. Costs 48px instead of 430px, and the list
+                is still there for anyone hunting a specific version.
+              </div>
+            </div>
+            <div
+              style="
+                width: 390px;
+                background: #ffffff;
+                box-shadow:
+                  0 1px 2px rgba(93, 84, 68, 0.05),
+                  0 10px 30px rgba(93, 84, 68, 0.07);
+                padding: 0 20px 40px;
+                overflow: hidden;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 16px;
+                  padding: 18px 0;
+                "
+              >
+                <a
+                  href="#2a"
+                  style="
+                    flex-shrink: 0;
+                    white-space: nowrap;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 700;
+                    text-decoration: none;
+                  "
+                  >← Back to drawing</a
+                >
+                <span style="display: inline-flex; align-items: center; gap: 6px">
+                  <span style="display: inline-flex; gap: 2px">
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #ec534e;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f89c45;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f9d24f;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #8cc864;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #62a2e9;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #ab71e1;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f47cb0;
+                      "
+                    ></i>
+                  </span>
+                  <span
+                    style="
+                      font-size: 10px;
+                      font-weight: 700;
+                      letter-spacing: 0.08em;
+                      text-transform: uppercase;
+                      color: #55555f;
+                    "
+                    >Splotch</span
+                  >
+                </span>
+              </div>
+              <div style="padding: 8px 0 28px">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 34px;
+                    font-weight: 700;
+                    line-height: 1.08;
+                    letter-spacing: -0.015em;
+                    color: #26262e;
+                  "
+                >
+                  Changelog
+                </h1>
+                <p
+                  style="
+                    margin: 16px 0 0;
+                    font-size: 16px;
+                    font-weight: 500;
+                    line-height: 1.6;
+                    color: #55555f;
+                  "
+                >
+                  Every public Splotch release, newest first, with the notes that shipped alongside
+                  it.
+                </p>
+              </div>
+              <a
+                href="#2a"
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 12px;
+                  padding: 14px 16px;
+                  border: 1px solid #eeeae4;
+                  border-radius: 8px;
+                  text-decoration: none;
+                  margin-bottom: 24px;
+                "
+              >
+                <span
+                  style="
+                    font-size: 12px;
+                    font-weight: 600;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6c6c76;
+                  "
+                  >Contents</span
+                >
+                <span
+                  style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                  "
+                  >6 releases <span style="font-size: 11px">▼</span></span
+                >
+              </a>
+              <article style="border-top: 1px solid #eeeae4; padding: 32px 0 0">
+                <header
+                  style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px"
+                >
+                  <h2
+                    style="
+                      margin: 0;
+                      color: #26262e;
+                      font-size: 22px;
+                      line-height: 1.25;
+                      font-weight: 700;
+                    "
+                  >
+                    Version 1.4.0
+                  </h2>
+                  <time style="color: #6c6c76; font-size: 14px; font-weight: 500"
+                    >July 28, 2026</time
+                  >
                 </header>
-                <div>
-                  <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-                  <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                    <li style="margin-bottom:8px">Dark mode — Light, Dark, or follow your device.</li>
-                    <li style="margin-bottom:8px">A wax crayon brush, from the new Brush Menu.</li>
-                    <li style="margin-bottom:8px">The magic brush now works on any drawing.</li>
-                    <li style="margin-bottom:8px">Report a bug from Settings.</li>
-                  </ul>
-                  <h3 style="margin:16px 0 8px;color:#26262e;font-size:18px;font-weight:700">🚀 Improved</h3>
-                  <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                    <li style="margin-bottom:8px">Rotating your device keeps the paper upright.</li>
-                    <li style="margin-bottom:8px">Undo now goes back 20 steps.</li>
-                    <li style="margin-bottom:8px">A bigger eraser, sized as holes in the paper.</li>
-                  </ul>
-                  <h3 style="margin:16px 0 8px;color:#26262e;font-size:18px;font-weight:700">🛠 Fixed</h3>
-                  <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                    <li style="margin-bottom:8px">The magic brush no longer leaves ghost outlines.</li>
-                    <li style="margin-bottom:8px">Swatches and pages read correctly in dark mode.</li>
-                    <li style="margin-bottom:8px">The drag-to-clear tutorial no longer vanishes instantly.</li>
-                  </ul>
-                </div>
+                <h3 style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700">
+                  ✨ New
+                </h3>
+                <ul
+                  style="
+                    margin: 0;
+                    padding-left: 1.2em;
+                    color: #55555f;
+                    font-size: 16px;
+                    line-height: 1.62;
+                  "
+                >
+                  <li style="margin-bottom: 8px">
+                    Dark mode — Light, Dark, or follow your device.
+                  </li>
+                  <li style="margin-bottom: 8px">A wax crayon brush, from the new Brush Menu.</li>
+                  <li style="margin-bottom: 8px">The magic brush now works on any drawing.</li>
+                </ul>
               </article>
-              <article style="border-top:1px solid #eeeae4;padding-top:32px">
-                <header style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px">
-                  <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.3.0</h2>
-                  <time style="flex-shrink:0;color:#6c6c76;font-size:14px;font-weight:500">July 5, 2026</time>
+            </div>
+          </div>
+
+          <div
+            id="2b"
+            style="display: flex; flex-direction: column; gap: 14px; width: 390px; flex-shrink: 0"
+          >
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span
+                  style="
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 34px;
+                    height: 24px;
+                    padding: 0 8px;
+                    border-radius: 999px;
+                    background: #26262e;
+                    color: #fff;
+                    font-size: 13px;
+                    font-weight: 700;
+                  "
+                  >2b</span
+                >
+                <span style="font-size: 18px; font-weight: 700; color: #26262e"
+                  >Swipeable strip</span
+                >
+              </div>
+              <div style="font-size: 15px; font-weight: 500; color: #55555f; line-height: 1.5">
+                The same six chips on one horizontally scrolling row, bleeding off the right edge so
+                it reads as scrollable. Nothing to tap open, about 70px tall.
+              </div>
+            </div>
+            <div
+              style="
+                width: 390px;
+                background: #ffffff;
+                box-shadow:
+                  0 1px 2px rgba(93, 84, 68, 0.05),
+                  0 10px 30px rgba(93, 84, 68, 0.07);
+                padding: 0 0 40px;
+                overflow: hidden;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 16px;
+                  padding: 18px 20px;
+                "
+              >
+                <a
+                  href="#2b"
+                  style="
+                    flex-shrink: 0;
+                    white-space: nowrap;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 700;
+                    text-decoration: none;
+                  "
+                  >← Back to drawing</a
+                >
+                <span style="display: inline-flex; align-items: center; gap: 6px">
+                  <span style="display: inline-flex; gap: 2px">
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #ec534e;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f89c45;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f9d24f;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #8cc864;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #62a2e9;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #ab71e1;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f47cb0;
+                      "
+                    ></i>
+                  </span>
+                  <span
+                    style="
+                      font-size: 10px;
+                      font-weight: 700;
+                      letter-spacing: 0.08em;
+                      text-transform: uppercase;
+                      color: #55555f;
+                    "
+                    >Splotch</span
+                  >
+                </span>
+              </div>
+              <div style="padding: 8px 20px 28px">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 34px;
+                    font-weight: 700;
+                    line-height: 1.08;
+                    letter-spacing: -0.015em;
+                    color: #26262e;
+                  "
+                >
+                  Changelog
+                </h1>
+                <p
+                  style="
+                    margin: 16px 0 0;
+                    font-size: 16px;
+                    font-weight: 500;
+                    line-height: 1.6;
+                    color: #55555f;
+                  "
+                >
+                  Every public Splotch release, newest first, with the notes that shipped alongside
+                  it.
+                </p>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 14px;
+                  padding: 0 20px 12px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  letter-spacing: 0.14em;
+                  text-transform: uppercase;
+                  color: #6c6c76;
+                "
+              >
+                Contents<span style="flex: 1; height: 1px; background: #eeeae4"></span>
+              </div>
+              <div style="display: flex; gap: 8px; padding: 0 20px 24px; overflow-x: auto">
+                <a
+                  href="#2b"
+                  style="
+                    flex: 0 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    padding: 8px 14px;
+                    border: 1px solid #eeeae4;
+                    border-radius: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                  "
+                  >Version 1.4.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                    >July 28, 2026</span
+                  ></a
+                >
+                <a
+                  href="#2b"
+                  style="
+                    flex: 0 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    padding: 8px 14px;
+                    border: 1px solid #eeeae4;
+                    border-radius: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                  "
+                  >Version 1.3.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                    >July 5, 2026</span
+                  ></a
+                >
+                <a
+                  href="#2b"
+                  style="
+                    flex: 0 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    padding: 8px 14px;
+                    border: 1px solid #eeeae4;
+                    border-radius: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                  "
+                  >Version 1.2.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                    >June 22, 2026</span
+                  ></a
+                >
+                <a
+                  href="#2b"
+                  style="
+                    flex: 0 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    padding: 8px 14px;
+                    border: 1px solid #eeeae4;
+                    border-radius: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                  "
+                  >Version 1.1.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                    >June 5, 2026</span
+                  ></a
+                >
+                <a
+                  href="#2b"
+                  style="
+                    flex: 0 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    padding: 8px 14px;
+                    border: 1px solid #eeeae4;
+                    border-radius: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                  "
+                  >Version 1.0.1<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                    >June 3, 2026</span
+                  ></a
+                >
+                <a
+                  href="#2b"
+                  style="
+                    flex: 0 0 auto;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1px;
+                    padding: 8px 14px;
+                    border: 1px solid #eeeae4;
+                    border-radius: 8px;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 600;
+                    text-decoration: none;
+                    white-space: nowrap;
+                  "
+                  >Version 1.0.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                    >June 1, 2026</span
+                  ></a
+                >
+              </div>
+              <article style="border-top: 1px solid #eeeae4; margin: 0 20px; padding: 32px 0 0">
+                <header
+                  style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px"
+                >
+                  <h2
+                    style="
+                      margin: 0;
+                      color: #26262e;
+                      font-size: 22px;
+                      line-height: 1.25;
+                      font-weight: 700;
+                    "
+                  >
+                    Version 1.4.0
+                  </h2>
+                  <time style="color: #6c6c76; font-size: 14px; font-weight: 500"
+                    >July 28, 2026</time
+                  >
                 </header>
-                <div>
-                  <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-                  <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                    <li style="margin-bottom:8px">Settings: a slider to resize the on-screen buttons.</li>
-                    <li style="margin-bottom:8px">Save your drawings straight to a folder on your computer (web).</li>
-                  </ul>
-                </div>
+                <h3 style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700">
+                  ✨ New
+                </h3>
+                <ul
+                  style="
+                    margin: 0;
+                    padding-left: 1.2em;
+                    color: #55555f;
+                    font-size: 16px;
+                    line-height: 1.62;
+                  "
+                >
+                  <li style="margin-bottom: 8px">
+                    Dark mode — Light, Dark, or follow your device.
+                  </li>
+                  <li style="margin-bottom: 8px">A wax crayon brush, from the new Brush Menu.</li>
+                </ul>
               </article>
             </div>
           </div>
+
+          <div
+            id="2c"
+            style="display: flex; flex-direction: column; gap: 14px; width: 390px; flex-shrink: 0"
+          >
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; align-items: center; gap: 10px">
+                <span
+                  style="
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 34px;
+                    height: 24px;
+                    padding: 0 8px;
+                    border-radius: 999px;
+                    background: #26262e;
+                    color: #fff;
+                    font-size: 13px;
+                    font-weight: 700;
+                  "
+                  >2c</span
+                >
+                <span style="font-size: 18px; font-weight: 700; color: #26262e"
+                  >No contents up top</span
+                >
+              </div>
+              <div style="font-size: 15px; font-weight: 500; color: #55555f; line-height: 1.5">
+                The newest release starts straight after the lede; the index moves to the foot of
+                the page as "Older releases". Best if most phone visitors only want what just
+                shipped.
+              </div>
+            </div>
+            <div
+              style="
+                width: 390px;
+                background: #ffffff;
+                box-shadow:
+                  0 1px 2px rgba(93, 84, 68, 0.05),
+                  0 10px 30px rgba(93, 84, 68, 0.07);
+                padding: 0 20px 40px;
+                overflow: hidden;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  gap: 16px;
+                  padding: 18px 0;
+                "
+              >
+                <a
+                  href="#2c"
+                  style="
+                    flex-shrink: 0;
+                    white-space: nowrap;
+                    color: #7c4dcf;
+                    font-size: 14px;
+                    font-weight: 700;
+                    text-decoration: none;
+                  "
+                  >← Back to drawing</a
+                >
+                <span style="display: inline-flex; align-items: center; gap: 6px">
+                  <span style="display: inline-flex; gap: 2px">
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #ec534e;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f89c45;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f9d24f;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #8cc864;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #62a2e9;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #ab71e1;
+                      "
+                    ></i>
+                    <i
+                      style="
+                        display: block;
+                        width: 7px;
+                        height: 6px;
+                        border-radius: 999px;
+                        background: #f47cb0;
+                      "
+                    ></i>
+                  </span>
+                  <span
+                    style="
+                      font-size: 10px;
+                      font-weight: 700;
+                      letter-spacing: 0.08em;
+                      text-transform: uppercase;
+                      color: #55555f;
+                    "
+                    >Splotch</span
+                  >
+                </span>
+              </div>
+              <div style="padding: 8px 0 28px">
+                <h1
+                  style="
+                    margin: 0;
+                    font-size: 34px;
+                    font-weight: 700;
+                    line-height: 1.08;
+                    letter-spacing: -0.015em;
+                    color: #26262e;
+                  "
+                >
+                  Changelog
+                </h1>
+                <p
+                  style="
+                    margin: 16px 0 0;
+                    font-size: 16px;
+                    font-weight: 500;
+                    line-height: 1.6;
+                    color: #55555f;
+                  "
+                >
+                  Every public Splotch release, newest first, with the notes that shipped alongside
+                  it.
+                </p>
+              </div>
+              <article style="border-top: 1px solid #eeeae4; padding: 32px 0 0">
+                <header
+                  style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 16px"
+                >
+                  <h2
+                    style="
+                      margin: 0;
+                      color: #26262e;
+                      font-size: 22px;
+                      line-height: 1.25;
+                      font-weight: 700;
+                    "
+                  >
+                    Version 1.4.0
+                  </h2>
+                  <time style="color: #6c6c76; font-size: 14px; font-weight: 500"
+                    >July 28, 2026</time
+                  >
+                </header>
+                <h3 style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700">
+                  ✨ New
+                </h3>
+                <ul
+                  style="
+                    margin: 0;
+                    padding-left: 1.2em;
+                    color: #55555f;
+                    font-size: 16px;
+                    line-height: 1.62;
+                  "
+                >
+                  <li style="margin-bottom: 8px">
+                    Dark mode — Light, Dark, or follow your device.
+                  </li>
+                  <li style="margin-bottom: 8px">A wax crayon brush, from the new Brush Menu.</li>
+                  <li style="margin-bottom: 8px">The magic brush now works on any drawing.</li>
+                  <li style="margin-bottom: 8px">Report a bug from Settings.</li>
+                </ul>
+                <h3 style="margin: 16px 0 8px; color: #26262e; font-size: 18px; font-weight: 700">
+                  🚀 Improved
+                </h3>
+                <ul
+                  style="
+                    margin: 0;
+                    padding-left: 1.2em;
+                    color: #55555f;
+                    font-size: 16px;
+                    line-height: 1.62;
+                  "
+                >
+                  <li style="margin-bottom: 8px">Rotating your device keeps the paper upright.</li>
+                </ul>
+              </article>
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  padding: 24px 0;
+                  color: #6c6c76;
+                  font-size: 13px;
+                  font-weight: 500;
+                  font-style: italic;
+                "
+              >
+                <span style="flex: 1; height: 1px; background: #eeeae4"></span>1.3.0 – 1.0.1
+                continue here<span style="flex: 1; height: 1px; background: #eeeae4"></span>
+              </div>
+              <nav style="border-top: 1px solid #eeeae4; padding-top: 32px">
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding-bottom: 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #6c6c76;
+                  "
+                >
+                  Older releases<span style="flex: 1; height: 1px; background: #eeeae4"></span>
+                </div>
+                <div style="display: flex; flex-direction: column">
+                  <a
+                    href="#2c"
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      padding: 12px 2px;
+                      border-bottom: 1px solid #eeeae4;
+                      color: #7c4dcf;
+                      font-size: 15px;
+                      font-weight: 600;
+                      text-decoration: none;
+                    "
+                    >Version 1.3.0<span
+                      style="color: #6c6c76; font-weight: 500; font-size: 13px; white-space: nowrap"
+                      >July 5, 2026</span
+                    ></a
+                  >
+                  <a
+                    href="#2c"
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      padding: 12px 2px;
+                      border-bottom: 1px solid #eeeae4;
+                      color: #7c4dcf;
+                      font-size: 15px;
+                      font-weight: 600;
+                      text-decoration: none;
+                    "
+                    >Version 1.2.0<span
+                      style="color: #6c6c76; font-weight: 500; font-size: 13px; white-space: nowrap"
+                      >June 22, 2026</span
+                    ></a
+                  >
+                  <a
+                    href="#2c"
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      padding: 12px 2px;
+                      border-bottom: 1px solid #eeeae4;
+                      color: #7c4dcf;
+                      font-size: 15px;
+                      font-weight: 600;
+                      text-decoration: none;
+                    "
+                    >Version 1.1.0<span
+                      style="color: #6c6c76; font-weight: 500; font-size: 13px; white-space: nowrap"
+                      >June 5, 2026</span
+                    ></a
+                  >
+                  <a
+                    href="#2c"
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      padding: 12px 2px;
+                      border-bottom: 1px solid #eeeae4;
+                      color: #7c4dcf;
+                      font-size: 15px;
+                      font-weight: 600;
+                      text-decoration: none;
+                    "
+                    >Version 1.0.1<span
+                      style="color: #6c6c76; font-weight: 500; font-size: 13px; white-space: nowrap"
+                      >June 3, 2026</span
+                    ></a
+                  >
+                  <a
+                    href="#2c"
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      padding: 12px 2px;
+                      color: #7c4dcf;
+                      font-size: 15px;
+                      font-weight: 600;
+                      text-decoration: none;
+                    "
+                    >Version 1.0.0<span
+                      style="color: #6c6c76; font-weight: 500; font-size: 13px; white-space: nowrap"
+                      >June 1, 2026</span
+                    ></a
+                  >
+                </div>
+              </nav>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
 
-    <div id="1b" style="display:flex;flex-direction:column;gap:14px;width:1180px;flex-shrink:0">
-      <div style="display:flex;align-items:baseline;gap:12px">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;background:#26262e;color:#fff;font-size:13px;font-weight:700;letter-spacing:0.04em">1b</span>
-        <span style="font-size:18px;font-weight:700;color:#26262e">One row of version chips</span>
-        <span style="font-size:15px;font-weight:500;color:#55555f">The smallest change: six versions on a single line under the lede. Dates drop to a second, quieter line inside each chip.</span>
-      </div>
-      <div style="background:#f0efed;padding:32px 16px 40px;border-radius:20px">
-        <div style="max-width:1148px;margin:0 auto;padding:0 34px 40px;background:#ffffff;border-radius:16px;box-shadow:0 1px 2px rgba(93,84,68,0.05), 0 10px 30px rgba(93,84,68,0.07)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0">
-            <a href="#1b" style="flex-shrink:0;white-space:nowrap;color:#7c4dcf;font-size:14px;font-weight:700;text-decoration:none">← Back to drawing</a>
-            <span style="display:inline-flex;align-items:center;gap:8px">
-              <span style="display:inline-flex;gap:4px">
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#EC534E"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F89C45"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F9D24F"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#8CC864"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#62A2E9"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#AB71E1"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F47CB0"></i>
-              </span>
-              <span style="font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#55555f">Splotch</span>
-            </span>
+      <section style="padding: 16px 64px 96px; display: flex; flex-direction: column; gap: 36px">
+        <div style="display: flex; flex-direction: column; gap: 8px; max-width: 760px">
+          <div
+            style="
+              font-size: 12px;
+              font-weight: 600;
+              letter-spacing: 0.14em;
+              text-transform: uppercase;
+              color: #6c6c76;
+            "
+          >
+            Turn 1 · Changelog contents
           </div>
-          <div style="padding:8px 0 34px">
-            <h1 style="margin:0;font-size:46px;font-weight:700;line-height:1.08;letter-spacing:-0.015em;color:#26262e">Changelog</h1>
-            <p style="margin:16px 0 0;max-width:62ch;font-size:18px;font-weight:500;line-height:1.6;color:#55555f">Every public Splotch release, newest first, with the notes that shipped alongside it.</p>
+          <div style="font-size: 28px; font-weight: 700; color: #26262e; line-height: 1.2">
+            Three ways to replace the two-column contents grid
           </div>
-
-          <nav style="margin-bottom:40px">
-            <div style="display:flex;align-items:center;gap:14px;padding-bottom:16px;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Contents<span style="flex:1;height:1px;background:#eeeae4"></span></div>
-            <div style="display:flex;flex-wrap:wrap;gap:10px">
-              <a href="#1b" style="display:flex;flex-direction:column;gap:1px;padding:8px 16px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.4.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">July 28, 2026</span></a>
-              <a href="#1b" style="display:flex;flex-direction:column;gap:1px;padding:8px 16px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.3.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">July 5, 2026</span></a>
-              <a href="#1b" style="display:flex;flex-direction:column;gap:1px;padding:8px 16px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.2.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 22, 2026</span></a>
-              <a href="#1b" style="display:flex;flex-direction:column;gap:1px;padding:8px 16px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.1.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 5, 2026</span></a>
-              <a href="#1b" style="display:flex;flex-direction:column;gap:1px;padding:8px 16px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.0.1<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 3, 2026</span></a>
-              <a href="#1b" style="display:flex;flex-direction:column;gap:1px;padding:8px 16px;border:1px solid #eeeae4;border-radius:8px;color:#7c4dcf;font-size:14px;font-weight:600;text-decoration:none">Version 1.0.0<span style="color:#6c6c76;font-weight:500;font-size:13px;white-space:nowrap">June 1, 2026</span></a>
-            </div>
-          </nav>
-
-          <article style="border-top:1px solid #eeeae4;padding:32px 0 40px">
-            <header style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px">
-              <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.4.0</h2>
-              <time style="flex-shrink:0;color:#6c6c76;font-size:14px;font-weight:500">July 28, 2026</time>
-            </header>
-            <div>
-              <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-              <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                <li style="margin-bottom:8px">Dark mode — Light, Dark, or follow your device.</li>
-                <li style="margin-bottom:8px">A wax crayon brush, from the new Brush Menu.</li>
-                <li style="margin-bottom:8px">The magic brush now works on any drawing.</li>
-                <li style="margin-bottom:8px">Report a bug from Settings.</li>
-              </ul>
-              <h3 style="margin:16px 0 8px;color:#26262e;font-size:18px;font-weight:700">🚀 Improved</h3>
-              <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                <li style="margin-bottom:8px">Rotating your device keeps the paper upright.</li>
-                <li style="margin-bottom:8px">Undo now goes back 20 steps.</li>
-                <li style="margin-bottom:8px">A bigger eraser, sized as holes in the paper.</li>
-              </ul>
-            </div>
-          </article>
+          <div
+            style="
+              font-size: 16px;
+              font-weight: 500;
+              color: #55555f;
+              line-height: 1.6;
+              text-wrap: pretty;
+            "
+          >
+            The two-column grid asks you to read in a Z pattern against a list that is already
+            ordered newest-first. Each option below keeps the same anchors and the same pinned light
+            palette, and only changes how the list is presented at widescreen.
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div id="1c" style="display:flex;flex-direction:column;gap:14px;width:1180px;flex-shrink:0">
-      <div style="display:flex;align-items:baseline;gap:12px">
-        <span style="display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:999px;background:#26262e;color:#fff;font-size:13px;font-weight:700;letter-spacing:0.04em">1c</span>
-        <span style="font-size:18px;font-weight:700;color:#26262e">Full-width index rows</span>
-        <span style="font-size:15px;font-weight:500;color:#55555f">One column, read top to bottom in release order, with the extra width spent on what each release actually contained.</span>
-      </div>
-      <div style="background:#f0efed;padding:32px 16px 40px;border-radius:20px">
-        <div style="max-width:1148px;margin:0 auto;padding:0 34px 40px;background:#ffffff;border-radius:16px;box-shadow:0 1px 2px rgba(93,84,68,0.05), 0 10px 30px rgba(93,84,68,0.07)">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0">
-            <a href="#1c" style="flex-shrink:0;white-space:nowrap;color:#7c4dcf;font-size:14px;font-weight:700;text-decoration:none">← Back to drawing</a>
-            <span style="display:inline-flex;align-items:center;gap:8px">
-              <span style="display:inline-flex;gap:4px">
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#EC534E"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F89C45"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F9D24F"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#8CC864"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#62A2E9"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#AB71E1"></i>
-                <i style="display:block;width:11px;height:7px;border-radius:999px;background:#F47CB0"></i>
-              </span>
-              <span style="font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#55555f">Splotch</span>
-            </span>
-          </div>
-          <div style="padding:8px 0 34px">
-            <h1 style="margin:0;font-size:46px;font-weight:700;line-height:1.08;letter-spacing:-0.015em;color:#26262e">Changelog</h1>
-            <p style="margin:16px 0 0;max-width:62ch;font-size:18px;font-weight:500;line-height:1.6;color:#55555f">Every public Splotch release, newest first, with the notes that shipped alongside it.</p>
-          </div>
-
-          <nav style="margin-bottom:40px">
-            <div style="display:flex;align-items:center;gap:14px;padding-bottom:8px;font-size:12px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#6c6c76">Contents<span style="flex:1;height:1px;background:#eeeae4"></span></div>
-            <div style="display:flex;flex-direction:column">
-              <a href="#1c" style="display:grid;grid-template-columns:170px minmax(0,1fr) 130px;align-items:baseline;gap:24px;padding:14px 4px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:16px;font-weight:600;text-decoration:none">Version 1.4.0<span style="color:#6c6c76;font-weight:500;font-size:14px">4 new · 3 improved · 3 fixed</span><span style="color:#6c6c76;font-weight:500;font-size:14px;text-align:right;white-space:nowrap">July 28, 2026</span></a>
-              <a href="#1c" style="display:grid;grid-template-columns:170px minmax(0,1fr) 130px;align-items:baseline;gap:24px;padding:14px 4px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:16px;font-weight:600;text-decoration:none">Version 1.3.0<span style="color:#6c6c76;font-weight:500;font-size:14px">5 new · 3 improved · 5 fixed</span><span style="color:#6c6c76;font-weight:500;font-size:14px;text-align:right;white-space:nowrap">July 5, 2026</span></a>
-              <a href="#1c" style="display:grid;grid-template-columns:170px minmax(0,1fr) 130px;align-items:baseline;gap:24px;padding:14px 4px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:16px;font-weight:600;text-decoration:none">Version 1.2.0<span style="color:#6c6c76;font-weight:500;font-size:14px">3 new · 2 improved · 4 fixed</span><span style="color:#6c6c76;font-weight:500;font-size:14px;text-align:right;white-space:nowrap">June 22, 2026</span></a>
-              <a href="#1c" style="display:grid;grid-template-columns:170px minmax(0,1fr) 130px;align-items:baseline;gap:24px;padding:14px 4px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:16px;font-weight:600;text-decoration:none">Version 1.1.0<span style="color:#6c6c76;font-weight:500;font-size:14px">2 new · 3 improved · 2 fixed</span><span style="color:#6c6c76;font-weight:500;font-size:14px;text-align:right;white-space:nowrap">June 5, 2026</span></a>
-              <a href="#1c" style="display:grid;grid-template-columns:170px minmax(0,1fr) 130px;align-items:baseline;gap:24px;padding:14px 4px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:16px;font-weight:600;text-decoration:none">Version 1.0.1<span style="color:#6c6c76;font-weight:500;font-size:14px">3 improved · 1 fixed</span><span style="color:#6c6c76;font-weight:500;font-size:14px;text-align:right;white-space:nowrap">June 3, 2026</span></a>
-              <a href="#1c" style="display:grid;grid-template-columns:170px minmax(0,1fr) 130px;align-items:baseline;gap:24px;padding:14px 4px;border-bottom:1px solid #eeeae4;color:#7c4dcf;font-size:16px;font-weight:600;text-decoration:none">Version 1.0.0<span style="color:#6c6c76;font-weight:500;font-size:14px">5 new</span><span style="color:#6c6c76;font-weight:500;font-size:14px;text-align:right;white-space:nowrap">June 1, 2026</span></a>
+        <div style="display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start">
+          <div
+            id="1a"
+            style="display: flex; flex-direction: column; gap: 14px; width: 1180px; flex-shrink: 0"
+          >
+            <div style="display: flex; align-items: baseline; gap: 12px">
+              <span
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-width: 34px;
+                  height: 24px;
+                  padding: 0 8px;
+                  border-radius: 999px;
+                  background: #26262e;
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 0.04em;
+                "
+                >1a</span
+              >
+              <span style="font-size: 18px; font-weight: 700; color: #26262e">Sticky rail</span>
+              <span style="font-size: 15px; font-weight: 500; color: #55555f"
+                >Contents moves out of the reading column into a left rail that follows you down the
+                page. My recommendation: it is the only option that earns the extra width instead of
+                spending it.</span
+              >
             </div>
-          </nav>
+            <div style="background: #f0efed; padding: 32px 16px 40px; border-radius: 20px">
+              <div
+                style="
+                  max-width: 1148px;
+                  margin: 0 auto;
+                  padding: 0 34px 40px;
+                  background: #ffffff;
+                  border-radius: 16px;
+                  box-shadow:
+                    0 1px 2px rgba(93, 84, 68, 0.05),
+                    0 10px 30px rgba(93, 84, 68, 0.07);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding: 18px 0;
+                  "
+                >
+                  <a
+                    href="#1a"
+                    style="
+                      flex-shrink: 0;
+                      white-space: nowrap;
+                      color: #7c4dcf;
+                      font-size: 14px;
+                      font-weight: 700;
+                      text-decoration: none;
+                    "
+                    >← Back to drawing</a
+                  >
+                  <span style="display: inline-flex; align-items: center; gap: 8px">
+                    <span style="display: inline-flex; gap: 4px">
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #ec534e;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f89c45;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f9d24f;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #8cc864;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #62a2e9;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #ab71e1;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f47cb0;
+                        "
+                      ></i>
+                    </span>
+                    <span
+                      style="
+                        font-size: 12px;
+                        font-weight: 700;
+                        letter-spacing: 0.14em;
+                        text-transform: uppercase;
+                        color: #55555f;
+                      "
+                      >Splotch</span
+                    >
+                  </span>
+                </div>
+                <div style="padding: 8px 0 34px">
+                  <h1
+                    style="
+                      margin: 0;
+                      font-size: 46px;
+                      font-weight: 700;
+                      line-height: 1.08;
+                      letter-spacing: -0.015em;
+                      color: #26262e;
+                    "
+                  >
+                    Changelog
+                  </h1>
+                  <p
+                    style="
+                      margin: 16px 0 0;
+                      max-width: 62ch;
+                      font-size: 18px;
+                      font-weight: 500;
+                      line-height: 1.6;
+                      color: #55555f;
+                    "
+                  >
+                    Every public Splotch release, newest first, with the notes that shipped
+                    alongside it.
+                  </p>
+                </div>
 
-          <article style="border-top:1px solid #eeeae4;padding:32px 0 40px">
-            <header style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px">
-              <h2 style="margin:0;color:#26262e;font-size:22px;line-height:1.25;font-weight:700">Version 1.4.0</h2>
-              <time style="flex-shrink:0;color:#6c6c76;font-size:14px;font-weight:500">July 28, 2026</time>
-            </header>
-            <div>
-              <h3 style="margin:0 0 8px;color:#26262e;font-size:18px;font-weight:700">✨ New</h3>
-              <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                <li style="margin-bottom:8px">Dark mode — Light, Dark, or follow your device.</li>
-                <li style="margin-bottom:8px">A wax crayon brush, from the new Brush Menu.</li>
-                <li style="margin-bottom:8px">The magic brush now works on any drawing.</li>
-                <li style="margin-bottom:8px">Report a bug from Settings.</li>
-              </ul>
-              <h3 style="margin:16px 0 8px;color:#26262e;font-size:18px;font-weight:700">🚀 Improved</h3>
-              <ul style="margin:0;padding-left:1.2em;max-width:62ch;color:#55555f;font-size:16px;line-height:1.62">
-                <li style="margin-bottom:8px">Rotating your device keeps the paper upright.</li>
-                <li style="margin-bottom:8px">Undo now goes back 20 steps.</li>
-                <li style="margin-bottom:8px">A bigger eraser, sized as holes in the paper.</li>
-              </ul>
+                <div
+                  style="
+                    display: grid;
+                    grid-template-columns: 232px minmax(0, 1fr);
+                    gap: 56px;
+                    align-items: start;
+                  "
+                >
+                  <nav
+                    style="
+                      position: sticky;
+                      top: 24px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 4px;
+                    "
+                  >
+                    <div
+                      style="
+                        display: flex;
+                        align-items: center;
+                        gap: 14px;
+                        padding-bottom: 16px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        letter-spacing: 0.14em;
+                        text-transform: uppercase;
+                        color: #6c6c76;
+                      "
+                    >
+                      Contents<span style="flex: 1; height: 1px; background: #eeeae4"></span>
+                    </div>
+                    <a
+                      href="#1a"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding: 8px 12px;
+                        border-left: 2px solid #7c4dcf;
+                        background: #f6f2fd;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.4.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                        >July 28, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1a"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding: 8px 12px;
+                        border-left: 2px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.3.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                        >July 5, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1a"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding: 8px 12px;
+                        border-left: 2px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.2.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                        >June 22, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1a"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding: 8px 12px;
+                        border-left: 2px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.1.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                        >June 5, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1a"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding: 8px 12px;
+                        border-left: 2px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.0.1<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                        >June 3, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1a"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 2px;
+                        padding: 8px 12px;
+                        border-left: 2px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.0.0<span style="color: #6c6c76; font-weight: 500; font-size: 13px"
+                        >June 1, 2026</span
+                      ></a
+                    >
+                  </nav>
+
+                  <div>
+                    <article
+                      style="padding: 0 0 40px; border-top: 1px solid #eeeae4; padding-top: 32px"
+                    >
+                      <header
+                        style="
+                          display: flex;
+                          align-items: baseline;
+                          justify-content: space-between;
+                          gap: 12px;
+                          margin-bottom: 16px;
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            color: #26262e;
+                            font-size: 22px;
+                            line-height: 1.25;
+                            font-weight: 700;
+                          "
+                        >
+                          Version 1.4.0
+                        </h2>
+                        <time
+                          style="flex-shrink: 0; color: #6c6c76; font-size: 14px; font-weight: 500"
+                          >July 28, 2026</time
+                        >
+                      </header>
+                      <div>
+                        <h3
+                          style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700"
+                        >
+                          ✨ New
+                        </h3>
+                        <ul
+                          style="
+                            margin: 0;
+                            padding-left: 1.2em;
+                            max-width: 62ch;
+                            color: #55555f;
+                            font-size: 16px;
+                            line-height: 1.62;
+                          "
+                        >
+                          <li style="margin-bottom: 8px">
+                            Dark mode — Light, Dark, or follow your device.
+                          </li>
+                          <li style="margin-bottom: 8px">
+                            A wax crayon brush, from the new Brush Menu.
+                          </li>
+                          <li style="margin-bottom: 8px">
+                            The magic brush now works on any drawing.
+                          </li>
+                          <li style="margin-bottom: 8px">Report a bug from Settings.</li>
+                        </ul>
+                        <h3
+                          style="
+                            margin: 16px 0 8px;
+                            color: #26262e;
+                            font-size: 18px;
+                            font-weight: 700;
+                          "
+                        >
+                          🚀 Improved
+                        </h3>
+                        <ul
+                          style="
+                            margin: 0;
+                            padding-left: 1.2em;
+                            max-width: 62ch;
+                            color: #55555f;
+                            font-size: 16px;
+                            line-height: 1.62;
+                          "
+                        >
+                          <li style="margin-bottom: 8px">
+                            Rotating your device keeps the paper upright.
+                          </li>
+                          <li style="margin-bottom: 8px">Undo now goes back 20 steps.</li>
+                          <li style="margin-bottom: 8px">
+                            A bigger eraser, sized as holes in the paper.
+                          </li>
+                        </ul>
+                        <h3
+                          style="
+                            margin: 16px 0 8px;
+                            color: #26262e;
+                            font-size: 18px;
+                            font-weight: 700;
+                          "
+                        >
+                          🛠 Fixed
+                        </h3>
+                        <ul
+                          style="
+                            margin: 0;
+                            padding-left: 1.2em;
+                            max-width: 62ch;
+                            color: #55555f;
+                            font-size: 16px;
+                            line-height: 1.62;
+                          "
+                        >
+                          <li style="margin-bottom: 8px">
+                            The magic brush no longer leaves ghost outlines.
+                          </li>
+                          <li style="margin-bottom: 8px">
+                            Swatches and pages read correctly in dark mode.
+                          </li>
+                          <li style="margin-bottom: 8px">
+                            The drag-to-clear tutorial no longer vanishes instantly.
+                          </li>
+                        </ul>
+                      </div>
+                    </article>
+                    <article style="border-top: 1px solid #eeeae4; padding-top: 32px">
+                      <header
+                        style="
+                          display: flex;
+                          align-items: baseline;
+                          justify-content: space-between;
+                          gap: 12px;
+                          margin-bottom: 16px;
+                        "
+                      >
+                        <h2
+                          style="
+                            margin: 0;
+                            color: #26262e;
+                            font-size: 22px;
+                            line-height: 1.25;
+                            font-weight: 700;
+                          "
+                        >
+                          Version 1.3.0
+                        </h2>
+                        <time
+                          style="flex-shrink: 0; color: #6c6c76; font-size: 14px; font-weight: 500"
+                          >July 5, 2026</time
+                        >
+                      </header>
+                      <div>
+                        <h3
+                          style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700"
+                        >
+                          ✨ New
+                        </h3>
+                        <ul
+                          style="
+                            margin: 0;
+                            padding-left: 1.2em;
+                            max-width: 62ch;
+                            color: #55555f;
+                            font-size: 16px;
+                            line-height: 1.62;
+                          "
+                        >
+                          <li style="margin-bottom: 8px">
+                            Settings: a slider to resize the on-screen buttons.
+                          </li>
+                          <li style="margin-bottom: 8px">
+                            Save your drawings straight to a folder on your computer (web).
+                          </li>
+                        </ul>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              </div>
             </div>
-          </article>
+          </div>
+
+          <div
+            id="1b"
+            style="display: flex; flex-direction: column; gap: 14px; width: 1180px; flex-shrink: 0"
+          >
+            <div style="display: flex; align-items: baseline; gap: 12px">
+              <span
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-width: 34px;
+                  height: 24px;
+                  padding: 0 8px;
+                  border-radius: 999px;
+                  background: #26262e;
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 0.04em;
+                "
+                >1b</span
+              >
+              <span style="font-size: 18px; font-weight: 700; color: #26262e"
+                >One row of version chips</span
+              >
+              <span style="font-size: 15px; font-weight: 500; color: #55555f"
+                >The smallest change: six versions on a single line under the lede. Dates drop to a
+                second, quieter line inside each chip.</span
+              >
+            </div>
+            <div style="background: #f0efed; padding: 32px 16px 40px; border-radius: 20px">
+              <div
+                style="
+                  max-width: 1148px;
+                  margin: 0 auto;
+                  padding: 0 34px 40px;
+                  background: #ffffff;
+                  border-radius: 16px;
+                  box-shadow:
+                    0 1px 2px rgba(93, 84, 68, 0.05),
+                    0 10px 30px rgba(93, 84, 68, 0.07);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding: 18px 0;
+                  "
+                >
+                  <a
+                    href="#1b"
+                    style="
+                      flex-shrink: 0;
+                      white-space: nowrap;
+                      color: #7c4dcf;
+                      font-size: 14px;
+                      font-weight: 700;
+                      text-decoration: none;
+                    "
+                    >← Back to drawing</a
+                  >
+                  <span style="display: inline-flex; align-items: center; gap: 8px">
+                    <span style="display: inline-flex; gap: 4px">
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #ec534e;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f89c45;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f9d24f;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #8cc864;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #62a2e9;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #ab71e1;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f47cb0;
+                        "
+                      ></i>
+                    </span>
+                    <span
+                      style="
+                        font-size: 12px;
+                        font-weight: 700;
+                        letter-spacing: 0.14em;
+                        text-transform: uppercase;
+                        color: #55555f;
+                      "
+                      >Splotch</span
+                    >
+                  </span>
+                </div>
+                <div style="padding: 8px 0 34px">
+                  <h1
+                    style="
+                      margin: 0;
+                      font-size: 46px;
+                      font-weight: 700;
+                      line-height: 1.08;
+                      letter-spacing: -0.015em;
+                      color: #26262e;
+                    "
+                  >
+                    Changelog
+                  </h1>
+                  <p
+                    style="
+                      margin: 16px 0 0;
+                      max-width: 62ch;
+                      font-size: 18px;
+                      font-weight: 500;
+                      line-height: 1.6;
+                      color: #55555f;
+                    "
+                  >
+                    Every public Splotch release, newest first, with the notes that shipped
+                    alongside it.
+                  </p>
+                </div>
+
+                <nav style="margin-bottom: 40px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 14px;
+                      padding-bottom: 16px;
+                      font-size: 12px;
+                      font-weight: 600;
+                      letter-spacing: 0.14em;
+                      text-transform: uppercase;
+                      color: #6c6c76;
+                    "
+                  >
+                    Contents<span style="flex: 1; height: 1px; background: #eeeae4"></span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px">
+                    <a
+                      href="#1b"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1px;
+                        padding: 8px 16px;
+                        border: 1px solid #eeeae4;
+                        border-radius: 8px;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.4.0<span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 13px;
+                          white-space: nowrap;
+                        "
+                        >July 28, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1b"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1px;
+                        padding: 8px 16px;
+                        border: 1px solid #eeeae4;
+                        border-radius: 8px;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.3.0<span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 13px;
+                          white-space: nowrap;
+                        "
+                        >July 5, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1b"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1px;
+                        padding: 8px 16px;
+                        border: 1px solid #eeeae4;
+                        border-radius: 8px;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.2.0<span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 13px;
+                          white-space: nowrap;
+                        "
+                        >June 22, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1b"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1px;
+                        padding: 8px 16px;
+                        border: 1px solid #eeeae4;
+                        border-radius: 8px;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.1.0<span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 13px;
+                          white-space: nowrap;
+                        "
+                        >June 5, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1b"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1px;
+                        padding: 8px 16px;
+                        border: 1px solid #eeeae4;
+                        border-radius: 8px;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.0.1<span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 13px;
+                          white-space: nowrap;
+                        "
+                        >June 3, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1b"
+                      style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1px;
+                        padding: 8px 16px;
+                        border: 1px solid #eeeae4;
+                        border-radius: 8px;
+                        color: #7c4dcf;
+                        font-size: 14px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.0.0<span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 13px;
+                          white-space: nowrap;
+                        "
+                        >June 1, 2026</span
+                      ></a
+                    >
+                  </div>
+                </nav>
+
+                <article style="border-top: 1px solid #eeeae4; padding: 32px 0 40px">
+                  <header
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      margin-bottom: 16px;
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        color: #26262e;
+                        font-size: 22px;
+                        line-height: 1.25;
+                        font-weight: 700;
+                      "
+                    >
+                      Version 1.4.0
+                    </h2>
+                    <time style="flex-shrink: 0; color: #6c6c76; font-size: 14px; font-weight: 500"
+                      >July 28, 2026</time
+                    >
+                  </header>
+                  <div>
+                    <h3 style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700">
+                      ✨ New
+                    </h3>
+                    <ul
+                      style="
+                        margin: 0;
+                        padding-left: 1.2em;
+                        max-width: 62ch;
+                        color: #55555f;
+                        font-size: 16px;
+                        line-height: 1.62;
+                      "
+                    >
+                      <li style="margin-bottom: 8px">
+                        Dark mode — Light, Dark, or follow your device.
+                      </li>
+                      <li style="margin-bottom: 8px">
+                        A wax crayon brush, from the new Brush Menu.
+                      </li>
+                      <li style="margin-bottom: 8px">The magic brush now works on any drawing.</li>
+                      <li style="margin-bottom: 8px">Report a bug from Settings.</li>
+                    </ul>
+                    <h3
+                      style="margin: 16px 0 8px; color: #26262e; font-size: 18px; font-weight: 700"
+                    >
+                      🚀 Improved
+                    </h3>
+                    <ul
+                      style="
+                        margin: 0;
+                        padding-left: 1.2em;
+                        max-width: 62ch;
+                        color: #55555f;
+                        font-size: 16px;
+                        line-height: 1.62;
+                      "
+                    >
+                      <li style="margin-bottom: 8px">
+                        Rotating your device keeps the paper upright.
+                      </li>
+                      <li style="margin-bottom: 8px">Undo now goes back 20 steps.</li>
+                      <li style="margin-bottom: 8px">
+                        A bigger eraser, sized as holes in the paper.
+                      </li>
+                    </ul>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <div
+            id="1c"
+            style="display: flex; flex-direction: column; gap: 14px; width: 1180px; flex-shrink: 0"
+          >
+            <div style="display: flex; align-items: baseline; gap: 12px">
+              <span
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-width: 34px;
+                  height: 24px;
+                  padding: 0 8px;
+                  border-radius: 999px;
+                  background: #26262e;
+                  color: #fff;
+                  font-size: 13px;
+                  font-weight: 700;
+                  letter-spacing: 0.04em;
+                "
+                >1c</span
+              >
+              <span style="font-size: 18px; font-weight: 700; color: #26262e"
+                >Full-width index rows</span
+              >
+              <span style="font-size: 15px; font-weight: 500; color: #55555f"
+                >One column, read top to bottom in release order, with the extra width spent on what
+                each release actually contained.</span
+              >
+            </div>
+            <div style="background: #f0efed; padding: 32px 16px 40px; border-radius: 20px">
+              <div
+                style="
+                  max-width: 1148px;
+                  margin: 0 auto;
+                  padding: 0 34px 40px;
+                  background: #ffffff;
+                  border-radius: 16px;
+                  box-shadow:
+                    0 1px 2px rgba(93, 84, 68, 0.05),
+                    0 10px 30px rgba(93, 84, 68, 0.07);
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 16px;
+                    padding: 18px 0;
+                  "
+                >
+                  <a
+                    href="#1c"
+                    style="
+                      flex-shrink: 0;
+                      white-space: nowrap;
+                      color: #7c4dcf;
+                      font-size: 14px;
+                      font-weight: 700;
+                      text-decoration: none;
+                    "
+                    >← Back to drawing</a
+                  >
+                  <span style="display: inline-flex; align-items: center; gap: 8px">
+                    <span style="display: inline-flex; gap: 4px">
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #ec534e;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f89c45;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f9d24f;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #8cc864;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #62a2e9;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #ab71e1;
+                        "
+                      ></i>
+                      <i
+                        style="
+                          display: block;
+                          width: 11px;
+                          height: 7px;
+                          border-radius: 999px;
+                          background: #f47cb0;
+                        "
+                      ></i>
+                    </span>
+                    <span
+                      style="
+                        font-size: 12px;
+                        font-weight: 700;
+                        letter-spacing: 0.14em;
+                        text-transform: uppercase;
+                        color: #55555f;
+                      "
+                      >Splotch</span
+                    >
+                  </span>
+                </div>
+                <div style="padding: 8px 0 34px">
+                  <h1
+                    style="
+                      margin: 0;
+                      font-size: 46px;
+                      font-weight: 700;
+                      line-height: 1.08;
+                      letter-spacing: -0.015em;
+                      color: #26262e;
+                    "
+                  >
+                    Changelog
+                  </h1>
+                  <p
+                    style="
+                      margin: 16px 0 0;
+                      max-width: 62ch;
+                      font-size: 18px;
+                      font-weight: 500;
+                      line-height: 1.6;
+                      color: #55555f;
+                    "
+                  >
+                    Every public Splotch release, newest first, with the notes that shipped
+                    alongside it.
+                  </p>
+                </div>
+
+                <nav style="margin-bottom: 40px">
+                  <div
+                    style="
+                      display: flex;
+                      align-items: center;
+                      gap: 14px;
+                      padding-bottom: 8px;
+                      font-size: 12px;
+                      font-weight: 600;
+                      letter-spacing: 0.14em;
+                      text-transform: uppercase;
+                      color: #6c6c76;
+                    "
+                  >
+                    Contents<span style="flex: 1; height: 1px; background: #eeeae4"></span>
+                  </div>
+                  <div style="display: flex; flex-direction: column">
+                    <a
+                      href="#1c"
+                      style="
+                        display: grid;
+                        grid-template-columns: 170px minmax(0, 1fr) 130px;
+                        align-items: baseline;
+                        gap: 24px;
+                        padding: 14px 4px;
+                        border-bottom: 1px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 16px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.4.0<span style="color: #6c6c76; font-weight: 500; font-size: 14px"
+                        >4 new · 3 improved · 3 fixed</span
+                      ><span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 14px;
+                          text-align: right;
+                          white-space: nowrap;
+                        "
+                        >July 28, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1c"
+                      style="
+                        display: grid;
+                        grid-template-columns: 170px minmax(0, 1fr) 130px;
+                        align-items: baseline;
+                        gap: 24px;
+                        padding: 14px 4px;
+                        border-bottom: 1px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 16px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.3.0<span style="color: #6c6c76; font-weight: 500; font-size: 14px"
+                        >5 new · 3 improved · 5 fixed</span
+                      ><span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 14px;
+                          text-align: right;
+                          white-space: nowrap;
+                        "
+                        >July 5, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1c"
+                      style="
+                        display: grid;
+                        grid-template-columns: 170px minmax(0, 1fr) 130px;
+                        align-items: baseline;
+                        gap: 24px;
+                        padding: 14px 4px;
+                        border-bottom: 1px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 16px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.2.0<span style="color: #6c6c76; font-weight: 500; font-size: 14px"
+                        >3 new · 2 improved · 4 fixed</span
+                      ><span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 14px;
+                          text-align: right;
+                          white-space: nowrap;
+                        "
+                        >June 22, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1c"
+                      style="
+                        display: grid;
+                        grid-template-columns: 170px minmax(0, 1fr) 130px;
+                        align-items: baseline;
+                        gap: 24px;
+                        padding: 14px 4px;
+                        border-bottom: 1px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 16px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.1.0<span style="color: #6c6c76; font-weight: 500; font-size: 14px"
+                        >2 new · 3 improved · 2 fixed</span
+                      ><span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 14px;
+                          text-align: right;
+                          white-space: nowrap;
+                        "
+                        >June 5, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1c"
+                      style="
+                        display: grid;
+                        grid-template-columns: 170px minmax(0, 1fr) 130px;
+                        align-items: baseline;
+                        gap: 24px;
+                        padding: 14px 4px;
+                        border-bottom: 1px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 16px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.0.1<span style="color: #6c6c76; font-weight: 500; font-size: 14px"
+                        >3 improved · 1 fixed</span
+                      ><span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 14px;
+                          text-align: right;
+                          white-space: nowrap;
+                        "
+                        >June 3, 2026</span
+                      ></a
+                    >
+                    <a
+                      href="#1c"
+                      style="
+                        display: grid;
+                        grid-template-columns: 170px minmax(0, 1fr) 130px;
+                        align-items: baseline;
+                        gap: 24px;
+                        padding: 14px 4px;
+                        border-bottom: 1px solid #eeeae4;
+                        color: #7c4dcf;
+                        font-size: 16px;
+                        font-weight: 600;
+                        text-decoration: none;
+                      "
+                      >Version 1.0.0<span style="color: #6c6c76; font-weight: 500; font-size: 14px"
+                        >5 new</span
+                      ><span
+                        style="
+                          color: #6c6c76;
+                          font-weight: 500;
+                          font-size: 14px;
+                          text-align: right;
+                          white-space: nowrap;
+                        "
+                        >June 1, 2026</span
+                      ></a
+                    >
+                  </div>
+                </nav>
+
+                <article style="border-top: 1px solid #eeeae4; padding: 32px 0 40px">
+                  <header
+                    style="
+                      display: flex;
+                      align-items: baseline;
+                      justify-content: space-between;
+                      gap: 12px;
+                      margin-bottom: 16px;
+                    "
+                  >
+                    <h2
+                      style="
+                        margin: 0;
+                        color: #26262e;
+                        font-size: 22px;
+                        line-height: 1.25;
+                        font-weight: 700;
+                      "
+                    >
+                      Version 1.4.0
+                    </h2>
+                    <time style="flex-shrink: 0; color: #6c6c76; font-size: 14px; font-weight: 500"
+                      >July 28, 2026</time
+                    >
+                  </header>
+                  <div>
+                    <h3 style="margin: 0 0 8px; color: #26262e; font-size: 18px; font-weight: 700">
+                      ✨ New
+                    </h3>
+                    <ul
+                      style="
+                        margin: 0;
+                        padding-left: 1.2em;
+                        max-width: 62ch;
+                        color: #55555f;
+                        font-size: 16px;
+                        line-height: 1.62;
+                      "
+                    >
+                      <li style="margin-bottom: 8px">
+                        Dark mode — Light, Dark, or follow your device.
+                      </li>
+                      <li style="margin-bottom: 8px">
+                        A wax crayon brush, from the new Brush Menu.
+                      </li>
+                      <li style="margin-bottom: 8px">The magic brush now works on any drawing.</li>
+                      <li style="margin-bottom: 8px">Report a bug from Settings.</li>
+                    </ul>
+                    <h3
+                      style="margin: 16px 0 8px; color: #26262e; font-size: 18px; font-weight: 700"
+                    >
+                      🚀 Improved
+                    </h3>
+                    <ul
+                      style="
+                        margin: 0;
+                        padding-left: 1.2em;
+                        max-width: 62ch;
+                        color: #55555f;
+                        font-size: 16px;
+                        line-height: 1.62;
+                      "
+                    >
+                      <li style="margin-bottom: 8px">
+                        Rotating your device keeps the paper upright.
+                      </li>
+                      <li style="margin-bottom: 8px">Undo now goes back 20 steps.</li>
+                      <li style="margin-bottom: 8px">
+                        A bigger eraser, sized as holes in the paper.
+                      </li>
+                    </ul>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-</x-dc>
-</body>
+      </section>
+    </x-dc>
+  </body>
 </html>

@@ -1,8 +1,9 @@
 # Handoff — page-inventory UI pass
 
-> 2026-08-10 · branch `agent/page-inventory-ui-pass` · PR (pending) · One long autonomous pass over
-> the design findings from the page-inventory scrapbook page: retool the generator, add design
-> notes, land twelve UI fixes, then regenerate captures and re-run the critique.
+> 2026-08-10 · branch `agent/page-inventory-ui-pass` · PR
+> [#931](https://github.com/KyleMit/Splotch/pull/931) · One long autonomous pass over the design
+> findings from the page-inventory scrapbook page: retool the generator, add design notes, land
+> twelve UI fixes, then regenerate captures and re-run the critique.
 
 ## Objective & non-goals
 
