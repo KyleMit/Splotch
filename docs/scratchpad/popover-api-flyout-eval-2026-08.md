@@ -23,10 +23,12 @@ floor than popover itself. A dual path would therefore carry **two placement sys
 placement system plus a capability check — and because the native iOS floor is 16.4, the fallback
 path would stay live on the flagship drawing device rather than fading out.
 
-One finding is worth acting on immediately and does not need popover: the custom flyouts do not
-close on **Escape**, which `popover="auto"` gets for free. That gap is now closed directly
-(`ActionsPanel.svelte`, covered by `flows-palette-brush.spec.ts`), which removes the one behavior
-the browser-managed path did strictly better.
+Two findings are worth acting on immediately, and neither needs popover. The custom flyouts did not
+close on **Escape**, and no close path handed **focus** back to the trigger — measured, a keyboard
+pick left `document.activeElement` on `<body>` for both flyouts. Spec'd popover behavior covers both
+(light dismiss on Escape, focus restoration on hide), and they were the whole of what the
+browser-managed path did strictly better. Both are now closed directly in `ActionsPanel.svelte`,
+covered by `flows-palette-brush.spec.ts`.
 
 ## Support data vs. the enforced floor
 
@@ -48,8 +50,15 @@ run on iPhone or iPad — the platform the drawing experience is tuned for.
 
 ## Method
 
-A standalone harness reproduced the real flyout DOM and the geometry-relevant CSS verbatim from
-`app.css` + `ActionsPanel.svelte` — `.actions-panel` fixed to the bottom-left, the collapsing
+The harness and its driver are committed beside this document — `popover-probe/harness.html` and
+`popover-probe/probe.mjs`, run with `node docs/scratchpad/popover-probe/probe.mjs` — so the re-entry
+trigger below can be re-measured on that era's engines rather than rebuilt from this prose. They are
+frozen evidence rather than maintained automation: nothing imports them, no npm script runs them,
+and the harness copies the app's CSS rather than importing it, so re-check it against `app.css`
+before trusting a fresh run.
+
+The harness reproduced the real flyout DOM and the geometry-relevant CSS verbatim from `app.css` +
+`ActionsPanel.svelte` — `.actions-panel` fixed to the bottom-left, the collapsing
 `.actions-drawer-inner`, two `position: relative` `.flyout-wrapper`s, and the three `.flyout-menu`
 placements (landscape above the trigger, portrait beside it, phone-portrait beside it as a column).
 Three variants were driven through the same scripted interactions in Chromium 149 (headless,
@@ -93,7 +102,8 @@ needs the second, newer feature to work.
 | Outside tap dismisses                     | ✅ (document handler)                                  | ✅ (light dismiss) |
 | Mutual exclusion (open one, other closes) | ✅ (shared state slot)                                 | ✅ (auto stack)    |
 | Second tap on the same trigger closes     | ✅                                                     | ✅ — no reopen     |
-| **Escape dismisses**                      | ❌ **(gap; now fixed)**                                | ✅                 |
+| **Escape dismisses**                      | ❌ → ✅ **(gap, fixed here)**                          | ✅                 |
+| **Focus returns to the trigger on close** | ❌ → ✅ **(gap, fixed here)**                          | ✅                 |
 | Escapes the drawer's `overflow: hidden`   | ❌ (moot — flyouts only open while the drawer is open) | ✅                 |
 
 The second-tap case is the one with a hidden dependency. `popovertarget` — the declarative trigger

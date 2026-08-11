@@ -1,0 +1,290 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Popover vs custom flyout — Splotch Actions Panel geometry probe</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: #f3f3f7;
+      }
+
+      /* Faithful copy of the geometry-relevant rules from web/src/app.css +
+         ActionsPanel.svelte. Chrome/decoration trimmed; nothing that affects
+         placement is changed. */
+      .actions-panel {
+        position: fixed;
+        bottom: 8px;
+        left: 100px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        z-index: 30;
+      }
+
+      .actions-drawer {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: center;
+        margin-right: 8px;
+      }
+
+      .actions-drawer-inner {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      body[data-drawer-open] .actions-drawer-inner {
+        overflow: visible;
+      }
+
+      .flyout-wrapper {
+        position: relative;
+      }
+
+      .action-button {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        border: 2px solid #ccc;
+        background: #fff;
+      }
+
+      .flyout-menu {
+        position: absolute;
+        left: 0;
+        bottom: calc(100% + 8px);
+        display: flex;
+        flex-direction: row;
+        gap: 6px;
+        padding: 6px;
+        background: #fff;
+        border: none;
+        border-radius: 18px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        z-index: 40;
+        /* UA popover styles set margin:auto; the app's rules never do. Keep the
+           author sheet identical for both variants so the only difference is
+           the popover attribute itself. */
+        margin: 0;
+      }
+
+      @media (orientation: portrait) {
+        .flyout-menu {
+          left: calc(100% + 8px);
+          bottom: 0;
+        }
+      }
+
+      @media (orientation: portrait) and (max-width: 540px) {
+        .flyout-menu {
+          flex-direction: column;
+        }
+      }
+
+      .flyout-menu[hidden] {
+        display: none;
+      }
+
+      /* Required by adoption: the author `display: flex` above outranks the UA
+         sheet's `[popover]:not(:popover-open) { display: none }`, so a popover
+         that is closed still lays out (and covers its own trigger) until this
+         rule is added. */
+      .flyout-menu[popover]:not(:popover-open) {
+        display: none;
+      }
+
+      /* Also required by adoption: the UA sheet's `[popover] { inset: 0 }` leaves
+         `top`/`right` set, over-constraining the author's left/bottom placement
+         (the menu pins to the top edge until these are reset). */
+      .flyout-menu[popover] {
+        top: auto;
+        right: auto;
+      }
+
+      /* Third variant: popover + CSS anchor positioning, the only declarative
+         way to put a top-layer element back next to its trigger. */
+      body[data-anchored] #brushButton {
+        anchor-name: --brush-trigger;
+      }
+      body[data-anchored] #strokeButton {
+        anchor-name: --stroke-trigger;
+      }
+      body[data-anchored] #brushMenu[popover] {
+        position-anchor: --brush-trigger;
+        left: anchor(left);
+        bottom: calc(anchor(top) + 8px);
+      }
+      body[data-anchored] #strokeMenu[popover] {
+        position-anchor: --stroke-trigger;
+        left: anchor(left);
+        bottom: calc(anchor(top) + 8px);
+      }
+      @media (orientation: portrait) {
+        body[data-anchored] #brushMenu[popover] {
+          left: calc(anchor(right) + 8px);
+          bottom: anchor(bottom);
+        }
+        body[data-anchored] #strokeMenu[popover] {
+          left: calc(anchor(right) + 8px);
+          bottom: anchor(bottom);
+        }
+      }
+
+      .flyout-option {
+        width: 60px;
+        height: 60px;
+        border: 2px solid #ddd;
+        border-radius: 14px;
+        background: #fff;
+      }
+    </style>
+  </head>
+  <body data-drawer-open>
+    <div class="actions-panel">
+      <div class="actions-drawer">
+        <div class="actions-drawer-inner">
+          <div class="flyout-wrapper" id="brushWrapper">
+            <button class="action-button" id="brushButton">B</button>
+            <div class="flyout-menu" id="brushMenu" hidden>
+              <button class="flyout-option">1</button>
+              <button class="flyout-option">2</button>
+              <button class="flyout-option">3</button>
+            </div>
+          </div>
+          <div class="flyout-wrapper" id="strokeWrapper">
+            <button class="action-button" id="strokeButton">S</button>
+            <div class="flyout-menu" id="strokeMenu" hidden>
+              <button class="flyout-option">1</button>
+              <button class="flyout-option">2</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="action-button" id="drawerToggle">C</button>
+    </div>
+
+    <script>
+      // Two variants of the same markup:
+      //   'custom'  — today's app: [hidden] toggled from a pointerup handler,
+      //               plus a document-level pointerdown outside-close.
+      //   'popover' — popover="auto" + showPopover()/hidePopover() from the same
+      //               pointerup handler (popovertarget is click-driven, which
+      //               ADR-0038's stylus path cannot use).
+      const log = [];
+      window.__log = log;
+      const menus = {
+        brush: document.getElementById('brushMenu'),
+        stroke: document.getElementById('strokeMenu'),
+      };
+      const wrappers = {
+        brush: document.getElementById('brushWrapper'),
+        stroke: document.getElementById('strokeWrapper'),
+      };
+      let mode = 'custom';
+      let openFlyout = null;
+
+      function applyMode(next) {
+        mode = next === 'popover-anchored' ? 'popover' : next;
+        document.body.toggleAttribute('data-anchored', next === 'popover-anchored');
+        for (const key of Object.keys(menus)) {
+          const el = menus[key];
+          if (el.matches(':popover-open')) el.hidePopover();
+          if (mode === 'popover') {
+            el.setAttribute('popover', 'auto');
+            el.removeAttribute('hidden');
+          } else {
+            el.removeAttribute('popover');
+            el.setAttribute('hidden', '');
+          }
+        }
+        openFlyout = null;
+        log.length = 0;
+      }
+      window.__applyMode = applyMode;
+
+      function render() {
+        for (const key of Object.keys(menus)) {
+          const el = menus[key];
+          const shouldOpen = openFlyout === key;
+          if (mode === 'popover') {
+            const isOpen = el.matches(':popover-open');
+            if (shouldOpen && !isOpen) el.showPopover();
+            if (!shouldOpen && isOpen) el.hidePopover();
+          } else {
+            el.toggleAttribute('hidden', !shouldOpen);
+          }
+        }
+      }
+      window.__render = render;
+      window.__state = () => ({
+        openFlyout,
+        brushOpen:
+          mode === 'popover'
+            ? menus.brush.matches(':popover-open')
+            : !menus.brush.hasAttribute('hidden'),
+        strokeOpen:
+          mode === 'popover'
+            ? menus.stroke.matches(':popover-open')
+            : !menus.stroke.hasAttribute('hidden'),
+      });
+
+      for (const key of Object.keys(menus)) {
+        menus[key].addEventListener('toggle', (e) => {
+          log.push(`ua:toggle ${key} ${e.oldState}->${e.newState}`);
+          // "One owner" boundary sync: the browser can close a popover on its
+          // own (light dismiss, Escape), so component state must follow it.
+          if (e.newState === 'closed' && openFlyout === key) openFlyout = null;
+        });
+      }
+
+      // scribbleTap's shape: activation on pointerup over the control.
+      function tapActivate(node, activate) {
+        let pressed = false;
+        node.addEventListener('pointerdown', () => {
+          pressed = true;
+        });
+        window.addEventListener(
+          'pointerup',
+          (e) => {
+            if (!pressed) return;
+            pressed = false;
+            if (!node.contains(document.elementFromPoint(e.clientX, e.clientY))) return;
+            log.push(`app:pointerup-activate ${node.id}`);
+            activate();
+          },
+          true
+        );
+      }
+
+      tapActivate(document.getElementById('brushButton'), () => {
+        openFlyout = openFlyout === 'brush' ? null : 'brush';
+        render();
+      });
+      tapActivate(document.getElementById('strokeButton'), () => {
+        openFlyout = openFlyout === 'stroke' ? null : 'stroke';
+        render();
+      });
+
+      // Today's outside-close handler (custom mode only; popover=auto owns it).
+      document.addEventListener('pointerdown', (e) => {
+        if (mode !== 'custom' || !openFlyout) return;
+        const wrapper = wrappers[openFlyout];
+        if (wrapper && !wrapper.contains(e.target)) {
+          log.push('app:outside-close');
+          openFlyout = null;
+          render();
+        }
+      });
+
+      applyMode('custom');
+    </script>
+  </body>
+</html>
