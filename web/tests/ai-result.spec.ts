@@ -17,9 +17,16 @@ interface AiMockResponse {
   body: string | Buffer;
 }
 
+interface AiUploadRequest {
+  method: string;
+  contentType: string | undefined;
+  bytes: number;
+}
+
 async function mockAiEndpoint(page: Page) {
   const queued: AiMockResponse[] = [];
   const waiters: ((response: AiMockResponse) => void)[] = [];
+  const requests: AiUploadRequest[] = [];
   const respond = (response: AiMockResponse) => {
     const waiter = waiters.shift();
     if (waiter) waiter(response);
@@ -27,6 +34,12 @@ async function mockAiEndpoint(page: Page) {
   };
 
   await page.route('**/api/generate-image*', async (route) => {
+    const request = route.request();
+    requests.push({
+      method: request.method(),
+      contentType: request.headers()['content-type'],
+      bytes: request.postDataBuffer()?.byteLength ?? 0,
+    });
     const response =
       queued.shift() ??
       (await new Promise<AiMockResponse>((resolve) => {
@@ -36,6 +49,7 @@ async function mockAiEndpoint(page: Page) {
   });
 
   return {
+    requests,
     succeed: () => respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT }),
     fail: (status = 500) =>
       respond({
@@ -116,6 +130,19 @@ function stripTokens(page: Page) {
 }
 
 test.describe('AI result modal', () => {
+  test('uploads the live canvas as a non-empty image POST', async ({ page }) => {
+    const endpoint = await openAiResult(page);
+
+    await expect.poll(() => endpoint.requests.length).toBe(1);
+    const request = endpoint.requests[0];
+    if (!request) throw new Error('Generate-image request was not recorded');
+    expect(request.method).toBe('POST');
+    expect(request.contentType).toMatch(/^image\/(webp|png)$/);
+    expect(request.bytes).toBeGreaterThan(0);
+
+    endpoint.fail();
+  });
+
   test('plays the dial and reveals the result image', async ({ page }) => {
     const endpoint = await openAiResult(page);
 
@@ -268,6 +295,15 @@ test.describe('AI result modal', () => {
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
+  });
+
+  test('shows the safety refusal state', async ({ page }) => {
+    const endpoint = await openAiResult(page);
+    endpoint.fail(422);
+
+    await expect(page.getByText("Let's try drawing something else!")).toBeVisible();
+    await expect(page.locator('.ai-result-error.safety')).toBeVisible();
+    await expect(page.getByText(/try drawing something different/i)).toBeVisible();
   });
 
   // Action-level coverage for the scoped pinchZoom (aiPreview.ts math is unit-
