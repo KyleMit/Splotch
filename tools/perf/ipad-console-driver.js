@@ -4,11 +4,9 @@
 // /dev/engine open (on a PERF_MARKS + PUBLIC_ENABLE_DEV_HARNESS build). It drives
 // the same undo scenarios as `npm run perf:undo`, but on the real device
 // (real WebKit/JavaScriptCore + GPU + 120 Hz ProMotion), and prints a table of
-// the device-specific numbers the desktop harness can't give — the ADR-0066
-// gates: the stroke-end commit hitch (with the paper copy and the op fold
-// measured separately, so a hot commit is attributable), per-step undo restore
-// time (live blit vs blob decode), and history memory, at real op volume on
-// real hardware.
+// the device-specific numbers the desktop harness can't give: tiled commit and
+// undo response plus resident patch/base memory at real op volume on hardware
+// (ADR-0085/0086).
 //
 // WebKit clamps performance.now() to ~1 ms, so timings are coarse — but that is
 // plenty to tell a ~10 ms blit from a hundreds-of-ms replay hang. Peak memory
@@ -18,7 +16,7 @@
 // the same run.
 //
 //   GATES (default). Paste this file alone. Full op volume, all four
-//   scenarios, no Timeline recording. Its table is the ADR-0066 verdict.
+//   scenarios, no Timeline recording. Its table is the tiled-history verdict.
 //   Narrow it to some scenarios with:
 //     window.__perfScenarios = 'crayon-scribbles'
 //
@@ -41,7 +39,7 @@
     return;
   }
 
-  // Match the device viewport so the raster is the real on-device size.
+  // Match the device viewport so tile geometry is the real on-device size.
   E.resizeTo(window.innerWidth, window.innerHeight);
   await new Promise((r) => setTimeout(r, 200));
 
@@ -49,16 +47,17 @@
   const M = 160; // edge-swipe-guard margin
   const W = window.innerWidth;
   const H = window.innerHeight;
-  const c = document.querySelector('#engineCanvas');
-  const side = Math.max(c.width, c.height);
   const MIB = 1024 * 1024;
-  const mbPerRaster = (side * side * 4) / MIB;
+  const renderScale = Math.min(window.devicePixelRatio || 1, 2);
+  const paperWidth = Math.round(W * renderScale);
+  const paperHeight = Math.round(H * renderScale);
+  const mbPerPaper = (paperWidth * paperHeight * 4) / MIB;
 
   // Two run modes, because the gates run and a Web Inspector Timeline recording
   // want opposite things from the same scenarios.
   //
   // GATES (default) — real op volume, so the absolute milliseconds are honest.
-  // This is the mode whose numbers answer ADR-0066. Never record a Timeline
+  // This is the mode whose numbers answer ADR-0085/0086. Never record a Timeline
   // across it: Web Inspector has to stream, model, and render every pointer
   // event and every engine.draw mark over USB, and a full run is ~53k markers
   // (99.7% of them engine.draw) plus ~53k event records. That pins the Mac at
@@ -70,17 +69,16 @@
   // at its source without changing what the engine does.
   //
   // TIMELINE MODE MEASURES SHAPE, NOT MAGNITUDE. Shorter strokes make smaller
-  // patches and cheaper encodes, so its milliseconds are not gate numbers —
-  // read it for *where* the time goes and whether a frame dropped, and quote
-  // the gates run for *how much*.
+  // patches, so its milliseconds are not gate numbers — read it for *where*
+  // the time goes and whether a frame dropped, and quote the gates run for
+  // *how much*.
   const TIMELINE = window.__perfTimeline === true;
   // 22 strokes is two past MAX_UNDO_DEPTH (20, matching
   // tools/perf/undo-scenarios.mjs), so the gates run measures history with
   // the stack full and exercises the oldest-entry fold + shift overflow path.
-  // Timeline mode is sized for legibility, not for the tier: since ADR-0082 the
-  // resident window is a byte budget, so a handful of thin strokes encodes
-  // nothing at all. A recorded run is for where the time goes and whether a
-  // frame dropped, which does not depend on the tier demoting.
+  // Timeline mode is sized for legibility, not retained-depth or byte-budget
+  // coverage. A recorded run is for where the time goes and whether a frame
+  // dropped.
   const STROKES = Number(window.__perfStrokes) || (TIMELINE ? 6 : 22);
   const OPS = Number(window.__perfOps) || (TIMELINE ? 200 : HZ * 10);
   const MULTI_FINGERS = 5;
@@ -152,9 +150,8 @@
     };
   };
 
-  // Restores settle asynchronously (deep entries decode from a blob), so each
-  // step waits for its engine.undo measure to land before the next fires —
-  // otherwise the loop outruns the restore queue.
+  // Wait for each measured undo before firing the next so the rows report one
+  // action at a time even if a future restore path becomes asynchronous.
   const undoAll = async () => {
     const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
     let n = 0;
@@ -263,37 +260,12 @@
     return;
   }
   await undoAll(); // drain the probe stroke so scenario counts start honest
-  performance.clearMeasures(); // drop the probe's own commit/snapshot/undo entries
+  performance.clearMeasures(); // drop the probe's own commit/undo entries
   performance.clearMarks();
 
-  // Blank paper is the only thing a scenario needs from the reset: leftover ink
-  // makes this scenario's patches denser, which inflates blob bytes and the
-  // encode cost measured from them.
-  //
-  // Snapshot depth needs no reset and must not be chased. STROKES exceeds
-  // MAX_UNDO_DEPTH (undoHistory.ts caps the stack by shifting the oldest out),
-  // so by drawEnd the stack holds only this scenario's most recent commits no
-  // matter what preceded them — including the clear's own entry, which is long
-  // gone by then.
-  //
-  // Draining *after* the clear is the trap: a clear is itself undoable
-  // (engine.ts clearCanvas runs the full pushCommand path), so undoing it
-  // restores the very ink it just removed. That left every scenario after the
-  // first drawing on inherited ink while reporting `0 leftover snapshot(s),
-  // canvasEmpty=false`. Drain first — a full drain lands on the pre-history
-  // baseline, which is as blank as undo can get it — then clear whatever the
-  // undo cap left permanently folded into the paper, and stop.
-  // Two commits of near-nothing, drawn a few px apart so each is its own stroke
-  // group. Small enough that the ink they leave is not a patch worth measuring.
-  const primingMark = (i) => {
-    const x = M + i * 8;
-    return [
-      { x, y: M },
-      { x: x + 2, y: M + 1 },
-      { x: x + 4, y: M + 2 },
-    ];
-  };
-
+  // Drain before clear: clear is undoable, so draining afterward would restore
+  // the ink it removed. The history cap guarantees a scenario that exceeds the
+  // depth owns the retained tail even when an older compacted base survives.
   const resetForScenario = async (label) => {
     await undoAll();
     // A fresh page needs neither step: nothing to clear, so nothing to prime.
@@ -301,23 +273,9 @@
     E.clearCanvas();
     if (!E.isCanvasEmpty()) {
       console.warn(
-        `[${label}] paper is not blank after clearCanvas — this row's patches, ` +
-          'blob bytes and encode cost include pre-existing ink'
+        `[${label}] paper is not blank after clearCanvas — this row's patches include ` +
+          'pre-existing ink'
       );
-    }
-    // The clear's own snapshot holds the entire inked paper it just wiped. It is
-    // also the oldest entry, and the byte budget evicts oldest-first, so in any
-    // scenario that does reach the budget it is the first thing to encode — a
-    // full-paper PNG landing inside the measurement window. Where the
-    // scenario's own encodes are cheap that artifact *is* the reported max:
-    // multi-finger read 176 ms this way against 1 ms measured in isolation.
-    // Push it down with a couple of throwaway commits here, before drawStart.
-    // The count is a heuristic rather than a derived number now that the window
-    // is bytes rather than entries; scenarios currently stay inside the budget
-    // and encode nothing, so this is a guard, not a load-bearing step.
-    for (let i = 0; i < 2; i++) {
-      E.strokeSync(primingMark(i), 'touch');
-      await new Promise((r) => requestAnimationFrame(r));
     }
   };
 
@@ -336,21 +294,11 @@
     const steps = await undoAll();
     const undoEnd = performance.now();
     if (E.setCrayonMode) E.setCrayonMode(false);
-    const snap = agg(drawStart, drawEnd, 'engine.snapshot');
-    const fold = agg(drawStart, drawEnd, 'engine.fold');
     const commit = agg(drawStart, drawEnd, 'engine.commit');
-    const encode = agg(drawStart, drawEnd, 'engine.encode');
     const un = agg(undoStart, undoEnd, 'engine.undo');
-    // rasterBytes is the live patches' real pixel cost (dirty-rect snapshots,
-    // ADR-0069); the liveRasters × full-raster product is the fallback for a
-    // build that predates it. The +1 raster is the paper itself.
-    const liveMB = dbg.rasterBytes != null ? dbg.rasterBytes / MIB : dbg.liveRasters * mbPerRaster;
-    const historyMB = liveMB + mbPerRaster + dbg.blobBytes / MIB;
-    // What the same stack would cost with the encoding removed entirely: every
-    // patch resident, plus the paper. The encode is what makes a WebKit commit
-    // miss its frame budget, so this is the number that says whether the ≲150 MB
-    // gate still needs it. null on a build predating patchBytes.
-    const unencodedMB = dbg.patchBytes != null ? dbg.patchBytes / MIB + mbPerRaster : null;
+    const patchMB = (dbg.rasterBytes ?? 0) / MIB;
+    const baseMB = (dbg.baseRasterBytes ?? 0) / MIB;
+    const historyMB = patchMB + baseMB;
     // A zero in a timing column means one of two opposite things: too fast to
     // measure, or nothing measured at all. `commits` disambiguates — it is the
     // sample count every timing column below is a max over, so commits=0 marks
@@ -359,27 +307,24 @@
       console.warn(
         `[${label}] ${dbg.snapshots} snapshot(s) but no engine.commit measure landed in ` +
           "the draw window — this row's timings are missing, not zero. " +
-          `rasterBytes=${dbg.rasterBytes} blobBytes=${dbg.blobBytes}; zero for both means ` +
-          'the snapshots carry no patches, so the fold never touched the paper — ' +
-          'commitStrokeGroup parks the fold while a paper restore is still pending.'
+          `rasterBytes=${dbg.rasterBytes} baseRasterBytes=${dbg.baseRasterBytes}.`
       );
     }
     return {
       key,
       scenario: label,
-      snapshots: dbg.snapshots ?? 0,
+      'undo entries': dbg.snapshots ?? 0,
+      'history commands': dbg.historyLength ?? 0,
+      'base tiles': dbg.baseRasters ?? 0,
       commits: commit.count,
-      'blob KB': Math.round((dbg.blobBytes ?? 0) / 1024),
-      'snap copy max ms': snap.max,
-      'fold max ms': fold.max,
-      'encode max ms': encode.max,
       'commit max ms': commit.max,
       'undo steps': steps,
       'undo avg ms': un.avg,
       'undo p95 ms': un.p95,
       'undo max ms': un.max,
+      'patch MiB': +patchMB.toFixed(1),
+      'base MiB': +baseMB.toFixed(1),
       'history MiB': +historyMB.toFixed(0),
-      'no-encode MiB': unencodedMB == null ? null : +unencodedMB.toFixed(0),
     };
   }
 
@@ -389,7 +334,7 @@
   }
 
   console.log(
-    `Device raster ${side}×${side} = ${mbPerRaster.toFixed(1)} MiB/raster · ` +
+    `Device paper ${paperWidth}×${paperHeight} = ${mbPerPaper.toFixed(1)} MiB aggregate · ` +
       `120 Hz frame budget 8.3 ms · NOTE WebKit clamps perf.now() to ~1 ms`
   );
   console.table(rows);
@@ -410,18 +355,11 @@
     return;
   }
   console.log(
-    'Gates (ADR-0066): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ one ' +
-      '120 Hz frame ≈ 8.3 ms · history ≲ 150 MiB · no dropped frames while blobs ' +
-      'encode. Inside a commit, "snap copy" is engine.snapshot (the paper copy ' +
-      'alone), "fold" is engine.fold (rendering the committed ops), and "encode" ' +
-      'is engine.encode (demoting cold snapshots to blobs — free where toBlob ' +
-      'encodes in parallel as specified, a full main-thread block in WebKit, ' +
-      'which encodes inside the call). A hot commit attributes to one of those; ' +
-      'if it attributes to none, the remainder is unmarked work in ' +
-      'commitStrokeGroup. "no-encode MiB" is what the same history would cost ' +
-      'with every patch resident and nothing encoded — under the 150 MiB gate ' +
-      'there, the encode is buying headroom nothing needs. ' +
-      'The Xcode memory gauge covers the snapshot tier. ' +
+    'Gates (ADR-0085/0086): undo p95 < 50 ms · commit hitch (engine.commit max) ≈ ' +
+      'one 120 Hz frame ≈ 8.3 ms · retained patch memory stays within six aggregate ' +
+      'papers while keeping the newest two commands. The table reports actual ' +
+      'tile-local patch and compacted-base bytes from tiledHistoryDebug(); the Xcode ' +
+      'memory gauge covers the live tile surfaces and transient canvas allocations. ' +
       'To see whether a frame actually dropped at finger-lift, record a ' +
       'Timeline over the hot row in timeline mode — never across this run:\n' +
       "  window.__perfTimeline = true; window.__perfScenarios = '<key>'"

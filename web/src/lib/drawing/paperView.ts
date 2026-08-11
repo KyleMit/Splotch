@@ -1,7 +1,7 @@
 // Pure geometry for presenting the drawing's "paper" inside a viewport that has
 // rotated since the paper was adopted (ADR-0050). While ink is on the canvas the
-// engine locks the paper — the coordinate space every recorded op, the paper
-// raster and its snapshots (ADR-0066), and the magic sheet live in — and a
+// engine locks the paper — the coordinate space every recorded op, live tile,
+// history base, undo patch, and magic sheet lives in — and a
 // device rotation is handled by *presenting* that space through the view
 // computed here instead of remapping any content. Production always presents
 // UPRIGHT (rotation 0: the picture rotates with the device and contain-fits,

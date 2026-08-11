@@ -12,7 +12,6 @@
   import { pushToolStateToEngine } from '$lib/drawing/earlyBoot';
   import { COLORING_OVERLAY_ID } from '$lib/drawing/overlay';
   import { viewMatrix } from '$lib/drawing/paperView';
-  import { LIVE_TILE_COUNT } from '$lib/drawing/liveTiles';
   import { layout } from '$lib/state/layout.svelte';
   import { colors } from '$lib/state/colors.svelte';
   import { toolState } from '$lib/state/tool.svelte';
@@ -42,11 +41,11 @@
   import { scheduleIdle } from '$lib/idle';
   import { prefetchImages } from '$lib/imagePrefetch';
   import FullscreenToggle from './FullscreenToggle.svelte';
+  import LiveSurface from './LiveSurface.svelte';
   import PointerHalos from './PointerHalos.svelte';
 
   let canvasEl: HTMLCanvasElement = $state()!;
   let pointerHalos: PointerHalos;
-  const liveTiles = Array.from({ length: LIVE_TILE_COUNT }, (_, index) => index);
 
   // The engine's paper view (ADR-0050): identity in normal use; after a device
   // rotation with ink on the canvas it presents the locked paper upright,
@@ -301,34 +300,7 @@
       hidden={!overlayUrl()}
     />
   </div>
-  <!-- The stack isolates the canvas + the engine's crayon pass overlays into
-       one blending group, so the overlays' darken preview mixes against the
-       CANVAS's own pixels (transparent where virgin — pure colour shows) and
-       never against the paper behind it. Without isolation, a fresh stroke
-       previews faint on the dark paper (min(colour, near-black) erases the
-       blend layer) until its pass stamps. -->
-  <div class="canvas-stack">
-    <canvas bind:this={canvasEl} id="drawingCanvas" class:erasing={toolState.brush === 'eraser'}
-    ></canvas>
-    <div
-      class="live-paper-view"
-      style:width={paperCssWidth}
-      style:height={paperCssHeight}
-      style:transform={paperTransform}
-    >
-      {#each liveTiles as tile (tile)}
-        <canvas class="live-tile" data-live-tile aria-hidden="true" hidden></canvas>
-        <canvas class="live-tile live-crayon-tile" data-live-crayon-bottom aria-hidden="true" hidden
-        ></canvas>
-        <canvas
-          class="live-tile live-crayon-tile live-crayon-tile-top"
-          data-live-crayon-top
-          aria-hidden="true"
-          hidden
-        ></canvas>
-      {/each}
-    </div>
-  </div>
+  <LiveSurface bind:canvasEl {paperView} erasing={toolState.brush === 'eraser'} />
   <PointerHalos bind:this={pointerHalos} {canvasEl} {eraserSizePx} {brushRingSizePx} />
   <FullscreenToggle />
 </div>
@@ -364,50 +336,6 @@
 
   .paper-sheet.paper-lifted {
     box-shadow: 0 2px 14px rgba(93, 84, 68, 0.18);
-  }
-
-  .canvas-stack {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    isolation: isolate;
-  }
-
-  #drawingCanvas {
-    position: relative;
-    z-index: 3;
-    display: block;
-    cursor: crosshair;
-    touch-action: none;
-    width: 100%;
-    height: 100%;
-  }
-
-  .live-paper-view {
-    position: absolute;
-    top: 0;
-    left: 0;
-    transform-origin: 0 0;
-  }
-
-  .live-tile {
-    position: absolute;
-    pointer-events: none;
-    z-index: 1;
-  }
-
-  .live-crayon-tile {
-    z-index: 2;
-    mix-blend-mode: darken;
-  }
-
-  .live-crayon-tile-top {
-    mix-blend-mode: normal;
-  }
-
-  #drawingCanvas.erasing {
-    cursor: none;
   }
 
   /* The generated overlay carries only transparent black or white ink, so it

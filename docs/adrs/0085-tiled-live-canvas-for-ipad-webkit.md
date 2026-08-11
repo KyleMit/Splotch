@@ -158,23 +158,23 @@ change, before changing the grid or treating 0.294 Mpx as a universal target.
 
 ## Decision
 
-The production `DrawingCanvas` uses a fixed 4×4 grid from `web/src/lib/drawing/liveTiles.ts`. Each
-cell has:
+The shared `LiveSurface` used by both `DrawingCanvas` and `/dev/engine` renders a fixed 4×4 grid
+from `web/src/lib/drawing/liveTiles.ts`. Each cell has:
 
 * One normal-ink canvas.
 * One bottom crayon-preview canvas using `mix-blend-mode: darken`.
 * One top crayon-preview canvas using the authored color-mix opacity.
 
 The original full-size `#drawingCanvas` remains the transparent input receiver, coordinate source,
-and accessibility surface, but the production renderer never paints it. The sixteen cells preserve
-ADR-0015's full `min(devicePixelRatio, 2)` resolution; tiling changes surface topology, not
-resolution. Operations stay in paper coordinates. `tiledRenderer.ts` applies the paper-view
-transform to each tile, culls dots and paths by their paper-space bounds, and renders only
-intersecting tiles. Its CSS boundaries are shared and snapped to physical-device pixels even when
-the backing scale is capped below device DPR, preventing independently composited neighbors from
-landing on fractional physical pixels.
+and accessibility surface, but the renderer never paints it. The sixteen cells preserve ADR-0015's
+full `min(devicePixelRatio, 2)` resolution; tiling changes surface topology, not resolution.
+Operations stay in paper coordinates. `tiledRenderer.ts` applies the paper-view transform to each
+tile, culls dots and paths by their paper-space bounds, and renders only intersecting tiles. Its CSS
+boundaries are shared and snapped to physical-device pixels even when the backing scale is capped
+below device DPR, preventing independently composited neighbors from landing on fractional physical
+pixels.
 
-`tiledSurfaces.ts` owns discovery and construction of the template-provided tile elements, normal
+`tiledSurfaces.ts` owns discovery and strict adoption of the template-provided tile elements, normal
 and crayon backing-store allocation, deferred hidden-tile clears, and history-base tile creation.
 `tiledRenderer.ts` owns renderer/history orchestration over those surfaces. This separation keeps
 surface lifecycle independent of command ordering without changing allocation timing or pixels.
@@ -201,10 +201,11 @@ Brush-specific invariants are:
 * The existing Web Audio drawing sound remains enabled. The media-element replacement was rejected;
   the original implementation passed the final tiled test.
 
-The `/dev/engine` white-box harness keeps the snapshot renderer temporarily because its tests
-directly exercise that historical implementation. The production route selects the tiled renderer by
-adopting the template-owned tile elements. New product behavior and regressions must be tested
-through the real route, not inferred from the legacy harness.
+`LiveSurface.svelte` is the renderer's single DOM contract. The product route composes paper,
+coloring art, pointer halos, and fullscreen control around it; `/dev/engine` renders it bare and
+composites its live tiles for pixel assertions. Missing or incomplete tile markup fails engine
+initialization instead of activating a fallback renderer. Product-only composition and rotation
+behavior remain real-route test concerns.
 
 The final trusted-touch runs all passed:
 
@@ -288,8 +289,8 @@ justified by the measured cost.
   That cost remains below 0.3 ms/frame and produced no observed frame-budget regression.
 * − Undo, resize, export, magic-source lifetime, and crayon buffering now have tiled code paths.
   Boundary and replay tests are required whenever a brush or paper transform changes.
-* − The snapshot renderer remains as temporary harness-only debt. Its passing microbenchmarks do not
-  establish production iPad performance.
+* \+ The white-box harness and product route exercise the same tiled renderer, undo history, live
+  surface topology, and debug contract. Harness tests no longer certify a retired architecture.
 * − Playwright cannot reproduce this device compositor failure even with extreme viewport/DPR
   emulation. Shipping changes to this path still requires the trusted physical-iPad gate.
 
@@ -297,9 +298,10 @@ justified by the measured cost.
 
 ### Measurement Contract
 
-Re-attempt an architecture against the production `/` route, not `/dev/engine`. The latter retains
-the historical snapshot renderer for white-box coverage and does not exercise the tiled production
-stack. Build once with performance marks and the dev harness enabled:
+Use the production `/` route for physical-device acceptance because it includes the complete layer
+stack and product controls. `/dev/engine` shares the tiled renderer and is appropriate for white-box
+correctness and synthetic profiling, but it does not reproduce the product composition. Build once
+with performance marks and the dev harness enabled:
 
 ```sh
 npm run perf:build

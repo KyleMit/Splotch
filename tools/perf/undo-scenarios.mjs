@@ -322,7 +322,7 @@ function engineMeasuresIn(page, from, to) {
 
 async function resetEngine(page, base, width, height) {
   await page.goto(`${base}dev/engine`, { waitUntil: 'networkidle' });
-  await page.waitForSelector('#engineCanvas');
+  await page.waitForSelector('#drawingCanvas');
   await page.waitForFunction(() => window.__engineReady === true);
   await page.evaluate(({ width, height }) => window.__engine.resizeTo(width, height), {
     width,
@@ -427,7 +427,7 @@ async function settleColdTier(page, timeoutMs = 10_000) {
 // snapshot (and the paper) occupies.
 async function rasterGeometry(page) {
   return page.evaluate(() => {
-    const c = document.querySelector('#engineCanvas');
+    const c = document.querySelector('#drawingCanvas');
     const side = Math.max(c.width, c.height);
     return { backingW: c.width, backingH: c.height, side, bytesPerRaster: side * side * 4 };
   });

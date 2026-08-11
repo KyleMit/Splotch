@@ -168,15 +168,15 @@ cover mapped margins would multiply the whole depth-20 stack.
 
 ## Amendment (ADR-0089, 2026-07)
 
-The tiled production renderer no longer rebuilds a locked paper into viewport-sized tile canvases.
-Its live tiles stay in upright paper coordinates and a `.live-paper-view` CSS transform supplies the
-same contain-fit presentation as the paper sheet and coloring overlay. The legacy `/dev/engine`
-renderer retains the persistent context-transform path described above.
+The tiled renderer no longer rebuilds a locked paper into viewport-sized tile canvases. Its live
+tiles stay in upright paper coordinates and a `.live-paper-view` CSS transform supplies the same
+contain-fit presentation as the paper sheet and coloring overlay. The product and `/dev/engine`
+share that live surface and presentation path.
 
 This changes three production details:
 
 * Letterbox margins are outside the paper and reject contacts that begin there. No invisible undo
-  command is created. The earlier drawable-margin behavior survives only in the legacy harness.
+  command is created.
 * Undo/clear-to-blank still frees the paper, but tiled production waits two rendered frames before
   resizing the newly hidden tile backings. The canvas is already visibly blank; only letterbox
   removal waits.

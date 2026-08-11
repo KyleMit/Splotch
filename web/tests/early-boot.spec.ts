@@ -8,7 +8,7 @@ import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 // still works, but the live canvas gets replaced and the early boot is wasted.
 // This spec pins the invariants: the post-hydration canvas is the same element
 // the prerendered HTML shipped, the console carries no hydration warnings, and
-// no duplicate overlay canvases accumulate in the stack.
+// the complete shared tile topology survives hydration without duplication.
 
 test.skip(
   !!process.env.DEV_SERVER,

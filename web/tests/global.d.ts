@@ -23,16 +23,10 @@ declare global {
       setEraserMode(active: boolean): void;
       setMagicMode(active: boolean): void;
       setSafeAreaInsets(insets: { top: number; right: number; bottom: number; left: number }): void;
-      // Resolves when the queued restore has settled (a deep entry decodes
-      // from its blob asynchronously) — page.evaluate awaits it.
       undo(): Promise<void>;
       clearCanvas(): void;
       isCanvasEmpty(): boolean;
-      getUndoDebug(): {
-        snapshots: number;
-        liveRasters: number;
-        blobBytes: number;
-      };
+      getUndoDebug(): import('../src/lib/drawing/undoHistory').HistoryDebug;
       setCrayonMode(active: boolean): void;
       setCrayonParams(params: {
         tile?: number;
@@ -63,6 +57,7 @@ declare global {
       blobRedPixelCount(blob: Blob | null): Promise<number>;
       nonTransparentCount(): number;
       pixelAt(x: number, y: number): number[];
+      pixelsIn(x: number, y: number, width: number, height: number): number[];
       resizeTo(w: number, h: number): Promise<void>;
       resumeTo(w: number, h: number): void;
       layoutTo(w: number, h: number): void;

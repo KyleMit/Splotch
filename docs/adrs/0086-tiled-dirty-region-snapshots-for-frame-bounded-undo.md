@@ -190,8 +190,9 @@ Resident patches use an adaptive byte budget:
 * − A pathological sequence whose patches exceed six aggregate papers can still shorten below twenty
   undo steps, but never below the newest two. This is a deliberate product tradeoff in favor of
   bounded memory, drawing, and undo responsiveness.
-* − The legacy `/dev/engine` snapshot stack remains a different architecture. Production tiled undo
-  must be validated on `/`, not inferred from legacy harness passes.
+* \+ `/dev/engine` exposes this tiled history through the same `HistoryDebug` contract used by
+  production profiling. Product-route tests still own integration with the real controls and layer
+  composition.
 
 ## Re-attempting the Architectures
 

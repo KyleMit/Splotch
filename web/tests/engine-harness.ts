@@ -45,7 +45,7 @@ async function openEngineHarness(page: Page) {
 // module is evaluated attaches to whichever spec file happened to trigger that
 // evaluation — and Node caches the module, so every LATER spec file loaded by
 // the same worker got no hook at all and ran against about:blank (issue #624:
-// ~12 failures whose signature was a missing #engineCanvas or an undefined
+// ~12 failures whose signature was a missing #drawingCanvas or an undefined
 // window.__engine). Fixtures are resolved per test, so they can't be skipped
 // this way.
 export const test = base.extend({

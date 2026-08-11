@@ -133,8 +133,9 @@ The production tiled renderer keeps live tile pixels in upright paper coordinate
 rotation. `DrawingCanvas.svelte` wraps all ink and crayon tiles in `.live-paper-view`, sized to the
 paper and transformed with the same CSS matrix used by the paper sheet and coloring overlay.
 `engine.ts` continues computing `paperView` and inverse-mapping pointer coordinates, but it does not
-resize, transform, or replay tiled surfaces while the paper is locked. The legacy `/dev/engine`
-renderer retains its context-transform implementation.
+resize, transform, or replay tiled surfaces while the paper is locked. The product and `/dev/engine`
+share this implementation through `LiveSurface.svelte`; production-route rotation tests cover the
+surrounding paper, coloring-art, and control composition.
 
 The related invariants are:
 
@@ -145,10 +146,9 @@ The related invariants are:
 * Locked tiled contexts stay in paper coordinates. Existing strokes and new inverse-mapped strokes
   land in the same paper-sized tiles, while CSS supplies presentation. Rotating back removes the CSS
   transform and restores the original pixels without replay or resampling.
-* The letterbox margin is not paper and is no longer drawable in tiled production. A contact that
-  begins outside the transformed paper is ignored and creates no undo command. This removes a
-  feature whose committed pixels were already cropped on rotating back or exporting. The legacy
-  harness retains its historical drawable-margin behavior because it still owns a viewport canvas.
+* The letterbox margin is not paper and is not drawable. A contact that begins outside the
+  transformed paper is ignored and creates no undo command. This removes a feature whose committed
+  pixels were already cropped on rotating back or exporting.
 * A blank rotation still re-adopts the new viewport. Its tiles are hidden, so normal-ink backings
   migrate one per animation frame. Undo patches from the previous geometry stay stale: rebuilding
   them together after migration caused a delayed 68–74 ms surface flush. An undo whose patch no
@@ -195,9 +195,8 @@ The related invariants are:
   main-thread snapshot.
 * − Letterbox margins are intentionally non-drawable in tiled production. This is a visible product
   rule, not an accidental culling side effect.
-* − Tiled and legacy rotation presentation differ internally. Rotation behavior that concerns the
-  production layer structure needs a real-route Playwright test; the legacy engine harness alone is
-  insufficient.
+* \+ The dev harness and production route use the same CSS-presented tile implementation. Rotation
+  behavior involving the production layer structure remains a real-route Playwright test concern.
 * − The first crayon stroke after a resize allocates touched preview tiles. The measured five-tile
   gesture passed at 30 ms, but future changes that touch many tiles at pointerdown need a physical
   iPad regression run.

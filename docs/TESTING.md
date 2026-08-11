@@ -267,7 +267,7 @@ specs that can't race in the first place:
   `test.beforeEach`.** A helper is evaluated once per worker process, so a hook it registers at
   import time attaches only to the *first* spec file in that worker that imports it; every later
   spec file gets no setup at all and runs against `about:blank`. That was issue \#624 — ~12
-  `/dev/engine` specs "flaking" with a missing `#engineCanvas` or an undefined `window.__engine`,
+  `/dev/engine` specs "flaking" with a missing `#drawingCanvas` or an undefined `window.__engine`,
   green on retry (a retry re-runs the file alone) and green in isolation. Extend `test` in the
   helper instead (`base.extend({ page: async ({ page }, use) => { …setup…; await use(page) } })`,
   see `tests/engine-harness.ts`) and have specs import `test`/`expect` from the helper;

@@ -19,9 +19,9 @@
 //
 // The engine drives this module: it rasterizes the sheet on resize, asks for the
 // sheet pattern per magic op, and calls the source setters from its tool/overlay
-// wiring. The offscreen sheet is a canvas the exact size of the engine's PAPER —
-// the space ops are recorded in, which tracks the main canvas until a rotation
-// locks it (ADR-0050); a no-repeat CanvasPattern of it is the brush's paint
+// wiring. The offscreen sheet is a canvas the exact size of the engine's paper,
+// the coordinate space shared by ops and live tiles through rotation (ADR-0089);
+// a no-repeat CanvasPattern of it is the brush's paint
 // (chosen over a per-op mask composite and a flat colour-sample after measuring
 // all three — see ADR-0043).
 
@@ -63,18 +63,15 @@ export interface RainbowGradient {
 // refresh already-recorded magic ops.
 interface MagicBrushHost {
   paperSize: () => { width: number; height: number } | null;
-  // The paper-coordinate rectangle the whole visible canvas maps to. Equal to the
-  // paper in normal use; under a rotation lock it's the larger mapped-viewport rect
-  // (its origin can be negative), so the sheet also covers the letterbox margins
-  // around the fitted paper and the brush can paint them (ADR-0043/0050).
+  // The exact paper-coordinate rectangle the sheet must cover.
   sheetBounds: () => { x: number; y: number; width: number; height: number } | null;
   repaint: () => void;
 }
 
-// The state below is a deliberate module-scope singleton — one magic-brush engine
-// per app, driven directly by the drawing engine (ADR-0004, the same rationale as
-// undoHistory.ts's module-scope state) — not a createX() factory, so there is no
-// per-instance seam for tests.
+// The state below is a deliberate module-scope singleton — one magic-brush
+// engine per app, driven directly by the drawing engine (ADR-0004, the same
+// rationale as tiledRenderer.ts's module-scope history) — not a createX()
+// factory, so there is no per-instance seam for tests.
 //
 // The only in-module reset is partial: setColorSheet(null) drops the fill source
 // and clearMagicGradient() drops the held gradient. Only the no-fill case comes
@@ -419,13 +416,9 @@ function extendSheetEdges(
 }
 
 // Rasterize the active source into the sheet and refresh the pattern cache. The
-// sheet covers the whole visible canvas in paper coordinates (host `sheetBounds`):
-// the paper itself normally, or the larger mapped-viewport rect under a rotation
-// lock, whose origin can be negative — `sheetOrigin{X,Y}` offsets everything so the
-// pattern still aligns. The fill is drawn contain-fit within the PAPER (matching
-// where the overlay <img> paints), then its edge colours are extended outward to
-// fill every letterbox margin (the fill's own, and the rotation-lock margins around
-// the paper); the gradient fills the whole sheet. Re-run on load and every resize.
+// sheet covers `sheetBounds` in paper coordinates. The fill is drawn contain-fit
+// within the paper, matching the overlay image, then its edge colours extend
+// through the fill's own letterbox margins; a gradient fills the whole sheet.
 function rasterizeSheet() {
   invalidateSheet();
   const paper = host?.paperSize();
@@ -469,12 +462,9 @@ export function resizeMagicSheet(eager: boolean) {
   else sheetGeometryStale = true;
 }
 
-// A no-repeat pattern of the sheet, cached per target context (the visible ctx
-// almost always; the paper raster on fold, export surfaces). The pattern is offset by
-// the sheet's paper-coordinate origin so sheet pixel (0,0) lands at that paper coord —
-// identity in normal use, a translation under a rotation lock — keeping it aligned on
-// the visible canvas and the larger square paper raster alike, all of which draw ops
-// in paper coordinates.
+// A no-repeat pattern of the sheet, cached per tile, history-base, or export
+// context. The pattern is offset by the sheet's paper-coordinate origin so
+// sheet pixel (0,0) lands at that paper coordinate on every surface.
 export function captureMagicSheet(): MagicSheetSnapshot | null {
   return sheetReady ? sheetSnapshot : null;
 }

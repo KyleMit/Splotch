@@ -1,8 +1,8 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
 
-test('a dense zigzag survives a resize, repainted from the paper raster', async ({ page }) => {
-  // A resize wipes the visible backing store; the repaint is one blit of the
-  // committed paper — the drawing must still be there afterward.
+test('a dense zigzag survives a resize, repainted from tiled history', async ({ page }) => {
+  // A resize rebuilds the live tiles from retained history, so the drawing
+  // must still be there afterward.
   const points = Array.from({ length: 460 }, (_, i) => ({
     x: i % 2 === 0 ? 30 : 230,
     y: 20 + Math.floor(i * 0.5),
@@ -12,7 +12,7 @@ test('a dense zigzag survives a resize, repainted from the paper raster', async 
 
   await page.evaluate(() => window.__engine.resizeTo(500, 400));
 
-  // The drawing persists after the resize, repainted from the paper.
+  // The drawing persists after the resize, repainted from tiled history.
   expect(await count(page)).toBeGreaterThan(0);
 
   // And it still undoes as a single unit back to blank.
@@ -24,7 +24,7 @@ test('a dense zigzag survives a resize, repainted from the paper raster', async 
 test('a back-and-forth scribble keeps its full extent after a rebuild (tip fidelity)', async ({
   page,
 }) => {
-  // The resize repaint blits the committed paper, so the scribble's tips must
+  // The resize repaint rebuilds from retained history, so the scribble's tips must
   // survive exactly (the ADR-0036 simplification era shrank them ~25% until the
   // curve family was fixed; a blit can't shrink anything — this pins that).
   const pts: { x: number; y: number }[] = [{ x: 50, y: 40 }];
@@ -58,7 +58,7 @@ test('a back-and-forth scribble keeps its full extent after a rebuild (tip fidel
 test('a sharp corner stays sharp and in place after a rebuild (corner fidelity)', async ({
   page,
 }) => {
-  // The rebuild is a blit of the committed paper, so a hook's sharp corner must
+  // The rebuild replays retained history, so a hook's sharp corner must
   // keep its exact reach (the simplification era could round and displace it by
   // tens of px). Draw the hook, rebuild, and check the corner's reach.
   const pts: { x: number; y: number }[] = [];
@@ -79,7 +79,7 @@ test('a sharp corner stays sharp and in place after a rebuild (corner fidelity)'
 });
 
 test('the drawing survives a canvas resize (virtual-canvas preservation)', async ({ page }) => {
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
 
   await drawStroke(page, box, [
     { x: 30, y: 30 },
@@ -93,24 +93,18 @@ test('the drawing survives a canvas resize (virtual-canvas preservation)', async
   // The original paper can become contain-fit in the resized viewport. Sample
   // the same paper point through the engine's published presentation transform.
   expect(await count(page)).toBeGreaterThan(0);
-  const alpha = await page.evaluate(() => {
-    const view = window.__engine.getViewState();
-    return window.__engine.pixelAt(
-      Math.round(70 * view.scale + view.tx),
-      Math.round(30 * view.scale + view.ty)
-    )[3];
-  });
+  const alpha = await page.evaluate(() => window.__engine.pixelAt(70, 30)[3]);
   expect(alpha).toBeGreaterThan(0);
 });
 
 test('a stroke in progress survives a mid-stroke resize and undoes as one unit', async ({
   page,
 }) => {
-  // The rebuild blits the committed paper, but a stroke still being drawn has
+  // The rebuild replays retained history, but a stroke still being drawn has
   // an uncommitted activeCommand (recorded, not yet folded). The resize must
   // repaint it too, so the in-flight stroke isn't dropped — and the whole
   // stroke remains a single undo unit afterwards.
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
 
   await drawStroke(page, box, [
@@ -127,13 +121,7 @@ test('a stroke in progress survives a mid-stroke resize and undoes as one unit',
 
   // Sample the in-flight stroke at its distinct paper position so the earlier
   // committed stroke cannot make this survival check pass on its own.
-  const inFlightAlpha = await page.evaluate(() => {
-    const view = window.__engine.getViewState();
-    return window.__engine.pixelAt(
-      Math.round(110 * view.scale + view.tx),
-      Math.round(160 * view.scale + view.ty)
-    )[3];
-  });
+  const inFlightAlpha = await page.evaluate(() => window.__engine.pixelAt(110, 160)[3]);
   expect(inFlightAlpha).toBeGreaterThan(0);
 
   await page.mouse.move(box.x + 220, box.y + 160);
@@ -173,7 +161,7 @@ test('a resume that beats the layout pass leaves the canvas drawable', async ({ 
     .poll(async () => (await page.evaluate(() => window.__engine.getViewState())).paperCssWidth)
     .toBe(500);
 
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
   await drawStroke(page, box, [
     { x: 30, y: 30 },
     { x: 120, y: 30 },
@@ -208,10 +196,10 @@ test('a drawing survives a resume that beats the layout pass', async ({ page }) 
   // The stroke came through the rebuild, and the recovered transform still maps
   // new input onto the paper.
   await expect.poll(() => count(page)).toBeGreaterThan(0);
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
   await drawStroke(page, box, [
-    { x: 40, y: 220 },
-    { x: 180, y: 220 },
+    { x: 80, y: 220 },
+    { x: 220, y: 220 },
   ]);
   await expect.poll(() => count(page)).toBeGreaterThan(before);
 });

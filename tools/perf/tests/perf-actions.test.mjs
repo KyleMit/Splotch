@@ -12,8 +12,8 @@ import { canvasHasInk, selectedActions } from '../ipad-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../desktop-actions.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'action-probe.js'), 'utf8');
-const DRAWING_CANVAS = readFileSync(
-  join(ROOT, 'web', 'src', 'lib', 'components', 'DrawingCanvas.svelte'),
+const LIVE_SURFACE = readFileSync(
+  join(ROOT, 'web', 'src', 'lib', 'components', 'LiveSurface.svelte'),
   'utf8'
 );
 // SCREENSHOT_BUTTON_ID lives with the other corner-button ids rather than beside
@@ -147,7 +147,7 @@ describe('action probe selector contract', () => {
     'data-live-crayon-top',
   ]) {
     it(`tracks the canvas surface declared by ${marker}`, () => {
-      expect(DRAWING_CANVAS).toContain(marker);
+      expect(LIVE_SURFACE).toContain(marker);
       expect(ACTION_PROBE).toContain(marker.replace('id="', '').replace('"', ''));
     });
   }

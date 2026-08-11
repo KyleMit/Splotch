@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import LiveSurface from '$lib/components/LiveSurface.svelte';
   import {
+    INITIAL_ENGINE_VIEW_STATE,
     initDrawingCanvas,
     setColor,
     setStrokeWidth,
@@ -17,11 +19,13 @@
     setScreenAngleOverride,
     getViewState,
     RESIZE_SETTLE_MS,
+    type EngineViewState,
   } from '$lib/drawing/engine';
 
-  let canvasEl: HTMLCanvasElement;
+  let canvasEl: HTMLCanvasElement = $state()!;
   let wrapperEl: HTMLDivElement;
   let engine: ReturnType<typeof initDrawingCanvas> | null = null;
+  let paperView = $state<EngineViewState>({ ...INITIAL_ENGINE_VIEW_STATE });
 
   // The Playwright engine spec reaches the harness through these window globals.
   interface EngineHarnessWindow {
@@ -59,10 +63,38 @@
       onStrokeEnd: () => {
         win.__engineState.strokeEnds++;
       },
+      onViewChange: (view) => {
+        Object.assign(paperView, view);
+      },
     });
     win.__engineState.canvasEmpty = isCanvasEmpty();
     win.__engineState.canUndo = getUndoDebug().snapshots > 0;
     setStrokeWidth(8);
+  }
+
+  function renderedCanvas() {
+    const tiles = Array.from(
+      wrapperEl.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')
+    );
+    const rendered = document.createElement('canvas');
+    if (tiles.length === 0) return rendered;
+    const scaleX = tiles[0].width / Number.parseFloat(tiles[0].style.width);
+    const scaleY = tiles[0].height / Number.parseFloat(tiles[0].style.height);
+    rendered.width = Math.max(
+      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.left) * scaleX) + tile.width)
+    );
+    rendered.height = Math.max(
+      ...tiles.map((tile) => Math.round(Number.parseFloat(tile.style.top) * scaleY) + tile.height)
+    );
+    const target = rendered.getContext('2d')!;
+    for (const tile of tiles.filter((tile) => !tile.hidden)) {
+      target.drawImage(
+        tile,
+        Math.round(Number.parseFloat(tile.style.left) * scaleX),
+        Math.round(Number.parseFloat(tile.style.top) * scaleY)
+      );
+    }
+    return rendered;
   }
 
   // Every synchronous input seam below dispatches through here, onto the canvas
@@ -147,10 +179,12 @@
         return n;
       },
 
-      // Count of non-transparent pixels on the visible canvas.
+      // Count of non-transparent pixels across the composited live tiles.
       nonTransparentCount() {
-        const ctx = canvasEl.getContext('2d')!;
-        const { data } = ctx.getImageData(0, 0, canvasEl.width, canvasEl.height);
+        const rendered = renderedCanvas();
+        const { data } = rendered
+          .getContext('2d')!
+          .getImageData(0, 0, rendered.width, rendered.height);
         let n = 0;
         for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) n++;
         return n;
@@ -160,8 +194,9 @@
       // can assert a stroke's extent survives a rebuild (resize, remount).
       // Empty canvas → null.
       inkBounds() {
-        const ctx = canvasEl.getContext('2d')!;
-        const { width, height } = canvasEl;
+        const rendered = renderedCanvas();
+        const ctx = rendered.getContext('2d')!;
+        const { width, height } = rendered;
         const { data } = ctx.getImageData(0, 0, width, height);
         let minX = width,
           minY = height,
@@ -182,13 +217,18 @@
 
       // [r, g, b, a] at a canvas-space pixel.
       pixelAt(x: number, y: number) {
-        const ctx = canvasEl.getContext('2d')!;
+        const ctx = renderedCanvas().getContext('2d')!;
         return Array.from(ctx.getImageData(x, y, 1, 1).data);
       },
 
+      pixelsIn(x: number, y: number, width: number, height: number) {
+        const ctx = renderedCanvas().getContext('2d')!;
+        return Array.from(ctx.getImageData(x, y, width, height).data);
+      },
+
       // Resize the canvas box and fire the resize event the engine listens for,
-      // so the spec can verify the drawing (repainted from the paper raster)
-      // survives a resize. The engine debounces the rebuild until the size
+      // so the spec can verify the tiled drawing survives a resize. The engine
+      // debounces the rebuild until the size
       // settles, so resolve only after that window has passed.
       resizeTo(w: number, h: number) {
         wrapperEl.style.width = `${w}px`;
@@ -297,7 +337,7 @@
      viewport-pinned canvas the specs read pixels and pointer coordinates from. -->
 <div class="harness">
   <div class="canvas-wrapper" bind:this={wrapperEl}>
-    <canvas bind:this={canvasEl} id="engineCanvas"></canvas>
+    <LiveSurface bind:canvasEl {paperView} />
   </div>
 </div>
 
@@ -317,17 +357,5 @@
     left: 0;
     width: 300px;
     height: 300px;
-    /* Blend-isolate the canvas + the engine's crayon pass overlays, matching
-       DrawingCanvas's .canvas-stack — the darken preview must mix against the
-       canvas's own pixels, not whatever is behind the wrapper. */
-    isolation: isolate;
-  }
-
-  #engineCanvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    touch-action: none;
   }
 </style>

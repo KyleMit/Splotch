@@ -12,10 +12,9 @@
 //
 //   strokeOps.ts        the op vocabulary + the one renderer every surface shares
 //   crayonPassBuffer.ts the crayon pass's accumulation buffers + glaze stamp
-//   crayonOverlay.ts    the legacy harness's live crayon preview planes
-//   tiledRenderer.ts    production live surfaces + vector-tail undo (ADR-0085)
+//   tiledRenderer.ts    live surfaces + vector-tail undo (ADR-0085)
 //   tiledSurfaces.ts    allocation and lifecycle of each tile's canvas surfaces
-//   undoHistory.ts      the legacy harness's paper + snapshot stack (ADR-0066)
+//   undoHistory.ts      the shared undo depth and debug contracts
 //   strokeMath.ts       pure gesture math (edge swipes, resume detection, speed)
 //   paperView.ts        pure rotation-lock view geometry (ADR-0050)
 //   magicBrush.ts       the magic brush's color sheet + paint pattern (ADR-0043)
@@ -50,8 +49,6 @@ import {
   paperPresentationFor,
   viewForPresentation,
   type PaperPresentation,
-  visiblePaperBounds,
-  viewMatrix,
   viewToPaper,
   type PaperView,
 } from './paperView';
@@ -62,14 +59,8 @@ import {
   clearMagicGradient,
   setColorSheet,
 } from './magicBrush';
-import { renderOp, clearAllOf, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
-import {
-  closeLiveCrayonPass,
-  flushCrayonBuffer,
-  hasOpenLiveCrayonPass,
-  resetLiveCrayonPass,
-  setCrayonPaperSpace,
-} from './crayonPassBuffer';
+import { type StrokeOp } from './strokeOps';
+import { flushCrayonBuffer } from './crayonPassBuffer';
 import {
   setCrayonOptions,
   crayonColorMix,
@@ -78,30 +69,8 @@ import {
   CrayonPassTracker,
   type CrayonOptions,
 } from './crayonBrush';
-import {
-  activeCrayonRasterRects,
-  beginCommand,
-  blitPaperRect,
-  commitActiveCommand,
-  deferCommand,
-  ensurePaperCovers,
-  finalizeDeferredCommand,
-  getHistoryDebug,
-  type HistoryDebug,
-  hasUnfoldedCommands,
-  pendingCommandCount,
-  popSnapshot,
-  pushCommand,
-  rebaseActiveCommand,
-  rebaseDeferredCommands,
-  recordOp,
-  repaintAll,
-  replaceOpenCrayonPassOps,
-  resetActiveCommandForClear,
-  snapshotCount,
-} from './undoHistory';
+import { type HistoryDebug } from './undoHistory';
 import { createCanvasMeasure, type CanvasRect } from './canvasMeasure';
-import { scanCanvasIsEmpty } from './emptyScan';
 import { createPenStreamAdopter } from './penStreamQuirks';
 import type { ExportOptions, ExportSnapshot, TiledExportSnapshot } from './exportDrawing';
 import { getActiveOverlayExportSource } from './overlay';
@@ -114,12 +83,6 @@ import {
 import { registerDrawingEngineListeners } from './engineListeners';
 import { scheduleIdle } from '../idle';
 import { PERF_MARKS } from './perf';
-import {
-  detachLegacyCrayonOverlays,
-  resizeLegacyCrayonOverlays,
-  setupLegacyCrayonOverlays,
-  syncLegacyCrayonMix,
-} from './crayonOverlay';
 import {
   adoptTiledRenderer,
   applyTiledView,
@@ -137,7 +100,6 @@ import {
   scheduleTiledHistoryFold,
   syncTiledCrayonMix,
   tiledHistoryDebug,
-  tiledRendererActive,
   tiledSurfaceTopologyDebug,
   tiledWorkDebug,
   undoTiledCommand,
@@ -186,41 +148,29 @@ let magicActive = false;
 let crayonActive = false;
 let lastColorChangeTime = 0;
 
-// The live crayon pass overlays: two canvases layered over the main one, both
-// holding the OPEN deposition pass at full opacity. The bottom layer
+// Each live tile has two crayon canvases holding the open deposition pass at
+// full opacity. The bottom layer
 // composites with mix-blend-mode: darken and the top with CSS opacity
 // (1 - colorMix), so the browser's compositing of (darken, then lerp) shows
 // pixel-for-pixel the two-blit subtractive mix the pass's 'crayonFlush'
-// stamp will bake into the main canvas at close (see crayonPassBuffer.ts)
+// stamp will bake into the normal tile at close (see crayonPassBuffer.ts)
 // — no visible snap. pointer-events: none, so input still lands on the canvas
-// beneath. The canvas's OWNING wrapper must set `isolation: isolate`
-// (DrawingCanvas's .canvas-stack; the dev harness's .canvas-wrapper): it
-// confines the darken blend to the canvas's own pixels, so a pass over virgin
-// (transparent) canvas previews at the pure colour — without it the blend
-// sees the composited page, and on the DARK paper min(colour, near-black)
-// erased the bottom layer, leaving a faint 1-m-opacity stroke until stamp.
+// beneath. LiveSurface's `.canvas-stack` sets `isolation: isolate`, confining
+// the darken blend to the drawing pixels. Without it the blend sees the
+// composited paper, and dark paper erases the bottom layer into a faint
+// `1 - mix`-opacity preview until the flush.
 //
 function syncCrayonOverlayMix() {
   const opacity = String(1 - crayonColorMix());
-  syncLegacyCrayonMix(opacity);
   syncTiledCrayonMix(opacity);
 }
 
-// Close the current deposition pass: stamp the live buffer onto the canvas,
-// then swap the pass's recorded ops for the raster its paper-space
-// accumulation captured, so the commit fold BLITS the pass instead of
-// re-rendering it (crayonPassBuffer's closeLiveCrayonPass). When nothing accumulated
-// (the mix-0 direct-paint escape hatch, or a raster the crop couldn't build)
-// the raw ops stay and a plain flush op keeps the legacy re-render fold
-// correct. recordOp/replaceOpenCrayonPassOps no-op when no command is open,
-// matching renderOp's no-op flush of a clean buffer.
+// Close the current deposition pass by stamping each tile's live buffer and
+// recording the same flush in the command retained for history and export.
 function recordCrayonFlush() {
   const flush: StrokeOp = { kind: 'crayonFlush' };
-  if (!tiledRendererActive()) renderOp(ctx, flush);
-  else renderTiledOp(flush);
-  const raster = closeLiveCrayonPass();
-  if (raster && !tiledRendererActive()) replaceOpenCrayonPassOps(raster);
-  else recordCurrentOp(flush);
+  renderTiledOp(flush);
+  recordCurrentOp(flush);
   crayonOpsSinceFlush = 0;
 }
 
@@ -230,8 +180,8 @@ function recordCrayonFlush() {
 // own paper (a back-and-forth scribble) splits into further passes mid-stroke
 // — see strokeCrayonSegments. A monotonic counter guarantees consecutive
 // passes differ even when drawn over the same spot; the value is stored on the
-// op, so the commit fold (and the pending-window repaint) reproduces the live
-// pixels regardless of the counter's position.
+// op, so repaints reproduce the live pixels regardless of the counter's
+// position.
 let crayonSeedCounter = 1;
 
 let callbacks: Omit<InitOptions, 'initialColor'> = {};
@@ -240,7 +190,7 @@ let callbacks: Omit<InitOptions, 'initialColor'> = {};
 // screens, capped at 2× — DPR-3 panels would cost 9× the pixels for detail a
 // finger-drawn stroke can't use (see ADR 0015). Fixed for the session at init:
 // a mid-session DPR change (desktop zoom, monitor move) would otherwise need
-// every pixel surface (visible canvas, paper) rescaled in place.
+// every tile surface rescaled in place.
 const MAX_RENDER_SCALE = 2;
 // Bound live crayon memory without making ordinary short strokes pay a checkpoint.
 const CRAYON_CHECKPOINT_OPS = 64;
@@ -263,13 +213,7 @@ let canvasEmpty = true;
 function readoptPaperAfterTiledCanvasHides() {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      if (
-        engineLive &&
-        tiledRendererActive() &&
-        canvasEmpty &&
-        activePointers.size === 0 &&
-        paperLocked
-      ) {
+      if (engineLive && canvasEmpty && activePointers.size === 0 && paperLocked) {
         resizeCanvas();
       }
     });
@@ -285,8 +229,7 @@ function setCanvasEmptyState(empty: boolean) {
   // leaving the child a letterboxed — or system-bar-cropped — blank page until
   // the next rotation.
   if (empty && activePointers.size === 0 && paperLocked) {
-    if (tiledRendererActive()) readoptPaperAfterTiledCanvasHides();
-    else resizeCanvas();
+    readoptPaperAfterTiledCanvasHides();
   }
 }
 
@@ -387,16 +330,10 @@ function screenToPaper(pt: Point): Point {
   return isIdentityView(paperView) ? pt : viewToPaper(paperView, pt.x, pt.y);
 }
 
-// The paper-coordinate rectangle that the whole visible canvas maps to — the
-// region the magic sheet must cover so a stroke anywhere on screen samples colour.
-// Identity view: exactly the paper (canvas == paper). Under a rotation lock the
-// paper is contain-fit into the viewport, so the visible area spills into the
-// letterbox margins around it — the mapped viewport corners give that larger
-// rect (unioned with the paper for safety). Ops in those margins record at these
-// out-of-paper coordinates, so the sheet is extended there too (ADR-0043/0050).
+// Magic is drawable only on the paper, so its sheet uses the paper's exact
+// coordinate bounds even when CSS contain-fits the paper after rotation.
 function sheetBoundsPaper(): { x: number; y: number; width: number; height: number } {
-  if (tiledRendererActive()) return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
-  return visiblePaperBounds({ width: paper.pxW, height: paper.pxH }, viewport, paperView);
+  return { x: 0, y: 0, width: paper.pxW, height: paper.pxH };
 }
 
 // The cached canvas client rect, so components can position pointer-following
@@ -413,30 +350,13 @@ function adoptPaper(rect: DOMRect) {
   paperAngle = currentScreenAngle();
 }
 
-// Present the paper through the view: the visible ctx keeps painting in paper
-// coordinates (live ops, repaints, and the sheet pattern all map through the
-// transform untouched), persisting until the next backing-store reset. A `fit`
-// presentation puts the paper UPRIGHT (view rotation 0): the picture rotates
-// with the device and contain-fits — scaled down when it must — rather than
-// counter-rotating to stay fixed on the glass (rejected in ADR-0050). A 180°
-// flip on an unchanged viewport therefore computes an identity view, as does
-// `window`, where the paper already covers the viewport and the surplus is
-// cropped by the canvas container.
-//
-// The margins around the fitted paper stay DRAWABLE (no clip): a child mid-
-// scribble shouldn't hit dead zones. Margin ink records at out-of-paper
-// coordinates — it renders normally while its stroke is live, is cropped by
-// design when rotating back (and from exports), and drops from repaints once
-// its commit folds it past the paper-square raster's bounds. Rasters covering
-// the mapped margins would cost tens of MB at 2× DPR (the fit maps a phone
-// viewport to ~2× the paper's long side), so that corner is accepted — see
-// ADR-0050. A `window` presentation has no margins: every visible pixel is paper.
+// Keep tile contexts in upright paper coordinates and report the presentation
+// matrix to LiveSurface. A `fit` presentation contain-fits the locked paper;
+// `window` fills the viewport. Letterbox margins are outside the paper and
+// reject pointer starts (ADR-0089).
 function applyPaperView(presentation: PaperPresentation) {
   paperView = viewForPresentation(presentation, { width: paper.pxW, height: paper.pxH }, viewport);
-  if (!tiledRendererActive() && !isIdentityView(paperView)) {
-    ctx.setTransform(...viewMatrix(paperView));
-  }
-  applyTiledView(tiledRendererActive() ? IDENTITY_PAPER_VIEW : paperView);
+  applyTiledView(IDENTITY_PAPER_VIEW);
 }
 
 // An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
@@ -456,34 +376,17 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   if (!paperLocked) adoptPaper(rect);
   resizedAngle = currentScreenAngle();
 
-  // The paper raster is a max(w,h) square of the viewport so it covers both
-  // orientations and rotation never loses pixels; anything larger (e.g. a
-  // resized desktop window) goes through the grow path. The live crayon
-  // pass accumulation buffer mirrors the same square (crayonPassBuffer).
-  const paperSide = Math.ceil(Math.max(paper.pxW, paper.pxH));
-  ensurePaperCovers(paperSide);
-  setCrayonPaperSpace(paperSide);
-
-  // Resizing the backing store wipes the visible canvas and resets its context
-  // state, so re-arm the round caps and repaint from the paper raster.
+  // The input canvas only receives pointers. The visible paper stays in the
+  // template-owned tile surfaces and is presented with CSS (ADR-0089).
   const { w, h } = backingSizeOf(rect);
   viewport = { width: w, height: h };
-  const inputBitmapWidth = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : w;
-  const inputBitmapHeight = tiledRendererActive() ? TILED_INPUT_BITMAP_SIDE_PX : h;
-  if (canvas.width !== inputBitmapWidth) canvas.width = inputBitmapWidth;
-  if (canvas.height !== inputBitmapHeight) canvas.height = inputBitmapHeight;
+  if (canvas.width !== TILED_INPUT_BITMAP_SIDE_PX) canvas.width = TILED_INPUT_BITMAP_SIDE_PX;
+  if (canvas.height !== TILED_INPUT_BITMAP_SIDE_PX) canvas.height = TILED_INPUT_BITMAP_SIDE_PX;
   const tiledRendererResized = resizeTiledRenderer(paper.pxW, paper.pxH, renderScale, canvasEmpty);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  resizeLegacyCrayonOverlays(viewport.width, viewport.height);
   applyPaperView(presentation);
 
   resizeMagicSheet(magicActive);
-  if (tiledRendererActive()) {
-    if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
-  } else {
-    repaintAll(ctx);
-  }
+  if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -540,31 +443,21 @@ function resyncOnReentry() {
 let groupHasDrawn = false;
 
 function recordCurrentOp(op: StrokeOp) {
-  if (!tiledRendererActive()) recordOp(op);
-  else recordTiledOp(op);
+  recordTiledOp(op);
 }
 
 function beginStrokeGroup() {
   if (groupHasDrawn) return;
-  if (!tiledRendererActive()) {
-    beginCommand(canvasEmpty);
-  } else {
-    beginTiledCommand(canvasEmpty);
-  }
+  beginTiledCommand(canvasEmpty);
   setCanvasEmptyState(false);
   groupHasDrawn = true;
 }
 
-// A mid-gesture brush switch (the Brush Menu doesn't lift held pointers) can
-// interleave a NON-crayon ink op — eraser, magic, pen — into a group whose
-// crayon pass is still open. The pass raster is cropped from the paper-space
-// accumulation, which never sees foreign ops, so an open pass must close at
-// that boundary or the raster would resurrect ink the foreign op erased or
-// painted over (and the trailing-run swap in replaceOpenCrayonPassOps could
-// not attribute it). Continued crayon ops then open a fresh pass, exactly as
-// the pre-raster pipeline behaved (the erase branch's implicit buffer flush).
+// A mid-gesture brush switch can interleave a non-crayon op into a group whose
+// crayon pass is open. Flush at that boundary so tile compositing preserves the
+// operation order; continued crayon ops open a fresh pass.
 function closeCrayonPassBeforeForeignOp(ps: PointerState) {
-  const hasOpenPass = tiledRendererActive() ? crayonOpsSinceFlush > 0 : hasOpenLiveCrayonPass();
+  const hasOpenPass = crayonOpsSinceFlush > 0;
   if (!(ps.crayon && !ps.erase) && hasOpenPass) recordCrayonFlush();
 }
 
@@ -592,12 +485,8 @@ function renderStrokeStart(ps: PointerState) {
     radius: ps.lineWidth / 2,
     ...strokeStyleOf(ps),
   };
-  if (tiledRendererActive()) renderTiledOp(dot);
-  else renderOp(ctx, dot);
+  renderTiledOp(dot);
   recordCurrentOp(dot);
-
-  ctx.beginPath();
-  ctx.moveTo(ps.x, ps.y);
 
   callbacks.onDrawSound?.({ speed: 0, isStrokeStart: true });
 }
@@ -606,7 +495,8 @@ function renderStrokeStart(ps: PointerState) {
 // with the raw point as the control, so consecutive segments share a tangent
 // and the stroke curves smoothly instead of showing straight-chord corners.
 // Each call is captured as one path op (matching its own beginPath/stroke
-// boundary) so the commit fold reproduces identical pixels and anti-aliasing.
+// boundary) so live rendering, history replay, and export share the same
+// anti-aliasing behavior.
 function strokeSmoothSegments(ps: PointerState, points: Point[]) {
   if (points.length === 0) return;
   closeCrayonPassBeforeForeignOp(ps);
@@ -628,8 +518,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
     ps.midX = midX;
     ps.midY = midY;
   }
-  if (tiledRendererActive()) renderTiledOp(op);
-  else renderOp(ctx, op);
+  renderTiledOp(op);
   recordCurrentOp(op);
   if (ps.crayon && !ps.erase && ++crayonOpsSinceFlush >= CRAYON_CHECKPOINT_OPS) {
     recordCrayonFlush();
@@ -646,8 +535,7 @@ function strokeSmoothSegments(ps: PointerState, points: Point[]) {
 // must build up exactly like a fresh stroke does. The flush boundary reuses
 // strokeSmoothSegments' own start/mid bookkeeping, so the drawn PATH is
 // identical to the unsplit one — only the pattern phase of the later ops
-// changes. Seeds are stored per op, so the commit fold reproduces the splits
-// byte-for-byte.
+// changes. Seeds are stored per op, so every replay reproduces the splits.
 function strokeCrayonSegments(ps: PointerState, points: Point[]) {
   let batch: Point[] = [];
   for (const p of points) {
@@ -678,26 +566,7 @@ function strokeSegments(ps: PointerState, points: Point[]) {
 function commitStrokeGroup() {
   if (PERF_MARKS) performance.mark('engine.commit:start');
   try {
-    if (tiledRendererActive()) {
-      if (!commitTiledCommand()) return;
-      setCanUndo(true);
-      callbacks.onStrokeEnd?.();
-      return;
-    }
-    const deferBehindRestore = paperStepsPending > 0;
-    const rasterRects = activeCrayonRasterRects();
-    if (!commitActiveCommand(deferBehindRestore)) return;
-    if (deferBehindRestore) {
-      queueDeferredCommandFold();
-    } else if (rasterRects.length > 0 && pendingCommandCount() === 0) {
-      // The fold just stamped this stroke's pass rasters into the paper; blit
-      // those rects back so the screen shows the committed pixels exactly (see
-      // activeCrayonRasterRects). Skipped when the fold is parked — behind a
-      // pending restore or an unready magic sheet — where the paper doesn't
-      // hold this stroke yet; the op replay keeps the screen right there, and
-      // the eventual fold's next repaint reconciles.
-      for (const r of rasterRects) blitPaperRect(ctx, r);
-    }
+    if (!commitTiledCommand()) return;
     setCanUndo(true);
     callbacks.onStrokeEnd?.();
   } finally {
@@ -811,11 +680,7 @@ function startDrawing(e: PointerEvent) {
 
   const screen = pointerToScreen(e);
   const { x, y } = screenToPaper(screen);
-  if (
-    tiledRendererActive() &&
-    !isIdentityView(paperView) &&
-    (x < 0 || y < 0 || x > paper.pxW || y > paper.pxH)
-  ) {
+  if (!isIdentityView(paperView) && (x < 0 || y < 0 || x > paper.pxW || y > paper.pxH)) {
     return;
   }
 
@@ -901,7 +766,6 @@ function commitEdgeSwipe(ps: PointerState) {
 // included): the discarded id gets no later stopDrawing tail to complete it.
 function discardPointer(e: PointerEvent) {
   activePointers.delete(e.pointerId);
-  ctx.beginPath();
   releaseCaptureSafe(e.pointerId);
   finishGroupWhenCanvasIdle();
 }
@@ -952,7 +816,6 @@ function restartStrokeIfResumed(ps: PointerState, resume: Point, now: number) {
     ps.seed = crayonSeedCounter++;
     ps.passTracker = new CrayonPassTracker(resume.x, resume.y, ps.lineWidth);
   }
-  ctx.beginPath();
 }
 
 // Speed is sampled from the final event only: one chord per pointermove,
@@ -1014,8 +877,7 @@ function draw(e: PointerEvent) {
 }
 
 function scanDrawingIsEmpty() {
-  if (tiledRendererActive()) return scanTiledRendererIsEmpty(renderScale);
-  return scanCanvasIsEmpty(canvas, renderScale);
+  return scanTiledRendererIsEmpty(renderScale);
 }
 
 function stopDrawing(e: PointerEvent) {
@@ -1038,24 +900,17 @@ function stopDrawing(e: PointerEvent) {
     commitEdgeSwipe(pointerState);
   }
 
-  // A lifting crayon finger closes its deposition pass — stamp the buffered wax
-  // onto the canvas (mixing with the ink under it) and record the flush so the
-  // commit fold stamps at the same point in the op order. Skipped for a
-  // discarded edge-swipe candidate (nothing was rendered).
+  // A lifting crayon finger closes its deposition pass by stamping each tile's
+  // buffered wax and recording the flush at the same point in the op order.
+  // A discarded edge-swipe candidate rendered nothing, so it has no pass.
   if (pointerState?.passTracker && !pointerState.edgeSwipeGuard) {
     recordCrayonFlush();
   }
 
   activePointers.delete(e.pointerId);
 
-  ctx.beginPath();
-
   if (pointerState && !pointerState.edgeSwipeGuard && pointerState.erase) {
-    if (tiledRendererActive()) {
-      requestAnimationFrame(() => setCanvasEmptyState(scanDrawingIsEmpty()));
-    } else {
-      setCanvasEmptyState(scanDrawingIsEmpty());
-    }
+    requestAnimationFrame(() => setCanvasEmptyState(scanDrawingIsEmpty()));
   }
 
   finishGroupWhenCanvasIdle();
@@ -1069,7 +924,6 @@ function finishPenCanvasExit(e: PointerEvent) {
 
 export function releaseAllPointers() {
   if (!ctx) return;
-  ctx.beginPath();
 
   // Force-releasing mid-flight crayon strokes closes their open pass so the
   // committed command ends stamped (one flush covers every open pass — the
@@ -1107,132 +961,25 @@ const cancelTouch = (e: TouchEvent) => e.preventDefault();
 
 // --- Undo, clear, and canvas-empty API --------------------------------------
 
-// Undo can be asynchronous — a deep entry decodes from its encoded blob
-// before it can blit — so every paper mutation serializes through one promise
-// chain instead of interleaving mid-restore: rapid undo taps queue in order,
-// and a stroke commit or clear landing inside a pending decode defers its
-// copy+fold behind the restore (deferCommand/finalizeDeferredCommand) so it
-// operates on the restored paper instead of being clobbered by the decode's
-// blit. Each step repaints and updates undo/empty state before the next runs.
-// The chain is returned so callers that need the settled state (the E2E
-// harness) can await it; the app's undo button ignores it.
-let paperChain: Promise<void> = Promise.resolve();
-let paperStepsPending = 0;
-
-function queuePaperStep(step: () => void | Promise<void>): Promise<void> {
-  paperStepsPending++;
-  paperChain = paperChain
-    .then(step)
-    .catch((err) => {
-      // A failed step (e.g. a blob decode) loses that one mutation; the chain
-      // must survive so the next undo tap still works.
-      console.error('Undo chain step failed:', err);
-    })
-    .finally(() => {
-      paperStepsPending--;
-    });
-  return paperChain;
-}
-
-function queueDeferredCommandFold() {
-  // queuePaperStep handles step failures internally; the chain promise is only
-  // needed by callers that sequence after it, which the fold does not.
-  void queuePaperStep(() => {
-    finalizeDeferredCommand();
-    setCanUndo(snapshotCount() > 0);
-  });
-}
-
 export function undo(): Promise<void> {
-  if (!canUndo || !canvas || !ctx) return paperChain;
-  if (tiledRendererActive()) {
-    if (PERF_MARKS) performance.mark('engine.undo:start');
-    const state = undoTiledCommand(renderScale);
-    setCanvasEmptyState(state.empty);
-    setCanUndo(state.canUndo);
-    if (PERF_MARKS) {
-      performance.mark('engine.undo:end');
-      performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
-    }
-    return Promise.resolve();
+  if (!canUndo || !canvas || !ctx) return Promise.resolve();
+  if (PERF_MARKS) performance.mark('engine.undo:start');
+  const state = undoTiledCommand(renderScale);
+  setCanvasEmptyState(state.empty);
+  setCanUndo(state.canUndo);
+  if (PERF_MARKS) {
+    performance.mark('engine.undo:end');
+    performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
   }
-  return queuePaperStep(async () => {
-    // Paired start/end marks, not just the measure: Safari Web Inspector's
-    // timeline export contains marks but no measures, and a deep undo spans
-    // multiple tasks (pop, await blob decode, restore blit), so only an
-    // explicit end mark at completion lets the export attribute the full
-    // duration (tools/perf/analyze-webinspector.mjs). The serialized paper
-    // chain runs one step at a time, so start/end pairs never interleave; the
-    // finally guarantees an end mark even when a step's decode fails.
-    if (PERF_MARKS) performance.mark('engine.undo:start');
-    try {
-      // Rect-limited repaint eligibility, decided on BOTH sides of the
-      // restore: with no unfolded commands before the pop (the popped entry's
-      // own ops are in the paper, not replayed on screen) and none after it
-      // (nothing replays on top; a stroke could open mid-decode), the visible
-      // canvas differs from the restored paper only inside the patch rect, so
-      // one blitPaperRect replaces the full clear + whole-paper blit — and,
-      // on device, shrinks the compositor damage from full-canvas to
-      // stroke-sized. A locked paper view falls back: repaintAll is what
-      // drops committed margin ink a rect blit would leave behind (ADR-0050).
-      const foldedOnly = !hasUnfoldedCommands() && isIdentityView(paperView);
-      const restored = popSnapshot();
-      if (!restored) return;
-      const { wasEmpty, rects } = await restored;
-      const emptyBeneathLiveStroke = rebaseDeferredCommands(wasEmpty);
-      const strokeStillLive = rebaseActiveCommand(emptyBeneathLiveStroke);
-      const rectOnly = foldedOnly && !hasUnfoldedCommands() && isIdentityView(paperView);
-      if (rectOnly && rects.length > 0) {
-        for (const r of rects) blitPaperRect(ctx, r);
-      } else if (!rectOnly) {
-        repaintAll(ctx);
-      }
-      // rectOnly with no rects: the popped fold never touched the paper
-      // and nothing replays on top — the screen already shows the state.
-      setCanvasEmptyState(emptyBeneathLiveStroke && !strokeStillLive);
-      setCanUndo(snapshotCount() > 0);
-    } finally {
-      if (PERF_MARKS) {
-        performance.mark('engine.undo:end');
-        performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
-      }
-    }
-  });
+  return Promise.resolve();
 }
 
 export function clearCanvas() {
   if (!canvas || !ctx) return;
-  if (tiledRendererActive()) {
-    const state = clearTiledRenderer(canvasEmpty);
-    resetLiveCrayonPass();
-    crayonOpsSinceFlush = 0;
-    setCanvasEmptyState(state.empty);
-    setCanUndo(state.canUndo);
-    clearMagicGradient();
-    if (magicActive) ensureMagicSheet();
-    return;
-  }
-  // The clear is its own undo command: folding it wipes the paper, and undoing
-  // it restores the pre-clear snapshot in one blit. Mid-restore it defers like
-  // a stroke commit; the visible wipe below still happens immediately.
-  const clearCommand: StrokeGroupCommand = { ops: [{ kind: 'clear' }], wasEmpty: canvasEmpty };
-  if (paperStepsPending > 0) {
-    deferCommand(clearCommand);
-    queueDeferredCommandFold();
-  } else {
-    pushCommand(clearCommand);
-  }
-  setCanUndo(true);
-  clearAllOf(ctx);
-  resetLiveCrayonPass();
-  // A stroke can straddle the clear (e.g. a second finger drawing while
-  // drag-to-clear completes) — see resetActiveCommandForClear. The continuing
-  // stroke counts as content (same as beginStrokeGroup), so the empty flag only
-  // flips when no stroke is live.
-  const strokeStillLive = resetActiveCommandForClear();
-  setCanvasEmptyState(!strokeStillLive);
-  // A cleared canvas releases the held rainbow so the next magic use picks a fresh
-  // one; if the brush is still selected, lock the new one in right away.
+  const state = clearTiledRenderer(canvasEmpty);
+  crayonOpsSinceFlush = 0;
+  setCanvasEmptyState(state.empty);
+  setCanUndo(state.canUndo);
   clearMagicGradient();
   if (magicActive) ensureMagicSheet();
 }
@@ -1241,12 +988,10 @@ export function isCanvasEmpty(): boolean {
   return canvasEmpty;
 }
 
-// Test/profiling seam: how the undo history is currently stored (see
-// undoHistory.getHistoryDebug).
+// Test/profiling seam: how tiled undo history is currently stored.
 export function getUndoDebug(): HistoryDebug {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) throw new Error();
-  if (tiledRendererActive()) return tiledHistoryDebug();
-  return getHistoryDebug();
+  return tiledHistoryDebug();
 }
 
 export function getLiveSurfaceTopology() {
@@ -1256,23 +1001,20 @@ export function getLiveSurfaceTopology() {
 
 export function getDrawingWorkDebug(): DrawingWorkDebug | null {
   if (!dev && !__DEV_HARNESS__) throw new Error();
-  return tiledRendererActive() ? tiledWorkDebug() : null;
+  return tiledWorkDebug();
 }
 
 // Dev A/B seam (ADR-0065 tuning): override the crayon tooth/coverage/pass knobs
 // so one build can sweep render variants and the winner ships as the default.
 // Wired onto window.__engine only on the /dev/engine page; production never calls
 // it and keeps crayonBrush.ts's tuned defaults. After a change, repaint so the
-// in-flight and pending crayon ops pick up the new tooth (committed wax is
-// baked into the paper raster and keeps the tooth it was drawn with).
+// retained crayon ops pick up the new tooth; strokes already compacted into the
+// tiled history base keep the pixels they were drawn with.
 export function setCrayonParams(params: Partial<CrayonOptions>) {
   if (!dev && !__DEV_HARNESS__) return;
   setCrayonOptions(params);
   syncCrayonOverlayMix();
-  if (ctx) {
-    if (tiledRendererActive()) repaintTiledRenderer();
-    else repaintAll(ctx);
-  }
+  if (ctx) repaintTiledRenderer();
 }
 
 // --- Mount / unmount ---------------------------------------------------------
@@ -1295,8 +1037,8 @@ function teardownEngine() {
     resizeSettleTimer = null;
   }
   measure.cancel();
-  // Pointer-input state must not outlive the mount, unlike the drawing
-  // state (see the persistence note in undoHistory.ts): a stale
+  // Pointer-input state must not outlive the mount, unlike tiled drawing
+  // history: a stale
   // activePointers entry surviving into a remount would let hover moves paint
   // after a remount reuses its pointerId, and the pen-stream adopter loses its
   // self-healing window trackers above. releaseAllPointers also commits any
@@ -1306,7 +1048,6 @@ function teardownEngine() {
   crayonOpsSinceFlush = 0;
   cancelCrayonWarmup();
   penStreamAdopter.reset();
-  detachLegacyCrayonOverlays();
   detachTiledRenderer();
   // After the pointer release above has fired its stop/commit callbacks,
   // detach them all: a torn-down engine (e.g. a deferred fold settling after
@@ -1351,9 +1092,7 @@ function wireMagicBrushHost(): void {
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     repaint: () => {
       if (!ctx) return;
-      if (tiledRendererActive()) {
-        if (hasUnresolvedTiledMagicOps()) repaintTiledRenderer();
-      } else repaintAll(ctx);
+      if (hasUnresolvedTiledMagicOps()) repaintTiledRenderer();
     },
   });
 }
@@ -1376,8 +1115,7 @@ export function initDrawingCanvas(canvasElement: HTMLCanvasElement, options: Ini
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     hasActivePointers: () => activePointers.size > 0 || penStreamAdopter.hasCanvasExit(),
   });
-  if (tiledRendererActive()) syncCrayonOverlayMix();
-  else setupLegacyCrayonOverlays(canvas, ctx, String(1 - crayonColorMix()));
+  syncCrayonOverlayMix();
   wireMagicBrushHost();
 
   attachCallbacks(options);
@@ -1486,10 +1224,7 @@ export function setSafeAreaInsets(insets: {
 
 // --- Export -------------------------------------------------------------------
 
-// Rebuild the strokes in PAPER space (the paper raster + pending + any
-// in-flight stroke) rather than copying the visible canvas: under a
-// rotation-locked view the visible canvas is the letterboxed presentation, and
-// the export should be the full upright page.
+// Capture strokes in upright paper space rather than the CSS-presented view.
 type StrokeSnapshots = { export: ExportSnapshot; preview: TiledExportSnapshot | null };
 
 function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
@@ -1500,8 +1235,7 @@ function snapshotStrokes(snapshotScale: number, capturePreview: boolean): Stroke
   const preview = capturePreview ? captureLiveTileSnapshot(renderScale) : null;
   return {
     export: createStrokeSnapshot(width, height, snapshotScale / renderScale, (target) => {
-      if (tiledRendererActive()) renderTiledSnapshot(target);
-      else repaintAll(target);
+      renderTiledSnapshot(target);
       // An in-flight crayon stroke's open pass sits unstamped on the pass buffer
       // (its flush is only recorded at pass close); an export is terminal for this
       // snapshot, so stamp it now rather than dropping that ink.

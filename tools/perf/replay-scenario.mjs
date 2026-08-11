@@ -87,7 +87,7 @@ export async function runReplayScenario() {
     });
     const page = await ctx.newPage();
     await page.goto(`${base}dev/engine`, { waitUntil: 'networkidle' });
-    await page.waitForSelector('#engineCanvas');
+    await page.waitForSelector('#drawingCanvas');
     await page.waitForFunction(() => window.__engineReady === true);
     await page.evaluate(({ w, h }) => window.__engine.resizeTo(w, h), cssCanvas);
     await sleep(150);
@@ -160,12 +160,12 @@ export async function runReplayScenario() {
   }
 }
 
-// Runs inside the page. Dispatches the recorded pointer stream on #engineCanvas
+// Runs inside the page. Dispatches the recorded pointer stream on #drawingCanvas
 // (synthetic events don't coalesce → one move = one engine op, matching the live
 // device) and maps UI actions onto the engine API. Real-time pacing uses the
 // recorded timestamps (capped) so frame cadence matches actual drawing.
 export function replayInPage({ events, recCanvas, sizePx, turbo, maxIdleGapMs }) {
-  const canvas = document.querySelector('#engineCanvas');
+  const canvas = document.querySelector('#drawingCanvas');
   const r = canvas.getBoundingClientRect();
   const sx = r.width / (recCanvas.w || r.width);
   const sy = r.height / (recCanvas.h || r.height);

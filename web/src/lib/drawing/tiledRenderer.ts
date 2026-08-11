@@ -68,8 +68,6 @@ export function adoptTiledRenderer(
   liveTiles = createLiveTiles(canvasElement);
 }
 
-export const tiledRendererActive = () => liveTiles.length > 0;
-
 export function tiledSurfaceTopologyDebug() {
   return liveTiles.map(({ width, height }) => ({ width, height }));
 }
@@ -377,6 +375,7 @@ export function commitTiledCommand() {
 export function undoTiledCommand(renderScale: number) {
   const undone = history.pop();
   undoableCommands = Math.max(0, undoableCommands - 1);
+  if (undone && activeCommand) activeCommand.wasEmpty = undone.wasEmpty;
   const pendingIndices = undone ? clearCapture.takePendingIndices(undone) : [];
   const snapshots = undone && undoPatches.get(undone);
   const snapshotsFit =
