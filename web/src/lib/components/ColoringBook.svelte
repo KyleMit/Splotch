@@ -522,6 +522,37 @@
     }
   }
 
+  /* ── Roomy portrait: the covers go tall instead of wide ──────────────────
+     Same floor the four-column layout starts at, because this replaces it: a
+     portrait viewport that roomy is far taller than it is wide, and four small
+     covers in a short, wide card leave the height unspent. Two columns turn
+     that height into cover art. The orphan selector is restated so this beats
+     it on order at equal specificity — its three-column fallback is a
+     four-column repair, and at two columns it would only shrink the tiles this
+     step exists to grow. */
+  @media (orientation: portrait) and (min-width: 741px) {
+    .coloring-books-grid,
+    .coloring-books-grid.book-grid-has-orphan {
+      --book-cols: 2;
+      /* Square tiles that fill the width would run the catalog well past the
+         fold, so the grid is capped at the width whose tiles seat this many
+         rows inside the dialog's height cap instead — the whole catalog today,
+         and a longer one still gets the trailing-row cut cue. */
+      --book-grid-rows-in-view: 4;
+      /* Everything inside that height cap that isn't tile: the content padding
+         above and below, the header row, the gaps between rows, and a little
+         slack so a sub-pixel row can't tip the last one past the fold. */
+      --book-grid-chrome: calc(
+        2 * var(--space-7) + var(--modal-close-size) + var(--space-5) +
+          (var(--book-grid-rows-in-view) - 1) * var(--space-3) + var(--space-4)
+      );
+      --book-grid-max-width: calc(
+        (var(--coloring-book-modal-max-height) - var(--book-grid-chrome)) /
+          var(--book-grid-rows-in-view) * var(--book-cols) + (var(--book-cols) - 1) * var(--space-3)
+      );
+    }
+  }
+
   .coloring-book-label {
     position: absolute;
     left: 0;
