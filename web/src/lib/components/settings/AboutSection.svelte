@@ -33,9 +33,6 @@
       </a>
     </p>
     <p class="version-text">Version {APP_VERSION}</p>
-    {#if import.meta.env.DEV}
-      <p class="dev-link"><a href="/dev/ai-timer">AI Timer</a></p>
-    {/if}
   </div>
 </section>
 
@@ -123,9 +120,5 @@
     font-size: var(--font-size-xs);
     color: var(--text-soft);
     font-family: var(--font-mono);
-  }
-
-  .dev-link {
-    font-size: var(--font-size-xs);
   }
 </style>

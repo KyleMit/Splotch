@@ -5,6 +5,7 @@ import {
   getLiveSurfaceTopology,
   getUndoDebug,
 } from '$lib/drawing/engine';
+import { generateAiImage } from '$lib/drawing/aiImage';
 import { PERF_MARKS } from '$lib/drawing/perf';
 
 // The drawing route's gated `window` seams — what the E2E harness and the
@@ -19,9 +20,12 @@ import { PERF_MARKS } from '$lib/drawing/perf';
 // route's onMount, whose teardown removes them — the engine itself boots
 // earlier (ADR-0072), but no spec can reach a brush button before hydration.
 //
-// Both are READ-ONLY on purpose. A test seam that mutates invites specs that pass
-// against a configuration no child ever runs; a profiling seam that mutates can
-// invalidate its own measurement.
+// State-inspection seams are READ-ONLY on purpose. A seam that sets internal
+// state invites specs that pass against a configuration no child ever reaches,
+// and a profiling seam that mutates can invalidate its own measurement.
+// __aiGenerate is the distinct allowed shape: an invoke handle for a production
+// function with its production arguments, not a setter for otherwise-unreachable
+// state (ADR-0109).
 //
 //   __committedBrushMode (ADR-0080) — the engine's committed brush mode. The
 //     toolState→engine bridge runs in a $effect, so a spec that clicks a brush
@@ -34,12 +38,17 @@ import { PERF_MARKS } from '$lib/drawing/perf';
 //     default, so DOM inspection cannot establish the surface-flush budget.
 //     `/dev/engine` already exposed `getUndoDebug()`; this reaches the same
 //     engine state on the route users actually draw on.
+//   __aiGenerate (ADR-0109) — invokes the production AI-generation flow so
+//     Playwright can mock its existing HTTP boundary while covering canvas
+//     export, upload encoding, response parsing, and state application.
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
   window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
+  window.__aiGenerate = generateAiImage;
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;
+    delete window.__aiGenerate;
   };
 }

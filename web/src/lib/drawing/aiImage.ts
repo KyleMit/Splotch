@@ -28,8 +28,8 @@ import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
 
-export const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
-export const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
+const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
 export const AI_LOADING_TITLE = 'Making your picture…';
 export const AI_LOADING_SUBTITLE = 'This takes about 10 seconds';
 

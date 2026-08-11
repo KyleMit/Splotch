@@ -145,11 +145,10 @@ See the [testing guide](TESTING.md) for the full test strategy, including the na
 
 Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
 
-| Route           | Purpose                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| `/dev`          | Index of the dev harnesses                                           |
-| `/dev/engine`   | Blank canvas with debug controls for testing the drawing engine      |
-| `/dev/ai-timer` | Full AI round-trip with timing display; used by Playwright E2E specs |
+| Route         | Purpose                                                         |
+| ------------- | --------------------------------------------------------------- |
+| `/dev`        | Index of the dev harnesses                                      |
+| `/dev/engine` | Blank canvas with debug controls for testing the drawing engine |
 
 The source of truth for this list is `web/src/routes/dev/`. The design-token styleguide is not a dev
 harness — it ships as the public `/design` route (see the `design` skill).
