@@ -38,7 +38,6 @@ export type IconName =
   | 'mobile-portrait'
   | 'mobile-rotate'
   | 'more-colors'
-  | 'more-horiz'
   | 'parent-center'
   | 'photo-size-select-small'
   | 'save-picture'

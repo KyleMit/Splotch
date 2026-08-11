@@ -79,20 +79,32 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
     expect(remove!.height).toBeGreaterThanOrEqual(44);
   }
 
-  // Intermediate and phone widths: the columns collapse to the compact pair
+  // Tablet band: the column grid collapses to the stacked code cell, but the
+  // freed width keeps all three actions inline — no overflow control at all —
   // instead of squeezing the code track to nothing and ballooning the row.
-  // The ceiling allows this deliberately long token one wrap on a phone
-  // (~98px) while staying far under the broken state's 206px rows.
-  for (const width of [700, 561, 390]) {
+  // The ceiling allows this deliberately long token one wrap (~98px) while
+  // staying far under the broken state's 206px rows.
+  for (const width of [700, 561]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(row.getByRole('button', { name: `More options for ${token}` })).toBeVisible();
+    await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
+    await expect(row.getByRole('button', { name: `Remove ${token}` })).toBeVisible();
     await expect
       .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
       .toBeLessThan(120);
   }
 
-  await row.getByRole('button', { name: `More options for ${token}` }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Remove' }).click();
+  // Phone: Copy plus the disclosure chevron; the remaining actions expand in
+  // place inside the row — no centered modal covering the list.
+  await page.setViewportSize({ width: 390, height: 900 });
+  const more = row.getByRole('button', { name: `More options for ${token}` });
+  await expect(more).toBeVisible();
+  await expect
+    .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
+    .toBeLessThan(120);
+
+  await more.click();
+  await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await row.getByRole('button', { name: `Remove ${token}` }).click();
   await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
 });
 
@@ -110,13 +122,16 @@ async function resolveTokenColor(page: Page, name: string) {
   }, name);
 }
 
-// The compact ledger's "⋯" press feedback has to survive the cascade, not just
-// exist: :active and :hover both match while a hover-capable pointer presses
-// the button, so declaring :active before the @media (hover: hover) block lets
-// the hover rule hold the background for the whole press. That shipped once
-// (PR #946) — reachable from any viewport at or under 800px, which includes
-// narrow desktop windows and trackpad hybrids, not just touch.
-test('web /admin ⋯ press feedback beats hover on a hover-capable pointer', async ({ page }) => {
+// The compact ledger's disclosure-chevron press feedback has to survive the
+// cascade, not just exist: :active and :hover both match while a hover-capable
+// pointer presses the button, so declaring :active before the
+// @media (hover: hover) block lets the hover rule hold the background for the
+// whole press. That shipped once (PR #946) — reachable from any viewport under
+// 560px, which includes narrow desktop windows and trackpad hybrids, not just
+// touch.
+test('web /admin chevron press feedback beats hover on a hover-capable pointer', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
   const token = `e2e-press-${Date.now()}`;
@@ -151,10 +166,64 @@ test('web /admin ⋯ press feedback beats hover on a hover-capable pointer', asy
     await expect.poll(background).toBe(pressed);
   } finally {
     // Release away from the button so the press doesn't complete as a click and
-    // open the overflow sheet over the next assertion.
+    // expand the row under the next assertion.
     await page.mouse.move(0, 0);
     await page.mouse.up();
   }
+});
+
+// Closing the reveal must drop its controls from the tab order the moment
+// `open` flips, not when the close animation ends (PR #950 review): a
+// transitioned visibility kept the closing subtree focusable in
+// legacy-interpolation engines, so Enter-to-close then an immediate Tab moved
+// focus into the still-closing "Copy link" and the transition's end dumped it
+// to <body>. The reveal subtree is inert while closed, so the Tab must skip
+// it no matter how fast it follows the close. The inert attribute is asserted
+// directly because the focus sequence alone can't reproduce the defect on
+// Chromium, which flips a transitioned visibility discretely rather than
+// holding it like WebKit/Firefox — the attribute is the cross-engine gate.
+test('web /admin closing the reveal removes its actions from the tab order immediately', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await signInToAdmin(page);
+  // A second row after the probed one gives the forward Tab a landing spot
+  // inside the ledger — from the last row's chevron it would legitimately
+  // leave the document, which is indistinguishable from the focus dump.
+  const token = `e2e-inert-a-${Date.now()}`;
+  const nextToken = `e2e-inert-b-${Date.now()}`;
+  for (const t of [token, nextToken]) {
+    await adminConsole(page).fill(t);
+    await page.getByRole('button', { name: 'Add code' }).click();
+    await expect(page.getByText(t, { exact: true })).toBeVisible();
+  }
+
+  const row = page.getByRole('row').filter({ hasText: token });
+  const more = row.getByRole('button', { name: `More options for ${token}` });
+  const reveal = row.locator('.row-actions');
+  await expect(reveal).toHaveAttribute('inert', '');
+  await more.click();
+  await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await expect(reveal).not.toHaveAttribute('inert', '');
+
+  // Tab back-to-back with the closing Enter — no assertion between them, so
+  // the Tab lands inside the close animation's window, where the defect bit.
+  await more.press('Enter');
+  await page.keyboard.press('Tab');
+  await expect(more).toHaveAttribute('aria-expanded', 'false');
+  await expect(reveal).toHaveAttribute('inert', '');
+  // Read the focus target directly — the closed reveal's buttons are hidden,
+  // so a role locator can never resolve them, focused or not.
+  const focusedLabel = await page.evaluate(
+    () => document.activeElement?.getAttribute('aria-label') ?? ''
+  );
+  expect(focusedLabel).not.toBe(`Copy link for ${token}`);
+
+  // Idle past the close animation (--duration-fast), then confirm focus was
+  // not dumped to <body> when it ended — it should sit on the next row's
+  // Copy button.
+  await page.waitForTimeout(400);
+  expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });
 
 test('web /admin surfaces a network failure instead of failing silently', async ({ page }) => {

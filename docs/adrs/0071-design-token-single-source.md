@@ -171,7 +171,9 @@ there — now applies to `/design`.
 ## Amendment (2026-08-04): `/admin` is themed
 
 The admin console redesign (owner decision, 2026-08) reversed the 2026-07-22 amendment for `/admin`
-only: `AdminConsole` and `InviteMenu` now style themselves from the themed tokens (`--brand-wash`,
+only: the console's components — `AdminConsole` with its ledger `InviteLedger` and per-row
+`InviteRowActions` (the row-action owners since PR #950 replaced the original `InviteMenu` overflow
+modal with an in-place row expansion) — style themselves from the themed tokens (`--brand-wash`,
 `--brand-solid`, `--surface-2`, the text ramp, the semantic washes), so the console follows
 light/dark like the rest of the app. `adminPalette.css` and its `--admin-*` vocabulary are deleted,
 along with the console's `--page-*` pins — `PageShell` runs on its themed defaults there, like

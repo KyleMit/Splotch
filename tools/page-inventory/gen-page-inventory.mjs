@@ -667,14 +667,14 @@ function adminSurfaces() {
       'admin',
       'admin-row-actions',
       'Admin · access-code actions',
-      'The modal action sheet on phones and inline actions on tablets.',
-      'InviteMenu/responsive ledger',
+      'The in-place row expansion on phones and inline actions on tablets.',
+      'InviteRowActions/responsive ledger',
       async (page) => {
         await admin(page);
         const more = page.getByRole('button', { name: /More options for/ }).first();
         if (await more.isVisible()) {
           await more.click();
-          await page.locator('dialog.more-menu').waitFor();
+          await page.locator('.row-actions.open').first().waitFor();
         } else {
           await page.getByRole('button', { name: 'Copy link' }).first().focus();
         }
