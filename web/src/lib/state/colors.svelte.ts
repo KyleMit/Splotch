@@ -1,7 +1,7 @@
 import { perceivedBrightness } from '../colorRing';
-import { BLACK_INK, PALETTE_COLORS, type PaletteLabel } from '../palette';
+import { BLACK_INK, PALETTE_COLORS, TRIM_ORDER } from '../palette';
 
-export { BLACK_INK, PALETTE_COLORS };
+export { BLACK_INK, PALETTE_COLORS, TRIM_ORDER };
 
 export const WHITE_INK = '#ffffff';
 
@@ -12,26 +12,6 @@ export const DEFAULT_STROKE_COLOR = PALETTE_COLORS[0].hex;
 export function themedSwatchColor(hex: string, dark: boolean): string {
   return dark && hex === BLACK_INK ? WHITE_INK : hex;
 }
-
-// Priority order (first listed → first to be hidden / last to appear). This is
-// independent of the display order above. The three bonus colors lead the list,
-// so they are the first to go and only show when there's the most room. Among
-// the core seven, red goes first, then orange, green, yellow; blue and purple
-// (the default selection) hang on longer, and black is kept the longest.
-const paletteByLabel = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label, hex]));
-const TRIM_LABELS: readonly PaletteLabel[] = [
-  'Brown',
-  'Teal',
-  'Pink',
-  'Red',
-  'Orange',
-  'Green',
-  'Yellow',
-  'Blue',
-  'Purple',
-  'Black',
-];
-export const TRIM_ORDER: readonly string[] = TRIM_LABELS.map((label) => paletteByLabel[label]);
 
 export const CUSTOM_SWATCH = 'custom';
 
