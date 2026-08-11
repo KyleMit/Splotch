@@ -351,16 +351,31 @@
     width: var(--ledger-target-min);
     height: var(--ledger-target-min);
     padding: 0;
-    background: transparent;
-    border: none;
+    background: var(--surface-2);
+    border: var(--border-width) solid var(--border);
     border-radius: var(--radius-sm);
     cursor: pointer;
+    transition: background var(--duration-fast) ease;
   }
 
   @media (hover: hover) {
     .more-btn:hover {
       background: var(--surface-hover);
     }
+  }
+
+  /* Press sits below the hover block so it wins on a hover-capable pointer too:
+     the compact layout is reached by narrow desktop windows and trackpad
+     hybrids, not only by touch, and there an earlier :active would lose to
+     :hover for the whole press — leaving the button with no press feedback on
+     exactly the devices this rule exists to serve. */
+  .more-btn:active {
+    background: var(--brand-wash);
+  }
+
+  .more-btn:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
   }
 
   :global(.more-btn .more-icon) {
@@ -372,6 +387,10 @@
      CSS fill beats the SVG's baked near-black presentation attribute. */
   :global(.more-btn .more-icon svg) {
     fill: var(--icon-muted);
+  }
+
+  :global(.more-btn:active .more-icon svg) {
+    fill: var(--brand-text);
   }
 
   /* Empty state */
