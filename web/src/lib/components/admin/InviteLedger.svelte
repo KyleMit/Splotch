@@ -352,7 +352,7 @@
     height: var(--ledger-target-min);
     padding: 0;
     background: var(--surface-2);
-    border: 1px solid var(--border);
+    border: var(--border-width) solid var(--border);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: background var(--duration-fast) ease;
