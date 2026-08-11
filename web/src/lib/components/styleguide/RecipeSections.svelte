@@ -1,11 +1,22 @@
 <script lang="ts">
   import Button from '$lib/components/design/Button.svelte';
+  import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
 
   // Composed specimens — the styleguide's bridge from single tokens to real
   // surfaces. Every rule in these specimens is a token reference; each recipe
   // names what it reaches for so a contributor can copy the composition, not
   // the values. Specimen first, caption below: the specimen is the object,
   // the caption its label.
+
+  // Button rows, not anchors: the specimen's own ids would otherwise jump the
+  // reader to the real sections they name.
+  const TOC_ITEMS = [
+    { id: 'color', label: 'Color', group: 'Foundations' },
+    { id: 'type', label: 'Type scale', group: 'Foundations' },
+    { id: 'motion', label: 'Motion', group: 'Foundations' },
+  ] as const satisfies readonly SidebarTocItem[];
+
+  let tocActive = $state<(typeof TOC_ITEMS)[number]['id']>('color');
 </script>
 
 <section id="recipes" data-sg-section>
@@ -87,6 +98,28 @@
         <p class="recipe-tokens">
           A card composed with the <code>Button</code> primitive's <code>brand</code> variant —
           <code>--font-size-lg</code> lede · <code>--space-3</code> between body and action
+        </p>
+      </figcaption>
+    </figure>
+
+    <figure class="recipe">
+      <div class="specimen toc-specimen">
+        <SidebarToc
+          items={TOC_ITEMS}
+          active={tocActive}
+          label="Sidebar TOC specimen"
+          onSelect={(id) => (tocActive = id)}
+        />
+      </div>
+      <figcaption>
+        <h4>Sidebar TOC</h4>
+        <p class="recipe-tokens">
+          A scrollspy table of contents over one continuous document — live: pick a row and the
+          track follows. <code>--border</code> hairline track down the full list · active segment
+          3px <code>--brand</code> · active row <code>--brand-wash</code> fill with
+          <code>--brand-text</code> ink · <code>--radius-sm</code> on the trailing corners only.
+          Icons and a second line are per-item. Use it wherever a column indexes one scrolling page;
+          use the <code>Button</code> primitive's chip variant for anything that actually switches pages
         </p>
       </figcaption>
     </figure>
@@ -236,5 +269,12 @@
 
   .cta-lede {
     font-size: var(--font-size-lg);
+  }
+
+  /* The real hosts are columns of their own; the specimen gives it one so the
+     track has a full-height run to draw. */
+  .toc-specimen {
+    max-width: 232px;
+    padding: var(--space-3) 0;
   }
 </style>
