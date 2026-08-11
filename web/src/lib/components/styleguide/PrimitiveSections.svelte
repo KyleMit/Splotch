@@ -154,10 +154,11 @@
     itself: absent while the content fits, present while there is more of it under the fold, absent
     again once the end is on screen. Its one contract is positional — render it as the
     <strong>last child of the scrolling content</strong>, because it plants its end-of-content
-    sentinel wherever it stands. Lifted out of the scroller, or set above the content it measures,
-    it reports an end that isn't one. Depth is the inherited
-    <code>--scroll-cue-height</code>, declared by the call site on any ancestor; both specimens
-    below take the default.
+    sentinel wherever it stands, and a copy lifted out of the scroller measures the wrong end. Depth
+    is the inherited <code>--scroll-cue-height</code>, declared by the call site on any ancestor;
+    both specimens below take the default. The sentinel's observer leaves its root implicit — one
+    component serving a dialog, a settings pane and a whole page without being told which — which is
+    also why a specimen still under this page's own fold reports more below until you bring it up.
   </p>
   <div class="cue-demo">
     <figure class="cue-figure">
