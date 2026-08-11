@@ -5,7 +5,7 @@ import { createModal } from './modal.svelte';
 // the startup path and settings/sections.ts pulls the coloring-pack and
 // free-generation stores in behind it. SettingsModal assigns this straight into
 // its `SectionId`-typed view, so the compiler holds the agreement there.
-export type RequestedSettingsSection = 'ai' | 'parentCenter';
+type RequestedSettingsSection = 'ai' | 'parentCenter';
 
 export interface UiState {
   // True while the parent is dragging the button-size slider. Settings
