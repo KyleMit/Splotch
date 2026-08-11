@@ -156,17 +156,27 @@ for (const colorScheme of ['light', 'dark'] as const) {
     }
   });
 
+  // WCAG 1.4.11: the chevron's rotation is the only visual open/closed signal.
+  // A glyph this thin reads against both the disc it is centred in and the panel
+  // that disc sits on — the two are a step apart on each paper — so the ink owes
+  // the floor on each rather than on whichever one happens to be measured.
   test(`the troubleshooting chevron clears the 3:1 non-text minimum in ${colorScheme} mode`, async ({
     page,
   }) => {
-    // WCAG 1.4.11: the chevron's rotation is the only visual open/closed signal.
     await page.emulateMedia({ colorScheme });
     await page.goto('/android-beta');
-    const ratio = await page.evaluate(`(() => {
+    const ratios = await page.evaluate(`(() => {
       const contrast = ${CONTRAST};
       const svg = document.querySelector('.chev svg');
-      return contrast(getComputedStyle(svg).fill, getComputedStyle(svg.closest('details')).backgroundColor);
+      const ink = getComputedStyle(svg).fill;
+      return ['.chev-disc', 'details'].map((ground) => ({
+        ground,
+        ratio: contrast(ink, getComputedStyle(svg.closest(ground)).backgroundColor),
+      }));
     })()`);
-    expect(ratio as number).toBeGreaterThanOrEqual(3);
+    expect(ratios).toHaveLength(2);
+    for (const { ground, ratio } of ratios as { ground: string; ratio: number }[]) {
+      expect(ratio, `chevron on ${ground}`).toBeGreaterThanOrEqual(3);
+    }
   });
 }

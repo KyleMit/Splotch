@@ -129,7 +129,9 @@
     border: var(--border-width) solid var(--page-rule);
     border-radius: var(--radius-lg);
     background: var(--surface-2);
-    transition: background var(--duration-base) ease;
+    transition:
+      background var(--duration-base) ease,
+      border-color var(--duration-base) ease;
   }
 
   .trouble :global(.beta-disclosure > summary) {
@@ -229,12 +231,15 @@
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. The panel's fill carries its
-     hover, and a link's underline thickens — the themed ramps have no deeper
-     step for either. */
+     keep it stuck until the next tap elsewhere. A surface and its hover step are
+     a hair apart on the light paper, so the panel's border carries the hover as
+     much as its fill — the pairing app.css already gives the modal close disc.
+     A link has no deeper step in the themed ramp at all, so its underline
+     thickens instead. */
   @media (hover: hover) {
     .trouble :global(.beta-disclosure:hover) {
       background: var(--surface-hover);
+      border-color: var(--border-warm-strong);
     }
 
     a:hover {
