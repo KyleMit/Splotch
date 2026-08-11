@@ -18,7 +18,7 @@ import {
   type Rgba,
 } from './helpers';
 
-import { openBrushMenu, openDrawer, pickBrush } from './flows-harness';
+import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-harness';
 
 async function canvasInkStats(
   page: Page,
@@ -602,11 +602,11 @@ test('the eraser bubble tracks the pointer and hides on leave or brush switch', 
   await expect(bubble).toHaveCount(0);
 });
 
-// Both Actions Panel flyouts dismiss on Escape and hand focus back to the
-// trigger they opened from. The menu goes display:none, so a keyboard user
-// standing on an option would otherwise be dropped on <body> with nothing
-// focused. Both flyouts share one open-state slot but have separate triggers,
-// so each is checked.
+// A flyout closing under a keyboard user's focus has to hand that focus back to
+// the trigger: the focused option is about to be display:none, which drops focus
+// on <body>. Both close paths that can fire from inside the menu get their own
+// test — the two flyouts share one open-state slot but have separate triggers,
+// so each is checked in both.
 test('Escape closes an Actions Panel flyout and restores focus to its trigger', async ({
   page,
 }) => {
@@ -619,13 +619,26 @@ test('Escape closes an Actions Panel flyout and restores focus to its trigger', 
   await expect(page.locator('.brush-menu')).toBeHidden();
   await expect(page.locator('#brushButton')).toBeFocused();
 
-  await retryOpen(
-    page.locator('button[aria-label="Size 3"]'),
-    () => page.locator('#strokeWidthButton').click({ timeout: 1000 }),
-    { settle: 1000 }
-  );
+  await openStrokeMenu(page);
   await page.locator('button[aria-label="Size 3"]').focus();
   await page.keyboard.press('Escape');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});
+
+test('a keyboard pick closes the flyout and restores focus to its trigger', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await openBrushMenu(page);
+  await page.locator('#crayonBrushButton').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await openStrokeMenu(page);
+  await page.locator('button[aria-label="Size 1"], button[aria-label="Eraser size 1"]').focus();
+  await page.keyboard.press('Enter');
   await expect(page.locator('.stroke-width-menu')).toBeHidden();
   await expect(page.locator('#strokeWidthButton')).toBeFocused();
 });
