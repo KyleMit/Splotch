@@ -192,6 +192,156 @@ test('the styleguide lays settings rows out on the modal’s icon column', async
   expect(await iconColumnMetrics(page.locator('.furniture-demo'))).toEqual(inModal);
 });
 
+// Below the 980px breakpoint the sidebar rail is gone and the sticky contents
+// row is the only thing reporting reading position, so what it says — and where
+// picking from it lands — is the whole narrow-screen navigation contract.
+test.describe('phone contents', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test('the row counts the sections at the hero and names the one being read', async ({ page }) => {
+    await page.goto('/design');
+    const row = page.locator('.header-toc summary');
+    // Derived from the sections the page actually renders, not a written count.
+    const sections = await page.locator('main.styleguide section[data-sg-section]').count();
+    await expect(row).toContainText(`${sections} sections`);
+
+    // The last section, at max scroll: a spy keyed on "the heading has crossed
+    // the line" can only ever reach it if the page reserves room under it.
+    // Read off the DOM rather than the a11y tree: the panel is closed, so its
+    // rows are display:none and no role selector can see them.
+    const lastLabel = await page.locator('.header-toc a').last().textContent();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await expect(row).toContainText(lastLabel!.trim());
+
+    // Symmetric rather than latched: back at the hero it advertises the count.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(row).toContainText(`${sections} sections`);
+  });
+
+  // A sticky element taller than its scrollport can never be scrolled to its own
+  // bottom — the pin outlives the scroll — so the panel has to cap itself to the
+  // room under the row. Its own padding has to come out of that cap, not add to
+  // it, which is what content-box would silently do.
+  test('the open panel fits the viewport it is pinned in, all the way to its last row', async ({
+    page,
+  }) => {
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await contents.locator('summary').click();
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const panel = document.querySelector('.header-toc .panel')!.getBoundingClientRect();
+          return Math.round(panel.bottom - window.innerHeight);
+        })
+      )
+      .toBeLessThanOrEqual(0);
+
+    const last = contents.getByRole('link').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+  });
+
+  // Where the viewport is short the list outruns the panel and the internal
+  // scroll is the only way to the last row — which the case above never
+  // exercises, because at 844 tall the whole list fits.
+  test('the last row stays reachable when the list outruns the panel', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 667 });
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await contents.locator('summary').click();
+
+    const clipped = await page.evaluate(() => {
+      const panel = document.querySelector('.header-toc .panel')!;
+      return panel.scrollHeight - panel.clientHeight;
+    });
+    expect(clipped, 'the list has to outrun the panel for this to test anything').toBeGreaterThan(
+      0
+    );
+
+    const last = contents.getByRole('link').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+  });
+
+  // The row is in the flow above every section it links to, so the panel's
+  // height has to leave the document before the target's position means
+  // anything — jumping while open lands a full panel-height short, and the row
+  // would then name a different section than the one picked.
+  test('picking a section from the panel lands it clear of the header', async ({ page }) => {
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await contents.locator('summary').click();
+    await contents.getByRole('link', { name: 'Named chrome' }).click();
+    await expect(contents.locator('details')).not.toHaveAttribute('open');
+
+    // Bounded on both sides: under the header is a heading parked out of sight,
+    // and a screenful below it is the undershoot of measuring the target while
+    // the panel's height is still in the flow above it.
+    const gapBelowHeader = () =>
+      page.evaluate(() => {
+        const header = document.querySelector('.site-header')!.getBoundingClientRect();
+        const section = document.getElementById('named')!.getBoundingClientRect();
+        return Math.round(section.top - header.bottom);
+      });
+    await expect.poll(gapBelowHeader).toBeLessThanOrEqual(48);
+    expect(await gapBelowHeader()).toBeGreaterThanOrEqual(0);
+    await expect(contents.locator('summary')).toContainText('Named chrome');
+
+    // The narrow pick has to leave the same trace the wide rail's anchor does,
+    // or the section can't be shared and Back doesn't undo the jump.
+    await expect(page).toHaveURL(/#named$/);
+    await page.goBack();
+    await expect(page).not.toHaveURL(/#named$/);
+  });
+
+  // Collapsing the panel takes the activated row out of the document with focus
+  // still on it, which drops a keyboard user to <body> at the moment they
+  // navigate — no focus ring, and Tab restarts from the top of the page.
+  test('activating a row from the keyboard leaves focus on the collapsed row', async ({ page }) => {
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await contents.locator('summary').click();
+
+    await contents.getByRole('link', { name: 'Named chrome' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(contents.locator('details')).not.toHaveAttribute('open');
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.activeElement === document.querySelector('.header-toc summary')
+        )
+      )
+      .toBe(true);
+  });
+});
+
+// A deep link is the one jump the contents does not compute for itself, so it
+// rides on scroll-margin-top — which has to agree with a header that carries a
+// row more chrome below the breakpoint. The section components each used to
+// declare that number, which is how it came to disagree with the header.
+for (const [label, viewport] of [
+  ['a phone', { width: 390, height: 844 }],
+  ['a desktop', { width: 1280, height: 900 }],
+] as const) {
+  test(`a deep link parks its heading clear of the sticky header on ${label}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/design#motion');
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const header = document.querySelector('.site-header')!.getBoundingClientRect();
+          const section = document.getElementById('motion')!.getBoundingClientRect();
+          return Math.round(section.top - header.bottom);
+        })
+      )
+      .toBeGreaterThanOrEqual(0);
+  });
+}
+
 // 390 is the common phone width; 320 is the narrowest supported one, where a
 // grid column floor wider than the padded viewport once forced sideways scroll.
 for (const width of [320, 390]) {

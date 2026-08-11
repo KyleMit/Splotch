@@ -69,7 +69,6 @@
 <style>
   section {
     margin-top: 48px;
-    scroll-margin-top: 96px;
   }
 
   section > p {

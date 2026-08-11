@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Disclosure from '$lib/components/design/Disclosure.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import ReleaseHistory from '$lib/components/page/ReleaseHistory.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
+  import TocDisclosure from '$lib/components/nav/TocDisclosure.svelte';
   import releases from '$lib/releases.json';
 
   const contents: SidebarTocItem[] = releases.map((release) => ({
@@ -17,6 +17,12 @@
   // is never blank at the top of the page.
   let activeRelease = $state(releases[0].id);
 
+  // Whether the reader has reached the history at all. The collapsed contents
+  // row states how many releases there are until then and names the one being
+  // read after — so it is derived apart from activeRelease, which is seeded and
+  // therefore can't say "nowhere yet".
+  let inHistory = $state(false);
+
   // Plain ref would do for the observer, but the effect below has to start once
   // the history is in the document.
   let historyEl = $state<HTMLElement>();
@@ -24,7 +30,8 @@
   // A release becomes the current one once it has climbed into the top third of
   // the viewport; while it is still below that line the reader is reading the
   // one above it.
-  const SPY_ROOT_MARGIN = '0px 0px -70% 0px';
+  const SPY_BAND_BOTTOM_PERCENT = 70;
+  const SPY_ROOT_MARGIN = `0px 0px -${SPY_BAND_BOTTOM_PERCENT}% 0px`;
 
   $effect(() => {
     const host = historyEl;
@@ -32,7 +39,19 @@
     const inBand: Record<string, boolean> = {};
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) inBand[entry.target.id] = entry.isIntersecting;
+        for (const entry of entries) {
+          // The history as a whole, observed alongside its releases: it is in
+          // the band for exactly as long as the reader is somewhere inside it,
+          // which makes the answer symmetric — scrolling back to the hero
+          // returns the row to the count. Reading the same thing off the newest
+          // release instead would miss it, because a jump that skips a crossing
+          // outright leaves that release's own state unchanged and unreported.
+          // The reading holds only while the container reaches the band at the
+          // bottom of the page: enough content below the history would lift its
+          // bottom edge clear, and the row would revert to the count there.
+          if (entry.target === host) inHistory = entry.isIntersecting;
+          else inBand[entry.target.id] = entry.isIntersecting;
+        }
         // Releases run newest first, so the last one in the band is the one
         // being scrolled into. An empty band means the reader is between two
         // releases — hold the last reading rather than blanking the rail.
@@ -41,6 +60,7 @@
       },
       { rootMargin: SPY_ROOT_MARGIN }
     );
+    observer.observe(host);
     for (const article of host.querySelectorAll('.release')) observer.observe(article);
     return () => observer.disconnect();
   });
@@ -54,7 +74,7 @@
   />
 </svelte:head>
 
-<div class="changelog">
+<div class="changelog" style:--spy-reserve="{SPY_BAND_BOTTOM_PERCENT}dvh">
   <PageShell title="Changelog" wordmark="Splotch">
     {#snippet lede()}
       Every public Splotch release, newest first, with the notes that shipped alongside it.
@@ -70,15 +90,15 @@
            release clears the fold instead of sitting under a wall of contents.
            Closed on every load: a reader who opened it once should still land
            on the newest release next visit. -->
-      <Disclosure class="contents-disclosure">
-        {#snippet summary()}
-          <span class="contents-eyebrow">Contents</span>
-          <span class="contents-count">{releases.length} releases</span>
-        {/snippet}
-        <div class="contents-open">
-          <SidebarToc items={contents} active={activeRelease} label="Changelog contents" />
-        </div>
-      </Disclosure>
+      <TocDisclosure
+        class="contents-disclosure"
+        items={contents}
+        active={activeRelease}
+        showCount={!inHistory}
+        label="Changelog contents"
+        noun="releases"
+        stickyTop="0px"
+      />
 
       <div class="releases" bind:this={historyEl}>
         <ReleaseHistory />
@@ -119,44 +139,21 @@
     display: none;
   }
 
-  .changelog-body :global(.contents-disclosure summary) {
-    gap: var(--space-2);
-    /* The whole row is the tap target. */
-    min-height: 48px;
-    padding: var(--space-3) var(--space-4);
-  }
-
-  .changelog-body :global(.contents-disclosure summary::after) {
-    color: var(--page-link);
-    font-weight: var(--font-weight-bold);
-  }
-
-  .contents-eyebrow {
-    font-size: var(--font-size-xs);
-    font-weight: var(--font-weight-semibold);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--page-muted);
-  }
-
-  /* Takes the row's free space so the count and the chevron read as one pair
-     against the right edge. */
-  .contents-count {
-    margin-left: auto;
-    color: var(--page-link);
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-semibold);
-  }
-
-  .contents-open {
-    padding: var(--space-2) var(--space-2) var(--space-3);
-  }
-
-  /* Clears the sticky rail's top edge when a jump parks a heading. */
+  /* Where a jumped-to release parks. The disclosure computes its own jumps, so
+     this is for the jumps it doesn't make: the rail's anchors and a deep link
+     into the page. On wide that only has to clear the rail's top offset. */
   .changelog :global(.release) {
-    scroll-margin-top: var(--space-6);
+    scroll-margin-top: var(--release-park, var(--space-6));
     padding: var(--space-8) 0;
     border-top: var(--border-width) solid var(--page-rule);
+  }
+
+  /* Nothing follows the oldest release, so without a reserve the scroll clamps
+     while it is still below the spy band and it can never become the reading
+     position. A band's worth of room under its own top is exactly what it needs
+     to climb in; min-height adds nothing once its notes are that long. */
+  .changelog :global(.release:last-of-type) {
+    min-height: var(--spy-reserve);
   }
 
   .changelog :global(.release-header) {
@@ -206,29 +203,38 @@
     margin-bottom: var(--space-2);
   }
 
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. */
-  @media (hover: hover) {
-    .changelog-body :global(.contents-disclosure:hover) {
-      border-color: var(--page-link);
-    }
-  }
-
   /* A 232px rail beside a fluid sheet squeezes the notes, so the whole tablet
      and phone range takes the disclosure instead — the same breakpoint the
-     shell drops its fixed sheet width at. */
+     shell drops its fixed sheet width at. The grid goes with it: a sticky row
+     is pinned only as far as its containing block reaches, and a grid item's
+     area is exactly its own height. */
   @media (max-width: 920px) {
+    /* The contents row pins at --space-6 and stands ~52px tall, so a heading has
+       to clear both of them plus air. The gap is asserted in changelog.spec.ts,
+       which reads the row and the heading rather than this number. */
+    .changelog {
+      --release-park: 96px;
+    }
+
     .changelog-body {
-      grid-template-columns: 1fr;
-      gap: var(--space-6);
+      display: block;
     }
 
     .contents-rail {
       display: none;
     }
 
+    /* Pinned, the row needs a ground of its own — /design's rides inside the
+       header and gets one for free, while this one would have the release notes
+       scrolling through the gap above it. So it pins flush to the top and pads
+       itself down to the rail's offset, which puts that gap inside its own box
+       and under its own background. The gutters need no cover: the sheet's
+       padding means nothing is laid out beside the row to show through. */
     .changelog-body :global(.contents-disclosure) {
       display: block;
+      padding-top: var(--space-6);
+      background: var(--page-sheet);
+      margin-bottom: var(--space-6);
     }
   }
 
