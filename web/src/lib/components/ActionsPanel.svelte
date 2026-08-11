@@ -203,17 +203,36 @@
       drawerMotion = false;
   }
 
+  function openFlyoutWrapper() {
+    if (!openFlyout) return undefined;
+    return openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
+  }
+
   onMount(() => {
     // Click outside closes the open flyout
     const onDocPointerDown = (e: PointerEvent) => {
-      if (!openFlyout) return;
-      const wrapper = openFlyout === 'brush' ? brushWrapperEl : strokeWrapperEl;
+      const wrapper = openFlyoutWrapper();
       if (wrapper && !wrapper.contains(e.target as Node)) openFlyout = null;
     };
+    // Escape closes it as well, handing focus back to the trigger: the option a
+    // keyboard user is standing on is about to be display:none, which would drop
+    // focus on <body>. This dismissal, and the outside-tap one above, are what
+    // popover="auto" would own for free — docs/COMPATIBILITY.md's Popover API
+    // row records why the flyouts still coordinate it themselves.
+    const onDocKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const wrapper = openFlyoutWrapper();
+      if (!wrapper) return;
+      const holdsFocus = wrapper.contains(document.activeElement);
+      openFlyout = null;
+      if (holdsFocus) wrapper.querySelector<HTMLButtonElement>('.action-button')?.focus();
+    };
     document.addEventListener('pointerdown', onDocPointerDown);
+    document.addEventListener('keydown', onDocKeyDown);
 
     return () => {
       document.removeEventListener('pointerdown', onDocPointerDown);
+      document.removeEventListener('keydown', onDocKeyDown);
     };
   });
 

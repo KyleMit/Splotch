@@ -601,3 +601,31 @@ test('the eraser bubble tracks the pointer and hides on leave or brush switch', 
   await pickBrush(page, '#penBrushButton');
   await expect(bubble).toHaveCount(0);
 });
+
+// Both Actions Panel flyouts dismiss on Escape and hand focus back to the
+// trigger they opened from. The menu goes display:none, so a keyboard user
+// standing on an option would otherwise be dropped on <body> with nothing
+// focused. Both flyouts share one open-state slot but have separate triggers,
+// so each is checked.
+test('Escape closes an Actions Panel flyout and restores focus to its trigger', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await openBrushMenu(page);
+  await page.locator('#penBrushButton').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await retryOpen(
+    page.locator('button[aria-label="Size 3"]'),
+    () => page.locator('#strokeWidthButton').click({ timeout: 1000 }),
+    { settle: 1000 }
+  );
+  await page.locator('button[aria-label="Size 3"]').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});
