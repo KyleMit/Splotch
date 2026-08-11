@@ -304,7 +304,7 @@ function settingsSurfaces() {
           await freshHome(page);
           const modal = await openSettings(page);
           if (await modal.locator('.quick-toggles').isVisible()) return;
-          const row = modal.locator(settingsSectionRowSelector(section.id, viewport.width));
+          const row = modal.locator(settingsSectionRowSelector(section.id));
           await row.evaluate((element) => element.click());
           if (viewport.width < SETTINGS_WIDE_MIN_WIDTH_PX) {
             await modal
@@ -338,9 +338,14 @@ function settingsSurfaces() {
   ];
 }
 
-export function settingsSectionRowSelector(sectionId, viewportWidth) {
-  const rowClass = viewportWidth < SETTINGS_WIDE_MIN_WIDTH_PX ? 'hub-row' : 'settings-nav-item';
-  return `.${rowClass}[data-section="${sectionId}"]`;
+// Both Settings shells render a section row as a button stamped with the section
+// id — the phone hub's list and the wide sidebar's table of contents — so the
+// attribute addresses either without naming a shell's classes, which are styling
+// and get renamed with it. The tag is load-bearing rather than decorative: the
+// wide pane's own `.settings-section` wrappers carry the same attribute and are
+// not rows, so a selector without it matches two elements inside the modal.
+export function settingsSectionRowSelector(sectionId) {
+  return `button[data-section="${sectionId}"]`;
 }
 
 async function coloringDialog(page) {

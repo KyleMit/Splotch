@@ -9,6 +9,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Window } from 'happy-dom';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { writePageInventoryFeedback } from '../attach-page-inventory-feedback.mjs';
@@ -74,6 +75,67 @@ function writeTexturedWebp(path, { width, height }) {
   return sharp(pixels, { raw: { width, height, channels: 3 } })
     .webp()
     .toFile(path);
+}
+
+const COMPONENTS = join(ROOT, 'web/src/lib/components');
+
+// A Svelte expression can contain `>` — an arrow function in an event handler —
+// so an opening tag ends at the first `>` outside braces, not the first one.
+function openingTagAround(source, index) {
+  const start = source.lastIndexOf('<', index);
+  let depth = 0;
+  for (let cursor = start; cursor < source.length; cursor += 1) {
+    if (source[cursor] === '{') depth += 1;
+    else if (source[cursor] === '}') depth -= 1;
+    else if (source[cursor] === '>' && depth === 0) return source.slice(start, cursor + 1);
+  }
+  throw new Error(`Unterminated opening tag at ${index}`);
+}
+
+// Every `{…}` value becomes a plain string so an HTML parser can take the tag;
+// the one under test becomes the id the selector asks for.
+function staticizeExpressions(tag, attribute, value) {
+  let html = '';
+  let cursor = 0;
+  while (cursor < tag.length) {
+    const open = tag.indexOf('{', cursor);
+    if (open === -1) return html + tag.slice(cursor);
+    let depth = 0;
+    let close = open;
+    while (close < tag.length) {
+      if (tag[close] === '{') depth += 1;
+      else if (tag[close] === '}' && (depth -= 1) === 0) break;
+      close += 1;
+    }
+    html += tag.slice(cursor, open);
+    html += html.endsWith(`${attribute}=`) ? `"${value}"` : '"expression"';
+    cursor = close + 1;
+  }
+  return html;
+}
+
+// Every element a component stamps `attribute` on, parsed out of the component
+// the app actually ships, so a selector can be matched against real markup.
+function markupElementsStamping(component, attribute, value) {
+  const source = readFileSync(join(COMPONENTS, component), 'utf8');
+  const { document } = new Window();
+  const elements = [];
+  for (
+    let anchor = source.indexOf(`${attribute}={`);
+    anchor !== -1;
+    anchor = source.indexOf(`${attribute}={`, anchor + 1)
+  ) {
+    const html = staticizeExpressions(openingTagAround(source, anchor), attribute, value);
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    const element = container.firstElementChild;
+    if (element?.getAttribute(attribute) !== value) {
+      throw new Error(`${component} did not parse into a ${attribute} element: ${html}`);
+    }
+    elements.push(element);
+  }
+  if (!elements.length) throw new Error(`${component} stamps no ${attribute} expression`);
+  return elements;
 }
 
 function inventoryItem(overrides = {}) {
@@ -281,13 +343,25 @@ describe('page inventory output', () => {
     );
   });
 
-  it('targets only the responsive Settings navigation row for section captures', () => {
-    expect(settingsSectionRowSelector('appearance', 375)).toBe(
-      '.hub-row[data-section="appearance"]'
-    );
-    expect(settingsSectionRowSelector('appearance', 744)).toBe(
-      '.settings-nav-item[data-section="appearance"]'
-    );
+  // The generator waits on this selector at every viewport, so a Settings shell
+  // that renames or re-tags its rows costs a multi-hour run rather than a test.
+  // Matching the selector against the row templates the app really ships is what
+  // makes that drift fail here — an assertion on the returned string could only
+  // restate the function. The wide pane's own section wrappers are matched too,
+  // because they carry the same attribute and must stay out of the selector.
+  it('matches the row template of both Settings shells and no other section element', () => {
+    const selector = settingsSectionRowSelector('appearance');
+    const matching = (component) =>
+      markupElementsStamping(component, 'data-section', 'appearance').filter((element) =>
+        element.matches(selector)
+      );
+
+    // The wide shell's rows come from the shared guide rail, whose other
+    // template is the anchor row /design and /changelog use.
+    expect(matching('nav/SidebarToc.svelte')).toHaveLength(1);
+    expect(matching('SettingsModal.svelte')).toHaveLength(1);
+    // The pane wrappers the section-landed wait reads, which are not rows.
+    expect(matching('settings/WideShell.svelte')).toHaveLength(0);
   });
 
   it('passes exactly one description and one image to an ephemeral reviewer', () => {
