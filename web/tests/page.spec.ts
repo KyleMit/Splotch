@@ -152,10 +152,12 @@ for (const { label, preference, systemDark } of THEME_PREFERENCE_CASES) {
     await expect(page.locator('#drawingCanvas')).toBeVisible();
 
     const pageColor = THEME_COLORS[resolveTheme(preference, systemDark)];
+    await expect
+      .poll(() => themeColor(page), {
+        message: 'NotchBand tints the tag with the active drawing color on /',
+      })
+      .not.toBe(pageColor);
     const drawingColor = await themeColor(page);
-    expect(drawingColor, 'NotchBand tints the tag with the active drawing color on /').not.toBe(
-      pageColor
-    );
 
     await spaNavigate(page, '/privacy');
     await expect(page.getByRole('heading', { name: 'Privacy Policy' })).toBeVisible();
