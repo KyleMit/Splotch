@@ -3,9 +3,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from '../breakpoints';
 
-// The bespoke dialogs that scale for roomy viewports must step at the same
-// widths — a gate that grows where the style picker does not (or the reverse)
-// is how one dialog quietly ends up phone-sized again. A CSS media query cannot
+// The bespoke dialogs that scale for roomy viewports — and the pieces extracted
+// out of one — must step at the same widths: a gate that grows where the style
+// picker does not (or the reverse) is how one dialog quietly ends up
+// phone-sized again. A CSS media query cannot
 // import the breakpoints, so each component restates them as literals; this is
 // the drift guard the cross-file agreement convention requires when the
 // agreeing sites can't share code (the app.html.test.ts pattern). Which floors
@@ -20,6 +21,15 @@ const DIALOGS = {
   ParentalGate: {
     source: read('./ParentalGate.svelte'),
     floors: [TABLET_MIN_SIDE_PX, LARGE_TABLET_MIN_SIDE_PX],
+  },
+  // Not a dialog of its own — the gate's manage footer, extracted because the
+  // gate hit its line ceiling. It is held to the same floors so a card and the
+  // line inside it cannot step at different widths. It takes only the first:
+  // fine print stays fine print, and the gate's large-tablet step moves the card
+  // and its spacing rather than this line.
+  ParentalGateManageFooter: {
+    source: read('./ParentalGateManageFooter.svelte'),
+    floors: [TABLET_MIN_SIDE_PX],
   },
   AiImagePrompt: {
     source: read('./AiImagePrompt.svelte'),

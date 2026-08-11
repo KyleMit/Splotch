@@ -197,6 +197,10 @@ policy). The Apple Kids Category adds:
       requires external links to sit behind a parental gate. Opening Settings is not proof of
       adulthood; gate each affected action at the point where it leaves the app, then verify the
       interaction against the current guideline 1.3 wording before submitting.
+* [ ] Confirm on a **native build** that every Parent Center policy starts at Every time. The
+      defaults split by target (ADR-0094): only the store builds arm them, and the web build ships
+      with all five off. `CAPACITOR=true` is what decides — a gate audited in `npm run dev` is
+      auditing the wrong build.
 
 ## 5. Known follow-ups
 

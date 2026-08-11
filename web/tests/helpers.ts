@@ -85,26 +85,39 @@ export function touchEventPrevented(
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
  *  so once it's visible the app has hydrated.
  *
- *  Parent Center controls the Grown-Ups Only gate per protected feature. By
- *  default tests seed the features that permit Never so unrelated specs reach
- *  their target directly; external links keep their compliant Every time default.
- *  Gate specs pass `gateUnlocked: false` to exercise the real flow. */
+ *  Parent Center holds an independent Grown-Ups Only policy per protected
+ *  feature, and this suite drives the web build, which ships every one of them
+ *  at Never — only the store builds arm them (ADR-0094). A spec states which it
+ *  wants rather than leaning on that: `never` (the default) so an unrelated spec
+ *  reaches its target directly, `always` for the specs that exercise the real
+ *  challenge, and `default` to seed nothing and assert what the build ships. */
 export async function gotoApp(
   page: Page,
   path = '/',
-  { gateUnlocked = true }: { gateUnlocked?: boolean } = {}
+  { gates = 'never' }: { gates?: 'never' | 'always' | 'default' } = {}
 ) {
-  if (gateUnlocked) {
+  if (gates !== 'default') {
     await page.addInitScript(
-      (modeKeys) => {
-        for (const key of modeKeys) localStorage.setItem(key, 'never');
+      ({ mode, modeKeys }) => {
+        // Stands in for the build's default, so it only fills a policy nobody
+        // has chosen: a spec that seeded its own before navigating keeps it, and
+        // a reload keeps whatever the run has since chosen through Parent Center
+        // — an init script runs again on every navigation, and overwriting there
+        // would quietly undo the choice the spec is about to assert survived.
+        for (const key of modeKeys) {
+          if (localStorage.getItem(key) === null) localStorage.setItem(key, mode);
+        }
       },
-      [
-        STORAGE_KEYS.parentalGateAiImageMode,
-        STORAGE_KEYS.parentalGateImageReportMode,
-        STORAGE_KEYS.parentalGateFeedbackMode,
-        STORAGE_KEYS.parentalGateParentCenterMode,
-      ]
+      {
+        mode: gates,
+        modeKeys: [
+          STORAGE_KEYS.parentalGateAiImageMode,
+          STORAGE_KEYS.parentalGateImageReportMode,
+          STORAGE_KEYS.parentalGateExternalLinksMode,
+          STORAGE_KEYS.parentalGateFeedbackMode,
+          STORAGE_KEYS.parentalGateParentCenterMode,
+        ],
+      }
     );
   }
   await page.goto(path);

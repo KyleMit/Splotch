@@ -87,7 +87,7 @@ export async function opaqueCanvasPixelCount(page: Page) {
 
 // Open the Grown-Ups Only gate from the AI button — its Parent Center-managed
 // operation boundary (ADR-0094: Settings entry itself is ungated). Requires a
-// gotoApp with `gateUnlocked: false` and a non-empty canvas (the caller draws
+// gotoApp with `gates: 'always'` and a non-empty canvas (the caller draws
 // first); the AI button lives in the collapsed drawer, so open that first.
 export async function openParentalGate(page: Page) {
   await openDrawer(page);

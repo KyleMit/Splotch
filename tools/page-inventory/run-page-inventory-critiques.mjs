@@ -14,6 +14,7 @@ import { parseArgs } from 'node:util';
 import {
   PAGE_INVENTORY_REVIEW_CONTRACT,
   readCaptureManifest,
+  reviewDescriptionDigest,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
 import { CHECKPOINT_SCHEMA_VERSION } from './finalize-page-inventory-critique.mjs';
@@ -216,7 +217,8 @@ function currentCheckpoint(path, capture, manifest) {
       document.schema_version !== CHECKPOINT_SCHEMA_VERSION ||
       document.review_contract !== PAGE_INVENTORY_REVIEW_CONTRACT ||
       document.review_id !== capture.review_id ||
-      document.entry?.review_id !== capture.review_id
+      document.entry?.review_id !== capture.review_id ||
+      document.review_description_sha256 !== reviewDescriptionDigest(capture.review_description)
     ) {
       return false;
     }
@@ -260,6 +262,7 @@ async function reviewCapture(context, capture) {
         schema_version: CHECKPOINT_SCHEMA_VERSION,
         review_contract: PAGE_INVENTORY_REVIEW_CONTRACT,
         review_id: capture.review_id,
+        review_description_sha256: reviewDescriptionDigest(capture.review_description),
         entry,
       });
       return;

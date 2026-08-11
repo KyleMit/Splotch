@@ -128,9 +128,11 @@ don't offer.
 |                          | **last child of the scrolling content** and it plants its own end-of-content sentinel       |
 |                          | there; one IntersectionObserver gives all three states, so it is absent when the content    |
 |                          | fits, absent at the end of the scroll, and present only in between. Depth is the inherited  |
-|                          | `--scroll-cue-height` (default 72px), set by the call site on any ancestor. A scroller that |
-|                          | already paints its own edge affordance (the settings sidebar's `local` shades) does not     |
-|                          | take one as well                                                                            |
+|                          | `--scroll-cue-height` (default 72px), set by the call site on any ancestor. It measures its |
+|                          | scroller's bottom padding and reaches past it, so the fade meets the edge the scrollport    |
+|                          | clips at however that scroller pads — never compensate for it at the call site. A scroller  |
+|                          | that already paints its own edge affordance (the settings sidebar's `local` shades) does    |
+|                          | not take one as well                                                                        |
 
 Shared *global* patterns are classes in **`web/src/app.css`** rather than components:
 

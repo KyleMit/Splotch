@@ -227,7 +227,11 @@
   $effect(() => {
     if (!settingsModal.open) return;
     const landing = landingSection;
-    parentCenterUnlocked = false;
+    // Landing on Parent Center is only ever requested by a solved challenge (the
+    // gate's own way into the policy editor), so that landing arrives already
+    // unlocked — asking again for the section the solve was spent on would make
+    // the solve worthless. Every other landing re-locks.
+    parentCenterUnlocked = landing === 'parentCenter';
     spiedSection = landing;
     // A section's offset depends only on what stacks above it, so mounting the
     // run up to the landing section is what makes the landing scroll below land

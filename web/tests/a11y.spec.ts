@@ -119,7 +119,7 @@ test('the locked Parent Center card has no serious accessibility violations', as
   // and a nav click there only moves the scroll position. What it never sees is
   // the lock card the shell stands in for those controls while the gate is still
   // required, so that is what this scans.
-  await gotoApp(page, '/', { gateUnlocked: false });
+  await gotoApp(page, '/', { gates: 'always' });
   const settings = await openSettingsModal(page);
   await expect(settings.getByRole('button', { name: 'Unlock these settings' })).toBeVisible();
   await expect(settings.getByText(/Choose when Splotch should ask/)).toHaveCount(0);
@@ -129,7 +129,7 @@ test('the locked Parent Center card has no serious accessibility violations', as
 
 test('the parental gate has no serious accessibility violations', async ({ page }) => {
   // The access-code param reveals the AI button, the gate's opener.
-  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await draw(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
@@ -201,7 +201,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 // both.
 test('the parental gate operand digits hold WCAG AA large-text contrast', async ({ page }) => {
   // The access-code param reveals the AI button, the gate's opener.
-  await gotoApp(page, '/?ai_access_token=test-token', { gateUnlocked: false });
+  await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await draw(page, [
     { x: 120, y: 120 },
     { x: 260, y: 200 },
