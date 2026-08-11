@@ -243,6 +243,28 @@ test.describe('phone contents', () => {
     await expect(last).toBeInViewport();
   });
 
+  // Where the viewport is short the list outruns the panel and the internal
+  // scroll is the only way to the last row — which the case above never
+  // exercises, because at 844 tall the whole list fits.
+  test('the last row stays reachable when the list outruns the panel', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 667 });
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await contents.locator('summary').click();
+
+    const clipped = await page.evaluate(() => {
+      const panel = document.querySelector('.header-toc .panel')!;
+      return panel.scrollHeight - panel.clientHeight;
+    });
+    expect(clipped, 'the list has to outrun the panel for this to test anything').toBeGreaterThan(
+      0
+    );
+
+    const last = contents.getByRole('link').last();
+    await last.scrollIntoViewIfNeeded();
+    await expect(last).toBeInViewport();
+  });
+
   // The row is in the flow above every section it links to, so the panel's
   // height has to leave the document before the target's position means
   // anything — jumping while open lands a full panel-height short, and the row

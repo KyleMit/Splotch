@@ -188,6 +188,22 @@
     border-top: var(--border-width) solid var(--border);
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* The list outruns the panel wherever the viewport is short — a landscape
+       phone hides two thirds of it — and a row clipped mid-height leaves the
+       panel looking finished, since touch scrollbars don't paint until the flick
+       starts. That is the same hard cut this row replaced on the chip strip, so
+       it does not get to come back here. The two `scroll` shades pin to the
+       scrollport's edges while the two `local` covers scroll with the list and
+       mask whichever end is at rest, so each shade shows only while there is
+       more list that way — and it needs no scroll listener. Same idiom, for the
+       same reason, as WideShell's settings nav column; ScrollCue is the wrong
+       primitive for a column scrolled from both ends, speaking as it does only
+       for the bottom. */
+    background:
+      linear-gradient(var(--surface) 40%, transparent) top / 100% 24px no-repeat local,
+      linear-gradient(transparent, var(--surface) 60%) bottom / 100% 24px no-repeat local,
+      linear-gradient(var(--border), transparent) top / 100% 9px no-repeat scroll,
+      linear-gradient(transparent, var(--border)) bottom / 100% 9px no-repeat scroll;
   }
 
   /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
