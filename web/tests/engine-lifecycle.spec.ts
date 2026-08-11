@@ -1,16 +1,33 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
+import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
 // ── teardown / re-init lifecycle (ADR-0004) ──────────────────────────────────
 // Client-side navigation (`/` → `/privacy` → `/`) tears the engine down and
-// re-inits it on a fresh canvas. Drawing state (paper raster, snapshot stack)
+// re-inits it on a fresh canvas. Tiled drawing history
 // persists across the cycle by design — a parent checking another page must not
 // wipe the child's drawing — while pointer-input state must be reset by
 // teardown().
 
+test('the harness boots the template-owned tiled renderer', async ({ page }) => {
+  const topology = await page.locator('#drawingCanvas').evaluate((canvas: HTMLCanvasElement) => ({
+    inputBitmap: { width: canvas.width, height: canvas.height },
+    liveTiles: canvas.parentElement!.querySelectorAll('canvas[data-live-tile]').length,
+    crayonBottoms: canvas.parentElement!.querySelectorAll('canvas[data-live-crayon-bottom]').length,
+    crayonTops: canvas.parentElement!.querySelectorAll('canvas[data-live-crayon-top]').length,
+  }));
+
+  expect(topology).toEqual({
+    inputBitmap: { width: 1, height: 1 },
+    liveTiles: LIVE_TILE_COUNT,
+    crayonBottoms: LIVE_TILE_COUNT,
+    crayonTops: LIVE_TILE_COUNT,
+  });
+});
+
 test('the drawing persists across teardown + re-init (client-side navigation)', async ({
   page,
 }) => {
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
 
   await drawStroke(page, box, [
     { x: 60, y: 60 },
@@ -20,13 +37,13 @@ test('the drawing persists across teardown + re-init (client-side navigation)', 
 
   await page.evaluate(() => window.__engine.remount());
 
-  // Rebuilt by blitting the retained paper raster onto the fresh init.
+  // Rebuilt from retained tiled history onto the fresh init.
   expect(await count(page)).toBeGreaterThan(0);
   const s = await state(page);
   expect(s.canvasEmpty).toBe(false);
   expect(s.canUndo).toBe(true);
 
-  // The persisted snapshot stack is still live: undo reverts the pre-remount
+  // The persisted tiled history is still live: undo reverts the pre-remount
   // stroke.
   await page.evaluate(() => window.__engine.undo());
   expect(await count(page)).toBe(0);
@@ -39,7 +56,7 @@ test('a pointer held through teardown cannot keep painting after remount', async
   // a stale activePointers entry would otherwise let hover moves paint when
   // the browser reuses the same pointerId after remount.
   const result = await page.evaluate(() => {
-    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const canvas = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     const fire = (type: string, x: number, y: number, buttons: number) =>
       canvas.dispatchEvent(

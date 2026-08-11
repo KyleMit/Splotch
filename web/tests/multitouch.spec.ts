@@ -85,7 +85,7 @@ test('a five-pointer gesture snapshots once and undoes as a single unit', async 
 });
 
 test('a pinch/spread across five pointers does not zoom or scale the canvas', async ({ page }) => {
-  const canvas = page.locator('#engineCanvas');
+  const canvas = page.locator('#drawingCanvas');
 
   const boxBefore = await canvas.boundingBox();
   const viewportBefore = await page.evaluate(() => ({

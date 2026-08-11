@@ -5,16 +5,9 @@ import { describe, expect, it } from 'vitest';
 import {
   COMMIT_GATE_MS,
   CRAYON_DRAW_REFERENCE_MS_PER_CALL,
-  encodeOnCommitBreaches,
   evaluateCommitTiming,
 } from '../undo-commit-gate.mjs';
-import {
-  ALL_UNDO_SCENARIO_KEYS,
-  COLD_ENCODE_PATH,
-  ENCODE_PATH_UNDO_SCENARIO_KEYS,
-  FAST_UNDO_SCENARIO_KEYS,
-  UNDO_SCENARIO_PATHS,
-} from '../undo-scenario-keys.mjs';
+import { ALL_UNDO_SCENARIO_KEYS, FAST_UNDO_SCENARIO_KEYS } from '../undo-scenario-keys.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
@@ -120,51 +113,11 @@ describe('WebKit performance CI', () => {
     expect(concurrency).not.toContain('github.sha');
   });
 
-  it('decides the structural half pre-merge, off WebKit and off the macOS runner', () => {
-    const guardJob = job('commit-path-guard');
-    const guardScript = packageJson.scripts['perf:undo:encode-path'];
-
-    expect(guardJob).toContain('runs-on: ubuntu-latest');
-    expect(guardJob).toContain('run: npm run perf:undo:encode-path');
-    expect(guardJob).toContain('browsers: chromium');
-    expect(guardJob).not.toContain('continue-on-error');
-    // The pre-merge tier must survive a tag build being excluded and still run
-    // on both pull requests and pushes to main.
-    expect(guardJob).toContain(
-      "if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}"
-    );
-    expect(guardScript).toContain('--suite=encode-path');
-    expect(guardScript).not.toContain('--engine=webkit');
-    expect(guardScript).not.toContain('--scenarios=');
-  });
-
-  // Derived from the coverage declarations rather than hand-listed, so the
-  // pre-merge guard cannot end up asserting over a set that no longer contains
-  // the scenario that reaches the encode path.
-  it('derives the pre-merge guard set from the declared cold-encode path', () => {
-    expect(ENCODE_PATH_UNDO_SCENARIO_KEYS.length).toBeGreaterThan(0);
-    expect(ENCODE_PATH_UNDO_SCENARIO_KEYS).toEqual(
-      ALL_UNDO_SCENARIO_KEYS.filter((key) => UNDO_SCENARIO_PATHS[key].includes(COLD_ENCODE_PATH))
-    );
-    // Every one of them is in the fast set too, so the post-merge timing tier
-    // measures the same scenarios the pre-merge guard cleared.
-    expect(
-      ENCODE_PATH_UNDO_SCENARIO_KEYS.every((key) => FAST_UNDO_SCENARIO_KEYS.includes(key))
-    ).toBe(true);
-  });
-
-  // The whole reason the structural half can move off WebKit: it reads a count,
-  // and a count survives an engine whose duration for the same work is ~0.
-  it('detects an encode on the commit path regardless of its measured duration', () => {
-    const scenarios = [
-      { key: 'multi-finger', draw: { encodeInCommitCount: 1, encodeInCommitMaxMs: 0.0 } },
-      { key: 'crayon-scribbles', draw: { encodeInCommitCount: 0, encodeInCommitMaxMs: 0 } },
-    ];
-
-    expect(encodeOnCommitBreaches(scenarios).map((s) => s.key)).toEqual(['multi-finger']);
-    // A deferred encode is large and healthy; it is measured in a different
-    // window and must never register here.
-    expect(encodeOnCommitBreaches([{ key: 'x', draw: { encodeInCommitCount: 0 } }])).toEqual([]);
+  it('retires the obsolete blob-encoding structural gate', () => {
+    expect(packageJson.scripts['perf:undo:encode-path']).toBeUndefined();
+    expect(workflow).not.toContain('commit-path-guard:');
+    expect(workflow).not.toContain('perf:undo:encode-path');
+    expect(workflow).not.toContain('Commit path guard');
   });
 
   it('normalizes shared-runner crayon slowdown while preserving the 25 ms work-shape gate', () => {
@@ -180,7 +133,7 @@ describe('WebKit performance CI', () => {
       }),
       { normalizeSharedRunnerCrayon: true }
     );
-    const encodeRegression = evaluateCommitTiming(
+    const multiPointerRegression = evaluateCommitTiming(
       timingScenario({
         key: 'multi-finger',
         commitP95Ms: 47,
@@ -193,7 +146,11 @@ describe('WebKit performance CI', () => {
     expect(noisyHealthy).toMatchObject({ normalized: true, breached: false });
     expect(noisyHealthy.gateP95Ms).toBeLessThan(COMMIT_GATE_MS);
     expect(knownBad).toMatchObject({ slowdownFactor: 1, gateP95Ms: 47, breached: true });
-    expect(encodeRegression).toMatchObject({ normalized: false, gateP95Ms: 47, breached: true });
+    expect(multiPointerRegression).toMatchObject({
+      normalized: false,
+      gateP95Ms: 47,
+      breached: true,
+    });
   });
 
   it('keeps full and on-demand WebKit runs on raw absolute timing', () => {

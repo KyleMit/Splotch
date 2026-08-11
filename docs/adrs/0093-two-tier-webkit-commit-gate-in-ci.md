@@ -3,7 +3,17 @@
 **Status:** Active — amends [ADR-0032](0032-performance-profiling-harness.md) and
 [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md); amended by
 [ADR-0100](0100-split-the-commit-gate-by-what-each-half-can-decide.md), which moved this tier off
-the pull-request path and put the structural half of its verdict there instead. **Date:** 2026-08
+the pull-request path. ADR-0100's 2026-08-11 amendment retired the structural half when tiled
+history removed the blob-encoding path it guarded. **Date:** 2026-08
+
+## Amendment — 2026-08-11: tiled-history coverage
+
+PR #941 made the tiled renderer (ADR-0085/0086) the sole drawing renderer. Its history has no cold
+blob encoding, so the original encode-path runtime proof and ADR-0100's pre-merge structural guard
+retired with the legacy implementation. The WebKit timing gate remains active. Its fast set still
+contains `multi-finger` and `crayon-scribbles`, now because they solely exercise the multi-pointer
+and mid-stroke crayon pass-split paths. The original decision below records the earlier history
+implementation and should be read with this amendment and ADR-0100.
 
 ## Context
 

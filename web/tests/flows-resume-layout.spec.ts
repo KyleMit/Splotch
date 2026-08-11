@@ -1,7 +1,6 @@
-// Resume-before-layout, on the real `/` route and therefore on the production
-// tiled renderer (ADR-0085): the `/dev/engine` harness still runs the legacy
-// snapshot renderer, so the live tiles collapsing to zero area — the shape of
-// the reported failure — can only be pinned here.
+// Resume-before-layout on the real `/` route, where the product's visibility
+// lifecycle and tiled renderer meet. The bare engine harness shares the live
+// surface but does not reproduce this route integration.
 import { expect, test, type Page } from '@playwright/test';
 
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';

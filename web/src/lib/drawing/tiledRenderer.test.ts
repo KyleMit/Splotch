@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IDENTITY_PAPER_VIEW } from './paperView';
+import { LIVE_TILE_COUNT } from './liveTiles';
 import type { StrokeOp } from './strokeOps';
 import {
   adoptTiledRenderer,
@@ -82,7 +83,7 @@ function rendererElements() {
   canvas.width = 400;
   canvas.height = 400;
   host.append(canvas);
-  for (let index = 0; index < 16; index++) {
+  for (let index = 0; index < LIVE_TILE_COUNT; index++) {
     const tile = document.createElement('canvas');
     tile.dataset.liveTile = '';
     tile.hidden = true;
@@ -112,12 +113,12 @@ describe('idle tiled canvas visibility', () => {
     canvas.height = 1;
     resizeTiledRenderer(400, 400, 1);
     expect(tiledSurfaceTopologyDebug()).toEqual(
-      Array.from({ length: 16 }, () => ({ width: 100, height: 100 }))
+      Array.from({ length: LIVE_TILE_COUNT }, () => ({ width: 100, height: 100 }))
     );
     expect(tiledWorkDebug()).toMatchObject({
       backingMigrationPending: false,
       liveSurfaceElements: 48,
-      realizedNormalBackings: 16,
+      realizedNormalBackings: LIVE_TILE_COUNT,
       realizedCrayonBackings: 0,
       maxLiveBackingBytes: 40_000,
       totalLiveBackingBytes: 640_000,
@@ -306,7 +307,10 @@ describe('idle tiled canvas visibility', () => {
 
   it('captures visible settled tiles before an asynchronous export continues', async () => {
     const { host, canvas } = rendererElements();
-    const bitmaps = Array.from({ length: 16 }, (_, index) => ({ index }) as unknown as ImageBitmap);
+    const bitmaps = Array.from(
+      { length: LIVE_TILE_COUNT },
+      (_, index) => ({ index }) as unknown as ImageBitmap
+    );
     let nextBitmap = 0;
     const createBitmap = vi.fn((_: HTMLCanvasElement) => Promise.resolve(bitmaps[nextBitmap++]));
     vi.stubGlobal('createImageBitmap', createBitmap);
@@ -512,7 +516,7 @@ describe('idle tiled canvas visibility', () => {
     paperReady = true;
     vi.advanceTimersByTime(1_500);
     expect(tiledHistoryDebug()).toMatchObject({
-      baseRasters: 16,
+      baseRasters: LIVE_TILE_COUNT,
       historyLength: initialHistoryLength + 20,
     });
     repaintTiledRenderer(false);

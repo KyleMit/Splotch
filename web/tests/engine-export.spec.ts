@@ -3,7 +3,7 @@ import { count, drawStroke, expect, test } from './engine-harness';
 test('an export started just before a clear still captures the drawing (save-on-delete race)', async ({
   page,
 }) => {
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
 
   await drawStroke(page, box, [
     { x: 60, y: 60 },

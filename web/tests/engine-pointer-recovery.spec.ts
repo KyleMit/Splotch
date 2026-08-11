@@ -23,7 +23,7 @@ test('a pointer resumed far away after an idle gap does not draw a connecting li
   // Reproduce it directly: press, idle past the resume gap, then move far away
   // WITHOUT lifting — the engine must restart the stroke instead of bridging
   // the two spots with a stray line.
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
 
   // The premise: the diagonal jump is far past the resume threshold.
@@ -97,7 +97,7 @@ test('a pen pointer bypasses the color-change debounce', async ({ page }) => {
 // picking a color with an Apple Pencil was silently dropped.
 test('a pen contact stream whose pointerdown was merged away still paints', async ({ page }) => {
   const painted = await page.evaluate(() => {
-    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const canvas = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     const fire = (type: string, x: number, y: number, buttons: number) =>
       canvas.dispatchEvent(
@@ -127,7 +127,7 @@ test('pen hover moves (tip not touching) never paint', async ({ page }) => {
   // Apple Pencil hover (M2+) streams pointermoves with buttons === 0. The
   // merged-stream recovery must not mistake hovering for a lost stroke.
   const painted = await page.evaluate(() => {
-    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const canvas = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     for (const [x, y] of [
       [60, 60],
@@ -162,7 +162,7 @@ test('a merged pen stream still targeted at a UI control paints once over the ca
   page,
 }) => {
   const painted = await page.evaluate(() => {
-    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const canvas = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     const fire = (target: EventTarget, type: string, x: number, y: number, buttons: number) =>
       target.dispatchEvent(
@@ -291,7 +291,7 @@ test('a pen drag that started with a delivered pointerdown on UI never paints', 
   page,
 }) => {
   const painted = await page.evaluate(() => {
-    const canvas = document.querySelector('#engineCanvas') as HTMLCanvasElement;
+    const canvas = document.querySelector('#drawingCanvas') as HTMLCanvasElement;
     const rect = canvas.getBoundingClientRect();
     const fire = (target: EventTarget, type: string, x: number, y: number, buttons: number) =>
       target.dispatchEvent(
@@ -324,8 +324,8 @@ test('the canvas cancels its touch stream so iPadOS Scribble releases pen stroke
   page,
 }) => {
   const prevented = await Promise.all([
-    touchEventPrevented(page, '#engineCanvas', 'touchstart'),
-    touchEventPrevented(page, '#engineCanvas', 'touchmove'),
+    touchEventPrevented(page, '#drawingCanvas', 'touchstart'),
+    touchEventPrevented(page, '#drawingCanvas', 'touchmove'),
   ]);
   expect(prevented).toEqual([true, true]);
 });

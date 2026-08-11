@@ -306,7 +306,7 @@ function perPhase(tasks, commits, windows) {
 // The top long (>50 ms) main-thread tasks, each attributed to the phase it fell
 // in and its dominant nested timeline events — so "which phase janked" (the
 // per-phase table) becomes "what the jank actually was" (a compositor Commit, a
-// pointerup dispatch, a blob decode) without hand-walking the trace.
+// pointerup dispatch or an undo restore) without hand-walking the trace.
 function attributeLongTasks(runTasks, nested, windows, limit = 12) {
   const tasks = runTasks
     .filter((e) => e.dur >= LONG_TASK_US)
@@ -488,7 +488,7 @@ export function renderReport(s) {
     out.push(
       'What each long main-thread task was actually doing — its largest nested timeline\n' +
         'events. `Commit` = compositor raster push; `EventDispatch (pointerup)` = stroke-end\n' +
-        'work inside the lift handler (see engine.commit/engine.snapshot in the hot paths).\n'
+        'work inside the lift handler (see engine.commit in the hot paths).\n'
     );
     out.push(
       table(

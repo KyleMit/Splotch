@@ -1,6 +1,6 @@
 import { resetCrayonStateForClear, setCrayonBufferForTarget } from './crayonPassBuffer';
 import { setMagicPatternRegion } from './magicBrush';
-import { LIVE_TILE_COLUMNS, LIVE_TILE_ROWS } from './liveTiles';
+import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
 import { geometryIntersectsTile, type TileBounds } from './tiledGeometry';
 
@@ -60,6 +60,13 @@ export function createLiveTiles(canvasElement: HTMLCanvasElement): LiveTile[] {
     canvasElement.parentElement?.querySelectorAll<HTMLCanvasElement>(
       'canvas[data-live-crayon-top]'
     ) ?? [];
+  if (
+    elements.length !== LIVE_TILE_COUNT ||
+    crayonBottoms.length !== elements.length ||
+    crayonTops.length !== elements.length
+  ) {
+    throw new Error('Drawing engine live surface markup is missing or incomplete');
+  }
   const tiles = Array.from(elements, (tileCanvas, index) => ({
     canvas: tileCanvas,
     ctx: tileCanvas.getContext('2d')!,
@@ -178,22 +185,6 @@ export function renderHistoryBaseOp(tiles: HistoryBaseTile[], op: StrokeOp) {
   }
   if (op.kind === 'crayonFlush') {
     for (const tile of tiles) renderOp(tile.ctx, op);
-    return;
-  }
-  if (op.kind === 'crayonPassRaster') {
-    const right = op.x + op.canvas.width;
-    const bottom = op.y + op.canvas.height;
-    for (const tile of tiles) {
-      if (
-        right > tile.paperLeft &&
-        op.x < tile.paperRight &&
-        bottom > tile.paperTop &&
-        op.y < tile.paperBottom
-      ) {
-        renderOp(tile.ctx, op);
-        tile.painted = true;
-      }
-    }
     return;
   }
   for (const tile of tiles) {

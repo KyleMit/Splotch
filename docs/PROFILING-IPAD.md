@@ -437,13 +437,9 @@ on the iPad page and:
   crayon squiggles, and 22 crayon reversal-scribbles (mid-stroke pass splits) — matching
   `npm run perf:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes, and
   each scenario resets to blank paper **and** zero history first so its counts are its own,
-* prints a `console.table` with, per scenario: `snapshots` / `blob KB`, **`snap copy max ms`** (the
-  patch capture alone, `engine.snapshot`), **`fold max ms`** (rendering the committed ops,
-  `engine.fold`), **`encode max ms`** (demoting cold snapshots to blobs, `engine.encode`),
-  **`commit max ms`** (the stroke-end hitch, which the previous three attribute),
-  **`undo
-  avg/p95/max ms`** (live blit vs deep blob decode), and the real `history MB` — then the
-  ADR-0066 gates verbatim.
+* prints a `console.table` with, per scenario: undo entries, retained history commands, folded base
+  tiles, **`commit max ms`**, **`undo avg/p95/max ms`**, and direct patch/base/total history MiB —
+  then the ADR-0066 gates verbatim.
 
 Narrow it to some scenarios with `window.__perfScenarios = 'crayon-scribbles'` (comma-separated for
 several) set in its own console statement first; unset runs all four. Keep the iPad screen awake and
@@ -543,8 +539,8 @@ npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
 
 Instead of having the harness generate synthetic strokes, capture your own finger input on the
 device once and feed it into the profiler. The replay reproduces the real op stream **and** real
-frame pacing, and reports exactly how the engine stored *your* strokes (snapshot depth / blob
-bytes).
+frame pacing, and reports exactly how the engine stored *your* strokes (undo depth, retained
+commands, and patch/base raster bytes).
 
 ### C1. Serve the app on the LAN — **⟨Mac⟩**
 
@@ -610,7 +606,7 @@ Use only to confirm the app shell behaves like Safari.
 4. **⟨Mac⟩** Start a **Timelines** recording.
 5. **⟨iPad⟩** By hand: draw one long continuous scribble (several seconds), then tap **undo**.
    Repeat a few times; try a five-finger drag too.
-6. **⟨Mac⟩** Stop the recording. Read `engine.draw` / `engine.snapshot` / `engine.undo` in the
+6. **⟨Mac⟩** Stop the recording. Read `engine.draw` / `engine.commit` / `engine.undo` in the
    Timeline's user-timing track, or export and `npm run perf:ios:analyze -- <export>.json`.
 
 There's no `window.__engine` here (the real app doesn't expose the harness), so op counts aren't
@@ -621,18 +617,15 @@ controlled and `getUndoDebug()` is unavailable — you're reading the engine mar
 ## Reading the results
 
 * **`undo p95 ms` < 50** → the ADR-0066 undo gate (the driver computes p95 per scenario and prints
-  the gate line verbatim). Undos inside the resident byte budget (ADR-0082) should be a near-free
-  blit; deep undos add a lossless blob decode — both are one-off costs at button-press.
+  the gate line verbatim). Tiled undo restores only the touched tiles from before-images; it is a
+  one-off cost at button-press.
 * **`commit max ms` ≈ one 120 Hz frame ≈ 8.3 ms** → the ADR-0066 commit-hitch gate. The commit runs
   once at finger-lift, off the draw frame, but a commit slower than one frame can still drop a frame
-  the instant the stroke ends; attribute a hot one via its inner columns — `snap copy max ms`
-  (`engine.snapshot`, the patch capture alone) vs `fold max ms` (`engine.fold`, rendering the ops).
-  Cross-check the Timeline for a long frame at that moment. This is the cost the desktop harness can
-  only estimate — SwiftShader exaggerates it wildly.
-* **`history MB`** → real raster memory for that scenario
-  (`(hot rasters + the paper) × max(w,h)² × 4 bytes + blob bytes`). On a 12.9″ iPad Pro the square
-  raster is ~28 MB, so the resident tier is ~85 MB plus single-digit-MB blobs per deep entry —
-  verify against the ≲150 MB gate with the Xcode memory gauge (no jetsam).
+  the instant the stroke ends. Cross-check the Timeline for a long frame at that moment. This is the
+  cost the desktop harness can only estimate — SwiftShader exaggerates it wildly.
+* **`history MiB`** → the real raster memory for that scenario: direct tile-local patch bytes plus
+  folded base-tile bytes from `getUndoDebug()`. Verify the process total with the Xcode memory gauge
+  (no jetsam).
 
 ---
 

@@ -54,6 +54,20 @@ function expectCliFailure(script, args, message) {
   expect(result.stderr).toBe(`${message}\n`);
 }
 
+function analyzeWebInspector(recording) {
+  const path = join(fixtureDir, 'webinspector.json');
+  writeFileSync(path, JSON.stringify({ version: 1, recording }));
+  const result = spawnSync(process.execPath, [webInspectorPath, path], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(0);
+  expect(result.stderr).toBe('');
+  return result.stdout;
+}
+
 describe('performance CLI input failures', () => {
   it('reports a missing Chrome trace', () => {
     const path = join(fixtureDir, 'missing-trace.json');
@@ -221,5 +235,39 @@ describe('performance CLI input failures', () => {
       expect(module[entry]).toBeTypeOf('function');
       expect(state.runMain).toHaveBeenCalledExactlyOnceWith(module[entry]);
     }
+  });
+});
+
+describe('Web Inspector analysis', () => {
+  const undoRecord = { startTime: 0.09, endTime: 0.11, type: 'script' };
+
+  it('uses the enclosing record for current synchronous tiled undo', () => {
+    const output = analyzeWebInspector({
+      startTime: 0,
+      endTime: 1,
+      records: [undoRecord],
+      markers: [
+        { time: 0.1, details: 'engine.undo:start' },
+        { time: 0.5, details: 'engine.undo:end' },
+      ],
+    });
+
+    expect(output).toMatch(/engine\.undo\s+count=\s+1\s+n=1\s+min=20\.00.*\[enclosing record\]/);
+  });
+
+  it('uses paired marks for asynchronous undo in archived snapshot/blob recordings', () => {
+    const output = analyzeWebInspector({
+      startTime: 0,
+      endTime: 1,
+      records: [undoRecord],
+      markers: [
+        { time: 0.1, details: 'engine.undo:start' },
+        { time: 0.2, details: 'engine.reinflate:start' },
+        { time: 0.3, details: 'engine.reinflate:end' },
+        { time: 0.5, details: 'engine.undo:end' },
+      ],
+    });
+
+    expect(output).toMatch(/engine\.undo\s+count=\s+1\s+n=1\s+min=400\.00.*\[paired marks\]/);
   });
 });

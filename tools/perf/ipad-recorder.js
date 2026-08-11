@@ -46,10 +46,9 @@
     console.warn('Recorder already running. Use __rec.stop() / __rec.json() / __rec.summary().');
     return window.__rec;
   }
-  const canvas =
-    document.querySelector('#drawingCanvas') || document.querySelector('#engineCanvas');
+  const canvas = document.querySelector('#drawingCanvas');
   if (!canvas) {
-    console.error('No #drawingCanvas / #engineCanvas found — open the app first.');
+    console.error('No #drawingCanvas found — open the app first.');
     return;
   }
 
@@ -70,7 +69,7 @@
   };
 
   // Engine activity: PERF_MARKS=true builds measure every wipe/rebuild-capable
-  // operation (engine.resize, engine.undo, engine.commit, engine.snapshot…).
+  // operation (engine.resize, engine.undo, engine.commit…).
   // engine.draw is skipped — one per pointermove, pure noise here.
   let perfObs = null;
   try {

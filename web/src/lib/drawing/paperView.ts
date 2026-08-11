@@ -1,7 +1,7 @@
 // Pure geometry for presenting the drawing's "paper" inside a viewport that has
 // rotated since the paper was adopted (ADR-0050). While ink is on the canvas the
-// engine locks the paper — the coordinate space every recorded op, the paper
-// raster and its snapshots (ADR-0066), and the magic sheet live in — and a
+// engine locks the paper — the coordinate space every recorded op, live tile,
+// history base, undo patch, and magic sheet lives in — and a
 // device rotation is handled by *presenting* that space through the view
 // computed here instead of remapping any content. Production always presents
 // UPRIGHT (rotation 0: the picture rotates with the device and contain-fits,
@@ -214,27 +214,4 @@ export function viewToPaper(view: PaperView, x: number, y: number): Point {
     case 270:
       return { x: -v, y: u };
   }
-}
-
-export function visiblePaperBounds(paper: Size, viewport: Size, view: PaperView) {
-  if (isIdentityView(view)) return { x: 0, y: 0, width: paper.width, height: paper.height };
-  let minX = 0;
-  let minY = 0;
-  let maxX = paper.width;
-  let maxY = paper.height;
-  for (const [x, y] of [
-    [0, 0],
-    [viewport.width, 0],
-    [0, viewport.height],
-    [viewport.width, viewport.height],
-  ]) {
-    const point = viewToPaper(view, x, y);
-    minX = Math.min(minX, point.x);
-    minY = Math.min(minY, point.y);
-    maxX = Math.max(maxX, point.x);
-    maxY = Math.max(maxY, point.y);
-  }
-  const x = Math.floor(minX);
-  const y = Math.floor(minY);
-  return { x, y, width: Math.ceil(maxX) - x, height: Math.ceil(maxY) - y };
 }

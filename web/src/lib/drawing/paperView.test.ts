@@ -7,7 +7,6 @@ import {
   IDENTITY_PAPER_VIEW,
   paperToView,
   rotationDelta,
-  visiblePaperBounds,
   paperPresentationFor,
   viewMatrix,
   viewToPaper,
@@ -236,29 +235,5 @@ describe('viewMatrix / viewToPaper', () => {
     expect(paperToView(IDENTITY_PAPER_VIEW, 42, 7)).toEqual({ x: 42, y: 7 });
     expect(viewToPaper(IDENTITY_PAPER_VIEW, 42, 7)).toEqual({ x: 42, y: 7 });
     expect(viewMatrix(IDENTITY_PAPER_VIEW)).toEqual([1, 0, 0, 1, 0, 0]);
-  });
-});
-
-describe('visiblePaperBounds', () => {
-  it('returns the paper for an identity view', () => {
-    expect(
-      visiblePaperBounds(
-        { width: 400, height: 800 },
-        { width: 400, height: 800 },
-        IDENTITY_PAPER_VIEW
-      )
-    ).toEqual({ x: 0, y: 0, width: 400, height: 800 });
-  });
-
-  it('includes the viewport margins mapped around a contain-fitted paper', () => {
-    const paper = { width: 400, height: 800 };
-    const viewport = { width: 800, height: 400 };
-    const view = computePaperView(paper, viewport, 0);
-    expect(visiblePaperBounds(paper, viewport, view)).toEqual({
-      x: -600,
-      y: 0,
-      width: 1600,
-      height: 800,
-    });
   });
 });

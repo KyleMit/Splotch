@@ -1,15 +1,14 @@
 // Focused undo profile: drives the imperative engine through deliberately-
-// shaped sessions and records, per scenario, how the snapshot stack behaves
-// (depth, hot rasters vs encoded blobs), the cost of drawing vs. the cost of
-// undoing — the commit hitch (paper copy) and per-step restore — and the
-// memory footprint while history is resident. Built to watch the ADR-0066
-// gates: commit P95, snapshot copy max, undo avg/max, history MB.
+// shaped sessions and records, per scenario, how tiled history behaves
+// (undo depth, patch rasters, retained commands, and folded base tiles), the
+// cost of drawing vs. committing vs. undoing, and the raster memory footprint
+// while history is resident. Built to watch the ADR-0085/0086 contracts.
 //
 //   npm run perf:undo                       (tablet viewport, 4× CPU throttle)
 //   node tools/perf/undo-scenarios.mjs --no-throttle --no-build
 //
 // Unlike perf:web (which drives the real #drawingCanvas toddler session), this
-// drives /dev/engine so it can read getUndoDebug() — the snapshot-stack
+// drives /dev/engine so it can read getUndoDebug() — the tiled-history
 // internals — and place strokes with exact op counts. Synthetic PointerEvents
 // don't coalesce, so one dispatched pointermove == one engine draw() == one
 // recorded op — real 120 Hz input volume, deterministically.
@@ -38,7 +37,6 @@ import { buildMetrics, writeProfileArtifacts } from './profile-artifacts.mjs';
 import { percentile } from './real-screen-stats.mjs';
 import {
   ALL_UNDO_SCENARIO_KEYS,
-  ENCODE_PATH_UNDO_SCENARIO_KEYS,
   FAST_UNDO_SCENARIO_KEYS,
   UNDO_SCENARIO_KEYS,
   UNDO_SCENARIO_PATHS,
@@ -48,7 +46,6 @@ import { toMiB } from './units.mjs';
 import {
   COMMIT_GATE_MS,
   COMMIT_GATE_PERCENTILE,
-  encodeOnCommitBreaches,
   evaluateCommitTiming,
 } from './undo-commit-gate.mjs';
 import { warnIfNoPerfMarks } from './warnings.mjs';
@@ -58,12 +55,12 @@ const entry = isMain(import.meta.url);
 // The deployment target we actually worry about: a 12.9" iPad Pro in portrait —
 // 1024×1366 CSS pt. iPads report devicePixelRatio 2 and the engine caps
 // renderScale at min(dpr, 2) = 2, so the backing store is 2048×2732 and the
-// square paper/snapshot raster is 2732² ≈ 29.9 MB each — the real per-raster
-// cost on that device (the hot tier holds 2 of them + the paper).
+// patch and base-raster bytes come directly from getUndoDebug(), because tiled
+// history does not retain one full-paper square per undo entry.
 const { flag, throttle, port, build } = parsePerfArgs({
   throttleDefault: 4,
   extra: [
-    'cold-tier-timeout-ms',
+    'history-settle-timeout-ms',
     'engine',
     'hz',
     'long-seconds',
@@ -76,9 +73,9 @@ const { flag, throttle, port, build } = parsePerfArgs({
   ],
   entry,
 });
-const COLD_TIER_TIMEOUT_MS = requireNumberFlag(
-  'cold-tier-timeout-ms',
-  flag('cold-tier-timeout-ms', '10000'),
+const HISTORY_SETTLE_TIMEOUT_MS = requireNumberFlag(
+  'history-settle-timeout-ms',
+  flag('history-settle-timeout-ms', '10000'),
   entry
 );
 const FAST_SET_HISTORY_SEED_PATH = fileURLToPath(
@@ -112,9 +109,7 @@ const ENGINES = {
     label: 'headless Chromium (Blink/V8) — not WebKit/JavaScriptCore or the iPad GPU',
     fidelity: ({ frameBudgetMs }) =>
       `Headless Chromium (Blink/V8) is **not** WebKit/JavaScriptCore or the iPad GPU — ` +
-      `SwiftShader software rendering exaggerates full-canvas blits (the paper copy, ` +
-      `restores, blob decodes) heavily, and its spec-compliant in-parallel \`toBlob\` ` +
-      `reports ~0 ms for an encode that costs WebKit a whole frame budget (#635). ` +
+      `SwiftShader software rendering exaggerates canvas copies and restores. ` +
       `CPU throttle models a slow CPU, not the tighter ${f1(frameBudgetMs)} ms ProMotion frame.`,
   },
   webkit: {
@@ -126,8 +121,7 @@ const ENGINES = {
     label: "Playwright WebKit (WebKit/JavaScriptCore) — the iOS app's engine family, desktop build",
     fidelity: () =>
       `Playwright's WebKit is the engine family the iOS app ships (WebKit/JavaScriptCore), ` +
-      `so per-engine canvas API behaviour — the synchronous \`toBlob\` encode behind #635 — ` +
-      `is reproduced here and cannot be on Chromium at any precision. It is still a desktop ` +
+      `so its tiled-canvas behavior is a closer signal than Chromium. It is still a desktop ` +
       `build on desktop silicon, not an iPad: it has no CPU throttle and no ` +
       `\`performance.memory\`, so the JS-heap table below reads n/a. WebKit also clamps ` +
       `\`performance.now()\` to ~1 ms, so every duration here is quantized to whole ` +
@@ -322,7 +316,7 @@ function engineMeasuresIn(page, from, to) {
 
 async function resetEngine(page, base, width, height) {
   await page.goto(`${base}dev/engine`, { waitUntil: 'networkidle' });
-  await page.waitForSelector('#engineCanvas');
+  await page.waitForSelector('#drawingCanvas');
   await page.waitForFunction(() => window.__engineReady === true);
   await page.evaluate(({ width, height }) => window.__engine.resizeTo(width, height), {
     width,
@@ -346,10 +340,8 @@ async function drawStrokes(page, strokes, crayon = false) {
 }
 
 // Undo until the engine reports nothing left (capped well above the stack
-// size), counting the steps actually performed. Restores settle asynchronously
-// (a deep entry decodes from its blob), so each step waits for its engine.undo
-// measure to land before firing the next — otherwise the loop outruns the
-// restore queue and the phase window misses the tail steps.
+// size), counting the steps actually performed. Restores settle asynchronously,
+// so each step waits for its engine.undo measure to land before firing the next.
 async function undoAll(page) {
   return page.evaluate(async (maxUndoSteps) => {
     const completed = () => performance.getEntriesByName('engine.undo', 'measure').length;
@@ -374,44 +366,36 @@ async function undoAll(page) {
 const undoDebug = (page) =>
   page.evaluate(() => (window.__engine.getUndoDebug ? window.__engine.getUndoDebug() : null));
 
-// The tier re-balances asynchronously — encodes land on an idle callback,
-// decodes on a promise — and the batched draw phase returns before either runs.
-// Sampled immediately, entries still hold rasters a pending encode is about to
-// free, so historyRasterMB transiently reports hundreds of MB of a healthy tier
-// (nondeterministically, against the ≲150 MB gate) and the undo phase would
-// measure raster restores instead of the blob decodes it exists to validate.
-//
-// What the harness needs is that the tier has *quiesced*, not that it reached
-// any particular shape. An earlier version waited for `liveRasters <= 2`,
-// mirroring the hot-entry count undoHistory used at the time; ADR-0082 replaced
-// that count with a byte budget and the predicate became unreachable, skipping
-// every scenario with an all-`n/a` report (docs/AUDIT.md had already filed the
-// mirror as a drift risk). Polling for a stable reading instead is independent
-// of whatever the tiering policy is.
+// Tiled history may finish progressive patch capture or fold old commands into
+// base tiles after the batched draw phase returns. The harness needs a quiescent
+// reading, not a policy-specific shape, so it polls the complete debug contract
+// until consecutive samples agree.
 const SETTLE_POLL_MS = 100;
-// Stability has to outlast a pending encode that has not started yet: scheduleIdle
-// (web/src/lib/idle.ts) falls back to a 200 ms timeout wherever requestIdleCallback
-// is missing, so fewer samples than that could read "unchanged" before any work ran.
 const SETTLE_STABLE_SAMPLES = 4;
-async function settleColdTier(page, timeoutMs = 10_000) {
+async function settleHistory(page, timeoutMs = 10_000) {
   const t0 = Date.now();
-  const sameTier = (a, b) =>
+  const sameHistory = (a, b) =>
     a != null &&
     a.snapshots === b.snapshots &&
     a.liveRasters === b.liveRasters &&
-    a.blobBytes === b.blobBytes &&
-    a.rasterBytes === b.rasterBytes;
+    a.rasterBytes === b.rasterBytes &&
+    a.baseRasters === b.baseRasters &&
+    a.baseRasterBytes === b.baseRasterBytes &&
+    a.historyLength === b.historyLength &&
+    a.pendingCommands === b.pendingCommands;
   let prev = null;
   let stable = 0;
   for (;;) {
     const d = await undoDebug(page);
     if (d == null) return null;
-    stable = sameTier(prev, d) ? stable + 1 : 0;
+    stable = sameHistory(prev, d) ? stable + 1 : 0;
     if (stable >= SETTLE_STABLE_SAMPLES - 1) return d;
     if (Date.now() - t0 > timeoutMs) {
       throw new Error(
-        `cold tier never settled within ${timeoutMs} ms: snapshots=${d.snapshots} ` +
-          `liveRasters=${d.liveRasters} blobBytes=${d.blobBytes} ` +
+        `history never settled within ${timeoutMs} ms: undoEntries=${d.snapshots} ` +
+          `livePatchEntries=${d.liveRasters} patchBytes=${d.rasterBytes} ` +
+          `baseTiles=${d.baseRasters} baseRasterBytes=${d.baseRasterBytes} ` +
+          `historyCommands=${d.historyLength} ` +
           `(want ${SETTLE_STABLE_SAMPLES} consecutive identical samples)`
       );
     }
@@ -420,25 +404,11 @@ async function settleColdTier(page, timeoutMs = 10_000) {
   }
 }
 
-// The square paper/snapshot raster is max(w,h) of the backing store (engine
-// uses max(w,h) × renderScale). performance.memory can't see canvas pixel
-// buffers (they aren't on the JS heap), so history memory has to be derived
-// from the raster geometry: this is the real per-raster cost each live
-// snapshot (and the paper) occupies.
-async function rasterGeometry(page) {
-  return page.evaluate(() => {
-    const c = document.querySelector('#engineCanvas');
-    const side = Math.max(c.width, c.height);
-    return { backingW: c.width, backingH: c.height, side, bytesPerRaster: side * side * 4 };
-  });
-}
-
 export async function runUndoScenario(
   page,
   base,
   sc,
-  geom,
-  coldTierTimeoutMs = COLD_TIER_TIMEOUT_MS
+  historySettleTimeoutMs = HISTORY_SETTLE_TIMEOUT_MS
 ) {
   console.log(`\n▶ ${sc.label}`);
   await resetEngine(page, base, IPAD_PRO.width, IPAD_PRO.height);
@@ -451,13 +421,7 @@ export async function runUndoScenario(
     drawStrokes(page, sc.strokes, !!sc.crayon)
   );
 
-  const debug = await settleColdTier(page, coldTierTimeoutMs);
-  // The cold encode is scheduled off the commit (scheduleColdEncode →
-  // scheduleIdle), and the draw phase is one synchronous batch with no idle
-  // gaps, so a correctly-deferred encode can only land between drawEnd and
-  // here. That makes this boundary the one that separates an encode on the
-  // commit path from an encode off it.
-  const settleEnd = await now(page);
+  const debug = await settleHistory(page, historySettleTimeoutMs);
   const heapAfterDraw = await heapBytes(page);
 
   const undoStart = await now(page);
@@ -473,45 +437,15 @@ export async function runUndoScenario(
   const observers = await readObservers(page);
 
   const drawMarks = await engineMeasuresIn(page, drawStart, drawEnd);
-  // Deliberately disjoint from the draw window, not a superset of it: an encode
-  // that ran on the commit path would otherwise be counted as deferred as well,
-  // and the two figures could never be read against each other. Split at
-  // drawEnd, "on the commit" and "off it" partition the encode cost.
-  const postDrawMarks = await engineMeasuresIn(page, drawEnd, settleEnd);
   const undoMarks = await engineMeasuresIn(page, undoStart, undoEnd);
 
   const draw = drawMarks['engine.draw'] || { count: 0, total: 0, max: 0 };
-  // engine.commit wraps the whole stroke-end pipeline (paper copy → fold), so
-  // its max is the pointerup hitch the user feels; engine.snapshot (the paper
-  // copy), engine.fold (rendering the committed ops), and engine.encode
-  // (demoting cold patches to blobs) are the candidates it decomposes into, so
-  // a hot commit attributes to one of them rather than to the pipeline at large.
   const commit = drawMarks['engine.commit'] || { count: 0, total: 0, max: 0, durationsMs: [] };
-  const snapshot = drawMarks['engine.snapshot'] || { count: 0, total: 0, max: 0 };
-  const fold = drawMarks['engine.fold'] || { count: 0, total: 0, max: 0 };
-  const encode = postDrawMarks['engine.encode'] || { count: 0, total: 0, max: 0 };
-  // The encode that landed in the *draw* window rather than the settle window.
-  // The draw phase is one synchronous batch with no idle gaps (see settleEnd),
-  // so scheduleIdle cannot have run inside it — an encode measured here is an
-  // encode back on the commit path, and it is the only encode figure that
-  // belongs beside snapshot/fold/commit, which all come from this same window.
-  const encodeInCommit = drawMarks['engine.encode'] || { count: 0, total: 0, max: 0 };
   const undoM = undoMarks['engine.undo'] || { count: 0, total: 0, max: 0 };
   const commitP95Ms = percentile(commit.durationsMs, COMMIT_GATE_PERCENTILE) ?? 0;
 
-  // History raster memory the way it actually lives — off the JS heap, in
-  // canvas backing stores: live snapshot patches + the paper, plus the
-  // encoded blobs. rasterBytes is the patches' real pixel cost (dirty-rect
-  // snapshots, ADR-0069); liveRasters × full-raster is the fallback for a
-  // build that predates it.
   const historyRasterMB =
-    debug == null
-      ? null
-      : toMiB(
-          (debug.rasterBytes ?? debug.liveRasters * geom.bytesPerRaster) +
-            geom.bytesPerRaster +
-            debug.blobBytes
-        );
+    debug == null ? null : toMiB((debug.rasterBytes ?? 0) + (debug.baseRasterBytes ?? 0));
 
   const result = {
     key: sc.key,
@@ -533,18 +467,6 @@ export async function runUndoScenario(
       headroomRatio: commitP95Ms / COMMIT_GATE_MS,
       commitMaxMs: commit.max,
       commitDurationsMs: commit.durationsMs,
-      snapshotMs: snapshot.total,
-      snapshotMaxMs: snapshot.max,
-      foldMs: fold.total,
-      foldMaxMs: fold.max,
-      encodeMs: encode.total,
-      encodeMaxMs: encode.max,
-      encodeInCommitMs: encodeInCommit.total,
-      encodeInCommitMaxMs: encodeInCommit.max,
-      // The structural gate reads the count, not the duration: an engine whose
-      // encode is genuinely in-parallel reports ~0 ms for the very shape the
-      // gate exists to reject (see encodeOnCommitBreaches).
-      encodeInCommitCount: encodeInCommit.count,
     },
     undo: {
       steps: undoM.count,
@@ -560,19 +482,20 @@ export async function runUndoScenario(
     observers,
   };
   console.log(
-    `  snapshots=${debug?.snapshots ?? 'n/a'} liveRasters=${debug?.liveRasters ?? 'n/a'} ` +
-      `blobKB=${debug ? Math.round(debug.blobBytes / 1024) : 'n/a'} | ` +
-      `commit p95 ${commitP95Ms.toFixed(1)}ms ` +
-      `max ${commit.max.toFixed(1)}ms (copy ${snapshot.max.toFixed(1)} ` +
-      `fold ${fold.max.toFixed(1)} encode ${encodeInCommit.max.toFixed(1)}; ` +
-      `deferred encode ${encode.max.toFixed(1)}) | ` +
+    `  undoEntries=${debug?.snapshots ?? 'n/a'} ` +
+      `livePatchEntries=${debug?.liveRasters ?? 'n/a'} ` +
+      `historyCommands=${debug?.historyLength ?? 'n/a'} ` +
+      `baseTiles=${debug?.baseRasters ?? 'n/a'} ` +
+      `patchMB=${debug ? f1(toMiB(debug.rasterBytes ?? 0)) : 'n/a'} ` +
+      `baseMB=${debug ? f1(toMiB(debug.baseRasterBytes ?? 0)) : 'n/a'} | ` +
+      `commit p95 ${commitP95Ms.toFixed(1)}ms max ${commit.max.toFixed(1)}ms | ` +
       `undo ${undoM.count} steps ` +
       `avg ${(undoM.count ? undoM.total / undoM.count : 0).toFixed(1)}ms max ${undoM.max.toFixed(1)}ms`
   );
   return result;
 }
 
-function buildUndoSettings({ throttle, build, geom, t0 }) {
+function buildUndoSettings({ throttle, build, t0 }) {
   return {
     target: `web/dev-engine (${engine.label})`,
     engine: engineName,
@@ -589,7 +512,6 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
     // Baked in rather than re-derived at render time, so the report stays a pure
     // function of the summary and regenerates identically from the JSON.
     fidelity: engine.fidelity({ frameBudgetMs: FRAME_BUDGET_MS }),
-    raster: { ...geom, mbPerRaster: toMiB(geom.bytesPerRaster) },
     startedAt: new Date(t0).toISOString(),
     durationMs: Date.now() - t0,
   };
@@ -600,7 +522,6 @@ function buildUndoSettings({ throttle, build, geom, t0 }) {
 // stand in for.
 const NAMED_SUITE_KEYS = {
   fast: FAST_UNDO_SCENARIO_KEYS,
-  'encode-path': ENCODE_PATH_UNDO_SCENARIO_KEYS,
 };
 
 // Session frame health is the union of the per-scenario sampling windows, so
@@ -692,7 +613,6 @@ export async function runUndoScenarios() {
     }
 
     await injectObservers(page);
-    const geom = await rasterGeometry(page);
     const events = cdp ? await startTrace(cdp) : null;
     // --scenarios=key1,key2 runs a subset (fast iteration on one question).
     const scenarios = buildScenarios(IPAD_PRO.width, IPAD_PRO.height).filter((scenario) =>
@@ -707,7 +627,7 @@ export async function runUndoScenarios() {
 
     for (const sc of scenarios) {
       try {
-        results.push(await runUndoScenario(page, base, sc, geom));
+        results.push(await runUndoScenario(page, base, sc));
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`Skipping undo scenario ${sc.key}: ${message}`);
@@ -740,7 +660,7 @@ export async function runUndoScenarios() {
 
     // Standard trace artifacts (engine hot paths, frame health) via the shared
     // analyzer, plus the bespoke per-scenario undo summary.
-    const settings = buildUndoSettings({ throttle, build, geom, t0 });
+    const settings = buildUndoSettings({ throttle, build, t0 });
     await page.screenshot({ path: join(outDir, 'screenshot.png') }).catch(() => {});
     const metrics = buildMetrics({
       settings,
@@ -756,12 +676,7 @@ export async function runUndoScenarios() {
 
     const gate = reportCommitGate(results, {
       normalizeSharedRunnerCrayon: suite === 'fast',
-      // Coverage guards protect whatever a run asserts, so they follow the
-      // assertion rather than the engine: a skipped scenario or a set that
-      // never reaches the encode path makes a pass vacuous. The gated engine
-      // asserts timing and the encode-path suite asserts structure; a
-      // diagnostic --scenarios subset on an ungated engine asserts neither.
-      enforcesCoverage: engine.gated || suite === 'encode-path',
+      enforcesCoverage: engine.gated,
     });
     const fullRun =
       requestedKeys.length === ALL_UNDO_SCENARIO_KEYS.length &&
@@ -867,46 +782,17 @@ function readRestoredHistoryOrSeed(historyPath) {
   };
 }
 
-// The commit gate, and why only WebKit gets it.
-//
-// ADR-0066 states the product gate as "commit max ≈ one 120 Hz frame" (8.3 ms),
-// but that is a claim about an iPad and this is a desktop build. What a desktop
-// run can still decide is a question of *shape*: does the stroke-end commit do
-// work that scales with the whole raster, or only with the dirty rect the stroke
-// touched? Those regimes are far enough apart to separate with a blunt
-// threshold. Measured on this harness, both endpoints on the same machine:
-//
-//   healthy    commit max 1–8 ms   (8 ms = crayon-scribbles, all fold)
-//   #635 shape commit max 47–56 ms (98% of it engine.encode, run to run)
-//
-// so the gate sits ~3× above the healthy worst case and ~2× below the cheapest
-// observed regression. A shared runner can still suspend WebKit inside one
-// measured commit, so the gate uses P95 to require the expensive shape to recur
-// while preserving max and every raw duration for diagnosis. It is deliberately
-// blunt: the point is to catch a full-raster operation reappearing on the
-// pointerup path, not to police millisecond drift, which only the on-device run
-// can honestly judge.
-//
-// Chromium is deliberately NOT gated. Its absolute milliseconds are unfaithful
-// in both directions — SwiftShader exaggerates full-canvas blits, and its
-// spec-compliant in-parallel toBlob reports almost nothing for an encode that
-// costs WebKit its whole frame budget. Reverting the #635 fix and running both
-// engines shows exactly that: WebKit reports a 47 ms commit with a 47 ms encode
-// inside it, Chromium a 11.4 ms commit with a 2.5 ms encode. Gating Chromium on
-// numbers it cannot measure would rebuild the false assurance that let #635 hide
-// behind a passing profile for a year.
+// The desktop WebKit gate uses a deliberately blunt P95 threshold to detect
+// recurring catastrophic stroke-end work. It is not a physical-iPad frame gate;
+// the device-calibrated verdict remains in ADR-0090. Chromium stays advisory
+// because its software canvas path cannot supply comparable absolute timings.
 function formatCommitBreach(scenario, timing) {
   const gateTiming = timing.normalized
     ? `gate ${f1(timing.gateP95Ms)} ms after ${f1(timing.slowdownFactor)}× ` +
       `same-run renderer normalization (raw ${f1(timing.rawP95Ms)} ms · ` +
       `draw ${f1(timing.drawMsPerCall)} ms/call), `
     : `commit p95 ${f1(timing.rawP95Ms)} ms, `;
-  return (
-    `  ${scenario.key}: ${gateTiming}` +
-    `max ${f1(scenario.draw.commitMaxMs)} ms ` +
-    `(copy ${f1(scenario.draw.snapshotMaxMs)} · fold ${f1(scenario.draw.foldMaxMs)} · ` +
-    `encode ${f1(scenario.draw.encodeInCommitMaxMs)}; deferred ${f1(scenario.draw.encodeMaxMs)})`
-  );
+  return `  ${scenario.key}: ${gateTiming}max ${f1(scenario.draw.commitMaxMs)} ms`;
 }
 
 function formatCompletedBreaches(breaches, timings) {
@@ -917,14 +803,9 @@ function formatCompletedBreaches(breaches, timings) {
     : '\n';
 }
 
-// Every measure absent reads exactly like a very fast commit — 0 ms, no breach,
-// green gate. That happens whenever the *served bundle* was built without
-// PERF_MARKS, which --no-build makes reachable since it reuses whatever is on
-// disk. warnIfNoPerfMarks cannot catch it: it reads this process's env var,
-// which the npm script always sets, not the build. Nor can the encode-path
-// warning — blobBytes comes from getUndoDebug(), which reports tiering whether
-// or not the marks were compiled in. So check the sample count, and fail rather
-// than certify a run that measured nothing.
+// Every absent measure reads like a very fast commit. This can happen when
+// --no-build reuses a bundle built without PERF_MARKS, so sample count is a
+// coverage assertion rather than a timing value.
 function reportMissingCommitSamples(measured) {
   if (measured.length > 0 && measured.some((scenario) => scenario.draw.commitCount > 0))
     return null;
@@ -937,28 +818,6 @@ function reportMissingCommitSamples(measured) {
       `  --no-build — and re-run.\n`
   );
   return { breaches: [], evaluated: false };
-}
-
-// A verdict, not a can't-evaluate: it is reported and then the run carries on
-// to its timing checks, so a gated engine still prints the millisecond evidence
-// beside the structural finding rather than trading one diagnosis for the other.
-function reportEncodeOnCommit(onCommit) {
-  process.exitCode = 1;
-  console.error(
-    `\n✗ Commit path FAILED on ${engineName}: ${onCommit.length} scenario(s) ran an ` +
-      `engine.encode inside the commit window.\n` +
-      `  The cold encode belongs off the pointerup path, on scheduleIdle — an encode measured\n` +
-      `  here is #635 recurring. This is a count, not a budget: no host slowness can\n` +
-      `  manufacture it, and no engine's timing fidelity is required to read it.\n` +
-      onCommit
-        .map(
-          (scenario) =>
-            `  ${scenario.key}: ${scenario.draw.encodeInCommitCount} encode(s) in commit, ` +
-            `max ${f1(scenario.draw.encodeInCommitMaxMs)} ms`
-        )
-        .join('\n') +
-      '\n'
-  );
 }
 
 function reportCommitGate(
@@ -974,7 +833,6 @@ function reportCommitGate(
   );
   const timings = new Map(scenarioTimings.map((timing) => [timing.key, timing]));
   const breaches = gated ? measured.filter((scenario) => timings.get(scenario.key).breached) : [];
-  const onCommit = encodeOnCommitBreaches(measured);
   const base = {
     engine: engineName,
     gated,
@@ -982,7 +840,6 @@ function reportCommitGate(
     percentile: COMMIT_GATE_PERCENTILE,
     breaches,
     scenarioTimings,
-    encodeOnCommit: onCommit.map((scenario) => scenario.key),
   };
 
   // Ordered most-specific-cause-first, so a run that never completed a scenario
@@ -999,13 +856,8 @@ function reportCommitGate(
     return { ...base, evaluated: false, skipped: skipped.length };
   }
 
-  // Both of these hold on every engine, so they run ahead of the advisory
-  // return below: an encode on the commit path is a defect whether or not this
-  // engine's milliseconds mean anything, and a run that measured nothing would
-  // satisfy that check vacuously.
   const vacuous = reportMissingCommitSamples(measured);
   if (vacuous) return { ...base, ...vacuous };
-  if (onCommit.length > 0) reportEncodeOnCommit(onCommit);
 
   if (!enforcesCoverage) {
     console.log(
@@ -1013,47 +865,6 @@ function reportCommitGate(
         `(see COMMIT_GATE_MS). Run \`${ENGINES.webkit.script}\` for the gated engine.`
     );
     return base;
-  }
-
-  // The encode path only runs for a scenario whose patches exhaust the resident
-  // byte budget (ADR-0082). Today that is multi-finger alone, so the gate's
-  // cover for #635's defect class rests on one scenario producing blobs. If a
-  // tiering change ever stops it, the run measured no coverage for that defect
-  // class and cannot certify the commit path.
-  const encoding = measured.filter((s) => (s.debug?.blobBytes ?? 0) > 0);
-  if (encoding.length === 0) {
-    process.exitCode = 1;
-    console.error(
-      `\n✗ Commit gate NOT EVALUATED on ${engineName}: no scenario demoted a patch to a ` +
-        `blob, so this run did not exercise the encode path.\n` +
-        `  The commit gate cannot see a #635-class regression. Check whether the resident byte\n` +
-        `  budget (HOT_PATCH_BUDGET_PAPER_MULTIPLE) now covers every requested scenario.` +
-        formatCompletedBreaches(breaches, timings)
-    );
-    return {
-      engine: engineName,
-      gated,
-      budgetMs,
-      percentile: COMMIT_GATE_PERCENTILE,
-      breaches,
-      scenarioTimings,
-      encoding: 0,
-      evaluated: false,
-    };
-  }
-
-  // An ungated engine that got this far ran the structural guard over covered
-  // scenarios and cannot say anything further: its milliseconds are advisory,
-  // so there is no timing verdict left to reach.
-  if (!gated) {
-    if (onCommit.length === 0) {
-      console.log(
-        `✓ Commit path: no engine.encode inside the commit window on ${engineName} ` +
-          `(${measured.length} measured, ${encoding.length} exercising the encode path). ` +
-          `Timing is gated separately on webkit — \`${ENGINES.webkit.script}\`.`
-      );
-    }
-    return { ...base, encoding: encoding.length };
   }
 
   const unevaluable = scenarioTimings.filter((timing) => !timing.evaluable);
@@ -1075,25 +886,19 @@ function reportCommitGate(
   }
 
   if (breaches.length === 0) {
-    if (onCommit.length === 0) {
-      console.log(
-        `✓ Commit gate: every scenario's gate p95 is within ${budgetMs} ms on ${engineName} ` +
-          `(${measured.length} measured, ${encoding.length} exercising the encode path).`
-      );
-    }
-    return { ...base, encoding: encoding.length };
+    console.log(
+      `✓ Commit gate: every scenario's gate p95 is within ${budgetMs} ms on ${engineName} ` +
+        `(${measured.length} measured).`
+    );
+    return base;
   }
 
   process.exitCode = 1;
   console.error(
     `\n✗ Commit gate FAILED on ${engineName}: ${breaches.length} scenario(s) had commit p95 ` +
       `above ${budgetMs} ms of synchronous stroke-end work.\n` +
-      `  Repeated commits this hot are doing full-raster work on the pointerup path. ` +
-      `The parts below\n` +
-      `  all come from inside engine.commit and sum to it — an engine.encode among them is\n` +
-      `  #635 recurring (the cold encode belongs off the commit, on scheduleIdle). The\n` +
-      `  trailing "deferred" figure is the encode that ran off-commit, which is where it\n` +
-      `  belongs: large there is healthy, and it is never the cause of a breach.\n`
+      `  Repeated commits this hot suggest unbounded or full-surface stroke-end work. ` +
+      `Inspect the engine.commit trace and tiled patch work.\n`
   );
   for (const scenario of breaches) {
     console.error(formatCommitBreach(scenario, timings.get(scenario.key)));
@@ -1110,7 +915,7 @@ function reportCommitGate(
 
 function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
   const out = [];
-  out.push('# Undo scenario profile (snapshot stack, ADR-0066)\n');
+  out.push('# Undo scenario profile (tiled history, ADR-0085/ADR-0086)\n');
   out.push(
     `Target **${settings.target}** · device **${settings.device}** ` +
       `(${settings.viewport?.width}×${settings.viewport?.height} @ dsf ${settings.viewport?.deviceScaleFactor}) · ` +
@@ -1130,30 +935,29 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
       `artifact. The clean live-draw signal is **engine.draw avg** (per pointermove); the ` +
       `commit and undo costs below don't depend on pacing.\n`
   );
-  out.push('## Snapshot stack after drawing (getUndoDebug)\n');
+  out.push('## Tiled history after drawing (getUndoDebug)\n');
   out.push(
-    '| Scenario | Strokes | Status / reason | Snapshots | Live rasters | Blob bytes | Pending commands |'
+    '| Scenario | Strokes | Status / reason | Undo entries | Live patch entries | Retained commands | Base tiles | Patch MiB | Base MiB | Pending commands |'
   );
-  out.push('| --- | --- | --- | --- | --- | --- | --- |');
+  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     if (s.skipped) {
-      out.push(`| ${s.label} | ${s.strokes} | Skipped: ${s.error} | n/a | n/a | n/a | n/a |`);
+      out.push(
+        `| ${s.label} | ${s.strokes} | Skipped: ${s.error} | n/a | n/a | n/a | n/a | n/a | n/a | n/a |`
+      );
       continue;
     }
-    const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
     out.push(
       `| ${s.label} | ${s.strokes} | Completed | ${s.debug?.snapshots ?? 'n/a'} | ` +
-        `${s.debug?.liveRasters ?? 'n/a'} | ${blobKB} KB | ${s.debug?.pendingCommands ?? 'n/a'} |`
+        `${s.debug?.liveRasters ?? 'n/a'} | ${s.debug?.historyLength ?? 'n/a'} | ` +
+        `${s.debug?.baseRasters ?? 'n/a'} | ${f1(toMiB(s.debug?.rasterBytes ?? 0))} | ` +
+        `${f1(toMiB(s.debug?.baseRasterBytes ?? 0))} | ${s.debug?.pendingCommands ?? 'n/a'} |`
     );
   }
-  out.push('\n## Drawing cost (engine.draw + the stroke-end pipeline)\n');
+  out.push('\n## Drawing cost (engine.draw + engine.commit)\n');
   out.push(
-    'engine.commit wraps the whole stroke-end pipeline. **Gate P95** is the shared-runner ' +
-      'verdict, while raw commit P95, commit max, and every JSON sample remain available for ' +
-      'diagnosis. ' +
-      'The three stage columns are measured in the same window and ' +
-      'decompose it: engine.snapshot (the pre-stroke patch copy), engine.fold (rendering the ' +
-      'committed ops), and engine.encode (demoting cold patches to blobs).\n'
+    '**Gate P95** is the shared-runner verdict. Raw commit P95, commit max, and every JSON ' +
+      'sample remain available for diagnosis.\n'
   );
   if (gate.scenarioTimings.some((timing) => timing.normalized)) {
     out.push(
@@ -1163,22 +967,11 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
         'gate. Release and on-demand full runs use raw timing.\n'
     );
   }
-  out.push(
-    '**encode in commit** should be 0 — the cold encode is scheduled *off* the commit ' +
-      '(scheduleIdle), so anything here landed back on the pointerup path, which is #635. ' +
-      '**deferred encode** is that same pass measured where it does belong, over the wider ' +
-      'draw+settle window; it is routinely far larger than the whole commit and that is ' +
-      'healthy. The two are separate columns because they are separate windows — reading the ' +
-      'deferred figure as part of the commit is how a fold regression gets blamed on the ' +
-      'encode.\n'
-  );
-  out.push(
-    '| Scenario | draw() calls | draw total | snapshot copy max | fold max | encode in commit max | commit p95 raw | **gate p95** | commit max | deferred encode max |'
-  );
-  out.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+  out.push('| Scenario | draw() calls | draw total | commit p95 raw | **gate p95** | commit max |');
+  out.push('| --- | --- | --- | --- | --- | --- |');
   for (const s of scenarios) {
     if (s.skipped) {
-      out.push(`| ${s.label} | n/a | n/a | n/a | n/a | n/a | n/a | **n/a** | n/a | n/a |`);
+      out.push(`| ${s.label} | n/a | n/a | n/a | **n/a** | n/a |`);
       continue;
     }
     const timing = gate.scenarioTimings.find((candidate) => candidate.key === s.key);
@@ -1187,11 +980,7 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
       : `${f1(timing.gateP95Ms)} ms`;
     out.push(
       `| ${s.label} | ${s.draw.ops} | ${f1(s.draw.totalMs)} ms | ` +
-        `${f1(s.draw.snapshotMaxMs)} ms | ${f1(s.draw.foldMaxMs)} ms | ` +
-        `${f1(s.draw.encodeInCommitMaxMs)} ms | ${f1(s.draw.commitP95Ms)} ms | ` +
-        `**${gateCell}** | ` +
-        `${f1(s.draw.commitMaxMs)} ms | ` +
-        `${f1(s.draw.encodeMaxMs)} ms |`
+        `${f1(s.draw.commitP95Ms)} ms | **${gateCell}** | ${f1(s.draw.commitMaxMs)} ms |`
     );
   }
   if (fastSetEvaluation) {
@@ -1244,24 +1033,22 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
         `${s.observers.frames.longFrames} | ${s.observers.longTasks.length} |`
     );
   }
-  const r = settings.raster;
   out.push('\n## History raster memory (the real undo cost — off the JS heap)\n');
   out.push(
-    `Each square raster is ${r?.side}×${r?.side} → **${f1(r?.mbPerRaster)} MiB**. ` +
-      `Canvas backing stores are **not** counted by performance.memory, so the JS-heap ` +
-      `table below stays flat regardless of history — the raster figure is the one that ` +
-      `matters. Resident rasters = live snapshots + the paper, plus the encoded blob bytes.\n`
+    'Canvas backing stores are **not** counted by performance.memory. Tiled history reports ' +
+      'its live patch and folded-base bytes directly, so their sum is the resident history cost.\n'
   );
-  out.push('| Scenario | Rasters resident | Blob bytes | History memory |');
+  out.push('| Scenario | Patch MiB | Base MiB | History memory |');
   out.push('| --- | --- | --- | --- |');
   for (const s of scenarios) {
     if (s.skipped) {
       out.push(`| ${s.label} | n/a | n/a | n/a |`);
       continue;
     }
-    const rasters = s.debug == null ? 'n/a' : `${s.debug.liveRasters} + 1`;
-    const blobKB = s.debug ? Math.round((s.debug.blobBytes ?? 0) / 1024) : 'n/a';
-    out.push(`| ${s.label} | ${rasters} | ${blobKB} KB | ${f1(s.historyRasterMB)} MiB |`);
+    out.push(
+      `| ${s.label} | ${f1(toMiB(s.debug?.rasterBytes ?? 0))} | ` +
+        `${f1(toMiB(s.debug?.baseRasterBytes ?? 0))} | ${f1(s.historyRasterMB)} MiB |`
+    );
   }
   out.push('\n## JS heap (performance.memory — excludes canvas pixels; coarse, GC-dependent)\n');
   out.push('| Scenario | After draw (history resident) | After undo-to-empty |');
@@ -1273,7 +1060,7 @@ function renderUndoReport({ settings, scenarios, gate, fastSetEvaluation }) {
     }
     out.push(`| ${s.label} | ${f1(s.heap.afterDrawMB)} MiB | ${f1(s.heap.afterUndoMB)} MiB |`);
   }
-  out.push('\n---\nSee the `profiling` skill and ADR-0066 for how to read these.\n');
+  out.push('\n---\nSee the `profiling` skill and ADR-0085/ADR-0086 for how to read these.\n');
   return out.join('\n');
 }
 

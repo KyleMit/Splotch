@@ -1,13 +1,8 @@
-# The commit gate is split by what each half can decide (ADR-0100). Pull
-# requests run the structural guard on Chromium: an encode inside the commit
-# window is the defect, a count rather than a budget, so it needs neither WebKit
-# nor a stable host. The millisecond P95 does need both, so it runs post-merge
-# on macOS over multi-finger (the sole encode-path exerciser) plus
-# crayon-scribbles (mid-stroke pass splits), and release tags run all seven
-# scenarios. Ubuntu's WebKit runtime never fit the wall-clock budget; what
-# changed is that the macOS job became the floor of a PR run, with
-# crayon-scribbles' draw phase most of its cost — decomposed, with the options
-# measured and rejected, in docs/scratchpad/webkit-commit-gate-cost-2026-08.md.
+# The tiled renderer has no cold blob-encoding path, so ADR-0100's structural
+# half retired with that legacy history implementation. The millisecond P95
+# still needs WebKit and a stable host, so it runs post-merge on macOS over
+# multi-finger (the sole multi-pointer exerciser) plus crayon-scribbles (the sole
+# mid-stroke pass-split exerciser), and release tags run all seven scenarios.
 name: Tests
 
 on:
@@ -248,42 +243,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The pre-merge half of the commit gate (ADR-0100). The defect class the gate
-  # exists to close is a full-raster encode returning to the pointerup path, and
-  # that is a structural fact — an engine.encode measure inside the commit
-  # window — rather than a duration. Chromium records that measure even though
-  # its in-parallel toBlob makes the duration meaningless, so this decides the
-  # question on Ubuntu in a job that hides under the e2e shards, and no amount of
-  # shared-host slowness can manufacture the failure. The millisecond verdict,
-  # which does need WebKit, moved post-merge.
-  commit-path-guard:
-    name: Commit path guard
-    if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - uses: ./.github/actions/setup-node
-
-      - uses: ./.github/actions/setup-playwright
-        with:
-          browsers: chromium
-
-      - name: Run commit-path guard
-        run: npm run perf:undo:encode-path
-
-      - name: Upload commit-path diagnostics
-        if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: undo-encode-path-diagnostics
-          path: |
-            perf-profiles/**/undo-scenarios.json
-            perf-profiles/**/undo-scenarios.md
-          if-no-files-found: warn
-          retention-days: 7
-
   # Post-merge, not per-PR (ADR-0100). This tier's verdict is a millisecond P95
   # on a shared macOS runner: it is the wall-clock floor of a run, and its
   # observed record on the pull-request path is false positives rather than
@@ -347,9 +306,8 @@ jobs:
           This tier gates a millisecond P95 on a shared macOS runner, so before treating it as
           product evidence read the raw commit P95 against the normalized gate value in the
           report — ADR-0093 records why those differ and PR 729 records what happens when the
-          difference is ignored. The structural half of the gate runs pre-merge as
-          "Commit path guard", so a failure here is a timing regression that guard cannot see,
-          or it is host noise.
+          difference is ignored. The legacy renderer's structural blob-encoding half retired with
+          that implementation, so a failure here is a timing regression or host noise.
           EOF
           )"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"

@@ -1,7 +1,7 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
 
 test('the eraser removes pixels and re-scans empty on stroke end', async ({ page }) => {
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
 
   await drawStroke(page, box, [
     { x: 60, y: 80 },
@@ -21,11 +21,11 @@ test('the eraser removes pixels and re-scans empty on stroke end', async ({ page
 
   // stopDrawing re-scans the bitmap after an erase, so the empty flag tracks it.
   expect(await count(page)).toBe(0);
-  expect((await state(page)).canvasEmpty).toBe(true);
+  await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
 });
 
 test('erasing only part of the drawing leaves the canvas non-empty', async ({ page }) => {
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
 
   // Two well-separated strokes.
   await drawStroke(page, box, [
@@ -54,9 +54,9 @@ test('erasing only part of the drawing leaves the canvas non-empty', async ({ pa
 
 test('undoing an eraser stroke replays the erased pixels back', async ({ page }) => {
   // Undo must revert a destination-out stroke like any other: the pre-erase
-  // snapshot (ADR-0066) still holds the pen stroke's pixels, so restoring it
+  // tiled undo patch still holds the pen stroke's pixels, so restoring it
   // brings the erased pixels back and the canvas is non-empty again.
-  const box = await page.locator('#engineCanvas').boundingBox();
+  const box = await page.locator('#drawingCanvas').boundingBox();
 
   await drawStroke(page, box, [
     { x: 60, y: 80 },
@@ -74,7 +74,7 @@ test('undoing an eraser stroke replays the erased pixels back', async ({ page })
     { x: 220, y: 80 },
   ]);
   expect(await count(page)).toBe(0);
-  expect((await state(page)).canvasEmpty).toBe(true);
+  await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
 
   await page.evaluate(() => window.__engine.undo());
 

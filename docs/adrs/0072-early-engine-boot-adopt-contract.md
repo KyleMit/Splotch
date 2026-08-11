@@ -60,14 +60,12 @@ Alternatives considered:
   the drawing from the module-level history (ADR-0066). Teardown stays symmetric: unmount runs the
   full engine teardown (listeners, pointer state, callback detach), and the next mount adopts or
   re-inits.
-* **The crayon overlay canvases are template-owned, not engine-injected.** The engine used to create
-  and insert its two live-pass overlay canvases at init. Done before hydration, that corrupts the
-  DOM Svelte expects: hydration bails with `hydration_mismatch` and silently re-renders the whole
-  route client-side, replacing the live canvas (verified — the failure mode of the naive version of
-  this change). `DrawingCanvas.svelte` now renders the pair (`canvas[data-crayon-overlay]`, styled
-  by its scoped CSS) so the prerendered DOM already matches, and the engine *adopts* them; it
-  creates and inline-styles its own only where the markup has none (the `/dev/engine` harness, which
-  inits after hydration where injection is safe).
+* **The complete live surface is template-owned, not engine-injected.** A shared
+  `LiveSurface.svelte` renders the transparent input receiver, isolated stack, paper-view wrapper,
+  and every normal/bottom-crayon/top-crayon tile for both `DrawingCanvas.svelte` and `/dev/engine`.
+  The engine only adopts that contract and throws when its fixed topology is missing or incomplete.
+  A pre-hydration DOM insertion would corrupt the tree Svelte expects, trigger a silent client
+  re-render, and replace the already-live canvas.
 * **The interim window is explicit and accepted.** Between engine-live and hydration-complete the
   engine has drawing sound but otherwise runs on defaults: no undo-button/empty-state sync (replayed
   at adopt), no stroke-count ticks (pre-hydration strokes don't count toward the install-banner
@@ -84,8 +82,12 @@ Non-obvious invariants:
 * The `earlyBoot` import in `+page.svelte` must stay a static, side-effect import; the engine chunk
   must stay in the prerendered page's modulepreload graph while the save modules stay out
   (`web/tests/startup-bundle.spec.ts`, issue 461).
-* `.crayon-overlay` in `DrawingCanvas.svelte` and the engine's `overlayCss` string are the same
-  styling in two places — keep them in sync.
+* `LiveSurface.svelte` is the single source for the engine's live DOM and blend-isolation contract.
+  A consumer must render that component; the engine must never synthesize missing surfaces.
+* An incomplete live surface is a fail-stop boot error. The engine throws through early boot rather
+  than hydrating controls around a broken primary drawing surface. The unit topology contract and
+  hydration E2E guard catch repository-owned markup drift; DOM-mutating extensions are outside the
+  supported boot contract.
 
 ## Consequences
 
@@ -102,13 +104,13 @@ Non-obvious invariants:
 * − Boot state is split across `earlyBoot.ts` (pre-hydration) and `DrawingCanvas.svelte`'s
   mount/`$effect` bridges (post-hydration); a new engine-facing setting must decide whether the
   interim window needs it (add to earlyBoot) or not (bridges only).
-* − The engine has a real lifecycle now (`engineLive`, owns-canvas checks, created-vs-adopted
-  overlays) where "init on mount, teardown on unmount" used to be the whole story.
+* − The engine has a real lifecycle (`engineLive`, owns-canvas checks, surface adoption) where "init
+  on mount, teardown on unmount" used to be the whole story.
 * − The hydration-bail hazard is one innocent-looking pre-hydration DOM write away, and its symptom
   (silent client re-render + fallback re-init) looks like working code.
   `web/tests/early-boot.spec.ts` pins it: the post-hydration canvas must be the pre-hydration
   element, the console must carry no hydration output, and the canvas stack must hold exactly the
-  prerendered trio.
+  prerendered input canvas and all three tile planes.
 
 Amends **ADR-0004** (the mount contract; see its amendment note). Leans on **ADR-0066** (module-
 level history makes adoption safe), **ADR-0040** (the prerendered home shell the boot targets), and
