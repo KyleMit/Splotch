@@ -41,9 +41,6 @@
   const PANEL_MIN_PX = 160;
   // Breathing room between the open panel's bottom edge and the viewport's.
   const PANEL_TAIL_PX = 8;
-  // Clearance between the collapsed row's bottom edge and a heading jumped to
-  // from the panel — enough to also clear whatever the host pads below the row.
-  const JUMP_CLEARANCE_PX = 24;
 
   let open = $state(false);
   let row = $state<HTMLElement>();
@@ -90,37 +87,29 @@
     const href = (event.target as Element).closest('a[href^="#"]')?.getAttribute('href');
     if (!href) return;
     event.preventDefault();
-    void jumpTo(decodeURIComponent(href.slice(1)));
+    void jumpTo(href);
   }
 
-  // Where the collapsed row's bottom edge comes to rest once the block it rides
-  // in is pinned — which is not where the row is right now, since a reader at
-  // the top of the page has not yet scrolled it up to its offset. Walking to the
-  // sticky ancestor covers both hosts: /changelog's row is itself the sticky
-  // block, /design's is the last line of a sticky header. The distance between
-  // the two is layout-invariant, so it reads correctly pinned or not.
-  function pinnedLine(el: HTMLElement): number {
-    const bottom = el.getBoundingClientRect().bottom;
-    for (let block: HTMLElement | null = el; block; block = block.parentElement) {
-      const style = getComputedStyle(block);
-      const offset = Number.parseFloat(style.top);
-      if (style.position === 'sticky' && Number.isFinite(offset)) {
-        return offset + bottom - block.getBoundingClientRect().top;
-      }
-    }
-    return bottom;
-  }
-
-  // The row sits in the flow above every section it links to, so the panel's
-  // height has to leave the document before the target's position means
-  // anything — measuring while open lands a full panel-height short.
-  async function jumpTo(id: string) {
+  // Only the timing is taken off the anchor, never the navigation: the row sits
+  // in the flow above every section it links to, so the panel's height has to
+  // leave the document before a jump means anything — the browser computes the
+  // target's position at click time and lands a full panel-height short.
+  async function jumpTo(href: string) {
     open = false;
     await tick();
-    const target = document.getElementById(id);
-    if (!target || !row) return;
-    const line = pinnedLine(row) + JUMP_CLEARANCE_PX;
-    window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top - line });
+    // Setting the fragment is what puts the section in the URL and in session
+    // history, so a narrow-screen pick is as shareable, and as reversible with
+    // Back, as the anchor the wide rail hands the browser. It is a no-op when
+    // the reader is already on that fragment, and picking a section still has
+    // to take them there — hence the scroll as well. Both land on the same
+    // scroll-margin-top, so the second is a no-op the rest of the time.
+    window.location.hash = href;
+    document.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();
+    // The row that was activated is inside the panel that just closed, so focus
+    // would otherwise fall to <body> — dropping a keyboard user out of the tab
+    // order at the moment they navigate. preventScroll keeps this from undoing
+    // the jump above.
+    row?.querySelector('summary')?.focus({ preventScroll: true });
   }
 </script>
 

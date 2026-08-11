@@ -113,6 +113,10 @@ test.describe('phone', () => {
     await expect.poll(gapBelowRow).toBeLessThanOrEqual(48);
     expect(await gapBelowRow()).toBeGreaterThanOrEqual(0);
     await expect(contents.locator('summary')).toContainText(`Version ${target.version}`);
+
+    // The narrow pick has to leave the same trace the wide rail's anchor does,
+    // or the release can't be shared and Back doesn't undo the jump.
+    await expect(page).toHaveURL(new RegExp(`#${target.id}$`));
   });
 });
 

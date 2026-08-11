@@ -266,6 +266,33 @@ test.describe('phone contents', () => {
     await expect.poll(gapBelowHeader).toBeLessThanOrEqual(48);
     expect(await gapBelowHeader()).toBeGreaterThanOrEqual(0);
     await expect(contents.locator('summary')).toContainText('Named chrome');
+
+    // The narrow pick has to leave the same trace the wide rail's anchor does,
+    // or the section can't be shared and Back doesn't undo the jump.
+    await expect(page).toHaveURL(/#named$/);
+    await page.goBack();
+    await expect(page).not.toHaveURL(/#named$/);
+  });
+
+  // Collapsing the panel takes the activated row out of the document with focus
+  // still on it, which drops a keyboard user to <body> at the moment they
+  // navigate — no focus ring, and Tab restarts from the top of the page.
+  test('activating a row from the keyboard leaves focus on the collapsed row', async ({ page }) => {
+    await page.goto('/design');
+    const contents = page.locator('.header-toc');
+    await contents.locator('summary').click();
+
+    await contents.getByRole('link', { name: 'Named chrome' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(contents.locator('details')).not.toHaveAttribute('open');
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.activeElement === document.querySelector('.header-toc summary')
+        )
+      )
+      .toBe(true);
   });
 });
 
