@@ -358,10 +358,17 @@
     transition: background var(--duration-fast) ease;
   }
 
-  /* The compact layout only exists at ≤800px, where (hover: hover) never
-     matches — so press feedback, not hover, is this button's only reveal on the
-     devices that see it. Both sit above the hover block so the pointer-only
-     rule keeps winning where it does match. */
+  @media (hover: hover) {
+    .more-btn:hover {
+      background: var(--surface-hover);
+    }
+  }
+
+  /* Press sits below the hover block so it wins on a hover-capable pointer too:
+     the compact layout is reached by narrow desktop windows and trackpad
+     hybrids, not only by touch, and there an earlier :active would lose to
+     :hover for the whole press — leaving the button with no press feedback on
+     exactly the devices this rule exists to serve. */
   .more-btn:active {
     background: var(--brand-wash);
   }
@@ -369,12 +376,6 @@
   .more-btn:focus-visible {
     outline: 2px solid var(--brand-solid);
     outline-offset: 2px;
-  }
-
-  @media (hover: hover) {
-    .more-btn:hover {
-      background: var(--surface-hover);
-    }
   }
 
   :global(.more-btn .more-icon) {
