@@ -98,10 +98,24 @@ test('the masthead crayon strip renders every palette hue it names', async ({ pa
 // ("content is too short to determine if it is actual text content"), and the
 // chevron is an SVG fill. Both carry real WCAG minimums, so they are measured
 // here from the rendered page rather than assumed.
+//
+// The channels come off a 1x1 canvas fill rather than a regex over the computed
+// string, because the two colors arrive in different notations: a plain token
+// computes to `rgb(r g b)` with 0-255 channels while StepLedger's derived
+// wash/ink computes to `color(srgb r g b)` with 0-1 ones, and a regex that
+// scales both by 255 reads the second as near-black — every pair passing at a
+// plausible-looking ratio near 1.
 const CONTRAST = `(fg, bg) => {
-  const lum = (c) => {
-    const [r, g, b] = c.match(/\\d+(\\.\\d+)?/g).slice(0, 3)
-      .map(Number).map((v) => v / 255)
+  const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+  const channels = (css) => {
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = css;
+    ctx.fillRect(0, 0, 1, 1);
+    return [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3);
+  };
+  const lum = (css) => {
+    const [r, g, b] = channels(css)
+      .map((v) => v / 255)
       .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
     return 0.2126 * r + 0.7152 * g + 0.0722 * b;
   };
@@ -109,38 +123,50 @@ const CONTRAST = `(fg, bg) => {
   return (hi + 0.05) / (lo + 0.05);
 }`;
 
-// Each numeral and its step's callout label are the same ink on the same wash,
-// so one measurement covers both. The numeral is set below the large-text
-// threshold, so it owes the full 4.5:1 rather than 3:1.
-test('the step inks clear 4.5:1 on the wash they sit on', async ({ page }) => {
-  await page.goto('/android-beta');
-  // Step 4's callout is the one composed after hydration, so waiting for it is
-  // what makes all eight measurable.
-  await expect(page.locator('.step-4 .card')).toBeVisible();
-  const ratios = await page.evaluate(`(() => {
-    const contrast = ${CONTRAST};
-    return [...document.querySelectorAll('.steps > li')].flatMap((li) =>
-      [li.querySelector('.num'), li.querySelector('.card-label')]
-        .filter(Boolean)
-        .map((el) => ({
-          where: li.className + ' ' + el.className,
-          ratio: contrast(getComputedStyle(el).color, getComputedStyle(el.closest('.num, .card')).backgroundColor),
-        }))
-    );
-  })()`);
-  expect(ratios).toHaveLength(8);
-  for (const { where, ratio } of ratios as { where: string; ratio: number }[]) {
-    expect(ratio, `${where} contrast`).toBeGreaterThanOrEqual(4.5);
-  }
-});
+// The page follows night mode like every other route, and the step washes and
+// inks are derived from one crayon hue mixed against the themed sheet and ink
+// (StepLedger). One mix strength has to hold for four crayons on two grounds,
+// so both themes are measured rather than assumed from the light one.
+for (const colorScheme of ['light', 'dark'] as const) {
+  // Each numeral and its step's callout label are the same ink on the same
+  // wash, so one measurement covers both. The numeral is set below the
+  // large-text threshold, so it owes the full 4.5:1 rather than 3:1.
+  test(`the step inks clear 4.5:1 on the wash they sit on in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/android-beta');
+    // Step 4's callout is the one composed after hydration, so waiting for it is
+    // what makes all eight measurable.
+    await expect(page.locator('.step-4 .card')).toBeVisible();
+    const ratios = await page.evaluate(`(() => {
+      const contrast = ${CONTRAST};
+      return [...document.querySelectorAll('.steps > li')].flatMap((li) =>
+        [li.querySelector('.num'), li.querySelector('.card-label')]
+          .filter(Boolean)
+          .map((el) => ({
+            where: li.className + ' ' + el.className,
+            ratio: contrast(getComputedStyle(el).color, getComputedStyle(el.closest('.num, .card')).backgroundColor),
+          }))
+      );
+    })()`);
+    expect(ratios).toHaveLength(8);
+    for (const { where, ratio } of ratios as { where: string; ratio: number }[]) {
+      expect(ratio, `${where} contrast`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 
-test('the troubleshooting chevron clears the 3:1 non-text minimum', async ({ page }) => {
-  // WCAG 1.4.11: the chevron's rotation is the only visual open/closed signal.
-  await page.goto('/android-beta');
-  const ratio = await page.evaluate(`(() => {
-    const contrast = ${CONTRAST};
-    const svg = document.querySelector('.chev svg');
-    return contrast(getComputedStyle(svg).fill, getComputedStyle(svg.closest('details')).backgroundColor);
-  })()`);
-  expect(ratio as number).toBeGreaterThanOrEqual(3);
-});
+  test(`the troubleshooting chevron clears the 3:1 non-text minimum in ${colorScheme} mode`, async ({
+    page,
+  }) => {
+    // WCAG 1.4.11: the chevron's rotation is the only visual open/closed signal.
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/android-beta');
+    const ratio = await page.evaluate(`(() => {
+      const contrast = ${CONTRAST};
+      const svg = document.querySelector('.chev svg');
+      return contrast(getComputedStyle(svg).fill, getComputedStyle(svg.closest('details')).backgroundColor);
+    })()`);
+    expect(ratio as number).toBeGreaterThanOrEqual(3);
+  });
+}
