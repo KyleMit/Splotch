@@ -374,7 +374,7 @@
   }
 
   .more-btn:focus-visible {
-    outline: 2px solid var(--brand-solid);
+    outline: 2px solid var(--brand);
     outline-offset: 2px;
   }
 
