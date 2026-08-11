@@ -44,6 +44,23 @@ function scrollToEnd(scroller: Locator) {
   return scroller.evaluate((node) => node.scrollTo({ top: node.scrollHeight }));
 }
 
+// How much live content the cue leaves undimmed below itself. A scroll
+// container clips at its padding box, so whatever is being scrolled past keeps
+// showing through the bottom padding — while a sticky inset resolves against
+// the content box, one padding higher. A cue that stops there cuts its opaque
+// end across the content as a hard line and leaves a bright sliver under it,
+// which is the fade at its most wrong on the surface with the deepest padding.
+// Zero on every surface, whatever each one pads by.
+function undimmedStripBelow(scroller: Locator) {
+  return scroller.evaluate((node) => {
+    const cue = node.querySelector('.scroll-cue')!;
+    const clipEdge =
+      node.getBoundingClientRect().bottom -
+      Number.parseFloat(getComputedStyle(node).borderBottomWidth);
+    return clipEdge - cue.getBoundingClientRect().bottom;
+  });
+}
+
 async function openCompactSettings(page: Page) {
   await gotoApp(page);
   const modal = await openSettingsModal(page);
@@ -68,6 +85,23 @@ test.describe('the sign-up page cues its own document scroll', () => {
     // position rather than latching once.
     await page.evaluate(() => window.scrollTo({ top: 0 }));
     await expect.poll(() => cueOpacity(cue)).toBe(1);
+  });
+
+  // The document's scroller has no padding of its own to reach past — the
+  // sheet's and the ground's are content, and scroll away with it — so this
+  // pins the measurement resolving to nothing rather than to the nearest
+  // padded ancestor.
+  test('fades to the foot of the viewport, not to the sheet inside it', async ({ page }) => {
+    await page.goto('/android-beta');
+    await expect(page.getByRole('heading', { name: 'Join the Android beta' })).toBeVisible();
+
+    await expect
+      .poll(() =>
+        page
+          .locator('.scroll-cue')
+          .evaluate((cue) => window.innerHeight - cue.getBoundingClientRect().bottom)
+      )
+      .toBe(0);
   });
 });
 
@@ -102,6 +136,14 @@ test.describe('the landscape-phone settings shell', () => {
 
     await scrollToEnd(scroller);
     await expect.poll(() => cueOpacity(cue)).toBe(0);
+  });
+
+  // This pane pads only its sides, so it is the surface where a cue stuck to
+  // the content box already sat on the clip edge — the case the measurement
+  // must leave exactly where it was.
+  test('fades to the foot of a pane that pads only its sides', async ({ page }) => {
+    const scroller = await openCompactSettings(page);
+    await expect.poll(() => undimmedStripBelow(scroller)).toBe(0);
   });
 });
 
@@ -142,6 +184,16 @@ test.describe('the portrait-phone settings shell', () => {
     await expect.poll(() => cueOpacity(cue)).toBe(1);
   });
 
+  // The deepest bottom padding of any surface the cue serves, so the strip of
+  // content showing through it below a short-stopping fade was a whole row of
+  // buttons wide — the shape the fade was reported as mangling.
+  test('fades to the foot of the card, not to the padding above it', async ({ page }) => {
+    const modal = await openPhoneSettings(page);
+    const scroller = modal.locator('.settings-scroll');
+    await expect.poll(() => overflows(scroller)).toBe(true);
+    await expect.poll(() => undimmedStripBelow(scroller)).toBe(0);
+  });
+
   // The drilled-in section is the shell's other scroller, and Sound is the one
   // that fits on this phone whole — so it pins the state the hub can't reach.
   test('leaves a drilled-in section that fits uncued', async ({ page }) => {
@@ -171,6 +223,12 @@ test.describe('the two-column settings shell', () => {
 
     await pane.evaluate((node) => node.scrollTo({ top: 0 }));
     await expect.poll(() => cueOpacity(cue)).toBe(1);
+  });
+
+  test('fades to the foot of the pane, not to the padding above it', async ({ page }) => {
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await expect.poll(() => undimmedStripBelow(modal.locator('.settings-pane'))).toBe(0);
   });
 
   // The sidebar carries its own two-ended edge shades, painted as `local` and

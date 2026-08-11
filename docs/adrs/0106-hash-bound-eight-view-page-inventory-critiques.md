@@ -15,6 +15,10 @@
 > rather than refused, the indistinguishable-review guard moved to the capture manifest, and the
 > critique `schema_version` moves 3 → 4. See the amendment at the end.
 
+> **Amendment (2026-08-11, later):** a checkpoint binds its `review_description` as well as its
+> image digest, so editing stated design intent makes the reviews taken under the old wording stale
+> instead of leaving them silently current. See the amendment at the end.
+
 ## Context
 
 The committed page inventory is both a responsive UI record and the evidence behind its design
@@ -159,3 +163,31 @@ to `validateCritiqueEntries`, and the `--status` path's call re-validated entrie
 * − The critique no longer asserts internal consistency of any kind. Two genuinely inconsistent
   reviewers now produce two entries and a `divergent: true` group that only a human reading both
   critiques can adjudicate.
+
+## Amendment (2026-08-11, later): a checkpoint binds the description as well as the pixels
+
+A reviewer's inputs are the image **and** the `review_description`, but a checkpoint bound only the
+image. Editing `lib/page-inventory-design-notes.mjs` therefore changed what every future reviewer is
+told while leaving all 672 stored reviews reading as current — a re-run reported "All selected
+page-inventory reviews are current" and re-reviewed nothing. The notes were an input the tool could
+not see having changed.
+
+A checkpoint now carries `review_description_sha256` beside its entry, and a mismatch is a
+`StaleCritiqueHashError` — the same class a recapture raises. That routes a notes edit into the
+staleness machinery that already exists: the runner re-queues those reviews, `--status` counts them
+under `stale_reviews` and offers the first as `next_review`, and finalization refuses to publish a
+critique containing one. Old checkpoints have no such field, so they read as stale rather than as
+malformed, and no schema version moves.
+
+The binding is to the manifest's stored description, not to the notes module, because that is what
+the reviewer was actually handed. So editing a note requires regenerating the inventory before
+re-reviewing; a re-review against an un-regenerated manifest faithfully re-runs the old wording.
+
+* \+ Changing stated design intent invalidates exactly the reviews it changes, with no human
+  bookkeeping and no way to publish a critique produced under superseded notes.
+* \+ It closes the more expensive half of the ADR's standing "a design note is unfalsifiable"
+  consequence: a note can still be wrong, but it can no longer be silently inert.
+* − Every checkpoint written before this amendment is stale, so the next campaign re-reviews the
+  whole inventory.
+* − A note edit costs a full recapture as well as a full re-review, since the description the
+  binding compares lives in the capture manifest.

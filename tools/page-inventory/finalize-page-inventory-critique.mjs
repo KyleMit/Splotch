@@ -15,6 +15,7 @@ import {
   finalizeDesignCritique,
   PAGE_INVENTORY_REVIEW_CONTRACT,
   readCaptureManifest,
+  reviewDescriptionDigest,
   StaleCritiqueHashError,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
@@ -82,17 +83,28 @@ function validateCheckpoint(document, manifest, expectedReviews) {
   if (document.entry.review_id !== document.review_id) {
     throw new Error(`entry.review_id must equal ${document.review_id}`);
   }
+  if (document.review_description_sha256 !== reviewDescriptionDigest(expected.review_description)) {
+    throw new StaleCritiqueHashError(
+      `Design critique checkpoint ${document.review_id} was reviewed against a different description`
+    );
+  }
   const entries = validateCritiqueEntries([document.entry], manifest, { allowPartial: true });
   if (!entries.has(expected.review_id)) throw new Error(`review is missing ${expected.review_id}`);
   return document.entry;
 }
 
+// Refreshes both halves of a review's binding — the image it was shown and the
+// description it was told — so that status can re-validate a checkpoint that is
+// stale on either one and confirm nothing else about it is wrong before
+// reporting it as merely stale rather than as malformed.
 function checkpointWithCurrentHashes(document, manifest) {
   const captures = new Map(manifest.captures.map((capture) => [capture.review_id, capture]));
   const capture = captures.get(document?.review_id);
+  if (!capture) return document;
   return {
     ...document,
-    entry: capture ? { ...document.entry, sha256: capture.sha256 } : document.entry,
+    review_description_sha256: reviewDescriptionDigest(capture.review_description),
+    entry: { ...document.entry, sha256: capture.sha256 },
   };
 }
 

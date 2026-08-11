@@ -11,6 +11,8 @@
 //                  screen, so a bottom fade can stand down both at the boundary
 //                  and on content short enough never to have crossed it. Any
 //                  scroller — it is what ScrollCue is built on.
+//   coverScrollportPadding publishes the scrollport's bottom padding, the strip
+//                  a bottom-stuck fade cannot reach on its own. Also ScrollCue's.
 //
 // Both re-evaluate off a ResizeObserver rather than a reactive open flag: a
 // closed <dialog> is display:none, so every open resizes the elements involved
@@ -171,6 +173,60 @@ export function observeContentEnd(node: HTMLElement, onChange: (atEnd: boolean) 
     destroy() {
       intersection.disconnect();
       resize.disconnect();
+    },
+  };
+}
+
+/** The custom property `coverScrollportPadding` writes and ScrollCue's `bottom`
+ *  reads. Not a tuning knob: it carries a measurement of the call site's own
+ *  scroller, so nothing should declare it by hand. */
+const SCROLLPORT_BOTTOM_PADDING_PROPERTY = '--scrollport-bottom-padding';
+
+/** The scrollport a sticky descendant of `node` sticks to: the nearest ancestor
+ *  that scrolls its content, or the document's scroller when none does. Only
+ *  `visible` and `clip` leave an element out — `hidden` still establishes a
+ *  scrollport, and so still bounds a sticky box. */
+function nearestScrollport(node: HTMLElement): Element | null {
+  for (let el = node.parentElement; el; el = el.parentElement) {
+    const { overflowY } = getComputedStyle(el);
+    if (overflowY !== 'visible' && overflowY !== 'clip') return el;
+  }
+  return document.scrollingElement;
+}
+
+/**
+ * Lets a `bottom: 0` sticky element reach the bottom edge of the scrollport it
+ * sticks to, by publishing that scrollport's bottom padding as
+ * `--scrollport-bottom-padding` on the element for a negative inset to spend.
+ *
+ * A scroll container lays its children out in its *content* box and clips them
+ * at its *padding* box, and a sticky inset resolves against the content box. So
+ * anything still being scrolled past keeps showing through the strip of bottom
+ * padding — while a fade stuck to `bottom: 0` stops exactly one padding above
+ * it. The fade's opaque end then cuts a hard line across live content, with an
+ * undimmed sliver of it below: the more bottom padding a scroller has, the less
+ * the cue reads as a fade at all.
+ */
+export function coverScrollportPadding(node: HTMLElement) {
+  const scrollport = nearestScrollport(node);
+  if (!scrollport) return;
+
+  function publish() {
+    const padding = Number.parseFloat(getComputedStyle(scrollport!).paddingBottom) || 0;
+    node.style.setProperty(SCROLLPORT_BOTTOM_PADDING_PROPERTY, `${padding}px`);
+  }
+  publish();
+
+  // Padding is a declaration, not a measurement, so nothing reports it changing
+  // — but every way it changes here (a media query re-evaluating on a rotate or
+  // a resize) resizes the scrollport in the same pass.
+  const observer = new ResizeObserver(publish);
+  observer.observe(scrollport);
+
+  return {
+    destroy() {
+      observer.disconnect();
+      node.style.removeProperty(SCROLLPORT_BOTTOM_PADDING_PROPERTY);
     },
   };
 }

@@ -111,6 +111,14 @@ export function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
+// A reviewer is handed exactly two semantic inputs, so a checkpoint that binds
+// only the image is bound to half of what produced it: edit a design note and
+// every stored review silently stays current against a description no reviewer
+// ever saw. This digest is the other half of that binding.
+export function reviewDescriptionDigest(description) {
+  return createHash('sha256').update(description).digest('hex');
+}
+
 export function captureReviewId(item, viewport, theme) {
   return `${item.group}--${item.id}--${viewport.id}--${theme.id}`;
 }
