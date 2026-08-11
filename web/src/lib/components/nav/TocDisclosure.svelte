@@ -57,8 +57,9 @@
   // A sticky element taller than its scrollport can never be scrolled to its
   // own bottom — the pin outlives the scroll — so the panel takes the room left
   // under the row and scrolls inside itself. Measured from where the panel
-  // actually sits rather than from the sticky offset, which spares this
-  // component the host's chrome arithmetic.
+  // actually sits — unlike the jump below, which needs where the row will come
+  // to rest, a cap taken from the panel's present position always fits the
+  // viewport it is opened in, and it only grows as the block pins.
   $effect(() => {
     if (!open) return;
     const cap = () => {
@@ -98,16 +99,16 @@
   // sticky ancestor covers both hosts: /changelog's row is itself the sticky
   // block, /design's is the last line of a sticky header. The distance between
   // the two is layout-invariant, so it reads correctly pinned or not.
-  function pinnedLine(bounds: DOMRect): number {
-    for (let el: HTMLElement | null = row!; el; el = el.parentElement) {
-      const style = getComputedStyle(el);
-      if (style.position !== 'sticky') continue;
+  function pinnedLine(el: HTMLElement): number {
+    const bottom = el.getBoundingClientRect().bottom;
+    for (let block: HTMLElement | null = el; block; block = block.parentElement) {
+      const style = getComputedStyle(block);
       const offset = Number.parseFloat(style.top);
-      if (Number.isFinite(offset)) {
-        return offset + bounds.bottom - el.getBoundingClientRect().top;
+      if (style.position === 'sticky' && Number.isFinite(offset)) {
+        return offset + bottom - block.getBoundingClientRect().top;
       }
     }
-    return bounds.bottom;
+    return bottom;
   }
 
   // The row sits in the flow above every section it links to, so the panel's
@@ -118,7 +119,7 @@
     await tick();
     const target = document.getElementById(id);
     if (!target || !row) return;
-    const line = pinnedLine(row.getBoundingClientRect()) + JUMP_CLEARANCE_PX;
+    const line = pinnedLine(row) + JUMP_CLEARANCE_PX;
     window.scrollTo({ top: window.scrollY + target.getBoundingClientRect().top - line });
   }
 </script>
