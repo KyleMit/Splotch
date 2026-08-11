@@ -401,7 +401,7 @@ test('drilling into a phone section resets the zoom', async ({ page }) => {
   // The hub row sits inside the scroller the pinch ran on, so the first tap is
   // eaten by the ghost-click guard — the retry is the second, genuine one.
   await expect(async () => {
-    await page.getByRole('button', { name: 'Buttons' }).click({ timeout: 1000 });
+    await page.getByRole('button', { name: 'Tool Drawer' }).click({ timeout: 1000 });
     await expect(page.locator('#advancedControlsToggle')).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 5000 });
   await expect.poll(() => paneZoom(page)).toBe(1);

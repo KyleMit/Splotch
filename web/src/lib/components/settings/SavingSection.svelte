@@ -2,7 +2,7 @@
   import ToggleRow from './ToggleRow.svelte';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
-  import { settings, setSaveOnDelete } from '$lib/state/settings.svelte';
+  import { settings, setSaveOnDelete, setScreenshot } from '$lib/state/settings.svelte';
   import { changeSaveFolder, forgetSaveFolder } from '$lib/state/saveFolder.svelte';
   import { folderSaveSupported } from '$lib/drawing/folderSave';
 
@@ -20,6 +20,21 @@
       checked={settings.saveOnDeleteEnabled}
       onToggle={setSaveOnDelete}
       help="Saves the current drawing each time the page is cleared"
+    />
+  </div>
+
+  <!-- The camera button's visibility lives with saving rather than with the
+       Tool Drawer's chip grid, the way Coloring and AI Art each own their own
+       button: it is the other way a drawing gets saved, and it is not something
+       Advanced Controls should be able to hide. -->
+  <div class="setting">
+    <ToggleRow
+      icon="camera"
+      label="Camera button"
+      id="screenshotToggle"
+      checked={settings.screenshotEnabled}
+      onToggle={setScreenshot}
+      help="Shows the button that saves a photo of the drawing"
     />
   </div>
 

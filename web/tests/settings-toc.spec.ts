@@ -97,10 +97,10 @@ test('the scrollspy reading line sits inside the 120-140px band', async ({ page 
 
   await parkHeadingBelowPaneTop(page, 'controls', BELOW_BAND_PX);
   await expect(nav.getByRole('button', { name: 'Sound' })).toHaveClass(/active/);
-  await expect(nav.getByRole('button', { name: 'Buttons' })).not.toHaveClass(/active/);
+  await expect(nav.getByRole('button', { name: 'Tool Drawer' })).not.toHaveClass(/active/);
 
   await parkHeadingBelowPaneTop(page, 'controls', ABOVE_BAND_PX);
-  await expect(nav.getByRole('button', { name: 'Buttons' })).toHaveClass(/active/);
+  await expect(nav.getByRole('button', { name: 'Tool Drawer' })).toHaveClass(/active/);
 });
 
 // The pane travels thousands of pixels on a jump, so it glides rather than

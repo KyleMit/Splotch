@@ -3,18 +3,24 @@ import { APP_VERSION } from '$lib/appVersion';
 import { aiCredentialKind, settings } from '$lib/state/settings.svelte';
 import { coloringPackState } from '$lib/state/coloringPacks.svelte';
 import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+import { hiddenDrawingToolCount } from './drawingTools';
 
 // Settings is one flat list of sections (ADR-0061). Both shells — the phone hub
 // with full-page drill-in and the tablet table of contents over one continuous
 // pane — render from this single ordered list, so the two layouts can never
 // drift, and the nav order is the pane's stacking order.
+//
+// Ordered by what a visit does: the two sections the phone hub answers inline
+// with a switch lead (see HUB_TOGGLES in SettingsModal), then the drill-ins by
+// how often a parent goes configuring, then the reference sections. Saving sits
+// below the feature sections because it is set once and left alone.
 export const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
   { id: 'sound', label: 'Sound', icon: 'sound' },
-  { id: 'controls', label: 'Buttons', icon: 'controls' },
-  { id: 'saving', label: 'Saving', icon: 'save-picture' },
+  { id: 'controls', label: 'Tool Drawer', title: 'Drawing Tools', icon: 'controls' },
   { id: 'coloring', label: 'Coloring', icon: 'shapes' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
+  { id: 'saving', label: 'Saving', icon: 'save-picture' },
   { id: 'parentCenter', label: 'Parent Center', icon: 'parent-center' },
   { id: 'setup', label: 'Install', icon: 'setup' },
   { id: 'feedback', label: 'Feedback', icon: 'feedback' },
@@ -54,32 +60,41 @@ export function sectionHeading(id: SectionId): string {
 // `var(--duration-*)` string.
 export const SECTION_SLIDE = { duration: 220 };
 
-const THEME_LABEL = { light: 'Light', dark: 'Dark', system: 'System' } as const;
+// What the Tool Drawer row says while every tool is showing: the contents of
+// the drawer, rather than a count of nothing.
+const ALL_TOOLS_SHOWING = 'Pen, crayon, magic brush & more';
 
 // The one-line status shown under each row in the phone hub. Reads live
 // `settings`, so it stays reactive wherever it's rendered in a component.
+//
+// A row the hub answers with an inline switch (HUB_TOGGLES in SettingsModal)
+// drops the on/off word from its subtitle and names the boolean instead — the
+// switch beside it is what says which way that boolean is set.
 export function sectionSubtitle(id: SectionId): string {
   switch (id) {
     case 'appearance': {
-      const parts: string[] = [THEME_LABEL[settings.theme]];
+      // The rotation lock is the other thing this section holds, kept to two
+      // words: the inline switch leaves this row the least subtitle width in
+      // the hub, and a summary that wraps past two lines is clipped.
+      const parts: string[] = ['Night Mode'];
       if (settings.lockRotationEnabled) {
-        parts.push('rotation locked');
-        parts.push(settings.forceLandscapeOrientation ? 'landscape' : 'portrait');
+        parts.push(settings.forceLandscapeOrientation ? 'landscape lock' : 'portrait lock');
       }
       return parts.join(' · ');
     }
     case 'sound':
-      return settings.soundEnabled
-        ? `Drawing sounds on · ${settings.soundVolume}%`
-        : 'Drawing sounds off';
+      return settings.soundEnabled ? `Volume ${settings.soundVolume}%` : 'Muted';
     case 'saving':
       return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
     case 'coloring':
       return settings.coloringBookEnabled
         ? `${Math.max(0, coloringPackState.installedBookIds.length - 1)} extra books ready`
         : 'Coloring books off';
-    case 'controls':
-      return settings.advancedControlsEnabled ? 'Advanced controls on' : 'Standard controls';
+    case 'controls': {
+      const hidden = hiddenDrawingToolCount();
+      if (!hidden) return ALL_TOOLS_SHOWING;
+      return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;
+    }
     case 'ai': {
       const kind = aiCredentialKind();
       if (kind === 'none') {

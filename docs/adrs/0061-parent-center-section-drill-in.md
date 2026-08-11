@@ -299,3 +299,57 @@ The trade is wall clock. Click to all-eleven-attached goes 287 ms → 798 ms at 
 itself is one frame per section either way. That buys a card that is interactive on its first
 painted frame and an open animation nothing competes with, at the price of the *bottom* of a
 settings list nobody has scrolled to yet arriving half a second later.
+
+## Amendment (2026-08): the phone hub answers its two most-flipped booleans in place
+
+A hub row was a uniform "go somewhere else": icon, title, live subtitle, chevron. That is the right
+shape for a section a parent goes to configure, and the wrong one for a boolean they flip mid-play —
+Night Mode and Sound both cost a drill-in, a tap, and a trip back for a state the row was already
+reporting in words.
+
+The alternative considered first was porting the `/design` styleguide's `TocDisclosure` to phone
+Settings: one continuous pane behind a collapsed expander, the same document the wide shell shows.
+It was **rejected**. A Settings visit is task-oriented and usually one section deep, so a table of
+contents that must be opened before it can be read is a step backwards from a hub that names every
+section and reports its state without being asked; and the continuous pane's mount cost is the one
+the amendment above exists to manage — the phone hub is the floor precisely because it mounts no
+section bodies at all.
+
+So the hub stays hub-and-drill, and the investment goes into the row:
+
+* **A split row where — and only where — the boolean is legible from the row's own name and worth
+  flipping mid-session.** That test admits exactly two: Night Mode (Appearance) and Sound. The row
+  body keeps the drill-in; a hairline separates it from a trailing switch that acts on the spot.
+  Auto-Save fails the second half of the test (set-and-forget) and Advanced Controls the first
+  ("Tool Drawer" doesn't say what it would be turning on), so both stay drill-ins. The switch is
+  binary over the *resolved* theme, the quick toggle `CompactShell` and `/design`'s header already
+  carry, with the same accepted trade: flipping it while on System pins the preference. The
+  three-way choice including System stays in the Appearance section.
+* **No chevrons anywhere.** With a switch on some rows, a chevron on the rest read as two kinds of
+  row rather than one. The tile already says tappable — `SidebarToc` and `CompactShell` carry no
+  chevron either — and dropping it returns ~32px of subtitle width to every row.
+* **A subtitle that names the boolean instead of stating it.** A row with a switch drops the on/off
+  word the switch now carries: Appearance reads "Night Mode", Sound reads "Volume 40%" or "Muted".
+  The rotation lock stays appended, shortened to two words, because the switch leaves that row the
+  least subtitle width in the hub and a summary that wraps past two lines is clipped.
+* **`SECTIONS` reordered** so the switch rows lead, the drill-ins follow by how often a parent goes
+  configuring, and Saving — set once, then left alone — sits below the feature sections. One list
+  drives both shells and the wide sidebar, so the order moves everywhere at once; that is the point.
+* **"Buttons" became "Tool Drawer"** in the nav, with "Drawing Tools" as the drilled-in heading
+  through the existing `title` mechanism (the split "What's New" → "Updates" already uses). The nav
+  label is a playful container in the brand's register; the heading over the controls stays literal.
+* **The camera button moved to Saving**, as an ungated toggle beside Auto-Save on Delete. It is the
+  other way a drawing gets saved, and Coloring and AI Art already own their own buttons' visibility
+  in their feature sections rather than in the chip grid behind Advanced Controls.
+
+The switch itself is now `settings/ToggleSwitch.svelte`, shared by `ToggleRow` and the hub, and the
+tools the chip grids show and hide are one exported list (`settings/drawingTools.ts`) — the hub row
+summarizes it ("2 tools hidden"), and a second copy would let the summary and the grids disagree
+about what a tool is.
+
+One thing this amendment does **not** fix, surfaced by the reorder: a table-of-contents jump made
+while the wide Pane is still filling computes its scroll from offsets that the conditional reveals
+above (persisted state, the free-generation fetch) then invalidate, so the section lands in view but
+several hundred pixels below the reading line. `tests/settings-mount.spec.ts` scores that jump on
+the section coming into view; it used to score it on the highlight, which held only because the
+section it drifted to was the one being jumped to.

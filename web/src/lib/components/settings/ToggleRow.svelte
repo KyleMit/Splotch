@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { CommonIconName } from '../iconTypes';
   import Icon from '../Icon.svelte';
+  import ToggleSwitch from './ToggleSwitch.svelte';
 
   // A single iOS-style toggle row: an icon + label on the left, a switch on the
   // right, and an optional help line below. `aria-label` is derived from `label`
@@ -24,19 +25,14 @@
     <Icon name={icon} class="setting-icon" />
     <span class="setting-label">{label}</span>
   </label>
-  <button
-    class="toggle-switch"
-    class:active={checked}
+  <ToggleSwitch
     {id}
-    role="switch"
-    aria-label={label}
-    aria-checked={checked}
-    aria-describedby={help ? `${id}-help` : undefined}
+    {label}
+    {checked}
+    {onToggle}
     {disabled}
-    onclick={() => onToggle(!checked)}
-  >
-    <span class="toggle-switch-thumb"></span>
-  </button>
+    describedBy={help ? `${id}-help` : undefined}
+  />
 </div>
 {#if help}
   <p id="{id}-help" class="setting-help" class:disabled>{help}</p>
@@ -82,56 +78,7 @@
     opacity: 0.55;
   }
 
-  .setting-toggle.disabled .setting-info,
-  .toggle-switch:disabled {
+  .setting-toggle.disabled .setting-info {
     cursor: default;
-  }
-
-  /* iOS-style toggle switch (boolean settings) */
-  .toggle-switch {
-    width: 52px;
-    height: 32px;
-    background: var(--control-track);
-    border: none;
-    border-radius: var(--radius-pill);
-    padding: 0;
-    position: relative;
-    cursor: pointer;
-    transition: background var(--duration-base) ease;
-    flex-shrink: 0;
-  }
-
-  @media (hover: hover) {
-    .toggle-switch:hover {
-      background: var(--control-track-hover);
-    }
-  }
-
-  .toggle-switch.active {
-    background: var(--brand);
-  }
-
-  @media (hover: hover) {
-    /* The textless --brand fill darkens through the same themed ramp the
-       labeled fills rest on — there is no separate unthemed hover step. */
-    .toggle-switch.active:hover {
-      background: var(--brand-solid);
-    }
-  }
-
-  .toggle-switch-thumb {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 26px;
-    height: 26px;
-    background: white;
-    border-radius: 50%;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    transition: transform var(--duration-base) ease;
-  }
-
-  .toggle-switch.active .toggle-switch-thumb {
-    transform: translateX(20px);
   }
 </style>
