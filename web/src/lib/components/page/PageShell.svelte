@@ -22,14 +22,12 @@
     /** A control the hero carries beside the title (the admin console's Sign out). */
     actions?: Snippet;
     children: Snippet;
-    /** Lands on the palette-bearing root, for a page that restyles the frame. */
-    class?: string;
   }
 
-  let { title, wordmark, lede, actions, children, class: className }: Props = $props();
+  let { title, wordmark, lede, actions, children }: Props = $props();
 </script>
 
-<main class={['page', className]}>
+<main class="page">
   <div class="sheet">
     <div class="topbar">
       <a class="back" href="/">← Back to drawing</a>
