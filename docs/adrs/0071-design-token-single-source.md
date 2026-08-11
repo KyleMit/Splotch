@@ -229,9 +229,17 @@ was not enough:
   ink as near-black — passing at a ratio just above 1. It reads its channels off a 1x1 canvas fill
   now, which is notation-agnostic.
 
-Still outside this reversal: the `<meta name="theme-color">` seeded by `app.html` stays
+The `<meta name="theme-color">` tag was the last holdout and closed the same day. It shipped as
 `THEME_COLORS.light` on every route except `/`, because `lib/state/appearance.svelte.ts` — the one
-owner of the resolved-theme subscription that repaints it — is imported only by the drawing route.
-The pages render dark correctly; the browser chrome above them does not follow. Fixing it means
-either pulling the drawing app's state modules into the marketing-page bundles or teaching
-`app.html`'s pre-paint script to resolve the theme itself, and neither was in scope here.
+owner of the resolved-theme subscription that repaints it — is imported only by the drawing route,
+so a dark `/privacy` rendered under a white address bar and PWA status bar. Of the two ways to fix
+it, pulling those state modules into the marketing-page bundles was rejected: a static import into a
+startup-path module re-partitions Rollup's chunks, and it would have done so for pages that need
+none of that state. Instead `app.html`'s pre-paint script resolves the theme itself — the explicit
+`splotch-theme` value when there is one, `prefers-color-scheme` otherwise — paints the tag before
+first paint, and in system mode keeps a `matchMedia` listener so the chrome follows an OS switch
+made while the page is open. That listener stands down whenever `data-app-surface` is present: on
+the drawing route `NotchBand` tints the same tag with the active drawing color, and the two must not
+fight over it. The script's copies of the colors and of `resolveTheme`'s three-state rule are
+guarded the way the rest of that script is — `app.html.test.ts` now runs the shipped script against
+the shipped tag for every preference under both OS preferences.

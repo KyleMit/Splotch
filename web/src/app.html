@@ -79,7 +79,19 @@
              (default: system, where the prefers-color-scheme CSS drives the theme
              with no attribute at all). Mirrors lib/theme.ts.
          The keys, defaults, and the scale clamp mirror settings.svelte.ts
-         (ACTION_BUTTON_SCALE_*, BOOL_SETTINGS); app.html.test.ts fails on divergence. -->
+         (ACTION_BUTTON_SCALE_*, BOOL_SETTINGS); app.html.test.ts fails on divergence.
+
+         The theme-color meta above is the one value this script REPAINTS rather
+         than stamps: the tag ships as THEME_COLORS.light, and every route needs
+         it on the RESOLVED theme so the browser address bar and PWA status bar
+         match the page under them. Only the drawing route imports
+         state/appearance.svelte.ts, which owns that subscription for the app, so
+         off that route this script is the only thing that can follow the OS
+         preference — hence the change listener, which stands down whenever the
+         drawing surface is on screen (data-app-surface) because NotchBand tints
+         the same tag with the active drawing color there. The colors mirror
+         THEME_COLORS and the resolution mirrors resolveTheme(), both in
+         lib/theme.ts; app.html.test.ts runs this script and fails on divergence. -->
     <script>
       (function () {
         try {
@@ -150,7 +162,20 @@
           }
 
           var theme = localStorage.getItem('splotch-theme');
-          if (theme === 'light' || theme === 'dark') el.setAttribute('data-theme', theme);
+          var explicitTheme = theme === 'light' || theme === 'dark';
+          if (explicitTheme) el.setAttribute('data-theme', theme);
+
+          var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+          var themeColorMeta = document.querySelector('meta[name="theme-color"]');
+          var paintThemeColor = function (dark) {
+            themeColorMeta.setAttribute('content', dark ? '#17171d' : '#ffffff');
+          };
+          paintThemeColor(explicitTheme ? theme === 'dark' : darkQuery.matches);
+          if (!explicitTheme) {
+            darkQuery.addEventListener('change', function (e) {
+              if (!el.hasAttribute('data-app-surface')) paintThemeColor(e.matches);
+            });
+          }
         } catch (e) {
           /* private-mode / disabled storage — fall back to CSS defaults */
         }
