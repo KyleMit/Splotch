@@ -7,6 +7,10 @@
 > four-device, one-orientation batch checkpoints are superseded by the independent-review contract
 > below.
 
+> **Amendment (2026-08-10, later):** the manifest record shape changed (`schema_version` 3), the
+> light-only theme-support opt-out is retired, capture failures are loud, and stated design intent
+> is an input to every review. See the amendment at the end.
+
 ## Context
 
 The committed page inventory is both a responsive UI record and the evidence behind its design
@@ -65,3 +69,45 @@ current inventory, files, and complete critique agree exactly.
   again, even when the visual difference is harmless.
 * − The strict attachment path refuses useful-but-incomplete feedback; work in progress must remain
   in scratch output until all current reviews are complete.
+
+## Amendment (2026-08-10): loud captures, retired light-only, and stated design intent
+
+Four changes, all in `tools/page-inventory/`. The manifest `schema_version` moves 2 → 3, so a
+manifest from before this amendment is refused until the inventory is regenerated.
+
+**The light-only opt-out is retired.** `theme_support`, `PAGE_INVENTORY_THEME_SUPPORT`, and the
+night-mode description branch are gone, following ADR-0071's decision that no page opts out of night
+mode. `validateThemeCaptureDifferences` now applies to every surface unconditionally, which converts
+it from a coverage detail into the guard that *enforces* that decision: a page that stops following
+the theme produces pixel-identical light and night captures and fails the run. The previous run had
+exactly that — `/android-beta`, `/changelog` and `/privacy` shipped one image reviewed twice under
+two rubrics, and the opt-out is what let it through.
+
+**Capture failure is loud.** Blankness is measured as peak channel standard deviation rather than
+inferred from file size, which is not a usable proxy — the quietest legitimate capture and an empty
+harness page overlap in bytes. A surface+theme that yields the same digest at two viewports is
+rejected as a viewport that never applied. Either failure retries a bounded number of times and then
+fails the whole run naming the surface, viewport, theme, and failing check. No manifest is written
+from a run that had a failed capture, so a green run means every image rendered.
+
+**Design intent is a review input.** `lib/page-inventory-design-notes.mjs` holds general notes that
+reach every `review_description` and per-surface notes keyed by `group/surface_id` that become that
+capture's `surface_intent`; it is the sole author of intent, replacing the per-surface `intent`
+option. This exists because an isolated reviewer cannot distinguish a settled decision from a defect
+— it sees one image and one description — so a decision like a deliberately low-contrast disabled
+control has to be stated or it will be re-reported on every run. A note key naming no captured
+surface fails the tool tests rather than silently delivering nothing.
+
+**Spot checks.** `--surface`, `--viewport`, and `--theme` filter a run. Any filter diverts output to
+scratch and writes neither the capture manifest nor the report, so a filtered run cannot leave the
+committed inventory partially rewritten — the coverage authority stays all-or-nothing.
+
+* \+ A capture that silently fails to render can no longer reach a reviewer or the report.
+* \+ Intended design decisions stop being re-reported every run, and the reason is
+  version-controlled next to the tool rather than re-explained per review.
+* \+ A generator or notes change can be verified against a couple of surfaces before spending a full
+  pass.
+* − Regenerating is now all-or-nothing: one unrenderable surface fails the run rather than degrading
+  it, which is the point but does make a flaky surface block the whole inventory.
+* − A design note is unfalsifiable by the tool. A wrong note suppresses a real finding on every
+  future run, and only a human reading the notes file will catch it.

@@ -13,8 +13,16 @@ infer completion from counts in a critique file.
 
 1. Read the `design` skill for Splotch's visual criteria.
 2. Run `npm run gen:page-inventory` when the manifest or any expected image is absent. A complete
-   capture contains light and night variants for four devices in portrait and landscape.
-3. Run `npm run gen:page-inventory:critique -- --status`. `next_review` is the first missing or
+   capture contains light and night variants for four devices in portrait and landscape. A capture
+   that comes back blank, near-uniform, or pixel-identical to the same surface at another viewport
+   is retried and then fails the run by name; no manifest is written from a run that had a failed
+   capture, so a green run means every image rendered.
+3. To check one surface without a full run, filter with `--surface` (`group/id` or a bare id),
+   `--viewport`, or `--theme`, all repeatable. Any filter makes it a spot check: output goes to
+   `.scrapbook-scratch/page-inventory-spot-check` as `spot-check-captures.json`, and neither the
+   capture manifest nor the report is rewritten — so the committed inventory still stands. Use this
+   to confirm a generator or design-intent change before spending a full pass.
+4. Run `npm run gen:page-inventory:critique -- --status`. `next_review` is the first missing or
    stale manifest record and includes the stable `review_id`, image, current digest, and exact
    standalone description. Checkpoints live in the gitignored
    `.scrapbook-scratch/page-inventory-critique/reviews/` directory.
@@ -35,6 +43,19 @@ The capture description owns the rubric:
   composition.
 * Both use only `pass`, `low`, `medium`, or `high`. A pass has `recommendation: null`; every
   non-pass has a specific, non-empty recommendation based on visible evidence.
+
+## Stated design intent
+
+`tools/page-inventory/lib/page-inventory-design-notes.mjs` is the one file a human edits to stop a
+reviewer reporting a settled decision as a defect. `GENERAL_DESIGN_NOTES` reach every capture;
+`SURFACE_DESIGN_NOTES` key by `group/surface_id`, reach only that surface, and become its
+`surface_intent`. Both ship verbatim inside `review_description`, so a note must stand alone, name
+what is visible, and read as a decision already made — a reviewer who sees one image and that
+description has nothing else to reconcile it against. A key naming no captured surface fails
+`tools/page-inventory/tests/page-inventory.test.mjs` rather than silently delivering nothing.
+
+Add a note when a reviewer flags something the design intends, not to suppress a finding you
+disagree with: the notes travel with every future run.
 
 The runner writes `<review_id>.json` with exactly one entry:
 
