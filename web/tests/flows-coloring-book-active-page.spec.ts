@@ -10,6 +10,7 @@ import {
   applyFarmPage,
   gotoAppWithAllColoringBooksInstalled,
   gotoAppWithInstalledColoringBook,
+  openColoringBookGrid,
   openColoringDialog,
   openDrawer,
   openFarmPageGrid,
@@ -49,11 +50,13 @@ test('an active page leaves the book grid geometry unchanged', async ({ page }) 
   });
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await openColoringDialog(page);
+  await openColoringBookGrid(page);
 
   const dialog = page.locator('#coloring-book-dialog');
   await settleFlyIn(dialog);
   const grid = dialog.locator('.coloring-books-grid');
+  // The grid is open on its first tile; the rest land with it unless a book is
+  // still downloading, which is what the long window covers.
   await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(WEB_COLORING_BOOK_COUNT, {
     timeout: 30_000,
   });
@@ -62,7 +65,7 @@ test('an active page leaves the book grid geometry unchanged', async ({ page }) 
 
   await (await openFarmPageGrid(page)).first().click();
   await expect(dialog).toBeHidden();
-  await openColoringDialog(page);
+  await openColoringBookGrid(page);
   await settleFlyIn(dialog);
 
   await expect(grid.locator(':scope > .coloring-tile')).toHaveCount(WEB_COLORING_BOOK_COUNT);
@@ -92,7 +95,7 @@ test('the active-page chip identifies the page in both picker views', async ({ p
   await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);
   await applyFarmPage(page);
-  await openColoringDialog(page);
+  await openColoringBookGrid(page);
 
   const dialog = page.locator('#coloring-book-dialog');
   const chip = dialog.getByRole('button', { name: 'Clear active coloring page: Cat' });
@@ -120,7 +123,7 @@ test.describe('active-page chip on a small viewport', () => {
     await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);
     await applyFarmPage(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
 
     const dialog = page.locator('#coloring-book-dialog');
     await settleFlyIn(dialog);

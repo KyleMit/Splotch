@@ -188,6 +188,43 @@ export async function openColoringDialog(page: Page) {
   );
 }
 
+// The bound on a picker that never lands on the grid — not a wait any healthy
+// open spends: measured readiness is 181ms median, 386ms worst over 80 opens on
+// two contending workers, and a reopen adds ~150ms. It is sized off the *inner*
+// open instead: `openColoringDialog` may spend its own 10s re-clicking a
+// launcher whose handler isn't wired yet, so a cap anywhere near that number
+// would cut the first attempt short before this helper ever reached its second
+// one — truncating the very tolerance it is built on. Three of those budgets.
+const COLORING_BOOK_GRID_TIMEOUT_MS = 30_000;
+
+// Open the picker on its Coloring Book Grid — the cover menu, which only exists
+// once a second book is installed.
+//
+// That installed set resolves asynchronously after load (a manifest fetch plus
+// a store scan — coloringPacks/manager.ts), and a dialog opened before it lands
+// shows the starter book's pages instead, by design: a fresh install has one
+// book and drills straight into it (coloring-pack-download.spec.ts pins that
+// view). Crucially the dialog then *stays* there — ColoringBook picks the view
+// once per open (`onOpen`) and only re-picks it when the active book goes away
+// — so no amount of waiting on that open reaches the grid, which is how the
+// eight-viewport cover-geometry spec came to fail with the grid simply absent
+// (issue #936). Reopen until an open lands on it: each attempt re-reads the
+// installed set.
+export async function openColoringBookGrid(page: Page) {
+  const dialog = page.locator('#coloring-book-dialog');
+  await retryOpen(
+    dialog.locator('.coloring-books-grid .coloring-tile').first(),
+    async () => {
+      if (await dialog.isVisible().catch(() => false)) {
+        await page.keyboard.press('Escape');
+        await expect(dialog).toBeHidden({ timeout: COLORING_DIALOG_CLOSE_SETTLE_MS });
+      }
+      await openColoringDialog(page);
+    },
+    { timeout: COLORING_BOOK_GRID_TIMEOUT_MS }
+  );
+}
+
 // Slack past a lapsed dead-zone window; zones self-clear on the next query, so
 // this only has to cover clock slop.
 const TAP_GUARD_LAPSE_MARGIN_MS = 100;

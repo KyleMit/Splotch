@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { settleFlyIn } from './helpers';
 import {
   gotoAppWithAllColoringBooksInstalled,
-  openColoringDialog,
+  openColoringBookGrid,
   openDrawer,
   settleTapGuard,
 } from './flows-harness';
@@ -43,7 +43,7 @@ test.describe('coloring picker scroll cues on a phone', () => {
   test('cuts the trailing row and fades it, then retires both at the bottom', async ({ page }) => {
     await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
 
     const dialog = dialogOf(page);
     await settleFlyIn(dialog);
@@ -72,7 +72,7 @@ test.describe('coloring picker scroll cues on a phone', () => {
   test('re-evaluates the cues when the page grid replaces the book grid', async ({ page }) => {
     await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
 
     const dialog = dialogOf(page);
     await settleFlyIn(dialog);
@@ -101,7 +101,7 @@ test.describe('coloring picker with room for the whole catalog', () => {
   test('leaves a grid that fits uncut and uncued', async ({ page }) => {
     await gotoAppWithAllColoringBooksInstalled(page);
     await openDrawer(page);
-    await openColoringDialog(page);
+    await openColoringBookGrid(page);
 
     const dialog = dialogOf(page);
     await settleFlyIn(dialog);
