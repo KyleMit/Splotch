@@ -42,9 +42,10 @@
  * the inventory, then re-run the review command, which re-queues exactly them. A
  * general note therefore restages all of it.
  *
- * GENERAL_DESIGN_NOTES reach every capture. SURFACE_DESIGN_NOTES reach only the
- * surface named by their `group/surface_id` key and become that capture's
- * `surface_intent`; a key naming no captured surface fails
+ * GENERAL_DESIGN_NOTES reach every capture. GROUP_DESIGN_NOTES reach every
+ * surface in the named group. SURFACE_DESIGN_NOTES reach only the surface named
+ * by their `group/surface_id` key. The matching group and surface notes are
+ * joined into that capture's `surface_intent`; a key naming no captured target fails
  * tools/page-inventory/tests/page-inventory.test.mjs rather than silently
  * delivering nothing.
  */
@@ -57,11 +58,18 @@ export const GENERAL_DESIGN_NOTES = [
   'In the bottom-corner panel of round buttons (the Actions Panel), the undo, AI, and screenshot buttons are drawn at reduced contrast whenever they are disabled, which is how this app marks them unavailable until at least one stroke is on the canvas. That reduced contrast is intended for those three buttons while they are in that disabled state; it is not a claim about their contrast once they are enabled.',
 ];
 
+export const GROUP_DESIGN_NOTES = {
+  settings:
+    'When this image shows the compact phone-landscape Settings shell, its Portrait and Landscape orientation segments are both inactive while screen rotation is unlocked. A segment becomes active only after the parent locks rotation to that orientation.',
+};
+
 export const SURFACE_DESIGN_NOTES = {
   'controls/clear-coachmark':
     'The clear-gesture coachmark drawn over the canvas is the intended design, and it is carried by an animation that a single frame cannot convey. Judge the coachmark itself on whether what is drawn here is legible, rather than on whether it explains the gesture. Everything else in the frame stays in normal scope.',
   'controls/clear-drag-preview':
     'The faint icons washed over the canvas are the intended effect: they signal that clearing the drawing is underway.',
+  'settings/settings-whatsnew':
+    "In the wide split-pane Settings shell, What's New and About are the two trailing sections of one continuous pane rather than independently paged views, so this capture records their shared trailing region. The table-of-contents highlight follows the reading position: it remains on What's New while that section is at the reading line and moves to About only at the pane's true scroll end. A viewport tall enough to show the entire trailing region can therefore produce the same capture when opened from either section.",
 };
 
 export function designNoteKey(group, surfaceId) {
@@ -69,5 +77,7 @@ export function designNoteKey(group, surfaceId) {
 }
 
 export function surfaceDesignNote(group, surfaceId) {
-  return SURFACE_DESIGN_NOTES[designNoteKey(group, surfaceId)];
+  const notes = [GROUP_DESIGN_NOTES[group], SURFACE_DESIGN_NOTES[designNoteKey(group, surfaceId)]];
+  const matched = notes.filter(Boolean);
+  return matched.length > 0 ? matched.join(' ') : undefined;
 }

@@ -33,6 +33,7 @@ import {
 import { assertCaptureRendered } from '../lib/page-inventory-capture.mjs';
 import {
   GENERAL_DESIGN_NOTES,
+  GROUP_DESIGN_NOTES,
   SURFACE_DESIGN_NOTES,
   designNoteKey,
 } from '../lib/page-inventory-design-notes.mjs';
@@ -297,10 +298,34 @@ describe('page inventory output', () => {
     expect(plain.review_description).toContain(GENERAL_DESIGN_NOTES[0]);
   });
 
+  it('carries group design intent into every surface in that group', () => {
+    const note = GROUP_DESIGN_NOTES.settings;
+    const overview = writeCaptures(
+      fixture(),
+      inventoryItem({ group: 'settings', id: 'settings-overview' })
+    ).captures[0];
+    const whatsNew = writeCaptures(
+      fixture(),
+      inventoryItem({ group: 'settings', id: 'settings-whatsnew' })
+    ).captures[0];
+
+    expect(overview.surface_intent).toBe(note);
+    expect(whatsNew.surface_intent).toContain(note);
+    expect(whatsNew.surface_intent).toContain(
+      SURFACE_DESIGN_NOTES[designNoteKey('settings', 'settings-whatsnew')]
+    );
+  });
+
   it('keys every per-surface design note to a surface the inventory captures', () => {
     const captured = new Set(allSurfaces().map((item) => designNoteKey(item.group, item.id)));
     expect(Object.keys(SURFACE_DESIGN_NOTES).filter((key) => !captured.has(key))).toEqual([]);
     expect(Object.keys(SURFACE_DESIGN_NOTES).length).toBeGreaterThan(0);
+  });
+
+  it('keys every group design note to a group the inventory captures', () => {
+    const captured = new Set(allSurfaces().map((item) => item.group));
+    expect(Object.keys(GROUP_DESIGN_NOTES).filter((key) => !captured.has(key))).toEqual([]);
+    expect(Object.keys(GROUP_DESIGN_NOTES).length).toBeGreaterThan(0);
   });
 
   it('rejects pixel-identical theme pairs for every surface', () => {
