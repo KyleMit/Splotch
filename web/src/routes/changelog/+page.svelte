@@ -29,17 +29,14 @@
   $effect(() => {
     const host = historyEl;
     if (!host) return;
-    const inBand = new Set<string>();
+    const inBand: Record<string, boolean> = {};
     const observer = new IntersectionObserver(
       (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) inBand.add(entry.target.id);
-          else inBand.delete(entry.target.id);
-        }
+        for (const entry of entries) inBand[entry.target.id] = entry.isIntersecting;
         // Releases run newest first, so the last one in the band is the one
         // being scrolled into. An empty band means the reader is between two
         // releases — hold the last reading rather than blanking the rail.
-        const current = releases.findLast((release) => inBand.has(release.id));
+        const current = releases.findLast((release) => inBand[release.id]);
         if (current) activeRelease = current.id;
       },
       { rootMargin: SPY_ROOT_MARGIN }
