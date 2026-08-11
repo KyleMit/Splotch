@@ -20,6 +20,12 @@ const TALLER_THAN_THE_PAGE = { width: 1100, height: 3200 };
 const CROPPED_LANDSCAPE = { width: 740, height: 250 };
 const ROOMY_LANDSCAPE = { width: 740, height: 320 };
 
+// A landscape tablet, which elects the two-column shell. There is no "it fits"
+// counterpart for that pane: it stacks every section in one scroll under a card
+// capped at 85vh, so it overflows at any viewport — the two surfaces above are
+// where the fits state is pinned.
+const TABLET_LANDSCAPE = { width: 1024, height: 768 };
+
 function cueOpacity(cue: Locator) {
   return cue.evaluate((node) => Number(getComputedStyle(node).opacity));
 }
@@ -100,5 +106,34 @@ test.describe('the landscape-phone settings shell with room for every toggle', (
     const scroller = await openCompactSettings(page);
     await expect.poll(() => overflows(scroller)).toBe(false);
     await expect.poll(() => cueOpacity(scroller.locator('.scroll-cue'))).toBe(0);
+  });
+});
+
+test.describe('the two-column settings shell', () => {
+  test.use({ viewport: TABLET_LANDSCAPE });
+
+  test('cues the content pane and stands down at the last section', async ({ page }) => {
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await expect(modal).toHaveClass(/wide/);
+
+    const pane = modal.locator('.settings-pane');
+    const cue = pane.locator('.scroll-cue');
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+
+    await scrollToEnd(pane);
+    await expect.poll(() => cueOpacity(cue)).toBe(0);
+
+    await pane.evaluate((node) => node.scrollTo({ top: 0 }));
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+  });
+
+  // The sidebar carries its own two-ended edge shades, painted as `local` and
+  // `scroll` backgrounds; a ScrollCue there would stack a second fade on the
+  // one edge that already has one.
+  test('leaves the sidebar to the edge shades it already paints', async ({ page }) => {
+    await gotoApp(page);
+    const modal = await openSettingsModal(page);
+    await expect(modal.locator('.settings-nav .scroll-cue')).toHaveCount(0);
   });
 });

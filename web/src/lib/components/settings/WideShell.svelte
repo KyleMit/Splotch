@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick, untrack } from 'svelte';
   import SidebarToc, { type SidebarTocItem } from '../nav/SidebarToc.svelte';
+  import ScrollCue from '../design/ScrollCue.svelte';
   import SectionBody from './SectionBody.svelte';
   import ParentCenterLock from './ParentCenterLock.svelte';
   import { SECTIONS, sectionHeading, type SectionId } from './sections';
@@ -351,6 +352,10 @@
         </section>
       {/each}
     </div>
+    <!-- Outside the zoom target: the cue is pane chrome, so it keeps its own
+         size while the reading content scales under it, and its sentinel still
+         marks the end of however tall that content has become. -->
+    <ScrollCue />
   </div>
 </div>
 
@@ -379,7 +384,10 @@
      the shade at whichever end is already at rest, so each shade appears only
      while there is more list that way — the pattern needs no scroll listener.
      Both are backgrounds of this column, so they paint behind SidebarToc's
-     track rather than over it. */
+     track rather than over it. This is the column's whole scroll cue and the
+     reason it carries no ScrollCue: the pair already says "more this way" at
+     each end, where the primitive speaks only for the bottom, so adding it
+     would stack a second fade on an edge that has one. */
   .settings-nav {
     flex-shrink: 0;
     width: 232px;
