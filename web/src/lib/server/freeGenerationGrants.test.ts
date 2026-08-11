@@ -14,6 +14,7 @@ const { entries, getStoreMock } = vi.hoisted(() => ({
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 vi.mock('$app/environment', () => ({ dev: false }));
 
+import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
 import {
   ADMIN_GRANT_SAMPLE_LIMIT,
   completeFreeGeneration,
@@ -117,6 +118,59 @@ describe('free generation grants', () => {
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 9 });
     await completeFreeGeneration(id, reservation.reservationId);
     await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 9 });
+  });
+
+  it('reads strongly so a write is visible to the request that made it', async () => {
+    await reserveFreeGeneration(installation('d'));
+
+    expect(getStoreMock).toHaveBeenCalledWith(
+      expect.objectContaining({ consistency: 'strong' as const })
+    );
+  });
+
+  it('spends the slot for a generation that outlived its reservation lease', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-09T12:00:00Z'));
+    const id = installation('e');
+    const reservation = await reserveFreeGeneration(id);
+    if (!reservation.reserved) throw new Error('Expected a reservation');
+
+    vi.setSystemTime(new Date('2026-08-09T12:05:00Z'));
+    await expect(completeFreeGeneration(id, reservation.reservationId)).resolves.toEqual({
+      remaining: 9,
+    });
+
+    const stats = await getFreeGenerationGrantAdminStats();
+    expect(stats).toMatchObject({
+      sampledSuccessful: 1,
+      sampledAttempts: 1,
+      sampledFailures: 0,
+      sampledActiveReservations: 0,
+    });
+  });
+
+  it('never hands back allowance beyond the limit when a lapsed slot is settled', async () => {
+    const id = installation('f');
+    entries.set(id, {
+      data: {
+        version: 1,
+        successful: FREE_GENERATION_LIMIT,
+        attempts: FREE_GENERATION_LIMIT,
+        failures: 0,
+        createdAt: '2026-08-09T12:00:00.000Z',
+        lastAttemptAt: '2026-08-09T12:00:00.000Z',
+        lastSuccessAt: '2026-08-09T12:00:00.000Z',
+        lastFailureAt: null,
+        lastFailureKind: null,
+        reservations: {},
+      },
+      etag: 'grant-v1',
+    });
+
+    await expect(completeFreeGeneration(id, 'lapsed-reservation')).resolves.toEqual({
+      remaining: 0,
+    });
+    await expect(getFreeGenerationGrantStatus(id)).resolves.toEqual({ remaining: 0 });
   });
 
   it('atomically refuses provider starts after the durable daily ceiling', async () => {

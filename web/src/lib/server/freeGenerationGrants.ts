@@ -44,9 +44,17 @@ const memoryDailyProviderStarts = new Map<string, DailyProviderStarts>();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Netlify Blobs reads are eventually consistent by default: after a write, an
+// edge node can keep serving the previous copy for up to a minute. Every
+// operation in this module is a read-modify-write against one key, and a single
+// generation does two of them around a multi-second model call — reserve a slot,
+// then finalize it. Under the default mode that second read routinely missed the
+// reservation the same request had just written, so roughly half of all
+// production free generations answered 503 with a finished image in hand. Strong
+// reads bypass the cache; the added latency is noise beside the provider call.
 function grantStore(allowMemoryFallback = false): ReturnType<typeof getStore> | null {
   try {
-    return getStore(STORE_NAME);
+    return getStore({ name: STORE_NAME, consistency: 'strong' });
   } catch (error) {
     if (!dev && !allowMemoryFallback) throw error;
     return null;
@@ -80,7 +88,15 @@ function failureKindOrNull(value: unknown): FreeGenerationFailureKind | null {
     : null;
 }
 
-function normalizeGrant(value: unknown, now: Date): FreeGenerationGrant {
+// `settlingReservationId` names the reservation whose outcome this update already
+// knows — the caller is completing or failing it right now. An expired lease on
+// that one is not an abandonment (the request it belongs to is still running, it
+// just outlived the lease), so it must not also be counted as a failure.
+function normalizeGrant(
+  value: unknown,
+  now: Date,
+  settlingReservationId?: string
+): FreeGenerationGrant {
   const source =
     typeof value === 'object' && value !== null ? (value as Partial<FreeGenerationGrant>) : {};
   const nowIso = now.toISOString();
@@ -90,7 +106,7 @@ function normalizeGrant(value: unknown, now: Date): FreeGenerationGrant {
     for (const [id, expiresAt] of Object.entries(source.reservations)) {
       if (typeof expiresAt === 'string' && new Date(expiresAt).getTime() > now.getTime()) {
         reservations[id] = expiresAt;
-      } else {
+      } else if (id !== settlingReservationId) {
         abandoned += 1;
       }
     }
@@ -197,11 +213,15 @@ export async function reserveDailyFreeGeneration(): Promise<
   throw new Error('Daily free generation budget is busy');
 }
 
-async function updateGrant<T>(installationId: string, update: GrantUpdate<T>): Promise<T> {
+async function updateGrant<T>(
+  installationId: string,
+  update: GrantUpdate<T>,
+  settlingReservationId?: string
+): Promise<T> {
   const store = grantStore();
   if (!store) {
     const now = new Date();
-    const current = normalizeGrant(memoryGrants.get(installationId), now);
+    const current = normalizeGrant(memoryGrants.get(installationId), now, settlingReservationId);
     const next = update(current, now);
     memoryGrants.set(installationId, next.grant);
     return next.result;
@@ -211,7 +231,7 @@ async function updateGrant<T>(installationId: string, update: GrantUpdate<T>): P
     if (attempt > 1) await sleep(CAS_BACKOFF_MS * attempt);
     const existing = await store.getWithMetadata(installationId, { type: 'json' });
     const now = new Date();
-    const current = normalizeGrant(existing?.data, now);
+    const current = normalizeGrant(existing?.data, now, settlingReservationId);
     const next = update(current, now);
     const condition = existing?.etag
       ? { onlyIfMatch: existing.etag }
@@ -262,17 +282,25 @@ export async function reserveFreeGeneration(
   );
 }
 
+// A slot is spent whenever an image was actually produced, whether or not the
+// lease survived: the caller only reaches here holding a reservation id its own
+// request minted, and a generation slower than the lease is still a generation
+// the child received. `successful` is clamped back to the limit on read, so an
+// overrun past a fully spent grant can't hand out extra allowance.
 export async function completeFreeGeneration(
   installationId: string,
   reservationId: string
 ): Promise<{ remaining: number }> {
-  return updateGrant(installationId, (grant, now) => {
-    if (!grant.reservations[reservationId]) throw new Error('Free generation reservation expired');
-    delete grant.reservations[reservationId];
-    grant.successful += 1;
-    grant.lastSuccessAt = now.toISOString();
-    return { grant, result: { remaining: remainingFor(grant) } };
-  });
+  return updateGrant(
+    installationId,
+    (grant, now) => {
+      delete grant.reservations[reservationId];
+      grant.successful += 1;
+      grant.lastSuccessAt = now.toISOString();
+      return { grant, result: { remaining: remainingFor(grant) } };
+    },
+    reservationId
+  );
 }
 
 export async function failFreeGeneration(
@@ -280,15 +308,19 @@ export async function failFreeGeneration(
   kind: FreeGenerationFailureKind,
   reservationId?: string
 ): Promise<void> {
-  await updateGrant(installationId, (grant, now) => {
-    if (reservationId) delete grant.reservations[reservationId];
-    else grant.attempts += 1;
-    grant.failures += 1;
-    grant.lastAttemptAt = now.toISOString();
-    grant.lastFailureAt = now.toISOString();
-    grant.lastFailureKind = kind;
-    return { grant, result: undefined };
-  });
+  await updateGrant(
+    installationId,
+    (grant, now) => {
+      if (reservationId) delete grant.reservations[reservationId];
+      else grant.attempts += 1;
+      grant.failures += 1;
+      grant.lastAttemptAt = now.toISOString();
+      grant.lastFailureAt = now.toISOString();
+      grant.lastFailureKind = kind;
+      return { grant, result: undefined };
+    },
+    reservationId
+  );
 }
 
 function statsFor(
