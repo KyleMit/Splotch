@@ -23,14 +23,11 @@ import {
   PALETTE_LANDSCAPE_WIDTHS_PX,
 } from './design/trimGeometry';
 import { LARGE_TABLET_MIN_SIDE_PX, TABLET_MIN_SIDE_PX } from './breakpoints';
-import type { Orientation } from './platform';
 import {
   ACTION_BUTTON_BASE_PX,
   ACTION_BUTTON_BASE_PROPERTY,
-  FLYOUT_OPTION_MIN_BASE_PX,
   actionButtonBase,
   actionButtonSizeClass,
-  type ActionButtonSizeClass,
   ACTION_PANEL_LIVE_ATTRIBUTE,
   CONTROL_OFF_ATTRIBUTES,
   NO_ACTIONS_ATTRIBUTE,
@@ -49,9 +46,6 @@ import {
 
 const originalMatchMedia = window.matchMedia;
 let singleColumnMediaMatches = false;
-
-// The design system's floor for anything interactive.
-const MIN_TOUCH_TARGET_PX = 44;
 
 function mediaQueryList(query: string, matches: boolean): MediaQueryList {
   return {
@@ -332,57 +326,8 @@ describe('action button size class', () => {
     }
   });
 
-  // Splotch is drawn on by two-year-olds, so the smallest default any screen
-  // can hand a child still clears the 44px minimum target.
-  it('keeps the smallest step a comfortable target at the slider default', () => {
-    const smallest = Math.min(...Object.values(ACTION_BUTTON_BASE_PX.phone));
-    expect(smallest).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET_PX);
-  });
-});
-
-// The default is only half of what a size class decides: the other half is how
-// small the Button Size slider can then ask for. At ACTION_BUTTON_SCALE_MIN a
-// parent has deliberately traded target size for canvas, so both of these floors
-// sit below MIN_TOUCH_TARGET_PX — that trade is the parent's to make. What is
-// not theirs to make is a baseline change taking a kid-facing control lower than
-// their own minimum already does, which is what these pin. The flyout options
-// hold the higher floor because a popover frees no canvas to trade for (see
-// FLYOUT_OPTION_MIN_BASE_PX and .flyout-option in app.css).
-const SMALLEST_ACTION_BUTTON_AT_MIN_SCALE_PX = 35;
-const SMALLEST_FLYOUT_OPTION_AT_MIN_SCALE_PX = 42;
-
-const SIZE_CLASS_STEPS = (
-  Object.entries(ACTION_BUTTON_BASE_PX) as [ActionButtonSizeClass, Record<Orientation, number>][]
-).flatMap(([sizeClass, steps]) =>
-  (Object.entries(steps) as [Orientation, number][]).map(([orientation, basePx]) => ({
-    where: `${sizeClass} ${orientation}`,
-    basePx,
-  }))
-);
-
-const atSliderMinimum = (basePx: number) => (basePx * ACTION_BUTTON_SCALE_MIN) / 100;
-
-describe('the smallest a parent can ask a kid-facing control to be', () => {
-  it.each(SIZE_CLASS_STEPS)('keeps the $where action button off the floor', ({ basePx }) => {
-    expect(atSliderMinimum(basePx)).toBeGreaterThanOrEqual(SMALLEST_ACTION_BUTTON_AT_MIN_SCALE_PX);
-  });
-
-  // Mirrors .flyout-option's `max(var(--action-btn-base), FLYOUT_OPTION_MIN_BASE_PX)`,
-  // which actionButtonLayout.fallback.test.ts holds the stylesheet to.
-  it.each(SIZE_CLASS_STEPS)('keeps the $where flyout option off the floor', ({ basePx }) => {
-    const optionBasePx = Math.max(basePx, FLYOUT_OPTION_MIN_BASE_PX);
-    expect(atSliderMinimum(optionBasePx)).toBeGreaterThanOrEqual(
-      SMALLEST_FLYOUT_OPTION_AT_MIN_SCALE_PX
-    );
-  });
-
-  // The pair only reads as a deliberate split while the popover is the larger
-  // target; equal floors would mean the flyout had quietly taken the panel's.
-  it('leaves a flyout option larger than the button that opened it', () => {
-    expect(SMALLEST_FLYOUT_OPTION_AT_MIN_SCALE_PX).toBeGreaterThan(
-      SMALLEST_ACTION_BUTTON_AT_MIN_SCALE_PX
-    );
-  });
+  // What each step is worth to a two-year-old's finger — at the slider default
+  // and at its minimum — is actionButtonLayout.touchTargets.test.ts.
 });
 
 // The hydrated render cap (a CSS length) and the slider ceiling (a number) are
