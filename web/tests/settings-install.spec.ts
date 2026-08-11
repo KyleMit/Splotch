@@ -59,8 +59,16 @@ test.describe('a desktop browser', () => {
       /Install as App/,
       /Keep kids in the app/,
     ]);
-    await expect(setup).toContainText('address bar');
     await expect(setup).not.toContainText('Add to Home Screen');
     await expect(setup).not.toContainText('Recent Apps');
+
+    // Every desktop instruction names something a desktop parent can actually
+    // reach: the Chromium address-bar affordance, Safari's Add to Dock, and the
+    // browser's own full-screen command — Splotch's Fullscreen Toggle is Android
+    // web only (fullscreenSupported() in state/fullscreen.svelte.ts), so the
+    // section must never point at it.
+    await expect(setup).toContainText('address bar');
+    await expect(setup).toContainText('Add to Dock');
+    await expect(setup).toContainText('F11');
   });
 });

@@ -123,16 +123,18 @@
     </ol>
   {:else}
     <ol class="steps">
-      <li>Click the <strong>install</strong> icon at the end of the address bar</li>
       <li>
-        Or open the browser <strong>menu</strong> and choose <strong>"Install Splotch"</strong>
+        In Chrome or Edge, click the <strong>install</strong> icon at the end of the address bar —
+        or open the browser <strong>menu</strong> and choose <strong>"Install Splotch"</strong>
+      </li>
+      <li>
+        In Safari on macOS Sonoma or later, choose <strong>File → Add to Dock</strong>
       </li>
       <li>Follow the prompts</li>
-      <li>Launch it from your desktop or taskbar for fullscreen mode</li>
+      <li>Launch it from your dock, desktop, or taskbar for fullscreen mode</li>
     </ol>
     <p class="steps-note">
-      Chrome and Edge can install Splotch as its own app. Safari and Firefox keep it in a tab, which
-      works too.
+      Firefox has no install of its own, so it keeps Splotch in a tab — that works too.
     </p>
   {/if}
 {/snippet}
@@ -163,7 +165,10 @@
     </p>
     <ul class="steps">
       <li>Install Splotch above, so it opens in its own window with no tabs or address bar</li>
-      <li>Use the fullscreen button in the corner of the drawing screen</li>
+      <li>
+        Put the browser in full screen — <strong>F11</strong> on Windows and Linux,
+        <strong>Control-Command-F</strong> on a Mac
+      </li>
       <li>Stay nearby — a keyboard can leave the app at any time</li>
     </ul>
   {/if}
