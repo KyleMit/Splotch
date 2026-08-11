@@ -13,11 +13,12 @@ production flow: the Playwright cases never reached the real canvas export, WebP
 production server build, roughly 300 lines of Svelte, an index entry, a Settings link, a dev-server
 warm-up probe, and special handling in the page-inventory generator.
 
-ADR-0080 established a dev-gated `window` seam for observing the engine's committed brush mode and
-stated that test seams should be read-only. That rule correctly rejects setters that place the app
-in state no child can reach, but it was too broad: `__screenshotSaveSink` already represented an
-instrumentation boundary, and an invoke handle for a production function does not manufacture a new
-state transition. It asks production code to perform the same transition with production arguments.
+ADR-0080 established a dev-gated `window` seam for observing the engine's committed brush mode; the
+seam module stated that test seams should be read-only. That rule correctly rejects setters that
+place the app in state no child can reach, but it was too broad: `__screenshotSaveSink` already
+represented an instrumentation boundary, and an invoke handle for a production function does not
+manufacture a new state transition. It asks production code to perform the same transition with
+production arguments.
 
 Alternatives considered:
 
