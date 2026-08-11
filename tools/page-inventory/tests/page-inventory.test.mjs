@@ -135,6 +135,17 @@ function markupElementsStamping(component, attribute, value) {
   return elements;
 }
 
+// Two flat halves, at 0 and at `peakLevel`, put each channel's standard
+// deviation at exactly half the level — a spread that can be placed either side
+// of the blankness floor. Lossless, so the encoder cannot move it.
+function writeTwoLevelWebp(path, { width, height }, peakLevel) {
+  const pixels = Buffer.alloc(width * height * 3);
+  pixels.fill(peakLevel, 0, Math.floor(pixels.length / 2));
+  return sharp(pixels, { raw: { width, height, channels: 3 } })
+    .webp({ lossless: true })
+    .toFile(path);
+}
+
 function inventoryItem(overrides = {}) {
   return attachExpectedCapturePaths([
     {
@@ -297,6 +308,24 @@ describe('page inventory output', () => {
     await expect(
       assertCaptureRendered(drawn, { ...viewport, width: viewport.width + 1 })
     ).rejects.toThrow('expected WebP 61×40');
+  });
+
+  // A page that renders a fraction of itself is the failure the floor is for, and
+  // it lands far closer to flat than to a real surface — so the floor has to be
+  // pinned, not merely somewhere between an empty frame and a busy one. These two
+  // captures score 5.5 and 6.5 levels, which holds it to that band.
+  it('rejects a capture whose spread sits below the blankness floor', async () => {
+    const root = fixture();
+    const viewport = { id: 'iphone-13-mini', width: 60, height: 40 };
+    const belowFloor = join(root, 'below-floor.webp');
+    const aboveFloor = join(root, 'above-floor.webp');
+    await writeTwoLevelWebp(belowFloor, viewport, 11);
+    await writeTwoLevelWebp(aboveFloor, viewport, 13);
+
+    await expect(assertCaptureRendered(belowFloor, viewport)).rejects.toThrow(
+      'near-uniform pixels (peak channel stddev 5.50'
+    );
+    await expect(assertCaptureRendered(aboveFloor, viewport)).resolves.toBeUndefined();
   });
 
   // Every viewport has its own width × height, and a capture is checked against
