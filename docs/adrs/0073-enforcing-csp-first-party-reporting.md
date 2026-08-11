@@ -71,3 +71,21 @@ credentialed console is no longer the least-protected page.
 asserts the two copies match, the drift guard this ADR flagged; `web/tests/admin.spec.ts` asserts
 the live SSR response carries the set. The `'unsafe-inline'` follow-up (script nonces) remains open
 and separate.
+
+## Update (2026-08): the E2E suite runs with no CSP, so `connect-src` needed widening
+
+`connect-src 'self'` blocked the picture report in production: it reads the drawing and the AI
+result back out of their object URLs, and `'self'` does not cover a `blob:` URL — CSP matches it by
+scheme, not by the origin baked into it. `connect-src 'self' blob:` in both copies fixes it. That is
+a widening of exactly one scheme whose URLs the page can only have minted itself, so it opens no
+outbound destination; `img-src` already carried `blob:` for the same previews.
+
+The gap that let it ship is the more durable finding: **no spec exercised the shipped policy.**
+Playwright serves the production build through `vite preview`, which returns the prerendered pages
+as static files, and the header they get in production comes from the `netlify.toml` block that only
+Netlify's CDN reads — so the whole suite runs unpoliced, and a client behaviour the CSP forbids
+passes locally and in CI. `enforceProductionCsp` (`web/tests/helpers.ts`) stamps `SECURITY_HEADERS`'
+policy onto document responses for a spec that needs the real thing; `ai-result.spec.ts`'s report
+flow uses it and fails without the `blob:` grant. Applying it suite- wide would turn every
+CSP-violating behaviour into a local failure and is worth considering, but it is a broad change to
+every spec's environment and was left out of the fix.

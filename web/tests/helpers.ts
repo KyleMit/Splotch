@@ -4,6 +4,7 @@ import { COLOR_FAMILIES } from '../src/lib/hexPickerLayout';
 import { compositeVisibleLiveTiles } from '../src/lib/drawing/liveTileComposite';
 import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/drawing/strokeMath';
 import { paletteHex } from '../src/lib/palette';
+import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
@@ -81,6 +82,33 @@ export function touchEventPrevented(
     },
     { selector, type, stylus }
   );
+}
+
+/** Stamp the shipped Content-Security-Policy onto the app's document responses.
+ *
+ *  Nothing in this suite serves the policy on its own: `vite preview` returns
+ *  the prerendered pages as plain static files, and in production those get
+ *  their headers from the netlify.toml `for = "/*"` block, which only Netlify's
+ *  CDN reads. So every spec runs with no CSP at all, and a client behaviour the
+ *  policy forbids passes here and fails on splotch.art — that is how the
+ *  picture report shipped with a `fetch()` of an object URL that the policy's
+ *  `connect-src` blocked for every user.
+ *
+ *  Call before `gotoApp`, and before any `page.route` a spec needs to win over
+ *  this one: Playwright checks the most recently added handler first, and the
+ *  non-document requests this one declines fall through to those. */
+export async function enforceProductionCsp(page: Page) {
+  await page.route('**/*', async (route) => {
+    if (route.request().resourceType() !== 'document') return route.fallback();
+    const response = await route.fetch();
+    await route.fulfill({
+      response,
+      headers: {
+        ...response.headers(),
+        'content-security-policy': SECURITY_HEADERS['Content-Security-Policy'],
+      },
+    });
+  });
 }
 
 /** Navigate to the app and wait for hydration: the canvas mounts on the client,
