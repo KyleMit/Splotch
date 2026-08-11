@@ -79,6 +79,8 @@ declare global {
       getLiveSurfaceTopology: typeof import('$lib/drawing/engine').getLiveSurfaceTopology;
       getUndoDebug: typeof import('$lib/drawing/engine').getUndoDebug;
     };
+    // Dev-gated invoke handle for the production AI flow (ADR-0109).
+    __aiGenerate?: typeof import('$lib/drawing/aiImage').generateAiImage;
     // Instrumented-build persistence boundary for native screenshot profiling.
     // The release bundle drops both the branch and this property name.
     __screenshotSaveSink?: (blob: Blob, baseName: string) => void | Promise<void>;

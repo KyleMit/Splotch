@@ -28,8 +28,8 @@ import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
 
-export const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
-export const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+const AI_SAFETY_REFUSAL_MESSAGE = "Let's try drawing something else!";
+const AI_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
 
 const UPLOAD_WEBP_QUALITY = 0.85;
 const FIRST_SERVER_ERROR_STATUS = 500;

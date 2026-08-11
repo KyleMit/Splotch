@@ -86,5 +86,6 @@ the returned error/refusal message instead. Rows flagged **⚠** need attention:
 | `allow-safe` | blocked (422) | ⚠ **false positive** — an innocent drawing was refused            |
 
 The endpoint returns **422** for a safety refusal (vs 502 for an infra failure); the app turns that
-into a child-friendly "let's draw something else!" message. You can preview every failure state
-without Gemini at `/dev/ai-timer`.
+into a child-friendly "let's draw something else!" message. The Playwright AI-result specs preview
+the reachable failure states without Gemini by invoking the production flow through its dev-gated
+handle and intercepting this endpoint.

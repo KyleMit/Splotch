@@ -82,8 +82,6 @@ const BASELINE = new Map(
     'lib/components/PointerHalos.svelte': 9,
     // Confetti particle colors are content, not chrome.
     'lib/components/AiConfetti.svelte': 1,
-    // Deliberate console-key chip (dark slab + white glyph in both themes).
-    'routes/dev/ai-timer/+page.svelte': 1,
   })
 );
 
@@ -96,9 +94,6 @@ const FONT_SIZE_BASELINE = new Map(
     // The reveal stage's 48px celebration emoji and the error state's 36px —
     // pictorial glyphs scaled as art, not type.
     'lib/components/AiImageResult.svelte': 2,
-    // The intro's inline code chips ride their sentence at 0.9em — relative to
-    // the prose around them, so a ramp step would break the lockstep.
-    'routes/dev/ai-timer/+page.svelte': 1,
   })
 );
 

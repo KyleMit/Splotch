@@ -1,7 +1,8 @@
 # ADR-0080: Tests Observe the Engine's Committed Brush Mode, and Pace Their Own Strokes
 
 **Status:** Active **Date:** 2026-07 **Amends:**
-[0078](0078-playwright-worker-count-and-flake-tuning.md) (the Playwright tuning record)
+[0078](0078-playwright-worker-count-and-flake-tuning.md) (the Playwright tuning record) **Amended
+by:** [0109](0109-dev-gated-production-invoke-handles-for-e2e.md)
 
 ## Context
 
@@ -174,6 +175,12 @@ seam lie about what a stroke would paint.
 on dynamic public env, so the branch ships (a few lines) rather than being tree-shaken out.
 `$env/static/public` would eliminate it but fails the build when the variable is unset, which is
 exactly the deploy case.
+
+## Amendment (ADR-0109, 2026-08)
+
+ADR-0109 narrows the original `devHarnessSeam.ts` module rule that inspection seams are read-only: a
+dev-gated handle may invoke a production transition under ADR-0109's constraints, while direct
+mutation of otherwise-unreachable state remains forbidden.
 
 ## Reproducing
 

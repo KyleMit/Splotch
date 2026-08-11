@@ -9,6 +9,7 @@ const ctrl = vi.hoisted(() => ({
   snapshots: 3,
   rasterizedOps: 5,
 }));
+const generateAiImage = vi.hoisted(() => vi.fn());
 
 vi.mock('$app/environment', () => ({
   get dev() {
@@ -22,6 +23,8 @@ vi.mock('$lib/drawing/engine', () => ({
   getUndoDebug: () => ({ snapshots: ctrl.snapshots }),
   getLiveSurfaceTopology: () => [{ width: 683, height: 458 }],
 }));
+
+vi.mock('$lib/drawing/aiImage', () => ({ generateAiImage }));
 
 vi.mock('$lib/drawing/perf', () => ({
   get PERF_MARKS() {
@@ -37,6 +40,7 @@ beforeEach(() => {
   ctrl.rasterizedOps = 5;
   delete window.__committedBrushMode;
   delete window.__drawingDebug;
+  delete window.__aiGenerate;
 });
 
 it('publishes the engine mode while the dev-harness gate is open', () => {
@@ -67,11 +71,17 @@ it('publishes the undo-history debug reader while the gate is open', () => {
   });
 });
 
+it('publishes the production AI generation function while the gate is open', () => {
+  installDevHarnessSeam();
+  expect(window.__aiGenerate).toBe(generateAiImage);
+});
+
 it('installs nothing when the gate is closed, so the deploy has no seam', () => {
   ctrl.harnessEnabled = false;
   installDevHarnessSeam();
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
+  expect(window.__aiGenerate).toBeUndefined();
 });
 
 it('publishes the read-only profiling seams in an instrumented physical build', () => {
@@ -80,10 +90,12 @@ it('publishes the read-only profiling seams in an instrumented physical build', 
   installDevHarnessSeam();
   expect(window.__committedBrushMode?.()).toBe('pen');
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
+  expect(window.__aiGenerate).toBe(generateAiImage);
 });
 
 it('removes every seam on teardown', () => {
   installDevHarnessSeam()();
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
+  expect(window.__aiGenerate).toBeUndefined();
 });

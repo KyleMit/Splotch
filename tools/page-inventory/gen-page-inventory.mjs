@@ -48,6 +48,7 @@ const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
 const SPOT_CHECK_RECORDS_NAME = 'spot-check-captures.json';
 const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 const SCROLL_END_EPSILON_PX = 1;
+const AI_OUTPUT = readFileSync(join(ROOT, 'web/tests/artifacts/ai-output.jpeg'));
 // The wide shell parks a jumped-to section just clear of the pane's top edge
 // rather than flush against it, and the pane's own padding holds the first
 // section clear of it too — so a landed section sits in a band below that edge,
@@ -94,8 +95,7 @@ const ROUTES = {
   '/privacy': ['Privacy policy', 'The public privacy policy at its opening position.'],
 };
 
-// The /dev tree is internal tooling nobody ships or design-reviews; the AI flow still
-// drives /dev/ai-timer as a harness, it just never becomes a reviewed surface.
+// The /dev tree is internal tooling nobody ships or design-reviews.
 const INTERNAL_ROUTE_ROOTS = ['/dev'];
 
 function filesBelow(dir) {
@@ -226,15 +226,40 @@ async function draw(page, yFraction = 0.5) {
   await page.mouse.up();
 }
 
-async function aiResult(page) {
-  await navigate(page, '/dev/ai-timer');
-  const dialog = await openDialog(
-    page,
-    'dialog.ai-result-modal',
-    () => page.getByRole('button', { name: /Fast/ }).click(),
-    'AI result'
-  );
-  await dialog.locator('.dial').waitFor();
+async function aiResult(page, outcome = 'pending') {
+  await freshHome(page);
+  await draw(page, 0.25);
+  await page.waitForFunction(() => {
+    const history = window.__drawingDebug?.getUndoDebug();
+    return Boolean(history && history.snapshots > 0 && history.pendingCommands === 0);
+  });
+  const heldRequests = [];
+  await page.unroute('**/api/generate-image*');
+  await page.route('**/api/generate-image*', async (route) => {
+    if (outcome === 'pending') {
+      // Leaving a route handler without settling it fails the fetch; the loading
+      // surface needs the request itself to remain in flight through capture.
+      await new Promise((release) => heldRequests.push(release));
+      return;
+    }
+    if (outcome === 'success') {
+      await route.fulfill({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT });
+      return;
+    }
+    const status = outcome === 'safety' ? 422 : 500;
+    await route.fulfill({
+      status,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: false, error: 'Page inventory generation failure' }),
+    });
+  });
+  await page.waitForFunction(() => typeof window.__aiGenerate === 'function');
+  await page.evaluate(() => {
+    void window.__aiGenerate({ style: 'Magical' });
+  });
+  const dialog = page.locator('dialog.ai-result-modal');
+  await dialog.waitFor();
+  if (outcome === 'pending') await dialog.locator('.dial').waitFor();
   return dialog;
 }
 
@@ -561,10 +586,9 @@ function controlSurfaces() {
 }
 
 function aiSurfaces() {
-  const failure = (id, key, title, description) =>
+  const failure = (id, outcome, title, description) =>
     surface('ai', `ai-result-${id}`, title, description, `AiImageResult/${id}`, async (page) => {
-      const dialog = await aiResult(page);
-      await page.keyboard.press(key);
+      const dialog = await aiResult(page, outcome);
       await dialog.locator('.ai-result-error').waitFor();
     });
   return [
@@ -593,7 +617,7 @@ function aiSurfaces() {
       'AI result · generating',
       'The progress dial over the blurred drawing preview.',
       'AiImageResult/loading',
-      aiResult
+      (page) => aiResult(page)
     ),
     surface(
       'ai',
@@ -602,8 +626,7 @@ function aiSurfaces() {
       'The generated picture, download action, and report flag.',
       'AiImageResult/success',
       async (page) => {
-        await aiResult(page);
-        await page.keyboard.press('f');
+        await aiResult(page, 'success');
         await page.locator('.stage-img.result.shown').waitFor({ timeout: ACTION_MS });
       }
     ),
@@ -614,18 +637,16 @@ function aiSurfaces() {
       'The confirmation and retention notice before a report is sent.',
       'AiImageReport',
       async (page) => {
-        await aiResult(page);
-        await page.keyboard.press('f');
+        await aiResult(page, 'success');
         await page.locator('.stage-img.result.shown').waitFor({ timeout: ACTION_MS });
         await page.getByRole('button', { name: 'Report this picture' }).click();
         await page.locator('.ai-report-confirmation').waitFor();
       }
     ),
-    failure('safety', 's', 'AI result · safety refusal', 'The child-safe refusal treatment.'),
-    failure('timeout', 't', 'AI result · timeout', 'The retryable timeout treatment.'),
+    failure('safety', 'safety', 'AI result · safety refusal', 'The child-safe refusal treatment.'),
     failure(
       'server-error',
-      'e',
+      'server-error',
       'AI result · server error',
       'The generic generation failure treatment.'
     ),

@@ -42,6 +42,7 @@ it.each(RELEASE_ONLY_TOKENS)('finds release-only token %s recursively', (token) 
 
 it('derives every current window seam and engine measure family', () => {
   expect(RELEASE_ONLY_TOKENS).toEqual([
+    '__aiGenerate',
     '__committedBrushMode',
     '__drawingDebug',
     '__screenshotSaveSink',

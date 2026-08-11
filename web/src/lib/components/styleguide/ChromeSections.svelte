@@ -114,12 +114,6 @@
       zone: 'shell',
     },
     {
-      name: 'Breadcrumb',
-      file: 'Breadcrumb.svelte',
-      blurb: 'The Home / current-page trail on the /dev harness routes.',
-      zone: 'breadcrumb',
-    },
-    {
       name: 'Settings shells',
       file: 'SettingsModal.svelte · settings/CompactShell.svelte',
       blurb:

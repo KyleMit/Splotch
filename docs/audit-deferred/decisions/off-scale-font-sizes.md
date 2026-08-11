@@ -23,9 +23,9 @@ Fully resolved by mainline work between the pinned commit and HEAD (0c1921a). Ve
   SetupInstructions `--font-size-xl/lg/sm` (6). No raw px or `font:` shorthand remains in any of
   them.
 * `npm run lint:tokens` passes, and its `FONT_SIZE_BASELINE` in `scripts/lint-token-styles.mjs`
-  lists only three unrelated files (BrandMark's tagline, AiImageResult's pictorial glyphs, the
-  ai-timer dev page) — none of the cited files carry an allowance, so any raw `font-size`
-  reintroduced there fails CI. The regression the finding worried about is ratchet-gated.
+  lists only unrelated files (including BrandMark's tagline and AiImageResult's pictorial glyphs) —
+  none of the cited files carry an allowance, so any raw `font-size` reintroduced there fails CI.
+  The regression the finding worried about is ratchet-gated.
 * The finding's premise is itself stale: it describes a seven-step scale (`--font-size-xs` 12px …
   `--font-size-3xl` 28px), but ADR-0098 consolidated the ramp to five steps (`xs/sm/md/lg/xl` =
   12/14/16/18/22px) plus `--font-size-display`. The audit-era `20px`/`24px` headings mapped onto
