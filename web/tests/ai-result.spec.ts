@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { draw, gotoApp } from './helpers';
+import { draw, enforceProductionCsp, gotoApp } from './helpers';
 
 // Exercises AiImageResult through the production generation flow. The endpoint
 // is mocked below the client pipeline, so each case still covers canvas export,
@@ -174,6 +174,10 @@ test.describe('AI result modal', () => {
 
   test('confirms and sends an AI picture report from the result', async ({ page }) => {
     let reportRequests = 0;
+    // Under the shipped CSP, because the report reads the drawing and the result
+    // back out of their object URLs — a `blob:` fetch the policy has to permit.
+    // Without this the flow passes here and fails in production.
+    await enforceProductionCsp(page);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.addInitScript(

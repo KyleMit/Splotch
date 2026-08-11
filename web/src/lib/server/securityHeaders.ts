@@ -18,7 +18,11 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' blob: data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  // blob: covers the app reading its own object URLs back through fetch() — the
+  // picture report posts the drawing and the AI result it is already showing.
+  // 'self' does not cover them: a blob: URL is matched by scheme, not by the
+  // origin baked into it.
+  "connect-src 'self' blob:",
   "worker-src 'self'",
   "manifest-src 'self'",
   "base-uri 'self'",
