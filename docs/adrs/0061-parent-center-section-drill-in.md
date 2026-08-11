@@ -335,16 +335,23 @@ So the hub stays hub-and-drill, and the investment goes into the row:
 * **`SECTIONS` reordered** so the switch rows lead, the drill-ins follow by how often a parent goes
   configuring, and Saving — set once, then left alone — sits below the feature sections. One list
   drives both shells and the wide sidebar, so the order moves everywhere at once; that is the point.
-* **"Buttons" became "Tool Drawer"** in the nav, with "Drawing Tools" as the drilled-in heading
-  through the existing `title` mechanism (the split "What's New" → "Updates" already uses). The nav
-  label is a playful container in the brand's register; the heading over the controls stays literal.
-* **The camera button moved to Saving**, as an ungated toggle beside Auto-Save on Delete. It is the
-  other way a drawing gets saved, and Coloring and AI Art already own their own buttons' visibility
+* **"Buttons" became "Tool Drawer"** — the nav row and the drilled-in heading alike, so the heading
+  echoes the row that was tapped. A `title` override putting the literal "Drawing Tools" at the top
+  of the section was drafted and then dropped: the literal name went to the chip grid below it
+  instead, and carrying both would stack the same two words twice on one screen — the exact thing
+  that mechanism (the "What's New" → "Updates" split) exists to avoid.
+* **The camera button moved to Saving**, where it leads the section above Auto-Save on Delete. It is
+  the other way a drawing gets saved — and the deliberate one, above the two rows that govern what
+  happens without anyone asking — and Coloring and AI Art already own their own buttons' visibility
   in their feature sections rather than in the chip grid behind Advanced Controls.
+* **The two chip grids became one**, headed "Drawing Tools": brushes first, then the controls beside
+  them. The old split named an implementation boundary — a brush lives in the brush menu, a button
+  on the panel — and not the one a parent is acting on, which is what a child can reach. Losing it
+  also retires a two-chip group, which read as a stub next to the three-chip one.
 
 The switch itself is now `settings/ToggleSwitch.svelte`, shared by `ToggleRow` and the hub, and the
-tools the chip grids show and hide are one exported list (`settings/drawingTools.ts`) — the hub row
-summarizes it ("2 tools hidden"), and a second copy would let the summary and the grids disagree
+tools the chip grid shows and hides are one exported list (`settings/drawingTools.ts`) — the hub row
+summarizes it ("2 tools hidden"), and a second copy would let the summary and the grid disagree
 about what a tool is.
 
 One thing this amendment does **not** fix, surfaced by the reorder: a table-of-contents jump made

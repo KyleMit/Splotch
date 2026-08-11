@@ -17,7 +17,7 @@ import { hiddenDrawingToolCount } from './drawingTools';
 export const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: 'appearance' },
   { id: 'sound', label: 'Sound', icon: 'sound' },
-  { id: 'controls', label: 'Tool Drawer', title: 'Drawing Tools', icon: 'controls' },
+  { id: 'controls', label: 'Tool Drawer', icon: 'controls' },
   { id: 'coloring', label: 'Coloring', icon: 'shapes' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
   { id: 'saving', label: 'Saving', icon: 'save-picture' },

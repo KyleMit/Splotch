@@ -12,21 +12,12 @@
 </script>
 
 <section class="setting-group">
-  <div class="setting">
-    <ToggleRow
-      icon="camera-party"
-      label="Auto-Save on Delete"
-      id="saveOnDeleteToggle"
-      checked={settings.saveOnDeleteEnabled}
-      onToggle={setSaveOnDelete}
-      help="Saves the current drawing each time the page is cleared"
-    />
-  </div>
-
   <!-- The camera button's visibility lives with saving rather than with the
        Tool Drawer's chip grid, the way Coloring and AI Art each own their own
        button: it is the other way a drawing gets saved, and it is not something
-       Advanced Controls should be able to hide. -->
+       Advanced Controls should be able to hide. It leads the section because
+       it is the deliberate save — the two rows under it govern what happens
+       without anyone asking. -->
   <div class="setting">
     <ToggleRow
       icon="camera"
@@ -35,6 +26,17 @@
       checked={settings.screenshotEnabled}
       onToggle={setScreenshot}
       help="Shows the button that saves a photo of the drawing"
+    />
+  </div>
+
+  <div class="setting">
+    <ToggleRow
+      icon="camera-party"
+      label="Auto-Save on Delete"
+      id="saveOnDeleteToggle"
+      checked={settings.saveOnDeleteEnabled}
+      onToggle={setSaveOnDelete}
+      help="Saves the current drawing each time the page is cleared"
     />
   </div>
 

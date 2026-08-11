@@ -14,7 +14,7 @@
   import { setResizingActionButtons } from '$lib/state/ui.svelte';
   import { maxActionButtonScale } from '$lib/actionButtonLayout';
   import { SECTION_SLIDE } from './sections';
-  import { DRAWING_TOOL_CHIPS, type DrawingTool, type DrawingToolId } from './drawingTools';
+  import { DRAWING_TOOL_CHIPS, type DrawingToolId } from './drawingTools';
 
   // Ceiling the Button Size slider at what the current screen can actually
   // fit, so the parent can't pick a size the Actions Panel would have to cap
@@ -26,24 +26,19 @@
   const scaleCeiling = $derived(maxActionButtonScale());
   const displayedScale = $derived(Math.min(settings.actionButtonScale, scaleCeiling));
 
-  // The per-tool on/off list is a 2-column chip grid: tap a chip to show or
-  // hide that Actions Panel button or brush. Each chip reads live `settings` so
-  // its on-state stays reactive.
-  const buttonChips = DRAWING_TOOL_CHIPS.filter((chip) => chip.grid === 'button');
-  const brushChips = DRAWING_TOOL_CHIPS.filter((chip) => chip.grid === 'brush');
+  // The per-tool on/off list is a 2-column chip grid: tap a chip to show or hide
+  // that brush or Actions Panel button. One grid rather than a split between the
+  // two — a parent turning something off is choosing what a child can reach, and
+  // whether it lives in the brush menu or on the panel isn't the distinction
+  // they're acting on. Each chip reads live `settings` so its on-state stays
+  // reactive.
+  const toolOptions: SegmentedPickerOption<DrawingToolId>[] = DRAWING_TOOL_CHIPS.map(
+    ({ id, label, icon }) => ({ value: id, label, icon, id })
+  );
 
-  function optionsFor(chips: readonly DrawingTool[]): SegmentedPickerOption<DrawingToolId>[] {
-    return chips.map(({ id, label, icon }) => ({ value: id, label, icon, id }));
-  }
-
-  function activeFor(chips: readonly DrawingTool[]): DrawingToolId[] {
-    return chips.filter((chip) => chip.checked()).map((chip) => chip.id);
-  }
-
-  const buttonOptions = optionsFor(buttonChips);
-  const brushOptions = optionsFor(brushChips);
-  const activeButtons = $derived(activeFor(buttonChips));
-  const activeBrushes = $derived(activeFor(brushChips));
+  const shownTools = $derived(
+    DRAWING_TOOL_CHIPS.filter((chip) => chip.checked()).map((chip) => chip.id)
+  );
 
   function toggleChip(id: DrawingToolId) {
     const chip = DRAWING_TOOL_CHIPS.find((entry) => entry.id === id);
@@ -89,27 +84,14 @@
       </div>
 
       <div class="chip-block">
-        <h4 class="chip-heading">Show these buttons</h4>
+        <h4 class="chip-heading">Drawing Tools</h4>
         <SegmentedPicker
           variant="chip"
           mode="toggle"
           class="control-chips"
-          label="Show these buttons"
-          options={buttonOptions}
-          selected={activeButtons}
-          onSelect={toggleChip}
-        />
-      </div>
-
-      <div class="chip-block">
-        <h4 class="chip-heading">Brushes</h4>
-        <SegmentedPicker
-          variant="chip"
-          mode="toggle"
-          class="control-chips"
-          label="Brushes"
-          options={brushOptions}
-          selected={activeBrushes}
+          label="Drawing Tools"
+          options={toolOptions}
+          selected={shownTools}
           onSelect={toggleChip}
         />
       </div>

@@ -401,7 +401,7 @@ test('the camera button toggle lives in Saving, not the Tool Drawer', async ({ p
   // The chip grid ships revealed, so its absent camera chip is an assertion
   // about this grid rather than about a collapsed section.
   await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'true');
-  await expect(page.locator('.control-chips')).toHaveCount(2);
+  await expect(page.locator('.control-chips')).toHaveCount(1);
   await expect(page.locator('#screenshotToggle')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Back' }).click();
