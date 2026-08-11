@@ -10,8 +10,9 @@
  * what is visible, and read as a decision already made rather than an instruction
  * to look away from the picture.
  *
- * Three rules earned by a review of the first draft, which found notes that would
- * have suppressed real findings across all 672 paid reviews:
+ * Four rules earned by reviews of earlier drafts, which found notes that would have
+ * suppressed real findings across all 672 paid reviews — and, in the fourth case, a
+ * note that produced them instead:
  *
  * 1. **State intent, never a verdict.** "This is correct as shown" and "this is
  *    sufficient" decide the finding for the reviewer. Describe the decision and let
@@ -22,11 +23,24 @@
  * 3. **Name elements the way a stranger can find them in a picture**, using the
  *    glossary term in `docs/ARCHITECTURE.md` plus a visual description. An invented
  *    name ("activity bar") either gets ignored or lands on the wrong control.
+ * 4. **Write the floor as a threshold, not as an invitation.** The first quiet-
+ *    controls note ended "report them if they are genuinely hard to make out", and
+ *    168 of the 256 non-pass reviews came back reporting the chevron and the
+ *    settings button, most of them echoing "genuinely difficult to make out" as the
+ *    justification. A clause phrased the way the finding would be phrased hands the
+ *    reviewer its wording. Say instead what observation is the styling arriving, and
+ *    put the floor at a state that can be checked in the image rather than at a
+ *    judgement of degree ("still findable" beats "plainly visible").
  *
  * Note that general notes reach the night-mode reviewers too, whose entire remit is
  * contrast and legibility. A general note that puts an element's contrast
  * off-limits blinds that rubric completely, so a note about deliberately quiet
  * styling has to leave a visibility floor the reviewer can still fail.
+ *
+ * Editing anything here is a re-review. A checkpoint binds the description it was
+ * taken against, so a changed note makes those stored reviews stale — regenerate
+ * the inventory, then re-run the review command, which re-queues exactly them. A
+ * general note therefore restages all of it.
  *
  * GENERAL_DESIGN_NOTES reach every capture. SURFACE_DESIGN_NOTES reach only the
  * surface named by their `group/surface_id` key and become that capture's
@@ -37,8 +51,9 @@
 
 export const GENERAL_DESIGN_NOTES = [
   'The round trash button that clears the drawing is docked against the edge of the screen on purpose, with part of it deliberately past the edge; it is not being clipped or cut off by the viewport. Pressing it undocks it.',
-  'The chevron that expands and collapses the bottom-corner button panel, and the settings button in the screen corner, are deliberately styled quieter than the drawing tools so they recede next to the child’s artwork. They are still meant to be plainly visible, so report them if they are genuinely hard to make out against what is behind them.',
-  'Where a scrolling region continues past its edge, this app marks it with a soft gradient fade along that edge, and deliberately ships no arrow, scrollbar, or second indicator beside it. The fade is the intended affordance rather than a rendering artifact.',
+  'The chevron that expands and collapses the bottom-corner button panel, and the settings button in the opposite bottom corner, are drawn as thin low-contrast gray glyphs with no filled button, disc, or outline behind them, so they sit back from the child’s artwork; they are the parent-facing controls on this screen, and a child who never notices them is the point. Seeing them read as quiet, subdued, faint, easy to overlook at a glance, or much weaker than the drawing tools is that styling arriving, in either theme, and is the resting appearance of those two controls rather than a contrast finding about them. The floor they still owe is that the glyph remains findable: report one only when you cannot locate its shape anywhere in this image.',
+  'Where a scrolling region continues past its edge, this app marks it with a soft gradient fade along that edge, and deliberately ships no arrow, scrollbar, or second indicator beside it. The fade is painted over the last line, row, or card rather than beside it, so that content thins out toward the edge and can read as blurred, smeared, washed out, grayed, or half-erased. That thinning is the cue itself being drawn — not a rendering artifact, a focus or compression fault, or a legibility problem in the region — so judge a scrolling region on the content that sits clear of its faded strip.',
+  'While a dialog, sheet, menu, or picker is open, everything behind it — the canvas, the color palette along the top edge, the corner buttons — is covered by one scrim that darkens and blurs the whole page at once, in both themes, so the open card holds attention. Background content that has gone dim, gray, soft, or blurred underneath an open card is that scrim rather than the styling of the elements beneath it. What such a capture puts in scope for contrast and legibility is the open card — its text, its controls, its close button — together with anything drawn on top of the scrim.',
   'In the bottom-corner panel of round buttons (the Actions Panel), the undo, AI, and screenshot buttons are drawn at reduced contrast whenever they are disabled, which is how this app marks them unavailable until at least one stroke is on the canvas. That reduced contrast is intended for those three buttons while they are in that disabled state; it is not a claim about their contrast once they are enabled.',
 ];
 
