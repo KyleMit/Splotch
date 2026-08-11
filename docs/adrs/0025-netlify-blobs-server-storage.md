@@ -76,7 +76,11 @@ mutations.
 **Eventual-consistency reads.** Both read paths use the default (eventual) consistency. Eventual is
 sufficient for this data, and it sidesteps the strong-read context requirements entirely. The one
 cost — a replica lagging the latest write can briefly report a key as absent and trip the
-seed-on-empty branch — is neutralized by the clobber-safe seed below.
+seed-on-empty branch — is neutralized by the clobber-safe seed below. This holds because no request
+here depends on observing its own write; it is **not** a site-wide default. The
+`free-generation-grants` store added later reserves and then finalizes a slot within one invocation,
+so it reads strongly — see ADR-0105's 2026-08-11 amendment, which also confirms on a live deploy
+that the V2 function's Blobs context supplies the `uncachedEdgeURL` a strong read needs.
 
 **Env-seeded, clobber-safe first run.** `ALLOWED_TOKENS_LIST` seeds the allowlist exactly once: on
 the first read against an empty store, `tokens.ts` writes the env-derived list with

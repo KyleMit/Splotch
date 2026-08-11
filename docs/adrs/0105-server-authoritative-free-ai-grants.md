@@ -105,3 +105,37 @@ non-persistent, because plain Vite has no Netlify Blobs context (ADR-0025).
   can still incur provider cost without consuming a successful user-visible generation.
 * − The one-minute reservation lease temporarily reduces the displayed remaining count while a
   request is in flight or after a crashed function.
+
+## Amendment (2026-08-11): strong grant reads, and a delivered image is never withheld
+
+Production measurement forced two reversals. Roughly half of all free generations answered `503`
+"Could not confirm the free generation allowance" with a finished image already in hand — reproduced
+against `splotch.art` at 4 failures in 7 requests, each failing about a second faster than a success
+because it threw before writing anything.
+
+**Cause.** The grant store used ADR-0025's default eventual-consistency reads. A generation performs
+two read-modify-write cycles on one key around a multi-second provider call, and the second read
+routinely served an edge copy predating the first write, so `completeFreeGeneration` could not find
+the reservation the same request had just made. `free-generation-grants` now reads with
+`consistency: 'strong'`. ADR-0025's eventual-read rationale still holds for `access-tokens` and
+`ai-usage`, where no request depends on seeing its own write; it does not hold for a ledger whose
+whole job is read-your-writes within one invocation. The strong-read hazard that ADR-0025 records
+(`BlobsConsistencyError` when the Blobs context has no `uncachedEdgeURL`) belongs to the V1-function
+era it also documents, and was re-verified against a real Netlify deploy before this shipped.
+
+**Two rejected alternatives are now accepted**, because the original reasoning weighed a cost the
+daily provider-start ceiling already bounds:
+
+* *An expired lease is recorded as abandoned.* Completing a lapsed reservation now spends the slot
+  rather than throwing. The caller only reaches that code holding a reservation id its own request
+  minted, and a generation slower than the one-minute lease is still a generation the child
+  received. `successful` is clamped to the limit on read, so a lapsed settlement cannot hand out
+  extra allowance, and the reservation being settled is no longer also counted as an abandoned
+  failure.
+* *A provider success followed by an unconfirmable accounting write is withheld from the client.*
+  The route now logs the failure, omits `X-Free-Generations-Remaining`, and returns the image. The
+  rejected alternative feared uncounted successes under repeated write contention; the durable
+  UTC-day ceiling this same ADR establishes is what actually bounds project spend, and it is charged
+  before the provider call, so uncounted successes cost availability accuracy rather than money.
+  Destroying a picture a child waited for, to protect a count the daily ceiling already backstops,
+  was the worse trade.
