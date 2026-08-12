@@ -204,8 +204,11 @@ async function pinchLiftingAFingerOutsideThePane(page: Page) {
   const drifted = { ...resting, y: box.y - 40 };
 
   await touch.start([resting]);
+  await touch.nextFrame();
   await touch.start([resting, spreading]);
+  await touch.nextFrame();
   await touch.move([drifted, spread]);
+  await touch.nextFrame();
   await touch.end();
 
   // The resting finger is whichever pointer id landed first; the browser assigns
