@@ -10,13 +10,16 @@ import {
 } from '../action-stats.mjs';
 import {
   canvasHasInk,
+  coloringClearActivation,
   coloringSelectionSteps,
   largestNativeRect,
+  runScreenshotToggleAtAdvancedBaseline,
   runToggleRoundTrip,
   screenshotActivation,
   selectedActions,
   settingsSectionMeasurement,
   settingsSectionSetupReady,
+  uiActivationLabel,
 } from '../ipad-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../desktop-actions.mjs';
 
@@ -147,6 +150,33 @@ describe('action state planning', () => {
     expect(restored).toEqual([true, false]);
   });
 
+  it('visits Saving for the nested Screenshot toggle before returning to Controls', async () => {
+    const sections = [];
+
+    await runScreenshotToggleAtAdvancedBaseline({
+      openSavingSection: async () => sections.push('saving'),
+      recordScreenshotToggle: async () => sections.push('screenshot'),
+      reopenControlsSection: async () => sections.push('controls'),
+    });
+
+    expect(sections).toEqual(['saving', 'screenshot', 'controls']);
+  });
+
+  it('returns to Controls when the nested Screenshot toggle round trip fails', async () => {
+    const sections = [];
+
+    await expect(
+      runScreenshotToggleAtAdvancedBaseline({
+        openSavingSection: async () => sections.push('saving'),
+        recordScreenshotToggle: async () => {
+          throw new Error('screenshot toggle failed');
+        },
+        reopenControlsSection: async () => sections.push('controls'),
+      })
+    ).rejects.toThrow('screenshot toggle failed');
+    expect(sections).toEqual(['saving', 'controls']);
+  });
+
   it('measures book selection only when the product renders a book grid', () => {
     expect(coloringSelectionSteps(true).map(({ label }) => label)).toEqual([
       'open coloring book',
@@ -157,21 +187,42 @@ describe('action state planning', () => {
     ]);
   });
 
-  it('maps coloring-page clearing through the native accessibility element', () => {
-    const clearBlock = IPAD_ACTIONS.slice(
-      IPAD_ACTIONS.indexOf("label: 'clear coloring page'"),
-      IPAD_ACTIONS.indexOf(
-        "if (actions.has('screenshot')",
-        IPAD_ACTIONS.indexOf("label: 'clear coloring page'")
-      )
-    );
+  it('keeps native coloring-page clearing on WebDriver and gives Safari a fallback', () => {
+    const measureClickStart = IPAD_ACTIONS.indexOf('async function measureClick');
+    const measureClickEnd = IPAD_ACTIONS.indexOf('async function measureIdle', measureClickStart);
+    expect(measureClickStart).toBeGreaterThan(-1);
+    expect(measureClickEnd).toBeGreaterThan(measureClickStart);
+    const measureClickBlock = IPAD_ACTIONS.slice(measureClickStart, measureClickEnd);
 
-    expect(clearBlock).toContain("activation: 'native-accessibility'");
+    const coloringStart = IPAD_ACTIONS.indexOf("if (actions.has('coloring'))");
+    const clearStart = IPAD_ACTIONS.indexOf("label: 'clear coloring page'", coloringStart);
+    const clearEnd = IPAD_ACTIONS.indexOf("if (actions.has('screenshot')", clearStart);
+    expect(coloringStart).toBeGreaterThan(-1);
+    expect(clearStart).toBeGreaterThan(-1);
+    expect(clearEnd).toBeGreaterThan(clearStart);
+    const coloringBlock = IPAD_ACTIONS.slice(coloringStart, clearEnd);
+    const clearBlock = IPAD_ACTIONS.slice(clearStart, clearEnd);
+
+    expect(coloringClearActivation(true)).toBe('webdriver');
+    expect(coloringClearActivation(false)).toBe('native-accessibility');
+    expect(clearBlock).toContain('activation: coloringClearActivation(client.nativeApp)');
+    expect(coloringBlock).toMatch(
+      /coloring books to reopen'[\s\S]*?await sleep\(ANIMATED_ACTION_SETTLE_MS\)[\s\S]*?label: 'clear coloring page'/
+    );
+    expect(measureClickBlock).toMatch(
+      /nativeAccessibilityBoundsForSelector\([\s\S]*?\)\.catch\(\(\) => null\)/
+    );
   });
 
   it('uses native accessibility activation only for the native Screenshot path', () => {
     expect(screenshotActivation(false)).toBe('native');
     expect(screenshotActivation(true)).toBe('native-accessibility-click');
+    expect(IPAD_ACTIONS).toContain(
+      "activation === 'native-accessibility-click' && !client.webdriverClicks"
+    );
+    expect(IPAD_ACTIONS).toContain("activationMode = 'webdriver-script-click'");
+    expect(uiActivationLabel(true)).toBe('webdriver-script-click');
+    expect(uiActivationLabel(false)).toBe('native-touch');
   });
 
   it('ignores a stale tiny WebView when mapping native geometry', () => {
@@ -186,6 +237,9 @@ describe('action state planning', () => {
       )
     ).toEqual(nativeWindow);
     expect(largestNativeRect([], nativeWindow)).toEqual(nativeWindow);
+    expect(largestNativeRect([{ x: 279, y: 947, width: 68, height: 44 }], nativeWindow)).toEqual(
+      nativeWindow
+    );
   });
 
   it('reads the Camera ToggleSwitch through its aria-checked state', () => {
@@ -199,6 +253,7 @@ describe('action state planning', () => {
       'settingsSectionSetupReady(section, ready, settingsModalUsesSidebar)',
       `clickSetupElement(execute, '#parentalGate button[aria-label="Close"]')`,
       'whileAtBaseline: () =>',
+      'runScreenshotToggleAtAdvancedBaseline({',
       "actionPanelHasAttribute('data-off-adv')",
       "actionPanelLacksAttribute('data-off-adv')",
       'coloringSelectionSteps(hasBookChoice)',

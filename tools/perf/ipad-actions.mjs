@@ -28,6 +28,9 @@ const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
 const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
+// A live Safari or Capacitor WebView covers most of the native window; Appium
+// can retain tiny detached WebView nodes that must not define touch geometry.
+const MIN_WEBVIEW_WINDOW_AREA_FRACTION = 0.5;
 const READY_TIMEOUT_MS = 30_000;
 const POLL_MS = 50;
 const SCRIPT_TIMEOUT_MS = 45_000;
@@ -150,6 +153,19 @@ export async function runToggleRoundTrip({
   }
 }
 
+export async function runScreenshotToggleAtAdvancedBaseline({
+  openSavingSection,
+  recordScreenshotToggle,
+  reopenControlsSection,
+}) {
+  await openSavingSection();
+  try {
+    await recordScreenshotToggle();
+  } finally {
+    await reopenControlsSection();
+  }
+}
+
 export function coloringSelectionSteps(hasBookChoice) {
   const steps = [];
   if (hasBookChoice) {
@@ -171,15 +187,26 @@ export function coloringSelectionSteps(hasBookChoice) {
   return steps;
 }
 
+export function coloringClearActivation(nativeApp) {
+  return nativeApp ? 'webdriver' : 'native-accessibility';
+}
+
 export function screenshotActivation(nativeApp) {
   return nativeApp ? 'native-accessibility-click' : 'native';
 }
 
+export function uiActivationLabel(webdriverClicks) {
+  return webdriverClicks ? 'webdriver-script-click' : 'native-touch';
+}
+
 export function largestNativeRect(rects, fallback) {
   if (!rects.length) return fallback;
-  return rects.reduce((largest, rect) =>
+  const largest = rects.reduce((largest, rect) =>
     rect.width * rect.height > largest.width * largest.height ? rect : largest
   );
+  const largestArea = largest.width * largest.height;
+  const fallbackArea = fallback.width * fallback.height;
+  return largestArea >= fallbackArea * MIN_WEBVIEW_WINDOW_AREA_FRACTION ? largest : fallback;
 }
 
 export function profilingUrl(appUrl, repeat) {
@@ -281,7 +308,7 @@ async function measureClick({
         sessionId,
         execute,
         selector
-      );
+      ).catch(() => null);
     }
   }
   await ensureActionProbe(execute);
@@ -301,9 +328,12 @@ async function measureClick({
       { type: 'pause', duration: 80 },
       { type: 'pointerUp', button: 0 },
     ]);
-  } else if (activation === 'native-accessibility-click') {
+  } else if (activation === 'native-accessibility-click' && !client.webdriverClicks) {
     activationMode = 'native-accessibility-click';
     await clickNativeAccessibilityElement(client, sessionId, execute, selector);
+  } else if (client.webdriverClicks) {
+    activationMode = 'webdriver-script-click';
+    await clickSetupElement(execute, selector);
   } else {
     activationMode = 'webdriver-element-click';
     await clickWebElement(client, sessionId, selector);
@@ -1019,14 +1049,29 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           ? actionPanelLacksAttribute('data-off-adv')
           : actionPanelHasAttribute('data-off-adv'),
       whileAtBaseline: () =>
-        recordToggleRoundTrip({
-          label: 'screenshot action button',
-          selector: '#screenshotToggle',
-          baseline: true,
-          readyFor: (enabled) =>
-            enabled
-              ? actionPanelLacksAttribute('data-off-screenshot')
-              : actionPanelHasAttribute('data-off-screenshot'),
+        runScreenshotToggleAtAdvancedBaseline({
+          openSavingSection: () =>
+            openSettingsSection(
+              'saving',
+              `document.querySelector('#screenshotToggle') !== null`,
+              'Saving section'
+            ),
+          recordScreenshotToggle: () =>
+            recordToggleRoundTrip({
+              label: 'screenshot action button',
+              selector: '#screenshotToggle',
+              baseline: true,
+              readyFor: (enabled) =>
+                enabled
+                  ? actionPanelLacksAttribute('data-off-screenshot')
+                  : actionPanelHasAttribute('data-off-screenshot'),
+            }),
+          reopenControlsSection: () =>
+            openSettingsSection(
+              'controls',
+              `document.querySelector('#advancedControlsToggle') !== null`,
+              'Buttons section'
+            ),
         }),
     });
   }
@@ -1075,6 +1120,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       `document.querySelector('#coloring-book-dialog')?.open === true`,
       'coloring books to reopen'
     );
+    await sleep(ANIMATED_ACTION_SETTLE_MS);
     await record(
       measureClick({
         client,
@@ -1084,7 +1130,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
         ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'native-accessibility',
+        activation: coloringClearActivation(client.nativeApp),
       })
     );
   }
@@ -1452,7 +1498,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       },
       appUrl,
       transport: nativeApp ? 'native-capacitor-webview' : 'browser',
-      uiActivation: client.webdriverClicks ? 'webdriver-element-click' : 'native-touch',
+      uiActivation: uiActivationLabel(client.webdriverClicks),
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],
       repeats,
