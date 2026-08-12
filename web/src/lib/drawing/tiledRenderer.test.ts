@@ -456,6 +456,9 @@ describe('idle tiled canvas visibility', () => {
     const patchBytesAfterResize = tiledHistoryDebug().patchBytes;
     applyTiledView(IDENTITY_PAPER_VIEW);
     expect(tiles.some((tile) => tile.width !== 200 || tile.height !== 100)).toBe(true);
+    // The published size leads the migration, so a pixel reader can build the
+    // grid while the backings are still catching up (issue #966).
+    expect(tiles.every((tile) => tile.dataset.tileBacking === '200x100')).toBe(true);
     while (deferredFrames.length) deferredFrames.shift()!(0);
 
     expect(tiles.every((tile) => tile.width === 200 && tile.height === 100)).toBe(true);
