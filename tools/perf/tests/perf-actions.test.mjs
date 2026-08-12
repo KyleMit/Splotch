@@ -11,6 +11,7 @@ import {
 import {
   canvasHasInk,
   coloringSelectionSteps,
+  largestNativeRect,
   runToggleRoundTrip,
   screenshotActivation,
   selectedActions,
@@ -173,6 +174,20 @@ describe('action state planning', () => {
     expect(screenshotActivation(true)).toBe('native-accessibility');
   });
 
+  it('ignores a stale tiny WebView when mapping native geometry', () => {
+    const nativeWindow = { x: 0, y: 0, width: 1366, height: 1024 };
+    expect(
+      largestNativeRect(
+        [
+          { x: 279, y: 947, width: 68, height: 44 },
+          { x: 0, y: 0, width: 1366, height: 1024 },
+        ],
+        nativeWindow
+      )
+    ).toEqual(nativeWindow);
+    expect(largestNativeRect([], nativeWindow)).toEqual(nativeWindow);
+  });
+
   it('reads the Camera ToggleSwitch through its aria-checked state', () => {
     expect(IPAD_ACTIONS).toContain("selector: '#screenshotToggle'");
     expect(IPAD_ACTIONS).not.toContain("stateAttribute: 'aria-pressed'");
@@ -188,6 +203,7 @@ describe('action state planning', () => {
       "actionPanelLacksAttribute('data-off-adv')",
       'coloringSelectionSteps(hasBookChoice)',
       'activation: screenshotActivation(client.nativeApp)',
+      'largestNativeRect(',
     ]) {
       expect(IPAD_ACTIONS).toContain(token);
     }

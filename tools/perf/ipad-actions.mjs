@@ -175,6 +175,13 @@ export function screenshotActivation(nativeApp) {
   return nativeApp ? 'native-accessibility' : 'native';
 }
 
+export function largestNativeRect(rects, fallback) {
+  if (!rects.length) return fallback;
+  return rects.reduce((largest, rect) =>
+    rect.width * rect.height > largest.width * largest.height ? rect : largest
+  );
+}
+
 export function profilingUrl(appUrl, repeat) {
   const url = new URL(appUrl);
   url.searchParams.set('perf-actions', `${Date.now()}-${repeat}`);
@@ -376,16 +383,25 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
   const webContext = contexts.find(isWebContext);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
-  const webViewBounds = await client
-    .request('POST', `/session/${sessionId}/element`, {
+  const webViews = await client
+    .request('POST', `/session/${sessionId}/elements`, {
       using: 'class name',
       value: client.nativeWebViewClass ?? DEFAULT_NATIVE_WEBVIEW_CLASS,
     })
-    .then((webView) => {
-      const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
-      return client.request('GET', `/session/${sessionId}/element/${webViewId}/rect`);
-    })
-    .catch(() => nativeWindow);
+    .catch(() => []);
+  const webViewBounds = largestNativeRect(
+    (
+      await Promise.all(
+        webViews.map((webView) => {
+          const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
+          return client
+            .request('GET', `/session/${sessionId}/element/${webViewId}/rect`)
+            .catch(() => null);
+        })
+      )
+    ).filter(Boolean),
+    nativeWindow
+  );
   const bounds = nativeCanvasBounds({
     webGeometry,
     webViewBounds,
