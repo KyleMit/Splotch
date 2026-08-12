@@ -126,6 +126,12 @@ export function settingsSectionMeasurement(section, label, settingsModalUsesSide
   };
 }
 
+export function settingsSectionSetupReady(section, ready, settingsModalUsesSidebar) {
+  if (!settingsModalUsesSidebar) return ready;
+  const selector = settingsSectionRow(section);
+  return `(${ready}) && document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`;
+}
+
 export async function runToggleRoundTrip({
   baseline,
   initial,
@@ -821,7 +827,11 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   const openSettingsSection = async (section, ready, hint) => {
     await ensureSettingsHub();
     await clickSetupElement(execute, settingsSectionRow(section));
-    await waitForReady(execute, ready, hint);
+    await waitForReady(
+      execute,
+      settingsSectionSetupReady(section, ready, settingsModalUsesSidebar),
+      hint
+    );
   };
 
   if (actions.has('settings-sections')) {

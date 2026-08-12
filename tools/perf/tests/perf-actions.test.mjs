@@ -15,6 +15,7 @@ import {
   screenshotActivation,
   selectedActions,
   settingsSectionMeasurement,
+  settingsSectionSetupReady,
 } from '../ipad-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../desktop-actions.mjs';
 
@@ -98,6 +99,15 @@ describe('action state planning', () => {
     });
   });
 
+  it('waits for stacked Settings controls to scroll into the active sidebar section', () => {
+    const controlReady = `document.querySelector('#advancedControlsToggle') !== null`;
+    const sidebar = settingsSectionSetupReady('controls', controlReady, true);
+
+    expect(sidebar).toContain('aria-current');
+    expect(sidebar).toContain(controlReady);
+    expect(settingsSectionSetupReady('controls', controlReady, false)).toBe(controlReady);
+  });
+
   it('keeps dependent controls inside the required toggle baseline and restores original state', async () => {
     const events = [];
 
@@ -154,6 +164,7 @@ describe('action state planning', () => {
   it('wires every state planner into the physical runner', () => {
     for (const token of [
       'settingsSectionMeasurement(section, label, settingsModalUsesSidebar)',
+      'settingsSectionSetupReady(section, ready, settingsModalUsesSidebar)',
       `clickSetupElement(execute, '#parentalGate button[aria-label="Close"]')`,
       'whileAtBaseline: () =>',
       'coloringSelectionSteps(hasBookChoice)',
