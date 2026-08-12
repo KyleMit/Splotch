@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { CLIENT_REQUEST_TIMEOUT_MS } from '../src/lib/ai/limits';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { draw, enforceProductionCsp, gotoApp } from './helpers';
@@ -338,6 +339,63 @@ test.describe('AI result modal', () => {
     await expect(page.locator('.ai-result-disclosure')).toBeVisible();
     expect((await revealedBoxes(page)).card.height).toBeCloseTo(before.card.height, 0);
     expect(reportRequests).toBe(0);
+  });
+
+  // A <dialog> hands focus back to whatever held it before showModal(), so the
+  // Report control has to still be mounted and connected when the confirmation
+  // goes away — otherwise dismissing drops a keyboard user on <body>, outside
+  // the result dialog they were working in.
+  for (const dismissal of ['Escape', 'Cancel'] as const) {
+    test(`dismissing the confirmation with ${dismissal} hands focus back to Report`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(
+        (key) => localStorage.setItem(key, 'never'),
+        STORAGE_KEYS.parentalGateImageReportMode
+      );
+      await revealAiResult(page);
+
+      const report = page.getByRole('button', { name: 'Report this picture' });
+      const confirm = page.locator('dialog.ai-report-confirm');
+      await report.focus();
+      await page.keyboard.press('Enter');
+      await expect(confirm).toBeVisible();
+
+      if (dismissal === 'Escape') await page.keyboard.press('Escape');
+      else await confirm.getByRole('button', { name: 'Cancel' }).click();
+      await expect(confirm).not.toBeVisible();
+      await expect(report).toBeFocused();
+    });
+  }
+
+  // Dismissal is blocked while the request is on the wire, so the deadline is
+  // the only thing that can end a send that never settles. Without it the
+  // topmost dialog stays open against Cancel, the backdrop, Esc and Android
+  // back alike, for as long as the browser holds the socket.
+  test('a report send that never settles times out into the retry state', async ({ page }) => {
+    test.setTimeout(CLIENT_REQUEST_TIMEOUT_MS * 3);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    // Never fulfilled, never aborted from this side: the client's own deadline
+    // has to be what ends it.
+    await page.route('**/api/report-image', async () => {});
+    await revealAiResult(page);
+
+    await page.getByRole('button', { name: 'Report this picture' }).click();
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
+
+    const retry = page.getByRole('button', { name: 'Try again' });
+    await expect(retry).toBeVisible({ timeout: CLIENT_REQUEST_TIMEOUT_MS * 1.5 });
+    await expect(page.locator('dialog.ai-report-confirm')).not.toBeVisible();
+    await expect(page.getByRole('alert')).toContainText('taking too long');
+    // The dialog that closed took the focused button with it, so the retry it
+    // left behind is where a keyboard user has to land.
+    await expect(retry).toBeFocused();
   });
 
   // The strip is anchored to the card, not the viewport corner the old flag sat

@@ -50,6 +50,14 @@
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
 
+  // The strip carries the button that launches the confirm dialog, so it stays
+  // mounted for as long as that dialog is up: a <dialog> hands focus back to
+  // whatever held it before showModal(), and a launcher that unmounted in the
+  // meantime leaves that a detached node — dismissing would drop a keyboard
+  // user on <body>, outside the result they were in. It gives way only once the
+  // footer has a status message to carry the outcome instead.
+  const reportSettled = $derived(reportStatus === 'success' || reportStatus === 'error');
+
   // The gate proves an adult is present; the confirmation that follows is the
   // last step before an irreversible send. Reversing the two would let a parent
   // solve the sum only to discover the report had already gone.
@@ -261,7 +269,7 @@
 
   <!-- Stays mounted through the polaroid send-off so it fades out with the rest
        of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
-  {#if revealed && aiResult.resultUrl && reportStatus === 'idle'}
+  {#if revealed && aiResult.resultUrl && !reportSettled}
     <AiResultDisclosure onclick={requestReport} disabled={!aiResult.previewUrl} />
   {/if}
 </dialog>

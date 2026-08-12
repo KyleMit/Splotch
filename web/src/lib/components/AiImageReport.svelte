@@ -8,6 +8,7 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { apiUrl } from '$lib/api';
   import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+  import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
   import type { StyleName } from '$lib/ai/styles';
   import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
@@ -26,13 +27,24 @@
 
   let { drawingUrl, outputUrl, style, origin = null, status = $bindable('idle') }: Props = $props();
 
+  const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+
   let message = $state('');
   let controller: AbortController | null = null;
+  let statusEl = $state<HTMLDivElement>();
 
   // The confirmation is the last step before an irreversible send, so it stands
   // in front of the result rather than in its footer: exactly one action is live
   // at a time, and the Download button behind the second scrim reads as context.
   const confirmOpen = $derived(status === 'confirm' || status === 'busy');
+
+  // Failing closes the dialog the keyboard user was in, so the retry it leaves
+  // behind takes focus — the alert announces what happened, and this puts them
+  // on the control that acts on it. Reached without any tap of theirs when the
+  // send times out, which is exactly when being dropped on <body> is worst.
+  $effect(() => {
+    if (status === 'error') statusEl?.querySelector('button')?.focus();
+  });
 
   $effect(() => {
     return () => {
@@ -48,6 +60,14 @@
     controller = requestController;
     status = 'busy';
     message = '';
+    // Nothing else bounds this wait: dismissal is blocked while the request is
+    // on the wire, so without a deadline a stalled send holds the topmost dialog
+    // open against Cancel, the backdrop, Esc and Android back alike.
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      requestController.abort();
+    }, CLIENT_REQUEST_TIMEOUT_MS);
 
     try {
       const [drawingResponse, outputResponse] = await Promise.all([
@@ -80,10 +100,13 @@
         message = result.ok ? 'Could not send your picture report.' : result.error;
       }
     } catch {
-      if (requestController.signal.aborted) return;
+      // An abort this component did not schedule is an unmount or a supersede —
+      // there is no one left to tell. Its own deadline firing is a real failure.
+      if (requestController.signal.aborted && !timedOut) return;
       status = 'error';
-      message = NETWORK_ERROR_MESSAGE;
+      message = timedOut ? REPORT_TIMEOUT_MESSAGE : NETWORK_ERROR_MESSAGE;
     } finally {
+      clearTimeout(timeout);
       if (controller === requestController) controller = null;
     }
   }
@@ -95,7 +118,7 @@
 </script>
 
 {#if status === 'success' || status === 'error'}
-  <div class="ai-image-report">
+  <div class="ai-image-report" bind:this={statusEl}>
     <StatusMessage {status}>{message}</StatusMessage>
     {#if status === 'error'}
       <!-- No second gate: the one guarding this report was already solved. -->
