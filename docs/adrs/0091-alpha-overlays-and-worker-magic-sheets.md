@@ -118,6 +118,24 @@ coloring asset directory therefore shrinks from about 53 MB to 34 MB despite add
 * − An `ImageBitmap` can now be the immutable `MagicSheetSnapshot.canvas`; callers must treat the
   snapshot as a `CanvasImageSource`, not assume an `HTMLCanvasElement` context exists.
 
+## Amendment (2026-08): Present Decoded Overlays Without a Full-Page Fade
+
+A later physical-iPad campaign reproduced a Capacitor-only 79–80 ms frame 39 ms after page
+selection, after the alpha overlay had decoded and the dialog was closed. The same production build
+passed MobileSafari at 9 ms first-frame P95, 17 ms post-action P95, and 17 ms maximum. Suppressing
+Magic-sheet setup, pre-promoting the overlay with `will-change: opacity`, and the existing worker
+architecture did not remove the native tail.
+
+Disabling only the 180 ms opacity transition reduced the six-run native result from 5/17/80 ms to
+5/17/17 ms for first-frame P95, post-action P95, and maximum. All six page-visible checks passed,
+and the decoded alpha art, source-over composition, layout, theme, and export output were unchanged.
+
+The decoded overlay therefore appears at full opacity when it becomes ready. A full-paper opacity
+fade is not part of the page-selection contract: WebKit may turn its repeated alpha composition into
+a delayed multi-frame stall even when the layer is pre-promoted. Re-attempting a reveal animation
+requires the same focused physical Safari and Capacitor comparison, with the final art and all
+coloring/Magic feature checks retained.
+
 ## Re-attempting the Architectures
 
 ### Authoritative Coloring-Selection Measurement

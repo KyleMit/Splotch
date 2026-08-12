@@ -463,3 +463,45 @@ update the user-facing promise in the same change if twenty realistic sweeps no 
 * − Truly full-paper commands can still exhaust six papers before twenty entries. Supporting every
   possible twenty-command sequence would require a twenty-paper worst-case allowance and was
   rejected as disproportionate memory pressure.
+
+## Amendment (2026-08): Omit Patches for a Blank Pre-Command State
+
+### Context
+
+After the drawing-audio stall was removed, the first Magic stroke on blank paper still produced a
+repeatable 37–39 ms frame when it crossed into additional tiles. The frame coincided with allocating
+the command's pre-mutation tile canvases. Those snapshots contained only transparent pixels because
+`beginTiledCommand` had already recorded `wasEmpty = true`.
+
+Suppressing undo capture for the blank command removed the tail. The result does not weaken undo
+semantics: `wasEmpty` is the authoritative pre-command state. A blank state can follow a retained
+clear command, so the rule is based on the captured state rather than assuming the command is first
+in history. It cannot use the existing no-patch replay path, because replaying an older drawing and
+its later clear would reintroduce the unbounded ordinary undo work this ADR rejected.
+
+### Decision
+
+`renderTiledOpForCommand` does not capture tile patches when the active command's `wasEmpty` value
+is true. The command and its undo count remain in history. Undo hides the command's presented normal
+and crayon tiles immediately and marks the normal backings for lazy cleanup. It does not batch that
+cleanup in later frames or replay surviving history. A later stroke clears only each tile it reaches
+immediately before reuse. Clear's pending or completed patches remain available, so the next Undo
+can still restore an earlier drawing. Non-blank commands retain cropped dirty-region patches and
+ordinary patch restore.
+
+Unit coverage requires the first blank-paper command to retain zero patch bytes, remain undoable,
+and undo back to hidden blank tiles without synchronously clearing all tile backings. It also pins
+draw → clear → draw → undo to the same no-replay path, then requires the next Undo to restore the
+pre-clear drawing. On the physical iPad, the combined audio and blank-patch change kept the six-run
+Magic interaction at 10/18/28 ms in MobileSafari and 8/18/29 ms in Capacitor for first-frame P95,
+post-action P95, and maximum respectively. A separate six-run Capacitor Undo sweep measured 7/17/18
+ms on the same final build.
+
+### Consequences
+
+* \+ A first blank-paper stroke avoids allocating transparent tile snapshots on the drawing path.
+* \+ The Undo control and captured empty-state semantics are unchanged.
+* \− Hidden backings retain stale pixels until reuse or another lifecycle operation clears or
+  reallocates them. Export and empty-state scans exclude hidden tiles, a new stroke clears each
+  reached tile before painting, and undoing a preceding clear replaces the stale state with its
+  retained patches.

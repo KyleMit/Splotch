@@ -154,6 +154,7 @@ describe('idle tiled canvas visibility', () => {
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
     expect(resizeTiledRenderer(400, 400, 1)).toBe(false);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+    expect(tiledHistoryDebug().patchBytes).toBe(0);
 
     const patchBytesBeforeClear = tiledHistoryDebug().patchBytes;
     const clearCallsBefore = tiles.reduce(
@@ -190,8 +191,18 @@ describe('idle tiled canvas visibility', () => {
     );
     expect(clearCallsAfterDeferredFrames).toBe(clearCallsAfterUndo);
 
-    undoTiledCommand(1);
+    const clearCallsBeforeBlankUndo = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
+    expect(
+      tiles.reduce(
+        (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+        0
+      )
+    ).toBe(clearCallsBeforeBlankUndo);
 
     const magic: StrokeOp = { ...dot, magic: true };
     beginTiledCommand(true);

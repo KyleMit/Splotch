@@ -24,6 +24,7 @@ import {
   ensureNormalTileBacking,
   liveTileSurfaces,
   renderHistoryBaseOp,
+  restoreBlankLiveTiles,
   restoreTileContexts,
   type HistoryBaseTile,
   type LiveTile,
@@ -254,7 +255,7 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
         ensureNormalTileBacking(tile);
       }
       prepareTileForMutation(tile, index);
-      if (command && op.kind !== 'crayonFlush') {
+      if (command && !command.wasEmpty && op.kind !== 'crayonFlush') {
         undoPatches.capture(command, tile, index);
       }
       showTileForOp(tile, op);
@@ -267,7 +268,9 @@ function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | nul
         ensureNormalTileBacking(tile);
         if (op.crayon && !op.erase) ensureCrayonTileBacking(tile);
         prepareTileForMutation(tile, index);
-        if (command) undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+        if (command && !command.wasEmpty) {
+          undoPatches.capture(command, tile, index, opDeviceBounds(tile, op));
+        }
         showTileForOp(tile, op);
         renderOp(tile.ctx, op);
         if (workCounters) surfaceVisits++;
@@ -394,7 +397,9 @@ export function undoTiledCommand(renderScale: number) {
       const tile = liveTiles[index];
       return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
     });
-  if (snapshotsFit && !activeCommand) {
+  if (undone?.wasEmpty && !activeCommand) {
+    restoreBlankLiveTiles(liveTiles);
+  } else if (snapshotsFit && !activeCommand) {
     for (const [index, snapshot] of snapshots ?? []) {
       const tile = liveTiles[index];
       resetCrayonStateForClear(tile.ctx);
@@ -454,7 +459,9 @@ export function clearTiledRenderer(wasEmpty: boolean) {
 }
 
 export function scanTiledRendererIsEmpty(renderScale: number) {
-  return liveTiles.every((tile) => scanCanvasIsEmpty(tile.canvas, renderScale));
+  return liveTiles.every(
+    (tile) => tile.canvas.hidden || scanCanvasIsEmpty(tile.canvas, renderScale)
+  );
 }
 
 export function hasUnresolvedTiledMagicOps() {
