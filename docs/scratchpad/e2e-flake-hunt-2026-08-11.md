@@ -202,7 +202,9 @@ test failed.
   no-buildup comparison is meaningful.
 * Reproduction: the focused unfixed pen test failed 5/100 at 20 workers and zero retries, always
   with zero pixels in the first sample. The sibling crayon buildup test passed 100/100 under the
-  same load; its brush-selection setup already synchronizes with hydrated engine state.
+  same load and was recorded here as immune on that evidence. It was not: it carries the same
+  flat-zero signature for an unrelated reason, and the green run had measured a precondition that
+  was never the one at risk — see "Crayon buildup reads a mis-aligned tile composite" below.
 * Fix: the pen test waits for the hydrated drawing harness before input, waits for each stroke's
   exact committed-history state, and polls for first-pass pixel coverage before recording the
   comparison baseline.
@@ -224,6 +226,35 @@ test failed.
   precondition is true. The separate AI-report flow uses the same helper.
 * Verification: the exact accessibility test passed 100/100 at 20 workers and zero retries, then the
   complete parental-gate spec passed 105/105 at 20 workers and `--repeat-each=5`.
+
+### Crayon buildup reads a mis-aligned tile composite
+
+* Status: fixed and stress-verified; surfaced after the hunt closed, as issue #966
+* Spec: `web/tests/engine-crayon.spec.ts`
+* Test: `crayon strokes keep paper tooth and build up without muddying`
+* Failure: the first coverage sample returned a flat 0 against a `> 0.3` bound — the solid-pen
+  signature above, in a spec that entry had exempted.
+* Frequency: 1 failure in a full `npm test` run; 3 in 50 under `--repeat-each=10`; 1 in 5 at
+  `--workers=1`.
+* Initial scope: read as another commit-and-repaint race on the strength of the matching signature.
+  It is not one. Instrumenting the failing `page.evaluate` showed the stroke painting an identical
+  2,551 non-transparent pixels in passing and failing runs alike — only the sampled region came back
+  empty, and only in the runs where a whole row of tiles above it still carried the 300×150 canvas
+  default.
+* Root cause: `resizeTiledRenderer` defers a hidden tile's backing store and migrates one tile per
+  frame, so for the ~16 frames after the initial resize a hidden tile reports the size it last held.
+  `compositeVisibleLiveTiles` measured each row and column from those backings, preferring visible
+  tiles wherever a row had one — a row whose tiles are all hidden has none, so it took 150 where the
+  grid is 75. The inflated row pushed every later row 75px down the composite, and `pixelsIn` read
+  paper coordinates off the ink.
+* Fix: each tile publishes the backing size the renderer intends it to have, and the composite
+  builds its grid from that instead of from backings that lag it.
+* Verification: the exact test passed 100/100 at 20 workers and zero retries, then the complete
+  `engine-crayon.spec.ts` passed 100/100 under the same load.
+* Scope note: the composite is shared by every spec that reads pixels through `renderedCanvasHandle`
+  and by the `/dev/engine` harness, and three of that file's other four one-shot readers sample
+  regions the same shift would move. The mis-alignment is a defect in the seam, not a missing wait
+  in each caller, so the seam fix covers the class where per-spec polling could not have.
 
 ## Post-fix full-suite validation
 
@@ -265,3 +296,4 @@ in 9 clusters. The final current-code sample is three consecutive 400/400 runs: 
 7. Pathological-stroke history setup.
 8. Solid-pen commit and repaint sampling.
 9. Parental-gate non-empty-canvas setup.
+10. Live-tile composite grid geometry (after the hunt closed).
