@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { draw, enforceProductionCsp, gotoApp } from './helpers';
@@ -11,6 +12,10 @@ import { draw, enforceProductionCsp, gotoApp } from './helpers';
 //   npm run test:e2e:headed -- ai-result
 
 const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
+
+// Big enough that the picture's height, not the card, is what limits it — the
+// case the fixed-width card used to leave mostly empty.
+const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 
 interface AiMockResponse {
   status: number;
@@ -328,6 +333,56 @@ test.describe('AI result modal', () => {
       expect(report.height).toBeCloseTo(tokens.tap, 0);
     });
   }
+
+  // The picture is drawn as large as its own aspect allows in the room the
+  // viewport has, rather than inside a fixed-width card that left most of a
+  // desktop screen empty. Both halves of that are measurable: the card carries
+  // nothing but its own padding beside the picture, and the picture's height
+  // budget runs from the top of the screen down to the strip's room at the
+  // bottom — which only holds because the reserve is spent below the card
+  // instead of mirrored above it.
+  test('draws the picture at the full height the viewport allows', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await revealAiResult(page);
+
+    const { card, report } = await resultBoxes(page);
+    const stage = await page.locator('.ai-stage').boundingBox();
+    const inlinePadding = await page
+      .locator('.ai-result-content')
+      .evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+    const natural = await page
+      .locator('.stage-img.result')
+      .evaluate(
+        (el) => (el as HTMLImageElement).naturalWidth / (el as HTMLImageElement).naturalHeight
+      );
+    if (!stage) throw new Error('AI stage geometry was not measurable');
+
+    expect(card.width - stage.width).toBeCloseTo(2 * inlinePadding, 0);
+    expect(stage.width / stage.height).toBeCloseTo(natural, 2);
+    // Flush to the top, with the strip's Report target landing on the bottom
+    // edge: between them there is no height left for the picture to have taken.
+    // The couple of pixels of slack are --result-sizing-air plus the subpixel
+    // rounding of a card centered on a half-pixel offset.
+    const reportBottom = report.y + report.height;
+    expect(card.y).toBeLessThanOrEqual(2);
+    expect(reportBottom).toBeGreaterThan(DESKTOP_VIEWPORT.height - 2);
+    expect(reportBottom).toBeLessThanOrEqual(DESKTOP_VIEWPORT.height + 1);
+  });
+
+  // The dial is a fraction of the stage, which now grows to a desktop's worth of
+  // room — so it stops at its cap rather than becoming a dinner plate. The
+  // confetti's mask hole is derived from the same two numbers, so a dial that
+  // outgrew this would also punch a hole in the leaves nothing sits behind.
+  test('caps the loading dial once the stage outgrows it', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await openAiResult(page);
+
+    const dial = page.locator('.dial');
+    await expect(dial).toBeVisible();
+    const box = await dial.boundingBox();
+    if (!box) throw new Error('Dial geometry was not measurable');
+    expect(box.width).toBeCloseTo(DIAL_MAX_SIZE_PX, 0);
+  });
 
   // The strip sits on the dimmed backdrop, which is dark under either theme, so
   // its colors are literal rather than theme tokens that flip in light mode.

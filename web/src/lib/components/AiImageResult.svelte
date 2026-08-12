@@ -1,6 +1,7 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
   import AiDial from './AiDial.svelte';
+  import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
   import AiConfetti from './AiConfetti.svelte';
   import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
@@ -85,18 +86,26 @@
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
   const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
 
-  // Keep the confetti's circular mask hole aligned with the round dial as the
-  // stage aspect changes. The one load-bearing value is DIAL_MASK_RX (% of
-  // width); the vertical radius (% of height) tracks it by the stage aspect.
+  // Keep the confetti's mask hole on the round dial, which means matching the
+  // dial's own two-part size: a fraction of the stage until it hits its cap.
+  // The horizontal radius is that size plus a little clearance, so leaves vanish
+  // just behind the dial's translucent rim rather than at its exact edge; the
+  // vertical radius is the same distance expressed against the stage's height,
+  // which is what draws a circle rather than an ellipse at any stage aspect.
   // Both are handed to AiConfetti via --confetti-rx/--confetti-ry on .ai-stage.
-  // At 4:3 this resolves to the original 41%.
-  const DIAL_MASK_RX = 31;
-  const confettiMaskRy = $derived(`${(DIAL_MASK_RX * imgAspect).toFixed(1)}%`);
+  const MASK_CLEARANCE = 1.19;
+  const MASK_RX_PERCENT = ((DIAL_STAGE_FRACTION / 2) * MASK_CLEARANCE * 100).toFixed(1);
+  const MASK_MAX_RADIUS_PX = ((DIAL_MAX_SIZE_PX / 2) * MASK_CLEARANCE).toFixed(1);
+  const maskRadius = (percent: string) => `min(${percent}%, ${MASK_MAX_RADIUS_PX}px)`;
+  const confettiMaskRy = $derived(maskRadius((Number(MASK_RX_PERCENT) * imgAspect).toFixed(1)));
 
   const stageStyle = $derived(
-    `--confetti-rx: ${DIAL_MASK_RX}%; --confetti-ry: ${confettiMaskRy};` +
+    `--confetti-rx: ${maskRadius(MASK_RX_PERCENT)}; --confetti-ry: ${confettiMaskRy};` +
       (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
   );
+
+  // Handed to the card so its width can be the picture's own — see --result-aspect.
+  const cardStyle = $derived(`--result-aspect: ${imgAspect.toFixed(4)};`);
 
   function handleDownload() {
     if (!aiResult.resultUrl || exiting) return;
@@ -127,7 +136,9 @@
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
   class:report-expanded={reportExpanded}
+  class:errored={!!aiResult.error}
   class:loading
+  style={cardStyle}
   bind:this={dialogEl}
   use:modalDialog={() => ({
     open: aiResult.open,
@@ -193,11 +204,7 @@
           {:else}
             <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
                  the dial has a home until the blurred preview slots in. -->
-            <div
-              class="stage-sizer placeholder-sizer"
-              style="aspect-ratio: {imgAspect};"
-              aria-hidden="true"
-            ></div>
+            <div class="stage-sizer placeholder-sizer" aria-hidden="true"></div>
           {/if}
 
           {#if aiResult.previewUrl}
@@ -270,20 +277,67 @@
         var(--result-sizing-air)
     );
     --result-footer-reserve: var(--result-loading-reserve);
-    /* A definite width (not shrink-to-fit, which browsers resolve differently
-       for a transform-centered fixed dialog). The image is centered inside with
-       side spacing, so a tall render reads as a framed card rather than a strip. */
-    width: min(96vw, 560px);
+    --result-inline-padding: calc(2 * var(--space-4));
+    /* Overwritten inline with the picture's own ratio the moment one is known;
+       the 4:3 here only covers the frame before that. */
+    --result-aspect: 1.3333;
+    /* Every scrap of height the viewport has left once the card's own chrome and
+       the disclosure strip's room are taken out — the picture gets the rest. */
+    --result-stage-max-h: calc(100dvh - var(--result-footer-reserve) - var(--report-strip-reserve));
+    /* Held back from the viewport edges so the card doesn't read as a takeover,
+       and floored so the caption, footer and error copy keep a readable measure
+       under a narrow picture. */
+    --result-max-w: 96vw;
+    --result-min-w: min(96vw, 340px);
+    --result-stage-max-w: calc(var(--result-max-w) - var(--result-inline-padding));
+    --result-shift-y: 0px;
     max-height: 96dvh;
     overflow: visible;
+    transform: translate(-50%, calc(-50% + var(--result-shift-y)));
+  }
+
+  /* The picture sets the card's width rather than the other way around: project
+     the height budget above through the image's own aspect and that is the
+     widest the picture can be drawn without letterboxing it. Below that floor —
+     or past the viewport — the stage's own max-width takes over and the picture
+     sits centered in a framed card, which is what a very tall render should do.
+
+     A definite width, never shrink-to-fit, which browsers resolve differently
+     for a transform-centered fixed dialog. The error state has no picture to
+     size against, so it keeps a card sized for its copy. */
+  .ai-result-modal.errored {
+    width: min(var(--result-max-w), 560px);
+  }
+
+  .ai-result-modal:not(.errored) {
+    width: clamp(
+      var(--result-min-w),
+      calc(var(--result-stage-max-h) * var(--result-aspect) + var(--result-inline-padding)),
+      var(--result-max-w)
+    );
   }
 
   /* Whenever the disclosure strip is on screen the card gives up the room it
-     needs below (mirrored above, since the card is transform-centered) — so a
-     short viewport shrinks the picture instead of pushing the strip off-screen.
-     The confirmation state replaces the strip, and keeps the plain 96dvh above. */
-  .ai-result-modal:not(.report-expanded) {
+     needs below — so a short viewport shrinks the picture instead of pushing the
+     strip off-screen — and rides up by half of it so the room is spent below the
+     card rather than mirrored above it (app.css). The confirmation state
+     replaces the strip, and keeps the plain centered 96dvh above. So does the
+     error state, which has no picture to disclose. The loading state keeps both
+     even though the strip is still to come, so the card doesn't move under the
+     reveal. */
+  .ai-result-modal:not(.report-expanded):not(.errored) {
     max-height: calc(100dvh - var(--report-strip-reserve));
+    --result-shift-y: var(--report-strip-offset);
+  }
+
+  .ai-result-modal.autosave {
+    --result-footer-reserve: var(--result-autosave-footer-reserve);
+  }
+
+  .ai-result-modal.report-expanded {
+    /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
+       ordinary footer above needs much less room. */
+    --result-stage-max-h: calc(96dvh - 276px);
   }
 
   .ai-result-content {
@@ -338,32 +392,23 @@
     visibility: hidden;
     width: auto;
     height: auto;
-    /* Shrunk down so the image clears the viewport edges and leaves margin
-       around the whole card. Width is capped to the content box; a tall image
-       is limited by the height reserve (padding + gap + download + some air). */
+    /* Width is capped to the content box, which the card sized from this same
+       height budget and the image's aspect — so for a picture that fits the
+       viewport both bind at once and none of the card is empty. A picture too
+       tall to project that way is held by the height alone and sits centered. */
     max-width: 100%;
-    max-height: calc(100dvh - var(--result-footer-reserve) - var(--report-strip-reserve));
+    max-height: var(--result-stage-max-h);
   }
 
-  .ai-result-modal.autosave .stage-sizer {
-    max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-strip-reserve));
-  }
-
-  .ai-result-modal.loading:not(.autosave) .stage-sizer {
-    max-height: calc(100dvh - var(--result-loading-reserve) - var(--report-strip-reserve));
-  }
-
-  .ai-result-modal.report-expanded .stage-sizer {
-    /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
-       ordinary footer above needs much less room. */
-    max-height: calc(96dvh - 276px);
-  }
-
-  /* No image yet (modal opened before the export finished): a definite width so
-     the aspect-ratio resolves a height, giving the dial a stable box to sit in.
-     A tall portrait drawing is reined in by max-height (width then follows). */
+  /* No image yet (modal opened before the export finished): a box in the
+     drawing's shape and at the size the preview will take, so the dial has a
+     stable home and the card doesn't resize under it when the preview slots in.
+     Its width is spelled out rather than taken as a percentage of the stage:
+     the stage shrink-wraps this box, so a percentage would be resolving against
+     the width it is itself supposed to determine, and collapses. */
   .placeholder-sizer {
-    width: min(84vw, 460px);
+    width: min(var(--result-stage-max-w), calc(var(--result-stage-max-h) * var(--result-aspect)));
+    aspect-ratio: var(--result-aspect);
   }
 
   .stage-img {
@@ -537,8 +582,9 @@
   .ai-result-modal.polaroid-mode {
     background: #fdfcf7;
     /* Tilt and settle like a freshly printed photo, then fly off after a beat.
-       The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
-    transform: translate(-50%, -50%) rotate(-3deg);
+       The fly-out's delay (0.9s) covers the morph + a brief hold in the center.
+       Keeps --result-shift-y so the tilt doesn't also drop the card back down. */
+    transform: translate(-50%, calc(-50% + var(--result-shift-y))) rotate(-3deg);
     transition:
       transform 0.4s var(--ease-pop),
       background 0.4s ease;
@@ -557,7 +603,7 @@
 
   @keyframes ai-polaroid-fly {
     0% {
-      transform: translate(-50%, -50%) rotate(-3deg);
+      transform: translate(-50%, calc(-50% + var(--result-shift-y))) rotate(-3deg);
       opacity: 1;
     }
     100% {
