@@ -11,7 +11,6 @@ import { draw, enforceProductionCsp, gotoApp } from './helpers';
 //   npm run test:e2e:headed -- ai-result
 
 const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
-const PREVIEW_COMMIT_ATTEMPT_TIMEOUT_MS = 1500;
 const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 
 interface AiMockResponse {
@@ -90,19 +89,19 @@ async function drawPreview(page: Page) {
     return Boolean(state && state.snapshots > 0 && state.pendingCommands === 0);
   };
 
-  await expect(async () => {
-    const state = await history();
-    if (!state || (state.snapshots === 0 && state.pendingCommands === 0)) {
-      const box = await page.locator('#drawingCanvas').boundingBox();
-      if (!box) throw new Error('Drawing canvas has no bounds');
-      await draw(page, [
-        { x: box.width * 0.24, y: box.height * 0.45 },
-        { x: box.width * 0.5, y: box.height * 0.62 },
-        { x: box.width * 0.76, y: box.height * 0.4 },
-      ]);
-    }
-    await expect.poll(committed, { timeout: PREVIEW_COMMIT_ATTEMPT_TIMEOUT_MS }).toBe(true);
-  }).toPass({ timeout: PREVIEW_COMMIT_TIMEOUT_MS });
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
+      timeout: PREVIEW_COMMIT_TIMEOUT_MS,
+    })
+    .toBe(true);
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('Drawing canvas has no bounds');
+  await draw(page, [
+    { x: box.width * 0.24, y: box.height * 0.45 },
+    { x: box.width * 0.5, y: box.height * 0.62 },
+    { x: box.width * 0.76, y: box.height * 0.4 },
+  ]);
+  await expect.poll(committed, { timeout: PREVIEW_COMMIT_TIMEOUT_MS }).toBe(true);
 }
 
 async function prepareAiGeneration(page: Page) {
