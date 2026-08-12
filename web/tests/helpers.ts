@@ -366,6 +366,8 @@ export async function firstOpaquePixel(page: Page): Promise<Rgba | null> {
   const canvas = await renderedCanvasHandle(page);
   try {
     return await canvas.evaluate((c): Rgba | null => {
+      // expect.poll does not retry callback errors, so callers waiting for mount
+      // establish renderedCanvasHasArea before using this blank-canvas reader.
       if (c.width === 0 || c.height === 0)
         throw new Error('live tiles are not mounted yet — the composite has no area');
       const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
