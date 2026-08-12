@@ -1,81 +1,47 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CODEX_POLICY_PATHS, POLICY_RULES } from './install-codex-policy.mjs';
-import { installReviewer } from './install-reviewer.mjs';
-
-const EXPECTED_CONFIG = {
-  approval_policy: 'on-request',
-  approvals_reviewer: 'auto_review',
-  sandbox_mode: 'workspace-write',
-};
+import {
+  checkCodexPolicy as checkRunClaudePolicy,
+  evaluateDecision,
+} from '../../run-claude/scripts/check-codex-policy.mjs';
+import { CODEX_POLICY_PATHS } from '../../run-claude/scripts/install-codex-policy.mjs';
+import { ISSUE_STACK_POLICY_RULES } from './install-codex-policy.mjs';
 
 const POLICY_CASES = [
   { command: ['gh', 'pr', 'view', '1'], expected: 'prompt' },
   { command: ['gh', 'pr', 'merge', '1'], expected: 'forbidden' },
   { command: ['gh', 'stack', 'merge'], expected: 'forbidden' },
   { command: ['git', 'push', 'origin', 'codex/policy-check'], expected: 'prompt' },
-  {
-    command: ['/Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs', '--pr', '1'],
-    expected: 'prompt',
-  },
-  {
-    command: ['/Users/kylemit/.local/libexec/splotch-claude-review-health.mjs'],
-    expected: 'prompt',
-  },
-  { command: ['claude', '--print', 'review'], expected: 'forbidden' },
 ];
 
-export function validateCodexConfig(content) {
-  const firstTable = content.search(/^\[/m);
-  const topLevel = firstTable === -1 ? content : content.slice(0, firstTable);
-  for (const [key, value] of Object.entries(EXPECTED_CONFIG)) {
-    const matches = topLevel.match(new RegExp(`^${key}\\s*=\\s*"${value}"\\s*$`, 'gm')) ?? [];
-    if (matches.length !== 1) throw new Error(`Codex config must set ${key} = "${value}" once`);
-  }
-}
-
-export function validateManagedRules(content) {
-  if (!content.includes(POLICY_RULES))
+export function validateIssueStackRules(content) {
+  if (!content.includes(ISSUE_STACK_POLICY_RULES)) {
     throw new Error('managed issue-stack rules are missing or stale');
+  }
 }
 
-function evaluateDecision(command) {
-  const result = spawnSync(
-    'codex',
-    ['execpolicy', 'check', '--rules', CODEX_POLICY_PATHS.rules, ...command],
-    { encoding: 'utf8' }
-  );
-  if (result.error) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(`codex execpolicy failed for ${command.join(' ')}: ${result.stderr.trim()}`);
+export function checkIssueStackPolicy() {
+  checkRunClaudePolicy();
+  if (!existsSync(CODEX_POLICY_PATHS.rules)) {
+    throw new Error(`missing Codex policy file: ${CODEX_POLICY_PATHS.rules}`);
   }
-  return JSON.parse(result.stdout).decision;
-}
-
-export function checkCodexPolicy() {
-  for (const path of Object.values(CODEX_POLICY_PATHS)) {
-    if (!existsSync(path)) throw new Error(`missing Codex policy file: ${path}`);
-  }
-  validateCodexConfig(readFileSync(CODEX_POLICY_PATHS.config, 'utf8'));
-  validateManagedRules(readFileSync(CODEX_POLICY_PATHS.rules, 'utf8'));
+  validateIssueStackRules(readFileSync(CODEX_POLICY_PATHS.rules, 'utf8'));
   for (const { command, expected } of POLICY_CASES) {
     const actual = evaluateDecision(command);
     if (actual !== expected) {
       throw new Error(`${command.join(' ')} resolves to ${actual}, expected ${expected}`);
     }
   }
-  installReviewer({ check: true });
-  console.log('Codex issue-stack policy and trusted reviewer are ready');
+  console.log('Codex issue-stack policy is ready');
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     if (process.argv.length !== 2) throw new Error('check-codex-policy.mjs accepts no arguments');
-    checkCodexPolicy();
+    checkIssueStackPolicy();
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

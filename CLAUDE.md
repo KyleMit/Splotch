@@ -8,9 +8,9 @@
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
 > the output. Direct provider packages registered in `tools/ruler/direct-provider-skills.mjs` are
 > the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and
-> Codex implementations, while `implement-issue-stack` is intentionally Codex-only. Edit only the
-> registered provider package and note you intend to change; never manufacture a missing provider by
-> copying another one.
+> Codex implementations, while `run-claude` and `implement-issue-stack` are intentionally
+> Codex-only. Edit only the registered provider package and note you intend to change; never
+> manufacture a missing provider by copying another one.
 
 Splotch is a drawing app for toddlers (2+). One SvelteKit codebase ships two targets (ADR-0001):
 
@@ -50,11 +50,12 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   sources end in `.template`; the suffix is removed at the destination and keeps Ruler's recursive
   rule loader from concatenating them into root instructions.
 * Direct-maintained exceptions are declared in `tools/ruler/direct-provider-skills.mjs`.
-  `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
-  Codex package because it orchestrates a standalone Claude reviewer; `analyze-session-transcripts`
-  has independent provider packages because Claude Code and Codex persist different transcript
-  formats. Edit registered packages and notes directly, never through `.ruler/`, and never create an
-  undeclared provider by copying one.
+  `burn-down-audits` has independent Claude and Codex packages; `run-claude` and
+  `implement-issue-stack` have only Codex packages because they orchestrate a standalone Claude
+  process and Codex-native subagents respectively; `analyze-session-transcripts` has independent
+  provider packages because Claude Code and Codex persist different transcript formats. Edit
+  registered packages and notes directly, never through `.ruler/`, and never create an undeclared
+  provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's
@@ -247,7 +248,7 @@ skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<n
 generated from `.ruler/`; managed runner forks may be produced from `.ruler/skill-forks/<runner>/`.
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
 under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
-implementations; Codex-only `implement-issue-stack` lives only under `.agents/`. See
+implementations; Codex-only `run-claude` and `implement-issue-stack` live only under `.agents/`. See
 `tools/ruler/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
@@ -260,6 +261,7 @@ implementations; Codex-only `implement-issue-stack` lives only under `.agents/`.
 | `profiling`                             | measuring drawing/canvas performance, investigating jank, or checking for perf regressions (`npm run perf:*`)                                                                                                            |
 | `lighthouse-audit`                      | auditing page-load performance / Core Web Vitals on a throttled device (Lighthouse, first vs repeat visit)                                                                                                               |
 | `adrs`                                  | proposing or discussing any architectural approach                                                                                                                                                                       |
+| `run-claude`                            | launching a fresh local Claude process from Codex for a second opinion, inspection, or empirical Splotch PR review                                                                                                       |
 | `pr-screenshots`                        | opening/creating a pull request that touches the UI — screenshot conventions that augment the built-in PR flow                                                                                                           |
 | `leave-pr-review` / `address-pr-review` | authoring a review of a PR (`leave-pr-review` — local checkout, empirical verification, gated posting, augments the built-in review flow), or working through the review feedback received on a PR (`address-pr-review`) |
 | `create-handoff` / `resume-handoff`     | pausing in-flight work for a later session (`create-handoff`), or picking it back up (`resume-handoff`) — transfer packets live in `docs/handoff/`                                                                       |

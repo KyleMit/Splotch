@@ -55,11 +55,13 @@ Complete preflight before creating any branch or PR:
    clean it. Determine the remote default branch, fetch it, and record its exact OID.
 3. Resolve every issue reference through GitHub. Read each body and labels. Confirm all are open,
    unique, in this repository, and actionable in the requested order.
-4. Run `npm run issue-stack:policy:check`, then invoke the fixed read-only authentication probe
-   `/Users/kylemit/.local/libexec/splotch-claude-review-health.mjs` outside the sandbox. A failed
-   policy or authentication check is a global blocker: tell the user to run
-   `npm run issue-stack:install` and restart Codex; do not change user configuration during an
-   unattended queue. Do not fall back to raw `claude` or weaken its permission mode.
+4. Read and follow the Codex-only `run-claude` skill, then run `npm run issue-stack:policy:check`.
+   Invoke its fixed read-only authentication probe
+   `/Users/kylemit/.local/libexec/splotch-claude-health.mjs` outside the sandbox, then run
+   `gh auth status --hostname github.com` outside the sandbox. A failed policy or authentication
+   check is a global blocker: tell the user to run `npm run issue-stack:install` and restart Codex;
+   do not change user configuration during an unattended queue. Do not fall back to raw `claude` or
+   weaken its permission mode.
 5. Require `gh stack --version` to report `0.1.0`. Another version is a global blocker unless the
    user authorized that exact version after its `link` and `unstack` behavior was validated. Use
    GitHub MCP for operations it covers; use `gh` for authenticated CLI-only operations, especially
@@ -181,7 +183,8 @@ review or the next issue while an applicable check is red or pending.
 
 ### 5. Run a standalone Claude adversarial review
 
-After CI is green, invoke only the installed fixed wrapper outside the Codex sandbox:
+After CI is green, use the `run-claude` skill's empirical Splotch PR-review profile. Invoke only its
+installed fixed wrapper outside the Codex sandbox:
 
 ```sh
 /Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs --pr <number>
