@@ -7,15 +7,17 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { assertNoApiBillingEnvironment } from './splotch-claude-subscription-auth.mjs';
 
 export const REVIEWER_PATHS = {
   claude: '/Users/kylemit/.local/bin/claude',
   gh: '/opt/homebrew/bin/gh',
   git: '/usr/bin/git',
   repositoryRoot: '/Users/kylemit/Code/Splotch',
-  settings: '/Users/kylemit/.config/splotch-claude-review/settings.json',
-  rubric: '/Users/kylemit/.config/splotch-claude-review/rubric.md',
-  manifest: '/Users/kylemit/.config/splotch-claude-review/manifest.json',
+  settings: '/Users/kylemit/.config/splotch-run-claude/settings.json',
+  rubric: '/Users/kylemit/.config/splotch-run-claude/reviewer-rubric.md',
+  manifest: '/Users/kylemit/.config/splotch-run-claude/manifest.json',
+  subscriptionAuth: '/Users/kylemit/.local/libexec/splotch-claude-subscription-auth.mjs',
 };
 
 const REPOSITORY = 'KyleMit/Splotch';
@@ -72,16 +74,17 @@ function digest(path) {
 }
 
 function verifyInstallation(paths) {
-  for (const path of [paths.settings, paths.rubric, paths.manifest]) {
+  for (const path of [paths.settings, paths.rubric, paths.manifest, paths.subscriptionAuth]) {
     if (!existsSync(path)) throw new Error(`missing trusted reviewer file: ${path}`);
   }
   const manifest = JSON.parse(readFileSync(paths.manifest, 'utf8'));
   const settings = JSON.parse(readFileSync(paths.settings, 'utf8'));
   const wrapperPath = resolve(process.argv[1]);
   if (
-    manifest.wrapperSha256 !== digest(wrapperPath) ||
+    manifest.reviewerSha256 !== digest(wrapperPath) ||
     manifest.settingsSha256 !== digest(paths.settings) ||
-    manifest.rubricSha256 !== digest(paths.rubric)
+    manifest.rubricSha256 !== digest(paths.rubric) ||
+    manifest.subscriptionAuthSha256 !== digest(paths.subscriptionAuth)
   ) {
     throw new Error(
       'trusted reviewer files differ from the installed manifest; reinstall before review'
@@ -101,6 +104,7 @@ function verifyInstallation(paths) {
 function run(command, arguments_, options = {}) {
   const result = spawnSync(command, arguments_, {
     cwd: options.cwd,
+    env: options.env,
     encoding: options.capture ? 'utf8' : undefined,
     stdio: options.capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
   });
@@ -202,7 +206,8 @@ function verifyPublishedReview(metadata, reviewMarker, paths) {
   }
 }
 
-export function publishReview(prNumber, paths = REVIEWER_PATHS) {
+export function publishReview(prNumber, paths = REVIEWER_PATHS, environment = process.env) {
+  assertNoApiBillingEnvironment(environment);
   verifyInstallation(paths);
   const metadata = readMetadata(prNumber, paths);
   verifyRepositoryAndRefs(metadata, paths);
@@ -249,7 +254,7 @@ export function publishReview(prNumber, paths = REVIEWER_PATHS) {
         'high',
         prompt,
       ],
-      { cwd: checkoutPath }
+      { cwd: checkoutPath, env: environment }
     );
 
     const finalMetadata = readMetadata(prNumber, paths);

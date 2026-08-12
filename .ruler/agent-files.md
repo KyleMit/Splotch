@@ -18,11 +18,12 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   sources end in `.template`; the suffix is removed at the destination and keeps Ruler's recursive
   rule loader from concatenating them into root instructions.
 * Direct-maintained exceptions are declared in `tools/ruler/direct-provider-skills.mjs`.
-  `burn-down-audits` has independent Claude and Codex packages; `implement-issue-stack` has only a
-  Codex package because it orchestrates a standalone Claude reviewer; `analyze-session-transcripts`
-  has independent provider packages because Claude Code and Codex persist different transcript
-  formats. Edit registered packages and notes directly, never through `.ruler/`, and never create an
-  undeclared provider by copying one.
+  `burn-down-audits` has independent Claude and Codex packages; `run-claude` and
+  `implement-issue-stack` have only Codex packages because they orchestrate a standalone Claude
+  process and Codex-native subagents respectively; `analyze-session-transcripts` has independent
+  provider packages because Claude Code and Codex persist different transcript formats. Edit
+  registered packages and notes directly, never through `.ruler/`, and never create an undeclared
+  provider by copying one.
 * Skill notes are authored in `.ruler/skill-notes/<name>.md.template` and mirrored, suffix stripped,
   to `.claude/skill-notes/` and `.agents/skill-notes/` by `tools/ruler/mirror-skill-notes.mjs`. The
   `.template` suffix is load-bearing for the same reason it is on a skill fork's Markdown: ruler's

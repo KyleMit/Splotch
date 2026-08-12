@@ -60,11 +60,13 @@ byte-stable output, so bumps are deliberate). A deliberately small registry in
   implementations in `.claude/skills/burn-down-audits/` and `.agents/skills/burn-down-audits/`.
   `analyze-session-transcripts` likewise has independent provider packages because Claude Code and
   Codex use different transcript stores and record formats; sharing the name preserves one user
-  concept without imposing a shared parser or runbook. `implement-issue-stack` exists only in
-  `.agents/skills/implement-issue-stack/`: its defining operation is Codex orchestrating a fresh
-  Claude Code adversarial reviewer, so a Claude package would misrepresent the workflow. The
-  registry declares exactly which providers exist; changing one never implies creating or syncing
-  another provider.
+  concept without imposing a shared parser or runbook. `run-claude` exists only in
+  `.agents/skills/run-claude/`: its defining operation is Codex launching a fresh local Claude Code
+  process through fixed permission-reviewed wrappers. `implement-issue-stack` also exists only in
+  `.agents/skills/implement-issue-stack/`: it orchestrates Codex-native implementers and consumes
+  `run-claude` for independent adversarial review. Claude packages for either would misrepresent the
+  workflow. The registry declares exactly which providers exist; changing one never implies creating
+  or syncing another provider.
 * **Config:** `.ruler/ruler.toml` — `default_agents = ["claude", "codex"]`, gitignore/MCP/backup all
   disabled (files are tracked; there are no project MCP servers; `.bak` files would be noise).
 * **Skill design notes:** shared notes in `.ruler/skill-notes/` are mirrored to both agents. A

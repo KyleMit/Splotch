@@ -1,0 +1,56 @@
+# Run Claude — design notes
+
+`run-claude` is a direct Codex-only package because its defining boundary is one agent runner
+launching another vendor's local authenticated CLI. A shared Claude package would imply Claude
+should orchestrate an independent Claude process and would spread Codex exec-policy details into a
+provider that cannot use them.
+
+## Capability split
+
+The first issue-stack implementation owned Claude authentication, installation, policy, and PR
+publication. That made the capability undiscoverable for ad-hoc second opinions and forced every
+future Codex workflow to either depend on issue stacking or rediscover the same Keychain boundary.
+The reusable capability now lives here; `implement-issue-stack` owns only stack orchestration and
+consumes the fixed PR-review profile.
+
+Three profiles deliberately have different authority:
+
+1. `ask` sends an arbitrary prompt from a bounded prompt file to a fresh Claude process with no
+   tools and returns JSON to Codex. It is the safe default for second opinions and smoke tests. The
+   file boundary keeps untrusted prompt text out of the parent shell grammar.
+2. `inspect` adds only `Read`, `Grep`, and `Glob` inside a validated Splotch worktree. It can review
+   repository evidence but cannot run code, edit, browse, or publish.
+3. The fixed PR publisher retains the empirical reviewer from the issue-stack workflow: a disposable
+   checkout, default tools, Auto + safe mode, the trusted `leave-pr-review` rubric, and one narrowly
+   authorized `COMMENT` review on validated base/head OIDs.
+
+An arbitrary full-tool profile was rejected. Once a generic wrapper runs outside Codex's Seatbelt
+sandbox, Codex cannot inspect Claude's nested operations after approving the wrapper. The PR
+publisher can justify that authority because its target, prompt, checkout, marker, and postcondition
+are fixed. An ad-hoc prompt cannot. A future empirical local-only profile should create a disposable
+checkout and enforce its command surface before it is added.
+
+## Authentication and policy
+
+Subprocesses inside Codex's Seatbelt sandbox see binaries and config files but cannot read Claude or
+GitHub credentials from the macOS Keychain. The installed entry points therefore run outside that
+sandbox behind Codex Auto-review. Raw `claude` remains forbidden so caller-controlled flags cannot
+remove Claude's second permission layer.
+
+The installer hashes the wrappers, shared subscription-auth guard, trusted settings, prompt
+boundaries, and review rubric. Every wrapper rejects environment variables that select API-key,
+Bedrock, Vertex, or Foundry billing; the health probe also requires `claude auth status` to report a
+logged-in, non-API-key session. `CLAUDE_CODE_OAUTH_TOKEN` remains valid because it draws from the
+Claude plan, while local runs normally use the Keychain login.
+
+The PR publisher additionally validates the repository remote, PR identity and state, same-repo
+status, branch names, and exact OIDs. Its hidden base/head marker makes publication idempotent and
+lets `address-pr-review mode=autonomous` recognize the independent review even when Claude and Codex
+share one GitHub identity.
+
+Open validation questions:
+
+* Whether Claude adds a stable machine-readable subscription field that should become a required
+  health-check assertion.
+* Whether a future local empirical profile can permit a useful test vocabulary without allowing
+  untrusted package scripts to turn that vocabulary into arbitrary host execution.

@@ -56,6 +56,12 @@ staging file, `fix-audits` burns the issues down.
 | Standalone | `dependency-health-audit` | Provenance/license/maintenance review of every dependency → `docs/DEPENDENCIES.md` |
 | Standalone | `workflow-audit`          | Claude Code config + session-history review vs. best practice → dated review doc   |
 
+## Cross-agent execution
+
+| Skill        | Use when you are…                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------- |
+| `run-claude` | **Launching** a fresh local Claude process from Codex for a second opinion or bounded review |
+
 ## Pull requests — author, review, respond
 
 All three augment the built-in PR flows rather than replacing them.
@@ -65,7 +71,7 @@ All three augment the built-in PR flows rather than replacing them.
 | `pr-screenshots`        | **Opening** a PR that touches UI — screenshot/before-after/gif conventions         |
 | `leave-pr-review`       | **Authoring** a review of someone's PR — local checkout, empirical verification    |
 | `address-pr-review`     | **Receiving** a review — triage every comment, fix or rebut, reply and resolve     |
-| `implement-issue-stack` | **Orchestrating** ordered issues into reviewed, green stacked PRs (Codex-only)     |
+| `implement-issue-stack` | **Orchestrating** ordered issues into reviewed, green stacked PRs via `run-claude` |
 | `triage-dependabot-prs` | **Clearing** the open Dependabot PRs — verify, sequence the merges, close the rest |
 
 `triage-dependabot-prs` is the human-side pass downstream of the automated Dependabot review
@@ -144,9 +150,9 @@ Every skill must appear here in exactly one primary group (cross-reference a sec
 when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
 `tools/ruler/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
-implementations, as does `analyze-session-transcripts`; `implement-issue-stack` is Codex-only. When
-editing one, change only the declared provider; never copy one implementation into an undeclared
-provider tree.
+implementations, as does `analyze-session-transcripts`; `run-claude` and `implement-issue-stack` are
+Codex-only. When editing one, change only the declared provider; never copy one implementation into
+an undeclared provider tree.
 
 **When you add, rename, or delete a skill, update this guide in the same change**, then run
 `npm run ruler:apply` for generated surfaces. If a new skill fits no existing group, add a group
