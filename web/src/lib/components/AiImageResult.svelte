@@ -1,14 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import AiDial from './AiDial.svelte';
-  import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
-  import AiConfetti from './AiConfetti.svelte';
   import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
+  import AiResultStage from './AiResultStage.svelte';
   import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
-  import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
@@ -20,36 +17,8 @@
   } from '$lib/saveNaming';
 
   let dialogEl: HTMLDialogElement;
-  let aiStageEl = $state<HTMLDivElement | undefined>();
-  let zoomLayerEl = $state<HTMLDivElement | undefined>();
-
-  // Tracks the stage's rendered size, which AiConfetti needs in real pixels: the
-  // fall distance (--stage-h) spans the stage rather than a fixed guess, and the
-  // mask hole (below) is a circle the stage's own aspect can't express in
-  // percentages. Both vary by viewport, by the autosave variant, and now by the
-  // picture's shape. Reactive on aiStageEl (not onMount): the error state's
-  // {:else} unmounts .ai-stage and swaps in a fresh element on retry, so the
-  // observer must be re-attached each time the element changes, not just once at
-  // component mount.
-  let stageHeight = $state(0);
-  let stageWidth = $state(0);
-  $effect(() => {
-    if (!aiStageEl) {
-      stageHeight = 0;
-      stageWidth = 0;
-      return;
-    }
-    const el = aiStageEl;
-    const ro = new ResizeObserver(([entry]) => {
-      stageHeight = entry.contentRect.height;
-      stageWidth = entry.contentRect.width;
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
 
   let revealed = $state(false);
-  let progress = $state(0);
   const loading = $derived(aiResult.open && !revealed && !aiResult.error);
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
@@ -72,8 +41,6 @@
   }
 
   const DEFAULT_ASPECT = 4 / 3;
-  const MIN_BLUR_PX = 2;
-  const MAX_EXTRA_BLUR_PX = 16;
 
   // Seed the stage with the window's aspect ratio as soon as generation starts
   // so the placeholder box closely matches the preview that slots in a beat later.
@@ -86,48 +53,17 @@
     }
   });
 
-  // Reset the dial's display state here in the parent — not in AiDial, which is
-  // unmounted by `{#if !revealed}` the moment generation completes and so never
-  // sees the modal close. Without this, `revealed` stays true and the spinner
-  // never mounts on the next generation.
+  // `revealed` is reset here rather than by the dial that sets it: the stage
+  // unmounts AiDial the moment generation completes, so it never sees the modal
+  // close. Without this it stays true and the spinner never mounts on the next
+  // generation.
   $effect(() => {
     if (!aiResult.open) {
       exiting = false;
       revealed = false;
-      progress = 0;
       reportStatus = 'idle';
     }
   });
-
-  function handleImgLoad(e: Event) {
-    if (!(e.currentTarget instanceof HTMLImageElement)) return;
-    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-    if (w > 0 && h > 0) imgAspect = w / h;
-  }
-
-  // The drawing stays blurry to keep the suspense, sharpening as we progress.
-  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
-
-  // Keep the confetti's mask hole on the round dial, which means matching the
-  // dial's own two-part size: a fraction of the stage until it stops at its cap.
-  // The clearance opens the hole a little wider than the dial, so leaves vanish
-  // just behind its translucent rim rather than at the exact edge.
-  //
-  // The result is a circle, and a circle on a stage of any aspect needs the same
-  // radius in both axes — which the measured stage width gives directly. Handing
-  // AiConfetti one radius in real pixels for --confetti-rx/--confetti-ry beats
-  // deriving the vertical one from the picture's aspect, and it keeps the value
-  // out of the gradient as CSS math, which is not worth relying on there.
-  const MASK_CLEARANCE = 1.19;
-  const maskRadiusPx = $derived(
-    Math.min(stageWidth * (DIAL_STAGE_FRACTION / 2), DIAL_MAX_SIZE_PX / 2) * MASK_CLEARANCE
-  );
-
-  const stageStyle = $derived(
-    (maskRadiusPx > 0
-      ? `--confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
-      : '') + (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
-  );
 
   // Handed to the card so its width can be the picture's own — see --result-aspect.
   const cardStyle = $derived(`--result-aspect: ${imgAspect.toFixed(4)};`);
@@ -195,62 +131,7 @@
         {/if}
       </div>
     {:else}
-      <div
-        class="ai-stage"
-        bind:this={aiStageEl}
-        style={stageStyle}
-        use:pinchZoom={() => ({
-          target: zoomLayerEl!,
-          // Only once the finished picture is on screen — the loading dial and
-          // blurred preview shouldn't zoom.
-          enabled: revealed && !!aiResult.resultUrl && !exiting,
-          // A fresh result resets the zoom back to fit.
-          resetKey: aiResult.resultUrl,
-        })}
-      >
-        <!-- The zoom layer holds only the picture; the dial and confetti stay
-             outside it so they never scale with a pinch. -->
-        <div class="zoom-layer" bind:this={zoomLayerEl}>
-          <!-- Hidden in-flow sizer: a real <img> drives the stage size from the
-               image's own dimensions (capped by max-width/max-height). Replaced
-               elements size identically in every browser — unlike an
-               aspect-ratio + max-width box, which WebKit collapses/distorts. The
-               visible images below overlay it. Uses the result once it's here, or
-               the preview while loading (same aspect, so no resize on reveal). -->
-          {#if aiResult.resultUrl || aiResult.previewUrl}
-            <img
-              class="stage-sizer"
-              src={aiResult.resultUrl || aiResult.previewUrl}
-              alt=""
-              aria-hidden="true"
-              onload={handleImgLoad}
-            />
-          {:else}
-            <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
-                 the dial has a home until the blurred preview slots in. -->
-            <div class="stage-sizer placeholder-sizer" aria-hidden="true"></div>
-          {/if}
-
-          {#if aiResult.previewUrl}
-            <img
-              class="stage-img preview"
-              class:gone={revealed}
-              style="filter: blur({previewBlur}) saturate(1.1);"
-              src={aiResult.previewUrl}
-              alt=""
-            />
-          {/if}
-
-          {#if aiResult.resultUrl}
-            <img class="stage-img result" class:shown={revealed} src={aiResult.resultUrl} alt="" />
-          {/if}
-        </div>
-
-        {#if !revealed}
-          <AiConfetti />
-          <AiDial bind:revealed bind:progress />
-        {/if}
-      </div>
+      <AiResultStage bind:revealed {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
 
       {#if loading}
         <div class="ai-loading-caption">
@@ -403,97 +284,6 @@
 
   .ai-result-close {
     z-index: 2;
-  }
-
-  /* ── Stage: holds the blurred drawing, the dial, and the final image ── */
-  .ai-stage {
-    position: relative;
-    display: block;
-    line-height: 0; /* drop the inline-image baseline gap under the sizer */
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    background: #fcfbf8;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    /* Own the touch gesture so the scoped pinch-zoom (use:pinchZoom) drives the
-       preview instead of the browser — the drawing surface stays zoom-locked
-       (ADR-0076). Size comes from .stage-sizer below — the modal shrink-wraps
-       this box. */
-    touch-action: none;
-  }
-
-  /* The pinch target: a top-left-anchored layer holding just the picture. The
-     surrounding .ai-stage stays at scale 1 so its rect is a stable reference,
-     and its overflow:hidden clips the zoomed image to the preview's own bounds. */
-  .zoom-layer {
-    position: relative;
-    display: block;
-    transform-origin: 0 0;
-    will-change: transform;
-  }
-  /* `.zoomed` is toggled imperatively by the pinchZoom action (via classList). */
-  .ai-stage:global(.zoomed) {
-    cursor: grab;
-  }
-
-  /* The invisible sizer: fits the image's natural aspect within the max width
-     and the available viewport height (reserving the download row), sizing to
-     whichever binds. It occupies layout (so the stage takes its size) but isn't
-     painted — the .stage-img overlays show the actual picture. */
-  .stage-sizer {
-    display: block;
-    visibility: hidden;
-    width: auto;
-    height: auto;
-    /* Width is capped to the content box, which the card sized from this same
-       height budget and the image's aspect — so for a picture that fits the
-       viewport both bind at once and none of the card is empty. A picture too
-       tall to project that way is held by the height alone and sits centered. */
-    max-width: 100%;
-    max-height: var(--result-stage-max-h);
-  }
-
-  /* No image yet (modal opened before the export finished): a box in the
-     drawing's shape and at the size the preview will take, so the dial has a
-     stable home and the card doesn't resize under it when the preview slots in.
-     Its width is spelled out rather than taken as a percentage of the stage:
-     the stage shrink-wraps this box, so a percentage would be resolving against
-     the width it is itself supposed to determine, and collapses. */
-  .placeholder-sizer {
-    width: min(var(--result-stage-max-w), calc(var(--result-stage-max-h) * var(--result-aspect)));
-    aspect-ratio: var(--result-aspect);
-  }
-
-  .stage-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .preview {
-    transition:
-      opacity 0.5s ease,
-      filter var(--duration-base) linear;
-    transform: scale(1.04); /* hide blur bleed at edges */
-  }
-
-  .preview.gone {
-    opacity: 0;
-  }
-
-  .result {
-    opacity: 0;
-    transform: scale(1.08);
-    transition:
-      opacity 0.55s ease,
-      transform 0.6s var(--ease-glide);
-  }
-
-  .result.shown {
-    opacity: 1;
-    transform: scale(1);
   }
 
   .ai-loading-caption {
