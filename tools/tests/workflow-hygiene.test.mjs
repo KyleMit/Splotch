@@ -107,10 +107,22 @@ function usesRefs(lines) {
     .filter((ref) => ref !== undefined);
 }
 
+function timeoutMinutesAtIndent(line, indent) {
+  return line.match(new RegExp(`^ {${indent}}timeout-minutes:\\s*(\\d+)`))?.[1];
+}
+
 describe('workflow hygiene', () => {
   it('found the workflows and composite actions', () => {
     expect(workflows.length).toBeGreaterThanOrEqual(7);
     expect(actions.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each([
+    ['plain', '    timeout-minutes: 2', '2'],
+    ['trailing whitespace', '    timeout-minutes: 5  ', '5'],
+    ['inline comment', '    timeout-minutes: 2 # bounds execution only', '2'],
+  ])('parses a %s job timeout', (_label, line, expected) => {
+    expect(timeoutMinutesAtIndent(line, 4)).toBe(expected);
   });
 
   for (const { name, lines } of workflows) {
@@ -135,12 +147,12 @@ describe('workflow hygiene', () => {
       it('keeps every step timeout shorter than its job timeout', () => {
         for (const job of jobs(lines)) {
           const jobTimeout = job.lines
-            .find((line) => /^ {4}timeout-minutes:\s*\d+/.test(line))
-            ?.match(/\d+$/)?.[0];
+            .map((line) => timeoutMinutesAtIndent(line, 4))
+            .find((timeout) => timeout !== undefined);
           if (jobTimeout === undefined) continue;
 
           const stepTimeouts = job.lines
-            .map((line) => line.match(/^ {8}timeout-minutes:\s*(\d+)/)?.[1])
+            .map((line) => timeoutMinutesAtIndent(line, 8))
             .filter((timeout) => timeout !== undefined);
           for (const stepTimeout of stepTimeouts) {
             expect
