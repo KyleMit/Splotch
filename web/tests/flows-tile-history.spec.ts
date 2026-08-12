@@ -18,6 +18,32 @@ import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
 import { openDrawer, pickBrush } from './flows-harness';
 import { draw, firstOpaquePixel, gotoApp, renderedCanvasHandle } from './helpers';
 
+const FIRST_STROKE_COMMIT_TIMEOUT_MS = 10_000;
+
+async function drawFirstCommittedStroke(
+  page: Page,
+  points: { x: number; y: number }[]
+): Promise<void> {
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
+      timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS,
+    })
+    .toBe(true);
+  await draw(page, points);
+  await expect
+    .poll(
+      async () => {
+        const current = await page.evaluate(() => window.__drawingDebug?.getUndoDebug());
+        return {
+          snapshots: current?.snapshots ?? 0,
+          pendingCommands: current?.pendingCommands ?? 0,
+        };
+      },
+      { timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS }
+    )
+    .toEqual({ snapshots: 1, pendingCommands: 0 });
+}
+
 async function alphaAt(page: Page, xFraction: number, yFraction: number) {
   const rendered = await renderedCanvasHandle(page);
   try {
@@ -195,9 +221,9 @@ test('tiled undo patches rebuild after the live canvas resizes', async ({ page }
 
   await openDrawer(page);
   await page.locator('#undoButton').click();
-  expect(await firstOpaquePixel(page)).not.toBeNull();
+  await expect.poll(() => firstOpaquePixel(page)).not.toBeNull();
   await page.locator('#undoButton').click();
-  expect(await firstOpaquePixel(page)).toBeNull();
+  await expect.poll(() => firstOpaquePixel(page)).toBeNull();
 });
 
 test('twenty large sweeping strokes retain the advertised undo depth within budget', async ({
@@ -252,13 +278,10 @@ test('pathological strokes shorten undo depth before exceeding the patch budget'
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('drawing canvas has no bounds');
 
-  await draw(page, [
+  await drawFirstCommittedStroke(page, [
     { x: box.width * 0.1, y: box.height * 0.1 },
     { x: box.width * 0.12, y: box.height * 0.1 },
   ]);
-  await expect
-    .poll(() => page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots))
-    .toBe(1);
   await expect.poll(() => alphaAt(page, 0.11, 0.1)).toBeGreaterThan(0);
   for (let stroke = 1; stroke < MAX_UNDO_DEPTH; stroke++) {
     const phase = stroke % 2 === 0 ? 0 : Math.PI;

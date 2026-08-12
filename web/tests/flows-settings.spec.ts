@@ -117,6 +117,52 @@ test('the Settings table of contents drives one continuous pane (tablet layout)'
   await expect(nav.getByRole('button', { name: 'Tool Drawer' })).not.toHaveClass(/active/);
 });
 
+// Whether every option in a picker encloses the hidden radio it is the skin for
+// — the geometric statement of "the option is the input's containing block".
+function optionsContainTheirInputs(page: Page, picker: string) {
+  return page.locator(picker).evaluate((track) =>
+    [...track.querySelectorAll('label.option')].every((option) => {
+      const input = option.querySelector('input');
+      if (!input) return false;
+      const box = option.getBoundingClientRect();
+      const hidden = input.getBoundingClientRect();
+      return (
+        hidden.top >= box.top &&
+        hidden.left >= box.left &&
+        hidden.bottom <= box.bottom &&
+        hidden.right <= box.right
+      );
+    })
+  );
+}
+
+test('choosing a feedback kind leaves the settings panel where it was', async ({ page }) => {
+  // A picker rendered as real radios hides its inputs off-view. Left
+  // unpositioned, an option is not their containing block, so an input's static
+  // position resolves against a distant ancestor — a full pane scrollTop away
+  // from the option a parent just tapped, deep in this shell's one long pane.
+  // Focusing it on click then scrolled it into view and took the whole card with
+  // it, leaving the settings modal blank.
+  await gotoApp(page);
+  await openSettingsSection(page, 'Feedback', '.report-kind');
+
+  const nav = page.locator('.settings-nav');
+  const idea = page.locator('.report-kind label.option').filter({ hasText: 'I have an idea' });
+  await idea.click();
+
+  await expect(page.getByRole('radio', { name: 'I have an idea' })).toBeChecked();
+  await expect(page.getByText("What's your idea?")).toBeVisible();
+  // The panel and the picker the parent tapped are both still on screen — the
+  // one thing the displacement destroyed.
+  await expect(nav).toBeInViewport();
+  await expect(page.locator('.report-kind')).toBeInViewport();
+
+  // And the invariant underneath, which the two assertions above only observe
+  // through this shell's scroll depth: every hidden input sits inside the option
+  // it belongs to, wherever the picker is rendered.
+  expect(await optionsContainTheirInputs(page, '.report-kind')).toBe(true);
+});
+
 test('the theme picker is one tab stop and the arrow keys move the selection', async ({ page }) => {
   await gotoApp(page);
   await openSettingsModal(page);

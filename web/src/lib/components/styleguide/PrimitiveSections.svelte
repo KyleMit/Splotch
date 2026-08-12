@@ -9,7 +9,7 @@
   import type { Orientation } from '$lib/platform';
 
   const buttonVariants = ['brand', 'wash', 'danger'] as const;
-  const buttonSizes = ['md', 'sm'] as const;
+  const buttonSizes = ['lg', 'md', 'sm'] as const;
   const statusMessageStatuses = ['success', 'error'] as const;
 
   type DemoTheme = 'light' | 'dark' | 'system';

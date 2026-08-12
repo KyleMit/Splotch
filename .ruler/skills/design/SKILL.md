@@ -111,9 +111,10 @@ don't offer.
 
 | Primitive                | Use for                                                                                     |
 | ------------------------ | ------------------------------------------------------------------------------------------- |
-| `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `md` / `sm`. Not          |
-|                          | for controls with a **selected state** — those are pickers, not actions: use                |
-|                          | `SegmentedPicker`                                                                           |
+| `Button.svelte`          | Text-labeled actions. Variants `brand` / `wash` / `danger`, sizes `lg` / `md` / `sm`        |
+|                          | (`lg` takes a 16px label, for a pair that is a screen's primary decision rather             |
+|                          | than chrome). Not for controls with a **selected state** — those are pickers, not           |
+|                          | actions: use `SegmentedPicker`                                                              |
 | `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup with roving     |
 |                          | tabindex + arrow-key selection: the theme pickers) / `toggle` (`aria-pressed`; deselection  |
 |                          | and multi-select stay with the caller: the orientation segment, the controls chips).        |

@@ -1,6 +1,21 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 
 import releases from '../src/lib/releases.json' with { type: 'json' };
+
+const DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS = 1000;
+const DISCLOSURE_PICK_TIMEOUT_MS = 10_000;
+
+async function openHydratedContents(contents: Locator) {
+  const panel = contents.locator('.panel');
+  await expect(async () => {
+    if (!(await panel.isVisible().catch(() => false))) {
+      await contents.locator('summary').click({ timeout: DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS });
+    }
+    await expect(panel).toHaveCSS('max-height', /\d+px/, {
+      timeout: DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS,
+    });
+  }).toPass({ timeout: DISCLOSURE_PICK_TIMEOUT_MS });
+}
 
 test('the changelog renders every release with its notes', async ({ page }) => {
   await page.goto('/changelog');
@@ -63,7 +78,7 @@ test.describe('phone', () => {
     ).toBeInViewport();
 
     // It is only ever opened deliberately, and then it carries every anchor.
-    await contents.locator('summary').click();
+    await openHydratedContents(contents);
     await expect(contents.getByRole('link')).toHaveCount(releases.length);
   });
 
@@ -95,10 +110,12 @@ test.describe('phone', () => {
   test('picking a release from the contents lands it clear of the pinned row', async ({ page }) => {
     await page.goto('/changelog');
     const contents = page.locator('.contents-disclosure');
-    await contents.locator('summary').click();
 
     const target = releases[2];
-    await contents.getByRole('link', { name: `Version ${target.version}` }).click();
+    const targetLink = contents.getByRole('link', { name: `Version ${target.version}` });
+    const targetUrl = new RegExp(`#${target.id}$`);
+    await openHydratedContents(contents);
+    await targetLink.click();
     await expect(contents.locator('details')).not.toHaveAttribute('open');
 
     // Bounded on both sides: under the row is a heading parked out of sight,
@@ -116,7 +133,7 @@ test.describe('phone', () => {
 
     // The narrow pick has to leave the same trace the wide rail's anchor does,
     // or the release can't be shared and Back doesn't undo the jump.
-    await expect(page).toHaveURL(new RegExp(`#${target.id}$`));
+    await expect(page).toHaveURL(targetUrl);
   });
 });
 

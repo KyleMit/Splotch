@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { draw, gotoApp, openSettingsModal, retryOpen } from './helpers';
-import { openDrawer, openParentalGate, solveParentalGate } from './flows-harness';
+import { gotoApp, openSettingsModal, retryOpen } from './helpers';
+import {
+  enableAiButtonWithStroke,
+  openDrawer,
+  openParentalGate,
+  solveParentalGate,
+} from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
@@ -36,16 +41,12 @@ function policyPicker(settings: Locator, feature: string) {
   return settings.getByRole('radiogroup', { name: `${feature} parental gate frequency` });
 }
 
-// A couple of strokes so the AI button is enabled (it's disabled on a blank
-// canvas), then the gate opens from it. The access-code param reveals the AI
-// button (it stays hidden with no credential). `gates` is the seed to leave the
-// policies at: 'default' for a spec that seeded its own before navigating.
+// The access-code param reveals the AI button (it stays hidden with no
+// credential). `gates` is the seed to leave the policies at: 'default' for a
+// spec that seeded its own before navigating. openParentalGate owns the robust
+// non-empty-canvas precondition.
 async function gotoGatedAiButton(page: Page, gates: 'always' | 'default' = 'always') {
   await gotoApp(page, '/?ai_access_token=test-token', { gates });
-  await draw(page, [
-    { x: 120, y: 120 },
-    { x: 260, y: 200 },
-  ]);
 }
 
 test('Settings opens directly — entry is not the gate (ADR-0094)', async ({ page }) => {
@@ -496,7 +497,12 @@ test('sending feedback waits for its parental gate before posting', async ({ pag
   expect(reportRequests).toBe(1);
 });
 
-test('reporting an AI picture waits for its own parental gate before posting', async ({ page }) => {
+// Unlike the flows above, the gate here is not the last thing before the send:
+// a confirmation follows it, so the tap order is Report → gate → confirm →
+// post. Reversed, a parent would solve the sum only to find the report gone.
+test('reporting an AI picture waits for its own parental gate before confirming', async ({
+  page,
+}) => {
   let reportRequests = 0;
   await page.addInitScript(
     (aiImageModeKey) => localStorage.setItem(aiImageModeKey, 'never'),
@@ -515,21 +521,24 @@ test('reporting an AI picture waits for its own parental gate before posting', a
   });
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openDrawer(page);
-  await draw(page, [
-    { x: 120, y: 120 },
-    { x: 260, y: 200 },
-  ]);
+  await enableAiButtonWithStroke(page);
   await page.locator('#aiImageButton').click();
   await page.getByRole('button', { name: 'Magical' }).click();
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
   await page.getByRole('button', { name: 'Report this picture' }).click();
-  await page.getByRole('button', { name: 'Send report' }).click();
 
   const gate = page.locator('#parentalGate');
+  const confirm = page.locator('dialog.ai-report-confirm');
   await expect(gate).toBeVisible();
+  await expect(confirm).not.toBeVisible();
   expect(reportRequests).toBe(0);
+
   await solveParentalGate(page);
+  await expect(confirm).toBeVisible();
+  expect(reportRequests).toBe(0);
+
+  await confirm.getByRole('button', { name: 'Send report' }).click();
   await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible({
     timeout: 5000,
   });

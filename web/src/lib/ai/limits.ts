@@ -25,4 +25,8 @@ export const VERIFY_KEY_DEADLINE_MS = 10_000;
 // The client aborts just past the platform ceiling: long enough that the
 // server's controlled error always arrives first, short enough that a truly
 // wedged request doesn't spin far past when the platform has already given up.
+// Every synchronous /api POST the client waits on takes this bound, not just
+// generate-image — report-image runs as the same kind of buffered function
+// under the same ceiling, and an unbounded wait there strands the parent under
+// a modal with no way out.
 export const CLIENT_REQUEST_TIMEOUT_MS = 27_000;

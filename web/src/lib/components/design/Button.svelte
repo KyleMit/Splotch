@@ -10,9 +10,13 @@
   //   brand  — solid purple, the primary action
   //   wash   — brand-tinted fill, secondary / selected
   //   danger — destructive confirm (Clear, delete key)
+  //
+  // Sizes step the label, not just the box: sm/md both carry the 14px chrome
+  // label and differ only in padding, while lg takes --font-size-md so a pair
+  // of buttons can read as a screen's primary decision rather than as chrome.
   interface Props extends HTMLButtonAttributes {
     variant?: 'brand' | 'wash' | 'danger';
-    size?: 'sm' | 'md';
+    size?: 'sm' | 'md' | 'lg';
     children: Snippet;
   }
 
@@ -49,6 +53,13 @@
   .btn:disabled {
     opacity: 0.5;
     cursor: default;
+  }
+
+  /* 14px of vertical padding, not a --space step: it is what carries a 16px
+     label to the app's 44px minimum target. */
+  .lg {
+    padding: 14px var(--space-4);
+    font-size: var(--font-size-md);
   }
 
   .md {

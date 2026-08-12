@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { CLIENT_REQUEST_TIMEOUT_MS } from '../src/lib/ai/limits';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { draw, enforceProductionCsp, gotoApp } from './helpers';
@@ -11,6 +12,7 @@ import { draw, enforceProductionCsp, gotoApp } from './helpers';
 //   npm run test:e2e:headed -- ai-result
 
 const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
+const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 
 interface AiMockResponse {
   status: number;
@@ -31,15 +33,22 @@ interface AiUploadRequest {
   bytes: number;
 }
 
+interface AiMockDelivery {
+  response: AiMockResponse;
+  delivered: () => void;
+}
+
 async function mockAiEndpoint(page: Page) {
-  const queued: AiMockResponse[] = [];
-  const waiters: ((response: AiMockResponse) => void)[] = [];
+  const queued: AiMockDelivery[] = [];
+  const waiters: ((delivery: AiMockDelivery) => void)[] = [];
   const requests: AiUploadRequest[] = [];
-  const respond = (response: AiMockResponse) => {
-    const waiter = waiters.shift();
-    if (waiter) waiter(response);
-    else queued.push(response);
-  };
+  const respond = (response: AiMockResponse) =>
+    new Promise<void>((delivered) => {
+      const delivery = { response, delivered };
+      const waiter = waiters.shift();
+      if (waiter) waiter(delivery);
+      else queued.push(delivery);
+    });
 
   await page.route('**/api/generate-image*', async (route) => {
     const request = route.request();
@@ -48,12 +57,16 @@ async function mockAiEndpoint(page: Page) {
       contentType: request.headers()['content-type'],
       bytes: request.postDataBuffer()?.byteLength ?? 0,
     });
-    const response =
+    const delivery =
       queued.shift() ??
-      (await new Promise<AiMockResponse>((resolve) => {
+      (await new Promise<AiMockDelivery>((resolve) => {
         waiters.push(resolve);
       }));
-    await route.fulfill(response);
+    try {
+      await route.fulfill(delivery.response);
+    } finally {
+      delivery.delivered();
+    }
   });
 
   return {
@@ -79,6 +92,17 @@ async function invokeAiGeneration(page: Page) {
 }
 
 async function drawPreview(page: Page) {
+  const history = () => page.evaluate(() => window.__drawingDebug?.getUndoDebug());
+  const committed = async () => {
+    const state = await history();
+    return Boolean(state && state.snapshots > 0 && state.pendingCommands === 0);
+  };
+
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
+      timeout: PREVIEW_COMMIT_TIMEOUT_MS,
+    })
+    .toBe(true);
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('Drawing canvas has no bounds');
   await draw(page, [
@@ -86,14 +110,7 @@ async function drawPreview(page: Page) {
     { x: box.width * 0.5, y: box.height * 0.62 },
     { x: box.width * 0.76, y: box.height * 0.4 },
   ]);
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const history = window.__drawingDebug?.getUndoDebug();
-        return Boolean(history && history.snapshots > 0 && history.pendingCommands === 0);
-      })
-    )
-    .toBe(true);
+  await expect.poll(committed, { timeout: PREVIEW_COMMIT_TIMEOUT_MS }).toBe(true);
 }
 
 // `freeTier: true` leaves the access token unset, which is what selects the
@@ -119,7 +136,7 @@ async function openAiResult(page: Page, options: AiGenerationOptions = {}) {
 
 async function revealAiResult(page: Page, options: AiGenerationOptions = {}) {
   const endpoint = await openAiResult(page, options);
-  endpoint.succeed(options.freeTier ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined);
+  await endpoint.succeed(options.freeTier ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined);
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
 }
 
@@ -195,7 +212,7 @@ test.describe('AI result modal', () => {
     expect(request.contentType).toMatch(/^image\/(webp|png)$/);
     expect(request.bytes).toBeGreaterThan(0);
 
-    endpoint.fail();
+    await endpoint.fail();
   });
 
   test('plays the dial and reveals the result image', async ({ page }) => {
@@ -211,7 +228,7 @@ test.describe('AI result modal', () => {
     await expect(loadingCaption).toContainText(AI_LOADING_TITLE);
     await expect(loadingCaption).toContainText(AI_LOADING_SUBTITLE);
 
-    endpoint.succeed();
+    await endpoint.succeed();
 
     // When the mocked image arrives the dial races to full, then the result
     // cross-fades in and the download button pops in.
@@ -266,7 +283,7 @@ test.describe('AI result modal', () => {
           loading.card.y + loading.card.height + 1
         );
 
-        endpoint.succeed();
+        await endpoint.succeed();
         await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
         const revealed = await revealedBoxes(page);
         expect(revealed.card.height).toBeCloseTo(loading.card.height, 0);
@@ -309,22 +326,116 @@ test.describe('AI result modal', () => {
     await report.focus();
     await expect(report).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('.ai-report-confirmation')).toContainText(
-      'The report is deleted after 30 days.'
-    );
+    const confirm = page.locator('dialog.ai-report-confirm');
+    await expect(confirm).toContainText('the report is deleted after 30 days.');
+    // The confirmation names the two artifacts by showing them, and stands in
+    // front of the result rather than in its footer — so the Download button is
+    // still on screen behind the second scrim, and is no longer a live choice.
+    await expect(confirm.locator('img')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Download' })).toBeVisible();
     expect(reportRequests).toBe(0);
 
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
+    await expect(confirm).not.toBeVisible();
     expect(reportRequests).toBe(1);
   });
 
+  // The confirmation carries no close disc — Cancel is the dismissal — and it
+  // stands in front of the result rather than replacing anything in it, so
+  // backing out has to leave the card exactly as it was.
+  test('cancelling the report confirmation returns to an untouched result', async ({ page }) => {
+    let reportRequests = 0;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    await page.route('**/api/report-image', async (route) => {
+      reportRequests += 1;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
+    });
+    await revealAiResult(page);
+
+    const before = await revealedBoxes(page);
+    const confirm = page.locator('dialog.ai-report-confirm');
+    await page.getByRole('button', { name: 'Report this picture' }).click();
+    await expect(confirm).toBeVisible();
+    // The picture behind it does not resize to make room, as the old inline
+    // confirmation made it.
+    expect((await revealedBoxes(page)).stage.height).toBeCloseTo(before.stage.height, 0);
+
+    await confirm.getByRole('button', { name: 'Cancel' }).click();
+    await expect(confirm).not.toBeVisible();
+    await expect(page.locator('.ai-result-disclosure')).toBeVisible();
+    expect((await revealedBoxes(page)).card.height).toBeCloseTo(before.card.height, 0);
+    expect(reportRequests).toBe(0);
+  });
+
+  // A <dialog> hands focus back to whatever held it before showModal(), so the
+  // Report control has to still be mounted and connected when the confirmation
+  // goes away — otherwise dismissing drops a keyboard user on <body>, outside
+  // the result dialog they were working in.
+  for (const dismissal of ['Escape', 'Cancel'] as const) {
+    test(`dismissing the confirmation with ${dismissal} hands focus back to Report`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.addInitScript(
+        (key) => localStorage.setItem(key, 'never'),
+        STORAGE_KEYS.parentalGateImageReportMode
+      );
+      await revealAiResult(page);
+
+      const report = page.getByRole('button', { name: 'Report this picture' });
+      const confirm = page.locator('dialog.ai-report-confirm');
+      await report.focus();
+      await page.keyboard.press('Enter');
+      await expect(confirm).toBeVisible();
+
+      if (dismissal === 'Escape') await page.keyboard.press('Escape');
+      else await confirm.getByRole('button', { name: 'Cancel' }).click();
+      await expect(confirm).not.toBeVisible();
+      await expect(report).toBeFocused();
+    });
+  }
+
+  // Dismissal is blocked while the request is on the wire, so the deadline is
+  // the only thing that can end a send that never settles. Without it the
+  // topmost dialog stays open against Cancel, the backdrop, Esc and Android
+  // back alike, for as long as the browser holds the socket.
+  test('a report send that never settles times out into the retry state', async ({ page }) => {
+    test.setTimeout(CLIENT_REQUEST_TIMEOUT_MS * 3);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    // Never fulfilled, never aborted from this side: the client's own deadline
+    // has to be what ends it.
+    await page.route('**/api/report-image', async () => {});
+    await revealAiResult(page);
+
+    await page.getByRole('button', { name: 'Report this picture' }).click();
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
+
+    const retry = page.getByRole('button', { name: 'Try again' });
+    await expect(retry).toBeVisible({ timeout: CLIENT_REQUEST_TIMEOUT_MS * 1.5 });
+    await expect(page.locator('dialog.ai-report-confirm')).not.toBeVisible();
+    await expect(page.getByRole('alert')).toContainText('taking too long');
+    // The dialog that closed took the focused button with it, so the retry it
+    // left behind is where a keyboard user has to land.
+    await expect(retry).toBeFocused();
+  });
+
   // Issue #960: a free-tier picture was unreportable because the client sent an
-  // empty X-Access-Token, which the server answered 403 to. The credential the
-  // report carries is the whole regression, so assert the header itself.
+  // empty X-Access-Token, which the server answered 403 to. The credentials the
+  // report carries are the whole regression, so assert the headers themselves.
   test('reports a free-tier picture with the signed report token', async ({ page }) => {
     let reportHeaders: Record<string, string> | null = null;
     await enforceProductionCsp(page);
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(
       (key) => localStorage.setItem(key, 'never'),
       STORAGE_KEYS.parentalGateImageReportMode
@@ -341,6 +452,7 @@ test.describe('AI result modal', () => {
 
     await page.getByRole('button', { name: 'Report this picture' }).focus();
     await page.keyboard.press('Enter');
+    await expect(page.locator('dialog.ai-report-confirm')).toBeVisible();
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByText(/Keep this report reference.*free-report-id/)).toBeVisible();
 
@@ -432,7 +544,7 @@ test.describe('AI result modal', () => {
 
   test('shows the error state', async ({ page }) => {
     const endpoint = await openAiResult(page);
-    endpoint.fail();
+    await endpoint.fail();
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
@@ -441,7 +553,7 @@ test.describe('AI result modal', () => {
 
   test('shows the safety refusal state', async ({ page }) => {
     const endpoint = await openAiResult(page);
-    endpoint.fail(422);
+    await endpoint.fail(422);
 
     await expect(page.getByText("Let's try drawing something else!")).toBeVisible();
     await expect(page.locator('.ai-result-error.safety')).toBeVisible();
@@ -537,7 +649,7 @@ test.describe('AI result modal', () => {
       const endpoint = await openAiResult(page);
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
 
-      endpoint.fail();
+      await endpoint.fail();
       await expect(page.getByText(/didn't work/i)).toBeVisible();
 
       await invokeAiGeneration(page);

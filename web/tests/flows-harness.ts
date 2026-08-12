@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 
-import { gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
+import { draw, gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
 import { coloringPackCacheName, coloringPackMarkerPath } from '../src/lib/coloringPacks/cacheKeys';
 import {
@@ -85,11 +85,28 @@ export async function opaqueCanvasPixelCount(page: Page) {
   }
 }
 
+const AI_BUTTON_ENABLE_ATTEMPT_TIMEOUT_MS = 1500;
+const AI_BUTTON_ENABLE_TIMEOUT_MS = 10_000;
+
+export async function enableAiButtonWithStroke(page: Page) {
+  const button = page.locator('#aiImageButton');
+  await expect(async () => {
+    if (await button.isEnabled().catch(() => false)) return;
+    await draw(page, [
+      { x: 120, y: 120 },
+      { x: 260, y: 200 },
+    ]);
+    await expect(button).toBeEnabled({ timeout: AI_BUTTON_ENABLE_ATTEMPT_TIMEOUT_MS });
+  }).toPass({ timeout: AI_BUTTON_ENABLE_TIMEOUT_MS });
+}
+
 // Open the Grown-Ups Only gate from the AI button — its Parent Center-managed
 // operation boundary (ADR-0094: Settings entry itself is ungated). Requires a
-// gotoApp with `gates: 'always'` and a non-empty canvas (the caller draws
-// first); the AI button lives in the collapsed drawer, so open that first.
+// gotoApp with `gates: 'always'`. The setup stroke is outcome-driven because
+// gotoApp can return on the prerendered canvas before its pre-hydration engine
+// is ready; the collapsed drawer is opened after that setup commits.
 export async function openParentalGate(page: Page) {
+  await enableAiButtonWithStroke(page);
   await openDrawer(page);
   const dialog = page.locator('#parentalGate');
   await retryOpen(dialog, () => page.locator('#aiImageButton').click({ timeout: 3000 }));
