@@ -1,9 +1,14 @@
 import { json } from '@sveltejs/kit';
-import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import {
+  ACCESS_TOKEN_HEADER,
+  API_KEY_HEADER,
+  INSTALLATION_ID_HEADER,
+  REPORT_TOKEN_HEADER,
+} from '$lib/apiHeaders';
 import { isReportingConfigured } from '$lib/server/github';
-import { submitImageReport } from '$lib/server/imageReport';
+import { MAX_REPORT_REQUEST_BYTES, submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
-import { apiHandler } from '$lib/server/http';
+import { apiHandler, readBodyWithinLimit } from '$lib/server/http';
 import type { RequestHandler } from './$types';
 
 export type ImageReportResponse = { ok: true; reportId: string } | { ok: false; error: string };
@@ -22,13 +27,30 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   const authorization = await authorizeImageReport({
     apiKey: request.headers.get(API_KEY_HEADER),
     token: request.headers.get(ACCESS_TOKEN_HEADER),
+    installationId: request.headers.get(INSTALLATION_ID_HEADER),
+    reportToken: request.headers.get(REPORT_TOKEN_HEADER),
     clientAddress: getClientAddress(),
   });
   if (!authorization.authorized) return authorization.response;
 
+  const body = await readBodyWithinLimit(request, MAX_REPORT_REQUEST_BYTES);
+  if (!body.ok) {
+    return json(
+      { ok: false, error: 'That picture is too large to report.' } satisfies ImageReportResponse,
+      { status: 413 }
+    );
+  }
+
   let form: FormData;
   try {
-    form = await request.formData();
+    // Re-parse the bytes already bounded above; `request.formData()` would read
+    // the stream a second time and reintroduce the unbounded buffer.
+    // Copied into a plain Uint8Array and wrapped as a Blob: the ambient BodyInit
+    // union takes no typed array, and Buffer's ArrayBufferLike is not a BlobPart.
+    // Bounded by the cap above, so the copy is at most MAX_REPORT_REQUEST_BYTES.
+    form = await new Response(new Blob([new Uint8Array(body.bytes)]), {
+      headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
+    }).formData();
   } catch {
     return json({ ok: false, error: 'Expected a picture report.' } satisfies ImageReportResponse, {
       status: 400,

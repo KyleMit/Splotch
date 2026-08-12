@@ -1,19 +1,23 @@
-import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { CLIENT_REQUEST_TIMEOUT_MS } from '../src/lib/ai/limits';
 import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { draw, enforceProductionCsp, gotoApp } from './helpers';
+import {
+  invokeAiGeneration,
+  loadingBoxes,
+  openAiResult,
+  prepareAiGeneration,
+  resultBoxes,
+  revealAiResult,
+  revealedBoxes,
+  stripTokens,
+} from './ai-harness';
 
-// Exercises AiImageResult through the production generation flow. The endpoint
-// is mocked below the client pipeline, so each case still covers canvas export,
-// upload encoding, response parsing, and response application without Gemini.
+// The AI result modal's presentation: generation upload, the dial and reveal,
+// and the geometry that has to hold across viewports. The report flow the modal
+// launches lives in ai-report.spec.ts.
 // Watch it run with:
 //   npm run test:e2e:headed -- ai-result
-
-const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
-const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 
 // Big enough that the picture's height, not the card, is what limits it — the
 // case the fixed-width card used to leave mostly empty.
@@ -76,178 +80,6 @@ async function emulateSafeAreaInsets(page: Page, insets: { top: number; bottom: 
     'env(safe-area-inset-bottom)',
   ]);
   return { top, bottom };
-}
-
-interface AiMockResponse {
-  status: number;
-  contentType: string;
-  body: string | Buffer;
-}
-
-interface AiUploadRequest {
-  method: string;
-  contentType: string | undefined;
-  bytes: number;
-}
-
-interface AiMockDelivery {
-  response: AiMockResponse;
-  delivered: () => void;
-}
-
-async function mockAiEndpoint(page: Page) {
-  const queued: AiMockDelivery[] = [];
-  const waiters: ((delivery: AiMockDelivery) => void)[] = [];
-  const requests: AiUploadRequest[] = [];
-  const respond = (response: AiMockResponse) =>
-    new Promise<void>((delivered) => {
-      const delivery = { response, delivered };
-      const waiter = waiters.shift();
-      if (waiter) waiter(delivery);
-      else queued.push(delivery);
-    });
-
-  await page.route('**/api/generate-image*', async (route) => {
-    const request = route.request();
-    requests.push({
-      method: request.method(),
-      contentType: request.headers()['content-type'],
-      bytes: request.postDataBuffer()?.byteLength ?? 0,
-    });
-    const delivery =
-      queued.shift() ??
-      (await new Promise<AiMockDelivery>((resolve) => {
-        waiters.push(resolve);
-      }));
-    try {
-      await route.fulfill(delivery.response);
-    } finally {
-      delivery.delivered();
-    }
-  });
-
-  return {
-    requests,
-    succeed: () => respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT }),
-    fail: (status = 500) =>
-      respond({
-        status,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: false, error: 'Mock generation failure' }),
-      }),
-  };
-}
-
-async function invokeAiGeneration(page: Page) {
-  await expect
-    .poll(() => page.evaluate(() => typeof window.__aiGenerate === 'function'))
-    .toBe(true);
-  await page.evaluate(() => {
-    void window.__aiGenerate?.({ style: 'Magical' });
-  });
-}
-
-async function drawPreview(page: Page) {
-  const history = () => page.evaluate(() => window.__drawingDebug?.getUndoDebug());
-  const committed = async () => {
-    const state = await history();
-    return Boolean(state && state.snapshots > 0 && state.pendingCommands === 0);
-  };
-
-  await expect
-    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
-      timeout: PREVIEW_COMMIT_TIMEOUT_MS,
-    })
-    .toBe(true);
-  const box = await page.locator('#drawingCanvas').boundingBox();
-  if (!box) throw new Error('Drawing canvas has no bounds');
-  await draw(page, [
-    { x: box.width * 0.24, y: box.height * 0.45 },
-    { x: box.width * 0.5, y: box.height * 0.62 },
-    { x: box.width * 0.76, y: box.height * 0.4 },
-  ]);
-  await expect.poll(committed, { timeout: PREVIEW_COMMIT_TIMEOUT_MS }).toBe(true);
-}
-
-async function prepareAiGeneration(page: Page) {
-  const endpoint = await mockAiEndpoint(page);
-  await gotoApp(page, '/?ai_access_token=test-token');
-  await drawPreview(page);
-  return endpoint;
-}
-
-async function openAiResult(page: Page) {
-  const endpoint = await prepareAiGeneration(page);
-  await invokeAiGeneration(page);
-  await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
-  return endpoint;
-}
-
-async function revealAiResult(page: Page) {
-  const endpoint = await openAiResult(page);
-  await endpoint.succeed();
-  await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
-}
-
-async function resultBoxes(page: Page) {
-  const [card, content, report, strip] = await Promise.all([
-    page.locator('dialog.ai-result-modal').boundingBox(),
-    page.locator('.ai-result-content').boundingBox(),
-    page.getByRole('button', { name: 'Report this picture' }).boundingBox(),
-    page.locator('.ai-result-disclosure').boundingBox(),
-  ]);
-  if (!card || !content || !report || !strip) {
-    throw new Error('AI result geometry was not measurable');
-  }
-  return { card, content, report, strip };
-}
-
-async function loadingBoxes(page: Page) {
-  return page.evaluate(() => {
-    function rectFor(selector: string) {
-      const element = document.querySelector<HTMLElement>(selector);
-      if (!element) throw new Error(`AI loading element was not found: ${selector}`);
-      const { x, y, width, height } = element.getBoundingClientRect();
-      return { x, y, width, height };
-    }
-
-    return {
-      card: rectFor('dialog.ai-result-modal'),
-      content: rectFor('.ai-result-content'),
-      stage: rectFor('.ai-stage'),
-      caption: rectFor('.ai-loading-caption'),
-    };
-  });
-}
-
-async function revealedBoxes(page: Page) {
-  return page.evaluate(() => {
-    function rectFor(selector: string) {
-      const element = document.querySelector<HTMLElement>(selector);
-      if (!element) throw new Error(`AI result element was not found: ${selector}`);
-      const { x, y, width, height } = element.getBoundingClientRect();
-      return { x, y, width, height };
-    }
-
-    return {
-      card: rectFor('dialog.ai-result-modal'),
-      stage: rectFor('.ai-stage'),
-    };
-  });
-}
-
-// The strip's placement below the card and the room the card's height budget
-// keeps clear for it come from the same custom properties, so the geometry
-// assertions read them off the page instead of restating their values.
-function stripTokens(page: Page) {
-  return page.evaluate(() => {
-    const root = getComputedStyle(document.documentElement);
-    return {
-      gap: parseFloat(root.getPropertyValue('--report-strip-gap')),
-      height: parseFloat(root.getPropertyValue('--report-strip-height')),
-      tap: parseFloat(root.getPropertyValue('--report-strip-tap')),
-    };
-  });
 }
 
 test.describe('AI result modal', () => {
@@ -340,143 +172,6 @@ test.describe('AI result modal', () => {
       });
     }
   }
-
-  test('confirms and sends an AI picture report from the result', async ({ page }) => {
-    let reportRequests = 0;
-    // Under the shipped CSP, because the report reads the drawing and the result
-    // back out of their object URLs — a `blob:` fetch the policy has to permit.
-    // Without this the flow passes here and fails in production.
-    await enforceProductionCsp(page);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
-    await page.addInitScript(
-      (key) => localStorage.setItem(key, 'never'),
-      STORAGE_KEYS.parentalGateImageReportMode
-    );
-    await page.route('**/api/report-image', async (route) => {
-      reportRequests += 1;
-      expect(route.request().headers()['content-type']).toContain('multipart/form-data');
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: true, reportId: 'test-report-id' }),
-      });
-    });
-    await revealAiResult(page);
-
-    const report = page.getByRole('button', { name: 'Report this picture' });
-    // The Report control is deliberately fine print; the tap target around it
-    // still has to clear the app's 44px minimum.
-    const { report: reportBox, strip } = await resultBoxes(page);
-    expect(reportBox.width).toBeGreaterThanOrEqual(44);
-    expect(reportBox.height).toBeGreaterThanOrEqual(44);
-    expect(reportBox.height).toBeGreaterThan(strip.height);
-
-    await report.focus();
-    await expect(report).toBeFocused();
-    await page.keyboard.press('Enter');
-    const confirm = page.locator('dialog.ai-report-confirm');
-    await expect(confirm).toContainText('the report is deleted after 30 days.');
-    // The confirmation names the two artifacts by showing them, and stands in
-    // front of the result rather than in its footer — so the Download button is
-    // still on screen behind the second scrim, and is no longer a live choice.
-    await expect(confirm.locator('img')).toHaveCount(2);
-    await expect(page.getByRole('button', { name: 'Download' })).toBeVisible();
-    expect(reportRequests).toBe(0);
-
-    await page.getByRole('button', { name: 'Send report' }).click();
-    await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
-    await expect(confirm).not.toBeVisible();
-    expect(reportRequests).toBe(1);
-  });
-
-  // The confirmation carries no close disc — Cancel is the dismissal — and it
-  // stands in front of the result rather than replacing anything in it, so
-  // backing out has to leave the card exactly as it was.
-  test('cancelling the report confirmation returns to an untouched result', async ({ page }) => {
-    let reportRequests = 0;
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(
-      (key) => localStorage.setItem(key, 'never'),
-      STORAGE_KEYS.parentalGateImageReportMode
-    );
-    await page.route('**/api/report-image', async (route) => {
-      reportRequests += 1;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
-    });
-    await revealAiResult(page);
-
-    const before = await revealedBoxes(page);
-    const confirm = page.locator('dialog.ai-report-confirm');
-    await page.getByRole('button', { name: 'Report this picture' }).click();
-    await expect(confirm).toBeVisible();
-    // The picture behind it does not resize to make room, as the old inline
-    // confirmation made it.
-    expect((await revealedBoxes(page)).stage.height).toBeCloseTo(before.stage.height, 0);
-
-    await confirm.getByRole('button', { name: 'Cancel' }).click();
-    await expect(confirm).not.toBeVisible();
-    await expect(page.locator('.ai-result-disclosure')).toBeVisible();
-    expect((await revealedBoxes(page)).card.height).toBeCloseTo(before.card.height, 0);
-    expect(reportRequests).toBe(0);
-  });
-
-  // A <dialog> hands focus back to whatever held it before showModal(), so the
-  // Report control has to still be mounted and connected when the confirmation
-  // goes away — otherwise dismissing drops a keyboard user on <body>, outside
-  // the result dialog they were working in.
-  for (const dismissal of ['Escape', 'Cancel'] as const) {
-    test(`dismissing the confirmation with ${dismissal} hands focus back to Report`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
-      await page.addInitScript(
-        (key) => localStorage.setItem(key, 'never'),
-        STORAGE_KEYS.parentalGateImageReportMode
-      );
-      await revealAiResult(page);
-
-      const report = page.getByRole('button', { name: 'Report this picture' });
-      const confirm = page.locator('dialog.ai-report-confirm');
-      await report.focus();
-      await page.keyboard.press('Enter');
-      await expect(confirm).toBeVisible();
-
-      if (dismissal === 'Escape') await page.keyboard.press('Escape');
-      else await confirm.getByRole('button', { name: 'Cancel' }).click();
-      await expect(confirm).not.toBeVisible();
-      await expect(report).toBeFocused();
-    });
-  }
-
-  // Dismissal is blocked while the request is on the wire, so the deadline is
-  // the only thing that can end a send that never settles. Without it the
-  // topmost dialog stays open against Cancel, the backdrop, Esc and Android
-  // back alike, for as long as the browser holds the socket.
-  test('a report send that never settles times out into the retry state', async ({ page }) => {
-    test.setTimeout(CLIENT_REQUEST_TIMEOUT_MS * 3);
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(
-      (key) => localStorage.setItem(key, 'never'),
-      STORAGE_KEYS.parentalGateImageReportMode
-    );
-    // Never fulfilled, never aborted from this side: the client's own deadline
-    // has to be what ends it.
-    await page.route('**/api/report-image', async () => {});
-    await revealAiResult(page);
-
-    await page.getByRole('button', { name: 'Report this picture' }).click();
-    await page.getByRole('button', { name: 'Send report' }).click();
-    await expect(page.getByRole('button', { name: 'Sending…' })).toBeVisible();
-
-    const retry = page.getByRole('button', { name: 'Try again' });
-    await expect(retry).toBeVisible({ timeout: CLIENT_REQUEST_TIMEOUT_MS * 1.5 });
-    await expect(page.locator('dialog.ai-report-confirm')).not.toBeVisible();
-    await expect(page.getByRole('alert')).toContainText('taking too long');
-    // The dialog that closed took the focused button with it, so the retry it
-    // left behind is where a keyboard user has to land.
-    await expect(retry).toBeFocused();
-  });
 
   // The strip is anchored to the card, not the viewport corner the old flag sat
   // in — so the gap under the picture is the same on a phone-sized dialog and on

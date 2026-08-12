@@ -63,3 +63,42 @@ Play declarations, App Store declarations, and iOS privacy manifest all describe
 * − Review depends on the private support repository and Netlify Blobs. If either write fails, the
   user sees a retryable error and no partial report is accepted.
 * − The 24-hour response commitment creates an operational obligation outside the codebase.
+
+## Amendment (2026-08-12): the free tier reports with a signed report token
+
+The Decision above requires "the same active managed token or verified BYO Gemini key as
+generation." That was accurate when generation took exactly those two credentials. Generation has
+since gained a third — the free tier, which authorizes with a bare `X-Installation-Id` — and the
+report endpoint kept only the original two, so every picture made on the default no-setup path was
+unreportable: `POST /api/report-image` answered `403 Invalid access token` (issue #960). Reporting
+being harder to reach than generation is a safety defect, since the report is the child-safety path
+for the very output that credential produced.
+
+Reporting now accepts all three, but the free one is **not** generation's credential. An
+installation id is a client-generated 64-hex string; accepting it alone would make an endpoint that
+writes image blobs to storage and opens issues in the private tracker an unauthenticated public
+write, bounded only by the per-instance rate limiter — which ADR-0014 defines as a throttle that
+resets on cold start and shares nothing across instances, not an authorization boundary.
+
+So `/api/generate-image` mints a **report token** on a successful free run: an HMAC over the
+installation id and a short expiry, keyed by `REPORT_TOKEN_SECRET`, returned in `X-Report-Token`.
+`/api/report-image` requires it back. That keeps the property this ADR cares about — every retained
+bundle traces to a generation this server actually performed — without a stored-state read in front
+of a child-safety path.
+
+Two alternatives were rejected. **Shape-only acceptance** (installation id plus a per-IP limit) was
+implemented first and rejected in review: it is locally mintable, and `/api/report` is not the
+precedent it appeared to be, because that endpoint retains no image bytes. **Requiring an existing
+free-generation grant record** is durable but weak — any caller mints a grant with one
+`generate-image` call under the same per-IP budget — and it puts a strong-consistency Netlify Blobs
+read in front of reporting, so a blobs outage would fail a safety report closed.
+
+The endpoint additionally caps the raw multipart body before parsing. The 4 MiB bundle limit is
+checked after `formData()` has already buffered the payload and only ever weighed the two images it
+keeps, so oversized bytes hidden in a discarded field passed it.
+
+* \+ Free-tier users can report, and every accepted report still proves server-side provenance.
+* \+ No blob read on the report path, so reporting does not inherit the grant store's availability.
+* − `REPORT_TOKEN_SECRET` is new required deploy configuration. Unset, the BYOK and managed paths
+  keep working and the free path alone answers 503, logged server-side.
+* − A report token expires, so a result left open long enough can no longer be reported.

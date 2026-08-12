@@ -41,6 +41,10 @@ export function reportImageByokBucket(address: string): string {
   return `report-image-byok:${address}`;
 }
 
+export function reportImageFreeBucket(address: string): string {
+  return `report-image-free:${address}`;
+}
+
 export function cspReportBucket(address: string): string {
   return `csp-report:${address}`;
 }

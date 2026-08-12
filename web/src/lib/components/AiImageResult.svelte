@@ -273,6 +273,7 @@
             drawingUrl={aiResult.previewUrl}
             outputUrl={aiResult.resultUrl}
             style={aiResult.style}
+            reportToken={aiResult.reportToken}
             origin={reportOrigin}
             bind:status={reportStatus}
           />

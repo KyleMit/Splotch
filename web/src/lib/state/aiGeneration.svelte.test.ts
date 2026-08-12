@@ -9,6 +9,7 @@ function createAiResultState(): AiResultState {
     resultType: null,
     previewUrl: null,
     style: null,
+    reportToken: null,
     error: null,
   };
 }

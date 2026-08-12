@@ -4,7 +4,9 @@ import {
   API_KEY_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
   INSTALLATION_ID_HEADER,
+  REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
+import { issueReportToken } from '$lib/server/reportToken';
 import {
   FREE_DAILY_LIMIT_EXHAUSTED_CODE,
   FREE_GENERATION_LIMIT,
@@ -234,6 +236,13 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     };
     if (freeRemaining !== null) {
       headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
+    }
+    // The free tier's proof that this picture came from here, so it can be
+    // reported. Minted off the authorized installation id, never off anything
+    // the request body carried.
+    if (authorization.kind === 'free') {
+      const reportToken = issueReportToken(authorization.installationId);
+      if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
     }
     return new Response(Buffer.from(result.data, 'base64'), { headers });
   } catch (cause) {
