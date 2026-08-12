@@ -172,7 +172,7 @@ export function coloringSelectionSteps(hasBookChoice) {
 }
 
 export function screenshotActivation(nativeApp) {
-  return nativeApp ? 'webdriver' : 'native';
+  return nativeApp ? 'native-accessibility-click' : 'native';
 }
 
 export function largestNativeRect(rects, fallback) {
@@ -290,8 +290,9 @@ async function measureClick({
       selector
     )}, ${JSON.stringify(eventTypes ?? ['pointerup', 'click'])});`
   );
-  const activationMode = nativeTarget ? 'native-touch' : 'webdriver-element-click';
+  let activationMode;
   if (nativeTarget) {
+    activationMode = 'native-touch';
     const x = Math.round(nativeTarget.bounds.x + nativeTarget.bounds.width / 2);
     const y = Math.round(nativeTarget.bounds.y + nativeTarget.bounds.height / 2);
     await performNativeGesture(client, sessionId, nativeTarget.webContext, [
@@ -300,7 +301,11 @@ async function measureClick({
       { type: 'pause', duration: 80 },
       { type: 'pointerUp', button: 0 },
     ]);
+  } else if (activation === 'native-accessibility-click') {
+    activationMode = 'native-accessibility-click';
+    await clickNativeAccessibilityElement(client, sessionId, execute, selector);
   } else {
+    activationMode = 'webdriver-element-click';
     await clickWebElement(client, sessionId, selector);
   }
   let readyAt;
@@ -436,6 +441,26 @@ async function nativeAccessibilityBoundsForSelector(client, sessionId, execute, 
   );
   if (!name) throw new Error(`No accessible native-gesture target matches ${selector}`);
   return nativeAccessibilityBounds(client, sessionId, name);
+}
+
+async function clickNativeAccessibilityElement(client, sessionId, execute, selector) {
+  const name = await execute(
+    `return document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-label');`
+  );
+  if (!name) throw new Error(`No accessible native click target matches ${selector}`);
+  const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
+  const webContext = contexts.find(isWebContext);
+  await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
+  try {
+    const element = await client.request('POST', `/session/${sessionId}/element`, {
+      using: 'accessibility id',
+      value: name,
+    });
+    const elementId = element[ELEMENT_KEY] ?? element.ELEMENT;
+    await client.request('POST', `/session/${sessionId}/element/${elementId}/click`);
+  } finally {
+    await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
+  }
 }
 
 async function performNativeGesture(client, sessionId, webContext, actions) {
