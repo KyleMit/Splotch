@@ -55,8 +55,11 @@ async function mockAiEndpoint(page: Page) {
       (await new Promise<AiMockDelivery>((resolve) => {
         waiters.push(resolve);
       }));
-    await route.fulfill(delivery.response);
-    delivery.delivered();
+    try {
+      await route.fulfill(delivery.response);
+    } finally {
+      delivery.delivered();
+    }
   });
 
   return {
