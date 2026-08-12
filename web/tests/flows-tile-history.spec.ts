@@ -18,30 +18,30 @@ import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
 import { openDrawer, pickBrush } from './flows-harness';
 import { draw, firstOpaquePixel, gotoApp, renderedCanvasHandle } from './helpers';
 
-const FIRST_STROKE_ATTEMPT_TIMEOUT_MS = 1500;
 const FIRST_STROKE_COMMIT_TIMEOUT_MS = 10_000;
 
 async function drawFirstCommittedStroke(
   page: Page,
   points: { x: number; y: number }[]
 ): Promise<void> {
-  const history = () => page.evaluate(() => window.__drawingDebug?.getUndoDebug());
-  await expect(async () => {
-    const state = await history();
-    if (!state || (state.snapshots === 0 && state.pendingCommands === 0)) await draw(page, points);
-    await expect
-      .poll(
-        async () => {
-          const current = await history();
-          return {
-            snapshots: current?.snapshots ?? 0,
-            pendingCommands: current?.pendingCommands ?? 0,
-          };
-        },
-        { timeout: FIRST_STROKE_ATTEMPT_TIMEOUT_MS }
-      )
-      .toEqual({ snapshots: 1, pendingCommands: 0 });
-  }).toPass({ timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS });
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
+      timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS,
+    })
+    .toBe(true);
+  await draw(page, points);
+  await expect
+    .poll(
+      async () => {
+        const current = await page.evaluate(() => window.__drawingDebug?.getUndoDebug());
+        return {
+          snapshots: current?.snapshots ?? 0,
+          pendingCommands: current?.pendingCommands ?? 0,
+        };
+      },
+      { timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS }
+    )
+    .toEqual({ snapshots: 1, pendingCommands: 0 });
 }
 
 async function alphaAt(page: Page, xFraction: number, yFraction: number) {
