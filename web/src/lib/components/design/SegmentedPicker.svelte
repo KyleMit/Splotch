@@ -157,6 +157,16 @@
 
 <style>
   .option {
+    /* Contains the visually-hidden input below. Without it the input's
+       containing block is whatever distant ancestor is positioned, so its
+       static position resolves against *that* box — unaffected by any scroller
+       in between. Deep in a scrolled pane the input then sits a full scrollTop
+       away from the option a parent just clicked, and the browser scrolling
+       that focused input into view drags the whole panel off screen — the
+       settings card went blank on the feedback picker. Pinned by "choosing a
+       feedback kind leaves the settings panel where it was" in
+       web/tests/flows-settings.spec.ts. */
+    position: relative;
     border: none;
     background: transparent;
     color: var(--text-soft);
@@ -176,6 +186,11 @@
      would take it out of the a11y tree and off the focus path. */
   .option input {
     position: absolute;
+    /* Pinned to the corner rather than left at its static position, which is the
+       centre of a flex-centred option — the one pixel a click aimed at the
+       option's label lands on. */
+    top: 0;
+    left: 0;
     width: 1px;
     height: 1px;
     opacity: 0;
