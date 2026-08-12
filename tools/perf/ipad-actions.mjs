@@ -112,6 +112,76 @@ const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
 const settingsSectionRow = (section) =>
   `#settingsModal button[data-section=${JSON.stringify(section)}]`;
 
+export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
+  const selector = settingsSectionRow(section);
+  const sectionReady = settingsModalUsesSidebar
+    ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`
+    : `document.querySelector('#settingsModal .settings-back') !== null`;
+  if (section !== 'parentCenter') {
+    return { label: `open Settings section: ${label}`, ready: sectionReady };
+  }
+  return {
+    label: 'open Parent Center',
+    ready: `document.querySelector('#parentalGate')?.open === true || (${sectionReady})`,
+  };
+}
+
+export function settingsSectionSetupReady(section, ready, settingsModalUsesSidebar) {
+  if (!settingsModalUsesSidebar) return ready;
+  const selector = settingsSectionRow(section);
+  return `(${ready}) && document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`;
+}
+
+export async function runToggleRoundTrip({
+  baseline,
+  initial,
+  setState,
+  recordState,
+  whileAtBaseline,
+  baselineHint = 'baseline',
+  originalStateHint = 'original state',
+}) {
+  try {
+    await setState(baseline, baselineHint);
+    for (const next of [!baseline, baseline]) await recordState(next);
+    await whileAtBaseline?.();
+  } finally {
+    await setState(initial, originalStateHint);
+  }
+}
+
+export function coloringSelectionSteps(hasBookChoice) {
+  const steps = [];
+  if (hasBookChoice) {
+    steps.push({
+      label: 'open coloring book',
+      selector: '#coloring-book-dialog button[aria-label$="coloring book"]',
+      ready: `document.querySelector('#coloring-book-dialog button[aria-label$="coloring page"]') !== null`,
+      settleMs: ANIMATED_ACTION_SETTLE_MS,
+      activation: 'webdriver',
+    });
+  }
+  steps.push({
+    label: 'select coloring page',
+    selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
+    ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready')`,
+    settleMs: ANIMATED_ACTION_SETTLE_MS,
+    activation: 'webdriver',
+  });
+  return steps;
+}
+
+export function screenshotActivation(nativeApp) {
+  return nativeApp ? 'native-accessibility-click' : 'native';
+}
+
+export function largestNativeRect(rects, fallback) {
+  if (!rects.length) return fallback;
+  return rects.reduce((largest, rect) =>
+    rect.width * rect.height > largest.width * largest.height ? rect : largest
+  );
+}
+
 export function profilingUrl(appUrl, repeat) {
   const url = new URL(appUrl);
   url.searchParams.set('perf-actions', `${Date.now()}-${repeat}`);
@@ -201,18 +271,28 @@ async function measureClick({
   eventTypes,
   activation = 'native',
 }) {
-  const nativeTarget =
-    activation === 'native' && !client.webdriverClicks
-      ? await nativeBoundsForSelector(client, sessionId, execute, selector)
-      : null;
+  let nativeTarget = null;
+  if (!client.webdriverClicks) {
+    if (activation === 'native') {
+      nativeTarget = await nativeBoundsForSelector(client, sessionId, execute, selector);
+    } else if (activation === 'native-accessibility') {
+      nativeTarget = await nativeAccessibilityBoundsForSelector(
+        client,
+        sessionId,
+        execute,
+        selector
+      );
+    }
+  }
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, ${JSON.stringify(
       selector
     )}, ${JSON.stringify(eventTypes ?? ['pointerup', 'click'])});`
   );
-  const activationMode = nativeTarget ? 'native-touch' : 'webdriver-element-click';
+  let activationMode;
   if (nativeTarget) {
+    activationMode = 'native-touch';
     const x = Math.round(nativeTarget.bounds.x + nativeTarget.bounds.width / 2);
     const y = Math.round(nativeTarget.bounds.y + nativeTarget.bounds.height / 2);
     await performNativeGesture(client, sessionId, nativeTarget.webContext, [
@@ -221,7 +301,11 @@ async function measureClick({
       { type: 'pause', duration: 80 },
       { type: 'pointerUp', button: 0 },
     ]);
+  } else if (activation === 'native-accessibility-click') {
+    activationMode = 'native-accessibility-click';
+    await clickNativeAccessibilityElement(client, sessionId, execute, selector);
   } else {
+    activationMode = 'webdriver-element-click';
     await clickWebElement(client, sessionId, selector);
   }
   let readyAt;
@@ -304,16 +388,25 @@ async function nativeBoundsForSelector(client, sessionId, execute, selector) {
   const webContext = contexts.find(isWebContext);
   await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
   const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
-  const webViewBounds = await client
-    .request('POST', `/session/${sessionId}/element`, {
+  const webViews = await client
+    .request('POST', `/session/${sessionId}/elements`, {
       using: 'class name',
       value: client.nativeWebViewClass ?? DEFAULT_NATIVE_WEBVIEW_CLASS,
     })
-    .then((webView) => {
-      const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
-      return client.request('GET', `/session/${sessionId}/element/${webViewId}/rect`);
-    })
-    .catch(() => nativeWindow);
+    .catch(() => []);
+  const webViewBounds = largestNativeRect(
+    (
+      await Promise.all(
+        webViews.map((webView) => {
+          const webViewId = webView[ELEMENT_KEY] ?? webView.ELEMENT;
+          return client
+            .request('GET', `/session/${sessionId}/element/${webViewId}/rect`)
+            .catch(() => null);
+        })
+      )
+    ).filter(Boolean),
+    nativeWindow
+  );
   const bounds = nativeCanvasBounds({
     webGeometry,
     webViewBounds,
@@ -337,6 +430,34 @@ async function nativeAccessibilityBounds(client, sessionId, name) {
     const bounds = await client.request('GET', `/session/${sessionId}/element/${elementId}/rect`);
     const nativeWindow = await client.request('GET', `/session/${sessionId}/window/rect`);
     return { bounds, nativeWindow, webContext };
+  } finally {
+    await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
+  }
+}
+
+async function nativeAccessibilityBoundsForSelector(client, sessionId, execute, selector) {
+  const name = await execute(
+    `return document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-label');`
+  );
+  if (!name) throw new Error(`No accessible native-gesture target matches ${selector}`);
+  return nativeAccessibilityBounds(client, sessionId, name);
+}
+
+async function clickNativeAccessibilityElement(client, sessionId, execute, selector) {
+  const name = await execute(
+    `return document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-label');`
+  );
+  if (!name) throw new Error(`No accessible native click target matches ${selector}`);
+  const contexts = await client.request('GET', `/session/${sessionId}/contexts`);
+  const webContext = contexts.find(isWebContext);
+  await client.request('POST', `/session/${sessionId}/context`, { name: 'NATIVE_APP' });
+  try {
+    const element = await client.request('POST', `/session/${sessionId}/element`, {
+      using: 'accessibility id',
+      value: name,
+    });
+    const elementId = element[ELEMENT_KEY] ?? element.ELEMENT;
+    await client.request('POST', `/session/${sessionId}/element/${elementId}/click`);
   } finally {
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   }
@@ -519,6 +640,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     readyFor,
     stateAttribute = 'aria-checked',
     baseline,
+    whileAtBaseline,
   }) => {
     const stateExpression = (enabled) =>
       `document.querySelector(${JSON.stringify(selector)})?.getAttribute(${JSON.stringify(stateAttribute)}) === '${enabled}'${readyFor ? ` && (${readyFor(enabled)})` : ''}`;
@@ -532,10 +654,12 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       await waitForReady(execute, stateExpression(target), hint);
       await sleep(ANIMATED_ACTION_SETTLE_MS);
     };
-    try {
-      await setState(baseline, `${label} baseline`);
-      for (const next of [!baseline, baseline]) {
-        await record(
+    await runToggleRoundTrip({
+      baseline,
+      initial,
+      setState,
+      recordState: (next) =>
+        record(
           measureClick({
             client,
             sessionId,
@@ -546,11 +670,11 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
             settleMs: ANIMATED_ACTION_SETTLE_MS,
             activation: 'webdriver',
           })
-        );
-      }
-    } finally {
-      await setState(initial, `${label} original state`);
-    }
+        ),
+      whileAtBaseline,
+      baselineHint: `${label} baseline`,
+      originalStateHint: `${label} original state`,
+    });
   };
 
   if (actions.has('idle')) {
@@ -761,7 +885,11 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   const openSettingsSection = async (section, ready, hint) => {
     await ensureSettingsHub();
     await clickSetupElement(execute, settingsSectionRow(section));
-    await waitForReady(execute, ready, hint);
+    await waitForReady(
+      execute,
+      settingsSectionSetupReady(section, ready, settingsModalUsesSidebar),
+      hint
+    );
   };
 
   if (actions.has('settings-sections')) {
@@ -777,23 +905,34 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           settingsModalUsesSidebar ? selector : `${selector} .hub-title`
         )})?.textContent?.trim();`
       );
+      const measurement = settingsSectionMeasurement(section, label, settingsModalUsesSidebar);
       await record(
         measureClick({
           client,
           sessionId,
           execute,
-          label: `open Settings section: ${label}`,
+          label: measurement.label,
           selector,
           // The wide sidebar is a table of contents over one continuous pane, so a
           // click scrolls rather than swaps and the row reports a reading
           // position. tools/perf/tests/perf-actions.test.mjs holds this token
           // against the shell that sets it.
-          ready: settingsModalUsesSidebar
-            ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`
-            : `document.querySelector('#settingsModal .settings-back') !== null`,
+          ready: measurement.ready,
           activation: 'webdriver',
         })
       );
+      if (
+        section === 'parentCenter' &&
+        (await execute(`return document.querySelector('#parentalGate')?.open === true;`))
+      ) {
+        await clickSetupElement(execute, '#parentalGate button[aria-label="Close"]');
+        await waitForReady(
+          execute,
+          `document.querySelector('#parentalGate')?.open !== true`,
+          'Parent Center challenge to close'
+        );
+        await sleep(ANIMATED_ACTION_SETTLE_MS);
+      }
     }
     await openSettingsSection(
       'appearance',
@@ -876,17 +1015,19 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       selector: '#advancedControlsToggle',
       baseline: true,
       readyFor: (enabled) =>
-        `document.querySelector('#screenshotToggle') ${enabled ? '!== null' : '=== null'}`,
-    });
-    await recordToggleRoundTrip({
-      label: 'screenshot action button',
-      selector: '#screenshotToggle',
-      stateAttribute: 'aria-pressed',
-      baseline: true,
-      readyFor: (enabled) =>
         enabled
-          ? actionPanelLacksAttribute('data-off-screenshot')
-          : actionPanelHasAttribute('data-off-screenshot'),
+          ? actionPanelLacksAttribute('data-off-adv')
+          : actionPanelHasAttribute('data-off-adv'),
+      whileAtBaseline: () =>
+        recordToggleRoundTrip({
+          label: 'screenshot action button',
+          selector: '#screenshotToggle',
+          baseline: true,
+          readyFor: (enabled) =>
+            enabled
+              ? actionPanelLacksAttribute('data-off-screenshot')
+              : actionPanelHasAttribute('data-off-screenshot'),
+        }),
     });
   }
 
@@ -922,30 +1063,12 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
-        label: 'open coloring book',
-        selector: '#coloring-book-dialog button[aria-label$="coloring book"]',
-        ready: `document.querySelector('#coloring-book-dialog button[aria-label$="coloring page"]') !== null`,
-        settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
-      })
+    const hasBookChoice = await execute(
+      `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
     );
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
-        label: 'select coloring page',
-        selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
-        ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready')`,
-        settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
-      })
-    );
+    for (const step of coloringSelectionSteps(hasBookChoice)) {
+      await record(measureClick({ client, sessionId, execute, ...step }));
+    }
     await clickSetupElement(execute, '#coloringBookButton');
     await waitForReady(
       execute,
@@ -961,7 +1084,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
         ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
+        activation: 'native-accessibility',
       })
     );
   }
@@ -995,6 +1118,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#screenshotButton',
         ready: `Number.isFinite(window.__actionDownloadReadyAt)`,
         settleMs: SCREENSHOT_ACTION_SETTLE_MS,
+        activation: screenshotActivation(client.nativeApp),
       })
     );
     await execute(`

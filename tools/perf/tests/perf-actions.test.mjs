@@ -8,7 +8,16 @@ import {
   scoredActionFrameGaps,
   summarizeActionGroup,
 } from '../action-stats.mjs';
-import { canvasHasInk, selectedActions } from '../ipad-actions.mjs';
+import {
+  canvasHasInk,
+  coloringSelectionSteps,
+  largestNativeRect,
+  runToggleRoundTrip,
+  screenshotActivation,
+  selectedActions,
+  settingsSectionMeasurement,
+  settingsSectionSetupReady,
+} from '../ipad-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../desktop-actions.mjs';
 
 const ACTION_PROBE = readFileSync(join(ROOT, 'tools', 'perf', 'action-probe.js'), 'utf8');
@@ -65,6 +74,139 @@ describe('selectedActions', () => {
   it('includes the idle-frame control in complete suites and focused runs', () => {
     expect(selectedActions()).toContain('idle');
     expect(selectedActions('idle')).toEqual(new Set(['idle']));
+  });
+});
+
+describe('action state planning', () => {
+  it('accepts either the Parent Center challenge or the requested section', () => {
+    const sidebar = settingsSectionMeasurement('parentCenter', 'Parent Center', true);
+    const hub = settingsSectionMeasurement('parentCenter', 'Parent Center', false);
+
+    expect(sidebar.label).toBe('open Parent Center');
+    expect(sidebar.ready).toContain('#parentalGate');
+    expect(sidebar.ready).toContain('aria-current');
+    expect(hub.ready).toContain('#parentalGate');
+    expect(hub.ready).toContain('.settings-back');
+  });
+
+  it('keeps ordinary Settings sections on their shell-specific readiness signal', () => {
+    expect(settingsSectionMeasurement('sound', 'Sound', true)).toMatchObject({
+      label: 'open Settings section: Sound',
+      ready: expect.stringContaining('aria-current'),
+    });
+    expect(settingsSectionMeasurement('sound', 'Sound', false)).toMatchObject({
+      label: 'open Settings section: Sound',
+      ready: expect.stringContaining('.settings-back'),
+    });
+  });
+
+  it('waits for stacked Settings controls to scroll into the active sidebar section', () => {
+    const controlReady = `document.querySelector('#advancedControlsToggle') !== null`;
+    const sidebar = settingsSectionSetupReady('controls', controlReady, true);
+
+    expect(sidebar).toContain('aria-current');
+    expect(sidebar).toContain(controlReady);
+    expect(settingsSectionSetupReady('controls', controlReady, false)).toBe(controlReady);
+  });
+
+  it('keeps dependent controls inside the required toggle baseline and restores original state', async () => {
+    const events = [];
+
+    await runToggleRoundTrip({
+      baseline: true,
+      initial: false,
+      setState: async (state, hint) => events.push(`set:${state}:${hint}`),
+      recordState: async (state) => events.push(`record:${state}`),
+      whileAtBaseline: async () => events.push('dependent'),
+      originalStateHint: 'advanced controls original state',
+    });
+
+    expect(events).toEqual([
+      'set:true:baseline',
+      'record:false',
+      'record:true',
+      'dependent',
+      'set:false:advanced controls original state',
+    ]);
+  });
+
+  it('restores the original toggle state when a dependent action fails', async () => {
+    const restored = [];
+
+    await expect(
+      runToggleRoundTrip({
+        baseline: true,
+        initial: false,
+        setState: async (state) => restored.push(state),
+        recordState: async () => {},
+        whileAtBaseline: async () => {
+          throw new Error('dependent failed');
+        },
+      })
+    ).rejects.toThrow('dependent failed');
+    expect(restored).toEqual([true, false]);
+  });
+
+  it('measures book selection only when the product renders a book grid', () => {
+    expect(coloringSelectionSteps(true).map(({ label }) => label)).toEqual([
+      'open coloring book',
+      'select coloring page',
+    ]);
+    expect(coloringSelectionSteps(false).map(({ label }) => label)).toEqual([
+      'select coloring page',
+    ]);
+  });
+
+  it('maps coloring-page clearing through the native accessibility element', () => {
+    const clearBlock = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf("label: 'clear coloring page'"),
+      IPAD_ACTIONS.indexOf(
+        "if (actions.has('screenshot')",
+        IPAD_ACTIONS.indexOf("label: 'clear coloring page'")
+      )
+    );
+
+    expect(clearBlock).toContain("activation: 'native-accessibility'");
+  });
+
+  it('uses native accessibility activation only for the native Screenshot path', () => {
+    expect(screenshotActivation(false)).toBe('native');
+    expect(screenshotActivation(true)).toBe('native-accessibility-click');
+  });
+
+  it('ignores a stale tiny WebView when mapping native geometry', () => {
+    const nativeWindow = { x: 0, y: 0, width: 1366, height: 1024 };
+    expect(
+      largestNativeRect(
+        [
+          { x: 279, y: 947, width: 68, height: 44 },
+          { x: 0, y: 0, width: 1366, height: 1024 },
+        ],
+        nativeWindow
+      )
+    ).toEqual(nativeWindow);
+    expect(largestNativeRect([], nativeWindow)).toEqual(nativeWindow);
+  });
+
+  it('reads the Camera ToggleSwitch through its aria-checked state', () => {
+    expect(IPAD_ACTIONS).toContain("selector: '#screenshotToggle'");
+    expect(IPAD_ACTIONS).not.toContain("stateAttribute: 'aria-pressed'");
+  });
+
+  it('wires every state planner into the physical runner', () => {
+    for (const token of [
+      'settingsSectionMeasurement(section, label, settingsModalUsesSidebar)',
+      'settingsSectionSetupReady(section, ready, settingsModalUsesSidebar)',
+      `clickSetupElement(execute, '#parentalGate button[aria-label="Close"]')`,
+      'whileAtBaseline: () =>',
+      "actionPanelHasAttribute('data-off-adv')",
+      "actionPanelLacksAttribute('data-off-adv')",
+      'coloringSelectionSteps(hasBookChoice)',
+      'activation: screenshotActivation(client.nativeApp)',
+      'largestNativeRect(',
+    ]) {
+      expect(IPAD_ACTIONS).toContain(token);
+    }
   });
 });
 
