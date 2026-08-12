@@ -37,7 +37,12 @@ jobs:
   numbering:
     name: ADR numbers, headings, and index entries agree
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Bounds execution only. Time spent queued for a runner is not counted, so
+    # this never fires on a queue stall no matter how long that stall runs —
+    # only a wedge inside the job trips it. Sized to the work (a directory read
+    # plus two shallow git operations) rather than to a comfortable margin, so a
+    # wedge fails loudly instead of idling out a generous budget.
+    timeout-minutes: 2
     env:
       BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
     steps:
@@ -51,7 +56,14 @@ jobs:
       # it reads every record's first line, and -M rename detection compares
       # similarity across base and head — so filtering blobs would trade written
       # bytes for lazy per-object fetches.
+      #
+      # This step and the fetch below are the only ones that block on anything
+      # outside the runner, which makes them the only plausible source of a hang.
+      # Each carries its own bound so a wedged connection fails on the step that
+      # wedged rather than consuming the whole job budget and reporting as a
+      # timeout of the check itself.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 2
         with:
           sparse-checkout: |
             docs/adrs
@@ -63,6 +75,7 @@ jobs:
       # conflicts, and a workflow that checked out the head ref would see no
       # base at all.
       - name: Fetch the base branch
+        timeout-minutes: 1
         run: |
           git fetch --depth=1 origin \
             "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
