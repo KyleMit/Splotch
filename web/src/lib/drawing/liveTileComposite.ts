@@ -21,7 +21,8 @@ export function compositeVisibleLiveTiles(root: ParentNode = document): HTMLCanv
   // the composite maps paper coordinates onto the wrong pixels. Read the size
   // the renderer publishes instead: `resizeTiledRenderer` writes it for every
   // tile in the same pass that hides them, so it leads the backings rather than
-  // lagging them. Markup assembled without it falls back to the backings.
+  // lagging them. Markup assembled without it prefers visible backings, falling
+  // back to every backing only when the entire row or column is hidden.
   // This body is serialized into the page, so neither the attribute name nor
   // its units (backing pixels, never CSS) can be shared with the writer —
   // `tiledRendererContract.test.ts` fails when the two sides drift apart.
@@ -33,7 +34,9 @@ export function compositeVisibleLiveTiles(root: ParentNode = document): HTMLCanv
     const declared = alignedTiles
       .map((tile) => declaredSpan(tile, dimension))
       .filter((span) => span > 0);
-    const spans = declared.length > 0 ? declared : alignedTiles.map((tile) => tile[dimension]);
+    const visible = alignedTiles.filter((tile) => !tile.hidden);
+    const measured = (visible.length > 0 ? visible : alignedTiles).map((tile) => tile[dimension]);
+    const spans = declared.length > 0 ? declared : measured;
     return Math.max(...spans);
   };
   const columnWidths = lefts.map((left) =>

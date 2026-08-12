@@ -296,4 +296,7 @@ in 9 clusters. The final current-code sample is three consecutive 400/400 runs: 
 7. Pathological-stroke history setup.
 8. Solid-pen commit and repaint sampling.
 9. Parental-gate non-empty-canvas setup.
-10. Live-tile composite grid geometry (after the hunt closed).
+
+The following issue was found after the hunt closed and is not among the 19 failures above:
+
+* Live-tile composite grid geometry.
