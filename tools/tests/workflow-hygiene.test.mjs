@@ -131,6 +131,27 @@ describe('workflow hygiene', () => {
             .toBe(true);
         }
       });
+
+      it('keeps every step timeout shorter than its job timeout', () => {
+        for (const job of jobs(lines)) {
+          const jobTimeout = job.lines
+            .find((line) => /^ {4}timeout-minutes:\s*\d+/.test(line))
+            ?.match(/\d+$/)?.[0];
+          if (jobTimeout === undefined) continue;
+
+          const stepTimeouts = job.lines
+            .map((line) => line.match(/^ {8}timeout-minutes:\s*(\d+)/)?.[1])
+            .filter((timeout) => timeout !== undefined);
+          for (const stepTimeout of stepTimeouts) {
+            expect
+              .soft(
+                Number(stepTimeout),
+                `job "${job.id}" has a step timeout that cannot fire before the job timeout`
+              )
+              .toBeLessThan(Number(jobTimeout));
+          }
+        }
+      });
     });
   }
 
