@@ -1,13 +1,11 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import AiDial from './AiDial.svelte';
-  import AiConfetti from './AiConfetti.svelte';
   import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
+  import AiResultStage from './AiResultStage.svelte';
   import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
-  import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
@@ -19,32 +17,8 @@
   } from '$lib/saveNaming';
 
   let dialogEl: HTMLDialogElement;
-  let aiStageEl = $state<HTMLDivElement | undefined>();
-  let zoomLayerEl = $state<HTMLDivElement | undefined>();
-
-  // Tracks the stage's rendered height so AiConfetti's fall distance (--stage-h)
-  // spans the real stage instead of a fixed pixel guess — the stage's height is
-  // capped by .stage-sizer's viewport-relative max-height, which varies by
-  // viewport and by the autosave variant. Reactive on aiStageEl (not onMount):
-  // the error state's {:else} unmounts .ai-stage and swaps in a fresh element
-  // on retry, so the observer must be re-attached each time the element
-  // changes, not just once at component mount.
-  let stageHeight = $state(0);
-  $effect(() => {
-    if (!aiStageEl) {
-      stageHeight = 0;
-      return;
-    }
-    const el = aiStageEl;
-    const ro = new ResizeObserver(([entry]) => {
-      stageHeight = entry.contentRect.height;
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  });
 
   let revealed = $state(false);
-  let progress = $state(0);
   const loading = $derived(aiResult.open && !revealed && !aiResult.error);
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
@@ -67,8 +41,6 @@
   }
 
   const DEFAULT_ASPECT = 4 / 3;
-  const MIN_BLUR_PX = 2;
-  const MAX_EXTRA_BLUR_PX = 16;
 
   // Seed the stage with the window's aspect ratio as soon as generation starts
   // so the placeholder box closely matches the preview that slots in a beat later.
@@ -81,40 +53,20 @@
     }
   });
 
-  // Reset the dial's display state here in the parent — not in AiDial, which is
-  // unmounted by `{#if !revealed}` the moment generation completes and so never
-  // sees the modal close. Without this, `revealed` stays true and the spinner
-  // never mounts on the next generation.
+  // `revealed` is reset here rather than by the dial that sets it: the stage
+  // unmounts AiDial the moment generation completes, so it never sees the modal
+  // close. Without this it stays true and the spinner never mounts on the next
+  // generation.
   $effect(() => {
     if (!aiResult.open) {
       exiting = false;
       revealed = false;
-      progress = 0;
       reportStatus = 'idle';
     }
   });
 
-  function handleImgLoad(e: Event) {
-    if (!(e.currentTarget instanceof HTMLImageElement)) return;
-    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-    if (w > 0 && h > 0) imgAspect = w / h;
-  }
-
-  // The drawing stays blurry to keep the suspense, sharpening as we progress.
-  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
-
-  // Keep the confetti's circular mask hole aligned with the round dial as the
-  // stage aspect changes. The one load-bearing value is DIAL_MASK_RX (% of
-  // width); the vertical radius (% of height) tracks it by the stage aspect.
-  // Both are handed to AiConfetti via --confetti-rx/--confetti-ry on .ai-stage.
-  // At 4:3 this resolves to the original 41%.
-  const DIAL_MASK_RX = 31;
-  const confettiMaskRy = $derived(`${(DIAL_MASK_RX * imgAspect).toFixed(1)}%`);
-
-  const stageStyle = $derived(
-    `--confetti-rx: ${DIAL_MASK_RX}%; --confetti-ry: ${confettiMaskRy};` +
-      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
-  );
+  // Handed to the card so its width can be the picture's own — see --result-aspect.
+  const cardStyle = $derived(`--result-aspect: ${imgAspect.toFixed(4)};`);
 
   function handleDownload() {
     if (!aiResult.resultUrl || exiting) return;
@@ -144,7 +96,9 @@
   class="ai-result-modal modal-dialog modal-shell"
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
+  class:errored={!!aiResult.error}
   class:loading
+  style={cardStyle}
   bind:this={dialogEl}
   use:modalDialog={() => ({
     open: aiResult.open,
@@ -177,66 +131,7 @@
         {/if}
       </div>
     {:else}
-      <div
-        class="ai-stage"
-        bind:this={aiStageEl}
-        style={stageStyle}
-        use:pinchZoom={() => ({
-          target: zoomLayerEl!,
-          // Only once the finished picture is on screen — the loading dial and
-          // blurred preview shouldn't zoom.
-          enabled: revealed && !!aiResult.resultUrl && !exiting,
-          // A fresh result resets the zoom back to fit.
-          resetKey: aiResult.resultUrl,
-        })}
-      >
-        <!-- The zoom layer holds only the picture; the dial and confetti stay
-             outside it so they never scale with a pinch. -->
-        <div class="zoom-layer" bind:this={zoomLayerEl}>
-          <!-- Hidden in-flow sizer: a real <img> drives the stage size from the
-               image's own dimensions (capped by max-width/max-height). Replaced
-               elements size identically in every browser — unlike an
-               aspect-ratio + max-width box, which WebKit collapses/distorts. The
-               visible images below overlay it. Uses the result once it's here, or
-               the preview while loading (same aspect, so no resize on reveal). -->
-          {#if aiResult.resultUrl || aiResult.previewUrl}
-            <img
-              class="stage-sizer"
-              src={aiResult.resultUrl || aiResult.previewUrl}
-              alt=""
-              aria-hidden="true"
-              onload={handleImgLoad}
-            />
-          {:else}
-            <!-- Modal opened ahead of the export: reserve a drawing-shaped box so
-                 the dial has a home until the blurred preview slots in. -->
-            <div
-              class="stage-sizer placeholder-sizer"
-              style="aspect-ratio: {imgAspect};"
-              aria-hidden="true"
-            ></div>
-          {/if}
-
-          {#if aiResult.previewUrl}
-            <img
-              class="stage-img preview"
-              class:gone={revealed}
-              style="filter: blur({previewBlur}) saturate(1.1);"
-              src={aiResult.previewUrl}
-              alt=""
-            />
-          {/if}
-
-          {#if aiResult.resultUrl}
-            <img class="stage-img result" class:shown={revealed} src={aiResult.resultUrl} alt="" />
-          {/if}
-        </div>
-
-        {#if !revealed}
-          <AiConfetti />
-          <AiDial bind:revealed bind:progress />
-        {/if}
-      </div>
+      <AiResultStage bind:revealed {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
 
       {#if loading}
         <div class="ai-loading-caption">
@@ -285,18 +180,97 @@
         var(--result-sizing-air)
     );
     --result-footer-reserve: var(--result-loading-reserve);
-    /* A definite width (not shrink-to-fit, which browsers resolve differently
-       for a transform-centered fixed dialog). The image is centered inside with
-       side spacing, so a tall render reads as a framed card rather than a strip. */
-    width: min(96vw, 560px);
-    /* The disclosure strip hangs below the card, so the card gives up the room
-       the strip needs (mirrored above, since the card is transform-centered) —
-       a short viewport shrinks the picture instead of pushing the strip
-       off-screen. The reserve is unconditional so tapping Report, which stands
-       a confirmation in front of this card, never resizes the picture behind
-       it. */
-    max-height: calc(100dvh - var(--report-strip-reserve));
+    --result-inline-padding: calc(2 * var(--space-4));
+    /* Overwritten inline with the picture's own ratio the moment one is known;
+       the 4:3 here only covers the frame before that. */
+    --result-aspect: 1.3333;
+    /* The clear space the card keeps between itself and the screen edges, so the
+       result reads as something laid over the app rather than a takeover of it.
+       A phone has no pixels to spare and gets barely more than a hairline; a big
+       screen can afford a frame, and wants one. Driven by vmin, the scarce axis,
+       so a short landscape window doesn't spend a desktop's gutter on the
+       dimension it has least of. */
+    --result-gutter-min: 10px;
+    --result-gutter-max: 80px;
+    /* The narrowest common phone, which should sit at the minimum, and the rate
+       the gutter opens above it — 0.14 reaches the maximum around a 900px axis,
+       a laptop's height. */
+    --result-gutter-ramp-from: 390px;
+    --result-gutter-ramp: 0.14;
+    --result-gutter: clamp(
+      var(--result-gutter-min),
+      calc(
+        var(--result-gutter-min) + (100vmin - var(--result-gutter-ramp-from)) *
+          var(--result-gutter-ramp)
+      ),
+      var(--result-gutter-max)
+    );
+
+    /* The band the card may occupy. Each bound is the deeper of the gutter and
+       whatever that edge demands outright: the display's own inset, which
+       `viewport-fit=cover` puts the viewport under (ADR-0026), and below, the
+       room the disclosure strip hangs in (app.css). The strip lives inside the
+       bottom bound rather than under it — it is the card's own fine print, not a
+       second thing needing its own frame. */
+    --result-top-bound: max(env(safe-area-inset-top), var(--result-gutter));
+    --result-bottom-bound: max(env(safe-area-inset-bottom), var(--result-gutter));
+    --result-side-bound: max(
+      env(safe-area-inset-left),
+      env(safe-area-inset-right),
+      var(--result-gutter)
+    );
+
+    --result-card-max-h: calc(100dvh - var(--result-top-bound) - var(--result-bottom-bound));
+    --result-stage-max-h: calc(var(--result-card-max-h) - var(--result-footer-reserve));
+    --result-max-w: calc(100vw - 2 * var(--result-side-bound));
+    /* Floored so the caption, footer and error copy keep a readable measure
+       under a narrow picture. */
+    --result-min-w: min(var(--result-max-w), 340px);
+    --result-stage-max-w: calc(var(--result-max-w) - var(--result-inline-padding));
+    /* The band is not centered on the viewport whenever its two bounds differ,
+       so the card is shifted onto the band's middle instead — half the
+       difference, in whichever direction the deeper bound lies. */
+    --result-shift-y: calc((var(--result-top-bound) - var(--result-bottom-bound)) / 2);
+
+    max-height: var(--result-card-max-h);
     overflow: visible;
+    transform: translate(-50%, calc(-50% + var(--result-shift-y)));
+  }
+
+  /* The picture sets the card's width rather than the other way around: project
+     the height budget above through the image's own aspect and that is the
+     widest the picture can be drawn without letterboxing it. Below that floor —
+     or past the viewport — the stage's own max-width takes over and the picture
+     sits centered in a framed card, which is what a very tall render should do.
+
+     A definite width, never shrink-to-fit, which browsers resolve differently
+     for a transform-centered fixed dialog. The error state has no picture to
+     size against, so it keeps a card sized for its copy. */
+  .ai-result-modal.errored {
+    width: min(var(--result-max-w), 560px);
+  }
+
+  .ai-result-modal:not(.errored) {
+    width: clamp(
+      var(--result-min-w),
+      calc(var(--result-stage-max-h) * var(--result-aspect) + var(--result-inline-padding)),
+      var(--result-max-w)
+    );
+  }
+
+  /* The disclosure strip is what the bottom edge owes room to, so it deepens
+     that bound — and the height budget and the shift follow from it above. The
+     reserve is unconditional (bar the error state, which has no picture to
+     disclose): the loading state claims it though its strip is still to come, so
+     the card doesn't move under the reveal, and it stays claimed while the
+     confirmation dialog stands in front of this card, so the picture behind
+     doesn't resize under it. */
+  .ai-result-modal:not(.errored) {
+    --result-bottom-bound: max(var(--report-strip-reserve), var(--result-gutter));
+  }
+
+  .ai-result-modal.autosave {
+    --result-footer-reserve: var(--result-autosave-footer-reserve);
   }
 
   .ai-result-content {
@@ -310,100 +284,6 @@
 
   .ai-result-close {
     z-index: 2;
-  }
-
-  /* ── Stage: holds the blurred drawing, the dial, and the final image ── */
-  .ai-stage {
-    position: relative;
-    display: block;
-    line-height: 0; /* drop the inline-image baseline gap under the sizer */
-    border-radius: var(--radius-md);
-    overflow: hidden;
-    background: #fcfbf8;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    /* Own the touch gesture so the scoped pinch-zoom (use:pinchZoom) drives the
-       preview instead of the browser — the drawing surface stays zoom-locked
-       (ADR-0076). Size comes from .stage-sizer below — the modal shrink-wraps
-       this box. */
-    touch-action: none;
-  }
-
-  /* The pinch target: a top-left-anchored layer holding just the picture. The
-     surrounding .ai-stage stays at scale 1 so its rect is a stable reference,
-     and its overflow:hidden clips the zoomed image to the preview's own bounds. */
-  .zoom-layer {
-    position: relative;
-    display: block;
-    transform-origin: 0 0;
-    will-change: transform;
-  }
-  /* `.zoomed` is toggled imperatively by the pinchZoom action (via classList). */
-  .ai-stage:global(.zoomed) {
-    cursor: grab;
-  }
-
-  /* The invisible sizer: fits the image's natural aspect within the max width
-     and the available viewport height (reserving the download row), sizing to
-     whichever binds. It occupies layout (so the stage takes its size) but isn't
-     painted — the .stage-img overlays show the actual picture. */
-  .stage-sizer {
-    display: block;
-    visibility: hidden;
-    width: auto;
-    height: auto;
-    /* Shrunk down so the image clears the viewport edges and leaves margin
-       around the whole card. Width is capped to the content box; a tall image
-       is limited by the height reserve (padding + gap + download + some air). */
-    max-width: 100%;
-    max-height: calc(100dvh - var(--result-footer-reserve) - var(--report-strip-reserve));
-  }
-
-  .ai-result-modal.autosave .stage-sizer {
-    max-height: calc(100dvh - var(--result-autosave-footer-reserve) - var(--report-strip-reserve));
-  }
-
-  .ai-result-modal.loading:not(.autosave) .stage-sizer {
-    max-height: calc(100dvh - var(--result-loading-reserve) - var(--report-strip-reserve));
-  }
-
-  /* No image yet (modal opened before the export finished): a definite width so
-     the aspect-ratio resolves a height, giving the dial a stable box to sit in.
-     A tall portrait drawing is reined in by max-height (width then follows). */
-  .placeholder-sizer {
-    width: min(84vw, 460px);
-  }
-
-  .stage-img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-
-  .preview {
-    transition:
-      opacity 0.5s ease,
-      filter var(--duration-base) linear;
-    transform: scale(1.04); /* hide blur bleed at edges */
-  }
-
-  .preview.gone {
-    opacity: 0;
-  }
-
-  .result {
-    opacity: 0;
-    transform: scale(1.08);
-    transition:
-      opacity 0.55s ease,
-      transform 0.6s var(--ease-glide);
-  }
-
-  .result.shown {
-    opacity: 1;
-    transform: scale(1);
   }
 
   .ai-loading-caption {
@@ -544,8 +424,9 @@
   .ai-result-modal.polaroid-mode {
     background: #fdfcf7;
     /* Tilt and settle like a freshly printed photo, then fly off after a beat.
-       The fly-out's delay (0.9s) covers the morph + a brief hold in the center. */
-    transform: translate(-50%, -50%) rotate(-3deg);
+       The fly-out's delay (0.9s) covers the morph + a brief hold in the center.
+       Keeps --result-shift-y so the tilt doesn't also drop the card back down. */
+    transform: translate(-50%, calc(-50% + var(--result-shift-y))) rotate(-3deg);
     transition:
       transform 0.4s var(--ease-pop),
       background 0.4s ease;
@@ -564,7 +445,7 @@
 
   @keyframes ai-polaroid-fly {
     0% {
-      transform: translate(-50%, -50%) rotate(-3deg);
+      transform: translate(-50%, calc(-50% + var(--result-shift-y))) rotate(-3deg);
       opacity: 1;
     }
     100% {

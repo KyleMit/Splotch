@@ -195,25 +195,29 @@ body {
 /* The AI disclosure strip hangs below the result card on the dimmed backdrop.
    It owns its height, the gap above it, and the Report control's tap target;
    the card consumes the reserve so its responsive height budget follows that
-   geometry. The reserve is doubled because the card is transform-centered —
-   room kept clear below it is mirrored above — and carries the safe-area inset
-   so the strip clears a home indicator.
+   geometry. The reserve carries the safe-area inset so the strip clears a home
+   indicator.
 
    What the reserve measures is the tap target, not the pill: the target is
    taller than the pill and centered on it, so it overhangs both edges, and
    reserving only the pill lets a short viewport clip the bottom of a 44px
    target down to something a parent can't reliably hit. Hence half of each —
-   the distance from the card's edge to the far side of the overhang. */
+   the distance from the card's edge to the far side of the overhang.
+
+   What the reserve does not decide is where the card then sits. The card is
+   transform-centered, so a reserve taken only off its height budget would be
+   mirrored above it as empty backdrop; the card has to be re-centered on the
+   band the reserve leaves. That band has bounds at both ends — the display's own
+   insets among them, since `viewport-fit=cover` (ADR-0026) puts the viewport
+   under the cutout — and belongs to the consumer, which knows what else it owes
+   each edge. AiImageResult composes this reserve into its own bounds. */
 :root {
   --report-strip-height: 26px;
   --report-strip-gap: var(--space-4);
   --report-strip-tap: 44px;
   --report-strip-reserve: calc(
-    2 *
-      (
-        var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
-          env(safe-area-inset-bottom)
-      )
+    var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
+      env(safe-area-inset-bottom)
   );
 }
 

@@ -12,6 +12,13 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Node realpaths a symlinked entry before constructing that URL, so compare physical paths too.
 // This lets a script export helpers for tests without running its CLI on import.
 export function isMain(url) {
+  // `isMain(import.meta)` — the object rather than its url — is the easy slip,
+  // and it compares unequal to every href, so the gate it guards silently never
+  // fires and the script exits 0 having done nothing. A CLI that quietly does
+  // nothing is worse than one that crashes, so the wrong shape throws.
+  if (typeof url !== 'string') {
+    throw new TypeError(`isMain expects import.meta.url, got ${typeof url}`);
+  }
   const entry = process.argv[1];
   if (!entry) return false;
   try {

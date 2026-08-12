@@ -76,8 +76,8 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   that remain (SDK paths, `open` vs `xdg-open`) behind a branch in `tools/lib/` rather than
   scattering them. Scripts bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode)
   must fail fast with a clear message elsewhere.
-* Every CLI script gates execution behind `isMain(import.meta)` (`tools/lib/proc.mjs`) and exports a
-  distinctly named entry function.
+* Every CLI script gates execution behind `isMain(import.meta.url)` (`tools/lib/proc.mjs`) and
+  exports a distinctly named entry function.
 * Script options are flags via `parseArgs`; an env var is at most a documented fallback.
 * Multi-item CLI runs: validate inputs up front with a path-specific one-line error and a non-zero
   exit; wrap per-item work in try/catch and report failures at the end without discarding completed

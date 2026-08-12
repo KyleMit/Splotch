@@ -2,6 +2,7 @@
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
   import { createDialProgress } from './aiDialProgress';
 
   interface Props {
@@ -91,7 +92,8 @@
   <div
     class="dial"
     class:waiting
-    style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle};"
+    style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle}; --dial-size: min({DIAL_STAGE_FRACTION *
+      100}%, {DIAL_MAX_SIZE_PX}px);"
     out:scale={{
       duration: DIAL_EXIT_MS,
       start: DIAL_EXIT_START_SCALE,
@@ -122,7 +124,7 @@
 
   .dial {
     position: relative;
-    width: 52%;
+    width: var(--dial-size);
     aspect-ratio: 1;
     border-radius: 50%;
     will-change: transform;

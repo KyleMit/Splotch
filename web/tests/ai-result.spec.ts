@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import {
@@ -17,6 +18,69 @@ import {
 // launches lives in ai-report.spec.ts.
 // Watch it run with:
 //   npm run test:e2e:headed -- ai-result
+
+// Big enough that the picture's height, not the card, is what limits it — the
+// case the fixed-width card used to leave mostly empty.
+const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
+
+// A phone with a cutout at the top and a home indicator at the bottom. The
+// insets are an iPhone-class notch and indicator; what matters is only that both
+// are non-zero and the top one clears NOTCH_INSET_THRESHOLD_PX (ADR-0026), so
+// the card is judged against a display that actually eats into both edges.
+const NOTCHED_PHONE_VIEWPORT = { width: 390, height: 844 };
+const NOTCHED_PHONE_INSETS = { top: 59, bottom: 34 };
+
+// Resolves length expressions to real pixels by letting the engine compute them
+// on a throwaway probe inside `host`. getComputedStyle hands back an unresolved
+// token stream for an unregistered custom property, so a `clamp()` of vmin — or
+// an `env()` — can only be read back through something that actually used it.
+// The probe is taken out of flow so measuring the card never moves it.
+function resolveLengths(page: Page, host: string, expressions: string[]) {
+  return page.evaluate(
+    ({ host, expressions }) => {
+      const parent = document.querySelector(host);
+      if (!parent) throw new Error(`No host for the length probe: ${host}`);
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden';
+      parent.append(probe);
+      const resolved = expressions.map((expression) => {
+        probe.style.paddingTop = expression;
+        return parseFloat(getComputedStyle(probe).paddingTop);
+      });
+      probe.remove();
+      return resolved;
+    },
+    { host, expressions }
+  );
+}
+
+// The bounds of the band the card is centered on, read off the card itself so
+// the assertions track whatever the gutter and the insets actually resolved to.
+async function cardBounds(page: Page) {
+  const [top, bottom, side] = await resolveLengths(page, 'dialog.ai-result-modal', [
+    'var(--result-top-bound)',
+    'var(--result-bottom-bound)',
+    'var(--result-side-bound)',
+  ]);
+  if (top === undefined || bottom === undefined || side === undefined) {
+    throw new Error('AI result bounds were not measurable');
+  }
+  return { top, bottom, side };
+}
+
+// Chromium emulates env(safe-area-inset-*) only over CDP — there is no viewport
+// option for it — so this is the one seam that can render the app as a notched
+// phone sees it. Returns what CSS actually resolved, so a caller can prove the
+// override landed rather than assuming it.
+async function emulateSafeAreaInsets(page: Page, insets: { top: number; bottom: number }) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setSafeAreaInsetsOverride' as never, { insets } as never);
+  const [top, bottom] = await resolveLengths(page, 'body', [
+    'env(safe-area-inset-top)',
+    'env(safe-area-inset-bottom)',
+  ]);
+  return { top, bottom };
+}
 
 test.describe('AI result modal', () => {
   test('uploads the live canvas as a non-empty image POST', async ({ page }) => {
@@ -133,6 +197,136 @@ test.describe('AI result modal', () => {
       expect(report.height).toBeCloseTo(tokens.tap, 0);
     });
   }
+
+  // The picture is drawn as large as its own aspect allows in the room the
+  // viewport has, rather than inside a fixed-width card that left most of a
+  // desktop screen empty. Both halves of that are measurable: the card carries
+  // nothing but its own padding beside the picture, and it fills its band from
+  // bound to bound, so there is no height left for the picture to have taken.
+  test('draws the picture at the full height its band allows', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await revealAiResult(page);
+
+    const { card } = await resultBoxes(page);
+    const bounds = await cardBounds(page);
+    const stage = await page.locator('.ai-stage').boundingBox();
+    const inlinePadding = await page
+      .locator('.ai-result-content')
+      .evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft));
+    const natural = await page
+      .locator('.stage-img.result')
+      .evaluate(
+        (el) => (el as HTMLImageElement).naturalWidth / (el as HTMLImageElement).naturalHeight
+      );
+    if (!stage) throw new Error('AI stage geometry was not measurable');
+
+    expect(card.width - stage.width).toBeCloseTo(2 * inlinePadding, 0);
+    expect(stage.width / stage.height).toBeCloseTo(natural, 2);
+    // The couple of pixels of slack are --result-sizing-air plus the subpixel
+    // rounding of a card centered on a half-pixel offset.
+    const bandBottom = DESKTOP_VIEWPORT.height - bounds.bottom;
+    expect(card.y).toBeGreaterThanOrEqual(bounds.top - 1);
+    expect(card.y).toBeLessThanOrEqual(bounds.top + 2);
+    expect(card.y + card.height).toBeGreaterThan(bandBottom - 2);
+    expect(card.y + card.height).toBeLessThanOrEqual(bandBottom + 1);
+  });
+
+  // A big screen is where the old fixed-width card looked worst, and also where
+  // running the picture to the screen edge would stop reading as a modal over
+  // the app. The gutter is what buys the frame back; on a phone it collapses to
+  // little more than a hairline, because there the picture is what's scarce. The
+  // range is the product claim — roughly this much room on this class of screen;
+  // everything below it is the rule the bounds follow from that one number.
+  for (const screen of [
+    { label: 'desktop', viewport: DESKTOP_VIEWPORT, least: 70, most: 80 },
+    { label: 'phone', viewport: { width: 390, height: 844 }, least: 8, most: 16 },
+  ]) {
+    test(`frames the card in a ${screen.label}-sized gutter`, async ({ page }) => {
+      await page.setViewportSize(screen.viewport);
+      await revealAiResult(page);
+
+      const { card } = await resultBoxes(page);
+      const bounds = await cardBounds(page);
+      const [gutter, reserve] = await resolveLengths(page, 'dialog.ai-result-modal', [
+        'var(--result-gutter)',
+        'var(--report-strip-reserve)',
+      ]);
+      if (gutter === undefined || reserve === undefined) {
+        throw new Error('The gutter was not measurable');
+      }
+
+      expect(gutter).toBeGreaterThanOrEqual(screen.least);
+      expect(gutter).toBeLessThanOrEqual(screen.most);
+      // No cutout is emulated here, so the gutter is the whole of both of these.
+      expect(bounds.top).toBeCloseTo(gutter, 0);
+      expect(bounds.side).toBeCloseTo(gutter, 0);
+      // The bottom also has the strip hanging in it, and takes whichever is
+      // deeper — the strip's room on a phone, the gutter on a desktop.
+      expect(bounds.bottom).toBeCloseTo(Math.max(gutter, reserve), 0);
+
+      // The card honors them: a picture too narrow to fill the width sits
+      // further in than the side bound, never outside it.
+      expect(card.x).toBeGreaterThanOrEqual(bounds.side - 1);
+      expect(card.y).toBeGreaterThanOrEqual(bounds.top - 1);
+      expect(card.y + card.height).toBeLessThanOrEqual(screen.viewport.height - bounds.bottom + 1);
+    });
+  }
+
+  // The card is centered on the band between the display's top inset and the
+  // strip's room below, not on the viewport — `viewport-fit=cover` (ADR-0026)
+  // puts the top of the viewport under the cutout, so centering on the viewport
+  // slides the Close disc beneath a notch on exactly the phones the app is most
+  // used on. Both states are covered: the loading card is the taller of the two
+  // and reaches the top bound first.
+  for (const state of ['loading', 'revealed'] as const) {
+    test(`clears the display's safe areas on a notched phone while ${state}`, async ({ page }) => {
+      await page.setViewportSize(NOTCHED_PHONE_VIEWPORT);
+      const insets = await emulateSafeAreaInsets(page, NOTCHED_PHONE_INSETS);
+      // Proves the emulation reached CSS: without it every assertion below holds
+      // trivially on a device with no cutout at all.
+      expect(insets).toEqual(NOTCHED_PHONE_INSETS);
+
+      if (state === 'loading') await openAiResult(page);
+      else await revealAiResult(page);
+
+      const card = await page.locator('dialog.ai-result-modal').boundingBox();
+      const close = await page.locator('.ai-result-close').boundingBox();
+      if (!card || !close) throw new Error('AI result geometry was not measurable');
+
+      // The Close disc, not the card, is what the cutout actually eats into: it
+      // is inset from the card's own top corner, so a card that merely starts
+      // below the band can still be hiding its one dismissal control.
+      expect(card.y).toBeGreaterThanOrEqual(insets.top - 1);
+      expect(close.y).toBeGreaterThanOrEqual(insets.top);
+
+      // Still bounded below by the strip's room, which carries the bottom inset:
+      // honoring the top must not come out of the home indicator's clearance.
+      const bottomBound = NOTCHED_PHONE_VIEWPORT.height - insets.bottom;
+      expect(card.y + card.height).toBeLessThanOrEqual(bottomBound + 1);
+      if (state === 'revealed') {
+        const { report } = await resultBoxes(page);
+        expect(report.y + report.height).toBeLessThanOrEqual(bottomBound + 1);
+      }
+    });
+  }
+
+  // The dial is a fraction of the stage, which now grows to a desktop's worth of
+  // room — so it stops at its cap rather than becoming a dinner plate. The
+  // confetti's mask hole is derived from the same two numbers, so a dial that
+  // outgrew this would also punch a hole in the leaves nothing sits behind.
+  test('caps the loading dial once the stage outgrows it', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await openAiResult(page);
+
+    const dial = page.locator('.dial');
+    await expect(dial).toBeVisible();
+    // Polled, not read once: the stage collapses to nothing for as long as the
+    // preview it is sized from is an <img> that has not decoded yet, and the
+    // dial is a fraction of the stage.
+    await expect
+      .poll(async () => (await dial.boundingBox())?.width ?? 0)
+      .toBeCloseTo(DIAL_MAX_SIZE_PX, 0);
+  });
 
   // The strip sits on the dimmed backdrop, which is dark under either theme, so
   // its colors are literal rather than theme tokens that flip in light mode.
