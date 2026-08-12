@@ -51,7 +51,7 @@ const BASELINE = new Map(
     // comment lives on .flash-warning.
     'lib/components/admin/AdminConsole.svelte': 4,
     // The polaroid flight's photographic near-paper whites — the print stays
-    // paper-white on both themes, like the AiImageResult stage it lands in —
+    // paper-white on both themes, like the AiResultStage picture it lands in —
     // plus the #000 white-stroke ink keyline shared by the action buttons and
     // the Brush/Stroke Width popovers (black reads against every pen color and
     // both papers).
@@ -60,8 +60,12 @@ const BASELINE = new Map(
     // purpose: they pinned a light-only --page-* palette until every page was
     // made to follow night mode, and now hold zero raw hexes. A new one there
     // is a page opting out of the theme again.
-    // Photographic stage/polaroid whites.
-    'lib/components/AiImageResult.svelte': 2,
+    // The polaroid the card morphs into on download — a photographic near-paper
+    // white, print-white on both themes rather than either paper.
+    'lib/components/AiImageResult.svelte': 1,
+    // The ground behind the picture, the same photographic white for the same
+    // reason: a picture is a print, and it hangs on paper under either theme.
+    'lib/components/AiResultStage.svelte': 1,
     // The AI disclosure strip's ink and its Report accent. The strip is the one
     // surface in the app that sits on the dimmed modal backdrop rather than on
     // either paper, and that backdrop is dark under both themes — so --text-soft
