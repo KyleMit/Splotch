@@ -156,6 +156,18 @@ describe('action state planning', () => {
     ]);
   });
 
+  it('keeps coloring-page clearing on mapped native touch', () => {
+    const clearBlock = IPAD_ACTIONS.slice(
+      IPAD_ACTIONS.indexOf("label: 'clear coloring page'"),
+      IPAD_ACTIONS.indexOf(
+        "if (actions.has('screenshot')",
+        IPAD_ACTIONS.indexOf("label: 'clear coloring page'")
+      )
+    );
+
+    expect(clearBlock).not.toContain("activation: 'webdriver'");
+  });
+
   it('uses element activation only for the native Screenshot path', () => {
     expect(screenshotActivation(false)).toBe('native');
     expect(screenshotActivation(true)).toBe('webdriver');
