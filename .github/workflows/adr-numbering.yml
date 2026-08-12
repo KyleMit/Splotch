@@ -57,13 +57,10 @@ jobs:
       # similarity across base and head — so filtering blobs would trade written
       # bytes for lazy per-object fetches.
       #
-      # This step and the fetch below are the only ones that block on anything
-      # outside the runner, which makes them the only plausible source of a hang.
-      # Each carries its own bound so a wedged connection fails on the step that
-      # wedged rather than consuming the whole job budget and reporting as a
-      # timeout of the check itself.
+      # Checkout blocks outside the runner, so its shorter step bound names a
+      # stalled connection before the whole check expires.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        timeout-minutes: 2
+        timeout-minutes: 1
         with:
           sparse-checkout: |
             docs/adrs
@@ -75,6 +72,8 @@ jobs:
       # conflicts, and a workflow that checked out the head ref would see no
       # base at all.
       - name: Fetch the base branch
+        # Fetch is the other network-bound step, so its shorter bound identifies
+        # a stalled fetch before the whole check expires.
         timeout-minutes: 1
         run: |
           git fetch --depth=1 origin \

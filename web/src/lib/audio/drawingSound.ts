@@ -78,8 +78,8 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   const ctx = audioContext;
   if (!ctx) return;
 
-  // A suspended WebKit context may reject synthetic input without changing state.
-  // One attempt per active gesture preserves user activation without charging every move.
+  // A suspended WebKit context may reject without changing state. One attempt
+  // per gesture preserves the next real activation without charging every move.
   if (gestureStarted && ctx.state === 'suspended') ctx.resume().catch(() => {});
   if (currentPlayback) updateGain(currentPlayback.gain.gain, speed, ctx.currentTime);
   else startPlaybackIfReady();

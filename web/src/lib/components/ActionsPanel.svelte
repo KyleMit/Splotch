@@ -232,12 +232,12 @@
     if (holdsFocus) trigger?.focus();
   }
 
-  // MobileSafari can blur the trigger between a trusted pointerup and its
-  // trailing click. scribbleTap ignores that click for activation, but a
-  // closed flyout still needs the pointer's final focus state restored.
-  function restoreClosedFlyoutTriggerFocus(event: MouseEvent) {
-    if (event.detail === 0 || openFlyout) return;
-    (event.currentTarget as HTMLButtonElement).focus();
+  // Mobile Safari can blur the trigger between a trusted pointerup and its
+  // trailing click. scribbleTap ignores that click for activation, but the
+  // pointer's final focus state still belongs on the trigger.
+  function restoreFlyoutTriggerFocus(event: MouseEvent & { currentTarget: HTMLButtonElement }) {
+    if (event.detail === 0) return;
+    event.currentTarget.focus();
   }
 
   onMount(() => {
@@ -363,7 +363,7 @@
         {inkWhite}
         {inkDark}
         onOpenChange={setBrushFlyout}
-        onTriggerClick={restoreClosedFlyoutTriggerFocus}
+        onTriggerClick={restoreFlyoutTriggerFocus}
       />
 
       <div class="flyout-wrapper stroke-width-wrapper" bind:this={strokeWrapperEl}>
@@ -375,7 +375,7 @@
           aria-label="Stroke width"
           aria-expanded={openFlyout === 'stroke'}
           use:scribbleTap={handleStrokeBtnClick}
-          onclick={restoreClosedFlyoutTriggerFocus}
+          onclick={restoreFlyoutTriggerFocus}
           bind:this={strokeTriggerEl}
           style:color={colors.activeColor}
         >

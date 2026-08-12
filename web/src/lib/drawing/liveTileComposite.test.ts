@@ -31,14 +31,14 @@ function appendTile(
 }
 
 describe('compositeVisibleLiveTiles', () => {
-  // Markup the renderer did not size — every fixture here, and anything else
-  // assembling tiles by hand — carries no published span to read, so the grid
-  // comes from the backings themselves.
-  it('falls back to the backings when no tile publishes a size', () => {
+  // Markup the renderer did not size carries no published span to read, so
+  // visible backings define the grid without letting a stale hidden backing
+  // distort it.
+  it('prefers visible backings when no tile publishes a size', () => {
     const drawImage = vi.fn();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage } as never);
     const root = document.createElement('div');
-    const topLeft = appendTile(root, { left: 0, top: 0, width: 40, height: 30, hidden: true });
+    const topLeft = appendTile(root, { left: 0, top: 0, width: 140, height: 130, hidden: true });
     appendTile(root, { left: 40, top: 0, width: 60, height: 30 });
     appendTile(root, { left: 0, top: 30, width: 40, height: 70 });
     const bottomRight = appendTile(root, { left: 40, top: 30, width: 60, height: 70 });

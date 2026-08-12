@@ -503,5 +503,5 @@ ms on the same final build.
 * \+ The Undo control and captured empty-state semantics are unchanged.
 * \− Hidden backings retain stale pixels until reuse or another lifecycle operation clears or
   reallocates them. Export and empty-state scans exclude hidden tiles, a new stroke clears each
-  reached tile before painting, and undoing a preceding clear replaces the stale state with its
-  retained patches.
+  reached tile before painting, and undo of any earlier command clears each stale backing before
+  restoring its retained patch so leftover pixels cannot be composited back into view.

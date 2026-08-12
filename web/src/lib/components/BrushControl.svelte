@@ -22,7 +22,7 @@
     wrapperEl?: HTMLDivElement;
     triggerEl?: HTMLButtonElement;
     onOpenChange: (open: boolean) => void;
-    onTriggerClick: (event: MouseEvent) => void;
+    onTriggerClick: (event: MouseEvent & { currentTarget: HTMLButtonElement }) => void;
   } = $props();
 
   const optionalBrushes = $derived(enabledOptionalBrushes());
