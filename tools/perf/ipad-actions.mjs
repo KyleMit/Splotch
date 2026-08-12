@@ -957,7 +957,9 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       selector: '#advancedControlsToggle',
       baseline: true,
       readyFor: (enabled) =>
-        `document.querySelector('#screenshotToggle') ${enabled ? '!== null' : '=== null'}`,
+        enabled
+          ? actionPanelLacksAttribute('data-off-adv')
+          : actionPanelHasAttribute('data-off-adv'),
       whileAtBaseline: () =>
         recordToggleRoundTrip({
           label: 'screenshot action button',

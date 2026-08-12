@@ -167,6 +167,8 @@ describe('action state planning', () => {
       'settingsSectionSetupReady(section, ready, settingsModalUsesSidebar)',
       `clickSetupElement(execute, '#parentalGate button[aria-label="Close"]')`,
       'whileAtBaseline: () =>',
+      "actionPanelHasAttribute('data-off-adv')",
+      "actionPanelLacksAttribute('data-off-adv')",
       'coloringSelectionSteps(hasBookChoice)',
       'activation: screenshotActivation(client.nativeApp)',
     ]) {
