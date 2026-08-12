@@ -7,15 +7,15 @@ import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 // advanced-control chips cut back to their icons ("Screen…", "Magic …"), and a
 // save-folder row with no room left to name the destination (issue #905). The
 // fix reflows rather than shrinks, so what these pin is that nothing in the
-// phone shell is clipped and that the chip grid changes column count between
+// phone shell is clipped and that the Drawing Tools list changes skin between
 // the two widths instead of trimming an option name.
 //
 // The two viewports are the narrowest and widest phones in the responsive page
-// inventory — the chip grid drops to one column across the gap between them, so
-// running both keeps that breakpoint honest from either side.
+// inventory — the block crosses the width where two chips fit across the gap
+// between them, so running both keeps that crossover honest from either side.
 const PHONE_VIEWPORTS = [
-  { device: 'iPhone 13 mini', width: 375, height: 812, chipColumns: 1 },
-  { device: 'iPhone 16 Pro Max', width: 440, height: 956, chipColumns: 2 },
+  { device: 'iPhone 13 mini', width: 375, height: 812, toolSkin: 'rows' },
+  { device: 'iPhone 16 Pro Max', width: 440, height: 956, toolSkin: 'chips' },
 ] as const;
 
 async function openHub(page: Page, width: number, height: number) {
@@ -60,7 +60,7 @@ function wrappedText(page: Page, selector: string): Promise<string[]> {
   );
 }
 
-for (const { device, width, height, chipColumns } of PHONE_VIEWPORTS) {
+for (const { device, width, height, toolSkin } of PHONE_VIEWPORTS) {
   test(`hub summaries read in full (${device})`, async ({ page }) => {
     await openHub(page, width, height);
 
@@ -73,43 +73,54 @@ for (const { device, width, height, chipColumns } of PHONE_VIEWPORTS) {
     expect(await clippedText(page, '.hub-subtitle')).toEqual([]);
   });
 
-  test(`control chips keep their option names (${device})`, async ({ page }) => {
+  test(`the Drawing Tools list keeps its option names (${device})`, async ({ page }) => {
     await openHub(page, width, height);
     await openHubSection(page, 'controls', '#advancedControlsToggle');
 
-    // The chip grid is what Advanced Controls reveals; it ships on, so this
+    // The tools list is what Advanced Controls reveals; it ships on, so this
     // asserts the state rather than toggling into it — a blind click would
     // reveal nothing and leave the assertions below racing the slide-away.
     await expect(page.locator('#advancedControlsToggle')).toHaveAttribute('aria-checked', 'true');
-    // One per entry in DRAWING_TOOL_CHIPS, stated rather than imported: that
-    // module reaches the rune-based settings store, which a spec can't load
-    // (the same reason settings-mount.spec.ts reads its count off the DOM).
-    const labels = page.locator('.control-chips .option-label');
-    await expect(labels).toHaveCount(5);
-    expect(await clippedText(page, '.control-chips .option')).toEqual([]);
-    // Every name on one line: this grid holds short labels, and the fallback
+
+    // Chips buy a second column and nothing else, so the narrow phone — which
+    // has only one column to give — gets the plain toggle rows instead.
+    const usingChips = toolSkin === 'chips';
+    await expect(page.locator('.control-chips')).toHaveCount(usingChips ? 1 : 0);
+    await expect(page.locator('.tool-rows')).toHaveCount(usingChips ? 0 : 1);
+    const optionSelector = usingChips ? '.control-chips .option' : '.tool-rows .setting';
+    const labelSelector = usingChips ? '.control-chips .option-label' : '.tool-rows .setting-label';
+
+    // One per entry in DRAWING_TOOLS, stated rather than imported: that module
+    // reaches the rune-based settings store, which a spec can't load (the same
+    // reason settings-mount.spec.ts reads its count off the DOM).
+    await expect(page.locator(labelSelector)).toHaveCount(5);
+    expect(await clippedText(page, optionSelector)).toEqual([]);
+    // Every name on one line: this list holds short labels, and the fallback
     // that keeps a long one readable — wrapping — would break these mid-word
     // ("Stroke wid/th") rather than at a space.
-    expect(await wrappedText(page, '.control-chips .option-label')).toEqual([]);
+    expect(await wrappedText(page, labelSelector)).toEqual([]);
 
-    // Which is what the column count buys: the labels only fit beside their
-    // 26px icons while the grid gives each chip enough of the row.
-    const columns = await page
-      .locator('.control-chips')
-      .first()
-      .evaluate(
-        (grid) =>
-          new Set([...grid.children].map((chip) => Math.round(chip.getBoundingClientRect().x))).size
-      );
-    expect(columns).toBe(chipColumns);
+    // Which is what the chips' width floor buys: the labels only fit beside
+    // their 26px icons while each chip gets enough of the row.
+    if (usingChips) {
+      const columns = await page
+        .locator('.control-chips')
+        .first()
+        .evaluate(
+          (grid) =>
+            new Set([...grid.children].map((chip) => Math.round(chip.getBoundingClientRect().x)))
+              .size
+        );
+      expect(columns).toBe(2);
+    }
 
-    // Reflowed, not shrunk: the chips stay full tap targets either way.
-    const shortestChip = await page
-      .locator('.control-chips .option')
-      .evaluateAll((chips) =>
-        Math.min(...chips.map((chip) => chip.getBoundingClientRect().height))
+    // Reflowed, not shrunk: the options stay full tap targets under either skin.
+    const shortestOption = await page
+      .locator(optionSelector)
+      .evaluateAll((options) =>
+        Math.min(...options.map((option) => option.getBoundingClientRect().height))
       );
-    expect(shortestChip).toBeGreaterThanOrEqual(44);
+    expect(shortestOption).toBeGreaterThanOrEqual(44);
   });
 }
 

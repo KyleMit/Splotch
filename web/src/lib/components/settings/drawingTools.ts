@@ -8,12 +8,12 @@ import {
   setUndoButton,
 } from '$lib/state/settings.svelte';
 
-// The on-screen tools the Tool Drawer section shows and hides, in the order its
-// one chip grid renders them: what a child draws with, then the controls beside
-// it. The list lives here rather than in the section because the hub row
-// summarizes it — "2 tools hidden" — and a second copy of the list would let
-// the summary and the grid disagree about what a tool is.
-interface DrawingToolChip {
+// The on-screen tools the Tool Drawer section shows and hides, in the order it
+// renders them: what a child draws with, then the controls beside it. The list
+// lives here rather than in the section because the hub row summarizes it —
+// "2 tools hidden" — and a second copy of the list would let the summary and
+// the controls disagree about what a tool is.
+interface DrawingTool {
   id: string;
   label: string;
   icon: CommonIconName;
@@ -21,7 +21,7 @@ interface DrawingToolChip {
   toggle: (next: boolean) => void;
 }
 
-export const DRAWING_TOOL_CHIPS = [
+export const DRAWING_TOOLS = [
   {
     id: 'crayonToggle',
     label: 'Crayon',
@@ -57,13 +57,13 @@ export const DRAWING_TOOL_CHIPS = [
     checked: () => settings.undoButtonEnabled,
     toggle: setUndoButton,
   },
-] as const satisfies readonly DrawingToolChip[];
+] as const satisfies readonly DrawingTool[];
 
 // Derived from the list rather than from the interface above, so an id stays
 // the literal it was written as everywhere it is passed around.
-export type DrawingToolId = (typeof DRAWING_TOOL_CHIPS)[number]['id'];
+export type DrawingToolId = (typeof DRAWING_TOOLS)[number]['id'];
 
 /** How many tools the parent has turned off — what the hub row reports. */
 export function hiddenDrawingToolCount(): number {
-  return DRAWING_TOOL_CHIPS.filter((chip) => !chip.checked()).length;
+  return DRAWING_TOOLS.filter((tool) => !tool.checked()).length;
 }
