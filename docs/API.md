@@ -221,13 +221,23 @@ See ADR-0060.
 
 Privately reports the AI result currently visible in `AiImageResult`. This is a separate,
 credentialed endpoint because its multipart body carries child-created image content. It accepts the
-same `X-Access-Token` or `X-Api-Key` header as generation. A managed token must still be active; a
-BYO key is verified against the provider. Valid reports are limited to 3/hour per managed token or
-3/hour per BYO caller IP. Authorization runs before multipart parsing.
+same three credentials as generation, picked client-side by the shared `aiCredentialHeaders()`
+(`web/src/lib/ai/credentials.ts`): `X-Api-Key` (BYOK), `X-Access-Token` (managed invite), or — on
+the free tier, where the caller holds neither — `X-Installation-Id`. A managed token must still be
+active; a BYO key is verified against the provider; the free installation id is checked for shape
+only, exactly as generation checks it. Valid reports are limited to 3/hour per managed token, per
+BYO caller IP, or per free caller IP. Authorization runs before multipart parsing.
+
+Reporting takes every credential generation takes by design: a picture that could be made must be
+reportable, because the report is the child-safety path for that same output. Requiring the free
+reporter to hold an existing generation grant record was considered and rejected — any caller mints
+one with a single `generate-image` call under the same per-IP budget, so it would gate honest users
+while putting a Netlify Blobs read in front of a safety path that then fails closed during an
+outage. What bounds this path is the per-IP bucket, the body-size cap, and the retention purge.
 
 ```text
 Content-Type: multipart/form-data
-X-Access-Token: <active token>  # or X-Api-Key
+X-Access-Token: <active token>  # or X-Api-Key, or X-Installation-Id on the free tier
 
 drawing=<png|jpeg|webp Blob>
 output=<png|jpeg|webp Blob>
@@ -254,6 +264,8 @@ hours. See ADR-0104.
 { "ok": true, "reportId": "1723123456789-550e8400-e29b-41d4-a716-446655440000" }
 // 400 — invalid body, images, size, or style
 { "ok": false, "error": "That picture could not be reported." }
+// 400 — the free tier sent no well-formed installation id
+{ "ok": false, "error": "Installation grant unavailable" }
 // 403 — invalid or expired generation credential
 { "ok": false, "error": "Invalid access token" }
 // 503 — private reporting or evidence storage unavailable

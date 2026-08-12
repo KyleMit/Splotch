@@ -247,16 +247,38 @@ async function checkReport(base) {
 }
 
 async function checkImageReport(base) {
-  const form = new FormData();
-  form.set('drawing', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'drawing.png');
-  form.set('output', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'output.png');
-  form.set('style', 'Magical');
-  const response = await fetch(`${base}/api/report-image`, { method: 'POST', body: form });
+  const imageReportForm = () => {
+    const form = new FormData();
+    form.set('drawing', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'drawing.png');
+    form.set('output', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'output.png');
+    form.set('style', 'Magical');
+    return form;
+  };
+  const response = await fetch(`${base}/api/report-image`, {
+    method: 'POST',
+    body: imageReportForm(),
+  });
   const body = await json(response);
   check(
     'report-image with private reporting unconfigured → 503 {ok:false, error}',
     response.status === 503 && body?.ok === false && typeof body?.error === 'string',
     `got ${response.status} ${JSON.stringify(body)}`
+  );
+
+  // The configuration probe short-circuits ahead of authorization, so this
+  // harness cannot reach the credential branches — reporting is deliberately
+  // unconfigured here. What it does pin is that the free credential is never the
+  // thing that fails: were authorization to move ahead of the probe, a
+  // report-image missing the free branch would answer 403 here instead (#960).
+  const free = await fetch(`${base}/api/report-image`, {
+    method: 'POST',
+    headers: { 'X-Installation-Id': 'a'.repeat(64) },
+    body: imageReportForm(),
+  });
+  check(
+    'report-image with a free installation id → not a credential rejection',
+    free.status !== 403,
+    `got ${free.status} ${JSON.stringify(await json(free))}`
   );
 }
 

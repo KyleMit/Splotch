@@ -88,22 +88,29 @@ async function drawPreview(page: Page) {
     .toBe(true);
 }
 
-async function prepareAiGeneration(page: Page) {
+// `freeTier: true` leaves the access token unset, which is what selects the
+// no-setup credential the app defaults to — the mocked endpoint answers either
+// way, so the difference is purely which header the client chooses to send.
+interface AiGenerationOptions {
+  freeTier?: boolean;
+}
+
+async function prepareAiGeneration(page: Page, options: AiGenerationOptions = {}) {
   const endpoint = await mockAiEndpoint(page);
-  await gotoApp(page, '/?ai_access_token=test-token');
+  await gotoApp(page, options.freeTier ? '/' : '/?ai_access_token=test-token');
   await drawPreview(page);
   return endpoint;
 }
 
-async function openAiResult(page: Page) {
-  const endpoint = await prepareAiGeneration(page);
+async function openAiResult(page: Page, options: AiGenerationOptions = {}) {
+  const endpoint = await prepareAiGeneration(page, options);
   await invokeAiGeneration(page);
   await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
   return endpoint;
 }
 
-async function revealAiResult(page: Page) {
-  const endpoint = await openAiResult(page);
+async function revealAiResult(page: Page, options: AiGenerationOptions = {}) {
+  const endpoint = await openAiResult(page, options);
   endpoint.succeed();
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
 }
@@ -302,6 +309,37 @@ test.describe('AI result modal', () => {
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
     expect(reportRequests).toBe(1);
+  });
+
+  // Issue #960: a free-tier picture was unreportable because the client sent an
+  // empty X-Access-Token, which the server answered 403 to. The credential the
+  // report carries is the whole regression, so assert the header itself.
+  test('reports a free-tier picture with the installation id credential', async ({ page }) => {
+    let reportHeaders: Record<string, string> | null = null;
+    await enforceProductionCsp(page);
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    await page.route('**/api/report-image', async (route) => {
+      reportHeaders = route.request().headers();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, reportId: 'free-report-id' }),
+      });
+    });
+    await revealAiResult(page, { freeTier: true });
+
+    await page.getByRole('button', { name: 'Report this picture' }).focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByText(/Keep this report reference.*free-report-id/)).toBeVisible();
+
+    expect(reportHeaders).not.toBeNull();
+    expect(reportHeaders?.['x-installation-id']).toMatch(/^[a-f0-9]{64}$/);
+    expect(reportHeaders?.['x-access-token']).toBeUndefined();
+    expect(reportHeaders?.['x-api-key']).toBeUndefined();
   });
 
   // The strip is anchored to the card, not the viewport corner the old flag sat

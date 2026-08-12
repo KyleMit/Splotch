@@ -11,7 +11,7 @@ vi.mock('$lib/server/github', () => ({ isReportingConfigured }));
 vi.mock('$lib/server/imageReport', () => ({ submitImageReport }));
 vi.mock('$lib/server/imageReportAuthorization', () => ({ authorizeImageReport }));
 
-import { ACCESS_TOKEN_HEADER } from '$lib/apiHeaders';
+import { ACCESS_TOKEN_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { POST } from './+server';
 
 function post(body: BodyInit, headers: HeadersInit = {}) {
@@ -41,12 +41,32 @@ describe('POST /api/report-image', () => {
     expect(authorizeImageReport).toHaveBeenCalledWith({
       apiKey: null,
       token: 'sunny-meadow',
+      installationId: null,
       clientAddress: '203.0.113.9',
     });
     expect(submitImageReport).toHaveBeenCalledWith({
       drawing: expect.any(Blob),
       output: expect.any(Blob),
       style: 'Magical',
+    });
+  });
+
+  // The free tier's only credential is this header, so the route dropping it is
+  // indistinguishable from the caller never sending one (#960).
+  it('forwards the free installation id to the authorizer', async () => {
+    const body = new FormData();
+    body.set('drawing', new Blob(['drawing'], { type: 'image/png' }));
+    body.set('output', new Blob(['output'], { type: 'image/jpeg' }));
+    body.set('style', 'Magical');
+    const installationId = 'a'.repeat(64);
+
+    await post(body, { [INSTALLATION_ID_HEADER]: installationId });
+
+    expect(authorizeImageReport).toHaveBeenCalledWith({
+      apiKey: null,
+      token: null,
+      installationId,
+      clientAddress: '203.0.113.9',
     });
   });
 
