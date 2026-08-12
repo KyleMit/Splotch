@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
@@ -89,7 +89,15 @@
     // Seeded synchronously so the first paint already carries the right skin —
     // the dialog is closed rather than unmounted, so a block mounted at zero
     // width (or reopened at another one) is corrected by the observer below.
-    measureBlock(block.clientWidth);
+    //
+    // Untracked because `measureBlock` reads the width it writes: tracking that
+    // read would make every observer update re-run this setup, which reseeds
+    // from `clientWidth` and re-observes. Under the pane's CSS `zoom` (ADR-0076)
+    // the two readings disagree by design — `clientWidth` is rounded, the
+    // observer's `contentRect.width` is not — so each would keep correcting the
+    // other for as long as the parent stayed zoomed. `settings-zoom.spec.ts`
+    // pins the observer quiet at a fractional zoom.
+    untrack(() => measureBlock(block.clientWidth));
     const observer = new ResizeObserver(([entry]) => measureBlock(entry.contentRect.width));
     observer.observe(block);
     return () => observer.disconnect();

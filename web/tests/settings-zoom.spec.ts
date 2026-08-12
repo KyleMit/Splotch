@@ -432,6 +432,82 @@ test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoo
   expect(await fontPx('.report-textarea')).toBeGreaterThanOrEqual(16);
 });
 
+// A fractional CSS `zoom` is what this whole feature produces, and it splits the
+// two ways an element's width can be read: `clientWidth` is rounded to an
+// integer, `ResizeObserver`'s `contentRect.width` is not. Anything that measures
+// through both and feeds each back into the other never agrees with itself — the
+// Drawing Tools block did exactly that, re-seeding from `clientWidth` on every
+// observer update, and the pair ping-ponged for as long as the pane stayed
+// enlarged. So: after an enlarged pane settles, the block's observer must go
+// quiet on its own.
+const TOOLS_OBSERVER_QUIET_MS = 250;
+
+interface ToolsObserverCounts {
+  callbacks: number;
+  observes: number;
+}
+
+// Count only the observations of the Drawing Tools block, so an unrelated
+// observer elsewhere in Settings can neither mask a runaway here nor fail this.
+async function countToolsBlockObservations(page: Page) {
+  await page.addInitScript(() => {
+    const Native = window.ResizeObserver;
+    const counts = { callbacks: 0, observes: 0 };
+    const isToolsBlock = (node: Element) => node.classList?.contains('tools-block');
+    class CountingResizeObserver extends Native {
+      constructor(callback: ResizeObserverCallback) {
+        super((entries, observer) => {
+          if (entries.some((entry) => isToolsBlock(entry.target))) counts.callbacks++;
+          callback(entries, observer);
+        });
+      }
+      observe(target: Element, options?: ResizeObserverOptions) {
+        if (isToolsBlock(target)) counts.observes++;
+        super.observe(target, options);
+      }
+    }
+    window.ResizeObserver = CountingResizeObserver;
+    Object.defineProperty(window, '__toolsBlockObservations', { value: counts });
+  });
+}
+
+function toolsObserverCounts(page: Page): Promise<ToolsObserverCounts> {
+  return page.evaluate(
+    () =>
+      ({
+        ...(window as unknown as { __toolsBlockObservations: ToolsObserverCounts })
+          .__toolsBlockObservations,
+      }) as ToolsObserverCounts
+  );
+}
+
+test('the Drawing Tools block stops re-measuring once an enlarged pane settles', async ({
+  page,
+}) => {
+  await countToolsBlockObservations(page);
+  await page.setViewportSize({ width: 460, height: 852 });
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Tool Drawer' }).click({ timeout: 1000 });
+    await expect(page.locator('.control-chips')).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 5000 });
+
+  // The gesture's own math is covered above; this needs only the CSS `zoom` it
+  // arrives at, at a factor whose product is fractional in this pane.
+  await page.locator('.settings-zoom').evaluate((el) => ((el as HTMLElement).style.zoom = '1.1'));
+  expect(await paneZoom(page)).toBe(1.1);
+
+  // The zoom legitimately costs one round of re-measuring; what must not happen
+  // is a second round arriving with no further input. A fixed idle is the point
+  // here — the assertion is that nothing changes across it.
+  await page.waitForTimeout(TOOLS_OBSERVER_QUIET_MS);
+  const settled = await toolsObserverCounts(page);
+  await page.waitForTimeout(TOOLS_OBSERVER_QUIET_MS);
+  expect(await toolsObserverCounts(page)).toEqual(settled);
+});
+
 test('closing the overlay resets the zoom for the next open', async ({ page }) => {
   await gotoApp(page);
   await openSettingsModal(page);
