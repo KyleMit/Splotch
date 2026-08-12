@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { compositeVisibleLiveTiles } from './liveTileComposite';
 import { LIVE_TILE_COUNT } from './liveTiles';
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
@@ -61,6 +62,7 @@ beforeEach(() => {
 afterEach(() => {
   detachTiledRenderer();
   HTMLCanvasElement.prototype.getContext = originalGetContext;
+  vi.unstubAllGlobals();
 });
 
 function rendererElements() {
@@ -75,7 +77,7 @@ function rendererElements() {
       host.append(tile);
     }
   }
-  return canvas;
+  return { host, canvas };
 }
 
 describe('tiled renderer contract', () => {
@@ -92,8 +94,35 @@ describe('tiled renderer contract', () => {
     ).toThrow('Drawing engine live surface markup is missing or incomplete');
   });
 
+  // The renderer publishes each tile's intended backing size and
+  // compositeVisibleLiveTiles builds its grid from it, but that reader is
+  // serialized into the page by Playwright and so can share no constant with
+  // the writer. Bind the two sides empirically instead: drive a real resize and
+  // read the real composite while the deferred backings still trail it. The
+  // shape of the case is what makes it a guard — at renderScale 2 backing
+  // pixels part company with CSS pixels, and a width the grid cannot divide
+  // evenly separates per-tile geometry from one span published grid-wide.
+  it('composites the intended grid while the tile backings still trail it', () => {
+    const { host, canvas } = rendererElements();
+    vi.stubGlobal('devicePixelRatio', 2);
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 801, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 2);
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    resizeTiledRenderer(801, 400, 2, true);
+
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    expect(tiles.every((tile) => tile.width === 100 && tile.height === 100)).toBe(true);
+
+    const rendered = compositeVisibleLiveTiles(host);
+
+    expect([rendered.width, rendered.height]).toEqual([801, 400]);
+  });
+
   it('rebases an active command when undo removes the paper beneath it', () => {
-    const canvas = rendererElements();
+    const { canvas } = rendererElements();
     let pointerActive = false;
     adoptTiledRenderer(canvas, {
       paperSize: () => ({ width: 400, height: 400 }),
