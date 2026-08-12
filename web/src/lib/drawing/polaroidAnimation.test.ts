@@ -72,6 +72,27 @@ describe('createPolaroidPreviewRequest', () => {
     expect(createPolaroidPreviewRequest()).toBeNull();
   });
 
+  it('repaints the mounted polaroid when recovery delivers a corrected preview', async () => {
+    const drawImage = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+      drawImage,
+    } as unknown as CanvasRenderingContext2D);
+    const first = { width: 960, height: 720, close: vi.fn() } as unknown as ImageBitmap;
+    const corrected = { width: 960, height: 720, close: vi.fn() } as unknown as ImageBitmap;
+    const { createPolaroidPreviewRequest } = await import('./polaroidAnimation');
+
+    const request = createPolaroidPreviewRequest();
+    request?.onReady(first);
+    request?.onReady(corrected);
+
+    expect(document.querySelectorAll('.polaroid-overlay')).toHaveLength(1);
+    expect(document.querySelectorAll('.polaroid-image')).toHaveLength(1);
+    expect(drawImage).toHaveBeenNthCalledWith(1, first, 0, 0);
+    expect(drawImage).toHaveBeenNthCalledWith(2, corrected, 0, 0);
+    expect(first.close).toHaveBeenCalledOnce();
+    expect(corrected.close).toHaveBeenCalledOnce();
+  });
+
   it('removes the preview when the frame animation does not finish', async () => {
     vi.useFakeTimers();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({

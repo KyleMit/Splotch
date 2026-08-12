@@ -93,6 +93,12 @@ function createPngEncoder(): PngEncoder {
       }
       return;
     }
+    if ('error' in event.data && event.data.code !== undefined) {
+      const error = new Error(event.data.error);
+      encoder.terminate(error);
+      if (cachedEncoder === encoder) cachedEncoder = null;
+      return;
+    }
     clearTimeout(request.timeoutId);
     pending.delete(event.data.id);
     if ('error' in event.data) {

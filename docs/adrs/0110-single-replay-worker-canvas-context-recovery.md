@@ -45,7 +45,9 @@ Full replay is safe because the source inputs stay inside the worker until its `
 
 * `pngEncoder.worker.ts` retains whole-canvas and tiled `ImageBitmap` inputs while it repaints and
   encodes. `paintTiledPngSurface()` reapplies paper, texture, smoothing, transforms, compositing,
-  tiles, and overlay from the request rather than trusting restored context state.
+  tiles, and overlay from the request rather than trusting restored context state. If a provisional
+  polaroid preview was already delivered, replay sends a corrected preview that repaints the
+  existing animation rather than starting a second one.
 * `magicSheet.worker.ts` retains its decoded fill bitmap while it redraws the contain fit and edge
   extensions. The replay does not refetch or re-decode the image.
 
@@ -56,8 +58,9 @@ returns `null` because its transferred inputs cannot be safely replayed by the c
 gets a fresh worker. Magic-sheet requests use the existing synchronous raster fallback.
 
 On engines without the events and probe, listeners remain inert and the probe is skipped. The
-existing 15-second worker deadline and correctness fallbacks remain authoritative. No user-agent or
-version detection is added.
+existing 15-second worker deadline and correctness fallbacks remain authoritative. A timed-out Magic
+sheet request retires the silent worker and fails only that request; other requests from that worker
+are re-dispatched with their original deadlines. No user-agent or version detection is added.
 
 ## Consequences
 
@@ -65,8 +68,9 @@ version detection is added.
   waiting for the broker deadline or returning a reset bitmap.
 * \+ Every replay reconstructs pixels and drawing state from request inputs; it never assumes that
   browser restoration preserves either.
-* \+ Terminal loss, worker errors, message decode failures, post failures, and timeouts retire the
-  affected worker and settle all pending requests.
+* \+ Terminal loss, worker errors, message decode failures, and post failures retire the affected
+  worker and settle all of its pending requests. A timeout retires the same worker without stealing
+  the remaining budget from concurrent requests.
 * \+ Deterministic unit tests dispatch loss and restoration through a controlled canvas seam and
   cover pre-dispatch loss, in-flight loss, between-request isolation, successful replay, failed
   restoration or recreation, repeated loss, worker replacement, and pending-request cleanup.

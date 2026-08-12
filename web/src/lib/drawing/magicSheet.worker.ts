@@ -40,6 +40,7 @@ workerScope.onmessage = async ({ data }) => {
     const response = await fetch(data.imageUrl);
     if (!response.ok) throw new Error(`Magic sheet worker could not load ${data.imageUrl}`);
     image = await createImageBitmap(await response.blob());
+    const sheetImage = image;
     const bitmap = await runWithCanvasContextRecovery(
       () =>
         createOffscreenCanvas2dSurface(
@@ -48,10 +49,10 @@ workerScope.onmessage = async ({ data }) => {
           'Magic sheet worker could not allocate a 2D context'
         ),
       ({ canvas, context }) => {
-        context.drawImage(image!, data.fit.x, data.fit.y, data.fit.width, data.fit.height);
+        context.drawImage(sheetImage, data.fit.x, data.fit.y, data.fit.width, data.fit.height);
         for (const fill of data.edgeFills) {
           context.drawImage(
-            image!,
+            sheetImage,
             fill.sx,
             fill.sy,
             fill.sw,

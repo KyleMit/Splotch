@@ -232,7 +232,8 @@ describe('encodeCanvasPng', () => {
 
   it('delivers a transferred preview without settling the PNG request', async () => {
     const tile = { close: vi.fn() } as unknown as ImageBitmap;
-    const preview = { close: vi.fn() } as unknown as ImageBitmap;
+    const firstPreview = { close: vi.fn() } as unknown as ImageBitmap;
+    const recoveredPreview = { close: vi.fn() } as unknown as ImageBitmap;
     const onPreview = vi.fn();
     const expected = new Blob(['worker'], { type: 'image/png' });
     vi.stubGlobal('Worker', ControllableWorker);
@@ -255,9 +256,12 @@ describe('encodeCanvasPng', () => {
     const worker = ControllableWorker.instances[0];
 
     expect(worker.posted[0].message.previewWidth).toBe(640);
-    worker.sendPreview(preview);
-    expect(onPreview).toHaveBeenCalledWith(preview);
-    expect(preview.close).not.toHaveBeenCalled();
+    worker.sendPreview(firstPreview);
+    worker.sendPreview(recoveredPreview);
+    expect(onPreview).toHaveBeenNthCalledWith(1, firstPreview);
+    expect(onPreview).toHaveBeenNthCalledWith(2, recoveredPreview);
+    expect(firstPreview.close).not.toHaveBeenCalled();
+    expect(recoveredPreview.close).not.toHaveBeenCalled();
 
     worker.resolve(expected);
     await expect(encoded).resolves.toBe(expected);

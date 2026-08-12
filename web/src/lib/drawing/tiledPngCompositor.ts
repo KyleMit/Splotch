@@ -44,13 +44,6 @@ export function paintTiledPngSurface(
   }
 }
 
-export function composeTiledPngCanvas(data: TiledPngInput): OffscreenCanvas {
-  const surface = createTiledPngSurface(data);
-  paintTiledPngSurface(surface, data);
-  const { canvas } = surface;
-  return canvas;
-}
-
 export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: number): ImageBitmap {
   const previewHeight = Math.max(1, Math.round((canvas.height / canvas.width) * previewWidth));
   const preview = new OffscreenCanvas(previewWidth, previewHeight);

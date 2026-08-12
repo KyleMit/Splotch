@@ -96,7 +96,7 @@ async function runContextAttempt<T>(
   surface: RecoverableCanvas2dSurface,
   operation: (surface: RecoverableCanvas2dSurface) => Promise<T> | T,
   discardResult: ((value: T) => void) | undefined,
-  restoreTimeoutMs: number
+  waitForRestoration: boolean
 ): Promise<ContextAttempt<T>> {
   const monitor = monitorContextLoss(surface);
   try {
@@ -118,7 +118,9 @@ async function runContextAttempt<T>(
 
     return {
       kind: 'lost',
-      restored: await monitor.waitForRestoration(restoreTimeoutMs),
+      restored: waitForRestoration
+        ? await monitor.waitForRestoration(CANVAS_CONTEXT_RESTORE_TIMEOUT_MS)
+        : false,
     };
   } finally {
     monitor.dispose();
@@ -133,12 +135,7 @@ export async function runWithCanvasContextRecovery<T>(
   let surface = createSurface();
   for (let retryCount = 0; retryCount <= MAX_CANVAS_CONTEXT_RETRIES; retryCount++) {
     const canRetry = retryCount < MAX_CANVAS_CONTEXT_RETRIES;
-    const outcome = await runContextAttempt(
-      surface,
-      operation,
-      discardResult,
-      canRetry ? CANVAS_CONTEXT_RESTORE_TIMEOUT_MS : 0
-    );
+    const outcome = await runContextAttempt(surface, operation, discardResult, canRetry);
     if (outcome.kind === 'complete') return outcome.value;
     if (!canRetry) throw new CanvasContextRecoveryError();
     if (!outcome.restored) {

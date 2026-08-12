@@ -21,19 +21,17 @@ encoderWorker.onmessage = async ({ data }) => {
   const { id } = data;
   try {
     if (data.kind === 'tiles') {
-      let previewSent = false;
       const blob = await runWithCanvasContextRecovery(
         () => createTiledPngSurface(data),
         ({ canvas, context }) => {
           paintTiledPngSurface({ canvas, context }, data);
           const encoded = canvas.convertToBlob({ type: 'image/png' });
-          if (data.previewWidth && !previewSent) {
+          if (data.previewWidth) {
             let preview: ImageBitmap | null = null;
             try {
               preview = createTiledPngPreview(canvas, data.previewWidth);
               encoderWorker.postMessage({ id, preview }, [preview]);
               preview = null;
-              previewSent = true;
             } catch {
               // Preview feedback is optional; its failure must not cancel the already-started PNG save.
               preview?.close();
