@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { stubAudioContext } from './drawingSoundTestHarness';
 
 let stopDrawSound: (() => void) | undefined;
 
@@ -55,19 +56,13 @@ describe('playDrawSound', () => {
     vi.stubGlobal('fetch', fetch);
     const resume = vi.fn().mockResolvedValue(undefined);
     let decodeIndex = 0;
-    vi.stubGlobal(
-      'AudioContext',
-      class {
-        state = 'suspended';
-        currentTime = 4;
-        destination = {};
-
-        resume = resume;
-        decodeAudioData = vi.fn(() => decoded[decodeIndex++].promise);
-        createGain = vi.fn(() => gainNode);
-        createBufferSource = vi.fn(() => sourceNode);
-      }
-    );
+    stubAudioContext({
+      currentTime: 4,
+      resume,
+      decodeAudioData: vi.fn(() => decoded[decodeIndex++].promise),
+      createGain: vi.fn(() => gainNode),
+      createBufferSource: vi.fn(() => sourceNode),
+    });
 
     setSound(true);
     setSoundVolume(50);
@@ -121,19 +116,11 @@ describe('playDrawSound', () => {
       vi.fn().mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) })
     );
     const decodeAudioData = vi.fn(() => decoded.promise);
-    vi.stubGlobal(
-      'AudioContext',
-      class {
-        state = 'suspended';
-        currentTime = 0;
-        destination = {};
-
-        resume = vi.fn().mockResolvedValue(undefined);
-        decodeAudioData = decodeAudioData;
-        createGain = vi.fn(() => gainNode);
-        createBufferSource = vi.fn(() => sourceNode);
-      }
-    );
+    stubAudioContext({
+      decodeAudioData,
+      createGain: vi.fn(() => gainNode),
+      createBufferSource: vi.fn(() => sourceNode),
+    });
 
     setSound(true);
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
@@ -201,6 +188,54 @@ describe('playDrawSound', () => {
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
 
     await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(7));
+  });
+
+  it('requests a suspended context resume once per active gesture', async () => {
+    const { setSound } = await import('$lib/state/settings.svelte');
+    const drawingSound = await import('./drawingSound');
+    stopDrawSound = drawingSound.stopDrawSound;
+    const resume = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) })
+    );
+    stubAudioContext({ resume });
+
+    setSound(true);
+    drawingSound.playDrawSound({ speed: 0, isStrokeStart: true });
+    for (let i = 0; i < 60; i++) {
+      drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
+    }
+    expect(resume).toHaveBeenCalledOnce();
+
+    drawingSound.stopDrawSound();
+    drawingSound.playDrawSound({ speed: 0, isStrokeStart: true });
+    expect(resume).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits for the next gesture after a context resume rejects', async () => {
+    const { setSound } = await import('$lib/state/settings.svelte');
+    const drawingSound = await import('./drawingSound');
+    stopDrawSound = drawingSound.stopDrawSound;
+    const resume = vi.fn().mockRejectedValue(new Error('activation expired'));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) })
+    );
+    stubAudioContext({ resume });
+
+    setSound(true);
+    drawingSound.playDrawSound({ speed: 0, isStrokeStart: true });
+    await expect(resume.mock.results[0]?.value).rejects.toThrow('activation expired');
+
+    for (let i = 0; i < 60; i++) {
+      drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
+    }
+    expect(resume).toHaveBeenCalledOnce();
+
+    drawingSound.stopDrawSound();
+    drawingSound.playDrawSound({ speed: 0, isStrokeStart: true });
+    expect(resume).toHaveBeenCalledTimes(2);
   });
 
   it('does not reload a decoded sound when playback startup throws', async () => {
@@ -290,18 +325,11 @@ describe('playDrawSound', () => {
       stop: vi.fn(),
     };
     vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal(
-      'AudioContext',
-      class {
-        state = 'suspended';
-        currentTime = 0;
-        destination = {};
-        resume = vi.fn().mockResolvedValue(undefined);
-        decodeAudioData = decodeAudioData;
-        createGain = vi.fn(() => gainNode);
-        createBufferSource = vi.fn(() => sourceNode);
-      }
-    );
+    stubAudioContext({
+      decodeAudioData,
+      createGain: vi.fn(() => gainNode),
+      createBufferSource: vi.fn(() => sourceNode),
+    });
 
     setSound(true);
     drawingSound.preloadDrawSounds();
@@ -422,19 +450,10 @@ describe('playDrawSound', () => {
       'fetch',
       vi.fn().mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) })
     );
-    vi.stubGlobal(
-      'AudioContext',
-      class {
-        state = 'suspended';
-        currentTime = 0;
-        destination = {};
-
-        resume = vi.fn().mockResolvedValue(undefined);
-        decodeAudioData = vi.fn().mockResolvedValue({ duration: 1 });
-        createGain = vi.fn(() => gainNode);
-        createBufferSource = vi.fn(() => sourceNode);
-      }
-    );
+    stubAudioContext({
+      createGain: vi.fn(() => gainNode),
+      createBufferSource: vi.fn(() => sourceNode),
+    });
 
     setSound(true);
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
