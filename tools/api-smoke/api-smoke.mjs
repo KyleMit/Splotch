@@ -81,8 +81,10 @@ async function checkCorsContract(base, noAuth) {
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
     'access-control-allow-headers':
-      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id',
-    'access-control-expose-headers': 'X-Free-Generations-Remaining',
+      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id, X-Report-Token',
+    // X-Report-Token is sent one way and read back the other, so it appears in
+    // both lists: generate-image returns it, report-image consumes it.
+    'access-control-expose-headers': 'X-Free-Generations-Remaining, X-Report-Token',
     'access-control-max-age': '86400',
   };
   const wrongCors = (res) =>
@@ -534,6 +536,9 @@ try {
       GITHUB_ISSUE_TOKEN: '',
       // A repo that does not exist — blank falls back to the real one.
       GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
+      // Non-blank so the free report path fails on the credential it is being
+      // checked for, rather than on an unconfigured signing secret.
+      REPORT_TOKEN_SECRET: 'smoke-report-token-secret',
     },
   }));
 

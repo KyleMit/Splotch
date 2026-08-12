@@ -16,7 +16,14 @@ interface AiMockResponse {
   status: number;
   contentType: string;
   body: string | Buffer;
+  headers?: Record<string, string>;
 }
+
+// Stands in for the token generate-image mints on a real free run. Its value is
+// never verified here — the mock replaces the server that would sign it — so
+// what this covers is the client carrying it from the generation response into
+// the report request. The signature itself is unit-tested in reportToken.test.ts.
+const MOCK_REPORT_TOKEN = '9999999999999.mock-signature';
 
 interface AiUploadRequest {
   method: string;
@@ -51,7 +58,8 @@ async function mockAiEndpoint(page: Page) {
 
   return {
     requests,
-    succeed: () => respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT }),
+    succeed: (headers?: Record<string, string>) =>
+      respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT, headers }),
     fail: (status = 500) =>
       respond({
         status,
@@ -111,7 +119,7 @@ async function openAiResult(page: Page, options: AiGenerationOptions = {}) {
 
 async function revealAiResult(page: Page, options: AiGenerationOptions = {}) {
   const endpoint = await openAiResult(page, options);
-  endpoint.succeed();
+  endpoint.succeed(options.freeTier ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined);
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
 }
 
@@ -314,7 +322,7 @@ test.describe('AI result modal', () => {
   // Issue #960: a free-tier picture was unreportable because the client sent an
   // empty X-Access-Token, which the server answered 403 to. The credential the
   // report carries is the whole regression, so assert the header itself.
-  test('reports a free-tier picture with the installation id credential', async ({ page }) => {
+  test('reports a free-tier picture with the signed report token', async ({ page }) => {
     let reportHeaders: Record<string, string> | null = null;
     await enforceProductionCsp(page);
     await page.addInitScript(
@@ -338,6 +346,9 @@ test.describe('AI result modal', () => {
 
     expect(reportHeaders).not.toBeNull();
     expect(reportHeaders?.['x-installation-id']).toMatch(/^[a-f0-9]{64}$/);
+    // Carried from the generation response — the proof the server signed, which
+    // is what actually authorizes the free report.
+    expect(reportHeaders?.['x-report-token']).toBe(MOCK_REPORT_TOKEN);
     expect(reportHeaders?.['x-access-token']).toBeUndefined();
     expect(reportHeaders?.['x-api-key']).toBeUndefined();
   });

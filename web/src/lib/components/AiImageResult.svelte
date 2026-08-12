@@ -242,6 +242,7 @@
             drawingUrl={aiResult.previewUrl}
             outputUrl={aiResult.resultUrl}
             style={aiResult.style}
+            reportToken={aiResult.reportToken}
             bind:expanded={reportExpanded}
             bind:status={reportStatus}
           />

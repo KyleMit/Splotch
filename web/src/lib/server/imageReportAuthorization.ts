@@ -10,6 +10,7 @@ import {
 import { rateLimitPolicy } from './rateLimitPolicy';
 import { isAllowedToken } from './tokens';
 import { isInstallationId } from './freeGenerationGrants';
+import { verifyReportToken } from './reportToken';
 
 export type ImageReportAuthorizationResult =
   | { authorized: true }
@@ -22,6 +23,7 @@ export async function authorizeImageReport(input: {
   apiKey: string | null;
   token: string | null;
   installationId: string | null;
+  reportToken: string | null;
   clientAddress: string;
 }): Promise<ImageReportAuthorizationResult> {
   const apiKey = input.apiKey?.trim() ?? '';
@@ -58,18 +60,39 @@ export async function authorizeImageReport(input: {
       : { authorized: true };
   }
 
-  // The free credential is shape-only, as it is for generation: a grant record
-  // proves nothing extra here, since any caller mints one with a single
-  // generate-image call under the same per-IP budget. What bounds this path is
-  // the bucket below plus the body-size cap and retention purge on the stored
-  // evidence — not the credential. Charged before the shape check so malformed
-  // free reports still spend the budget.
+  // The free tier proves itself with the report token generate-image minted for
+  // this installation, not with the installation id alone: that id is a
+  // locally-mintable 64-hex string, and the bucket below is a throttle rather
+  // than an authorization boundary (ADR-0014 resets it on cold start and shares
+  // nothing across instances). Charged before verification so forged tokens
+  // still spend the budget.
   const attempt = rateLimit(
     reportImageFreeBucket(input.clientAddress),
     rateLimitPolicy.reportImageFree
   );
   if (attempt.limited) return { authorized: false, response: throttled(attempt.retryAfter) };
-  return isInstallationId(input.installationId)
-    ? { authorized: true }
-    : { authorized: false, response: fail(400, 'Installation grant unavailable') };
+  if (!isInstallationId(input.installationId)) {
+    return { authorized: false, response: fail(400, 'Installation grant unavailable') };
+  }
+
+  switch (verifyReportToken(input.reportToken, input.installationId)) {
+    case 'valid':
+      return { authorized: true };
+    case 'expired':
+      return { authorized: false, response: fail(403, 'That picture can no longer be reported.') };
+    case 'unconfigured':
+      // A deploy without the signing secret can still report on the other two
+      // credentials, so this fails the free path alone — loudly, because the
+      // symptom is otherwise a silent 503 on the child-safety path.
+      console.error('[report-image] REPORT_TOKEN_SECRET is unset; free-tier reporting is closed');
+      return {
+        authorized: false,
+        response: fail(
+          503,
+          'Picture reporting is not available right now. Please try again later.'
+        ),
+      };
+    default:
+      return { authorized: false, response: fail(403, 'Invalid access token') };
+  }
 }

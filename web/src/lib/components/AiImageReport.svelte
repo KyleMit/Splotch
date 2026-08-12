@@ -7,6 +7,7 @@
   import StatusMessage from './design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
   import { aiCredentialHeaders } from '$lib/ai/credentials';
+  import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
   import type { StyleName } from '$lib/ai/styles';
   import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
@@ -18,6 +19,8 @@
     drawingUrl: string | null;
     outputUrl: string;
     style: StyleName | null;
+    /** The free tier's proof of generation; null on the BYOK and managed paths. */
+    reportToken: string | null;
     expanded?: boolean;
     status?: ImageReportStatus;
   }
@@ -26,6 +29,7 @@
     drawingUrl,
     outputUrl,
     style,
+    reportToken,
     expanded = $bindable(false),
     status = $bindable('idle'),
   }: Props = $props();
@@ -63,9 +67,10 @@
       form.set('output', await outputResponse.blob(), 'output');
       form.set('style', style ?? '');
 
+      const credentials = await aiCredentialHeaders();
       const response = await fetch(apiUrl('/api/report-image'), {
         method: 'POST',
-        headers: await aiCredentialHeaders(),
+        headers: reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
         body: form,
         signal: requestController.signal,
       });

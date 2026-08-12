@@ -6,6 +6,7 @@ import {
   API_KEY_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
   INSTALLATION_ID_HEADER,
+  REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
 import { ERROR_LOG_PREFIX, GENERIC_ERROR_MESSAGE } from '$lib/errorLog';
 import { securityHeadersFor } from '$lib/server/securityHeaders';
@@ -23,8 +24,8 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   // Authorization: admin bearer sessions. X-Access-Token / X-Api-Key: the
   // generate-image credentials (secrets kept out of the query string).
-  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${INSTALLATION_ID_HEADER}`,
-  'Access-Control-Expose-Headers': FREE_GENERATIONS_REMAINING_HEADER,
+  'Access-Control-Allow-Headers': `Content-Type, Authorization, ${ACCESS_TOKEN_HEADER}, ${API_KEY_HEADER}, ${INSTALLATION_ID_HEADER}, ${REPORT_TOKEN_HEADER}`,
+  'Access-Control-Expose-Headers': `${FREE_GENERATIONS_REMAINING_HEADER}, ${REPORT_TOKEN_HEADER}`,
   // Let native clients cache the preflight for a day instead of paying an
   // extra OPTIONS round trip on every cross-origin JSON request.
   'Access-Control-Max-Age': '86400',

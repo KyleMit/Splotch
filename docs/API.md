@@ -7,13 +7,14 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 
 **CORS:** `hooks.server.ts` answers preflights and adds `Access-Control-Allow-Origin: *` to every
 `/api/*` response, with `GET, POST, DELETE, OPTIONS` and the `Content-Type` / `Authorization` /
-`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` headers allowed, plus
-`X-Free-Generations-Remaining` exposed and `Access-Control-Max-Age: 86400` so native clients can
-read the updated allowance and cache the preflight instead of paying an OPTIONS round trip per
-request. The wildcard is safe because every endpoint is either gated by a credential the caller must
-already hold (access token, Gemini key, or admin session) or rate-limited and bounded. The
-credential-less `report` endpoint creates a sanitized private support issue; `csp-report` is
-size-capped and bounded to log lines. Nothing under `/api` uses cookies. See ADR-0007.
+`X-Access-Token` / `X-Api-Key` / `X-Installation-Id` / `X-Report-Token` headers allowed, plus
+`X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
+native clients can read the updated allowance and cache the preflight instead of paying an OPTIONS
+round trip per request. The wildcard is safe because every endpoint is either gated by a credential
+the caller must already hold (access token, Gemini key, or admin session) or rate-limited and
+bounded. The credential-less `report` endpoint creates a sanitized private support issue;
+`csp-report` is size-capped and bounded to log lines. Nothing under `/api` uses cookies. See
+ADR-0007.
 
 **Rate limiting:** unauthenticated oracles are throttled per IP with a sliding window (default 10
 hits/min, `web/src/lib/server/rateLimit.ts`, ADR-0014). Every throttled response uses one standard
@@ -93,8 +94,9 @@ and caps project-funded traffic across all installations and function instances 
 day. Provider failures and safety refusals are not refunded from that daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
-`X-Free-Generations-Remaining`. Exhaustion is `403` with
-`{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
+`X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this picture came
+from here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion
+is `403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
 already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
 child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
@@ -221,32 +223,41 @@ See ADR-0060.
 
 Privately reports the AI result currently visible in `AiImageResult`. This is a separate,
 credentialed endpoint because its multipart body carries child-created image content. It accepts the
-same three credentials as generation, picked client-side by the shared `aiCredentialHeaders()`
-(`web/src/lib/ai/credentials.ts`): `X-Api-Key` (BYOK), `X-Access-Token` (managed invite), or — on
-the free tier, where the caller holds neither — `X-Installation-Id`. A managed token must still be
-active; a BYO key is verified against the provider; the free installation id is checked for shape
-only, exactly as generation checks it. Valid reports are limited to 3/hour per managed token, per
-BYO caller IP, or per free caller IP. Authorization runs before multipart parsing.
+credential each of generation's three tiers can present, picked client-side by the shared
+`aiCredentialHeaders()` (`web/src/lib/ai/credentials.ts`): `X-Api-Key` (BYOK), `X-Access-Token`
+(managed invite), or — on the free tier, where the caller holds neither — `X-Installation-Id` **plus
+`X-Report-Token`**. A managed token must still be active; a BYO key is verified against the
+provider. Valid reports are limited to 3/hour per managed token, per BYO caller IP, or per free
+caller IP. Authorization runs before multipart parsing.
 
-Reporting takes every credential generation takes by design: a picture that could be made must be
-reportable, because the report is the child-safety path for that same output. Requiring the free
-reporter to hold an existing generation grant record was considered and rejected — any caller mints
-one with a single `generate-image` call under the same per-IP budget, so it would gate honest users
-while putting a Netlify Blobs read in front of a safety path that then fails closed during an
-outage. What bounds this path is the per-IP bucket, the body-size cap, and the retention purge.
+The free tier's credential is not generation's. An installation id is a client-generated 64-hex
+string, so accepting it alone would leave an endpoint that writes image blobs and opens private
+issues an unauthenticated public write, bounded only by a rate limiter that ADR-0014 defines as a
+per-instance throttle — reset on cold start, uncoordinated across instances — rather than an
+authorization boundary. Instead `/api/generate-image` mints a **report token** on a successful free
+run (`X-Report-Token`: an HMAC over the installation id and a short expiry, keyed by
+`REPORT_TOKEN_SECRET`) and this endpoint requires it back, so every accepted report traces to a
+generation this server actually performed. With the secret unset, BYOK and managed reporting still
+work and the free path alone answers 503, logged server-side. See ADR-0104's amendment, which also
+records the two rejected alternatives (shape-only acceptance, and requiring a grant record).
 
 ```text
 Content-Type: multipart/form-data
-X-Access-Token: <active token>  # or X-Api-Key, or X-Installation-Id on the free tier
+X-Access-Token: <active token>  # or X-Api-Key, or X-Installation-Id + X-Report-Token on the free tier
 
 drawing=<png|jpeg|webp Blob>
 output=<png|jpeg|webp Blob>
 style=<StyleName or empty>
 ```
 
-The two images must be non-empty and total no more than 4 MiB. `style` is a closed server-side enum:
-an arbitrary value is rejected with 400, and no client-supplied prompt is accepted. The server
-rebuilds the exact light-theme generation prompt from the shared base prompt and selected style.
+The raw multipart body is capped before it is parsed, at the 4 MiB bundle limit plus a fixed budget
+for part headers and boundaries; over that the request is rejected with 413 and never buffered
+whole. The two images must then each be non-empty and together total no more than 4 MiB. The
+pre-parse cap is what bounds the request: the bundle check runs after the payload is already in
+memory and weighs only the two images it keeps, so bytes hidden in a discarded field would otherwise
+pass it. `style` is a closed server-side enum: an arbitrary value is rejected with 400, and no
+client-supplied prompt is accepted. The server rebuilds the exact light-theme generation prompt from
+the shared base prompt and selected style.
 
 After the client disclosure is confirmed through the dedicated image-report policy configured in
 Parent Center, the server writes four objects to the site-wide `ai-image-reports` Netlify Blobs
@@ -266,6 +277,12 @@ hours. See ADR-0104.
 { "ok": false, "error": "That picture could not be reported." }
 // 400 — the free tier sent no well-formed installation id
 { "ok": false, "error": "Installation grant unavailable" }
+// 403 — the free tier's report token is missing, forged, or minted for another installation
+{ "ok": false, "error": "Invalid access token" }
+// 403 — the free tier's report token has expired
+{ "ok": false, "error": "That picture can no longer be reported." }
+// 413 — the raw multipart body exceeds the pre-parse cap
+{ "ok": false, "error": "That picture is too large to report." }
 // 403 — invalid or expired generation credential
 { "ok": false, "error": "Invalid access token" }
 // 503 — private reporting or evidence storage unavailable

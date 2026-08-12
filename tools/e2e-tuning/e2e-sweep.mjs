@@ -49,6 +49,7 @@ export const SWEEP_SERVER_ENV = {
   GEMINI_API_KEY: 'not-a-usable-gemini-key',
   GITHUB_ISSUE_TOKEN: '',
   GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
+  REPORT_TOKEN_SECRET: 'test-report-token-secret',
 };
 
 /** Every test execution in a Playwright JSON report, flattened. */

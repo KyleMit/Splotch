@@ -10,7 +10,7 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
-import { FREE_GENERATIONS_REMAINING_HEADER } from '$lib/apiHeaders';
+import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 import { aiCredentialHeaders } from '$lib/ai/credentials';
 import {
   setFreeGenerationsRemaining,
@@ -192,7 +192,11 @@ function buildRequest(
 // Drive the run's terminal UI transition from the parsed response: fail on any of
 // the three error kinds, or commit the image. Returns the committed blob only when
 // the image landed and the run still owns the UI, proving it is safe to auto-save.
-function applyResponse(runId: number, response: AiImageResponse): { committedBlob: Blob } | null {
+function applyResponse(
+  runId: number,
+  response: AiImageResponse,
+  reportToken: string | null
+): { committedBlob: Blob } | null {
   switch (response.kind) {
     case 'safety':
       failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety');
@@ -227,7 +231,12 @@ function applyResponse(runId: number, response: AiImageResponse): { committedBlo
       );
       return null;
   }
-  return finishAiGeneration(runId, URL.createObjectURL(response.blob), response.blob.type)
+  return finishAiGeneration(
+    runId,
+    URL.createObjectURL(response.blob),
+    response.blob.type,
+    reportToken
+  )
     ? { committedBlob: response.blob }
     : null;
 }
@@ -274,7 +283,7 @@ export async function generateAiImage({
       if (Number.isInteger(remaining)) setFreeGenerationsRemaining(remaining);
     }
     const response = await readAiImageResponse(res);
-    const committed = applyResponse(runId, response);
+    const committed = applyResponse(runId, response, res.headers.get(REPORT_TOKEN_HEADER));
     if (committed && settings.autoSaveAiEnabled) {
       await autoSaveImages(committed.committedBlob, exported.preview, runId);
     }

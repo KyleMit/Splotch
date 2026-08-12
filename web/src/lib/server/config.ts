@@ -9,4 +9,5 @@ export const config = {
   geminiApiKey: () => env.GEMINI_API_KEY,
   githubIssueToken: () => env.GITHUB_ISSUE_TOKEN,
   githubIssueRepo: () => env.GITHUB_ISSUE_REPO?.trim() || DEFAULT_GITHUB_ISSUE_REPO,
+  reportTokenSecret: () => env.REPORT_TOKEN_SECRET,
 };
