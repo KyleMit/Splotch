@@ -8,6 +8,8 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
+  import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
   import {
     timestamp,
@@ -45,8 +47,24 @@
   let progress = $state(0);
   const loading = $derived(aiResult.open && !revealed && !aiResult.error);
   let exiting = $state(false);
-  let reportExpanded = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
+  let reportOrigin = $state<Origin | null>(null);
+
+  // The strip carries the button that launches the confirm dialog, so it stays
+  // mounted for as long as that dialog is up: a <dialog> hands focus back to
+  // whatever held it before showModal(), and a launcher that unmounted in the
+  // meantime leaves that a detached node — dismissing would drop a keyboard
+  // user on <body>, outside the result they were in. It gives way only once the
+  // footer has a status message to carry the outcome instead.
+  const reportSettled = $derived(reportStatus === 'success' || reportStatus === 'error');
+
+  // The gate proves an adult is present; the confirmation that follows is the
+  // last step before an irreversible send. Reversing the two would let a parent
+  // solve the sum only to discover the report had already gone.
+  function requestReport(event: MouseEvent & { currentTarget: HTMLElement }) {
+    reportOrigin = buttonCenter(event.currentTarget);
+    requireParentalGate('imageReport', () => (reportStatus = 'confirm'), reportOrigin);
+  }
 
   const DEFAULT_ASPECT = 4 / 3;
   const MIN_BLUR_PX = 2;
@@ -126,7 +144,6 @@
   class="ai-result-modal modal-dialog modal-shell"
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
-  class:report-expanded={reportExpanded}
   class:loading
   bind:this={dialogEl}
   use:modalDialog={() => ({
@@ -242,7 +259,7 @@
             drawingUrl={aiResult.previewUrl}
             outputUrl={aiResult.resultUrl}
             style={aiResult.style}
-            bind:expanded={reportExpanded}
+            origin={reportOrigin}
             bind:status={reportStatus}
           />
         </div>
@@ -252,11 +269,8 @@
 
   <!-- Stays mounted through the polaroid send-off so it fades out with the rest
        of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
-  {#if revealed && aiResult.resultUrl && reportStatus === 'idle'}
-    <AiResultDisclosure
-      onclick={() => (reportStatus = 'confirm')}
-      disabled={!aiResult.previewUrl}
-    />
+  {#if revealed && aiResult.resultUrl && !reportSettled}
+    <AiResultDisclosure onclick={requestReport} disabled={!aiResult.previewUrl} />
   {/if}
 </dialog>
 
@@ -274,16 +288,14 @@
        for a transform-centered fixed dialog). The image is centered inside with
        side spacing, so a tall render reads as a framed card rather than a strip. */
     width: min(96vw, 560px);
-    max-height: 96dvh;
-    overflow: visible;
-  }
-
-  /* Whenever the disclosure strip is on screen the card gives up the room it
-     needs below (mirrored above, since the card is transform-centered) — so a
-     short viewport shrinks the picture instead of pushing the strip off-screen.
-     The confirmation state replaces the strip, and keeps the plain 96dvh above. */
-  .ai-result-modal:not(.report-expanded) {
+    /* The disclosure strip hangs below the card, so the card gives up the room
+       the strip needs (mirrored above, since the card is transform-centered) —
+       a short viewport shrinks the picture instead of pushing the strip
+       off-screen. The reserve is unconditional so tapping Report, which stands
+       a confirmation in front of this card, never resizes the picture behind
+       it. */
     max-height: calc(100dvh - var(--report-strip-reserve));
+    overflow: visible;
   }
 
   .ai-result-content {
@@ -351,12 +363,6 @@
 
   .ai-result-modal.loading:not(.autosave) .stage-sizer {
     max-height: calc(100dvh - var(--result-loading-reserve) - var(--report-strip-reserve));
-  }
-
-  .ai-result-modal.report-expanded .stage-sizer {
-    /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
-       ordinary footer above needs much less room. */
-    max-height: calc(96dvh - 276px);
   }
 
   /* No image yet (modal opened before the export finished): a definite width so
