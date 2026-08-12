@@ -25,6 +25,7 @@ import {
   POLICY_CASES,
   validateCodexConfig,
   validateManagedRules,
+  validateSkillExecutionContract,
 } from '../../.agents/skills/run-claude/scripts/check-codex-policy.mjs';
 import {
   EXPECTED_HOME,
@@ -204,6 +205,49 @@ describe('trusted Claude PR reviewer', () => {
 });
 
 describe('run-claude Codex policy', () => {
+  it('requires the skill to enter the host approval boundary before invoking wrappers', () => {
+    const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
+    expect(() => validateSkillExecutionContract(skill)).not.toThrow();
+    expect(() =>
+      validateSkillExecutionContract(
+        skill.replace(
+          'After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.',
+          'Complete ordinary invocations with manual user steps.'
+        )
+      )
+    ).toThrow('seamless invocation instruction');
+    expect(() =>
+      validateSkillExecutionContract(
+        skill.replace(
+          '`sandbox_permissions: "require_escalated"`',
+          '`sandbox_permissions: "use_default"`'
+        )
+      )
+    ).toThrow('host escalation instruction');
+    expect(() =>
+      validateSkillExecutionContract(
+        skill.replace(
+          'Never run an installed wrapper in the sandbox first.',
+          'Run an installed wrapper in the sandbox first.'
+        )
+      )
+    ).toThrow('sandbox-first prohibition');
+  });
+
+  it('documents every one-time setup and verification command in the skill notes', () => {
+    const notes = readFileSync(join(repositoryRoot, '.agents/skill-notes/run-claude.md'), 'utf8');
+    for (const required of [
+      'cd /Users/kylemit/Code/Splotch',
+      'npm run run-claude:install',
+      'Restart Codex',
+      'npm run run-claude:policy:check',
+      '/Users/kylemit/.local/libexec/splotch-claude-health.mjs',
+      'No per-invocation setup command is required.',
+    ]) {
+      expect(notes).toContain(required);
+    }
+  });
+
   it('upserts top-level approval policy before TOML tables', () => {
     let config = 'model = "gpt"\n\n[features]\napps = true\n';
     config = upsertTopLevelToml(config, 'approval_policy', 'on-request');

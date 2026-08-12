@@ -37,6 +37,17 @@ The prefix rules are not a complete remote security perimeter. Repository protec
 scoped credentials remain the hard remote guarantees; Auto-review evaluates operations that reach
 the escalation boundary.
 
+Call every installed wrapper through `exec_command` with `sandbox_permissions: "require_escalated"`
+on its first attempt. A `prompt` decision in the installed policy reviews an explicitly escalated
+command; it does not turn a default sandboxed invocation into host execution. The sandbox cannot
+read the Keychain login, so a sandboxed health failure does not establish that the installation or
+Claude authentication is stale.
+
+Once installation and policy checks pass, ordinary `ask` and `inspect` executions require no manual
+user step. Their escalation requests go to Auto-review, while the fixed prefix rules and each
+wrapper's internal contract retain the narrow authority described above. A denial remains a real
+stop or safer-path signal; never route around it.
+
 Run `npm run run-claude:policy:check` before use. Use
 `codex execpolicy check --rules ~/.codex/rules/default.rules --pretty < command.txt` to inspect the
 effective decisions after installation.

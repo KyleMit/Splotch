@@ -12,6 +12,15 @@ const EXPECTED_CONFIG = {
   approvals_reviewer: 'auto_review',
   sandbox_mode: 'workspace-write',
 };
+const SKILL_PATH = fileURLToPath(new URL('../SKILL.md', import.meta.url));
+const REQUIRED_SKILL_EXECUTION_CONTRACT = new Map([
+  [
+    'seamless invocation instruction',
+    'After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.',
+  ],
+  ['host escalation instruction', '`sandbox_permissions: "require_escalated"`'],
+  ['sandbox-first prohibition', 'Never run an installed wrapper in the sandbox first.'],
+]);
 
 // Exported so the installer-path drift guard covers the commands evaluated by Codex.
 export const POLICY_CASES = [
@@ -49,6 +58,14 @@ export function validateManagedRules(content) {
   }
 }
 
+export function validateSkillExecutionContract(content) {
+  for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
+    if (!content.includes(requirement)) {
+      throw new Error(`run-claude skill is missing its ${name}`);
+    }
+  }
+}
+
 export function evaluateDecision(command) {
   const result = spawnSync(
     'codex',
@@ -66,6 +83,7 @@ export function checkCodexPolicy() {
   for (const path of Object.values(CODEX_POLICY_PATHS)) {
     if (!existsSync(path)) throw new Error(`missing Codex policy file: ${path}`);
   }
+  validateSkillExecutionContract(readFileSync(SKILL_PATH, 'utf8'));
   validateCodexConfig(readFileSync(CODEX_POLICY_PATHS.config, 'utf8'));
   validateManagedRules(readFileSync(CODEX_POLICY_PATHS.rules, 'utf8'));
   for (const { command, expected } of POLICY_CASES) {
