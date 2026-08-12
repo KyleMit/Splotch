@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { slide } from 'svelte/transition';
   import ToggleRow from './ToggleRow.svelte';
   import SliderRow from './SliderRow.svelte';
@@ -62,16 +63,34 @@
   let toolsBlockWidth = $state(0);
   const useChips = $derived(toolsBlockWidth >= TWO_COLUMN_CHIP_WIDTH_PX);
 
+  const focusedToolId = (): DrawingToolId | null => {
+    const id = document.activeElement?.id;
+    return DRAWING_TOOLS.some((tool) => tool.id === id) ? (id as DrawingToolId) : null;
+  };
+
+  // A skin change destroys the control the parent was on and mounts the other
+  // skin's in its place, which drops focus to <body> — a keyboard user resizing
+  // the window or zooming the browser would have to tab in from the top again.
+  // The tool's id is the same element under either skin, so it is what carries
+  // focus across the swap.
+  async function measureBlock(width: number) {
+    if (width === toolsBlockWidth) return;
+    const swapsSkin = width >= TWO_COLUMN_CHIP_WIDTH_PX !== useChips;
+    const refocus = swapsSkin ? focusedToolId() : null;
+    toolsBlockWidth = width;
+    if (!refocus) return;
+    await tick();
+    document.getElementById(refocus)?.focus();
+  }
+
   $effect(() => {
     const block = toolsBlockEl;
     if (!block) return;
     // Seeded synchronously so the first paint already carries the right skin —
     // the dialog is closed rather than unmounted, so a block mounted at zero
     // width (or reopened at another one) is corrected by the observer below.
-    toolsBlockWidth = block.clientWidth;
-    const observer = new ResizeObserver(([entry]) => {
-      toolsBlockWidth = entry.contentRect.width;
-    });
+    measureBlock(block.clientWidth);
+    const observer = new ResizeObserver(([entry]) => measureBlock(entry.contentRect.width));
     observer.observe(block);
     return () => observer.disconnect();
   });

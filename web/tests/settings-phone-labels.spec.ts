@@ -124,6 +124,33 @@ for (const { device, width, height, toolSkin } of PHONE_VIEWPORTS) {
   });
 }
 
+// The two skins render different elements for the same tool, so crossing the
+// width mid-session destroys whatever the parent had focused — a keyboard user
+// resizing the window, or zooming the browser, would otherwise land back on
+// <body> and have to tab in from the top again. Driven in both directions
+// because only one of them is the swap the parent is looking at.
+test('a tool keeps focus when the block crosses into the other skin', async ({ page }) => {
+  const [narrow, wide] = PHONE_VIEWPORTS;
+  await openHub(page, wide.width, wide.height);
+  await openHubSection(page, 'controls', '#advancedControlsToggle');
+  await expect(page.locator('.control-chips')).toHaveCount(1);
+
+  const focusedId = () => page.evaluate(() => document.activeElement?.id ?? '');
+
+  await page.locator('#magicBrushToggle').focus();
+  expect(await focusedId()).toBe('magicBrushToggle');
+
+  // Chips out, rows in. The skin assertion comes first so a swap that never
+  // happened can't pass this as retained focus.
+  await page.setViewportSize({ width: narrow.width, height: narrow.height });
+  await expect(page.locator('.tool-rows')).toHaveCount(1);
+  await expect.poll(focusedId).toBe('magicBrushToggle');
+
+  await page.setViewportSize({ width: wide.width, height: wide.height });
+  await expect(page.locator('.control-chips')).toHaveCount(1);
+  await expect.poll(focusedId).toBe('magicBrushToggle');
+});
+
 test('the save-folder row seats its label and its action without collision', async ({ page }) => {
   const { width, height } = PHONE_VIEWPORTS[0];
   await openHub(page, width, height);
