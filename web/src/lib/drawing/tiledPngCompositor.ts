@@ -1,14 +1,27 @@
+import {
+  createOffscreenCanvas2dSurface,
+  type RecoverableCanvas2dSurface,
+} from './canvasContextRecovery';
 import { drawExportOverlay, paintExportPaper } from './exportCompositor';
 import type { TiledPngInput } from './pngEncoderProtocol';
 
-export function composeTiledPngCanvas(data: TiledPngInput): OffscreenCanvas {
+export function createTiledPngSurface(data: TiledPngInput): RecoverableCanvas2dSurface {
   const width = Math.round((data.sourceWidth / data.sourceScale) * data.exportScale);
   const height = Math.round((data.sourceHeight / data.sourceScale) * data.exportScale);
+  return createOffscreenCanvas2dSurface(
+    width,
+    height,
+    'PNG encoder could not allocate a 2D context'
+  );
+}
+
+export function paintTiledPngSurface(
+  { canvas, context }: RecoverableCanvas2dSurface,
+  data: TiledPngInput
+) {
+  const { width, height } = canvas;
   const logicalWidth = width / data.exportScale;
   const logicalHeight = height / data.exportScale;
-  const canvas = new OffscreenCanvas(width, height);
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('PNG encoder could not allocate a 2D context');
 
   paintExportPaper(context, {
     width: logicalWidth,
@@ -29,7 +42,6 @@ export function composeTiledPngCanvas(data: TiledPngInput): OffscreenCanvas {
       { width: logicalWidth, height: logicalHeight, scale: data.exportScale }
     );
   }
-  return canvas;
 }
 
 export function createTiledPngPreview(canvas: OffscreenCanvas, previewWidth: number): ImageBitmap {

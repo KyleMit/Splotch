@@ -93,6 +93,12 @@ function createPngEncoder(): PngEncoder {
       }
       return;
     }
+    if ('error' in event.data && event.data.code !== undefined) {
+      const error = new Error(event.data.error);
+      encoder.terminate(error);
+      if (cachedEncoder === encoder) cachedEncoder = null;
+      return;
+    }
     clearTimeout(request.timeoutId);
     pending.delete(event.data.id);
     if ('error' in event.data) {
@@ -103,6 +109,11 @@ function createPngEncoder(): PngEncoder {
   });
   worker.addEventListener('error', (event) => {
     const error = new Error(event.message || 'PNG encoder worker failed');
+    encoder.terminate(error);
+    if (cachedEncoder === encoder) cachedEncoder = null;
+  });
+  worker.addEventListener('messageerror', () => {
+    const error = new Error('PNG encoder worker response could not be decoded');
     encoder.terminate(error);
     if (cachedEncoder === encoder) cachedEncoder = null;
   });

@@ -79,25 +79,36 @@ function mountPolaroidAnimation(canvas: HTMLCanvasElement, size: PolaroidSize) {
   document.body.appendChild(overlay);
 }
 
-function playPolaroidAnimation(preview: ImageBitmap, size: PolaroidSize) {
-  const canvas = document.createElement('canvas');
-  canvas.width = preview.width;
-  canvas.height = preview.height;
+function paintPolaroidPreview(canvas: HTMLCanvasElement, preview: ImageBitmap) {
   const context = canvas.getContext('2d');
   if (!context) {
     preview.close();
-    return;
+    return false;
   }
+  canvas.width = preview.width;
+  canvas.height = preview.height;
   context.drawImage(preview, 0, 0);
   preview.close();
-  mountPolaroidAnimation(canvas, size);
+  return true;
 }
 
 export function createPolaroidPreviewRequest(): PolaroidPreviewRequest | null {
   const size = polaroidSize();
   if (!size) return null;
+  let canvas: HTMLCanvasElement | null = null;
   return {
     width: size.rasterWidth,
-    onReady: (preview) => playPolaroidAnimation(preview, size),
+    onReady: (preview) => {
+      if (canvas && !canvas.isConnected) {
+        preview.close();
+        return;
+      }
+      const target = canvas ?? document.createElement('canvas');
+      if (!paintPolaroidPreview(target, preview)) return;
+      if (!canvas) {
+        canvas = target;
+        mountPolaroidAnimation(canvas, size);
+      }
+    },
   };
 }
