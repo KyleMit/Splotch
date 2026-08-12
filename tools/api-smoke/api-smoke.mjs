@@ -81,8 +81,10 @@ async function checkCorsContract(base, noAuth) {
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
     'access-control-allow-headers':
-      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id',
-    'access-control-expose-headers': 'X-Free-Generations-Remaining',
+      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id, X-Report-Token',
+    // X-Report-Token is sent one way and read back the other, so it appears in
+    // both lists: generate-image returns it, report-image consumes it.
+    'access-control-expose-headers': 'X-Free-Generations-Remaining, X-Report-Token',
     'access-control-max-age': '86400',
   };
   const wrongCors = (res) =>
@@ -247,16 +249,38 @@ async function checkReport(base) {
 }
 
 async function checkImageReport(base) {
-  const form = new FormData();
-  form.set('drawing', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'drawing.png');
-  form.set('output', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'output.png');
-  form.set('style', 'Magical');
-  const response = await fetch(`${base}/api/report-image`, { method: 'POST', body: form });
+  const imageReportForm = () => {
+    const form = new FormData();
+    form.set('drawing', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'drawing.png');
+    form.set('output', new Blob([tinyPngBuffer()], { type: 'image/png' }), 'output.png');
+    form.set('style', 'Magical');
+    return form;
+  };
+  const response = await fetch(`${base}/api/report-image`, {
+    method: 'POST',
+    body: imageReportForm(),
+  });
   const body = await json(response);
   check(
     'report-image with private reporting unconfigured → 503 {ok:false, error}',
     response.status === 503 && body?.ok === false && typeof body?.error === 'string',
     `got ${response.status} ${JSON.stringify(body)}`
+  );
+
+  // The configuration probe short-circuits ahead of authorization, so this
+  // harness cannot reach the credential branches — reporting is deliberately
+  // unconfigured here. What it does pin is that the free credential is never the
+  // thing that fails: were authorization to move ahead of the probe, a
+  // report-image missing the free branch would answer 403 here instead (#960).
+  const free = await fetch(`${base}/api/report-image`, {
+    method: 'POST',
+    headers: { 'X-Installation-Id': 'a'.repeat(64) },
+    body: imageReportForm(),
+  });
+  check(
+    'report-image with a free installation id → not a credential rejection',
+    free.status !== 403,
+    `got ${free.status} ${JSON.stringify(await json(free))}`
   );
 }
 
@@ -512,6 +536,9 @@ try {
       GITHUB_ISSUE_TOKEN: '',
       // A repo that does not exist — blank falls back to the real one.
       GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
+      // Non-blank so the free report path fails on the credential it is being
+      // checked for, rather than on an unconfigured signing secret.
+      REPORT_TOKEN_SECRET: 'smoke-report-token-secret',
     },
   }));
 

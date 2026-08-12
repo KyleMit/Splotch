@@ -7,25 +7,34 @@
   import StatusMessage from './design/StatusMessage.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { apiUrl } from '$lib/api';
-  import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+  import { aiCredentialHeaders } from '$lib/ai/credentials';
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
   import type { StyleName } from '$lib/ai/styles';
+  import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
   import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
   import type { Origin } from '$lib/state/modal.svelte';
-  import { settings } from '$lib/state/settings.svelte';
   import type { ImageReportResponse } from '../../routes/api/report-image/+server';
 
   interface Props {
     drawingUrl: string | null;
     outputUrl: string;
     style: StyleName | null;
+    /** The free tier's proof of generation; null on the BYOK and managed paths. */
+    reportToken: string | null;
     /** The Report control's center, for the confirm dialog's fly-in. */
     origin?: Origin | null;
     status?: ImageReportStatus;
   }
 
-  let { drawingUrl, outputUrl, style, origin = null, status = $bindable('idle') }: Props = $props();
+  let {
+    drawingUrl,
+    outputUrl,
+    style,
+    reportToken,
+    origin = null,
+    status = $bindable('idle'),
+  }: Props = $props();
 
   const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
 
@@ -79,12 +88,10 @@
       form.set('output', await outputResponse.blob(), 'output');
       form.set('style', style ?? '');
 
-      const headers = new Headers();
-      if (settings.aiUserApiKey) headers.set(API_KEY_HEADER, settings.aiUserApiKey);
-      else headers.set(ACCESS_TOKEN_HEADER, settings.aiAccessToken);
+      const credentials = await aiCredentialHeaders();
       const response = await fetch(apiUrl('/api/report-image'), {
         method: 'POST',
-        headers,
+        headers: reportToken ? { ...credentials, [REPORT_TOKEN_HEADER]: reportToken } : credentials,
         body: form,
         signal: requestController.signal,
       });

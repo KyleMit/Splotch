@@ -10,6 +10,13 @@ import {
 } from './imageReportStore';
 
 const MAX_REPORT_BUNDLE_BYTES = 4 * 1024 * 1024;
+// `submitImageReport` bounds the two images it keeps, but only after the whole
+// multipart payload is buffered, and it never sees the parts it discards — so
+// two tiny images plus a huge unused field would sail past it. The route caps
+// the raw body at this before parsing: the bundle limit plus a budget for part
+// headers, boundaries, and the style field.
+const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
+export const MAX_REPORT_REQUEST_BYTES = MAX_REPORT_BUNDLE_BYTES + MULTIPART_OVERHEAD_BYTES;
 const IMAGE_REPORT_LABELS = ['user-report', 'area:ai-art', 'type:bug'];
 
 export interface ImageReportInput {

@@ -9,6 +9,9 @@ export interface AiResultState {
   resultType: string | null;
   previewUrl: string | null;
   style: StyleName | null;
+  // Proof this picture came from a free run on this server, spent by the report
+  // flow. Null on the BYOK and managed paths, which carry their own credential.
+  reportToken: string | null;
   // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
   // 'retry'   — a transient failure (timeout, server); the same drawing may work.
   // 'generic' — anything else.
@@ -22,6 +25,7 @@ export const aiResult: AiResultState = $state({
   resultType: null,
   previewUrl: null,
   style: null,
+  reportToken: null,
   error: null,
 });
 
@@ -46,6 +50,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     resultState.previewUrl = swapObjectUrl(resultState.previewUrl, previewUrl);
     resultState.resultUrl = swapObjectUrl(resultState.resultUrl);
     resultState.resultType = null;
+    resultState.reportToken = null;
     resultState.error = null;
   }
 
@@ -88,13 +93,19 @@ export function createAiGenerationMachine(resultState: AiResultState) {
 
   // The finished image has arrived — hand it to the modal so the dial can race to
   // completion and reveal it.
-  function finishAiGeneration(id: number, url: string, imageType: string): boolean {
+  function finishAiGeneration(
+    id: number,
+    url: string,
+    imageType: string,
+    reportToken: string | null = null
+  ): boolean {
     if (!isAiGenerationActive(id) || !resultState.open) {
       URL.revokeObjectURL(url);
       return false;
     }
     resultState.resultUrl = swapObjectUrl(resultState.resultUrl, url);
     resultState.resultType = imageType;
+    resultState.reportToken = reportToken;
     resultState.generating = false;
     return true;
   }
