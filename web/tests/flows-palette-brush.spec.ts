@@ -80,13 +80,18 @@ async function waitForStableCanvasInkStats(
   region: { x: number; y: number; width: number; height: number }
 ): Promise<CanvasInkStats> {
   let previousCount = 0;
+  let previousAlphaSum = 0;
   let settled: CanvasInkStats | undefined;
   await expect
     .poll(
       async () => {
         const current = await canvasInkStats(page, region);
-        const stable = current.count > 0 && current.count === previousCount;
+        const stable =
+          current.count > 0 &&
+          current.count === previousCount &&
+          current.alphaSum === previousAlphaSum;
         previousCount = current.count;
+        previousAlphaSum = current.alphaSum;
         if (stable) settled = current;
         return stable;
       },
