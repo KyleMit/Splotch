@@ -57,10 +57,11 @@ Complete preflight before creating any branch or PR:
    unique, in this repository, and actionable in the requested order.
 4. Read and follow the Codex-only `run-claude` skill, then run `npm run issue-stack:policy:check`.
    Invoke its fixed read-only authentication probe
-   `/Users/kylemit/.local/libexec/splotch-claude-health.mjs` outside the sandbox and verify GitHub
-   authentication. A failed policy or authentication check is a global blocker: tell the user to run
-   `npm run issue-stack:install` and restart Codex; do not change user configuration during an
-   unattended queue. Do not fall back to raw `claude` or weaken its permission mode.
+   `/Users/kylemit/.local/libexec/splotch-claude-health.mjs` outside the sandbox, then run
+   `gh auth status --hostname github.com` outside the sandbox. A failed policy or authentication
+   check is a global blocker: tell the user to run `npm run issue-stack:install` and restart Codex;
+   do not change user configuration during an unattended queue. Do not fall back to raw `claude` or
+   weaken its permission mode.
 5. Require `gh stack --version` to report `0.1.0`. Another version is a global blocker unless the
    user authorized that exact version after its `link` and `unstack` behavior was validated. Use
    GitHub MCP for operations it covers; use `gh` for authenticated CLI-only operations, especially

@@ -72,10 +72,11 @@ function isWithin(path, root) {
   return pathFromRoot === '' || (!pathFromRoot.startsWith('..') && !isAbsolute(pathFromRoot));
 }
 
-export function readPromptFile(path) {
+// Injectable roots keep the boundary testable from noncanonical checkouts without weakening it.
+export function readPromptFile(path, allowedRoots = ALLOWED_PROMPT_ROOTS) {
   if (!isAbsolute(path)) throw new Error('--prompt-file must be absolute');
   const promptPath = realpathSync(path);
-  if (!ALLOWED_PROMPT_ROOTS.some((root) => isWithin(promptPath, root))) {
+  if (!allowedRoots.some((root) => isWithin(promptPath, root))) {
     throw new Error('--prompt-file must be under /private/tmp or a Splotch checkout');
   }
   const promptStats = statSync(promptPath);

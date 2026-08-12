@@ -3,15 +3,18 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   assertClaudePlanAuthentication,
   assertNoApiBillingEnvironment,
 } from './splotch-claude-subscription-auth.mjs';
 
-const CLAUDE = '/Users/kylemit/.local/bin/claude';
-const MANIFEST = '/Users/kylemit/.config/splotch-run-claude/manifest.json';
+export const HEALTH_PATHS = {
+  claude: '/Users/kylemit/.local/bin/claude',
+  manifest: '/Users/kylemit/.config/splotch-run-claude/manifest.json',
+  subscriptionAuth: '/Users/kylemit/.local/libexec/splotch-claude-subscription-auth.mjs',
+};
 
 function digest(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -30,16 +33,14 @@ function capture(command, arguments_) {
 
 export function checkClaudeAuthentication(environment = process.env) {
   assertNoApiBillingEnvironment(environment);
-  const manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
-  const installedDirectory = dirname(resolve(process.argv[1]));
-  const subscriptionAuth = resolve(installedDirectory, 'splotch-claude-subscription-auth.mjs');
+  const manifest = JSON.parse(readFileSync(HEALTH_PATHS.manifest, 'utf8'));
   if (
     manifest.healthSha256 !== digest(resolve(process.argv[1])) ||
-    manifest.subscriptionAuthSha256 !== digest(subscriptionAuth)
+    manifest.subscriptionAuthSha256 !== digest(HEALTH_PATHS.subscriptionAuth)
   ) {
     throw new Error('trusted Claude health files differ from the installed manifest');
   }
-  assertClaudePlanAuthentication(JSON.parse(capture(CLAUDE, ['auth', 'status'])));
+  assertClaudePlanAuthentication(JSON.parse(capture(HEALTH_PATHS.claude, ['auth', 'status'])));
   console.log('Claude plan authentication is available outside the Codex sandbox');
 }
 

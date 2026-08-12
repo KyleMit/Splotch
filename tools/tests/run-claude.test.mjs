@@ -1,25 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { join, relative, resolve } from 'node:path';
 import {
   buildClaudeArgs,
   buildRunnerPrompt,
   parseRunArgs,
   readPromptFile,
+  RUNNER_PATHS,
 } from '../../.agents/skills/run-claude/scripts/claude-run.mjs';
 import {
   buildAuthorizationPrompt,
   parseReviewerArgs,
+  REVIEWER_PATHS,
 } from '../../.agents/skills/run-claude/scripts/claude-review-publish.mjs';
+import { HEALTH_PATHS } from '../../.agents/skills/run-claude/scripts/claude-health.mjs';
 import {
+  POLICY_RULES,
   replaceManagedRules,
   upsertTopLevelToml,
 } from '../../.agents/skills/run-claude/scripts/install-codex-policy.mjs';
 import {
+  POLICY_CASES,
   validateCodexConfig,
   validateManagedRules,
 } from '../../.agents/skills/run-claude/scripts/check-codex-policy.mjs';
-import { expectedRunClaudeFiles } from '../../.agents/skills/run-claude/scripts/install-run-claude.mjs';
+import {
+  EXPECTED_HOME,
+  expectedRunClaudeFiles,
+  INSTALL_PATHS,
+} from '../../.agents/skills/run-claude/scripts/install-run-claude.mjs';
 import {
   assertClaudePlanAuthentication,
   assertNoApiBillingEnvironment,
@@ -51,10 +61,17 @@ describe('output-only Claude runner', () => {
   });
 
   it('reads prompts only from bounded regular files', () => {
-    const prompt = readPromptFile(join(repositoryRoot, 'tools/tests/run-claude.test.mjs'));
-    expect(prompt).toContain("describe('output-only Claude runner'");
-    expect(() => readPromptFile('relative.txt')).toThrow('must be absolute');
-    expect(() => readPromptFile('/etc/hosts')).toThrow('must be under');
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-run-claude-test-'));
+    try {
+      const promptPath = join(temporaryRoot, 'prompt.txt');
+      writeFileSync(promptPath, 'ping');
+      const allowedRoots = [realpathSync(temporaryRoot)];
+      expect(readPromptFile(promptPath, allowedRoots)).toBe('ping');
+      expect(() => readPromptFile('relative.txt', allowedRoots)).toThrow('must be absolute');
+      expect(() => readPromptFile('/etc/hosts', allowedRoots)).toThrow('must be under');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
   });
 
   it('gives ask no tools and inspect only read tools', () => {
@@ -71,6 +88,11 @@ describe('output-only Claude runner', () => {
       effort: 'medium',
     });
     expect(ask.slice(ask.indexOf('--tools'), ask.indexOf('--tools') + 2)).toEqual(['--tools', '']);
+    expect(ask.slice(ask.indexOf('--tools'), ask.indexOf('--tools') + 3)).toEqual([
+      '--tools',
+      '',
+      '--safe-mode',
+    ]);
     expect(ask).not.toContain('--allowedTools');
     expect(inspect).toContain('Read,Grep,Glob');
     expect(inspect).not.toContain('Bash');
@@ -80,6 +102,7 @@ describe('output-only Claude runner', () => {
       expect(arguments_).toContain('--no-session-persistence');
       expect(arguments_).not.toContain('--dangerously-skip-permissions');
       expect(arguments_).not.toContain('--bare');
+      expect(arguments_.at(-1)).toContain('AUTHORIZED TASK');
     }
     expect(buildRunnerPrompt({ prompt: 'ping', profile: 'ask' })).toContain(
       'authorizes no external writes'
@@ -180,6 +203,45 @@ describe('run-claude Codex policy', () => {
     config = upsertTopLevelToml(config, 'approval_policy', 'on-request');
     expect(config.match(/^approval_policy = "on-request"$/gm)).toHaveLength(1);
     expect(config.indexOf('approval_policy')).toBeLessThan(config.indexOf('[features]'));
+
+    const profileConfig = 'model = "gpt"\n\n[profiles.fast]\napproval_policy = "never"\n';
+    const updated = upsertTopLevelToml(profileConfig, 'approval_policy', 'on-request');
+    expect(updated.match(/^approval_policy = "on-request"$/gm)).toHaveLength(1);
+    expect(updated).toContain('[profiles.fast]\napproval_policy = "never"');
+  });
+
+  it('keeps standalone wrapper paths aligned with the installer and Codex policy', () => {
+    const installed = Object.fromEntries(
+      Object.entries(INSTALL_PATHS).map(([name, path]) => [
+        name,
+        resolve(EXPECTED_HOME, relative(homedir(), path)),
+      ])
+    );
+    expect(RUNNER_PATHS).toMatchObject({
+      settings: installed.settings,
+      boundary: installed.runnerBoundary,
+      manifest: installed.manifest,
+      subscriptionAuth: installed.subscriptionAuth,
+    });
+    expect(REVIEWER_PATHS).toMatchObject({
+      settings: installed.settings,
+      rubric: installed.rubric,
+      manifest: installed.manifest,
+      subscriptionAuth: installed.subscriptionAuth,
+    });
+    expect(HEALTH_PATHS).toMatchObject({
+      manifest: installed.manifest,
+      subscriptionAuth: installed.subscriptionAuth,
+    });
+
+    const wrapperPaths = [installed.runner, installed.reviewer, installed.health];
+    const policyRulePaths = [
+      ...POLICY_RULES.matchAll(/pattern = \["([^"\]]+libexec[^"\]]+)"\]/g),
+    ].map((match) => match[1]);
+    expect(policyRulePaths).toEqual(wrapperPaths);
+    expect(POLICY_CASES.slice(0, wrapperPaths.length).map(({ command }) => command[0])).toEqual(
+      wrapperPaths
+    );
   });
 
   it('replaces its managed rules idempotently and keeps unrelated rules', () => {

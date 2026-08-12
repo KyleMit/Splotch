@@ -13,7 +13,8 @@ const EXPECTED_CONFIG = {
   sandbox_mode: 'workspace-write',
 };
 
-const POLICY_CASES = [
+// Exported so the installer-path drift guard covers the commands evaluated by Codex.
+export const POLICY_CASES = [
   {
     command: [
       '/Users/kylemit/.local/libexec/splotch-claude-run.mjs',

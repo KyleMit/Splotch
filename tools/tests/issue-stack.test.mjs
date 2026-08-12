@@ -121,6 +121,7 @@ describe('skill contracts', () => {
     expect(stackSkill).toMatch(/`ready_for_review`\s+event/);
     expect(stackSkill).toContain('`gh stack unstack <recorded-stack-number>`');
     expect(stackSkill).toContain('npm run issue-stack:policy:check');
+    expect(stackSkill).toContain('gh auth status --hostname github.com');
     expect(stackSkill).toContain('Codex-only `run-claude` skill');
     expect(stackSkill).toContain("`run-claude` skill's empirical Splotch PR-review profile");
     expect(stackSkill).toContain('Checkpoint every phase transition and external mutation');

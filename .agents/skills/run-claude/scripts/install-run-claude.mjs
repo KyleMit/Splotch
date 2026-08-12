@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const packageDirectory = resolve(scriptDirectory, '..');
 const repositoryRoot = resolve(packageDirectory, '../../..');
-const EXPECTED_HOME = '/Users/kylemit';
+// Exported so the drift guard can normalize homedir()-based paths on noncanonical hosts.
+export const EXPECTED_HOME = '/Users/kylemit';
 const EXPECTED_REPOSITORY_ROOT = '/Users/kylemit/Code/Splotch';
 
 export const INSTALL_PATHS = {

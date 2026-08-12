@@ -36,11 +36,13 @@ ${END_MARKER}`;
 
 export function upsertTopLevelToml(content, key, value) {
   const assignment = `${key} = ${JSON.stringify(value)}`;
-  const pattern = new RegExp(`^${key}\\s*=.*$`, 'm');
-  if (pattern.test(content)) return content.replace(pattern, assignment);
   const tableIndex = content.search(/^\[/m);
+  const topLevel = tableIndex === -1 ? content : content.slice(0, tableIndex);
+  const rest = tableIndex === -1 ? '' : content.slice(tableIndex);
+  const pattern = new RegExp(`^${key}\\s*=.*$`, 'm');
+  if (pattern.test(topLevel)) return `${topLevel.replace(pattern, assignment)}${rest}`;
   if (tableIndex === -1) return `${content.trimEnd()}\n${assignment}\n`;
-  return `${content.slice(0, tableIndex).trimEnd()}\n${assignment}\n\n${content.slice(tableIndex)}`;
+  return `${topLevel.trimEnd()}\n${assignment}\n\n${rest}`;
 }
 
 export function replaceManagedRules(content) {
