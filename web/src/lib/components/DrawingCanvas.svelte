@@ -193,8 +193,8 @@
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
-  // the composition changes, decode the browser-selected file off-DOM, and fade
-  // it in only once ready. A theme sibling has identical registration, so it
+  // the composition changes, decode the browser-selected file off-DOM, and show
+  // it only once ready. A theme sibling has identical registration, so it
   // keeps the current art visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
   let displayedOverlaySrcset = $state<string | null>(null);
@@ -356,8 +356,8 @@
     display: none;
   }
 
-  /* Hidden instantly while the next art variant decodes (no transition on the
-     way out), then faded in once it's ready — see displayedOverlayUrl. */
+  /* Hidden while the next art variant decodes, then shown once it's ready —
+     see displayedOverlayUrl. */
   .coloring-overlay {
     display: block;
     width: 100%;
@@ -368,7 +368,6 @@
 
   .coloring-overlay.overlay-ready {
     opacity: 1;
-    transition: opacity 0.18s ease;
   }
 
   .coloring-overlay[hidden] {

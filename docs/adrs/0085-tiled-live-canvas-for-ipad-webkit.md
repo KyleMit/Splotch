@@ -612,6 +612,27 @@ declick ramp, suspended-clock synchronous mute, un-timestamped stop, both discon
 of an `ended` handler. Do not make teardown depend on audio-clock progress or an `ended` event, and
 do not replace Web Audio with the already-rejected media-element path.
 
+#### Gesture-Start Resume Amendment (2026-08)
+
+A focused production-route campaign later found a separate suspended-context cost. On the first
+Magic stroke in MobileSafari, five measured runs spent 123–127 ms in the first `engine.draw` call
+and reached 135–141 ms maximum frame gaps. Suppressing the renderer did not change the stall;
+suppressing the drawing-audio callback removed it. The trusted XCUITest touch delivered pointer
+events without setting `navigator.userActivation`, so every move called `AudioContext.resume()`
+while the context remained suspended.
+
+`playDrawSound` now attempts to resume a suspended context once when an active gesture first
+requests playback. `stopDrawSound` resets that guard for the next gesture. This preserves the
+user-activation opportunity at gesture start and bounds a denied or unresolved resume attempt away
+from subsequent moves without rate-limiting audible feedback.
+
+Six measured MobileSafari Magic strokes improved from 9/20/141 ms first-frame P95, post-action P95,
+and maximum to 10/18/28 ms. The matching Capacitor run improved from 8/19/38 ms to 8/18/29 ms. All
+twelve final feature checks retained the selected coloring page, Magic output, settled undo state,
+enabled screenshot and Undo controls, and successful page clear. Automation still cannot validate
+audible output because its touch lacks user activation; a human touch remains the acceptance check
+for sound presence and lift-time cutoff.
+
 ### Productization and Regression Protocol
 
 The production reconstruction is the combination of the passing architectures, not any single

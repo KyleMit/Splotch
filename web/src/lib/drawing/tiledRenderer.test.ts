@@ -16,6 +16,7 @@ import {
   repaintTiledRenderer,
   renderTiledOp,
   resizeTiledRenderer,
+  scanTiledRendererIsEmpty,
   tiledHistoryDebug,
   tiledSurfaceTopologyDebug,
   tiledWorkDebug,
@@ -36,7 +37,10 @@ beforeEach(() => {
     kind: string
   ) {
     if (kind !== '2d') return null;
-    const canvas = this as HTMLCanvasElement & { _ctx?: CanvasRenderingContext2D };
+    const canvas = this as HTMLCanvasElement & {
+      _ctx?: CanvasRenderingContext2D;
+      _testHasInk?: boolean;
+    };
     if (canvas._ctx) return canvas._ctx;
     let transform = new DOMMatrix();
     const context = {
@@ -49,12 +53,23 @@ beforeEach(() => {
       save() {},
       restore() {},
       beginPath() {},
+      moveTo() {},
+      quadraticCurveTo() {},
+      stroke() {},
       rect() {},
       clip() {},
-      clearRect: vi.fn(),
-      drawImage: vi.fn(),
+      clearRect: vi.fn(() => {
+        canvas._testHasInk = false;
+      }),
+      drawImage: vi.fn((source: CanvasImageSource) => {
+        canvas._testHasInk = Boolean(
+          (source as HTMLCanvasElement & { _testHasInk?: boolean })._testHasInk
+        );
+      }),
       getImageData(_x: number, _y: number, width: number, height: number) {
-        return { data: new Uint8ClampedArray(width * height * 4) };
+        const data = new Uint8ClampedArray(width * height * 4);
+        if (canvas._testHasInk) data[3] = 255;
+        return { data };
       },
       arc() {},
       fill() {},
@@ -154,6 +169,7 @@ describe('idle tiled canvas visibility', () => {
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
     expect(resizeTiledRenderer(400, 400, 1)).toBe(false);
     expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+    expect(tiledHistoryDebug().patchBytes).toBe(0);
 
     const patchBytesBeforeClear = tiledHistoryDebug().patchBytes;
     const clearCallsBefore = tiles.reduce(
@@ -190,8 +206,18 @@ describe('idle tiled canvas visibility', () => {
     );
     expect(clearCallsAfterDeferredFrames).toBe(clearCallsAfterUndo);
 
-    undoTiledCommand(1);
+    const clearCallsBeforeBlankUndo = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
     expect(tiles.every((tile) => tile.hidden)).toBe(true);
+    expect(
+      tiles.reduce(
+        (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+        0
+      )
+    ).toBe(clearCallsBeforeBlankUndo);
 
     const magic: StrokeOp = { ...dot, magic: true };
     beginTiledCommand(true);
@@ -206,6 +232,127 @@ describe('idle tiled canvas visibility', () => {
     expect(hasUnresolvedTiledMagicOps()).toBe(false);
     commitTiledCommand();
     undoTiledCommand(1);
+  });
+
+  it('restores a blank state after clear without replaying retained history', () => {
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const deferredFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      deferredFrames.push(callback);
+      return deferredFrames.length;
+    });
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+    };
+    const widePath: StrokeOp = {
+      kind: 'path',
+      pid: 1,
+      startX: 25,
+      startY: 50,
+      segs: [{ cx: 200, cy: 50, x: 375, y: 50 }],
+      color: '#ff0000',
+      lineWidth: 10,
+      erase: false,
+    };
+    const draw = (op: StrokeOp, wasEmpty: boolean) => {
+      beginTiledCommand(wasEmpty);
+      renderTiledOp(op);
+      recordTiledOp(op);
+      commitTiledCommand();
+    };
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+
+    draw(dot, true);
+    clearTiledRenderer(false);
+    draw(widePath, true);
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(4);
+
+    const patchBytesBeforeUndo = tiledHistoryDebug().patchBytes;
+    const deferredFramesBeforeUndo = deferredFrames.length;
+    const clearCallsBeforeUndo = tiles.reduce(
+      (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+      0
+    );
+    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: true });
+    expect(tiles.every((tile) => tile.hidden)).toBe(true);
+    expect(tiledHistoryDebug().patchBytes).toBe(patchBytesBeforeUndo);
+    expect(
+      tiles.reduce(
+        (calls, tile) => calls + vi.mocked(tile.getContext('2d')!.clearRect).mock.calls.length,
+        0
+      )
+    ).toBe(clearCallsBeforeUndo);
+    expect(deferredFrames).toHaveLength(deferredFramesBeforeUndo);
+
+    expect(undoTiledCommand(1)).toEqual({ empty: false, canUndo: true });
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+    while (deferredFrames.length) deferredFrames.shift()!(0);
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+
+    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
+    expect(tiles.every((tile) => tile.hidden)).toBe(true);
+  });
+
+  it('ignores hidden stale backings when an eraser only reaches part of a blank canvas', () => {
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const widePath: StrokeOp = {
+      kind: 'path',
+      pid: 1,
+      startX: 25,
+      startY: 50,
+      segs: [{ cx: 200, cy: 50, x: 375, y: 50 }],
+      color: '#ff0000',
+      lineWidth: 10,
+      erase: false,
+    };
+    const eraser: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#000000',
+      erase: true,
+    };
+    const pen: StrokeOp = { ...eraser, color: '#ff0000', erase: false };
+    const draw = (op: StrokeOp, wasEmpty: boolean) => {
+      beginTiledCommand(wasEmpty);
+      renderTiledOp(op);
+      recordTiledOp(op);
+      commitTiledCommand();
+    };
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+
+    draw(widePath, true);
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(4);
+    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: false });
+
+    for (const tile of tiles.slice(1, 4)) {
+      (tile as HTMLCanvasElement & { _testHasInk?: boolean })._testHasInk = true;
+    }
+    draw(eraser, true);
+    expect(tiles.filter((tile) => !tile.hidden)).toHaveLength(1);
+    expect(scanTiledRendererIsEmpty(1)).toBe(true);
+
+    draw(pen, true);
+    expect(undoTiledCommand(1)).toEqual({ empty: true, canUndo: true });
+    expect(tiles.every((tile) => tile.hidden)).toBe(true);
   });
 
   it('counts seam overdraw and lazily realized crayon backings', () => {

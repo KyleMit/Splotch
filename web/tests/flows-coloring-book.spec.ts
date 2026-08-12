@@ -297,6 +297,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
     await expect(overlay).toHaveAttribute('src', /\/cat-wide\.overlay\.webp$/);
     await expect(overlay).toHaveClass(/overlay-ready/);
     await expect(overlay).toHaveCSS('opacity', '1');
+    await expect(overlay).toHaveCSS('transition-duration', '0s');
 
     await openColoringBookGrid(page);
     await expect(dialog.getByRole('heading', { name: 'Coloring Books' })).toBeVisible();

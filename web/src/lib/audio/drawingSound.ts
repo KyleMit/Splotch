@@ -68,6 +68,7 @@ export function preloadDrawSounds() {
 
 export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (!settings.soundEnabled) return;
+  const gestureStarted = !playbackRequested;
   playbackRequested = true;
   requestedSpeed = speed;
   if (isStrokeStart) {
@@ -77,9 +78,9 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   const ctx = audioContext;
   if (!ctx) return;
 
-  // playDrawSound only runs from drawing or slider pointer input. Resume while
-  // that user gesture is active, even if decoding has not finished yet.
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  // A suspended WebKit context may reject synthetic input without changing state.
+  // One attempt per active gesture preserves user activation without charging every move.
+  if (gestureStarted && ctx.state === 'suspended') ctx.resume().catch(() => {});
   if (currentPlayback) updateGain(currentPlayback.gain.gain, speed, ctx.currentTime);
   else startPlaybackIfReady();
 }
