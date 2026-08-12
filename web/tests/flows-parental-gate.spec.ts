@@ -496,7 +496,12 @@ test('sending feedback waits for its parental gate before posting', async ({ pag
   expect(reportRequests).toBe(1);
 });
 
-test('reporting an AI picture waits for its own parental gate before posting', async ({ page }) => {
+// Unlike the flows above, the gate here is not the last thing before the send:
+// a confirmation follows it, so the tap order is Report → gate → confirm →
+// post. Reversed, a parent would solve the sum only to find the report gone.
+test('reporting an AI picture waits for its own parental gate before confirming', async ({
+  page,
+}) => {
   let reportRequests = 0;
   await page.addInitScript(
     (aiImageModeKey) => localStorage.setItem(aiImageModeKey, 'never'),
@@ -524,12 +529,18 @@ test('reporting an AI picture waits for its own parental gate before posting', a
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10000 });
 
   await page.getByRole('button', { name: 'Report this picture' }).click();
-  await page.getByRole('button', { name: 'Send report' }).click();
 
   const gate = page.locator('#parentalGate');
+  const confirm = page.locator('dialog.ai-report-confirm');
   await expect(gate).toBeVisible();
+  await expect(confirm).not.toBeVisible();
   expect(reportRequests).toBe(0);
+
   await solveParentalGate(page);
+  await expect(confirm).toBeVisible();
+  expect(reportRequests).toBe(0);
+
+  await confirm.getByRole('button', { name: 'Send report' }).click();
   await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible({
     timeout: 5000,
   });

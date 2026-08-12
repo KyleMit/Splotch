@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
-import { solveParentalGate } from './flows-harness';
 import { draw, enforceProductionCsp, gotoApp } from './helpers';
 
 // Exercises AiImageResult through the production generation flow. The endpoint
@@ -310,39 +309,34 @@ test.describe('AI result modal', () => {
     expect(reportRequests).toBe(1);
   });
 
-  // The gate proves an adult is present; the confirmation is then the last step
-  // before an irreversible send. Reversed, a parent would solve the sum only to
-  // find the report already gone.
-  test('raises the parental gate before the confirmation, not after it', async ({ page }) => {
+  // The confirmation carries no close disc — Cancel is the dismissal — and it
+  // stands in front of the result rather than replacing anything in it, so
+  // backing out has to leave the card exactly as it was.
+  test('cancelling the report confirmation returns to an untouched result', async ({ page }) => {
     let reportRequests = 0;
     await page.setViewportSize({ width: 390, height: 844 });
     await page.addInitScript(
-      (key) => localStorage.setItem(key, 'always'),
+      (key) => localStorage.setItem(key, 'never'),
       STORAGE_KEYS.parentalGateImageReportMode
     );
     await page.route('**/api/report-image', async (route) => {
       reportRequests += 1;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ ok: true, reportId: 'gated-report-id' }),
-      });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' });
     });
     await revealAiResult(page);
 
+    const before = await revealedBoxes(page);
     const confirm = page.locator('dialog.ai-report-confirm');
     await page.getByRole('button', { name: 'Report this picture' }).click();
-    await expect(page.locator('#parentalGate')).toBeVisible();
-    await expect(confirm).not.toBeVisible();
-
-    await solveParentalGate(page);
     await expect(confirm).toBeVisible();
-    expect(reportRequests).toBe(0);
+    // The picture behind it does not resize to make room, as the old inline
+    // confirmation made it.
+    expect((await revealedBoxes(page)).stage.height).toBeCloseTo(before.stage.height, 0);
 
-    // Cancel is the dismissal, and it leaves the result card as it was.
     await confirm.getByRole('button', { name: 'Cancel' }).click();
     await expect(confirm).not.toBeVisible();
     await expect(page.locator('.ai-result-disclosure')).toBeVisible();
+    expect((await revealedBoxes(page)).card.height).toBeCloseTo(before.card.height, 0);
     expect(reportRequests).toBe(0);
   });
 
