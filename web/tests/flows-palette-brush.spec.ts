@@ -22,10 +22,19 @@ import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-ha
 
 const STROKE_SETTLE_TIMEOUT_MS = 10_000;
 
+interface CanvasInkStats {
+  count: number;
+  strong: number;
+  alphaSum: number;
+  r: number;
+  g: number;
+  b: number;
+}
+
 async function canvasInkStats(
   page: Page,
   region: { x: number; y: number; width: number; height: number }
-): Promise<{ count: number; strong: number; alphaSum: number; r: number; g: number; b: number }> {
+): Promise<CanvasInkStats> {
   const canvas = await renderedCanvasHandle(page);
   try {
     return await canvas.evaluate((rendered, { x, y, width, height }) => {
@@ -64,6 +73,28 @@ async function canvasInkStats(
   } finally {
     await canvas.dispose();
   }
+}
+
+async function waitForStableCanvasInkStats(
+  page: Page,
+  region: { x: number; y: number; width: number; height: number }
+): Promise<CanvasInkStats> {
+  let previousCount = 0;
+  let settled: CanvasInkStats | undefined;
+  await expect
+    .poll(
+      async () => {
+        const current = await canvasInkStats(page, region);
+        const stable = current.count > 0 && current.count === previousCount;
+        previousCount = current.count;
+        if (stable) settled = current;
+        return stable;
+      },
+      { timeout: STROKE_SETTLE_TIMEOUT_MS }
+    )
+    .toBe(true);
+  if (!settled) throw new Error('canvas ink never settled');
+  return settled;
 }
 
 async function waitForCommittedSnapshots(page: Page, snapshots: number) {
@@ -191,15 +222,10 @@ test('the default pen lays solid ink with no crayon buildup', async ({ page }) =
   const region = { x: 220, y: 280, width: 320, height: 80 };
   await draw(page, line);
   await waitForCommittedSnapshots(page, 1);
-  await expect
-    .poll(() => canvasInkStats(page, region).then((stats) => stats.count), {
-      timeout: STROKE_SETTLE_TIMEOUT_MS,
-    })
-    .toBeGreaterThan(200);
-  const first = await canvasInkStats(page, region);
+  const first = await waitForStableCanvasInkStats(page, region);
   await draw(page, line);
   await waitForCommittedSnapshots(page, 2);
-  const second = await canvasInkStats(page, region);
+  const second = await waitForStableCanvasInkStats(page, region);
 
   expect(first.count).toBeGreaterThan(200);
   // Solid fill: nearly every inked pixel is at full strength (only AA edges dip).
