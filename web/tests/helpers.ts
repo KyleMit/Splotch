@@ -366,6 +366,7 @@ export async function firstOpaquePixel(page: Page): Promise<Rgba | null> {
   const canvas = await renderedCanvasHandle(page);
   try {
     return await canvas.evaluate((c): Rgba | null => {
+      if (c.width === 0 || c.height === 0) return null;
       const { data } = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
       for (let i = 3; i < data.length; i += 4) {
         if (data[i] > 0) return [data[i - 3], data[i - 2], data[i - 1], data[i]];
