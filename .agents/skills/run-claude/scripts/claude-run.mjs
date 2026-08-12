@@ -25,7 +25,8 @@ const PROFILES = new Set(['ask', 'inspect']);
 const MODELS = new Set(['sonnet', 'opus']);
 const EFFORTS = new Set(['low', 'medium', 'high']);
 const MAX_PROMPT_BYTES = 256 * 1024;
-const ALLOWED_PROMPT_ROOTS = [
+// Exported so the production prompt boundary remains explicit under the injectable test seam.
+export const ALLOWED_PROMPT_ROOTS = [
   '/private/tmp',
   '/Users/kylemit/Code/Splotch',
   '/Users/kylemit/.codex/worktrees',

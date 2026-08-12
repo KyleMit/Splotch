@@ -3,6 +3,7 @@ import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from '
 import { homedir, tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import {
+  ALLOWED_PROMPT_ROOTS,
   buildClaudeArgs,
   buildRunnerPrompt,
   parseRunArgs,
@@ -69,6 +70,11 @@ describe('output-only Claude runner', () => {
       expect(readPromptFile(promptPath, allowedRoots)).toBe('ping');
       expect(() => readPromptFile('relative.txt', allowedRoots)).toThrow('must be absolute');
       expect(() => readPromptFile('/etc/hosts', allowedRoots)).toThrow('must be under');
+      expect(ALLOWED_PROMPT_ROOTS).toEqual([
+        '/private/tmp',
+        '/Users/kylemit/Code/Splotch',
+        '/Users/kylemit/.codex/worktrees',
+      ]);
     } finally {
       rmSync(temporaryRoot, { recursive: true, force: true });
     }
@@ -103,6 +109,7 @@ describe('output-only Claude runner', () => {
       expect(arguments_).not.toContain('--dangerously-skip-permissions');
       expect(arguments_).not.toContain('--bare');
       expect(arguments_.at(-1)).toContain('AUTHORIZED TASK');
+      expect(arguments_.at(-3)).toBe('--effort');
     }
     expect(buildRunnerPrompt({ prompt: 'ping', profile: 'ask' })).toContain(
       'authorizes no external writes'
@@ -242,6 +249,13 @@ describe('run-claude Codex policy', () => {
     expect(POLICY_CASES.slice(0, wrapperPaths.length).map(({ command }) => command[0])).toEqual(
       wrapperPaths
     );
+
+    const forbiddenClaudePaths = [
+      ...POLICY_RULES.matchAll(/pattern = \["([^"\]]*\/claude)"\], decision = "forbidden"/g),
+    ].map((match) => match[1]);
+    expect(forbiddenClaudePaths).toEqual([RUNNER_PATHS.claude]);
+    expect(REVIEWER_PATHS.claude).toBe(RUNNER_PATHS.claude);
+    expect(HEALTH_PATHS.claude).toBe(RUNNER_PATHS.claude);
   });
 
   it('replaces its managed rules idempotently and keeps unrelated rules', () => {
