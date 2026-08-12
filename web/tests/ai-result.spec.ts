@@ -379,9 +379,12 @@ test.describe('AI result modal', () => {
 
     const dial = page.locator('.dial');
     await expect(dial).toBeVisible();
-    const box = await dial.boundingBox();
-    if (!box) throw new Error('Dial geometry was not measurable');
-    expect(box.width).toBeCloseTo(DIAL_MAX_SIZE_PX, 0);
+    // Polled, not read once: the stage collapses to nothing for as long as the
+    // preview it is sized from is an <img> that has not decoded yet, and the
+    // dial is a fraction of the stage.
+    await expect
+      .poll(async () => (await dial.boundingBox())?.width ?? 0)
+      .toBeCloseTo(DIAL_MAX_SIZE_PX, 0);
   });
 
   // The strip sits on the dimmed backdrop, which is dark under either theme, so

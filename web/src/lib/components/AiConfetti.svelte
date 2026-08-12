@@ -60,11 +60,11 @@
 
 <style>
   /* Punch a circular hole where the dial sits so leaves don't show through its
-     translucent face — they fall behind it and vanish into it. Both radii
-     arrive as --confetti-rx/--confetti-ry CSS vars set by the parent on
-     .ai-stage, derived there from the dial's own geometry: an ellipse in the
-     stage's two axes is what draws a circle on a stage of any aspect. The
-     literal fallbacks mirror a 4:3 stage. */
+     translucent face — they fall behind it and vanish into it. Both radii arrive
+     as --confetti-rx/--confetti-ry CSS vars set by the parent on .ai-stage,
+     derived there from the dial's own geometry once the stage has been measured.
+     The literal fallbacks cover the frame before that, and mirror a 4:3 stage
+     small enough that the dial has not yet reached its size cap. */
   .confetti-layer {
     position: absolute;
     inset: 0;

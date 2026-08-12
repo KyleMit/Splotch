@@ -21,22 +21,26 @@
   let aiStageEl = $state<HTMLDivElement | undefined>();
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
 
-  // Tracks the stage's rendered height so AiConfetti's fall distance (--stage-h)
-  // spans the real stage instead of a fixed pixel guess — the stage's height is
-  // capped by .stage-sizer's viewport-relative max-height, which varies by
-  // viewport and by the autosave variant. Reactive on aiStageEl (not onMount):
-  // the error state's {:else} unmounts .ai-stage and swaps in a fresh element
-  // on retry, so the observer must be re-attached each time the element
-  // changes, not just once at component mount.
+  // Tracks the stage's rendered size, which AiConfetti needs in real pixels: the
+  // fall distance (--stage-h) spans the stage rather than a fixed guess, and the
+  // mask hole (below) is a circle the stage's own aspect can't express in
+  // percentages. Both vary by viewport, by the autosave variant, and now by the
+  // picture's shape. Reactive on aiStageEl (not onMount): the error state's
+  // {:else} unmounts .ai-stage and swaps in a fresh element on retry, so the
+  // observer must be re-attached each time the element changes, not just once at
+  // component mount.
   let stageHeight = $state(0);
+  let stageWidth = $state(0);
   $effect(() => {
     if (!aiStageEl) {
       stageHeight = 0;
+      stageWidth = 0;
       return;
     }
     const el = aiStageEl;
     const ro = new ResizeObserver(([entry]) => {
       stageHeight = entry.contentRect.height;
+      stageWidth = entry.contentRect.width;
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -87,21 +91,24 @@
   const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
 
   // Keep the confetti's mask hole on the round dial, which means matching the
-  // dial's own two-part size: a fraction of the stage until it hits its cap.
-  // The horizontal radius is that size plus a little clearance, so leaves vanish
-  // just behind the dial's translucent rim rather than at its exact edge; the
-  // vertical radius is the same distance expressed against the stage's height,
-  // which is what draws a circle rather than an ellipse at any stage aspect.
-  // Both are handed to AiConfetti via --confetti-rx/--confetti-ry on .ai-stage.
+  // dial's own two-part size: a fraction of the stage until it stops at its cap.
+  // The clearance opens the hole a little wider than the dial, so leaves vanish
+  // just behind its translucent rim rather than at the exact edge.
+  //
+  // The result is a circle, and a circle on a stage of any aspect needs the same
+  // radius in both axes — which the measured stage width gives directly. Handing
+  // AiConfetti one radius in real pixels for --confetti-rx/--confetti-ry beats
+  // deriving the vertical one from the picture's aspect, and it keeps the value
+  // out of the gradient as CSS math, which is not worth relying on there.
   const MASK_CLEARANCE = 1.19;
-  const MASK_RX_PERCENT = ((DIAL_STAGE_FRACTION / 2) * MASK_CLEARANCE * 100).toFixed(1);
-  const MASK_MAX_RADIUS_PX = ((DIAL_MAX_SIZE_PX / 2) * MASK_CLEARANCE).toFixed(1);
-  const maskRadius = (percent: string) => `min(${percent}%, ${MASK_MAX_RADIUS_PX}px)`;
-  const confettiMaskRy = $derived(maskRadius((Number(MASK_RX_PERCENT) * imgAspect).toFixed(1)));
+  const maskRadiusPx = $derived(
+    Math.min(stageWidth * (DIAL_STAGE_FRACTION / 2), DIAL_MAX_SIZE_PX / 2) * MASK_CLEARANCE
+  );
 
   const stageStyle = $derived(
-    `--confetti-rx: ${maskRadius(MASK_RX_PERCENT)}; --confetti-ry: ${confettiMaskRy};` +
-      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
+    (maskRadiusPx > 0
+      ? `--confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
+      : '') + (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
   );
 
   // Handed to the card so its width can be the picture's own — see --result-aspect.
