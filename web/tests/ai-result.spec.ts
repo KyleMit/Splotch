@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { solveParentalGate } from './flows-harness';
 import { draw, enforceProductionCsp, gotoApp } from './helpers';
 
 // Exercises AiImageResult through the production generation flow. The endpoint
@@ -294,14 +295,55 @@ test.describe('AI result modal', () => {
     await report.focus();
     await expect(report).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.locator('.ai-report-confirmation')).toContainText(
-      'The report is deleted after 30 days.'
-    );
+    const confirm = page.locator('dialog.ai-report-confirm');
+    await expect(confirm).toContainText('the report is deleted after 30 days.');
+    // The confirmation names the two artifacts by showing them, and stands in
+    // front of the result rather than in its footer — so the Download button is
+    // still on screen behind the second scrim, and is no longer a live choice.
+    await expect(confirm.locator('img')).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Download' })).toBeVisible();
     expect(reportRequests).toBe(0);
 
     await page.getByRole('button', { name: 'Send report' }).click();
     await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible();
+    await expect(confirm).not.toBeVisible();
     expect(reportRequests).toBe(1);
+  });
+
+  // The gate proves an adult is present; the confirmation is then the last step
+  // before an irreversible send. Reversed, a parent would solve the sum only to
+  // find the report already gone.
+  test('raises the parental gate before the confirmation, not after it', async ({ page }) => {
+    let reportRequests = 0;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'always'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    await page.route('**/api/report-image', async (route) => {
+      reportRequests += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, reportId: 'gated-report-id' }),
+      });
+    });
+    await revealAiResult(page);
+
+    const confirm = page.locator('dialog.ai-report-confirm');
+    await page.getByRole('button', { name: 'Report this picture' }).click();
+    await expect(page.locator('#parentalGate')).toBeVisible();
+    await expect(confirm).not.toBeVisible();
+
+    await solveParentalGate(page);
+    await expect(confirm).toBeVisible();
+    expect(reportRequests).toBe(0);
+
+    // Cancel is the dismissal, and it leaves the result card as it was.
+    await confirm.getByRole('button', { name: 'Cancel' }).click();
+    await expect(confirm).not.toBeVisible();
+    await expect(page.locator('.ai-result-disclosure')).toBeVisible();
+    expect(reportRequests).toBe(0);
   });
 
   // The strip is anchored to the card, not the viewport corner the old flag sat

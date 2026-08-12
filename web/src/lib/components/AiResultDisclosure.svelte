@@ -3,7 +3,8 @@
 
   interface Props {
     disabled?: boolean;
-    onclick: () => void;
+    /** Handed the tap so the caller can fly the parental gate in from the flag. */
+    onclick: (event: MouseEvent & { currentTarget: HTMLElement }) => void;
   }
 
   let { disabled = false, onclick }: Props = $props();
