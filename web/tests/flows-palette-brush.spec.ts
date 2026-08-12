@@ -15,6 +15,8 @@ import {
 
 import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-harness';
 
+const SAFARI_TRAILING_FOCUS_WINDOW_MS = 500;
+
 // Focus a control and fire an activation key, retrying the whole gesture until
 // the expected reactive class lands. A lone press-then-assert flakes under a
 // starved parallel worker: the keydown can land before the swatch's handler is
@@ -424,9 +426,9 @@ test('a keyboard pick closes the flyout and restores focus to its trigger', asyn
 // the trigger before the handler runs, so focus has already left the menu.
 // Where activation does not focus the button — Safari's behavior, and the whole
 // reason scribbleTap activates on pointerup (ADR-0038) — the app has to hand
-// focus back itself. These synthetic events are exactly the pair scribbleTap
-// listens for, minus that focus side effect.
-async function tapTriggerWithoutFocusing(page: Page, triggerId: string) {
+// focus back itself. Focus can then be lost again before the trailing trusted
+// click, which is the ordering this synthetic sequence keeps.
+async function tapTriggerLikeSafari(page: Page, triggerId: string) {
   await page.locator(triggerId).evaluate((node) => {
     const rect = node.getBoundingClientRect();
     const init = {
@@ -439,6 +441,8 @@ async function tapTriggerWithoutFocusing(page: Page, triggerId: string) {
     };
     node.dispatchEvent(new PointerEvent('pointerdown', init));
     window.dispatchEvent(new PointerEvent('pointerup', init));
+    (node as HTMLElement).blur();
+    node.dispatchEvent(new MouseEvent('click', { ...init, detail: 1 }));
   });
 }
 
@@ -448,13 +452,15 @@ test('a second tap on the trigger closes the flyout and restores focus to it', a
 
   await openBrushMenu(page);
   await page.locator('#penBrushButton').focus();
-  await tapTriggerWithoutFocusing(page, '#brushButton');
+  await tapTriggerLikeSafari(page, '#brushButton');
   await expect(page.locator('.brush-menu')).toBeHidden();
+  await page.waitForTimeout(SAFARI_TRAILING_FOCUS_WINDOW_MS);
   await expect(page.locator('#brushButton')).toBeFocused();
 
   await openStrokeMenu(page);
   await page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]').focus();
-  await tapTriggerWithoutFocusing(page, '#strokeWidthButton');
+  await tapTriggerLikeSafari(page, '#strokeWidthButton');
   await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await page.waitForTimeout(SAFARI_TRAILING_FOCUS_WINDOW_MS);
   await expect(page.locator('#strokeWidthButton')).toBeFocused();
 });

@@ -232,6 +232,14 @@
     if (holdsFocus) trigger?.focus();
   }
 
+  // MobileSafari can blur the trigger between a trusted pointerup and its
+  // trailing click. scribbleTap ignores that click for activation, but a
+  // closed flyout still needs the pointer's final focus state restored.
+  function restoreClosedFlyoutTriggerFocus(event: MouseEvent) {
+    if (event.detail === 0 || openFlyout) return;
+    (event.currentTarget as HTMLButtonElement).focus();
+  }
+
   onMount(() => {
     // Click outside closes the open flyout
     const onDocPointerDown = (e: PointerEvent) => {
@@ -355,6 +363,7 @@
         {inkWhite}
         {inkDark}
         onOpenChange={setBrushFlyout}
+        onTriggerClick={restoreClosedFlyoutTriggerFocus}
       />
 
       <div class="flyout-wrapper stroke-width-wrapper" bind:this={strokeWrapperEl}>
@@ -366,6 +375,7 @@
           aria-label="Stroke width"
           aria-expanded={openFlyout === 'stroke'}
           use:scribbleTap={handleStrokeBtnClick}
+          onclick={restoreClosedFlyoutTriggerFocus}
           bind:this={strokeTriggerEl}
           style:color={colors.activeColor}
         >
