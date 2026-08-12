@@ -38,7 +38,7 @@ interface AiMockDelivery {
   delivered: () => void;
 }
 
-export async function mockAiEndpoint(page: Page) {
+async function mockAiEndpoint(page: Page) {
   const queued: AiMockDelivery[] = [];
   const waiters: ((delivery: AiMockDelivery) => void)[] = [];
   const requests: AiUploadRequest[] = [];
@@ -91,7 +91,7 @@ export async function invokeAiGeneration(page: Page) {
   });
 }
 
-export async function drawPreview(page: Page) {
+async function drawPreview(page: Page) {
   const history = () => page.evaluate(() => window.__drawingDebug?.getUndoDebug());
   const committed = async () => {
     const state = await history();

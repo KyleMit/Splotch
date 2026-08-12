@@ -9,7 +9,7 @@ import {
   type SavedImageReport,
 } from './imageReportStore';
 
-export const MAX_REPORT_BUNDLE_BYTES = 4 * 1024 * 1024;
+const MAX_REPORT_BUNDLE_BYTES = 4 * 1024 * 1024;
 // `submitImageReport` bounds the two images it keeps, but only after the whole
 // multipart payload is buffered, and it never sees the parts it discards — so
 // two tiny images plus a huge unused field would sail past it. The route caps
