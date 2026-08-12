@@ -964,7 +964,6 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         recordToggleRoundTrip({
           label: 'screenshot action button',
           selector: '#screenshotToggle',
-          stateAttribute: 'aria-pressed',
           baseline: true,
           readyFor: (enabled) =>
             enabled

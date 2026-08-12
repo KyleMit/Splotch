@@ -161,6 +161,11 @@ describe('action state planning', () => {
     expect(screenshotActivation(true)).toBe('webdriver');
   });
 
+  it('reads the Camera ToggleSwitch through its aria-checked state', () => {
+    expect(IPAD_ACTIONS).toContain("selector: '#screenshotToggle'");
+    expect(IPAD_ACTIONS).not.toContain("stateAttribute: 'aria-pressed'");
+  });
+
   it('wires every state planner into the physical runner', () => {
     for (const token of [
       'settingsSectionMeasurement(section, label, settingsModalUsesSidebar)',
