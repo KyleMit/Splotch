@@ -172,7 +172,7 @@ export function coloringSelectionSteps(hasBookChoice) {
 }
 
 export function screenshotActivation(nativeApp) {
-  return nativeApp ? 'webdriver' : 'native';
+  return nativeApp ? 'native-accessibility' : 'native';
 }
 
 export function profilingUrl(appUrl, repeat) {
@@ -264,10 +264,19 @@ async function measureClick({
   eventTypes,
   activation = 'native',
 }) {
-  const nativeTarget =
-    activation === 'native' && !client.webdriverClicks
-      ? await nativeBoundsForSelector(client, sessionId, execute, selector)
-      : null;
+  let nativeTarget = null;
+  if (!client.webdriverClicks) {
+    if (activation === 'native') {
+      nativeTarget = await nativeBoundsForSelector(client, sessionId, execute, selector);
+    } else if (activation === 'native-accessibility') {
+      nativeTarget = await nativeAccessibilityBoundsForSelector(
+        client,
+        sessionId,
+        execute,
+        selector
+      );
+    }
+  }
   await ensureActionProbe(execute);
   await execute(
     `return window.__actionProbe.begin(${JSON.stringify(label)}, ${JSON.stringify(
@@ -403,6 +412,14 @@ async function nativeAccessibilityBounds(client, sessionId, name) {
   } finally {
     await client.request('POST', `/session/${sessionId}/context`, { name: webContext });
   }
+}
+
+async function nativeAccessibilityBoundsForSelector(client, sessionId, execute, selector) {
+  const name = await execute(
+    `return document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-label');`
+  );
+  if (!name) throw new Error(`No accessible native-gesture target matches ${selector}`);
+  return nativeAccessibilityBounds(client, sessionId, name);
 }
 
 async function performNativeGesture(client, sessionId, webContext, actions) {
@@ -1026,6 +1043,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
         ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
+        activation: 'native-accessibility',
       })
     );
   }

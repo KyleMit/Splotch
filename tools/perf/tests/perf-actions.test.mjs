@@ -156,7 +156,7 @@ describe('action state planning', () => {
     ]);
   });
 
-  it('keeps coloring-page clearing on mapped native touch', () => {
+  it('maps coloring-page clearing through the native accessibility element', () => {
     const clearBlock = IPAD_ACTIONS.slice(
       IPAD_ACTIONS.indexOf("label: 'clear coloring page'"),
       IPAD_ACTIONS.indexOf(
@@ -165,12 +165,12 @@ describe('action state planning', () => {
       )
     );
 
-    expect(clearBlock).not.toContain("activation: 'webdriver'");
+    expect(clearBlock).toContain("activation: 'native-accessibility'");
   });
 
-  it('uses element activation only for the native Screenshot path', () => {
+  it('uses accessibility element bounds only for the native Screenshot path', () => {
     expect(screenshotActivation(false)).toBe('native');
-    expect(screenshotActivation(true)).toBe('webdriver');
+    expect(screenshotActivation(true)).toBe('native-accessibility');
   });
 
   it('reads the Camera ToggleSwitch through its aria-checked state', () => {
