@@ -402,6 +402,7 @@ export function undoTiledCommand(renderScale: number) {
   } else if (snapshotsFit && !activeCommand) {
     for (const [index, snapshot] of snapshots ?? []) {
       const tile = liveTiles[index];
+      prepareTileForMutation(tile, index);
       resetCrayonStateForClear(tile.ctx);
       tile.ctx.save();
       tile.ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -422,10 +423,7 @@ export function undoTiledCommand(renderScale: number) {
   if (undone) undoPatches.delete(undone);
   const empty =
     undone && !host?.hasActivePointers() ? undone.wasEmpty : scanTiledRendererIsEmpty(renderScale);
-  return {
-    empty,
-    canUndo: undoableCommands > 0,
-  };
+  return { empty, canUndo: undoableCommands > 0 };
 }
 
 export function clearTiledRenderer(wasEmpty: boolean) {

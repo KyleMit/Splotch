@@ -48,6 +48,40 @@ test('clearing the canvas is itself undoable', async ({ page }) => {
   expect((await state(page)).canvasEmpty).toBe(false);
 });
 
+test('undo does not reveal stale pixels after an erase-to-empty command', async ({ page }) => {
+  const box = await page.locator('#drawingCanvas').boundingBox();
+  if (!box) throw new Error('canvas has no bounding box');
+
+  await drawStroke(page, box, [
+    { x: 16, y: 16 },
+    { x: 34, y: 16 },
+  ]);
+
+  await page.evaluate(() => {
+    window.__engine.setStrokeWidth(20);
+    window.__engine.setEraserMode(true);
+  });
+  await drawStroke(page, box, [
+    { x: 8, y: 16 },
+    { x: 42, y: 16 },
+  ]);
+  await expect.poll(async () => (await state(page)).canvasEmpty).toBe(true);
+
+  await page.evaluate(() => {
+    window.__engine.setEraserMode(false);
+    window.__engine.setStrokeWidth(8);
+  });
+  await drawStroke(page, box, [
+    { x: 48, y: 60 },
+    { x: 66, y: 60 },
+  ]);
+
+  await page.evaluate(() => window.__engine.undo());
+  await page.evaluate(() => window.__engine.undo());
+
+  expect(await page.evaluate(() => window.__engine.pixelAt(57, 60)[3])).toBe(0);
+});
+
 test('a clear during an in-flight stroke does not resurrect wiped ink', async ({ page }) => {
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');

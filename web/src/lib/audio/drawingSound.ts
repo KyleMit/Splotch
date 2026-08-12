@@ -18,6 +18,7 @@ const loadPromises = new Map<string, Promise<void>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 let playbackRequested = false;
+let resumeAttempted = false;
 let requestedSpeed = 0;
 
 function volumeMultiplier() {
@@ -68,7 +69,6 @@ export function preloadDrawSounds() {
 
 export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (!settings.soundEnabled) return;
-  const gestureStarted = !playbackRequested;
   playbackRequested = true;
   requestedSpeed = speed;
   if (isStrokeStart) {
@@ -78,9 +78,14 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   const ctx = audioContext;
   if (!ctx) return;
 
-  // A suspended WebKit context may reject synthetic input without changing state.
-  // One attempt per active gesture preserves user activation without charging every move.
-  if (gestureStarted && ctx.state === 'suspended') ctx.resume().catch(() => {});
+  // A suspended WebKit context may reject an expired activation without changing state.
+  // Keep one attempt in flight and re-arm only after an actual rejection.
+  if (!resumeAttempted && ctx.state === 'suspended') {
+    resumeAttempted = true;
+    ctx.resume().catch(() => {
+      resumeAttempted = false;
+    });
+  }
   if (currentPlayback) updateGain(currentPlayback.gain.gain, speed, ctx.currentTime);
   else startPlaybackIfReady();
 }
@@ -118,6 +123,7 @@ function updateGain(param: AudioParam, speed: number, now: number) {
 export function stopDrawSound() {
   failedUrls.clear();
   playbackRequested = false;
+  resumeAttempted = false;
   requestedSpeed = 0;
   const playback = currentPlayback;
   if (playback && audioContext) {
