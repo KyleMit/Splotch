@@ -121,6 +121,16 @@ export function resizeTiledRenderer(
       const crayonWasVisible = !tile.crayonBottom.hidden || !tile.crayonTop.hidden;
       tile.width = right - tile.x;
       tile.height = bottom - tile.y;
+      // The size this tile's backing store is meant to have, published for
+      // compositeVisibleLiveTiles: a hidden tile's own backing lags this by
+      // design (migrateHiddenBackingsAcrossFrames re-sizes one tile per frame),
+      // so a composite measured off the backings alone mis-sizes any row or
+      // column whose tiles are all hidden and shifts every later one. That
+      // reader is serialized into the page and can import neither the attribute
+      // name nor its units — backing pixels, which part company with CSS pixels
+      // wherever renderScale is above 1 — so `tiledRendererContract.test.ts`
+      // drives a real resize through the real composite to catch either drift.
+      tile.canvas.dataset.tileBacking = `${tile.width}x${tile.height}`;
       tile.canvas.hidden = true;
       tile.crayonBottom.hidden = true;
       tile.crayonTop.hidden = true;
