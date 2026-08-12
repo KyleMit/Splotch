@@ -288,9 +288,12 @@
     /* Overwritten inline with the picture's own ratio the moment one is known;
        the 4:3 here only covers the frame before that. */
     --result-aspect: 1.3333;
-    /* Every scrap of height the viewport has left once the card's own chrome and
-       the disclosure strip's room are taken out — the picture gets the rest. */
-    --result-stage-max-h: calc(100dvh - var(--result-footer-reserve) - var(--report-strip-reserve));
+    /* The band the card may occupy: the viewport less the display's top inset
+       and the room the strip needs below it — the two bounds --report-strip-offset
+       re-centers the card between (app.css). The picture gets whatever the card's
+       own chrome leaves of it. */
+    --result-card-max-h: calc(100dvh - env(safe-area-inset-top) - var(--report-strip-reserve));
+    --result-stage-max-h: calc(var(--result-card-max-h) - var(--result-footer-reserve));
     /* Held back from the viewport edges so the card doesn't read as a takeover,
        and floored so the caption, footer and error copy keep a readable measure
        under a narrow picture. */
@@ -324,16 +327,16 @@
     );
   }
 
-  /* Whenever the disclosure strip is on screen the card gives up the room it
-     needs below — so a short viewport shrinks the picture instead of pushing the
-     strip off-screen — and rides up by half of it so the room is spent below the
-     card rather than mirrored above it (app.css). The confirmation state
-     replaces the strip, and keeps the plain centered 96dvh above. So does the
-     error state, which has no picture to disclose. The loading state keeps both
-     even though the strip is still to come, so the card doesn't move under the
-     reveal. */
+  /* Whenever the disclosure strip is on screen the card is held to the band
+     between the top inset and the strip's room — so a short viewport shrinks the
+     picture instead of pushing the strip off-screen or the Close disc under the
+     cutout — and shifted to sit centered on that band (app.css). The
+     confirmation state replaces the strip, and keeps the plain centered 96dvh
+     above. So does the error state, which has no picture to disclose. The
+     loading state keeps both even though the strip is still to come, so the card
+     doesn't move under the reveal. */
   .ai-result-modal:not(.report-expanded):not(.errored) {
-    max-height: calc(100dvh - var(--report-strip-reserve));
+    max-height: var(--result-card-max-h);
     --result-shift-y: var(--report-strip-offset);
   }
 

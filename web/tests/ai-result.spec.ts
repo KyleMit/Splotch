@@ -18,6 +18,35 @@ const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 // case the fixed-width card used to leave mostly empty.
 const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 
+// A phone with a cutout at the top and a home indicator at the bottom. The
+// insets are an iPhone-class notch and indicator; what matters is only that both
+// are non-zero and the top one clears NOTCH_INSET_THRESHOLD_PX (ADR-0026), so
+// the card is judged against a display that actually eats into both edges.
+const NOTCHED_PHONE_VIEWPORT = { width: 390, height: 844 };
+const NOTCHED_PHONE_INSETS = { top: 59, bottom: 34 };
+
+// Chromium emulates env(safe-area-inset-*) only over CDP — there is no viewport
+// option for it — so this is the one seam that can render the app as a notched
+// phone sees it. Returns what CSS actually resolved, so a caller can prove the
+// override landed rather than assuming it.
+async function emulateSafeAreaInsets(page: Page, insets: { top: number; bottom: number }) {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setSafeAreaInsetsOverride' as never, { insets } as never);
+  return page.evaluate(() => {
+    const probe = document.createElement('div');
+    probe.style.paddingTop = 'env(safe-area-inset-top)';
+    probe.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    document.body.append(probe);
+    const style = getComputedStyle(probe);
+    const resolved = {
+      top: parseFloat(style.paddingTop),
+      bottom: parseFloat(style.paddingBottom),
+    };
+    probe.remove();
+    return resolved;
+  });
+}
+
 interface AiMockResponse {
   status: number;
   contentType: string;
@@ -384,6 +413,44 @@ test.describe('AI result modal', () => {
     expect(reportBottom).toBeGreaterThan(DESKTOP_VIEWPORT.height - 2);
     expect(reportBottom).toBeLessThanOrEqual(DESKTOP_VIEWPORT.height + 1);
   });
+
+  // The card is centered on the band between the display's top inset and the
+  // strip's room below, not on the viewport — `viewport-fit=cover` (ADR-0026)
+  // puts the top of the viewport under the cutout, so centering on the viewport
+  // slides the Close disc beneath a notch on exactly the phones the app is most
+  // used on. Both states are covered: the loading card is the taller of the two
+  // and reaches the top bound first.
+  for (const state of ['loading', 'revealed'] as const) {
+    test(`clears the display's safe areas on a notched phone while ${state}`, async ({ page }) => {
+      await page.setViewportSize(NOTCHED_PHONE_VIEWPORT);
+      const insets = await emulateSafeAreaInsets(page, NOTCHED_PHONE_INSETS);
+      // Proves the emulation reached CSS: without it every assertion below holds
+      // trivially on a device with no cutout at all.
+      expect(insets).toEqual(NOTCHED_PHONE_INSETS);
+
+      if (state === 'loading') await openAiResult(page);
+      else await revealAiResult(page);
+
+      const card = await page.locator('dialog.ai-result-modal').boundingBox();
+      const close = await page.locator('.ai-result-close').boundingBox();
+      if (!card || !close) throw new Error('AI result geometry was not measurable');
+
+      // The Close disc, not the card, is what the cutout actually eats into: it
+      // is inset from the card's own top corner, so a card that merely starts
+      // below the band can still be hiding its one dismissal control.
+      expect(card.y).toBeGreaterThanOrEqual(insets.top - 1);
+      expect(close.y).toBeGreaterThanOrEqual(insets.top);
+
+      // Still bounded below by the strip's room, which carries the bottom inset:
+      // honoring the top must not come out of the home indicator's clearance.
+      const bottomBound = NOTCHED_PHONE_VIEWPORT.height - insets.bottom;
+      expect(card.y + card.height).toBeLessThanOrEqual(bottomBound + 1);
+      if (state === 'revealed') {
+        const { report } = await resultBoxes(page);
+        expect(report.y + report.height).toBeLessThanOrEqual(bottomBound + 1);
+      }
+    });
+  }
 
   // The dial is a fraction of the stage, which now grows to a desktop's worth of
   // room — so it stops at its cap rather than becoming a dinner plate. The

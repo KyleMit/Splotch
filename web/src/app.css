@@ -206,9 +206,17 @@ body {
 
    The room belongs below the card, but the card is transform-centered, so the
    reserve alone would be mirrored above it — half the picture's height budget
-   spent on empty backdrop nobody sees. The offset buys it back: the card rides
-   up by half the reserve, which centers the card-plus-strip group instead of
-   the card, and the reserve is then subtracted once rather than twice. */
+   spent on empty backdrop nobody sees. The offset buys it back by centering the
+   card on the band it may actually occupy rather than on the viewport, so the
+   reserve is subtracted once rather than twice.
+
+   That band is bounded above as well as below: `viewport-fit=cover` (ADR-0026)
+   puts the top of the viewport under the cutout, so a card centered on the
+   viewport's own middle can slide its Close disc beneath the notch. The band
+   therefore runs from the top inset down to the reserve, and the offset is half
+   the difference between them — negative where the reserve is deeper than the
+   inset (the usual case), positive where the cutout is deeper. A consumer
+   subtracts both to size itself. */
 :root {
   --report-strip-height: 26px;
   --report-strip-gap: var(--space-4);
@@ -217,7 +225,7 @@ body {
     var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
       env(safe-area-inset-bottom)
   );
-  --report-strip-offset: calc(var(--report-strip-reserve) / -2);
+  --report-strip-offset: calc((env(safe-area-inset-top) - var(--report-strip-reserve)) / 2);
 }
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared
