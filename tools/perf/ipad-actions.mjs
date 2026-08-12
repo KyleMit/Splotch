@@ -112,6 +112,63 @@ const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
 const settingsSectionRow = (section) =>
   `#settingsModal button[data-section=${JSON.stringify(section)}]`;
 
+export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
+  const selector = settingsSectionRow(section);
+  const sectionReady = settingsModalUsesSidebar
+    ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`
+    : `document.querySelector('#settingsModal .settings-back') !== null`;
+  if (section !== 'parentCenter') {
+    return { label: `open Settings section: ${label}`, ready: sectionReady };
+  }
+  return {
+    label: 'open Parent Center',
+    ready: `document.querySelector('#parentalGate')?.open === true || (${sectionReady})`,
+  };
+}
+
+export async function runToggleRoundTrip({
+  baseline,
+  initial,
+  setState,
+  recordState,
+  whileAtBaseline,
+  baselineHint = 'baseline',
+  originalStateHint = 'original state',
+}) {
+  try {
+    await setState(baseline, baselineHint);
+    for (const next of [!baseline, baseline]) await recordState(next);
+    await whileAtBaseline?.();
+  } finally {
+    await setState(initial, originalStateHint);
+  }
+}
+
+export function coloringSelectionSteps(hasBookChoice) {
+  const steps = [];
+  if (hasBookChoice) {
+    steps.push({
+      label: 'open coloring book',
+      selector: '#coloring-book-dialog button[aria-label$="coloring book"]',
+      ready: `document.querySelector('#coloring-book-dialog button[aria-label$="coloring page"]') !== null`,
+      settleMs: ANIMATED_ACTION_SETTLE_MS,
+      activation: 'webdriver',
+    });
+  }
+  steps.push({
+    label: 'select coloring page',
+    selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
+    ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready')`,
+    settleMs: ANIMATED_ACTION_SETTLE_MS,
+    activation: 'webdriver',
+  });
+  return steps;
+}
+
+export function screenshotActivation(nativeApp) {
+  return nativeApp ? 'webdriver' : 'native';
+}
+
 export function profilingUrl(appUrl, repeat) {
   const url = new URL(appUrl);
   url.searchParams.set('perf-actions', `${Date.now()}-${repeat}`);
@@ -519,6 +576,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     readyFor,
     stateAttribute = 'aria-checked',
     baseline,
+    whileAtBaseline,
   }) => {
     const stateExpression = (enabled) =>
       `document.querySelector(${JSON.stringify(selector)})?.getAttribute(${JSON.stringify(stateAttribute)}) === '${enabled}'${readyFor ? ` && (${readyFor(enabled)})` : ''}`;
@@ -532,10 +590,12 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       await waitForReady(execute, stateExpression(target), hint);
       await sleep(ANIMATED_ACTION_SETTLE_MS);
     };
-    try {
-      await setState(baseline, `${label} baseline`);
-      for (const next of [!baseline, baseline]) {
-        await record(
+    await runToggleRoundTrip({
+      baseline,
+      initial,
+      setState,
+      recordState: (next) =>
+        record(
           measureClick({
             client,
             sessionId,
@@ -546,11 +606,11 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
             settleMs: ANIMATED_ACTION_SETTLE_MS,
             activation: 'webdriver',
           })
-        );
-      }
-    } finally {
-      await setState(initial, `${label} original state`);
-    }
+        ),
+      whileAtBaseline,
+      baselineHint: `${label} baseline`,
+      originalStateHint: `${label} original state`,
+    });
   };
 
   if (actions.has('idle')) {
@@ -777,23 +837,34 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
           settingsModalUsesSidebar ? selector : `${selector} .hub-title`
         )})?.textContent?.trim();`
       );
+      const measurement = settingsSectionMeasurement(section, label, settingsModalUsesSidebar);
       await record(
         measureClick({
           client,
           sessionId,
           execute,
-          label: `open Settings section: ${label}`,
+          label: measurement.label,
           selector,
           // The wide sidebar is a table of contents over one continuous pane, so a
           // click scrolls rather than swaps and the row reports a reading
           // position. tools/perf/tests/perf-actions.test.mjs holds this token
           // against the shell that sets it.
-          ready: settingsModalUsesSidebar
-            ? `document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-current') === 'location'`
-            : `document.querySelector('#settingsModal .settings-back') !== null`,
+          ready: measurement.ready,
           activation: 'webdriver',
         })
       );
+      if (
+        section === 'parentCenter' &&
+        (await execute(`return document.querySelector('#parentalGate')?.open === true;`))
+      ) {
+        await clickSetupElement(execute, '#parentalGate button[aria-label="Close"]');
+        await waitForReady(
+          execute,
+          `document.querySelector('#parentalGate')?.open !== true`,
+          'Parent Center challenge to close'
+        );
+        await sleep(ANIMATED_ACTION_SETTLE_MS);
+      }
     }
     await openSettingsSection(
       'appearance',
@@ -877,16 +948,17 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       baseline: true,
       readyFor: (enabled) =>
         `document.querySelector('#screenshotToggle') ${enabled ? '!== null' : '=== null'}`,
-    });
-    await recordToggleRoundTrip({
-      label: 'screenshot action button',
-      selector: '#screenshotToggle',
-      stateAttribute: 'aria-pressed',
-      baseline: true,
-      readyFor: (enabled) =>
-        enabled
-          ? actionPanelLacksAttribute('data-off-screenshot')
-          : actionPanelHasAttribute('data-off-screenshot'),
+      whileAtBaseline: () =>
+        recordToggleRoundTrip({
+          label: 'screenshot action button',
+          selector: '#screenshotToggle',
+          stateAttribute: 'aria-pressed',
+          baseline: true,
+          readyFor: (enabled) =>
+            enabled
+              ? actionPanelLacksAttribute('data-off-screenshot')
+              : actionPanelHasAttribute('data-off-screenshot'),
+        }),
     });
   }
 
@@ -922,30 +994,12 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
-        label: 'open coloring book',
-        selector: '#coloring-book-dialog button[aria-label$="coloring book"]',
-        ready: `document.querySelector('#coloring-book-dialog button[aria-label$="coloring page"]') !== null`,
-        settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
-      })
+    const hasBookChoice = await execute(
+      `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
     );
-    await record(
-      measureClick({
-        client,
-        sessionId,
-        execute,
-        label: 'select coloring page',
-        selector: '#coloring-book-dialog button[aria-label$="coloring page"]',
-        ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.classList.contains('overlay-ready')`,
-        settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
-      })
-    );
+    for (const step of coloringSelectionSteps(hasBookChoice)) {
+      await record(measureClick({ client, sessionId, execute, ...step }));
+    }
     await clickSetupElement(execute, '#coloringBookButton');
     await waitForReady(
       execute,
@@ -995,6 +1049,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#screenshotButton',
         ready: `Number.isFinite(window.__actionDownloadReadyAt)`,
         settleMs: SCREENSHOT_ACTION_SETTLE_MS,
+        activation: screenshotActivation(client.nativeApp),
       })
     );
     await execute(`
