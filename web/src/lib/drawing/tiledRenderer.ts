@@ -24,6 +24,7 @@ import {
   ensureNormalTileBacking,
   liveTileSurfaces,
   renderHistoryBaseOp,
+  restoreBlankLiveTiles,
   restoreTileContexts,
   type HistoryBaseTile,
   type LiveTile,
@@ -236,16 +237,6 @@ function showTileForOp(tile: LiveTile, op: StrokeOp) {
   tile.canvas.hidden = false;
 }
 
-function restoreBlankStateAfterUndo() {
-  for (const tile of liveTiles) {
-    const wasVisible = !tile.canvas.hidden;
-    tile.canvas.hidden = true;
-    tile.crayonBottom.hidden = true;
-    tile.crayonTop.hidden = true;
-    if (wasVisible) tile.needsClear = true;
-  }
-}
-
 function renderTiledOpForCommand(op: StrokeOp, command: StrokeGroupCommand | null) {
   let surfaceVisits = 0;
   if (op.kind !== 'dot' && op.kind !== 'path') {
@@ -397,7 +388,7 @@ export function undoTiledCommand(renderScale: number) {
       return snapshot.tileWidth === tile?.width && snapshot.tileHeight === tile?.height;
     });
   if (undone?.wasEmpty && !activeCommand) {
-    restoreBlankStateAfterUndo();
+    restoreBlankLiveTiles(liveTiles);
   } else if (snapshotsFit && !activeCommand) {
     for (const [index, snapshot] of snapshots ?? []) {
       const tile = liveTiles[index];
