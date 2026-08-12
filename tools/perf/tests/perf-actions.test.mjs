@@ -9,10 +9,12 @@ import {
   summarizeActionGroup,
 } from '../action-stats.mjs';
 import {
+  activationModeFor,
   canvasHasInk,
   coloringClearActivation,
   coloringSelectionSteps,
   largestNativeRect,
+  nativeAccessibilityFallbackWarning,
   runScreenshotToggleAtAdvancedBaseline,
   runToggleRoundTrip,
   screenshotActivation,
@@ -187,7 +189,7 @@ describe('action state planning', () => {
     ]);
   });
 
-  it('keeps native coloring-page clearing on WebDriver and gives Safari a fallback', () => {
+  it('uses native accessibility for coloring-page clearing with a WebDriver fallback', () => {
     const measureClickStart = IPAD_ACTIONS.indexOf('async function measureClick');
     const measureClickEnd = IPAD_ACTIONS.indexOf('async function measureIdle', measureClickStart);
     expect(measureClickStart).toBeGreaterThan(-1);
@@ -203,9 +205,8 @@ describe('action state planning', () => {
     const coloringBlock = IPAD_ACTIONS.slice(coloringStart, clearEnd);
     const clearBlock = IPAD_ACTIONS.slice(clearStart, clearEnd);
 
-    expect(coloringClearActivation(true)).toBe('webdriver');
-    expect(coloringClearActivation(false)).toBe('native-accessibility');
-    expect(clearBlock).toContain('activation: coloringClearActivation(client.nativeApp)');
+    expect(coloringClearActivation()).toBe('native-accessibility');
+    expect(clearBlock).toContain('activation: coloringClearActivation()');
     expect(coloringBlock).toMatch(
       /coloring books to reopen'[\s\S]*?await sleep\(ANIMATED_ACTION_SETTLE_MS\)[\s\S]*?label: 'clear coloring page'/
     );
@@ -217,12 +218,52 @@ describe('action state planning', () => {
   it('uses native accessibility activation only for the native Screenshot path', () => {
     expect(screenshotActivation(false)).toBe('native');
     expect(screenshotActivation(true)).toBe('native-accessibility-click');
-    expect(IPAD_ACTIONS).toContain(
-      "activation === 'native-accessibility-click' && !client.webdriverClicks"
-    );
-    expect(IPAD_ACTIONS).toContain("activationMode = 'webdriver-script-click'");
-    expect(uiActivationLabel(true)).toBe('webdriver-script-click');
-    expect(uiActivationLabel(false)).toBe('native-touch');
+  });
+
+  it.each([
+    ['native target', 'native', false, true, 'native-touch'],
+    ['accessibility target', 'native-accessibility', false, true, 'native-touch'],
+    [
+      'accessibility element click',
+      'native-accessibility-click',
+      false,
+      false,
+      'native-accessibility-click',
+    ],
+    ['accessibility fallback', 'native-accessibility', false, false, 'webdriver-element-click'],
+    ['forced WebDriver', 'native-accessibility-click', true, true, 'webdriver-script-click'],
+  ])(
+    'selects the %s activation mode',
+    (_label, activation, webdriverClicks, hasNativeTarget, expected) => {
+      expect(activationModeFor({ activation, webdriverClicks, hasNativeTarget })).toBe(expected);
+    }
+  );
+
+  it('reports native accessibility downgrades while they can still be rerun', () => {
+    expect(
+      nativeAccessibilityFallbackWarning(
+        'clear coloring page',
+        'native-accessibility',
+        'webdriver-element-click'
+      )
+    ).toContain('clear coloring page fell back');
+    expect(
+      nativeAccessibilityFallbackWarning(
+        'clear coloring page',
+        'native-accessibility',
+        'native-touch'
+      )
+    ).toBeNull();
+  });
+
+  it('summarizes the activation modes observed in the samples', () => {
+    expect(
+      uiActivationLabel([
+        { activation: 'native-touch' },
+        { activation: 'native-touch' },
+        { activation: 'webdriver-element-click' },
+      ])
+    ).toBe('native-touch+webdriver-element-click');
   });
 
   it('ignores a stale tiny WebView when mapping native geometry', () => {
@@ -258,6 +299,8 @@ describe('action state planning', () => {
       "actionPanelLacksAttribute('data-off-adv')",
       'coloringSelectionSteps(hasBookChoice)',
       'activation: screenshotActivation(client.nativeApp)',
+      'activationModeFor({',
+      'uiActivation: uiActivationLabel(samples)',
       'largestNativeRect(',
     ]) {
       expect(IPAD_ACTIONS).toContain(token);

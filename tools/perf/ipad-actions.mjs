@@ -187,16 +187,30 @@ export function coloringSelectionSteps(hasBookChoice) {
   return steps;
 }
 
-export function coloringClearActivation(nativeApp) {
-  return nativeApp ? 'webdriver' : 'native-accessibility';
+export function coloringClearActivation() {
+  return 'native-accessibility';
 }
 
 export function screenshotActivation(nativeApp) {
   return nativeApp ? 'native-accessibility-click' : 'native';
 }
 
-export function uiActivationLabel(webdriverClicks) {
-  return webdriverClicks ? 'webdriver-script-click' : 'native-touch';
+export function activationModeFor({ activation, webdriverClicks, hasNativeTarget }) {
+  if (webdriverClicks) return 'webdriver-script-click';
+  if (hasNativeTarget) return 'native-touch';
+  if (activation === 'native-accessibility-click') return 'native-accessibility-click';
+  return 'webdriver-element-click';
+}
+
+export function nativeAccessibilityFallbackWarning(label, activation, activationMode) {
+  if (activation !== 'native-accessibility' || activationMode !== 'webdriver-element-click') {
+    return null;
+  }
+  return `[ipad-actions] ${label} fell back from native accessibility to WebDriver element click`;
+}
+
+export function uiActivationLabel(samples) {
+  return [...new Set(samples.map((sample) => sample.activation))].join('+');
 }
 
 export function largestNativeRect(rects, fallback) {
@@ -317,9 +331,14 @@ async function measureClick({
       selector
     )}, ${JSON.stringify(eventTypes ?? ['pointerup', 'click'])});`
   );
-  let activationMode;
-  if (nativeTarget) {
-    activationMode = 'native-touch';
+  const activationMode = activationModeFor({
+    activation,
+    webdriverClicks: client.webdriverClicks,
+    hasNativeTarget: nativeTarget !== null,
+  });
+  const fallbackWarning = nativeAccessibilityFallbackWarning(label, activation, activationMode);
+  if (fallbackWarning) console.warn(fallbackWarning);
+  if (activationMode === 'native-touch') {
     const x = Math.round(nativeTarget.bounds.x + nativeTarget.bounds.width / 2);
     const y = Math.round(nativeTarget.bounds.y + nativeTarget.bounds.height / 2);
     await performNativeGesture(client, sessionId, nativeTarget.webContext, [
@@ -328,14 +347,11 @@ async function measureClick({
       { type: 'pause', duration: 80 },
       { type: 'pointerUp', button: 0 },
     ]);
-  } else if (activation === 'native-accessibility-click' && !client.webdriverClicks) {
-    activationMode = 'native-accessibility-click';
+  } else if (activationMode === 'native-accessibility-click') {
     await clickNativeAccessibilityElement(client, sessionId, execute, selector);
-  } else if (client.webdriverClicks) {
-    activationMode = 'webdriver-script-click';
+  } else if (activationMode === 'webdriver-script-click') {
     await clickSetupElement(execute, selector);
   } else {
-    activationMode = 'webdriver-element-click';
     await clickWebElement(client, sessionId, selector);
   }
   let readyAt;
@@ -1130,7 +1146,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#coloring-book-dialog button[aria-label^="Clear active coloring page:"]',
         ready: `document.querySelector('#coloring-book-dialog')?.open !== true && document.querySelector('#coloringOverlay')?.hidden === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: coloringClearActivation(client.nativeApp),
+        activation: coloringClearActivation(),
       })
     );
   }
@@ -1498,7 +1514,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       },
       appUrl,
       transport: nativeApp ? 'native-capacitor-webview' : 'browser',
-      uiActivation: uiActivationLabel(client.webdriverClicks),
+      uiActivation: uiActivationLabel(samples),
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],
       repeats,
