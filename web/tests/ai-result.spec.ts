@@ -12,6 +12,7 @@ import { draw, enforceProductionCsp, gotoApp } from './helpers';
 //   npm run test:e2e:headed -- ai-result
 
 const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
+const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 
 // Big enough that the picture's height, not the card, is what limits it — the
 // case the fixed-width card used to leave mostly empty.
@@ -29,15 +30,22 @@ interface AiUploadRequest {
   bytes: number;
 }
 
+interface AiMockDelivery {
+  response: AiMockResponse;
+  delivered: () => void;
+}
+
 async function mockAiEndpoint(page: Page) {
-  const queued: AiMockResponse[] = [];
-  const waiters: ((response: AiMockResponse) => void)[] = [];
+  const queued: AiMockDelivery[] = [];
+  const waiters: ((delivery: AiMockDelivery) => void)[] = [];
   const requests: AiUploadRequest[] = [];
-  const respond = (response: AiMockResponse) => {
-    const waiter = waiters.shift();
-    if (waiter) waiter(response);
-    else queued.push(response);
-  };
+  const respond = (response: AiMockResponse) =>
+    new Promise<void>((delivered) => {
+      const delivery = { response, delivered };
+      const waiter = waiters.shift();
+      if (waiter) waiter(delivery);
+      else queued.push(delivery);
+    });
 
   await page.route('**/api/generate-image*', async (route) => {
     const request = route.request();
@@ -46,12 +54,16 @@ async function mockAiEndpoint(page: Page) {
       contentType: request.headers()['content-type'],
       bytes: request.postDataBuffer()?.byteLength ?? 0,
     });
-    const response =
+    const delivery =
       queued.shift() ??
-      (await new Promise<AiMockResponse>((resolve) => {
+      (await new Promise<AiMockDelivery>((resolve) => {
         waiters.push(resolve);
       }));
-    await route.fulfill(response);
+    try {
+      await route.fulfill(delivery.response);
+    } finally {
+      delivery.delivered();
+    }
   });
 
   return {
@@ -76,6 +88,17 @@ async function invokeAiGeneration(page: Page) {
 }
 
 async function drawPreview(page: Page) {
+  const history = () => page.evaluate(() => window.__drawingDebug?.getUndoDebug());
+  const committed = async () => {
+    const state = await history();
+    return Boolean(state && state.snapshots > 0 && state.pendingCommands === 0);
+  };
+
+  await expect
+    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
+      timeout: PREVIEW_COMMIT_TIMEOUT_MS,
+    })
+    .toBe(true);
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('Drawing canvas has no bounds');
   await draw(page, [
@@ -83,14 +106,7 @@ async function drawPreview(page: Page) {
     { x: box.width * 0.5, y: box.height * 0.62 },
     { x: box.width * 0.76, y: box.height * 0.4 },
   ]);
-  await expect
-    .poll(() =>
-      page.evaluate(() => {
-        const history = window.__drawingDebug?.getUndoDebug();
-        return Boolean(history && history.snapshots > 0 && history.pendingCommands === 0);
-      })
-    )
-    .toBe(true);
+  await expect.poll(committed, { timeout: PREVIEW_COMMIT_TIMEOUT_MS }).toBe(true);
 }
 
 async function prepareAiGeneration(page: Page) {
@@ -109,7 +125,7 @@ async function openAiResult(page: Page) {
 
 async function revealAiResult(page: Page) {
   const endpoint = await openAiResult(page);
-  endpoint.succeed();
+  await endpoint.succeed();
   await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
 }
 
@@ -185,7 +201,7 @@ test.describe('AI result modal', () => {
     expect(request.contentType).toMatch(/^image\/(webp|png)$/);
     expect(request.bytes).toBeGreaterThan(0);
 
-    endpoint.fail();
+    await endpoint.fail();
   });
 
   test('plays the dial and reveals the result image', async ({ page }) => {
@@ -201,7 +217,7 @@ test.describe('AI result modal', () => {
     await expect(loadingCaption).toContainText(AI_LOADING_TITLE);
     await expect(loadingCaption).toContainText(AI_LOADING_SUBTITLE);
 
-    endpoint.succeed();
+    await endpoint.succeed();
 
     // When the mocked image arrives the dial races to full, then the result
     // cross-fades in and the download button pops in.
@@ -256,7 +272,7 @@ test.describe('AI result modal', () => {
           loading.card.y + loading.card.height + 1
         );
 
-        endpoint.succeed();
+        await endpoint.succeed();
         await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
         const revealed = await revealedBoxes(page);
         expect(revealed.card.height).toBeCloseTo(loading.card.height, 0);
@@ -441,7 +457,7 @@ test.describe('AI result modal', () => {
 
   test('shows the error state', async ({ page }) => {
     const endpoint = await openAiResult(page);
-    endpoint.fail();
+    await endpoint.fail();
 
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
@@ -450,7 +466,7 @@ test.describe('AI result modal', () => {
 
   test('shows the safety refusal state', async ({ page }) => {
     const endpoint = await openAiResult(page);
-    endpoint.fail(422);
+    await endpoint.fail(422);
 
     await expect(page.getByText("Let's try drawing something else!")).toBeVisible();
     await expect(page.locator('.ai-result-error.safety')).toBeVisible();
@@ -546,7 +562,7 @@ test.describe('AI result modal', () => {
       const endpoint = await openAiResult(page);
       await expect.poll(() => stageHeightVar(page)).toMatch(/^[\d.]+px$/);
 
-      endpoint.fail();
+      await endpoint.fail();
       await expect(page.getByText(/didn't work/i)).toBeVisible();
 
       await invokeAiGeneration(page);

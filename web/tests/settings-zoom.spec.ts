@@ -107,6 +107,8 @@ async function touchDriver(page: Page) {
     start: (touchPoints: TouchPoint[]) => dispatch('touchStart', touchPoints),
     move: (touchPoints: TouchPoint[]) => dispatch('touchMove', touchPoints),
     end: () => dispatch('touchEnd', []),
+    nextFrame: () =>
+      page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))),
   };
 }
 
@@ -161,8 +163,11 @@ async function scrollOneFinger(
   const yBottom = box.y + box.height * 0.8;
   const yTop = box.y + box.height * 0.2;
   await touch.start([{ x, y: yBottom, id: 0 }]);
+  await touch.nextFrame();
   await touch.move([{ x, y: (yBottom + yTop) / 2, id: 0 }]);
+  await touch.nextFrame();
   await touch.move([{ x, y: yTop, id: 0 }]);
+  await touch.nextFrame();
   await touch.end();
 }
 
@@ -199,8 +204,11 @@ async function pinchLiftingAFingerOutsideThePane(page: Page) {
   const drifted = { ...resting, y: box.y - 40 };
 
   await touch.start([resting]);
+  await touch.nextFrame();
   await touch.start([resting, spreading]);
+  await touch.nextFrame();
   await touch.move([drifted, spread]);
+  await touch.nextFrame();
   await touch.end();
 
   // The resting finger is whichever pointer id landed first; the browser assigns
