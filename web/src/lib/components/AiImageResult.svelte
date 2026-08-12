@@ -9,6 +9,8 @@
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
+  import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
+  import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '$lib/ai/loadingCopy';
   import {
     timestamp,
@@ -50,8 +52,24 @@
   let progress = $state(0);
   const loading = $derived(aiResult.open && !revealed && !aiResult.error);
   let exiting = $state(false);
-  let reportExpanded = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
+  let reportOrigin = $state<Origin | null>(null);
+
+  // The strip carries the button that launches the confirm dialog, so it stays
+  // mounted for as long as that dialog is up: a <dialog> hands focus back to
+  // whatever held it before showModal(), and a launcher that unmounted in the
+  // meantime leaves that a detached node — dismissing would drop a keyboard
+  // user on <body>, outside the result they were in. It gives way only once the
+  // footer has a status message to carry the outcome instead.
+  const reportSettled = $derived(reportStatus === 'success' || reportStatus === 'error');
+
+  // The gate proves an adult is present; the confirmation that follows is the
+  // last step before an irreversible send. Reversing the two would let a parent
+  // solve the sum only to discover the report had already gone.
+  function requestReport(event: MouseEvent & { currentTarget: HTMLElement }) {
+    reportOrigin = buttonCenter(event.currentTarget);
+    requireParentalGate('imageReport', () => (reportStatus = 'confirm'), reportOrigin);
+  }
 
   const DEFAULT_ASPECT = 4 / 3;
   const MIN_BLUR_PX = 2;
@@ -142,7 +160,6 @@
   class="ai-result-modal modal-dialog modal-shell"
   class:polaroid-mode={exiting}
   class:autosave={settings.autoSaveAiEnabled}
-  class:report-expanded={reportExpanded}
   class:errored={!!aiResult.error}
   class:loading
   style={cardStyle}
@@ -256,7 +273,7 @@
             drawingUrl={aiResult.previewUrl}
             outputUrl={aiResult.resultUrl}
             style={aiResult.style}
-            bind:expanded={reportExpanded}
+            origin={reportOrigin}
             bind:status={reportStatus}
           />
         </div>
@@ -266,11 +283,8 @@
 
   <!-- Stays mounted through the polaroid send-off so it fades out with the rest
        of the chrome (.polaroid-mode below) instead of vanishing on the first frame. -->
-  {#if revealed && aiResult.resultUrl && reportStatus === 'idle'}
-    <AiResultDisclosure
-      onclick={() => (reportStatus = 'confirm')}
-      disabled={!aiResult.previewUrl}
-    />
+  {#if revealed && aiResult.resultUrl && !reportSettled}
+    <AiResultDisclosure onclick={requestReport} disabled={!aiResult.previewUrl} />
   {/if}
 </dialog>
 
@@ -362,26 +376,19 @@
     );
   }
 
-  /* Whenever the disclosure strip is on screen it is what the bottom edge owes
-     room to, so it deepens that bound — and the height budget and the shift
-     follow from it above. The loading state claims the room too, though its
-     strip is still to come, so the card doesn't move under the reveal; the
-     confirmation state replaces the strip and the error state has no picture to
-     disclose, so both keep the plain gutter. */
-  .ai-result-modal:not(.report-expanded):not(.errored) {
+  /* The disclosure strip is what the bottom edge owes room to, so it deepens
+     that bound — and the height budget and the shift follow from it above. The
+     reserve is unconditional (bar the error state, which has no picture to
+     disclose): the loading state claims it though its strip is still to come, so
+     the card doesn't move under the reveal, and it stays claimed while the
+     confirmation dialog stands in front of this card, so the picture behind
+     doesn't resize under it. */
+  .ai-result-modal:not(.errored) {
     --result-bottom-bound: max(var(--report-strip-reserve), var(--result-gutter));
   }
 
   .ai-result-modal.autosave {
     --result-footer-reserve: var(--result-autosave-footer-reserve);
-  }
-
-  .ai-result-modal.report-expanded {
-    /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
-       ordinary footer above needs much less room. Taken off the same band as
-       every other state, so the confirmation keeps the card's frame instead of
-       growing out of it the moment Report is tapped. */
-    --result-stage-max-h: calc(var(--result-card-max-h) - 276px);
   }
 
   .ai-result-content {

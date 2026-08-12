@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { composeTiledPngCanvas, createTiledPngPreview } from './tiledPngCompositor';
+import {
+  createTiledPngPreview,
+  createTiledPngSurface,
+  paintTiledPngSurface,
+} from './tiledPngCompositor';
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('composeTiledPngCanvas', () => {
+describe('tiled PNG composition', () => {
   it('executes the shared paper and overlay compositor around the live tiles', async () => {
     const expected = new Blob(['png'], { type: 'image/png' });
     const drawImage = vi.fn();
@@ -55,18 +59,20 @@ describe('composeTiledPngCanvas', () => {
     const texture = { width: 32, height: 32 } as ImageBitmap;
     const overlay = { width: 100, height: 200 } as ImageBitmap;
 
-    await expect(
-      composeTiledPngCanvas({
-        sourceWidth: 400,
-        sourceHeight: 300,
-        sourceScale: 2,
-        exportScale: 2,
-        tiles: [{ bitmap: tile, x: 10, y: 20 }],
-        texture,
-        overlay,
-        paperColor: '#fffaf0',
-      }).convertToBlob({ type: 'image/png' })
-    ).resolves.toBe(expected);
+    const input = {
+      sourceWidth: 400,
+      sourceHeight: 300,
+      sourceScale: 2,
+      exportScale: 2,
+      tiles: [{ bitmap: tile, x: 10, y: 20 }],
+      texture,
+      overlay,
+      paperColor: '#fffaf0',
+    };
+    const surface = createTiledPngSurface(input);
+    paintTiledPngSurface(surface, input);
+
+    await expect(surface.canvas.convertToBlob({ type: 'image/png' })).resolves.toBe(expected);
 
     expect(canvases).toHaveLength(1);
     expect(canvases[0]).toMatchObject({ width: 400, height: 300 });

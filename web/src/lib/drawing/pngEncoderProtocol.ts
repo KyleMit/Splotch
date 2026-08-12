@@ -1,3 +1,5 @@
+import type { CanvasContextRecoveryErrorCode } from './canvasContextRecovery';
+
 export interface TiledPngInput {
   sourceWidth: number;
   sourceHeight: number;
@@ -24,4 +26,4 @@ export type EncodePngRequest = EncodePngPayload & { id: number };
 export type EncodePngResponse =
   | { id: number; blob: Blob }
   | { id: number; preview: ImageBitmap }
-  | { id: number; error: string };
+  | { id: number; error: string; code?: CanvasContextRecoveryErrorCode };

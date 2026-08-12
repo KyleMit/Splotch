@@ -1,3 +1,10 @@
+import {
+  CanvasContextRecoveryError,
+  createOffscreenCanvas2dSurface,
+  type CanvasContextRecoveryErrorCode,
+  runWithCanvasContextRecovery,
+} from './canvasContextRecovery';
+
 export interface MagicSheetWorkerRequest {
   id: number;
   imageUrl: string;
@@ -18,7 +25,7 @@ export interface MagicSheetWorkerRequest {
 
 export type MagicSheetWorkerResponse =
   | { id: number; bitmap: ImageBitmap }
-  | { id: number; error: string };
+  | { id: number; error: string; code?: CanvasContextRecoveryErrorCode };
 
 interface MagicSheetWorkerScope {
   onmessage: ((event: MessageEvent<MagicSheetWorkerRequest>) => void) | null;
@@ -33,27 +40,43 @@ workerScope.onmessage = async ({ data }) => {
     const response = await fetch(data.imageUrl);
     if (!response.ok) throw new Error(`Magic sheet worker could not load ${data.imageUrl}`);
     image = await createImageBitmap(await response.blob());
-    const canvas = new OffscreenCanvas(data.width, data.height);
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Magic sheet worker could not allocate a 2D context');
-    context.drawImage(image, data.fit.x, data.fit.y, data.fit.width, data.fit.height);
-    for (const fill of data.edgeFills) {
-      context.drawImage(
-        image,
-        fill.sx,
-        fill.sy,
-        fill.sw,
-        fill.sh,
-        fill.dx,
-        fill.dy,
-        fill.dw,
-        fill.dh
-      );
-    }
-    const bitmap = canvas.transferToImageBitmap();
+    const sheetImage = image;
+    const bitmap = await runWithCanvasContextRecovery(
+      () =>
+        createOffscreenCanvas2dSurface(
+          data.width,
+          data.height,
+          'Magic sheet worker could not allocate a 2D context'
+        ),
+      ({ canvas, context }) => {
+        context.drawImage(sheetImage, data.fit.x, data.fit.y, data.fit.width, data.fit.height);
+        for (const fill of data.edgeFills) {
+          context.drawImage(
+            sheetImage,
+            fill.sx,
+            fill.sy,
+            fill.sw,
+            fill.sh,
+            fill.dx,
+            fill.dy,
+            fill.dw,
+            fill.dh
+          );
+        }
+        return canvas.transferToImageBitmap();
+      },
+      (discarded) => discarded.close()
+    );
     workerScope.postMessage({ id: data.id, bitmap }, [bitmap]);
   } catch (error) {
-    workerScope.postMessage({ id: data.id, error: String(error) }, []);
+    workerScope.postMessage(
+      {
+        id: data.id,
+        error: String(error),
+        ...(error instanceof CanvasContextRecoveryError ? { code: error.code } : {}),
+      },
+      []
+    );
   } finally {
     image?.close();
   }
