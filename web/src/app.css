@@ -204,19 +204,13 @@ body {
    target down to something a parent can't reliably hit. Hence half of each —
    the distance from the card's edge to the far side of the overhang.
 
-   The room belongs below the card, but the card is transform-centered, so the
-   reserve alone would be mirrored above it — half the picture's height budget
-   spent on empty backdrop nobody sees. The offset buys it back by centering the
-   card on the band it may actually occupy rather than on the viewport, so the
-   reserve is subtracted once rather than twice.
-
-   That band is bounded above as well as below: `viewport-fit=cover` (ADR-0026)
-   puts the top of the viewport under the cutout, so a card centered on the
-   viewport's own middle can slide its Close disc beneath the notch. The band
-   therefore runs from the top inset down to the reserve, and the offset is half
-   the difference between them — negative where the reserve is deeper than the
-   inset (the usual case), positive where the cutout is deeper. A consumer
-   subtracts both to size itself. */
+   What the reserve does not decide is where the card then sits. The card is
+   transform-centered, so a reserve taken only off its height budget would be
+   mirrored above it as empty backdrop; the card has to be re-centered on the
+   band the reserve leaves. That band has bounds at both ends — the display's own
+   insets among them, since `viewport-fit=cover` (ADR-0026) puts the viewport
+   under the cutout — and belongs to the consumer, which knows what else it owes
+   each edge. AiImageResult composes this reserve into its own bounds. */
 :root {
   --report-strip-height: 26px;
   --report-strip-gap: var(--space-4);
@@ -225,7 +219,6 @@ body {
     var(--report-strip-gap) + (var(--report-strip-height) + var(--report-strip-tap)) / 2 +
       env(safe-area-inset-bottom)
   );
-  --report-strip-offset: calc((env(safe-area-inset-top) - var(--report-strip-reserve)) / 2);
 }
 
 /* Absolute-positioned close button (top-right corner) and its icon, shared

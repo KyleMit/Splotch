@@ -25,6 +25,44 @@ const DESKTOP_VIEWPORT = { width: 1440, height: 900 };
 const NOTCHED_PHONE_VIEWPORT = { width: 390, height: 844 };
 const NOTCHED_PHONE_INSETS = { top: 59, bottom: 34 };
 
+// Resolves length expressions to real pixels by letting the engine compute them
+// on a throwaway probe inside `host`. getComputedStyle hands back an unresolved
+// token stream for an unregistered custom property, so a `clamp()` of vmin — or
+// an `env()` — can only be read back through something that actually used it.
+// The probe is taken out of flow so measuring the card never moves it.
+function resolveLengths(page: Page, host: string, expressions: string[]) {
+  return page.evaluate(
+    ({ host, expressions }) => {
+      const parent = document.querySelector(host);
+      if (!parent) throw new Error(`No host for the length probe: ${host}`);
+      const probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;visibility:hidden';
+      parent.append(probe);
+      const resolved = expressions.map((expression) => {
+        probe.style.paddingTop = expression;
+        return parseFloat(getComputedStyle(probe).paddingTop);
+      });
+      probe.remove();
+      return resolved;
+    },
+    { host, expressions }
+  );
+}
+
+// The bounds of the band the card is centered on, read off the card itself so
+// the assertions track whatever the gutter and the insets actually resolved to.
+async function cardBounds(page: Page) {
+  const [top, bottom, side] = await resolveLengths(page, 'dialog.ai-result-modal', [
+    'var(--result-top-bound)',
+    'var(--result-bottom-bound)',
+    'var(--result-side-bound)',
+  ]);
+  if (top === undefined || bottom === undefined || side === undefined) {
+    throw new Error('AI result bounds were not measurable');
+  }
+  return { top, bottom, side };
+}
+
 // Chromium emulates env(safe-area-inset-*) only over CDP — there is no viewport
 // option for it — so this is the one seam that can render the app as a notched
 // phone sees it. Returns what CSS actually resolved, so a caller can prove the
@@ -32,19 +70,11 @@ const NOTCHED_PHONE_INSETS = { top: 59, bottom: 34 };
 async function emulateSafeAreaInsets(page: Page, insets: { top: number; bottom: number }) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setSafeAreaInsetsOverride' as never, { insets } as never);
-  return page.evaluate(() => {
-    const probe = document.createElement('div');
-    probe.style.paddingTop = 'env(safe-area-inset-top)';
-    probe.style.paddingBottom = 'env(safe-area-inset-bottom)';
-    document.body.append(probe);
-    const style = getComputedStyle(probe);
-    const resolved = {
-      top: parseFloat(style.paddingTop),
-      bottom: parseFloat(style.paddingBottom),
-    };
-    probe.remove();
-    return resolved;
-  });
+  const [top, bottom] = await resolveLengths(page, 'body', [
+    'env(safe-area-inset-top)',
+    'env(safe-area-inset-bottom)',
+  ]);
+  return { top, bottom };
 }
 
 interface AiMockResponse {
@@ -382,15 +412,14 @@ test.describe('AI result modal', () => {
   // The picture is drawn as large as its own aspect allows in the room the
   // viewport has, rather than inside a fixed-width card that left most of a
   // desktop screen empty. Both halves of that are measurable: the card carries
-  // nothing but its own padding beside the picture, and the picture's height
-  // budget runs from the top of the screen down to the strip's room at the
-  // bottom — which only holds because the reserve is spent below the card
-  // instead of mirrored above it.
-  test('draws the picture at the full height the viewport allows', async ({ page }) => {
+  // nothing but its own padding beside the picture, and it fills its band from
+  // bound to bound, so there is no height left for the picture to have taken.
+  test('draws the picture at the full height its band allows', async ({ page }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT);
     await revealAiResult(page);
 
-    const { card, report } = await resultBoxes(page);
+    const { card } = await resultBoxes(page);
+    const bounds = await cardBounds(page);
     const stage = await page.locator('.ai-stage').boundingBox();
     const inlinePadding = await page
       .locator('.ai-result-content')
@@ -404,15 +433,55 @@ test.describe('AI result modal', () => {
 
     expect(card.width - stage.width).toBeCloseTo(2 * inlinePadding, 0);
     expect(stage.width / stage.height).toBeCloseTo(natural, 2);
-    // Flush to the top, with the strip's Report target landing on the bottom
-    // edge: between them there is no height left for the picture to have taken.
     // The couple of pixels of slack are --result-sizing-air plus the subpixel
     // rounding of a card centered on a half-pixel offset.
-    const reportBottom = report.y + report.height;
-    expect(card.y).toBeLessThanOrEqual(2);
-    expect(reportBottom).toBeGreaterThan(DESKTOP_VIEWPORT.height - 2);
-    expect(reportBottom).toBeLessThanOrEqual(DESKTOP_VIEWPORT.height + 1);
+    const bandBottom = DESKTOP_VIEWPORT.height - bounds.bottom;
+    expect(card.y).toBeGreaterThanOrEqual(bounds.top - 1);
+    expect(card.y).toBeLessThanOrEqual(bounds.top + 2);
+    expect(card.y + card.height).toBeGreaterThan(bandBottom - 2);
+    expect(card.y + card.height).toBeLessThanOrEqual(bandBottom + 1);
   });
+
+  // A big screen is where the old fixed-width card looked worst, and also where
+  // running the picture to the screen edge would stop reading as a modal over
+  // the app. The gutter is what buys the frame back; on a phone it collapses to
+  // little more than a hairline, because there the picture is what's scarce. The
+  // range is the product claim — roughly this much room on this class of screen;
+  // everything below it is the rule the bounds follow from that one number.
+  for (const screen of [
+    { label: 'desktop', viewport: DESKTOP_VIEWPORT, least: 70, most: 80 },
+    { label: 'phone', viewport: { width: 390, height: 844 }, least: 8, most: 16 },
+  ]) {
+    test(`frames the card in a ${screen.label}-sized gutter`, async ({ page }) => {
+      await page.setViewportSize(screen.viewport);
+      await revealAiResult(page);
+
+      const { card } = await resultBoxes(page);
+      const bounds = await cardBounds(page);
+      const [gutter, reserve] = await resolveLengths(page, 'dialog.ai-result-modal', [
+        'var(--result-gutter)',
+        'var(--report-strip-reserve)',
+      ]);
+      if (gutter === undefined || reserve === undefined) {
+        throw new Error('The gutter was not measurable');
+      }
+
+      expect(gutter).toBeGreaterThanOrEqual(screen.least);
+      expect(gutter).toBeLessThanOrEqual(screen.most);
+      // No cutout is emulated here, so the gutter is the whole of both of these.
+      expect(bounds.top).toBeCloseTo(gutter, 0);
+      expect(bounds.side).toBeCloseTo(gutter, 0);
+      // The bottom also has the strip hanging in it, and takes whichever is
+      // deeper — the strip's room on a phone, the gutter on a desktop.
+      expect(bounds.bottom).toBeCloseTo(Math.max(gutter, reserve), 0);
+
+      // The card honors them: a picture too narrow to fill the width sits
+      // further in than the side bound, never outside it.
+      expect(card.x).toBeGreaterThanOrEqual(bounds.side - 1);
+      expect(card.y).toBeGreaterThanOrEqual(bounds.top - 1);
+      expect(card.y + card.height).toBeLessThanOrEqual(screen.viewport.height - bounds.bottom + 1);
+    });
+  }
 
   // The card is centered on the band between the display's top inset and the
   // strip's room below, not on the viewport — `viewport-fit=cover` (ADR-0026)

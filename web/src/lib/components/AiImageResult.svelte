@@ -288,20 +288,55 @@
     /* Overwritten inline with the picture's own ratio the moment one is known;
        the 4:3 here only covers the frame before that. */
     --result-aspect: 1.3333;
-    /* The band the card may occupy: the viewport less the display's top inset
-       and the room the strip needs below it — the two bounds --report-strip-offset
-       re-centers the card between (app.css). The picture gets whatever the card's
-       own chrome leaves of it. */
-    --result-card-max-h: calc(100dvh - env(safe-area-inset-top) - var(--report-strip-reserve));
+    /* The clear space the card keeps between itself and the screen edges, so the
+       result reads as something laid over the app rather than a takeover of it.
+       A phone has no pixels to spare and gets barely more than a hairline; a big
+       screen can afford a frame, and wants one. Driven by vmin, the scarce axis,
+       so a short landscape window doesn't spend a desktop's gutter on the
+       dimension it has least of. */
+    --result-gutter-min: 10px;
+    --result-gutter-max: 80px;
+    /* The narrowest common phone, which should sit at the minimum, and the rate
+       the gutter opens above it — 0.14 reaches the maximum around a 900px axis,
+       a laptop's height. */
+    --result-gutter-ramp-from: 390px;
+    --result-gutter-ramp: 0.14;
+    --result-gutter: clamp(
+      var(--result-gutter-min),
+      calc(
+        var(--result-gutter-min) + (100vmin - var(--result-gutter-ramp-from)) *
+          var(--result-gutter-ramp)
+      ),
+      var(--result-gutter-max)
+    );
+
+    /* The band the card may occupy. Each bound is the deeper of the gutter and
+       whatever that edge demands outright: the display's own inset, which
+       `viewport-fit=cover` puts the viewport under (ADR-0026), and below, the
+       room the disclosure strip hangs in (app.css). The strip lives inside the
+       bottom bound rather than under it — it is the card's own fine print, not a
+       second thing needing its own frame. */
+    --result-top-bound: max(env(safe-area-inset-top), var(--result-gutter));
+    --result-bottom-bound: max(env(safe-area-inset-bottom), var(--result-gutter));
+    --result-side-bound: max(
+      env(safe-area-inset-left),
+      env(safe-area-inset-right),
+      var(--result-gutter)
+    );
+
+    --result-card-max-h: calc(100dvh - var(--result-top-bound) - var(--result-bottom-bound));
     --result-stage-max-h: calc(var(--result-card-max-h) - var(--result-footer-reserve));
-    /* Held back from the viewport edges so the card doesn't read as a takeover,
-       and floored so the caption, footer and error copy keep a readable measure
+    --result-max-w: calc(100vw - 2 * var(--result-side-bound));
+    /* Floored so the caption, footer and error copy keep a readable measure
        under a narrow picture. */
-    --result-max-w: 96vw;
-    --result-min-w: min(96vw, 340px);
+    --result-min-w: min(var(--result-max-w), 340px);
     --result-stage-max-w: calc(var(--result-max-w) - var(--result-inline-padding));
-    --result-shift-y: 0px;
-    max-height: 96dvh;
+    /* The band is not centered on the viewport whenever its two bounds differ,
+       so the card is shifted onto the band's middle instead — half the
+       difference, in whichever direction the deeper bound lies. */
+    --result-shift-y: calc((var(--result-top-bound) - var(--result-bottom-bound)) / 2);
+
+    max-height: var(--result-card-max-h);
     overflow: visible;
     transform: translate(-50%, calc(-50% + var(--result-shift-y)));
   }
@@ -327,17 +362,14 @@
     );
   }
 
-  /* Whenever the disclosure strip is on screen the card is held to the band
-     between the top inset and the strip's room — so a short viewport shrinks the
-     picture instead of pushing the strip off-screen or the Close disc under the
-     cutout — and shifted to sit centered on that band (app.css). The
-     confirmation state replaces the strip, and keeps the plain centered 96dvh
-     above. So does the error state, which has no picture to disclose. The
-     loading state keeps both even though the strip is still to come, so the card
-     doesn't move under the reveal. */
+  /* Whenever the disclosure strip is on screen it is what the bottom edge owes
+     room to, so it deepens that bound — and the height budget and the shift
+     follow from it above. The loading state claims the room too, though its
+     strip is still to come, so the card doesn't move under the reveal; the
+     confirmation state replaces the strip and the error state has no picture to
+     disclose, so both keep the plain gutter. */
   .ai-result-modal:not(.report-expanded):not(.errored) {
-    max-height: var(--result-card-max-h);
-    --result-shift-y: var(--report-strip-offset);
+    --result-bottom-bound: max(var(--report-strip-reserve), var(--result-gutter));
   }
 
   .ai-result-modal.autosave {
@@ -346,8 +378,10 @@
 
   .ai-result-modal.report-expanded {
     /* Reserve the wrapped disclosure plus two actions on a 390px phone; the
-       ordinary footer above needs much less room. */
-    --result-stage-max-h: calc(96dvh - 276px);
+       ordinary footer above needs much less room. Taken off the same band as
+       every other state, so the confirmation keeps the card's frame instead of
+       growing out of it the moment Report is tapped. */
+    --result-stage-max-h: calc(var(--result-card-max-h) - 276px);
   }
 
   .ai-result-content {
