@@ -12,8 +12,7 @@ const EXPECTED_CONFIG = {
   approvals_reviewer: 'auto_review',
   sandbox_mode: 'workspace-write',
 };
-const SKILL_PATH = fileURLToPath(new URL('../SKILL.md', import.meta.url));
-const REQUIRED_SKILL_EXECUTION_CONTRACT = new Map([
+export const REQUIRED_SKILL_EXECUTION_CONTRACT = new Map([
   [
     'seamless invocation instruction',
     'After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.',
@@ -83,7 +82,6 @@ export function checkCodexPolicy() {
   for (const path of Object.values(CODEX_POLICY_PATHS)) {
     if (!existsSync(path)) throw new Error(`missing Codex policy file: ${path}`);
   }
-  validateSkillExecutionContract(readFileSync(SKILL_PATH, 'utf8'));
   validateCodexConfig(readFileSync(CODEX_POLICY_PATHS.config, 'utf8'));
   validateManagedRules(readFileSync(CODEX_POLICY_PATHS.rules, 'utf8'));
   for (const { command, expected } of POLICY_CASES) {

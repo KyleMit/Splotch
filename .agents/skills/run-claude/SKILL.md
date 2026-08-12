@@ -9,6 +9,27 @@ Use the installed wrappers, never raw `claude`, a renamed binary, or an indirect
 wrappers run outside Codex's sandbox so the Claude CLI can read its macOS Keychain login; Claude's
 own sandbox and permission classifier remain active.
 
+## One-time setup
+
+From the trusted canonical checkout, install the fixed wrappers and Codex policy once:
+
+```sh
+cd /Users/kylemit/Code/Splotch
+npm run run-claude:install
+```
+
+Restart Codex so the updated config and rules load. To verify the prepared state explicitly from a
+normal restarted session, run the policy check in the normal sandbox, then invoke the health wrapper
+through the host-execution boundary below:
+
+```sh
+npm run run-claude:policy:check
+/Users/kylemit/.local/libexec/splotch-claude-health.mjs
+```
+
+No per-invocation setup command is required. Rerun the installer only when the policy check or an
+escalated health check reports missing or stale installation state.
+
 ## Invocation contract
 
 After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.

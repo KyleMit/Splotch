@@ -5,31 +5,6 @@ launching another vendor's local authenticated CLI. A shared Claude package woul
 should orchestrate an independent Claude process and would spread Codex exec-policy details into a
 provider that cannot use them.
 
-## One-time setup
-
-The steady state is a normal Codex session launched in the Splotch repository: invoking
-`run-claude`, or Codex selecting it from the task, runs the ordinary `ask` and `inspect` profiles
-end to end without manual setup, profile selection, preflight, or approval steps.
-
-From the trusted canonical checkout, install the fixed wrappers and Codex policy once:
-
-```sh
-cd /Users/kylemit/Code/Splotch
-npm run run-claude:install
-```
-
-Restart Codex so the updated config and rules load. To verify the prepared state explicitly from a
-normal restarted session, run:
-
-```sh
-npm run run-claude:policy:check
-/Users/kylemit/.local/libexec/splotch-claude-health.mjs
-```
-
-The health wrapper must run outside Codex's sandbox; the skill requests that boundary automatically.
-No per-invocation setup command is required. Rerun the installer only when the policy check or an
-escalated health check reports missing or stale installation state.
-
 ## Capability split
 
 The first issue-stack implementation owned Claude authentication, installation, policy, and PR
@@ -66,8 +41,14 @@ The caller must request host execution for each installed wrapper on its first a
 wrapper's `prompt` policy decision protects the escalation boundary but does not convert a default
 sandboxed invocation into host execution. Treating the resulting Keychain failure as a failed
 installation creates a false recovery loop: reinstalling cannot change the sandbox's credential
-access. The skill and policy preflight therefore carry a drift-guarded `require_escalated`
-instruction, and installation recovery begins only after a wrapper fails in that required context.
+access. The skill therefore carries a CI-drift-guarded host-execution instruction, and installation
+recovery begins only after a wrapper fails in that required context.
+
+Codex currently names this tool boundary with the `sandbox_permissions` field and
+`require_escalated` value. Those names come from Codex's external tool API; repository code cannot
+validate that spelling or pin it to a Codex version. The behavioral signal remains whether the
+health wrapper reaches the Keychain outside the sandbox. If that behavior regresses while policy and
+installation checks pass, verify the current Codex escalation API before reinstalling.
 
 The installer hashes the wrappers, shared subscription-auth guard, trusted settings, prompt
 boundaries, and review rubric. Every wrapper rejects environment variables that select API-key,

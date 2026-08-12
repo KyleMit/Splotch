@@ -23,6 +23,7 @@ import {
 } from '../../.agents/skills/run-claude/scripts/install-codex-policy.mjs';
 import {
   POLICY_CASES,
+  REQUIRED_SKILL_EXECUTION_CONTRACT,
   validateCodexConfig,
   validateManagedRules,
   validateSkillExecutionContract,
@@ -208,34 +209,14 @@ describe('run-claude Codex policy', () => {
   it('requires the skill to enter the host approval boundary before invoking wrappers', () => {
     const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
     expect(() => validateSkillExecutionContract(skill)).not.toThrow();
-    expect(() =>
-      validateSkillExecutionContract(
-        skill.replace(
-          'After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.',
-          'Complete ordinary invocations with manual user steps.'
-        )
-      )
-    ).toThrow('seamless invocation instruction');
-    expect(() =>
-      validateSkillExecutionContract(
-        skill.replace(
-          '`sandbox_permissions: "require_escalated"`',
-          '`sandbox_permissions: "use_default"`'
-        )
-      )
-    ).toThrow('host escalation instruction');
-    expect(() =>
-      validateSkillExecutionContract(
-        skill.replace(
-          'Never run an installed wrapper in the sandbox first.',
-          'Run an installed wrapper in the sandbox first.'
-        )
-      )
-    ).toThrow('sandbox-first prohibition');
+    for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
+      expect(skill).toContain(requirement);
+      expect(() => validateSkillExecutionContract(skill.replaceAll(requirement, ''))).toThrow(name);
+    }
   });
 
-  it('documents every one-time setup and verification command in the skill notes', () => {
-    const notes = readFileSync(join(repositoryRoot, '.agents/skill-notes/run-claude.md'), 'utf8');
+  it('documents every one-time setup and verification command in the authoritative skill', () => {
+    const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
     for (const required of [
       'cd /Users/kylemit/Code/Splotch',
       'npm run run-claude:install',
@@ -244,7 +225,7 @@ describe('run-claude Codex policy', () => {
       '/Users/kylemit/.local/libexec/splotch-claude-health.mjs',
       'No per-invocation setup command is required.',
     ]) {
-      expect(notes).toContain(required);
+      expect(skill).toContain(required);
     }
   });
 
