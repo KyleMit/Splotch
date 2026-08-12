@@ -172,7 +172,7 @@ export function coloringSelectionSteps(hasBookChoice) {
 }
 
 export function screenshotActivation(nativeApp) {
-  return nativeApp ? 'native-accessibility' : 'native';
+  return nativeApp ? 'webdriver' : 'native';
 }
 
 export function largestNativeRect(rects, fallback) {

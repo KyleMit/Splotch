@@ -169,9 +169,9 @@ describe('action state planning', () => {
     expect(clearBlock).toContain("activation: 'native-accessibility'");
   });
 
-  it('uses accessibility element bounds only for the native Screenshot path', () => {
+  it('uses element activation only for the native Screenshot path', () => {
     expect(screenshotActivation(false)).toBe('native');
-    expect(screenshotActivation(true)).toBe('native-accessibility');
+    expect(screenshotActivation(true)).toBe('webdriver');
   });
 
   it('ignores a stale tiny WebView when mapping native geometry', () => {
