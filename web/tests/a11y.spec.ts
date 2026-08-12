@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
-import { draw, gotoApp, openSettingsModal } from './helpers';
+import { gotoApp, openSettingsModal } from './helpers';
 import { openParentalGate } from './flows-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
@@ -130,10 +130,6 @@ test('the locked Parent Center card has no serious accessibility violations', as
 test('the parental gate has no serious accessibility violations', async ({ page }) => {
   // The access-code param reveals the AI button, the gate's opener.
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
-  await draw(page, [
-    { x: 120, y: 120 },
-    { x: 260, y: 200 },
-  ]);
   await openParentalGate(page);
 
   await expectNoSeriousViolations(page, '#parentalGate');
@@ -202,10 +198,6 @@ for (const colorScheme of ['light', 'dark'] as const) {
 test('the parental gate operand digits hold WCAG AA large-text contrast', async ({ page }) => {
   // The access-code param reveals the AI button, the gate's opener.
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
-  await draw(page, [
-    { x: 120, y: 120 },
-    { x: 260, y: 200 },
-  ]);
   await openParentalGate(page);
 
   const operands = page.locator('.gate-operand');

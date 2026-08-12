@@ -75,6 +75,7 @@ test('the support address is absent from the served HTML and added after hydrati
 
 test('the troubleshooting panel starts collapsed', async ({ page }) => {
   await page.goto('/android-beta');
+  await expect(page.getByRole('link', { name: supportEmail() })).toBeVisible();
   const panel = page.locator('details.beta-disclosure');
   await expect(panel).not.toHaveAttribute('open', /.*/);
   await page.getByText('Troubleshooting', { exact: true }).click();
