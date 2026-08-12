@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { capture, hasCommand } from '../lib/proc.mjs';
+import { capture, hasCommand, isMain } from '../lib/proc.mjs';
 
 const argumentsToPreserve = [
   '$HOME',
@@ -128,6 +128,14 @@ describe('command helpers', () => {
     } finally {
       rmSync(fixtureDir, { recursive: true, force: true });
     }
+  });
+
+  // The gate this gets wrong fails open: `isMain(import.meta)` compares unequal
+  // to every href, so the CLI it guards runs nothing and exits 0 — a green
+  // no-op, which is the one outcome a check script must never produce.
+  it('throws on import.meta rather than silently never matching', () => {
+    expect(() => isMain(import.meta)).toThrow(TypeError);
+    expect(() => isMain(import.meta)).toThrow(/import\.meta\.url/);
   });
 
   it('keeps deliberate shell syntax available through sh', () => {
