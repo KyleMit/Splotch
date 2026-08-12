@@ -10,14 +10,9 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
+import { FREE_GENERATIONS_REMAINING_HEADER } from '$lib/apiHeaders';
+import { aiCredentialHeaders } from '$lib/ai/credentials';
 import {
-  ACCESS_TOKEN_HEADER,
-  API_KEY_HEADER,
-  FREE_GENERATIONS_REMAINING_HEADER,
-  INSTALLATION_ID_HEADER,
-} from '$lib/apiHeaders';
-import {
-  installationId,
   setFreeGenerationsRemaining,
   setFreeGenerationsUnavailable,
 } from '$lib/state/freeGenerations.svelte';
@@ -182,14 +177,12 @@ async function exportUploadImage(
 function buildRequest(
   uploadBlob: Blob,
   style: StyleName | '',
-  freeInstallationId: string | null
+  credentialHeaders: Record<string, string>
 ): { endpoint: string; headers: Record<string, string>; body: Blob } {
   const headers: Record<string, string> = {
     'Content-Type': uploadBlob.type || 'image/png',
+    ...credentialHeaders,
   };
-  if (settings.aiUserApiKey) headers[API_KEY_HEADER] = settings.aiUserApiKey;
-  else if (freeInstallationId) headers[INSTALLATION_ID_HEADER] = freeInstallationId;
-  else headers[ACCESS_TOKEN_HEADER] = settings.aiAccessToken;
 
   const endpoint =
     apiUrl('/api/generate-image') + (style ? `?style=${encodeURIComponent(style)}` : '');
@@ -263,9 +256,11 @@ export async function generateAiImage({
     const exported = await exportUploadImage(drawing, runId);
     if (!exported) return;
 
-    const freeInstallationId =
-      settings.aiUserApiKey || settings.aiAccessToken ? null : await installationId();
-    const { endpoint, headers, body } = buildRequest(exported.upload, style, freeInstallationId);
+    const { endpoint, headers, body } = buildRequest(
+      exported.upload,
+      style,
+      await aiCredentialHeaders()
+    );
     timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
     const res = await fetch(endpoint, {
       method: 'POST',

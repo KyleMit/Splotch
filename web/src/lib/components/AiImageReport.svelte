@@ -6,13 +6,12 @@
   import Button from './design/Button.svelte';
   import StatusMessage from './design/StatusMessage.svelte';
   import { apiUrl } from '$lib/api';
-  import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+  import { aiCredentialHeaders } from '$lib/ai/credentials';
   import type { StyleName } from '$lib/ai/styles';
   import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
-  import { settings } from '$lib/state/settings.svelte';
   import type { ImageReportResponse } from '../../routes/api/report-image/+server';
 
   interface Props {
@@ -64,12 +63,9 @@
       form.set('output', await outputResponse.blob(), 'output');
       form.set('style', style ?? '');
 
-      const headers = new Headers();
-      if (settings.aiUserApiKey) headers.set(API_KEY_HEADER, settings.aiUserApiKey);
-      else headers.set(ACCESS_TOKEN_HEADER, settings.aiAccessToken);
       const response = await fetch(apiUrl('/api/report-image'), {
         method: 'POST',
-        headers,
+        headers: await aiCredentialHeaders(),
         body: form,
         signal: requestController.signal,
       });

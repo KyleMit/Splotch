@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { ACCESS_TOKEN_HEADER, API_KEY_HEADER } from '$lib/apiHeaders';
+import { ACCESS_TOKEN_HEADER, API_KEY_HEADER, INSTALLATION_ID_HEADER } from '$lib/apiHeaders';
 import { isReportingConfigured } from '$lib/server/github';
 import { submitImageReport } from '$lib/server/imageReport';
 import { authorizeImageReport } from '$lib/server/imageReportAuthorization';
@@ -22,6 +22,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   const authorization = await authorizeImageReport({
     apiKey: request.headers.get(API_KEY_HEADER),
     token: request.headers.get(ACCESS_TOKEN_HEADER),
+    installationId: request.headers.get(INSTALLATION_ID_HEADER),
     clientAddress: getClientAddress(),
   });
   if (!authorization.authorized) return authorization.response;
