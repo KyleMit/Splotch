@@ -15,8 +15,6 @@ import {
 
 import { openBrushMenu, openDrawer, openStrokeMenu, pickBrush } from './flows-harness';
 
-const SAFARI_TRAILING_FOCUS_WINDOW_MS = 500;
-
 // Focus a control and fire an activation key, retrying the whole gesture until
 // the expected reactive class lands. A lone press-then-assert flakes under a
 // starved parallel worker: the keydown can land before the swatch's handler is
@@ -446,6 +444,25 @@ async function tapTriggerLikeSafari(page: Page, triggerId: string) {
   });
 }
 
+test('a trigger tap that opens a flyout focuses it for Escape restoration', async ({ page }) => {
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await tapTriggerLikeSafari(page, '#brushButton');
+  await expect(page.locator('.brush-menu')).toBeVisible();
+  await expect(page.locator('#brushButton')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.brush-menu')).toBeHidden();
+  await expect(page.locator('#brushButton')).toBeFocused();
+
+  await tapTriggerLikeSafari(page, '#strokeWidthButton');
+  await expect(page.locator('.stroke-width-menu')).toBeVisible();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.stroke-width-menu')).toBeHidden();
+  await expect(page.locator('#strokeWidthButton')).toBeFocused();
+});
+
 test('a second tap on the trigger closes the flyout and restores focus to it', async ({ page }) => {
   await gotoApp(page);
   await openDrawer(page);
@@ -454,13 +471,11 @@ test('a second tap on the trigger closes the flyout and restores focus to it', a
   await page.locator('#penBrushButton').focus();
   await tapTriggerLikeSafari(page, '#brushButton');
   await expect(page.locator('.brush-menu')).toBeHidden();
-  await page.waitForTimeout(SAFARI_TRAILING_FOCUS_WINDOW_MS);
   await expect(page.locator('#brushButton')).toBeFocused();
 
   await openStrokeMenu(page);
   await page.locator('button[aria-label="Size 3"], button[aria-label="Eraser size 3"]').focus();
   await tapTriggerLikeSafari(page, '#strokeWidthButton');
   await expect(page.locator('.stroke-width-menu')).toBeHidden();
-  await page.waitForTimeout(SAFARI_TRAILING_FOCUS_WINDOW_MS);
   await expect(page.locator('#strokeWidthButton')).toBeFocused();
 });
