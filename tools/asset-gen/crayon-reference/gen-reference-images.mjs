@@ -2,10 +2,10 @@
 // Gemini, to serve as acceptance criteria for the new crayon brush mode.
 // Not part of the shipping pipeline — a scratch generator for reference art.
 //
-//   GEMINI_API_KEY=… node --experimental-strip-types --disable-warning=ExperimentalWarning gen.mjs [idPrefix...]
+//   GEMINI_API_KEY=… node --experimental-strip-types --disable-warning=ExperimentalWarning gen-reference-images.mjs [idPrefix...]
 //
 // With no args it generates every spec; pass one or more id prefixes to
-// generate just a subset (e.g. `gen.mjs 1- 2-` for stages 1 and 2).
+// generate just a subset (e.g. `gen-reference-images.mjs 1- 2-` for stages 1 and 2).
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';

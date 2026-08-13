@@ -51,7 +51,7 @@ deferrals.
 
 ```bash
 BRANCH=claude/audit-burn-down-vf4iui \
-CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check && npm run img:audit:check && npm run check:assets:manifest && npm run lint:dead' \
+CHECK_CMD='npm run check && npm run lint:tokens && npm run gen:tokens:check && npm run scrapbook:check && npm run check:svg-assets && npm run check:assets:manifest && npm run lint:dead' \
 TEST_CMD='npm run test:unit && npm run test:tools && npm run test:asset-gen' \
 npm run audit:burndown:overnight -- 600
 ```
@@ -99,10 +99,10 @@ because `test.yml` sets `cancel-in-progress` and a merge commit's push run is ro
 without ever reporting. Each gate was run **individually**, not `&&`-chained, so no red gate could
 hide behind an earlier one:
 
-| Gate                                                                                                                   | Result |
-| ---------------------------------------------------------------------------------------------------------------------- | ------ |
-| `check`, `lint:tokens`, `gen:tokens:check`, `scrapbook:check`, `img:audit:check`, `check:assets:manifest`, `lint:dead` | all ok |
-| `test:unit`, `test:tools`, `test:asset-gen`                                                                            | all 0  |
+| Gate                                                                                                                    | Result |
+| ----------------------------------------------------------------------------------------------------------------------- | ------ |
+| `check`, `lint:tokens`, `gen:tokens:check`, `scrapbook:check`, `check:svg-assets`, `check:assets:manifest`, `lint:dead` | all ok |
+| `test:unit`, `test:tools`, `test:asset-gen`                                                                             | all 0  |
 
 Preflight OK: deps, auth, clean tree, origin reachable, all three role prompts present, 72 findings
 parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.

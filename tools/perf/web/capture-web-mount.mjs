@@ -57,7 +57,7 @@ export async function runMountProfile() {
     const page = await ctx.newPage();
 
     // Buffered longtask observer from time zero so load-phase long tasks are
-    // kept (injectObservers in capture.mjs runs post-load, too late for these).
+    // kept (injectObservers in chrome-trace-capture.mjs runs post-load, too late for these).
     await page.addInitScript(() => {
       window.__mount = { longTasks: [] };
       try {
