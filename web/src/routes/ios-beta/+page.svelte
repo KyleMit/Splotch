@@ -74,7 +74,7 @@
   wordmark="Splotch for iOS"
   intro="Joining is free and takes three quick steps — plus an optional fourth if you'd like to send feedback. Thank you for helping: trying Splotch on a real iPhone or iPad finds problems we can't catch on our own."
   troubleStart="Invitation not opening, "
-  troubleClause="beta unavailable, "
+  troubleClause="beta unavailable,&nbsp;"
   troubleEnd="or no Install button?"
   {troubleshooting}
 >

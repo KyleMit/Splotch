@@ -86,7 +86,7 @@
   wordmark="Splotch for Android"
   intro="Joining is free and takes three quick steps — plus an optional fourth if you'd like to send feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we can't catch on our own."
   troubleStart="Beta not showing up, "
-  troubleClause="“item not found”, "
+  troubleClause="“item not found”,&nbsp;"
   troubleEnd="or stuck on step 2?"
   {troubleshooting}
 >
