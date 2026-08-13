@@ -24,7 +24,7 @@ name: ADR Integrity
 on:
   pull_request:
   merge_group:
-  workflow_dispatch: # allow ad-hoc runs (e.g. auditing the numbering on main)
+  workflow_dispatch: # allow ad-hoc runs (e.g. auditing ADR integrity on main)
 
 permissions:
   contents: read
@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  numbering:
+  integrity:
     name: ADR numbers, headings, and index entries agree
     runs-on: ubuntu-latest
     # Bounds execution only. Time spent queued for a runner is not counted, so

@@ -18,6 +18,10 @@ capabilities share it and no narrower domain owns the concern. Preserve the exis
 contracts during capability moves; `npm run lint:dead` distinguishes live shared code from unused
 exports through its importers.
 
+`proc.mjs` is also imported by `tools/adrs/check-adr-integrity.mjs`, whose standalone GitHub
+workflow deliberately uses the runner image's default Node without `setup-node`. Keep that shared
+module compatible with the runner's Node floor rather than assuming the contributor `engines` floor.
+
 Failures are surfaced to callers rather than converted into process exits unless process ownership
 is the module's explicit contract. Run `npm run test:tools` after changing shared modules, plus the
 focused suite of every capability that imports the changed contract.
