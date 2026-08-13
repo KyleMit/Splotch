@@ -14,7 +14,7 @@ const SUPPORT_DOMAIN = 'gmail.com';
  * Safe to call on the server, but only where the result cannot reach a
  * crawlable document — /feedback renders it into an action's POST response,
  * which no crawler issues. Anywhere a GET could carry it, compose it after
- * hydration instead (see BetaStepLedger).
+ * hydration instead (see the beta routes).
  */
 export function supportEmail(): string {
   return `${SUPPORT_MAILBOX}@${SUPPORT_DOMAIN}`;

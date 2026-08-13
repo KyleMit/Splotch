@@ -205,7 +205,9 @@ non-polyfill choices:
 
 * Change the web floor in `web/browserTargets.ts`. Change the native iOS floor in
   `IPHONEOS_DEPLOYMENT_TARGET`; keep the web target's iOS/Safari version ≤ the native iOS target
-  (`web/src/browserFloor.test.ts` fails otherwise).
+  (`web/src/browserFloor.test.ts` fails otherwise). The `/ios-beta` claim is guarded by
+  `web/src/lib/components/iosBeta/iosBeta.test.ts`, which requires every deployment target in the
+  Xcode project to match `MIN_IOS_RELEASE`.
 * When adding a new web API, check its Baseline status against this floor and either confirm it's
   covered or feature-detect it — then add a row here.
 * **`Where` answers "where is the guard", not "where is every use."** A site earns its own anchor
