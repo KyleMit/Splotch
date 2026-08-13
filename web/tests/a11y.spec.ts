@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
 import { gotoApp, openSettingsModal } from './helpers';
 import { openParentalGate } from './flows-harness';
+import { openAiResult } from './ai-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
 // /changelog, /android-beta, /ios-beta, /feedback, /design, /admin (both auth states),
@@ -118,6 +119,17 @@ test('Settings has no serious accessibility violations', async ({ page }) => {
   await openSettingsModal(page);
 
   await expectNoSeriousViolations(page, '#settingsModal');
+});
+
+test('the false-positive refusal confirmation has no serious accessibility violations', async ({
+  page,
+}) => {
+  const endpoint = await openAiResult(page);
+  await endpoint.fail(422);
+  await page.getByRole('button', { name: 'Report this refusal' }).click();
+  await expect(page.locator('dialog.ai-report-confirm')).toBeVisible();
+
+  await expectNoSeriousViolations(page, 'dialog.ai-report-confirm');
 });
 
 test('the locked Parent Center card has no serious accessibility violations', async ({ page }) => {

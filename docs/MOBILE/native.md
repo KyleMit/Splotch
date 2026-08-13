@@ -156,12 +156,13 @@ alone won't register it.
 
 * **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
 * Data leaves the device only through an explicit feature: a **drawing image** sent to the AI
-  endpoint, a confirmed AI-picture report, or private feedback (plus an invite token). Nothing is
-  sold or used for tracking. Ordinary AI requests are not retained by Splotch. A confirmed picture
-  report retains the input, server-resolved prompt, output, style, and timestamp privately for at
-  most 30 days; a daily scheduled function purges it. Optional feedback device details are private.
-  Coloring-pack requests contain only public static asset paths; they carry no drawing or child
-  data.
+  endpoint, a confirmed AI report, or private feedback (plus an invite token). Nothing is sold or
+  used for tracking. Ordinary AI requests and refusals are not retained by Splotch. A confirmed
+  report retains the input, server-resolved prompt, style, and timestamp privately for at most 30
+  days; a refusal report also retains the provider's signed refusal reason, and a picture report
+  retains the generated output. A daily scheduled function purges it. Optional feedback device
+  details are private. Coloring-pack requests contain only public static asset paths; they carry no
+  drawing or child data.
 * Photos are saved **locally** to the device gallery (a "Splotch" album).
 
 ## 2. Shared web-asset / sync commands

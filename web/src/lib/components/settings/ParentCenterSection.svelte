@@ -31,8 +31,8 @@
       help: 'Before a drawing is sent to Google for image generation.',
     },
     imageReport: {
-      label: 'Reporting an AI picture',
-      help: 'Before a drawing and generated picture are sent to Splotch for review.',
+      label: 'Reporting an AI result',
+      help: 'Before a drawing and either a generated picture or safety refusal are sent for review.',
     },
     externalLinks: {
       label: 'Viewing external links',

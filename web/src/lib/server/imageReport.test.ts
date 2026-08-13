@@ -38,9 +38,11 @@ beforeEach(() => {
 describe('submitImageReport', () => {
   it('stores a closed-style report and notifies the private feedback channel with its blob key', async () => {
     const result = await submitImageReport({
+      kind: null,
       drawing: new Blob(['drawing'], { type: 'image/png' }),
       output: new Blob(['output'], { type: 'image/webp' }),
       style: 'Felt',
+      reportContext: null,
     });
 
     expect(result).toEqual({ ok: true, reportId: 'report-id' });
@@ -60,12 +62,63 @@ describe('submitImageReport', () => {
 
   it('rejects missing images and arbitrary styles before storing anything', async () => {
     await expect(
-      submitImageReport({ drawing: null, output: new Blob(['x']), style: 'Anything' })
+      submitImageReport({
+        kind: 'picture',
+        drawing: null,
+        output: new Blob(['x']),
+        style: 'Anything',
+        reportContext: null,
+      })
     ).resolves.toEqual({
       ok: false,
       status: 400,
-      error: 'That picture could not be reported.',
+      error: 'That AI report could not be sent.',
     });
+    expect(saveImageReport).not.toHaveBeenCalled();
+  });
+
+  it('categorizes a false-positive refusal and stores no generated output', async () => {
+    const drawing = new Blob(['drawing'], { type: 'image/png' });
+
+    const result = await submitImageReport({
+      kind: 'false-positive-refusal',
+      drawing,
+      output: null,
+      style: 'Felt',
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
+    });
+
+    expect(result).toEqual({ ok: true, reportId: 'report-id' });
+    expect(saveImageReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'false-positive-refusal',
+        input: drawing,
+        output: null,
+        refusalReason: 'IMAGE_SAFETY',
+      })
+    );
+    expect(createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: '[AI refusal] Possible false positive (Felt)',
+        body: expect.stringContaining('**Category:** false-positive-refusal'),
+      })
+    );
+    expect(createIssue.mock.calls[0][0].body).toContain('**Refusal reason:** IMAGE_SAFETY');
+  });
+
+  it('rejects a refusal without a server-authenticated reason', async () => {
+    await expect(
+      submitImageReport({
+        kind: 'false-positive-refusal',
+        drawing: new Blob(['drawing'], { type: 'image/png' }),
+        output: null,
+        style: 'Felt',
+        reportContext: null,
+      })
+    ).resolves.toMatchObject({ ok: false, status: 503 });
     expect(saveImageReport).not.toHaveBeenCalled();
   });
 
@@ -74,9 +127,11 @@ describe('submitImageReport', () => {
 
     await expect(
       submitImageReport({
+        kind: 'picture',
         drawing: new Blob(['drawing'], { type: 'image/png' }),
         output: new Blob(['output'], { type: 'image/png' }),
         style: '',
+        reportContext: null,
       })
     ).resolves.toMatchObject({ ok: false, status: 502 });
     expect(deleteImageReport).toHaveBeenCalledWith(saved);

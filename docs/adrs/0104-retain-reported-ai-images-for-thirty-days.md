@@ -102,3 +102,39 @@ keeps, so oversized bytes hidden in a discarded field passed it.
 * − `REPORT_TOKEN_SECRET` is new required deploy configuration. Unset, the BYOK and managed paths
   keep working and the free path alone answers 503, logged server-side.
 * − A report token expires, so a result left open long enough can no longer be reported.
+
+## Amendment (2026-08-13): confirmed false-positive refusals use the same retention boundary
+
+Safety refusals were still a blind spot after the original reporting flow shipped: the parent could
+report an inappropriate generated picture, but could not report that a harmless drawing had been
+blocked. Issue #988 extends the same deliberate feedback boundary to false positives without
+weakening the safety classifier or retaining every refusal.
+
+The refusal UI offers a visibly parent-facing “Report this refusal” action only for the `422` safety
+state. It uses the existing AI-report Parent Center policy, then a distinct confirmation naming the
+evidence before the send. Until that confirmation, the rejected drawing remains only in the open
+client state and normal generation remains ephemeral.
+
+`POST /api/report-image` now accepts the closed report kinds `picture` and `false-positive-refusal`.
+An absent kind remains `picture` for already-installed clients. Both reports retain the input
+drawing, server-reconstructed prompt, style, timestamps, and a versioned metadata category; only a
+picture report accepts and stores an output image. Refusal metadata and private notifications also
+carry the provider's authenticated refusal reason so support can distinguish an inappropriate result
+from an over-aggressive refusal without trying to reproduce a non-deterministic model response.
+
+The free tier's `422` response now mints the same short-lived report token as a successful image
+response. Every refusal mode extends that token with an HMAC-authenticated context bound to the
+generation credential and carrying the normalized provider reason. The client returns the opaque
+token but cannot forge the retained reason. This keeps the context stateless and preserves the
+ephemeral boundary: neither the refusal drawing nor its reason is written anywhere unless the parent
+confirms. Managed-token and BYO-key setups continue to authorize the report with their existing
+credentials; their signed context is required only for refusal reports.
+
+* \+ False-positive refusals become visible to human review with the input, exact server-owned
+  instruction, and authenticated provider reason needed to investigate them.
+* \+ Refusals remain ephemeral by default and use the same 30-day purge and orphan-cleanup
+  guarantees as picture reports.
+* \+ The report endpoint remains a closed evidence surface: a refusal cannot smuggle an output image
+  or client-authored prompt into its bundle.
+* − Every refusal response now carries a credential-bound report token for its short lifetime, even
+  when the parent never opens the report action.

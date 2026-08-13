@@ -160,7 +160,7 @@
     <li>
       <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong> They
       pass straight through our service on the way to Google and back, unless a grown-up separately confirms
-      “Report this picture.”
+      “Report this picture” or “Report this refusal.”
     </li>
     <li>
       Google generates the picture on its own systems, under the
@@ -202,17 +202,24 @@
     </li>
   </ul>
 
-  <h3>Reporting an AI-generated picture</h3>
+  <h3>Reporting an AI picture or refusal</h3>
   <p>
     Every finished magic image is labelled “AI-generated picture.” If one is inappropriate or
     otherwise wrong, a grown-up can choose “Report this picture,” review a confirmation, and send it
     for human review. Nothing is retained until that final confirmation.
   </p>
   <p>
-    A confirmed picture report stores the drawing that was sent, the exact server-generated
-    instruction used for the selected art style, the AI-generated picture, the selected style, and
-    the report time. It goes into our private support system so we can investigate and respond
-    within 24 hours. The report bundle is automatically deleted after
+    If the AI refuses a harmless drawing for safety, a grown-up can instead choose “Report this
+    refusal.” Its confirmation sends the rejected drawing, exact server-generated instruction,
+    selected art style, the AI provider's refusal reason, and report time. It does not include a
+    generated picture because none was made. A refusal stays ephemeral unless a grown-up confirms
+    this report.
+  </p>
+  <p>
+    A confirmed picture report stores the drawing, exact server-generated instruction, selected art
+    style, report time, and AI-generated picture. Confirmed reports go into our private support
+    system so we can investigate and respond within 24 hours. The report bundle is automatically
+    deleted after
     <strong>30 days</strong> by a daily cleanup job. To ask us to delete one sooner, use the
     {@render feedbackLink()} and include the report reference shown after it was sent.
   </p>
@@ -250,13 +257,13 @@
     Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and has
     no advertising or analytics SDKs. When the app opens online, it checks the free allowance using
     the one-way installation code described above; it does not send drawing content during that
-    check. Sending feedback and reporting an AI-generated picture each has its own grown-up-check
-    policy in Parent Center. The App Store and Google Play versions ask every time to begin with; on
-    the web those checks start off, and you turn on the ones you want. Splotch does not ask for a
-    child's name, email address, account, or location, and the submitted content is not used to
-    identify a child. We handle these deliberate flows in line with children's privacy laws,
-    including COPPA and the GDPR's protections for children. There are no social features, comments,
-    chat, advertising, or in-app purchases.
+    check. Sending feedback and reporting an AI result each has its own grown-up-check policy in
+    Parent Center. The App Store and Google Play versions ask every time to begin with; on the web
+    those checks start off, and you turn on the ones you want. Splotch does not ask for a child's
+    name, email address, account, or location, and the submitted content is not used to identify a
+    child. We handle these deliberate flows in line with children's privacy laws, including COPPA
+    and the GDPR's protections for children. There are no social features, comments, chat,
+    advertising, or in-app purchases.
   </p>
 
   <h3>Changes to this policy</h3>

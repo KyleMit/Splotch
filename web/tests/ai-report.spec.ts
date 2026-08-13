@@ -2,7 +2,13 @@ import { expect, test } from '@playwright/test';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '../src/lib/ai/limits';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { enforceProductionCsp } from './helpers';
-import { MOCK_REPORT_TOKEN, resultBoxes, revealAiResult, revealedBoxes } from './ai-harness';
+import {
+  MOCK_REPORT_TOKEN,
+  openAiResult,
+  resultBoxes,
+  revealAiResult,
+  revealedBoxes,
+} from './ai-harness';
 
 // The picture-report flow launched from the AI result: the confirmation dialog,
 // its dismissals, the send's deadline, and the credentials the request carries.
@@ -182,5 +188,131 @@ test.describe('AI picture report', () => {
     expect(reportHeaders?.['x-report-token']).toBe(MOCK_REPORT_TOKEN);
     expect(reportHeaders?.['x-access-token']).toBeUndefined();
     expect(reportHeaders?.['x-api-key']).toBeUndefined();
+  });
+
+  test('confirms and sends a free-tier false-positive refusal report', async ({ page }) => {
+    let reportBody = '';
+    let reportHeaders: Record<string, string> | null = null;
+    await enforceProductionCsp(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    await page.route('**/api/report-image', async (route) => {
+      reportHeaders = route.request().headers();
+      reportBody = route.request().postDataBuffer()?.toString('utf8') ?? '';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, reportId: 'refusal-report-id' }),
+      });
+    });
+    const endpoint = await openAiResult(page, { freeTier: true });
+    await endpoint.fail(422, { 'X-Report-Token': MOCK_REPORT_TOKEN });
+
+    const report = page.getByRole('button', { name: 'Report this refusal' });
+    await expect(page.getByText('For grown-ups')).toBeVisible();
+    await expect(report).toBeVisible();
+    const reportBox = await report.boundingBox();
+    expect(reportBox?.height).toBeGreaterThanOrEqual(44);
+
+    await report.focus();
+    await page.keyboard.press('Enter');
+    const confirm = page.locator('dialog.ai-report-confirm');
+    await expect(confirm).toContainText(
+      "The rejected drawing, selected art style, exact instruction sent to the AI, and the AI's refusal reason"
+    );
+    await expect(confirm).toContainText('the report is deleted after 30 days.');
+    await expect(confirm.locator('img')).toHaveCount(1);
+    await expect(confirm.getByText('The rejected drawing', { exact: true })).toBeVisible();
+
+    await confirm.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByText(/Keep this report reference.*refusal-report-id/)).toBeVisible();
+    expect(reportBody).toContain('false-positive-refusal');
+    expect(reportBody).toContain('name="drawing"');
+    expect(reportBody).not.toContain('name="output"');
+    expect(reportHeaders?.['x-report-token']).toBe(MOCK_REPORT_TOKEN);
+    expect(reportHeaders?.['x-installation-id']).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  for (const viewport of [
+    { width: 740, height: 360 },
+    { width: 480, height: 320 },
+  ]) {
+    test(`cancelling a refusal report restores focus at ${viewport.width}×${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+      await page.addInitScript(
+        (key) => localStorage.setItem(key, 'never'),
+        STORAGE_KEYS.parentalGateImageReportMode
+      );
+      const endpoint = await openAiResult(page);
+      await endpoint.fail(422);
+
+      const report = page.getByRole('button', { name: 'Report this refusal' });
+      await report.focus();
+      await page.keyboard.press('Enter');
+      const confirm = page.locator('dialog.ai-report-confirm');
+      await expect(confirm).toBeVisible();
+      const geometry = await confirm.evaluate((dialog) => {
+        const dialogBox = dialog.getBoundingClientRect();
+        const headingBox = dialog.querySelector('h3')!.getBoundingClientRect();
+        const disclosureBox = dialog
+          .querySelector('.ai-report-confirm-heading p')!
+          .getBoundingClientRect();
+        return {
+          dialogTop: dialogBox.top,
+          dialogBottom: dialogBox.bottom,
+          headingTop: headingBox.top,
+          disclosureTop: disclosureBox.top,
+        };
+      });
+      expect(geometry.dialogTop).toBeGreaterThanOrEqual(0);
+      expect(geometry.dialogBottom).toBeLessThanOrEqual(viewport.height);
+      expect(geometry.headingTop).toBeGreaterThanOrEqual(geometry.dialogTop);
+      expect(geometry.disclosureTop).toBeGreaterThanOrEqual(geometry.dialogTop);
+
+      await page.keyboard.press('Escape');
+      await expect(confirm).not.toBeVisible();
+      await expect(report).toBeFocused();
+    });
+  }
+
+  test('a failed refusal report offers an in-place retry without another generation', async ({
+    page,
+  }) => {
+    let attempts = 0;
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.addInitScript(
+      (key) => localStorage.setItem(key, 'never'),
+      STORAGE_KEYS.parentalGateImageReportMode
+    );
+    await page.route('**/api/report-image', async (route) => {
+      attempts += 1;
+      await route.fulfill({
+        status: attempts === 1 ? 503 : 200,
+        contentType: 'application/json',
+        body:
+          attempts === 1
+            ? JSON.stringify({ ok: false, error: 'Reporting is temporarily unavailable.' })
+            : JSON.stringify({ ok: true, reportId: 'retried-refusal-id' }),
+      });
+    });
+    const endpoint = await openAiResult(page);
+    await endpoint.fail(422);
+
+    await page.getByRole('button', { name: 'Report this refusal' }).click();
+    await page.getByRole('button', { name: 'Send report' }).click();
+    const retry = page.getByRole('button', { name: 'Try again' });
+    await expect(retry).toBeFocused();
+    await retry.click();
+    await page.getByRole('button', { name: 'Send report' }).click();
+
+    await expect(page.getByText(/Keep this report reference.*retried-refusal-id/)).toBeVisible();
+    expect(attempts).toBe(2);
   });
 });

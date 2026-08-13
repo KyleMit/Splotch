@@ -3,6 +3,7 @@
   import AiImageReport, { type ImageReportStatus } from './AiImageReport.svelte';
   import AiResultDisclosure from './AiResultDisclosure.svelte';
   import AiResultStage from './AiResultStage.svelte';
+  import Button from './design/Button.svelte';
   import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -128,6 +129,26 @@
           <p class="ai-result-error-sub">
             That picture didn't work — try drawing something different!
           </p>
+          <div class="ai-refusal-report">
+            <span class="ai-refusal-report-label" id="refusalReportAudience">For grown-ups</span>
+            {#if !reportSettled}
+              <Button
+                size="md"
+                aria-describedby="refusalReportAudience"
+                onclick={requestReport}
+                disabled={!aiResult.previewUrl}>Report this refusal</Button
+              >
+            {/if}
+            <AiImageReport
+              kind="false-positive-refusal"
+              drawingUrl={aiResult.previewUrl}
+              outputUrl={null}
+              style={aiResult.style}
+              reportToken={aiResult.reportToken}
+              origin={reportOrigin}
+              bind:status={reportStatus}
+            />
+          </div>
         {/if}
       </div>
     {:else}
@@ -339,6 +360,26 @@
     font-weight: var(--font-weight-medium);
     color: var(--text-soft);
     max-width: 280px;
+  }
+
+  .ai-refusal-report {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  .ai-refusal-report-label {
+    color: var(--text-soft);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  /* Keep this adult-only secondary action quieter than a primary `lg` decision
+     while preserving the app's minimum touch target. */
+  .ai-refusal-report :global(.btn) {
+    min-height: 44px;
   }
 
   /* ── Saved caption (auto-save mode, replaces the Download button) ── */

@@ -16,6 +16,7 @@ import {
   solveParentalGate,
 } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { openAiResult } from './ai-harness';
 
 // The Grown-Ups Only gate (ParentalGate.svelte + state/parentalGate.svelte.ts)
 // sits at operation boundaries, never in front of Settings itself (ADR-0094).
@@ -34,7 +35,7 @@ const AI_RESULT_WEBP = readFileSync(
 // Every operation Parent Center holds a policy for, by the name it carries there.
 const PROTECTED_FEATURES = [
   'Generating an AI image',
-  'Reporting an AI picture',
+  'Reporting an AI result',
   'Viewing external links',
   'Sending feedback',
   'Opening Parent Center',
@@ -602,5 +603,41 @@ test('reporting an AI picture waits for its own parental gate before confirming'
   await expect(page.getByText(/Keep this report reference.*test-report-id/)).toBeVisible({
     timeout: 5000,
   });
+  expect(reportRequests).toBe(1);
+});
+
+test('reporting a safety refusal uses the AI-report parental gate before confirming', async ({
+  page,
+}) => {
+  let reportRequests = 0;
+  await page.addInitScript(
+    (reportModeKey) => localStorage.setItem(reportModeKey, 'always'),
+    STORAGE_KEYS.parentalGateImageReportMode
+  );
+  await page.route('**/api/report-image', async (route) => {
+    reportRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, reportId: 'refusal-report-id' }),
+    });
+  });
+  const endpoint = await openAiResult(page);
+  await endpoint.fail(422);
+
+  await page.getByRole('button', { name: 'Report this refusal' }).click();
+
+  const gate = page.locator('#parentalGate');
+  const confirm = page.locator('dialog.ai-report-confirm');
+  await expect(gate).toBeVisible();
+  await expect(confirm).not.toBeVisible();
+  expect(reportRequests).toBe(0);
+
+  await solveParentalGate(page);
+  await expect(confirm).toBeVisible();
+  expect(reportRequests).toBe(0);
+
+  await confirm.getByRole('button', { name: 'Send report' }).click();
+  await expect(page.getByText(/Keep this report reference.*refusal-report-id/)).toBeVisible();
   expect(reportRequests).toBe(1);
 });

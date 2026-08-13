@@ -6,7 +6,7 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
-import { issueReportToken } from '$lib/server/reportToken';
+import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
 import {
   FREE_DAILY_LIMIT_EXHAUSTED_CODE,
   FREE_GENERATION_LIMIT,
@@ -26,7 +26,7 @@ import {
   MAX_IMAGE_BYTES,
   resolveGenerationPrompt,
 } from '$lib/server/generateImagePolicy';
-import { apiHandler, contentTypeOf, readBodyWithinLimit } from '$lib/server/http';
+import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import {
   completeFreeGeneration,
   failFreeGeneration,
@@ -40,8 +40,26 @@ import type { RequestHandler } from './$types';
 // as a distinct 422 (vs 502 for genuine upstream failures) so the client can
 // show the right guidance. See ADR-0023.
 const SAFETY_STATUS = 422;
-function safetyRefusal(reason: string): never {
-  throw error(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`);
+
+function reportTokenBinding(authorization: GenerationAuthorization): ReportTokenBinding {
+  switch (authorization.kind) {
+    case 'byok':
+      return { kind: 'byok', credential: authorization.effectiveKey };
+    case 'managed':
+      return { kind: 'managed', credential: authorization.managedToken };
+    case 'free':
+      return { kind: 'free', credential: authorization.installationId };
+  }
+}
+
+function safetyRefusal(reason: string, authorization: GenerationAuthorization): Response {
+  const headers: Record<string, string> = {};
+  const reportToken = issueReportToken(reportTokenBinding(authorization), {
+    kind: 'false-positive-refusal',
+    refusalReason: reason,
+  });
+  if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
+  return fail(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
 }
 
 function assertAllowedImageType(mimeType: string): void {
@@ -145,6 +163,21 @@ function freeFailureKind(cause: unknown): FreeGenerationFailureKind {
   return 'invalid-request';
 }
 
+async function recordFreeGenerationFailure(
+  installationId: string,
+  kind: FreeGenerationFailureKind,
+  reservationId?: string
+): Promise<void> {
+  try {
+    await failFreeGeneration(installationId, kind, reservationId);
+  } catch (trackingError) {
+    console.warn(
+      '[free-generation] failed to record unsuccessful attempt:',
+      trackingError instanceof Error ? trackingError.message : trackingError
+    );
+  }
+}
+
 function exhaustedGrant(): Response {
   const body: FreeGenerationGrantExhausted = {
     ok: false,
@@ -220,7 +253,12 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       image: { base64: inputBytes.toString('base64'), mimeType: mimeType || 'image/png' },
       prompt: finalPrompt,
     });
-    if (result.kind === 'refusal') safetyRefusal(result.reason);
+    if (result.kind === 'refusal') {
+      if (authorization.kind === 'free') {
+        await recordFreeGenerationFailure(authorization.installationId, 'safety', reservationId);
+      }
+      return safetyRefusal(result.reason, authorization);
+    }
     if (result.kind === 'error') throw error(502, result.reason);
 
     let freeRemaining: number | null = null;
@@ -237,28 +275,21 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     if (freeRemaining !== null) {
       headers[FREE_GENERATIONS_REMAINING_HEADER] = String(freeRemaining);
     }
-    // The free tier's proof that this picture came from here, so it can be
-    // reported. Minted off the authorized installation id, never off anything
-    // the request body carried.
+    // The free tier's proof that this AI attempt ran here, so its result can be
+    // reported. Refusals receive the same proof in safetyRefusal above. Minted
+    // off the authorized installation id, never off request-body data.
     if (authorization.kind === 'free') {
-      const reportToken = issueReportToken(authorization.installationId);
+      const reportToken = issueReportToken(reportTokenBinding(authorization));
       if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
     }
     return new Response(Buffer.from(result.data, 'base64'), { headers });
   } catch (cause) {
     if (authorization.kind === 'free') {
-      try {
-        await failFreeGeneration(
-          authorization.installationId,
-          freeFailureKind(cause),
-          reservationId
-        );
-      } catch (trackingError) {
-        console.warn(
-          '[free-generation] failed to record unsuccessful attempt:',
-          trackingError instanceof Error ? trackingError.message : trackingError
-        );
-      }
+      await recordFreeGenerationFailure(
+        authorization.installationId,
+        freeFailureKind(cause),
+        reservationId
+      );
     }
     throw cause;
   }

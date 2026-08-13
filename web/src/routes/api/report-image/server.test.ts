@@ -29,7 +29,7 @@ function post(body: BodyInit, headers: HeadersInit = {}) {
 
 beforeEach(() => {
   isReportingConfigured.mockReset().mockReturnValue(true);
-  authorizeImageReport.mockReset().mockResolvedValue({ authorized: true });
+  authorizeImageReport.mockReset().mockResolvedValue({ authorized: true, reportContext: null });
   submitImageReport.mockReset().mockResolvedValue({ ok: true, reportId: 'report-id' });
 });
 
@@ -52,9 +52,11 @@ describe('POST /api/report-image', () => {
       clientAddress: '203.0.113.9',
     });
     expect(submitImageReport).toHaveBeenCalledWith({
+      kind: null,
       drawing: expect.any(Blob),
       output: expect.any(Blob),
       style: 'Magical',
+      reportContext: null,
     });
   });
 
@@ -97,7 +99,7 @@ describe('POST /api/report-image', () => {
     expect(response.status).toBe(413);
     expect(await response.json()).toEqual({
       ok: false,
-      error: 'That picture is too large to report.',
+      error: 'That AI report is too large to send.',
     });
     expect(submitImageReport).not.toHaveBeenCalled();
   });
@@ -112,6 +114,34 @@ describe('POST /api/report-image', () => {
 
     expect(response.status).toBe(200);
     expect(submitImageReport).toHaveBeenCalledOnce();
+  });
+
+  it('hands a false-positive refusal to the core without inventing an output image', async () => {
+    authorizeImageReport.mockResolvedValue({
+      authorized: true,
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
+    });
+    const body = new FormData();
+    body.set('kind', 'false-positive-refusal');
+    body.set('drawing', new Blob(['drawing'], { type: 'image/webp' }));
+    body.set('style', 'Felt');
+
+    const response = await post(body);
+
+    expect(response.status).toBe(200);
+    expect(submitImageReport).toHaveBeenCalledWith({
+      kind: 'false-positive-refusal',
+      drawing: expect.any(Blob),
+      output: null,
+      style: 'Felt',
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
+    });
   });
 
   it('fails before authorization or body parsing when private reporting is unconfigured', async () => {

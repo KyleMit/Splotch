@@ -28,6 +28,7 @@ beforeEach(() => {
 describe('saveImageReport', () => {
   it('stores the drawing, prompt, output, and retention metadata under one report key', async () => {
     const saved = await saveImageReport({
+      kind: 'picture',
       input: new Blob(['drawing'], { type: 'image/png' }),
       output: new Blob(['result'], { type: 'image/jpeg' }),
       prompt: 'Resolved prompt',
@@ -52,15 +53,63 @@ describe('saveImageReport', () => {
     expect(store.setJSON).toHaveBeenCalledWith(
       `${saved.keyPrefix}metadata.json`,
       {
-        version: 1,
+        version: 2,
+        kind: 'picture',
         reportedAt: saved.reportedAt,
         deleteAfter: saved.deleteAfter,
         style: 'Crayon',
         inputContentType: 'image/png',
         outputContentType: 'image/jpeg',
+        refusalReason: null,
       },
       { onlyIfNew: true }
     );
+  });
+
+  it('stores a refusal without fabricating an output object', async () => {
+    const saved = await saveImageReport({
+      kind: 'false-positive-refusal',
+      input: new Blob(['drawing'], { type: 'image/webp' }),
+      output: null,
+      prompt: 'Resolved prompt',
+      style: null,
+      refusalReason: 'IMAGE_SAFETY',
+    });
+
+    expect(saved.keys).toEqual([
+      `${saved.keyPrefix}input.webp`,
+      `${saved.keyPrefix}prompt.txt`,
+      `${saved.keyPrefix}metadata.json`,
+    ]);
+    expect(store.set.mock.calls.map(([key]) => key)).toEqual([
+      `${saved.keyPrefix}input.webp`,
+      `${saved.keyPrefix}prompt.txt`,
+    ]);
+    expect(store.setJSON).toHaveBeenCalledWith(
+      `${saved.keyPrefix}metadata.json`,
+      expect.objectContaining({
+        version: 2,
+        kind: 'false-positive-refusal',
+        outputContentType: null,
+        refusalReason: 'IMAGE_SAFETY',
+      }),
+      { onlyIfNew: true }
+    );
+  });
+
+  it('uses the picture discriminant to write an output even when its MIME type is empty', async () => {
+    const saved = await saveImageReport({
+      kind: 'picture',
+      input: new Blob(['drawing'], { type: 'image/png' }),
+      output: new Blob(['result']),
+      prompt: 'Resolved prompt',
+      style: null,
+    });
+
+    expect(saved.keys).toContain(`${saved.keyPrefix}output.png`);
+    expect(store.set).toHaveBeenCalledWith(`${saved.keyPrefix}output.png`, expect.any(Blob), {
+      onlyIfNew: true,
+    });
   });
 });
 

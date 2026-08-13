@@ -10,15 +10,41 @@ import {
 import { rateLimitPolicy } from './rateLimitPolicy';
 import { isAllowedToken } from './tokens';
 import { isInstallationId } from './freeGenerationGrants';
-import { verifyReportToken } from './reportToken';
+import { verifyReportToken, type ReportTokenBinding, type ReportTokenContext } from './reportToken';
 
 export type ImageReportAuthorizationResult =
-  | { authorized: true }
+  | { authorized: true; reportContext: ReportTokenContext | null }
   | { authorized: false; response: Response };
 
-// Reporting accepts exactly the three credentials generation accepts, because a
-// picture that could be made must be reportable — the report is the child-safety
-// path for the very output the same credential produced.
+function verifyReportContext(
+  token: string | null,
+  binding: ReportTokenBinding,
+  required = false
+): ImageReportAuthorizationResult {
+  if (!token && !required) return { authorized: true, reportContext: null };
+
+  const verdict = verifyReportToken(token, binding);
+  switch (verdict.status) {
+    case 'valid':
+      return { authorized: true, reportContext: verdict.context };
+    case 'expired':
+      return {
+        authorized: false,
+        response: fail(403, 'That AI result can no longer be reported.'),
+      };
+    case 'unconfigured':
+      console.error('[report-image] REPORT_TOKEN_SECRET is unset; signed reporting is closed');
+      return {
+        authorized: false,
+        response: fail(503, 'AI reporting is not available right now. Please try again later.'),
+      };
+    default:
+      return { authorized: false, response: fail(403, 'Invalid access token') };
+  }
+}
+
+// Reporting accepts exactly the three credentials generation accepts, because
+// every result or refusal must be reportable through the same child-safety path.
 export async function authorizeImageReport(input: {
   apiKey: string | null;
   token: string | null;
@@ -34,9 +60,8 @@ export async function authorizeImageReport(input: {
     );
     if (attempt.limited) return { authorized: false, response: throttled(attempt.retryAfter) };
     const check = await aiProvider.verifyKey(apiKey);
-    return check.ok
-      ? { authorized: true }
-      : { authorized: false, response: fail(403, 'Invalid API key') };
+    if (!check.ok) return { authorized: false, response: fail(403, 'Invalid API key') };
+    return verifyReportContext(input.reportToken, { kind: 'byok', credential: apiKey });
   }
 
   // Invalid managed tokens are the same oracle as /api/verify-access-code, so
@@ -55,9 +80,13 @@ export async function authorizeImageReport(input: {
       reportImageTokenBucket(managedToken),
       rateLimitPolicy.reportImageToken
     );
-    return attempt.limited
-      ? { authorized: false, response: throttled(attempt.retryAfter) }
-      : { authorized: true };
+    if (attempt.limited) {
+      return { authorized: false, response: throttled(attempt.retryAfter) };
+    }
+    return verifyReportContext(input.reportToken, {
+      kind: 'managed',
+      credential: managedToken,
+    });
   }
 
   // The free tier proves itself with the report token generate-image minted for
@@ -75,24 +104,9 @@ export async function authorizeImageReport(input: {
     return { authorized: false, response: fail(400, 'Installation grant unavailable') };
   }
 
-  switch (verifyReportToken(input.reportToken, input.installationId)) {
-    case 'valid':
-      return { authorized: true };
-    case 'expired':
-      return { authorized: false, response: fail(403, 'That picture can no longer be reported.') };
-    case 'unconfigured':
-      // A deploy without the signing secret can still report on the other two
-      // credentials, so this fails the free path alone — loudly, because the
-      // symptom is otherwise a silent 503 on the child-safety path.
-      console.error('[report-image] REPORT_TOKEN_SECRET is unset; free-tier reporting is closed');
-      return {
-        authorized: false,
-        response: fail(
-          503,
-          'Picture reporting is not available right now. Please try again later.'
-        ),
-      };
-    default:
-      return { authorized: false, response: fail(403, 'Invalid access token') };
-  }
+  return verifyReportContext(
+    input.reportToken,
+    { kind: 'free', credential: input.installationId },
+    true
+  );
 }

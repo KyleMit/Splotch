@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   failGrant: vi.fn(),
   completeGrant: vi.fn(),
   generateImage: vi.fn(),
+  issueReportToken: vi.fn(),
 }));
 
 vi.mock('$lib/server/generationAuthorization', () => ({
@@ -26,8 +27,11 @@ vi.mock('$lib/server/usage', () => ({
   recordByokUsage: vi.fn(),
   recordTokenUsage: vi.fn(),
 }));
+vi.mock('$lib/server/reportToken', () => ({
+  issueReportToken: mocks.issueReportToken,
+}));
 
-import { FREE_GENERATIONS_REMAINING_HEADER } from '$lib/apiHeaders';
+import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 import { POST } from './+server';
 
 function post() {
@@ -55,6 +59,7 @@ beforeEach(() => {
   mocks.reserveGrant.mockResolvedValue({ reserved: true, reservationId: 'reservation-1' });
   mocks.reserveDaily.mockResolvedValue({ reserved: false, remaining: 0 });
   mocks.failGrant.mockResolvedValue(undefined);
+  mocks.issueReportToken.mockReturnValue('signed-report-token');
 });
 
 describe('POST /api/generate-image', () => {
@@ -88,5 +93,51 @@ describe('POST /api/generate-image', () => {
     expect(response.headers.get(FREE_GENERATIONS_REMAINING_HEADER)).toBeNull();
     await expect(response.text()).resolves.toBe('generated');
     expect(mocks.failGrant).not.toHaveBeenCalled();
+  });
+
+  it('returns a report token with a free-tier safety refusal without retaining the drawing', async () => {
+    mocks.reserveDaily.mockResolvedValue({ reserved: true, remaining: 400 });
+    mocks.generateImage.mockResolvedValue({ kind: 'refusal', reason: 'IMAGE_SAFETY' });
+
+    const response = await post();
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'Drawing was blocked for safety: IMAGE_SAFETY',
+    });
+    expect(mocks.failGrant).toHaveBeenCalledWith('a'.repeat(64), 'safety', 'reservation-1');
+    expect(mocks.completeGrant).not.toHaveBeenCalled();
+    expect(mocks.issueReportToken).toHaveBeenCalledWith(
+      { kind: 'free', credential: 'a'.repeat(64) },
+      { kind: 'false-positive-refusal', refusalReason: 'IMAGE_SAFETY' }
+    );
+  });
+
+  it.each([
+    {
+      kind: 'managed' as const,
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+      binding: { kind: 'managed', credential: 'daycare-club' },
+    },
+    {
+      kind: 'byok' as const,
+      effectiveKey: 'parent-key',
+      binding: { kind: 'byok', credential: 'parent-key' },
+    },
+  ])('returns a signed refusal context for $kind generation', async (authorization) => {
+    mocks.authorize.mockResolvedValue({ authorized: true, ...authorization });
+    mocks.generateImage.mockResolvedValue({ kind: 'refusal', reason: 'PROHIBITED_CONTENT' });
+
+    const response = await post();
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
+    expect(mocks.issueReportToken).toHaveBeenCalledWith(authorization.binding, {
+      kind: 'false-positive-refusal',
+      refusalReason: 'PROHIBITED_CONTENT',
+    });
   });
 });

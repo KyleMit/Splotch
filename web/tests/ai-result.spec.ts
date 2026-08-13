@@ -387,6 +387,7 @@ test.describe('AI result modal', () => {
     await expect(page.getByText(/didn't work/i)).toBeVisible();
     await expect(page.locator('.dial')).toHaveCount(0);
     await expect(page.locator('.ai-loading-caption')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Report this refusal' })).toHaveCount(0);
   });
 
   test('shows the safety refusal state', async ({ page }) => {
@@ -396,6 +397,12 @@ test.describe('AI result modal', () => {
     await expect(page.getByText("Let's try drawing something else!")).toBeVisible();
     await expect(page.locator('.ai-result-error.safety')).toBeVisible();
     await expect(page.getByText(/try drawing something different/i)).toBeVisible();
+    const audience = page.getByText('For grown-ups');
+    const report = page.getByRole('button', { name: 'Report this refusal' });
+    await expect(audience).toBeVisible();
+    await expect(audience).toHaveAttribute('id', 'refusalReportAudience');
+    await expect(report).toBeVisible();
+    await expect(report).toHaveAttribute('aria-describedby', 'refusalReportAudience');
   });
 
   // Action-level coverage for the scoped pinchZoom (aiPreview.ts math is unit-

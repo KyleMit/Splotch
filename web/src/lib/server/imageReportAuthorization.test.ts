@@ -29,6 +29,7 @@ import { rateLimitPolicy } from './rateLimitPolicy';
 import { issueReportToken } from './reportToken';
 
 const INSTALLATION_ID = 'a'.repeat(64);
+const FREE_BINDING = { kind: 'free', credential: INSTALLATION_ID } as const;
 
 beforeEach(() => {
   envState.REPORT_TOKEN_SECRET = 'unit-test-report-secret';
@@ -48,7 +49,7 @@ describe('authorizeImageReport', () => {
       clientAddress: '203.0.113.5',
     });
 
-    expect(result).toEqual({ authorized: true });
+    expect(result).toEqual({ authorized: true, reportContext: null });
     expect(peekRateLimit).toHaveBeenCalledWith(
       verifyAccessCodeBucket('203.0.113.5'),
       rateLimitPolicy.verifyAccessCode
@@ -58,6 +59,28 @@ describe('authorizeImageReport', () => {
       reportImageTokenBucket('daycare-club'),
       rateLimitPolicy.reportImageToken
     );
+  });
+
+  it('verifies the server-authenticated refusal reason for a managed report', async () => {
+    const binding = { kind: 'managed', credential: 'daycare-club' } as const;
+    const result = await authorizeImageReport({
+      apiKey: null,
+      token: binding.credential,
+      installationId: null,
+      reportToken: issueReportToken(binding, {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      }),
+      clientAddress: '203.0.113.5',
+    });
+
+    expect(result).toEqual({
+      authorized: true,
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
+    });
   });
 
   it('charges an invalid managed token to the shared access-code oracle bucket', async () => {
@@ -89,13 +112,30 @@ describe('authorizeImageReport', () => {
       clientAddress: '198.51.100.8',
     });
 
-    expect(result).toEqual({ authorized: true });
+    expect(result).toEqual({ authorized: true, reportContext: null });
     expect(rateLimit).toHaveBeenCalledWith(
       reportImageByokBucket('198.51.100.8'),
       rateLimitPolicy.reportImageByok
     );
     expect(verifyKey).toHaveBeenCalledWith('parent-key');
     expect(isAllowedToken).not.toHaveBeenCalled();
+  });
+
+  it('rejects a refusal context token bound to a different BYO key', async () => {
+    const result = await authorizeImageReport({
+      apiKey: 'parent-key',
+      token: null,
+      installationId: null,
+      reportToken: issueReportToken(
+        { kind: 'byok', credential: 'different-key' },
+        { kind: 'false-positive-refusal', refusalReason: 'IMAGE_SAFETY' }
+      ),
+      clientAddress: '198.51.100.8',
+    });
+
+    expect(result.authorized).toBe(false);
+    if (result.authorized) throw new Error('Expected authorization failure');
+    expect(result.response.status).toBe(403);
   });
 
   it('rejects a BYO key that the provider cannot verify', async () => {
@@ -119,7 +159,7 @@ describe('authorizeImageReport', () => {
       apiKey: null,
       token: null,
       installationId: INSTALLATION_ID,
-      reportToken: issueReportToken(INSTALLATION_ID),
+      reportToken: issueReportToken(FREE_BINDING),
       clientAddress: '192.0.2.9',
       ...overrides,
     });
@@ -127,7 +167,10 @@ describe('authorizeImageReport', () => {
   it('accepts a signed free report token and spends only its own per-IP bucket', async () => {
     const result = await freeReport();
 
-    expect(result).toEqual({ authorized: true });
+    expect(result).toEqual({
+      authorized: true,
+      reportContext: { kind: 'picture' },
+    });
     expect(rateLimit).toHaveBeenCalledOnce();
     expect(rateLimit).toHaveBeenCalledWith(
       reportImageFreeBucket('192.0.2.9'),
@@ -143,7 +186,10 @@ describe('authorizeImageReport', () => {
   it('treats an empty access token as the free tier rather than a bad token', async () => {
     const result = await freeReport({ apiKey: '', token: '' });
 
-    expect(result).toEqual({ authorized: true });
+    expect(result).toEqual({
+      authorized: true,
+      reportContext: { kind: 'picture' },
+    });
     expect(isAllowedToken).not.toHaveBeenCalled();
   });
 
@@ -158,7 +204,9 @@ describe('authorizeImageReport', () => {
   });
 
   it('rejects a report token minted for a different installation', async () => {
-    const result = await freeReport({ reportToken: issueReportToken('b'.repeat(64)) });
+    const result = await freeReport({
+      reportToken: issueReportToken({ kind: 'free', credential: 'b'.repeat(64) }),
+    });
 
     expect(result.authorized).toBe(false);
     if (result.authorized) throw new Error('Expected authorization failure');
@@ -167,7 +215,7 @@ describe('authorizeImageReport', () => {
 
   it('rejects a report token whose signature was forged against a different secret', async () => {
     envState.REPORT_TOKEN_SECRET = 'a-different-secret';
-    const forged = issueReportToken(INSTALLATION_ID);
+    const forged = issueReportToken(FREE_BINDING);
     envState.REPORT_TOKEN_SECRET = 'unit-test-report-secret';
 
     const result = await freeReport({ reportToken: forged });
@@ -180,7 +228,7 @@ describe('authorizeImageReport', () => {
   it('rejects an expired report token', async () => {
     vi.useFakeTimers();
     try {
-      const token = issueReportToken(INSTALLATION_ID);
+      const token = issueReportToken(FREE_BINDING);
       vi.advanceTimersByTime(3 * 60 * 60 * 1000);
       const result = await freeReport({ reportToken: token });
 
@@ -195,7 +243,7 @@ describe('authorizeImageReport', () => {
   // A deploy missing the signing secret is a server fault, not a bad credential,
   // and the other two credentials keep working.
   it('answers 503 rather than 403 when the signing secret is unset', async () => {
-    const token = issueReportToken(INSTALLATION_ID);
+    const token = issueReportToken(FREE_BINDING);
     envState.REPORT_TOKEN_SECRET = undefined;
 
     const result = await freeReport({ reportToken: token });
