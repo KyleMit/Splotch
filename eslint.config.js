@@ -116,7 +116,7 @@ export default tseslint.config(
   {
     // Browser-console paste snippets, not Node scripts — the blanket eslint-disable at the
     // top of each file is intentional even when currently redundant.
-    files: ['tools/perf/ipad-*.js'],
+    files: ['tools/perf/probes/*.js'],
     linterOptions: { reportUnusedDisableDirectives: 'off' },
   },
   {

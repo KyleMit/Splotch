@@ -9,18 +9,18 @@ P95 that needs WebKit and a quiet host; its full seven-scenario form and the rea
 tests run only on tagged releases. ADR-0100's 2026-08-11 amendment records why its obsolete
 pre-merge blob-encoding guard retired.
 
-| Layer                 | Tool                | Command                         | Runs in CI                                   |
-| --------------------- | ------------------- | ------------------------------- | -------------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                              |
-| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                              |
-| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`   | every push / PR                              |
-| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`            | every push / PR                              |
-| E2E (web)             | Playwright          | `npm run test:e2e`              | every push / PR                              |
-| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`        | every push / PR (unit job)                   |
-| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)               |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                     |
-| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner)      |
-| WebKit commit timing  | Playwright WebKit   | `npm run perf:undo:webkit:fast` | pushes to `main`; full suite on release tags |
+| Layer                 | Tool                | Command                             | Runs in CI                                   |
+| --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`                 | every push / PR                              |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
+| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
+| E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
+| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only**                     |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
+| WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous

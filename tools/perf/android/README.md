@@ -9,4 +9,6 @@ serve the local build unless given an external URL. They write captures beneath 
 fail non-zero when device discovery, WebView/CDP attachment, capture, or an enforced gate fails.
 
 Android-specific discovery and transport stay here. Shared device-session, action-scoring, trace,
-and artifact behavior belongs in `../lib/`; the injected action payload belongs in `../probes/`.
+and artifact behavior belongs in `../lib/`; the injected action payload belongs in `../probes/`. The
+behavior-preserving issue #975 manifest leaves the shared action plan in
+`../ios/capture-xcuitest-actions.mjs`, which this browser runner imports deliberately.

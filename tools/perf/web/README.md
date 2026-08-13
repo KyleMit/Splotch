@@ -18,4 +18,6 @@ installed Playwright browsers. Gate commands exit non-zero for missing samples o
 breaches; capture commands also fail when they cannot build, serve, or drive the app.
 
 Shared capture formats and scoring belong in `../lib/`; browser-injected payloads belong in
-`../probes/`. Keep platform-neutral action behavior shared with the Android and iOS runners.
+`../probes/`. The behavior-preserving issue #975 manifest leaves the shared action plan in
+`../ios/capture-xcuitest-actions.mjs` and the reused probe configuration in
+`../ios/capture-webkit-frames.mjs`; web runners import those deliberate owners.

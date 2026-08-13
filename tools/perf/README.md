@@ -23,6 +23,11 @@ manifest. The committed fixture in `fixtures/` seeds the rolling WebKit undo his
 cannot import Node modules. Tests remain in `tests/` and cover entry points, probes, gates, and
 artifact contracts.
 
+The exact issue #975 manifest preserves two established cross-platform owners instead of extracting
+new modules during this behavior-preserving move: `ios/capture-xcuitest-actions.mjs` owns the action
+plan consumed by the web and Android runners, and `ios/capture-webkit-frames.mjs` owns the probe
+configuration reused by local web capture.
+
 Most captures build or connect to external software and fail non-zero when prerequisites, fidelity
 checks, or performance gates are missing. Analyzers fail on unreadable or unsupported evidence. Read
 [`docs/PROFILING.md`](../../docs/PROFILING.md) before changing metrics or thresholds, and
