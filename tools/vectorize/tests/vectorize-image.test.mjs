@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 // One copy: the driver lives in tools/, not in a skill package Ruler would
 // triplicate into .claude/ and .agents/.
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
-const DRIVERS = ['tools/vectorize/vectorize.mjs'];
+const DRIVERS = ['tools/vectorize/vectorize-image.mjs'];
 
 const load = (path) => import(pathToFileURL(join(repoRoot, path)).href);
 

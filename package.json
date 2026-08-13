@@ -101,7 +101,7 @@
     "model-eval": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/model-eval/run-model-evaluation.mjs",
     "model-eval:fixtures": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/model-eval/gen-model-fixtures.mjs",
     "model-eval:gen-inputs": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/model-eval/gen-model-inputs.mjs",
-    "vectorize": "node tools/vectorize/vectorize.mjs",
+    "vectorize": "node tools/vectorize/vectorize-image.mjs",
     "gen:icon-names": "node tools/icons/gen-icon-names.mjs",
     "gen:releases": "node tools/release/gen-release-notes.mjs",
     "gen:tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/tokens/gen-token-css.mjs",

@@ -11,10 +11,10 @@
 // explicit --production / --mode.
 //
 // Usage:
-//   node tools/vectorize/vectorize.mjs <input> [--out file] [options]
-//   node tools/vectorize/vectorize.mjs --download <token> [--out file]
-//   node tools/vectorize/vectorize.mjs --delete <token>
-//   node tools/vectorize/vectorize.mjs --account
+//   node tools/vectorize/vectorize-image.mjs <input> [--out file] [options]
+//   node tools/vectorize/vectorize-image.mjs --download <token> [--out file]
+//   node tools/vectorize/vectorize-image.mjs --delete <token>
+//   node tools/vectorize/vectorize-image.mjs --account
 //
 // <input> is a file path, an http(s) URL, or token:<image-token>.
 // See README.md for the flag table and docs/api.md for every --param name.
@@ -72,7 +72,7 @@ const EXTENSION_MIME = {
   '.tiff': 'image/tiff',
 };
 
-// Importable for tests; only a direct `node vectorize.mjs` run executes anything.
+// Importable for tests; only a direct `node vectorize-image.mjs` run executes anything.
 if (
   process.argv[1] &&
   realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
@@ -374,10 +374,10 @@ export function parseArgs(argv) {
 function printUsage() {
   console.log(`Vectorize a bitmap through Vectorizer.AI. Defaults to the free, watermarked test mode.
 
-  node tools/vectorize/vectorize.mjs <input> [--out file] [options]
-  node tools/vectorize/vectorize.mjs --download <token> [--out file] [--receipt r]
-  node tools/vectorize/vectorize.mjs --delete <token>
-  node tools/vectorize/vectorize.mjs --account
+  node tools/vectorize/vectorize-image.mjs <input> [--out file] [options]
+  node tools/vectorize/vectorize-image.mjs --download <token> [--out file] [--receipt r]
+  node tools/vectorize/vectorize-image.mjs --delete <token>
+  node tools/vectorize/vectorize-image.mjs --account
 
   <input>          file path | http(s) URL | token:<image-token>
   --out <file>     output path; its extension picks the format (default ${DEFAULT_OUT_DIR}/vectorized.svg)

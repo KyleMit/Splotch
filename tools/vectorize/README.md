@@ -1,9 +1,20 @@
 # tools/vectorize — raster → vector through Vectorizer.AI
 
-The runbook for [`vectorize.mjs`](vectorize.mjs), which traces a bitmap into filled vector shapes
-via the Vectorizer.AI HTTP API. The `vectorize-image` skill is a thin pointer at this folder;
-everything substantive lives here, once, because a skill under `.ruler/` is copied verbatim into
-both `.claude/` and `.agents/` and this material is far too large to trip.
+The runbook for [`vectorize-image.mjs`](vectorize-image.mjs), which traces a bitmap into filled
+vector shapes via the Vectorizer.AI HTTP API. The `vectorize-image` skill is a thin pointer at this
+folder; everything substantive lives here, once, because a skill under `.ruler/` is copied verbatim
+into both `.claude/` and `.agents/` and this material is far too large to trip.
+
+## Entry point
+
+| Entry point           | Public command         | Purpose                                        |
+| --------------------- | ---------------------- | ---------------------------------------------- |
+| `vectorize-image.mjs` | `npm run vectorize --` | Trace, download, delete, or inspect an account |
+
+The public npm command, CLI modes, flags, environment variables, default `vectorized/` output,
+credit safeguards, and exit behavior remain stable during the tools naming migration. Inputs and
+outputs are documented under [Driver flags](#driver-flags), credentials under
+[Credentials](#credentials), and API failure recovery in [`docs/errors.md`](docs/errors.md).
 
 The account this repo uses is a **metered 50-credit plan** — a production vectorization is **1
 credit**, and credits do not come back. Read
@@ -75,19 +86,19 @@ Rules that follow from that:
 
 ```bash
 # Free watermarked trace — prove the parameters before spending anything
-node tools/vectorize/vectorize.mjs web/static/coloring/creatures/owl-tall.outline.webp \
+node tools/vectorize/vectorize-image.mjs web/static/coloring/creatures/owl-tall.outline.webp \
   --out vectorized/owl.svg --param processing.max_colors=2
 
 # The keeper run (1 credit), retained for a day so extra formats cost 0.1 each
-node tools/vectorize/vectorize.mjs web/static/coloring/creatures/owl-tall.outline.webp \
+node tools/vectorize/vectorize-image.mjs web/static/coloring/creatures/owl-tall.outline.webp \
   --out vectorized/owl.svg --production --retain 1 --param processing.max_colors=2
 
 # Second format from that result (0.1 credit) — token printed by the run above
-node tools/vectorize/vectorize.mjs --download <image-token> --out vectorized/owl.png
+node tools/vectorize/vectorize-image.mjs --download <image-token> --out vectorized/owl.png
 
 # Housekeeping, both free
-node tools/vectorize/vectorize.mjs --account
-node tools/vectorize/vectorize.mjs --delete <image-token>
+node tools/vectorize/vectorize-image.mjs --account
+node tools/vectorize/vectorize-image.mjs --delete <image-token>
 ```
 
 The equivalent raw call, when you would rather not use the driver:
@@ -163,7 +174,7 @@ clean SVG with the white background dropped. Two passes, and only the second cos
 back out:
 
 ```bash
-node tools/vectorize/vectorize.mjs icon.png \
+node tools/vectorize/vectorize-image.mjs icon.png \
   --out vectorized/discover.svg --retain 1 --param processing.max_colors=0
 grep -o 'fill="#[0-9a-f]\{6\}"' vectorized/discover.svg | sort | uniq -c | sort -rn
 ```
@@ -174,7 +185,7 @@ Ignore the greys `#7f7f7f`, `#696d69`, `#6b6d6b`, and `#323533`; they are waterm
 **Pass 2 — the keeper.** Re-run through the token (free to rehearse, `--production` to commit):
 
 ```bash
-node tools/vectorize/vectorize.mjs "token:<image-token>" \
+node tools/vectorize/vectorize-image.mjs "token:<image-token>" \
   --out vectorized/icon.svg --production \
   --param 'processing.palette=#FFFFFF -> #00000000 ~ 0.05;' \
   --param output.gap_filler.enabled=false \
@@ -382,3 +393,18 @@ choice. Measured on 2026-08-06 against this account:
 
 If Vectorizer.AI ever moves into app or asset-pipeline code rather than agent-run scripts,
 reconsider the SDK for its typed enums — and write an ADR for it.
+
+## Maintenance
+
+`vectorize-image.mjs` owns authentication loading, credit-safe request construction, response
+headers, retries, and output writes. Keep the inlined API documents aligned when the service
+contract changes. `tests/vectorize-image.test.mjs` imports the request seams without executing the
+CLI, making the metered production path safe to verify without credentials, network calls, or
+credits.
+
+Run focused verification with:
+
+```bash
+npm run test:tools -- tools/vectorize/tests/vectorize-image.test.mjs
+npm run vectorize -- --help
+```
