@@ -6,8 +6,8 @@ import {
   flattenSvgPath,
   generateModule,
   generateStoreDrawings,
-} from '../bin/generate.mjs';
-import { softColorMetrics } from '../bin/evaluate.mjs';
+} from '../gen-pointer-instructions.mjs';
+import { softColorMetrics } from '../evaluate-drawing-fidelity.mjs';
 import { fitInstructionScene, sceneStrokePoints } from '../lib/drawing-instructions.mjs';
 import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
 

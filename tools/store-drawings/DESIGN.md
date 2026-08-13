@@ -19,12 +19,12 @@ need deterministic mapping onto the controls Splotch actually offers.
 
 ## Approach
 
-`tools/store-drawings/bin/generate.mjs` is an offline compiler. It accepts a deliberately narrow
-centerline SVG subset (`M`, cubic `C`, and `Z`; round unfilled strokes), adaptively flattens the
-curves, and emits `tools/store-drawings/generated/store-drawings.mjs`. The generated module contains
-only static numeric pointer coordinates, selected Splotch width levels, and selectable color tokens.
-It exports named functions such as `drawHouseTall` and `drawHouseWide`; no generated drawing reads
-an SVG at runtime.
+`tools/store-drawings/gen-pointer-instructions.mjs` is an offline compiler. It accepts a
+deliberately narrow centerline SVG subset (`M`, cubic `C`, and `Z`; round unfilled strokes),
+adaptively flattens the curves, and emits `tools/store-drawings/generated/store-drawings.mjs`. The
+generated module contains only static numeric pointer coordinates, selected Splotch width levels,
+and selectable color tokens. It exports named functions such as `drawHouseTall` and `drawHouseWide`;
+no generated drawing reads an SVG at runtime.
 
 Color selection considers both the main palette and the hex-grid colors in OKLab space. Candidates
 are limited to swatches visible on both store targets for the drawing's orientation. Width selection
@@ -39,13 +39,13 @@ for the engine's intentional midpoint smoothing so an authored path reaches its 
 
 Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
 replaying their shared pointer instructions. Magic skips stored color selections because the brush
-owns its rendered color. `tools/store-drawings/bin/generate-review.mjs` exercises those variants
-into a review-only gallery outside `store-assets/`.
+owns its rendered color. `tools/store-drawings/gen-brush-review.mjs` exercises those variants into a
+review-only gallery outside `store-assets/`.
 
-`tools/store-drawings/bin/evaluate.mjs` keeps conversion measurable. It compares equal-width source
-and generated centerlines, then captures the live tiled canvas after replay and compares both pixel
-coverage and RGB color with the static instructions and original SVG. The workflow and overlay
-interpretation are documented in `tools/store-drawings/README.md`.
+`tools/store-drawings/evaluate-drawing-fidelity.mjs` keeps conversion measurable. It compares
+equal-width source and generated centerlines, then captures the live tiled canvas after replay and
+compares both pixel coverage and RGB color with the static instructions and original SVG. The
+workflow and overlay interpretation are documented in `tools/store-drawings/README.md`.
 
 ## Tradeoffs
 

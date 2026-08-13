@@ -7,7 +7,7 @@ coordinates and exports one named function per scene, including `drawHouseTall` 
 
 ## Layout
 
-* `bin/` contains the conversion, evaluation, and brush-review entry points.
+* The capability root contains the conversion, evaluation, and brush-review entry points.
 * `lib/` contains the static-scene fitting and replay helper.
 * `generated/` contains the committed pointer instructions consumed by store screenshots.
 * `samples/` contains the SVG authoring inputs used only by the offline converter and evaluator.
@@ -15,6 +15,19 @@ coordinates and exports one named function per scene, including `drawHouseTall` 
 
 See [DESIGN.md](DESIGN.md) for why the pipeline compiles static instructions instead of rendering or
 parsing SVGs during screenshot capture, plus the accepted fidelity and runtime tradeoffs.
+
+## Entry points
+
+| Entry point                     | Public command                        | Purpose                                  |
+| ------------------------------- | ------------------------------------- | ---------------------------------------- |
+| `gen-pointer-instructions.mjs`  | `npm run gen:store-drawings`          | Compile SVGs into static pointer scenes  |
+| `evaluate-drawing-fidelity.mjs` | `npm run gen:store-drawings:evaluate` | Compare SVG, points, and live app output |
+| `gen-brush-review.mjs`          | `npm run gen:store-drawings:review`   | Capture brush variants for review        |
+
+All commands need installed project dependencies. Conversion is deterministic and browser-free;
+evaluation and brush review also need Playwright Chromium and an unused local port. The public npm
+commands, sample paths, generated module, and screenshot output directories remain stable during the
+tools naming migration.
 
 ## Conversion pipeline
 
@@ -88,3 +101,23 @@ store-sized Google Play phone and tablet screenshots. The gallery is written to 
 functions accept an optional `{ brush: 'pen' | 'crayon' | 'magic' }` argument. Magic ignores the
 stored color changes because its production brush supplies its own color, while Pen and Crayon use
 the stored palette and hex-grid selections.
+
+## Failure behavior and maintenance
+
+Unsupported SVG input, invalid filters, stale generated output, unavailable browser/server
+prerequisites, and capture failures produce diagnostics and nonzero exits. Generation writes the
+committed module only after every selected SVG converts successfully; `--check` compares a fresh
+render in memory and never updates it. Evaluation and review write only beneath their gitignored
+`screenshots/` directories and never replace `store-assets/`.
+
+`lib/drawing-instructions.mjs` owns scene fitting and replay. The browser-driving entry points
+deliberately import `tools/app-driver/lib/app-driver.mjs`; keep that ownership edge rather than
+forking selectors or pointer delivery. Regenerate and commit `generated/store-drawings.mjs` whenever
+samples or conversion policy change.
+
+Run focused verification with:
+
+```bash
+npm run test:store-drawings
+npm run gen:store-drawings:check
+```
