@@ -22,9 +22,9 @@ import { ROOT } from './lib/proc.mjs';
 const from = join(ROOT, 'web', '.netlify');
 const to = join(ROOT, '.netlify');
 if (!existsSync(from)) {
-  console.error(`[stage-netlify] ${from} not found — did the SvelteKit build run?`);
+  console.error(`[stage-netlify-functions] ${from} not found — did the SvelteKit build run?`);
   process.exit(1);
 }
 rmSync(to, { recursive: true, force: true });
 cpSync(from, to, { recursive: true });
-console.log(`[stage-netlify] ${from} -> ${to}`);
+console.log(`[stage-netlify-functions] ${from} -> ${to}`);
