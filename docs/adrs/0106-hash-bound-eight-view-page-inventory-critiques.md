@@ -2,6 +2,10 @@
 
 **Status:** Active **Date:** 2026-08
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
+> hash-bound capture contract remains in force, while its executable is now
+> `tools/page-inventory/capture-page-inventory.mjs`.
+
 > **Amendment (2026-08-10):** every surface now has an explicit light/night capture axis, and each
 > screenshot is reviewed by a fresh image-only reviewer under its own stable review ID. The original
 > four-device, one-orientation batch checkpoints are superseded by the independent-review contract

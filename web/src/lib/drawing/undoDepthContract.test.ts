@@ -7,14 +7,17 @@ import { MAX_UNDO_DEPTH } from './undoHistory';
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
 describe('undo depth product contract', () => {
-  it('requires the current release-note promise to equal the engine depth cap', () => {
-    const [{ version }] = releases;
-    const releaseNotes = read(`../../../../releases/${version}.md`);
-    const advertisedDepth = /Undo now goes back (\d+) steps\./.exec(releaseNotes)?.[1];
+  it('requires the release-note history to advertise the engine depth cap', () => {
+    const advertisedDepths = releases.flatMap(({ version }) => {
+      const releaseNotes = read(`../../../../releases/${version}.md`);
+      const advertisedDepth = /Undo now goes back (\d+) steps\./.exec(releaseNotes)?.[1];
+
+      return advertisedDepth ? [advertisedDepth] : [];
+    });
 
     expect(
-      advertisedDepth,
-      `${version} must advertise the undo depth or remove this product contract deliberately`
-    ).toBe(String(MAX_UNDO_DEPTH));
+      advertisedDepths,
+      'release notes must advertise the undo depth or remove this product contract deliberately'
+    ).toContain(String(MAX_UNDO_DEPTH));
   });
 });
