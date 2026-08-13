@@ -1,12 +1,22 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
-import { dirname, isAbsolute, relative, resolve } from 'node:path';
+import { createHash, randomUUID } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { assertNoApiBillingEnvironment } from './splotch-claude-subscription-auth.mjs';
+import { runClaudeStreaming } from './splotch-claude-stream.mjs';
 
 export const RUNNER_PATHS = {
   claude: '/Users/kylemit/.local/bin/claude',
@@ -15,6 +25,10 @@ export const RUNNER_PATHS = {
   boundary: '/Users/kylemit/.config/splotch-run-claude/runner-boundary.md',
   manifest: '/Users/kylemit/.config/splotch-run-claude/manifest.json',
   subscriptionAuth: '/Users/kylemit/.local/libexec/splotch-claude-subscription-auth.mjs',
+  stream: '/Users/kylemit/.local/libexec/splotch-claude-stream.mjs',
+  sessionLedger: '/Users/kylemit/.config/splotch-run-claude/session-ledger.json',
+  claudeProjects: '/Users/kylemit/.claude/projects',
+  streamLogDirectory: '/private/tmp',
 };
 
 const EXPECTED_REMOTES = new Set([
@@ -25,6 +39,9 @@ const PROFILES = new Set(['ask', 'inspect']);
 const MODELS = new Set(['sonnet', 'opus']);
 const EFFORTS = new Set(['low', 'medium', 'high']);
 const MAX_PROMPT_BYTES = 256 * 1024;
+const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const USAGE =
+  'usage: splotch-claude-run.mjs --prompt-file <absolute-path> [--profile ask|inspect] [--persist | --resume <session-id>] | --end-session <session-id>';
 // Exported so the production prompt boundary remains explicit under the injectable test seam.
 export const ALLOWED_PROMPT_ROOTS = [
   '/private/tmp',
@@ -39,33 +56,51 @@ export function parseRunArgs(argv) {
     allowPositionals: false,
     options: {
       'prompt-file': { type: 'string' },
-      profile: { type: 'string', default: 'ask' },
+      profile: { type: 'string' },
       cwd: { type: 'string' },
-      model: { type: 'string', default: 'sonnet' },
-      effort: { type: 'string', default: 'high' },
+      model: { type: 'string' },
+      effort: { type: 'string' },
+      persist: { type: 'boolean', default: false },
+      resume: { type: 'string' },
+      'end-session': { type: 'string' },
     },
   });
-  if (positionals.length > 0 || !values['prompt-file']) {
-    throw new Error(
-      'usage: splotch-claude-run.mjs --prompt-file <absolute-path> [--profile ask|inspect]'
-    );
+  if (positionals.length > 0) throw new Error(USAGE);
+  for (const sessionId of [values.resume, values['end-session']]) {
+    if (sessionId !== undefined && !SESSION_ID_PATTERN.test(sessionId)) {
+      throw new Error('session ids must be UUIDs issued by this wrapper');
+    }
   }
-  if (!PROFILES.has(values.profile)) throw new Error(`unsupported profile: ${values.profile}`);
-  if (!MODELS.has(values.model)) throw new Error(`unsupported model: ${values.model}`);
-  if (!EFFORTS.has(values.effort)) throw new Error(`unsupported effort: ${values.effort}`);
-  if (values.profile === 'ask' && values.cwd) {
+  if (values['end-session']) {
+    const extra = Object.entries(values).filter(
+      ([name, value]) => name !== 'end-session' && value !== undefined && value !== false
+    );
+    if (extra.length > 0) throw new Error('--end-session accepts no other options');
+    return { endSession: values['end-session'] };
+  }
+  const options = {
+    promptFile: values['prompt-file'],
+    profile: values.profile ?? 'ask',
+    cwd: values.cwd,
+    model: values.model ?? 'sonnet',
+    effort: values.effort ?? 'high',
+    persist: values.persist,
+    resume: values.resume,
+  };
+  if (!options.promptFile) throw new Error(USAGE);
+  if (!PROFILES.has(options.profile)) throw new Error(`unsupported profile: ${options.profile}`);
+  if (!MODELS.has(options.model)) throw new Error(`unsupported model: ${options.model}`);
+  if (!EFFORTS.has(options.effort)) throw new Error(`unsupported effort: ${options.effort}`);
+  if (options.profile === 'ask' && options.cwd) {
     throw new Error('--cwd is available only with --profile inspect');
   }
-  if (values.profile === 'inspect' && !values.cwd) {
+  if (options.profile === 'inspect' && !options.cwd) {
     throw new Error('--profile inspect requires --cwd');
   }
-  return {
-    promptFile: values['prompt-file'],
-    profile: values.profile,
-    cwd: values.cwd,
-    model: values.model,
-    effort: values.effort,
-  };
+  if (options.persist && options.resume) {
+    throw new Error('--persist and --resume are mutually exclusive');
+  }
+  return options;
 }
 
 function isWithin(path, root) {
@@ -101,7 +136,17 @@ Return the result to the parent Codex process. This invocation authorizes no ext
 messages, publication, commits, pushes, or changes outside the disposable Claude session.`;
 }
 
-export function buildClaudeArgs({ prompt, profile, model, effort }, paths = RUNNER_PATHS) {
+export function sessionArguments(session = { mode: 'ephemeral' }) {
+  if (session.mode === 'create') return ['--session-id', session.id];
+  if (session.mode === 'resume') return ['--resume', session.id];
+  if (session.mode === 'ephemeral') return ['--no-session-persistence'];
+  throw new Error(`unsupported session mode: ${session.mode}`);
+}
+
+export function buildClaudeArgs(
+  { prompt, profile, model, effort, session = { mode: 'ephemeral' } },
+  paths = RUNNER_PATHS
+) {
   const tools = profile === 'inspect' ? 'Read,Grep,Glob' : '';
   const arguments_ = ['--print', '--permission-mode', 'dontAsk', '--tools', tools];
   if (profile === 'inspect') arguments_.push('--allowedTools', tools);
@@ -111,9 +156,10 @@ export function buildClaudeArgs({ prompt, profile, model, effort }, paths = RUNN
     paths.settings,
     '--no-chrome',
     '--strict-mcp-config',
-    '--no-session-persistence',
+    ...sessionArguments(session),
     '--output-format',
-    'json',
+    'stream-json',
+    '--verbose',
     '--append-system-prompt-file',
     paths.boundary,
     '--model',
@@ -125,12 +171,92 @@ export function buildClaudeArgs({ prompt, profile, model, effort }, paths = RUNN
   return arguments_;
 }
 
+export function readSessionLedger(path) {
+  if (!existsSync(path)) return { version: 1, sessions: {} };
+  const ledger = JSON.parse(readFileSync(path, 'utf8'));
+  if (ledger.version !== 1 || typeof ledger.sessions !== 'object' || ledger.sessions === null) {
+    throw new Error(`unsupported session ledger at ${path}; remove it to start fresh`);
+  }
+  return ledger;
+}
+
+function writeSessionLedger(path, ledger) {
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, `${JSON.stringify(ledger, null, 2)}\n`);
+}
+
+export function authorizeResume(ledger, sessionId, requestedProfile) {
+  const entry = ledger.sessions[sessionId];
+  if (!entry) {
+    throw new Error(
+      `unknown run-claude session ${sessionId}; only sessions this wrapper created with --persist can be resumed`
+    );
+  }
+  const widensAskToInspect = entry.profile === 'ask' && requestedProfile === 'inspect';
+  if (entry.profile !== requestedProfile && !widensAskToInspect) {
+    throw new Error(
+      `session ${sessionId} holds the ${entry.profile} profile; resume with the same profile or widen ask to inspect`
+    );
+  }
+  return { ...entry, profile: requestedProfile };
+}
+
+function planSession(options, paths) {
+  if (options.resume) {
+    const ledger = readSessionLedger(paths.sessionLedger);
+    ledger.sessions[options.resume] = {
+      ...authorizeResume(ledger, options.resume, options.profile),
+      lastResumedAt: new Date().toISOString(),
+    };
+    writeSessionLedger(paths.sessionLedger, ledger);
+    return { mode: 'resume', id: options.resume };
+  }
+  if (options.persist) {
+    const sessionId = randomUUID();
+    const ledger = readSessionLedger(paths.sessionLedger);
+    ledger.sessions[sessionId] = { profile: options.profile, createdAt: new Date().toISOString() };
+    writeSessionLedger(paths.sessionLedger, ledger);
+    return { mode: 'create', id: sessionId };
+  }
+  return { mode: 'ephemeral', id: randomUUID() };
+}
+
+export function endSession(sessionId, paths = RUNNER_PATHS) {
+  const ledger = readSessionLedger(paths.sessionLedger);
+  if (!ledger.sessions[sessionId]) {
+    throw new Error(
+      `unknown run-claude session ${sessionId}; only sessions recorded in the wrapper ledger can be ended`
+    );
+  }
+  delete ledger.sessions[sessionId];
+  writeSessionLedger(paths.sessionLedger, ledger);
+  let removed = 0;
+  if (existsSync(paths.claudeProjects)) {
+    for (const project of readdirSync(paths.claudeProjects)) {
+      const transcript = join(paths.claudeProjects, project, `${sessionId}.jsonl`);
+      if (existsSync(transcript)) {
+        rmSync(transcript);
+        removed += 1;
+      }
+    }
+  }
+  console.log(
+    `ended session ${sessionId} (${removed} transcript file${removed === 1 ? '' : 's'} removed)`
+  );
+}
+
 function digest(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
 function verifyInstallation(paths) {
-  for (const path of [paths.settings, paths.boundary, paths.manifest, paths.subscriptionAuth]) {
+  for (const path of [
+    paths.settings,
+    paths.boundary,
+    paths.manifest,
+    paths.subscriptionAuth,
+    paths.stream,
+  ]) {
     if (!existsSync(path)) throw new Error(`missing trusted run-claude file: ${path}`);
   }
   const manifest = JSON.parse(readFileSync(paths.manifest, 'utf8'));
@@ -138,7 +264,8 @@ function verifyInstallation(paths) {
     manifest.runnerSha256 !== digest(resolve(process.argv[1])) ||
     manifest.settingsSha256 !== digest(paths.settings) ||
     manifest.runnerBoundarySha256 !== digest(paths.boundary) ||
-    manifest.subscriptionAuthSha256 !== digest(paths.subscriptionAuth)
+    manifest.subscriptionAuthSha256 !== digest(paths.subscriptionAuth) ||
+    manifest.streamSha256 !== digest(paths.stream)
   ) {
     throw new Error('trusted run-claude files differ from the installed manifest; reinstall');
   }
@@ -171,22 +298,31 @@ function validateCheckout(path, paths) {
   return checkout;
 }
 
-export function runClaude(options, paths = RUNNER_PATHS, environment = process.env) {
+export async function runClaude(options, paths = RUNNER_PATHS, environment = process.env) {
   assertNoApiBillingEnvironment(environment);
   verifyInstallation(paths);
+  if (options.endSession) return endSession(options.endSession, paths);
   const cwd =
     options.profile === 'inspect' ? validateCheckout(options.cwd, paths) : dirname(paths.boundary);
   const prompt = readPromptFile(options.promptFile);
-  const output = capture(paths.claude, buildClaudeArgs({ ...options, prompt }, paths), {
+  const session = planSession(options, paths);
+  const logPath = join(paths.streamLogDirectory, `splotch-claude-${session.id}.ndjson`);
+  process.stderr.write(`stream log: ${logPath}\n`);
+  if (session.mode !== 'ephemeral') process.stderr.write(`session id: ${session.id}\n`);
+  const result = await runClaudeStreaming({
+    command: paths.claude,
+    args: buildClaudeArgs({ ...options, prompt, session }, paths),
     cwd,
     env: environment,
+    logPath,
+    onProgress: (line) => process.stderr.write(`${line}\n`),
   });
-  process.stdout.write(output);
+  process.stdout.write(`${JSON.stringify(result)}\n`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    runClaude(parseRunArgs(process.argv.slice(2)));
+    await runClaude(parseRunArgs(process.argv.slice(2)));
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);
