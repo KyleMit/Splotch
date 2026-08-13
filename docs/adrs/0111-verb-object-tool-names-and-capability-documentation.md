@@ -1,7 +1,11 @@
 # ADR-0111: Verb-Object Tool Names and Capability Documentation
 
 **Status:** Active **Date:** 2026-08 **Amends:** [0019](0019-npm-script-naming-and-scripts-info.md),
-[0044](0044-svg-optimization-audit.md), [0083](0083-real-screen-capture-on-device.md),
+[0044](0044-svg-optimization-audit.md),
+[0079](0079-physical-ios-device-capture-webkit-inspector-protocol.md),
+[0083](0083-real-screen-capture-on-device.md),
+[0084](0084-trusted-xcuitest-input-for-ipad-real-screen-profiling.md),
+[0090](0090-tiered-real-ipad-performance-regression-gates.md),
 [0106](0106-hash-bound-eight-view-page-inventory-critiques.md), and
 [0108](0108-unified-tools-tree.md)
 
@@ -97,6 +101,15 @@ Capacitor's existing `cap:*` namespace; `record:` avoids that similarity but is 
 retaining `gen:page-inventory` would misdescribe evidence capture as artifact generation.
 `promotional-image` names the generator rather than Google Play because its `large-image.png` output
 serves both store and social/link preview placements.
+
+Performance commands likewise fold the target and action into the public name. `perf:mount` becomes
+`perf:web:mount`; `perf:settings` becomes `perf:web:settings`; `perf:android:web:actions` becomes
+`perf:android:browser:actions`; `perf:ios` becomes `perf:web:webkit`; `perf:ipad` and
+`perf:ipad:frames` become `perf:ios:webkit:gates` and `perf:ios:webkit:frames`; `perf:ipad:xcuitest`
+and `perf:ipad:actions` become `perf:ios:xcuitest:screen` and `perf:ios:xcuitest:actions`;
+`perf:desktop:actions` becomes `perf:web:actions`; the `perf:undo*` family becomes `perf:web:undo*`;
+`perf:replay` becomes `perf:web:replay`; and the analyzer and local frame commands become
+`perf:analyze:chrome`, `perf:analyze:web-inspector`, `perf:analyze:frames`, and `perf:web:frames`.
 
 This migration is structural and behavior-preserving. Each capability lands in a focused stacked PR
 using `git mv`. Flags, environment variables, defaults, exit behavior, output paths, and artifact

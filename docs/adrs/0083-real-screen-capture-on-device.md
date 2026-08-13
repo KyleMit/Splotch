@@ -3,9 +3,9 @@
 **Status:** Active **Date:** 2026-07
 
 > **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
-> real-screen measurement contract remains in force. Its command replacements are `perf:ipad` →
-> `perf:ios:webkit:gates`, `perf:ipad:frames` → `perf:ios:webkit:frames`, `perf:frames:analyze` →
-> `perf:analyze:frames`, and `perf:frames:local` → `perf:web:frames`.
+> real-screen measurement contract remains in force. Its command replacements are `perf:ipad:frames`
+> → `perf:ios:webkit:frames`, `perf:frames:analyze` → `perf:analyze:frames`, and `perf:frames:local`
+> → `perf:web:frames`.
 
 ## Context
 
