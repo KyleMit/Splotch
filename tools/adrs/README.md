@@ -11,10 +11,13 @@ duplicate index entries, and local ADR links whose label or target is wrong.
 | ------------------------- | -------------------- | --------------------------------------------------------- |
 | `check-adr-integrity.mjs` | `npm run check:adrs` | Validate the working tree and compare additions to a base |
 
-Pass `--base=<ref>` to select the comparison ref. The default is `origin/main`. The standalone ADR
-Integrity workflow invokes the script directly because it deliberately uses the runner's built-in
-Node installation and does not install project dependencies. Its only prerequisites are Node and a
-Git checkout containing the requested base ref.
+Pass `--base=<ref>` to select the comparison ref, keeping npm's separator
+(`npm run check:adrs -- --base=<ref>`) so npm forwards the flag. The default is `origin/main`. The
+standalone [ADR Integrity workflow](../../.github/workflows/adr-integrity.yml) invokes the script
+directly because it deliberately uses the runner's built-in Node installation and does not install
+project dependencies. Its prerequisites are Node, a Git checkout containing the requested base ref,
+and `tools/lib/proc.mjs` — the single cross-capability import, which is why the workflow's sparse
+checkout lists `tools/lib` beside `tools/adrs`.
 
 ## Inputs and outputs
 
@@ -24,8 +27,9 @@ It writes only diagnostics. In GitHub Actions it also emits workflow-command ann
 offending paths and lines; locally it prints the same failures as plain text.
 
 `lib/adr-integrity.mjs` owns the dependency-free parsing, comparison, and diagnostic formatting.
-`tests/adr-integrity.test.mjs` covers those pure rules. Keep both compatible with the default Node
-version on GitHub's runner unless the workflow is intentionally changed to install Node.
+`tests/adr-integrity.test.mjs` covers those pure rules. Keep the entry point, its library, and the
+shared `tools/lib/proc.mjs` import compatible with the default Node version on GitHub's runner
+unless the workflow is intentionally changed to install Node.
 
 ## Failure behavior
 

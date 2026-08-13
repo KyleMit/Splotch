@@ -11,8 +11,8 @@
 # advises against path filtering a required workflow. The check itself is
 # unconditional, so the job always runs and always reports.
 #
-# No setup-node step: tools/adrs/check-adr-integrity.mjs imports only node: builtins
-# and its own siblings, and the runner ships Node, so installing dependencies
+# No setup-node step: tools/adrs/check-adr-integrity.mjs imports only node: builtins,
+# its own siblings, and tools/lib/proc.mjs; the runner ships Node, so installing dependencies
 # would cost ~15s to change nothing (setup-node measured at 14-20s in the Quality
 # job, against well under a second for the check itself). node is invoked directly
 # rather than through npm run for the same reason. The constraint that buys: this
@@ -30,7 +30,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: adr-numbering-${{ github.event.pull_request.number || github.ref }}
+  group: adr-integrity-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
