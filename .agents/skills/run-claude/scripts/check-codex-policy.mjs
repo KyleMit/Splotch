@@ -12,6 +12,16 @@ const EXPECTED_CONFIG = {
   approvals_reviewer: 'auto_review',
   sandbox_mode: 'workspace-write',
 };
+// Consumed only by the CI drift guard in tools/tests/run-claude.test.mjs. It is deliberately not
+// part of checkCodexPolicy(), whose reinstall recovery cannot repair skill prose.
+export const REQUIRED_SKILL_EXECUTION_CONTRACT = new Map([
+  [
+    'seamless invocation instruction',
+    'After one-time setup, complete ordinary `ask` and `inspect` invocations without manual user steps.',
+  ],
+  ['host escalation instruction', '`sandbox_permissions: "require_escalated"`'],
+  ['sandbox-first prohibition', 'Never run an installed wrapper in the sandbox first.'],
+]);
 
 // Exported so the installer-path drift guard covers the commands evaluated by Codex.
 export const POLICY_CASES = [
@@ -46,6 +56,15 @@ export function validateCodexConfig(content) {
 export function validateManagedRules(content) {
   if (!content.includes(POLICY_RULES)) {
     throw new Error('managed run-claude rules are missing or stale');
+  }
+}
+
+// Test-only validator for the CI drift guard described above.
+export function validateSkillExecutionContract(content) {
+  for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
+    if (!content.includes(requirement)) {
+      throw new Error(`run-claude skill is missing its ${name}`);
+    }
   }
 }
 

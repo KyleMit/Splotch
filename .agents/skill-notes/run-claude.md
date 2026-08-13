@@ -37,6 +37,31 @@ GitHub credentials from the macOS Keychain. The installed entry points therefore
 sandbox behind Codex Auto-review. Raw `claude` remains forbidden so caller-controlled flags cannot
 remove Claude's second permission layer.
 
+The caller must request host execution for each installed wrapper on its first attempt. A fixed
+wrapper's `prompt` policy decision protects the escalation boundary but does not convert a default
+sandboxed invocation into host execution. Treating the resulting Keychain failure as a failed
+installation creates a false recovery loop: reinstalling cannot change the sandbox's credential
+access. The skill therefore carries a CI-drift-guarded host-execution instruction, and installation
+recovery begins only after a wrapper fails in that required context.
+
+Codex currently names this tool boundary with the `sandbox_permissions` field and
+`require_escalated` value. Those names come from Codex's external tool API; repository code cannot
+validate that spelling or pin it to a Codex version. The behavioral signal remains whether the
+health wrapper reaches the Keychain outside the sandbox. If that behavior regresses while policy and
+installation checks pass, verify the current Codex escalation API before reinstalling.
+
+Merged upstream change [openai/codex#36350](https://github.com/openai/codex/pull/36350) confirms the
+unified `exec_command` call requires explicit `sandbox_permissions` whenever it carries a
+`justification`; an incomplete call is rejected before execution with a model-visible instruction to
+request `require_escalated` or omit the justification. Codex composes calls against its live tool
+schema, so a future schema rename should fail toward the live schema while this note remains only
+human-facing provenance.
+
+Automatic model selection may consume Claude plan quota for `ask` or `inspect` without a separate
+human prompt. That residual cost risk is accepted for repository-scoped sessions because seamless
+model invocation is the capability's purpose, and those profiles remain bounded to no tools or
+read-only repository access. The PR publisher retains its separate exact-PR authorization gate.
+
 The installer hashes the wrappers, shared subscription-auth guard, trusted settings, prompt
 boundaries, and review rubric. Every wrapper rejects environment variables that select API-key,
 Bedrock, Vertex, or Foundry billing; the health probe also requires `claude auth status` to report a

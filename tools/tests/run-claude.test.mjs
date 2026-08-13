@@ -23,8 +23,10 @@ import {
 } from '../../.agents/skills/run-claude/scripts/install-codex-policy.mjs';
 import {
   POLICY_CASES,
+  REQUIRED_SKILL_EXECUTION_CONTRACT,
   validateCodexConfig,
   validateManagedRules,
+  validateSkillExecutionContract,
 } from '../../.agents/skills/run-claude/scripts/check-codex-policy.mjs';
 import {
   EXPECTED_HOME,
@@ -204,6 +206,29 @@ describe('trusted Claude PR reviewer', () => {
 });
 
 describe('run-claude Codex policy', () => {
+  it('requires the skill to enter the host approval boundary before invoking wrappers', () => {
+    const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
+    expect(() => validateSkillExecutionContract(skill)).not.toThrow();
+    for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
+      expect(skill).toContain(requirement);
+      expect(() => validateSkillExecutionContract(skill.replaceAll(requirement, ''))).toThrow(name);
+    }
+  });
+
+  it('documents every one-time setup and verification command in the authoritative skill', () => {
+    const skill = readFileSync(join(repositoryRoot, '.agents/skills/run-claude/SKILL.md'), 'utf8');
+    for (const required of [
+      'cd /Users/kylemit/Code/Splotch',
+      'npm run run-claude:install',
+      'Restart Codex',
+      'npm run run-claude:policy:check',
+      '/Users/kylemit/.local/libexec/splotch-claude-health.mjs',
+      'No per-invocation setup command is required.',
+    ]) {
+      expect(skill).toContain(required);
+    }
+  });
+
   it('upserts top-level approval policy before TOML tables', () => {
     let config = 'model = "gpt"\n\n[features]\napps = true\n';
     config = upsertTopLevelToml(config, 'approval_policy', 'on-request');
