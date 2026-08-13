@@ -63,7 +63,7 @@ export function setFreeGenerationsUnavailable(): void {
   freeGenerations.loading = false;
 }
 
-export function createFreeGenerationGrantRefreshGate(): () => boolean {
+export function createFreeGenerationGrantRefresher(): () => void {
   let wasReady = false;
   let wasOnline = false;
   return () => {
@@ -73,7 +73,11 @@ export function createFreeGenerationGrantRefreshGate(): () => boolean {
     wasReady = ready;
     wasOnline = online;
     if (shouldRearm && !freeGenerations.available) freeGenerations.loading = true;
-    return ready && online && freeGenerations.loading;
+    if (ready && online && freeGenerations.loading) {
+      void refreshFreeGenerationGrant();
+    } else if (persistedStateStatus.hydrated && !ready) {
+      setFreeGenerationsUnavailable();
+    }
   };
 }
 

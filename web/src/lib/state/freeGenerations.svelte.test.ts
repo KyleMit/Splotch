@@ -3,10 +3,9 @@ import { persistedStateStatus } from '$lib/boot/persistedStateStatus.svelte';
 import { network } from './network.svelte';
 import { settings } from './settings.svelte';
 import {
-  createFreeGenerationGrantRefreshGate,
+  createFreeGenerationGrantRefresher,
   freeGenerations,
   grantRefreshReady,
-  refreshFreeGenerationGrant,
 } from './freeGenerations.svelte';
 
 beforeEach(() => {
@@ -46,7 +45,7 @@ describe('grantRefreshReady', () => {
   });
 
   it('re-arms a failed status request so a reconnect can recover the free path', async () => {
-    const shouldRefresh = createFreeGenerationGrantRefreshGate();
+    const refreshGrant = createFreeGenerationGrantRefresher();
     const fetchMock = vi
       .fn()
       .mockRejectedValueOnce(new Error('offline'))
@@ -54,18 +53,37 @@ describe('grantRefreshReady', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     persistedStateStatus.hydrated = true;
-    expect(shouldRefresh()).toBe(true);
-    await refreshFreeGenerationGrant();
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() => expect(freeGenerations.loading).toBe(false));
     expect(freeGenerations).toMatchObject({ available: false, loading: false });
 
-    expect(shouldRefresh()).toBe(false);
+    refreshGrant();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     network.online = false;
-    expect(shouldRefresh()).toBe(false);
+    refreshGrant();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     network.online = true;
-    expect(shouldRefresh()).toBe(true);
-
-    await refreshFreeGenerationGrant();
+    refreshGrant();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await vi.waitFor(() => expect(freeGenerations.available).toBe(true));
     expect(freeGenerations).toMatchObject({ available: true, loading: false, remaining: 7 });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('waits while an eligible grant is offline and marks an ineligible grant unavailable', () => {
+    const refreshGrant = createFreeGenerationGrantRefresher();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    persistedStateStatus.hydrated = true;
+    network.online = false;
+    refreshGrant();
+    expect(freeGenerations).toMatchObject({ available: false, loading: true });
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    settings.aiUserApiKey = 'parent-key';
+    refreshGrant();
+    expect(freeGenerations).toMatchObject({ available: false, loading: false });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

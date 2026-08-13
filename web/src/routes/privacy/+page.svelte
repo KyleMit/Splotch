@@ -7,12 +7,13 @@
   // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
   // wording changes.
 
-  import type { Component } from 'svelte';
+  import { onMount, type Component } from 'svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
-  import ParentalGate from '$lib/components/ParentalGate.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
+  import { scheduleIdle } from '$lib/idle';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
+  import { createSingleFlight } from '$lib/singleFlight';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import type { Origin } from '$lib/state/modal.svelte';
   import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
@@ -35,24 +36,40 @@
   ];
 
   let managingPolicies = $state(false);
+  let ParentalGate = $state<Component | null>(null);
   let SettingsModal = $state<Component | null>(null);
+  let refreshFreeGenerationGrant = $state<(() => void) | null>(null);
 
-  // Intentionally untracked: the promise only deduplicates the one-time load;
-  // the resolved component above is the state that affects rendering.
-  let settingsLoad: Promise<Component> | null = null;
+  const loadParentalGate = createSingleFlight(
+    async () => (await import('$lib/components/ParentalGate.svelte')).default
+  );
 
-  function loadSettingsModal(): Promise<Component> {
-    settingsLoad ??= Promise.all([
+  const loadSettingsModal = createSingleFlight(async () => {
+    const [module, { hydratePersistedState }, grants] = await Promise.all([
       import('$lib/components/SettingsModal.svelte'),
       import('$lib/boot/persistedState'),
       import('$lib/state/freeGenerations.svelte'),
-    ]).then(async ([module, { hydratePersistedState }, grants]) => {
-      await hydratePersistedState();
-      if (grants.grantRefreshReady()) void grants.refreshFreeGenerationGrant();
-      else grants.setFreeGenerationsUnavailable();
-      return module.default;
-    });
-    return settingsLoad;
+    ]);
+    await hydratePersistedState();
+    refreshFreeGenerationGrant ??= grants.createFreeGenerationGrantRefresher();
+    return module.default;
+  });
+
+  function mountParentalGate() {
+    void loadParentalGate()
+      .then((component) => (ParentalGate = component))
+      .catch((error) => console.error('Privacy parental gate failed to load:', error));
+  }
+
+  function privacyParentalGateLink(node: HTMLAnchorElement) {
+    node.addEventListener('click', mountParentalGate);
+    const gateLink = parentalGateLink(node);
+    return {
+      destroy() {
+        node.removeEventListener('click', mountParentalGate);
+        gateLink.destroy();
+      },
+    };
   }
 
   function openPrivacyParentCenter(origin: Origin | null) {
@@ -70,6 +87,12 @@
   $effect(() => {
     if (managingPolicies && !settingsModal.open) managingPolicies = false;
   });
+
+  $effect(() => {
+    refreshFreeGenerationGrant?.();
+  });
+
+  onMount(() => scheduleIdle(mountParentalGate));
 </script>
 
 <svelte:head>
@@ -82,7 +105,7 @@
 
 {#snippet feedbackLink()}
   {#if __IS_CAPACITOR__}
-    <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:parentalGateLink
+    <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:privacyParentalGateLink
       >private feedback form</a
     >
   {:else}
@@ -145,7 +168,7 @@
         href="https://ai.google.dev/gemini-api/terms"
         target="_blank"
         rel="noopener noreferrer"
-        use:parentalGateLink
+        use:privacyParentalGateLink
       >
         Gemini API terms</a
       >, which let it keep prompts and results for a limited time to check for abuse. That part is
@@ -248,7 +271,9 @@
   </p>
 </PageShell>
 
-<ParentalGate manageDestination={openPrivacyParentCenter} />
+{#if ParentalGate}
+  <ParentalGate manageDestination={openPrivacyParentCenter} />
+{/if}
 {#if SettingsModal && managingPolicies}
   <SettingsModal />
 {/if}
