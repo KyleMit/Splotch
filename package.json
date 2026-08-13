@@ -360,7 +360,7 @@
     "@dprint/typescript": "^0.96.1",
     "@eslint/js": "^10.0.1",
     "@intellectronica/ruler": "0.3.44",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.1",
     "dprint": "^0.55.1",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
