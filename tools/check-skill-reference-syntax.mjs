@@ -34,6 +34,10 @@ const CODEX_ONLY_PREFIXES = ['.agents/'];
 // that layout shipped. Rewriting it would falsify the history, not fix a bug.
 const HISTORICAL_PATHS = ['docs/adrs/0018-claude-native-knowledge-tiers.md'];
 
+// This guard's own suite has to spell the form it rejects, so it is the one
+// file whose violations are the point.
+const FIXTURE_PATHS = ['tools/tests/skill-reference-syntax.test.mjs'];
+
 // Skill names that are also live app routes (`/api/*`, `/design`). A slash in
 // front of these is overwhelmingly the route, and no wording rule can tell the
 // two apart, so they are out of the vocabulary entirely.
@@ -108,6 +112,7 @@ export function scannedFiles(root = ROOT) {
       // Product source spells routes and directories, never skills, and
       // package-lock.json is generated registry data.
       .filter((file) => !file.startsWith('web/') && file !== 'package-lock.json')
+      .filter((file) => !FIXTURE_PATHS.includes(file))
   );
 }
 

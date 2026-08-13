@@ -3,6 +3,7 @@ import {
   findFileViolations,
   findViolations,
   registeredSkillNames,
+  scannedFiles,
 } from '../check-skill-reference-syntax.mjs';
 
 const NAMES = ['build', 'release', 'create-adr'];
@@ -103,5 +104,11 @@ describe('things that are not skill references', () => {
 describe('the repository', () => {
   it('has no runner-specific skill sigils in shared prose', () => {
     expect(findViolations()).toEqual([]);
+  });
+
+  // Without this exemption the suite fails on its own fixtures, and the
+  // tempting fix is to soften the matcher until they stop matching.
+  it('skips this suite, which has to spell the form it rejects', () => {
+    expect(scannedFiles()).not.toContain('tools/tests/skill-reference-syntax.test.mjs');
   });
 });

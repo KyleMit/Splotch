@@ -244,14 +244,17 @@ wrong SHA on the thread and costs every later reader a cross-reference.
 
 On-demand **skills** (consult when the topic comes up — don't guess from memory). Skill-aware
 runners select them by description, and each has its own explicit-invocation sigil — Claude Code
-`/name`, Codex `$name` — so shared prose here names a skill bare (the `build` skill) and leaves the
-sigil to the runner; agents without skill support should read the skill's `SKILL.md` directly from
-`.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are generated from `.ruler/`; managed
-runner forks may be produced from `.ruler/skill-forks/<runner>/`. Registered direct provider
-packages are different: `burn-down-audits` is independently maintained under `.claude/` and
-`.agents/`, as is `analyze-session-transcripts` with format-specific implementations; Codex-only
-`run-claude` and `implement-issue-stack` live only under `.agents/`. See
-`tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
+`/name`, Codex `$name`. **Shared prose, docs, and process output name a skill bare** (the `build`
+skill, alongside the concrete `npm run …` where one exists); a sigil belongs only inside the tree
+that runner owns, because one file here generates both providers' copies. `npm run check:skill-refs`
+(also `tools/tests/skill-reference-syntax.test.mjs`) fails on the wrong one. Agents without skill
+support should read the skill's `SKILL.md` directly from `.agents/skills/<name>/` (or
+`.claude/skills/<name>/`). Most are generated from `.ruler/`; managed runner forks may be produced
+from `.ruler/skill-forks/<runner>/`. Registered direct provider packages are different:
+`burn-down-audits` is independently maintained under `.claude/` and `.agents/`, as is
+`analyze-session-transcripts` with format-specific implementations; Codex-only `run-claude` and
+`implement-issue-stack` live only under `.agents/`. See `tools/ruler/lib/direct-provider-skills.mjs`
+for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
