@@ -6,6 +6,7 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
@@ -15,12 +16,15 @@ import {
   authorizeResume,
   buildClaudeArgs,
   buildRunnerPrompt,
+  createSessionRecord,
   endSession,
   parseRunArgs,
   readPromptFile,
-  readSessionLedger,
+  readSessionRecord,
   RUNNER_PATHS,
   sessionArguments,
+  sessionRecordPath,
+  updateSessionRecord,
 } from '../../.agents/skills/run-claude/scripts/claude-run.mjs';
 import {
   renderProgressEvent,
@@ -57,6 +61,19 @@ import {
 const repositoryRoot = resolve(import.meta.dirname, '../..');
 const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
 const OTHER_SESSION_ID = 'ffffffff-0000-4111-8222-333333333333';
+
+async function waitForProcessExit(pid, timeoutMs = 6000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return true;
+    }
+    if (Date.now() > deadline) return false;
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
+  }
+}
 
 describe('output-only Claude runner', () => {
   it('accepts a minimal prompt and closes every optional value set', () => {
@@ -184,37 +201,60 @@ describe('output-only Claude runner', () => {
     expect(() => sessionArguments({ mode: 'other' })).toThrow('unsupported session mode');
   });
 
-  it('resumes only ledger sessions and widens only ask to inspect', () => {
-    const ledger = { version: 1, sessions: { [SESSION_ID]: { profile: 'ask' } } };
-    expect(authorizeResume(ledger, SESSION_ID, 'ask').profile).toBe('ask');
-    expect(authorizeResume(ledger, SESSION_ID, 'inspect').profile).toBe('inspect');
-    expect(() => authorizeResume(ledger, OTHER_SESSION_ID, 'ask')).toThrow(
+  it('resumes only recorded sessions and widens only ask to inspect', () => {
+    expect(authorizeResume({ profile: 'ask' }, SESSION_ID, 'ask').profile).toBe('ask');
+    expect(authorizeResume({ profile: 'ask' }, SESSION_ID, 'inspect').profile).toBe('inspect');
+    expect(() => authorizeResume(null, OTHER_SESSION_ID, 'ask')).toThrow(
       'unknown run-claude session'
     );
-    const inspectLedger = { version: 1, sessions: { [SESSION_ID]: { profile: 'inspect' } } };
-    expect(authorizeResume(inspectLedger, SESSION_ID, 'inspect').profile).toBe('inspect');
-    expect(() => authorizeResume(inspectLedger, SESSION_ID, 'ask')).toThrow('widen ask to inspect');
+    expect(authorizeResume({ profile: 'inspect' }, SESSION_ID, 'inspect').profile).toBe('inspect');
+    expect(() => authorizeResume({ profile: 'inspect' }, SESSION_ID, 'ask')).toThrow(
+      'widen ask to inspect'
+    );
   });
 
-  it('ends only ledger sessions and removes their transcripts', () => {
+  it('keeps one owner-only record per session so concurrent sessions never collide', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-run-claude-records-'));
+    try {
+      const directory = join(temporaryRoot, 'sessions');
+      createSessionRecord(directory, SESSION_ID, { profile: 'ask' });
+      createSessionRecord(directory, OTHER_SESSION_ID, { profile: 'inspect' });
+      expect(statSync(sessionRecordPath(directory, SESSION_ID)).mode & 0o777).toBe(0o600);
+      expect(() => createSessionRecord(directory, SESSION_ID, { profile: 'ask' })).toThrow();
+      updateSessionRecord(directory, SESSION_ID, { profile: 'inspect', lastResumedAt: 'later' });
+      expect(readSessionRecord(directory, SESSION_ID)).toEqual({
+        profile: 'inspect',
+        lastResumedAt: 'later',
+      });
+      expect(readSessionRecord(directory, OTHER_SESSION_ID)).toEqual({ profile: 'inspect' });
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('ends only recorded sessions and removes transcripts with their sidecars', () => {
     const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-run-claude-session-'));
     try {
       const paths = {
-        sessionLedger: join(temporaryRoot, 'session-ledger.json'),
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
         claudeProjects: join(temporaryRoot, 'projects'),
       };
-      writeFileSync(
-        paths.sessionLedger,
-        JSON.stringify({ version: 1, sessions: { [SESSION_ID]: { profile: 'ask' } } })
-      );
-      const transcript = join(paths.claudeProjects, 'some-project', `${SESSION_ID}.jsonl`);
-      mkdirSync(join(paths.claudeProjects, 'some-project'), { recursive: true });
+      createSessionRecord(paths.sessionsDirectory, SESSION_ID, { profile: 'ask' });
+      createSessionRecord(paths.sessionsDirectory, OTHER_SESSION_ID, { profile: 'ask' });
+      const project = join(paths.claudeProjects, 'some-project');
+      const transcript = join(project, `${SESSION_ID}.jsonl`);
+      const sidecarDirectory = join(project, SESSION_ID);
+      mkdirSync(join(sidecarDirectory, 'tool-results'), { recursive: true });
       writeFileSync(transcript, '{}');
+      writeFileSync(join(sidecarDirectory, 'tool-results', 'toolu_1.json'), '{}');
       endSession(SESSION_ID, paths);
       expect(existsSync(transcript)).toBe(false);
-      expect(readSessionLedger(paths.sessionLedger).sessions).toEqual({});
+      expect(existsSync(sidecarDirectory)).toBe(false);
+      expect(readSessionRecord(paths.sessionsDirectory, SESSION_ID)).toBeNull();
+      expect(readSessionRecord(paths.sessionsDirectory, OTHER_SESSION_ID)).toEqual({
+        profile: 'ask',
+      });
       expect(() => endSession(SESSION_ID, paths)).toThrow('unknown run-claude session');
-      expect(() => endSession(OTHER_SESSION_ID, paths)).toThrow('unknown run-claude session');
     } finally {
       rmSync(temporaryRoot, { recursive: true, force: true });
     }
@@ -315,6 +355,7 @@ describe('claude stream progress', () => {
       expect(progress.some((line) => line.includes('session s-1 model sonnet'))).toBe(true);
       expect(progress.some((line) => line.includes('tool Read: /tmp/a.ts'))).toBe(true);
       expect(readFileSync(logPath, 'utf8').trim().split('\n')).toHaveLength(3);
+      expect(statSync(logPath).mode & 0o777).toBe(0o600);
     } finally {
       rmSync(temporaryRoot, { recursive: true, force: true });
     }
@@ -351,6 +392,55 @@ describe('claude stream progress', () => {
       rmSync(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it('refuses a pre-existing stream log target', async () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-log-'));
+    try {
+      const logPath = join(temporaryRoot, 'existing.ndjson');
+      writeFileSync(logPath, '');
+      await expect(
+        runClaudeStreaming({
+          command: process.execPath,
+          args: ['-e', 'setTimeout(() => {}, 60000)'],
+          logPath,
+        })
+      ).rejects.toThrow('stream log');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it(
+    'terminates the whole process group, not only the direct child',
+    { timeout: 15_000 },
+    async () => {
+      const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-group-'));
+      try {
+        const script = [
+          `const { spawn } = require('node:child_process');`,
+          `const grandchild = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'ignore' });`,
+          `console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: String(grandchild.pid), model: 'x' }));`,
+          `setTimeout(() => {}, 60000);`,
+        ].join('\n');
+        const progress = [];
+        await expect(
+          runClaudeStreaming(
+            {
+              command: process.execPath,
+              args: ['-e', script],
+              logPath: join(temporaryRoot, 'group.ndjson'),
+              onProgress: (line) => progress.push(line),
+            },
+            300
+          )
+        ).rejects.toThrow('emitted no stream events');
+        const grandchildPid = Number(progress[0].match(/session (\d+) model/)[1]);
+        expect(await waitForProcessExit(grandchildPid)).toBe(true);
+      } finally {
+        rmSync(temporaryRoot, { recursive: true, force: true });
+      }
+    }
+  );
 });
 
 describe('trusted Claude PR reviewer', () => {

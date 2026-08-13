@@ -5,8 +5,15 @@ import { createInterface } from 'node:readline';
 // Generous by design: the watchdog distinguishes a hung process from a slow one, and a single
 // long tool execution emits no stream events between its tool_use and its tool_result.
 export const STREAM_STALL_TIMEOUT_MS = 10 * 60 * 1000;
+// A stalled tree that ignores SIGTERM (a wedged test runner, an uninterruptible child) gets this
+// long to exit before the whole process group is SIGKILLed.
+const STALL_SIGKILL_GRACE_MS = 10 * 1000;
 const PROGRESS_TEXT_MAX_CHARS = 160;
 const STDERR_TAIL_MAX_CHARS = 4096;
+// The raw stream log can embed whole tool results (file contents, command output) and lives in a
+// listable shared temp directory, so it must be owner-only and exclusively created: 'wx' refuses a
+// pre-existing or symlinked target instead of appending through it.
+const STREAM_LOG_OPTIONS = { flags: 'wx', mode: 0o600 };
 
 function compactText(value) {
   const collapsed = String(value).replace(/\s+/g, ' ').trim();
@@ -61,18 +68,41 @@ export function runClaudeStreaming(
   stallTimeoutMs = STREAM_STALL_TIMEOUT_MS
 ) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, { cwd, env, stdio: ['ignore', 'pipe', 'pipe'] });
-    const log = createWriteStream(logPath, { flags: 'a' });
+    // detached puts Claude at the head of its own process group so the watchdog can terminate the
+    // whole tool tree, not just the Claude PID — the vite-server.mjs pattern.
+    const child = spawn(command, args, {
+      cwd,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: true,
+    });
+    const log = createWriteStream(logPath, STREAM_LOG_OPTIONS);
     let stderrTail = '';
     let lastEvent = 'none';
     let resultEvent;
     let stalled = false;
+    let killTimer;
 
+    const signalProcessGroup = (signal) => {
+      try {
+        process.kill(-child.pid, signal);
+      } catch {
+        child.kill(signal);
+      }
+    };
     const terminateStalledChild = () => {
       stalled = true;
-      child.kill('SIGTERM');
+      signalProcessGroup('SIGTERM');
+      killTimer = setTimeout(() => signalProcessGroup('SIGKILL'), STALL_SIGKILL_GRACE_MS);
     };
     let stallTimer = setTimeout(terminateStalledChild, stallTimeoutMs);
+
+    log.on('error', (error) => {
+      clearTimeout(stallTimer);
+      clearTimeout(killTimer);
+      signalProcessGroup('SIGTERM');
+      rejectPromise(new Error(`stream log ${logPath} failed: ${error.message}`));
+    });
 
     child.stderr.on('data', (chunk) => {
       stderrTail = `${stderrTail}${chunk}`.slice(-STDERR_TAIL_MAX_CHARS);
@@ -96,12 +126,14 @@ export function runClaudeStreaming(
 
     child.on('error', (error) => {
       clearTimeout(stallTimer);
+      clearTimeout(killTimer);
       log.end();
       rejectPromise(error);
     });
 
     child.on('close', (code) => {
       clearTimeout(stallTimer);
+      clearTimeout(killTimer);
       log.end();
       if (stalled) {
         rejectPromise(

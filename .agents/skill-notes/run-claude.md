@@ -103,11 +103,17 @@ deferred — resume-with-widened-grant covers the need at turn granularity.
 The widened grant is bounded to the existing profile vocabulary: a resumed session may go `ask` →
 `inspect` and nothing else. Arbitrary `--allowedTools` widening on resume was rejected for the same
 reason as the generic profile — the fixed profiles are the reviewed authority surface. The runner's
-session ledger exists so `--resume` and `--end-session` can only reach sessions this wrapper
-created; without it, resume would be a door into any local Claude session and end-session could
-delete a human's interactive transcript. The PR publisher stays one-shot: its disposable worktree
-teardown is part of its contract, and a resumable reviewer would outlive the checkout its context
-assumes.
+session records exist so `--resume` and `--end-session` can only reach sessions this wrapper
+created; without them, resume would be a door into any local Claude session and end-session could
+delete a human's interactive transcript. The records are one owner-only file per session rather than
+one shared ledger JSON — the first review of this design reproduced concurrent wrappers losing each
+other's entries through the shared file's read-modify-write cycle. The same review hardened the
+stream log (owner-only, exclusively created, because raw tool_result events embed file contents into
+a listable temp directory) and the watchdog kill (Claude runs detached at the head of its own
+process group, terminated group-wide with a bounded SIGKILL escalation, because SIGTERM to the
+Claude PID alone leaves a hung tool grandchild running — the vite-server.mjs precedent). The PR
+publisher stays one-shot: its disposable worktree teardown is part of its contract, and a resumable
+reviewer would outlive the checkout its context assumes.
 
 Open validation questions:
 

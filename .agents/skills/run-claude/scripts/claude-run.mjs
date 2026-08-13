@@ -8,6 +8,7 @@ import {
   readdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -26,7 +27,7 @@ export const RUNNER_PATHS = {
   manifest: '/Users/kylemit/.config/splotch-run-claude/manifest.json',
   subscriptionAuth: '/Users/kylemit/.local/libexec/splotch-claude-subscription-auth.mjs',
   stream: '/Users/kylemit/.local/libexec/splotch-claude-stream.mjs',
-  sessionLedger: '/Users/kylemit/.config/splotch-run-claude/session-ledger.json',
+  sessionsDirectory: '/Users/kylemit/.config/splotch-run-claude/sessions',
   claudeProjects: '/Users/kylemit/.claude/projects',
   streamLogDirectory: '/private/tmp',
 };
@@ -171,77 +172,92 @@ export function buildClaudeArgs(
   return arguments_;
 }
 
-export function readSessionLedger(path) {
-  if (!existsSync(path)) return { version: 1, sessions: {} };
-  const ledger = JSON.parse(readFileSync(path, 'utf8'));
-  if (ledger.version !== 1 || typeof ledger.sessions !== 'object' || ledger.sessions === null) {
-    throw new Error(`unsupported session ledger at ${path}; remove it to start fresh`);
-  }
-  return ledger;
+// One owner-only record file per session: concurrent wrapper invocations for different sessions
+// never share writable state, so there is no cross-process read-modify-write to lose or corrupt.
+export function sessionRecordPath(directory, sessionId) {
+  return join(directory, `${sessionId}.json`);
 }
 
-function writeSessionLedger(path, ledger) {
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${JSON.stringify(ledger, null, 2)}\n`);
+export function readSessionRecord(directory, sessionId) {
+  const path = sessionRecordPath(directory, sessionId);
+  if (!existsSync(path)) return null;
+  return JSON.parse(readFileSync(path, 'utf8'));
 }
 
-export function authorizeResume(ledger, sessionId, requestedProfile) {
-  const entry = ledger.sessions[sessionId];
-  if (!entry) {
+export function createSessionRecord(directory, sessionId, record) {
+  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  writeFileSync(sessionRecordPath(directory, sessionId), `${JSON.stringify(record, null, 2)}\n`, {
+    flag: 'wx',
+    mode: 0o600,
+  });
+}
+
+export function updateSessionRecord(directory, sessionId, record) {
+  const temporary = sessionRecordPath(directory, `.${sessionId}`);
+  writeFileSync(temporary, `${JSON.stringify(record, null, 2)}\n`, { mode: 0o600 });
+  renameSync(temporary, sessionRecordPath(directory, sessionId));
+}
+
+export function authorizeResume(record, sessionId, requestedProfile) {
+  if (!record) {
     throw new Error(
       `unknown run-claude session ${sessionId}; only sessions this wrapper created with --persist can be resumed`
     );
   }
-  const widensAskToInspect = entry.profile === 'ask' && requestedProfile === 'inspect';
-  if (entry.profile !== requestedProfile && !widensAskToInspect) {
+  const widensAskToInspect = record.profile === 'ask' && requestedProfile === 'inspect';
+  if (record.profile !== requestedProfile && !widensAskToInspect) {
     throw new Error(
-      `session ${sessionId} holds the ${entry.profile} profile; resume with the same profile or widen ask to inspect`
+      `session ${sessionId} holds the ${record.profile} profile; resume with the same profile or widen ask to inspect`
     );
   }
-  return { ...entry, profile: requestedProfile };
+  return { ...record, profile: requestedProfile };
 }
 
 function planSession(options, paths) {
   if (options.resume) {
-    const ledger = readSessionLedger(paths.sessionLedger);
-    ledger.sessions[options.resume] = {
-      ...authorizeResume(ledger, options.resume, options.profile),
+    const record = authorizeResume(
+      readSessionRecord(paths.sessionsDirectory, options.resume),
+      options.resume,
+      options.profile
+    );
+    updateSessionRecord(paths.sessionsDirectory, options.resume, {
+      ...record,
       lastResumedAt: new Date().toISOString(),
-    };
-    writeSessionLedger(paths.sessionLedger, ledger);
+    });
     return { mode: 'resume', id: options.resume };
   }
   if (options.persist) {
     const sessionId = randomUUID();
-    const ledger = readSessionLedger(paths.sessionLedger);
-    ledger.sessions[sessionId] = { profile: options.profile, createdAt: new Date().toISOString() };
-    writeSessionLedger(paths.sessionLedger, ledger);
+    createSessionRecord(paths.sessionsDirectory, sessionId, {
+      profile: options.profile,
+      createdAt: new Date().toISOString(),
+    });
     return { mode: 'create', id: sessionId };
   }
-  return { mode: 'ephemeral', id: randomUUID() };
+  return { mode: 'ephemeral' };
 }
 
 export function endSession(sessionId, paths = RUNNER_PATHS) {
-  const ledger = readSessionLedger(paths.sessionLedger);
-  if (!ledger.sessions[sessionId]) {
+  if (!readSessionRecord(paths.sessionsDirectory, sessionId)) {
     throw new Error(
-      `unknown run-claude session ${sessionId}; only sessions recorded in the wrapper ledger can be ended`
+      `unknown run-claude session ${sessionId}; only sessions recorded by this wrapper can be ended`
     );
   }
-  delete ledger.sessions[sessionId];
-  writeSessionLedger(paths.sessionLedger, ledger);
   let removed = 0;
   if (existsSync(paths.claudeProjects)) {
     for (const project of readdirSync(paths.claudeProjects)) {
-      const transcript = join(paths.claudeProjects, project, `${sessionId}.jsonl`);
-      if (existsSync(transcript)) {
-        rmSync(transcript);
-        removed += 1;
+      for (const entry of [`${sessionId}.jsonl`, sessionId]) {
+        const target = join(paths.claudeProjects, project, entry);
+        if (existsSync(target)) {
+          rmSync(target, { recursive: true, force: true });
+          removed += 1;
+        }
       }
     }
   }
+  rmSync(sessionRecordPath(paths.sessionsDirectory, sessionId), { force: true });
   console.log(
-    `ended session ${sessionId} (${removed} transcript file${removed === 1 ? '' : 's'} removed)`
+    `ended session ${sessionId} (${removed} transcript path${removed === 1 ? '' : 's'} removed)`
   );
 }
 
@@ -306,7 +322,7 @@ export async function runClaude(options, paths = RUNNER_PATHS, environment = pro
     options.profile === 'inspect' ? validateCheckout(options.cwd, paths) : dirname(paths.boundary);
   const prompt = readPromptFile(options.promptFile);
   const session = planSession(options, paths);
-  const logPath = join(paths.streamLogDirectory, `splotch-claude-${session.id}.ndjson`);
+  const logPath = join(paths.streamLogDirectory, `splotch-claude-${randomUUID()}.ndjson`);
   process.stderr.write(`stream log: ${logPath}\n`);
   if (session.mode !== 'ephemeral') process.stderr.write(`session id: ${session.id}\n`);
   const result = await runClaudeStreaming({
