@@ -99,7 +99,7 @@ const checks = [
     ],
   },
   {
-    path: 'tools/perf/android.mjs',
+    path: 'tools/perf/android/capture-webview-session.mjs',
     values: [['APP_ID', /^const APP_ID = ['"]([^'"]+)['"];\s*$/m]],
   },
   {

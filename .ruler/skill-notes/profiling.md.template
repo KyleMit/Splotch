@@ -1,7 +1,7 @@
 # profiling — design notes
 
-Design history for the `profiling` skill, and specifically for `npm run perf:ipad`
-(`tools/perf/ipad.mjs` + `tools/perf/webkit-inspector.mjs`), whose shape is almost entirely
+Design history for the `profiling` skill, and specifically for `npm run perf:ios:webkit:gates`
+(`tools/perf/ios/capture-webkit-gates.mjs` + `tools/perf/lib/webkit-inspector.mjs`), whose shape is almost entirely
 dictated by protocol facts that are expensive to rediscover.
 
 ## Driving a physical iPad: what is actually true
@@ -28,7 +28,7 @@ proxy actually breaks on some future iPadOS.
 
 ### Five protocol shapes that dictate the client
 
-These are why `webkit-inspector.mjs` is not a thin wrapper over a CDP client:
+These are why `lib/webkit-inspector.mjs` is not a thin wrapper over a CDP client:
 
 1. **Everything multiplexes through the Target domain.** A bare `Runtime.evaluate` answers
    `'Runtime' domain was not found` — which reads like a missing capability and is really a missing
@@ -61,13 +61,13 @@ stale tab silently running an old bundle, and a leftover `window.__perfScenarios
 "full" run to one scenario. Both are invisible in the output — the table looks completely normal. So
 the runner navigates the tab itself rather than trusting one that already shows the harness URL, and
 assigns *every* `window.__perf*` override on each run rather than only the requested ones. The
-overrides are locked by `tools/perf/tests/perf-ipad.test.mjs`; the navigation is not, because faking
+overrides are locked by `tools/perf/tests/ios-webkit-gates.test.mjs`; the navigation is not, because faking
 the device is more machinery than the guarantee is worth.
 
 ### What stays manual, and why
 
 * **Timeline recording.** The protocol has a `Timeline` domain, but its event stream is not the
-  shape `npm run perf:ios:analyze` parses (that reads a Web Inspector *export*,
+  shape `npm run perf:analyze:web-inspector` parses (that reads a Web Inspector *export*,
   `{recording:{records,markers}}`). Automating the gates run does not get Timeline capture for free,
   and the issue scoped it out. A5–A6 of the runbook remain the only path. Anyone attempting it
   should expect to write a second analyzer, not to reuse the existing one.
@@ -75,12 +75,12 @@ the device is more machinery than the guarantee is worth.
   nothing to attach to and no protocol call that creates one. So a human still unlocks the iPad and
   opens Safari once. Everything after that is automated.
 
-## The real-screen probe (`perf:ipad:frames`) — what the measurements cost to learn
+## The real-screen probe (`perf:ios:webkit:frames`) — what the measurements cost to learn
 
-Design history for `tools/perf/real-screen-probe.js` + `real-screen-stats.mjs` + `ipad-frames.mjs`
-(issue #659). The shape of all three is dictated by wrong readings that had to be corrected against
-real device captures, which is also why the probe **records raw tables and computes nothing**: every
-metric definition below was fixed without re-drawing anything.
+Design history for `tools/perf/probes/real-screen-probe.js` + `lib/real-screen-stats.mjs` +
+`ios/capture-webkit-frames.mjs` (issue #659). The shape of all three is dictated by wrong readings
+that had to be corrected against real device captures, which is also why the probe **records raw
+tables and computes nothing**: every metric definition below was fixed without re-drawing anything.
 
 ### Safari gives web content 60 Hz on a 120 Hz ProMotion iPad
 
@@ -168,8 +168,8 @@ are drift-guarded by a test, since prose cannot hold that agreement.
 
 * Only ever run against one device (iPadOS 26.5). `--device-id=` exists for multi-device machines
   but has not been exercised with two attached.
-* The gates thresholds are not enforced by `perf:ipad` — it prints the table and the gate text, like
-  the manual paste. `perf:undo:webkit` is the one that exits non-zero past `COMMIT_GATE_MS`. Making
+* The gates thresholds are not enforced by `perf:ios:webkit:gates` — it prints the table and the gate text, like
+  the manual paste. `perf:web:undo:webkit` is the one that exits non-zero past `COMMIT_GATE_MS`. Making
   the device run gate-enforcing would need a view on device-to-device variance nobody has yet.
 * Every measured column on iPadOS 26.5 came back at or under 1 ms, against a 1 ms
   `performance.now()` clamp — the run proves the plumbing, but the device is currently so far inside

@@ -26,7 +26,7 @@ file if it contains IDs or credentials.
 Drawing on the production route, one brush at a time:
 
 ```sh
-npm run perf:frames:local -- \
+npm run perf:web:frames -- \
   --engine=webkit \
   --brush=pen \
   --drive=mixed \
@@ -39,7 +39,7 @@ build separately and pass its URL through `--url=` while keeping the current run
 Discrete actions:
 
 ```sh
-npm run perf:desktop:actions -- \
+npm run perf:web:actions -- \
   --engine=webkit \
   --headed \
   --repeats=4
@@ -56,7 +56,7 @@ Safari open, Appium/XCUITest configured and signed.
 High-fidelity real-screen drawing plus undo:
 
 ```sh
-npm run perf:ipad:xcuitest --ignore-scripts -- \
+npm run perf:ios:xcuitest:screen --ignore-scripts -- \
   --device-id=<udid> \
   --url=<lan-url> \
   --no-serve \
@@ -71,16 +71,16 @@ calibration must pass before interpreting drawing gates as approval.
 Discrete actions:
 
 ```sh
-npm run perf:ipad:actions --ignore-scripts -- \
+npm run perf:ios:xcuitest:actions --ignore-scripts -- \
   --device-id=<udid> \
   --url=<lan-url> \
   --no-serve \
   --repeats=4
 ```
 
-Use the real-screen WebKit Inspector runner (`perf:ipad:frames`) for a hand-driven diagnostic and
-`perf:ipad` for the legacy `/dev/engine` gate only when those narrower questions are in scope. A
-passing engine harness does not approve the real presentation surface.
+Use the real-screen WebKit Inspector runner (`perf:ios:webkit:frames`) for a hand-driven diagnostic
+and `perf:ios:webkit:gates` for the legacy `/dev/engine` gate only when those narrower questions are
+in scope. A passing engine harness does not approve the real presentation surface.
 
 ## Physical iPad native
 
@@ -88,7 +88,7 @@ Build/install an instrumented native app according to the profiling/mobile skill
 bundle capabilities and attach to its WebView without navigating to an HTTP page:
 
 ```sh
-npm run perf:ipad:xcuitest --ignore-scripts -- \
+npm run perf:ios:xcuitest:screen --ignore-scripts -- \
   --appium-url=<appium-url> \
   --capabilities-file=<capabilities.json> \
   --native-app \
@@ -98,7 +98,7 @@ npm run perf:ipad:xcuitest --ignore-scripts -- \
 ```
 
 ```sh
-npm run perf:ipad:actions --ignore-scripts -- \
+npm run perf:ios:xcuitest:actions --ignore-scripts -- \
   --appium-url=<appium-url> \
   --capabilities-file=<capabilities.json> \
   --native-app \
@@ -151,7 +151,7 @@ preview URL. Report missing contact geometry as advisory.
 Actions must use direct CDP:
 
 ```sh
-npm run perf:android:web:actions --ignore-scripts -- \
+npm run perf:android:browser:actions --ignore-scripts -- \
   --device-id=emulator-5554 \
   --url=<url> \
   --no-serve \
@@ -234,7 +234,7 @@ scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 Regenerate normalized JSON, Markdown, and HTML:
 
 ```sh
-npm run perf:matrix:report -- \
+npm run gen:performance-matrix -- \
   scrapbook/performance/2026-07-31-deployment-target-matrix/sources.json
 ```
 

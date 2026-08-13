@@ -18,6 +18,7 @@
     "tools/*.mjs",
     "tools/*/*.mjs",
     "tools/mobile/{android,ios}/*.mjs",
+    "tools/perf/{web,android,ios}/*.mjs",
     "!tools/lib/*.mjs",
     "tools/*/tests/*.test.mjs",
     "tools/mobile/{android,ios}/tests/*.test.mjs",

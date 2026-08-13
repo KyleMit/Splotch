@@ -6,8 +6,8 @@ import {
   COMMIT_GATE_MS,
   CRAYON_DRAW_REFERENCE_MS_PER_CALL,
   evaluateCommitTiming,
-} from '../undo-commit-gate.mjs';
-import { ALL_UNDO_SCENARIO_KEYS, FAST_UNDO_SCENARIO_KEYS } from '../undo-scenario-keys.mjs';
+} from '../lib/undo-commit-gate.mjs';
+import { ALL_UNDO_SCENARIO_KEYS, FAST_UNDO_SCENARIO_KEYS } from '../lib/undo-scenario-keys.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
@@ -36,13 +36,13 @@ function timingScenario({ key = 'crayon-scribbles', commitP95Ms, drawTotalMs, dr
 
 describe('WebKit performance CI', () => {
   it('defines the fast scenario set once and resolves every key through the scenario registry', () => {
-    const fastScript = packageJson.scripts['perf:undo:webkit:fast'];
+    const fastScript = packageJson.scripts['perf:web:undo:webkit:fast'];
 
     expect(FAST_UNDO_SCENARIO_KEYS).toEqual(['multi-finger', 'crayon-scribbles']);
     expect(FAST_UNDO_SCENARIO_KEYS.every((key) => ALL_UNDO_SCENARIO_KEYS.includes(key))).toBe(true);
     expect(fastScript).toContain('--suite=fast');
     expect(fastScript).not.toContain('--scenarios=');
-    expect(workflow).toContain('npm run perf:undo:webkit:fast');
+    expect(workflow).toContain('npm run perf:web:undo:webkit:fast');
     expect(workflow).not.toContain('--scenarios=');
   });
 
@@ -67,7 +67,7 @@ describe('WebKit performance CI', () => {
     expect(workflow).toContain('pull_request:');
     expect(fastJob).toContain("if: github.event_name == 'push' && github.ref == 'refs/heads/main'");
     expect(fastJob).toContain('runs-on: macos-latest');
-    expect(fastJob).toContain('run: npm run perf:undo:webkit:fast');
+    expect(fastJob).toContain('run: npm run perf:web:undo:webkit:fast');
     expect(fastJob).not.toContain('continue-on-error');
   });
 
@@ -168,9 +168,9 @@ describe('WebKit performance CI', () => {
     expect(fullJob).toContain("startsWith(github.ref, 'refs/tags/v')");
     expect(fullJob).toContain('runs-on: macos-latest');
     expect(fullJob).toContain(
-      'run: npm run perf:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json'
+      'run: npm run perf:web:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json'
     );
-    expect(packageJson.scripts['perf:undo:webkit']).not.toContain('--scenarios=');
+    expect(packageJson.scripts['perf:web:undo:webkit']).not.toContain('--scenarios=');
   });
 
   it('restores and durably persists the rolling full-run history', () => {
