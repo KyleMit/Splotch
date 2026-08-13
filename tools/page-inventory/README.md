@@ -35,7 +35,7 @@ the new output, but stale feedback remains detached from the report.
 Use repeatable filters for a bounded spot check:
 
 ```sh
-npm run capture:page-inventory -- --surface controls/brush-menu --viewport iphone-13-mini-portrait --theme dark
+npm run capture:page-inventory -- --surface controls/brush-menu --viewport iphone-13-mini --theme dark
 ```
 
 Any `--surface`, `--viewport`, or `--theme` filter switches to spot-check mode. That mode writes
