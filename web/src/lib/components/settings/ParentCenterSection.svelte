@@ -175,7 +175,7 @@
     </div>
 
     <div class="unprotected-confirm-actions">
-      <Button size="lg" onclick={cancelUnprotected}>Keep the check</Button>
+      <Button size="lg" onclick={cancelUnprotected}>Keep it on</Button>
       <Button variant="danger" size="lg" onclick={confirmUnprotected}>Turn it off</Button>
     </div>
   </div>

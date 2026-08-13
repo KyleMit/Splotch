@@ -19,7 +19,7 @@ test('cancelling the warning leaves the Parent Center check as it was', async ({
   await parentCenter.getByRole('radio', { name: 'Never' }).click();
   const confirm = page.locator(UNPROTECTED_CONFIRM);
   await expect(confirm.getByText(UNPROTECTED_CONSEQUENCE)).toBeVisible();
-  await confirm.getByRole('button', { name: 'Keep the check' }).click();
+  await confirm.getByRole('button', { name: 'Keep it on' }).click();
 
   await expect(confirm).not.toBeVisible();
   await expect(parentCenter.getByRole('radio', { name: 'Every time' })).toHaveAttribute(
