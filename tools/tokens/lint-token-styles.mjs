@@ -56,7 +56,7 @@ const BASELINE = new Map(
     // the Brush/Stroke Width popovers (black reads against every pen color and
     // both papers).
     'app.css': 3,
-    // /privacy, /changelog, /android-beta and its StepLedger are absent on
+    // /privacy, /changelog and both beta pages are absent on
     // purpose: they pinned a light-only --page-* palette until every page was
     // made to follow night mode, and now hold zero raw hexes. A new one there
     // is a page opting out of the theme again.

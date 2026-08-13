@@ -1,8 +1,27 @@
 // @vitest-environment node
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_CODE, TESTFLIGHT_INVITE_URL } from './iosBeta';
+import {
+  MIN_IOS_RELEASE,
+  TESTFLIGHT_APP_URL,
+  TESTFLIGHT_INVITE_CODE,
+  TESTFLIGHT_INVITE_URL,
+} from './iosBeta';
 
 describe('/ios-beta facts', () => {
+  it('states the iOS floor the Xcode project actually enforces', () => {
+    const project = readFileSync(
+      new URL('../../../../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url),
+      'utf8'
+    );
+    const deploymentTargets = [...project.matchAll(/IPHONEOS_DEPLOYMENT_TARGET = ([\d.]+);/g)].map(
+      (match) => match[1]
+    );
+
+    expect(deploymentTargets.length).toBeGreaterThan(0);
+    expect(new Set(deploymentTargets)).toEqual(new Set([MIN_IOS_RELEASE]));
+  });
+
   it('keeps the published Splotch invitation code', () => {
     expect(TESTFLIGHT_INVITE_CODE).toBe('9GRH3JNQ');
   });

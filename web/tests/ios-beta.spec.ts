@@ -3,8 +3,6 @@ import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_URL } from '../src/lib/components
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
 
-test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
-
 test('the iOS beta steps link to TestFlight and feedback', async ({ page }) => {
   await page.goto('/ios-beta');
   await expect(page.getByRole('heading', { name: 'Join the iPhone and iPad beta' })).toBeVisible();

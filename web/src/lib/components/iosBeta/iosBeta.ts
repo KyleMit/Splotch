@@ -4,6 +4,9 @@
 
 export const TESTFLIGHT_INVITE_CODE = '9GRH3JNQ';
 
+/** The minimum iOS and iPadOS release accepted by the native target. */
+export const MIN_IOS_RELEASE = '16.4';
+
 /** The public invitation Apple generated for Splotch's external testing group. */
 export const TESTFLIGHT_INVITE_URL = `https://testflight.apple.com/join/${TESTFLIGHT_INVITE_CODE}`;
 
