@@ -22,7 +22,7 @@ export function runPerfServe({ port = PREVIEW_PORT, strictPort = false } = {}) {
   const child = spawn(
     process.execPath,
     [
-      join(ROOT, 'tools', 'web.mjs'),
+      join(ROOT, 'tools', 'run-web-tool.mjs'),
       'vite',
       'preview',
       '--host',

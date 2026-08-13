@@ -78,7 +78,7 @@ throwaway vite dev/preview server in a detached process group so `stop()` can't 
 grandchild, while `release()` hands that group to the OS instead — which is why it takes only the
 `RELEASABLE_STDIO` sinks it exports and throws on anything this process would take with it),
 `html.mjs` (escaping/render primitives for the report producers), `smoke.mjs` (the
-`check()`/`fatal()`/`summarize()` pass-fail reporter), and `book-assets.mjs`.
+`check()`/`fatal()`/`summarize()` pass-fail reporter), and `coloring-book-assets.mjs`.
 
 Everything else lives in the `lib/` of the capability that owns it, and another tool may import it
 across the boundary — cross-tool reuse is not a reason to erase ownership into `tools/lib/`:
@@ -112,8 +112,8 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   exit; wrap per-item work in try/catch and report failures at the end without discarding completed
   results; never overwrite a baseline/output artifact from a run that had errors; name polling
   budgets.
-* TypeScript-flavored scripts run via `node --experimental-strip-types` (see the `check:assets` npm
-  script).
+* TypeScript-flavored scripts run via `node --experimental-strip-types` (see the
+  `check:coloring-assets` npm script).
 * Env vars in npm scripts are set inline (`VAR=value cmd`) — no `cross-env`, since scripts run only
   on macOS/Linux.
 * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**

@@ -7,7 +7,7 @@ vi.mock('../lib/proc.mjs', async (importOriginal) => {
 });
 
 import { spawnSync } from 'node:child_process';
-import { killDevPorts } from '../dev-kill.mjs';
+import { killDevPorts } from '../stop-dev-servers.mjs';
 import { sleep } from '../lib/proc.mjs';
 
 const noListeners = { status: 1, stdout: '', stderr: '' };

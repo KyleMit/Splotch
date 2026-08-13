@@ -124,7 +124,7 @@ Re-run `npm run adb:reverse` after each USB reconnect.
 If port 5173 is already in use from a stale dev server, kill it first:
 
 ```bash
-npm run dev:kill
+npm run dev:stop
 ```
 
 **Option B — Install the debug APK (tests the Capacitor shell)**

@@ -134,8 +134,8 @@ For ad-hoc validation of a single change, filter through the npm script — **no
 `npx playwright test` from the repo root. The config + `baseURL` live in `web/`, so raw `npx` from
 the root navigates to an empty `baseURL` (`Cannot navigate to
 invalid URL`) and also loses the
-Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/web.mjs` sets the
-`web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
+Chromium fallback (cryptic `chrome-headless-shell` error in cloud). `node tools/run-web-tool.mjs`
+sets the `web/` cwd and Chromium path for you, and forwards everything after `--` to Playwright.
 
 Configured in `web/playwright.config.ts`. By default it builds the production artifact and serves it
 with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). Specs live in

@@ -2,11 +2,11 @@
 // that the platform filtering used by strip-native-assets.mjs is consistent with
 // booksForPlatform, and that no authoring doc sits in the publicly served static
 // tree. Run with:
-//   npm run check:assets
+//   npm run check:coloring-assets
 
 import { existsSync, globSync } from 'node:fs';
 import { join } from 'node:path';
-import { webOnlyBooks } from './lib/book-assets.mjs';
+import { webOnlyBooks } from './lib/coloring-book-assets.mjs';
 import { ROOT, fail, isMain } from './lib/proc.mjs';
 import { BOOKS, booksForPlatform, bookAssetPaths } from '../web/src/lib/state/books.ts';
 

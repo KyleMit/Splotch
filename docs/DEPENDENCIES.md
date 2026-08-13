@@ -737,7 +737,7 @@ Non-`keep` rows first.
 ### svgo
 
 * **Version:** `^4.0.1` declared · 4.0.1 locked (latest 4.0.2) · dev
-* **Used for:** Optimizing shipped/inlined SVGs (`img:audit`/`img:audit:check`).
+* **Used for:** Optimizing shipped/inlined SVGs (`optimize:svg-assets`/`check:svg-assets`).
 * **Source:** npm · [github.com/svg/svgo](https://github.com/svg/svgo) · published by the SVGO team
 * **License:** MIT
 * **Health** (checked 2026-07-17): [22.6k stars](https://github.com/svg/svgo) · latest 4.0.2 on
@@ -904,7 +904,7 @@ tag pins are conventional. No action pins to a SHA today.
 | Tool                           | Where                                                      | Source / provisioning                                                                                                                      | Verdict                                                                                                   |
 | ------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `netlify-cli`                  | `dev:netlify` (`netlify dev --cwd web`)                    | **global install** (`npm i -g netlify-cli`), deliberately not a project dep — `tools/check-netlify-cli.mjs` guards its presence/login/link | keep — kept out of the tree on purpose (heavy CLI); the guard documents the requirement                   |
-| Local port cleanup             | `dev:kill` (`node tools/dev-kill.mjs`)                     | repo-local script (replaced the unpinned `npx kill-port` fetch); SIGTERM → verify → SIGKILL → verify on the two dev ports                  | keep — runs project code without a registry lookup; `lsof` is the supported macOS/Linux system dependency |
+| Local port cleanup             | `dev:stop` (`node tools/stop-dev-servers.mjs`)             | repo-local script (replaced the unpinned `npx kill-port` fetch); SIGTERM → verify → SIGKILL → verify on the two dev ports                  | keep — runs project code without a registry lookup; `lsof` is the supported macOS/Linux system dependency |
 | Playwright browsers (Chromium) | `test.yml` (`npx playwright install --with-deps chromium`) | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI                    | keep — versioned by the npm package; the binaries are a separate download, not a separate dep             |
 
 ### System toolchains (native builds & tests — no npm range)

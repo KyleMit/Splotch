@@ -20,7 +20,7 @@ The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, buil
 Capacitor native trees (`android/`, `ios/`), `capacitor.config.json`, the single root
 `package.json`/`node_modules`, and `tools/` stay at the repo root. This keeps netlify-cli's file
 watcher (run via `netlify dev --cwd web`) off the large native trees — see ADR-0024. The web
-toolchain runs with `cwd = web/` through `tools/web.mjs`.
+toolchain runs with `cwd = web/` through `tools/run-web-tool.mjs`.
 
 The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
 (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be

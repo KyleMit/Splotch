@@ -96,11 +96,11 @@ The SvelteKit app lives in **`web/`** (`web/src/`, the Vite/SvelteKit/test confi
 `package.json`/`node_modules`, and `tools/` stay at the repo root. `npm run dev:netlify` runs
 `netlify dev --cwd web` so netlify-cli's file watcher is scoped to `web/` and never traverses the
 large native trees (the cause of the `EMFILE` crash this layout fixes). All the npm scripts still
-run from the repo root; the web toolchain is dispatched into `web/` by `tools/web.mjs`.
+run from the repo root; the web toolchain is dispatched into `web/` by `tools/run-web-tool.mjs`.
 
 > **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the lockfile
 > live). The root `netlify.toml` build command runs `npm run build` (which builds the app in `web/`)
-> then `node tools/stage-netlify.mjs`, which copies `web/build → build` and
+> then `node tools/stage-netlify-functions.mjs`, which copies `web/build → build` and
 > `web/.netlify → .netlify` so Netlify sees the standard root layout (`publish = "build"`, SSR
 > function in `.netlify/functions-internal`). Local `netlify dev` uses `web/netlify.toml` instead.
 

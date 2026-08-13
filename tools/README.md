@@ -35,6 +35,31 @@ Precise domain verbs such as `convert`, `normalize`, `optimize`, `publish`, `enc
 are welcome when they are more accurate. `audit` names a capability or npm namespace, not an
 executable action.
 
+## Root entry points
+
+Root executables coordinate repository-wide concerns that do not belong to one capability package:
+
+| Entry point                        | Public command or owner                   | Purpose                                                       |
+| ---------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| `check-coloring-assets.mjs`        | `check:coloring-assets`                   | Validate the complete coloring-book asset catalog             |
+| `check-github-action-versions.mjs` | `check:github-actions`                    | Inventory workflow action pins and optionally query releases  |
+| `check-netlify-cli.mjs`            | `predev:netlify`                          | Require an authenticated, linked Netlify CLI                  |
+| `check-pwa-precache.mjs`           | `postbuild`                               | Enforce offline-asset coverage and the precache budget        |
+| `check-release-seams.mjs`          | `postbuild`, `postbuild:cap`              | Reject profiling and development seams in release output      |
+| `optimize-svg-assets.mjs`          | `optimize:svg-assets`, `check:svg-assets` | Optimize shipped SVGs or detect optimization drift            |
+| `print-playwright-version.mjs`     | GitHub setup actions                      | Emit the installed Playwright version for cache keys          |
+| `run-quality-checks.mjs`           | `check:quality`                           | Mirror CI's Quality job while reporting every failed step     |
+| `run-web-tool.mjs`                 | web build, check, and test commands       | Run root-installed web tools with `web/` as their working dir |
+| `stage-netlify-functions.mjs`      | Netlify production build                  | Move adapter output to the repository-root Netlify layout     |
+| `start-cloud-tunnel.mjs`           | `dev:tunnel`                              | Start the cloud preview server and authenticated tunnel       |
+| `stop-dev-servers.mjs`             | `dev:stop`                                | Stop listeners on the repository-owned development ports      |
+
+The check and optimization commands are deterministic and local except
+`check:github-actions -- --check-latest`, which queries GitHub and reports unknown release data when
+the network is unavailable. `dev:tunnel` requires the cloud-session tunnel credentials documented in
+[`docs/CLOUD/Claude.md`](../docs/CLOUD/Claude.md). Root tools fail nonzero on an unmet contract and
+must not silently weaken a check when an external prerequisite is missing.
+
 ## Capability documentation
 
 Every capability and meaningful sub-capability must have a README that covers:

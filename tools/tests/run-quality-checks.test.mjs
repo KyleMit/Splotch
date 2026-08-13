@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { QUALITY_COMMANDS, runQualityChecks, summarize } from '../run-quality-checks.mjs';
 
-// `npm run quality` exists so the Quality job is reproducible before pushing —
+// `npm run check:quality` exists so the Quality job is reproducible before pushing —
 // which it only is while it runs the same commands. The workflow is YAML and
 // cannot import the list, so the two sides are compared here instead: a step
 // added to CI and not to the script leaves the script quietly under-checking,

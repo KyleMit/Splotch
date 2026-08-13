@@ -128,7 +128,7 @@ async function runOneRep({ workers, rep, outDir }) {
     spawnSync(
       process.execPath,
       [
-        join(ROOT, 'tools', 'web.mjs'),
+        join(ROOT, 'tools', 'run-web-tool.mjs'),
         'playwright',
         'test',
         `--workers=${workers}`,

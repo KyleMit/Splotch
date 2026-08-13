@@ -218,12 +218,13 @@ Two consequences worth knowing before styling one:
 * **A single path inside a spot icon can still be themed** (ADR-0102). Declare it in
   `web/src/lib/design/iconTokens.ts` — keyed by icon then part, with a `light` and a `dark` hex —
   run `npm run gen:tokens`, and paint the path with
-  `style="fill:var(--icon-<icon>-<part>,#lightHex)"`; then `npm run img:audit`. The fallback hex
-  must equal the `light` value and every declared part must be referenced by an SVG, both enforced
-  by `web/src/lib/icons/tokenFallback.test.ts`. These are **not** `ThemeTokens` entries and need no
-  `tokenUsage.ts` rule: they are a per-asset lookup table, and no component style may reference one.
-  Reach for it when a path is illegible on a theme's grounds — the spot icons rest on `--surface`,
-  `--surface-2` *and* the near-constant `--brand-solid`, so each theme's colors must clear both.
+  `style="fill:var(--icon-<icon>-<part>,#lightHex)"`; then `npm run optimize:svg-assets`. The
+  fallback hex must equal the `light` value and every declared part must be referenced by an SVG,
+  both enforced by `web/src/lib/icons/tokenFallback.test.ts`. These are **not** `ThemeTokens`
+  entries and need no `tokenUsage.ts` rule: they are a per-asset lookup table, and no component
+  style may reference one. Reach for it when a path is illegible on a theme's grounds — the spot
+  icons rest on `--surface`, `--surface-2` *and* the near-constant `--brand-solid`, so each theme's
+  colors must clear both.
 * **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
   (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
   color beneath. `--paper-margin` is the flat tone behind the rotation-locked sheet.

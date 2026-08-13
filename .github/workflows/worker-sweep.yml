@@ -64,7 +64,7 @@ jobs:
       # harness routes the specs drive. The sweep driver builds nothing, so this
       # is the only build.
       - name: Build preview bundle
-        run: node tools/web.mjs vite build
+        run: node tools/run-web-tool.mjs vite build
         env:
           PUBLIC_ENABLE_DEV_HARNESS: 'true'
           ADMIN_ACCESS_TOKEN: test-admin-secret

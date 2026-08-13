@@ -3,11 +3,11 @@
 // the dependency-update-audit skill can bump outdated Action pins alongside the
 // npm packages `npm outdated` surfaces.
 //
-//   node tools/gha-versions.mjs                 offline: inventory + flag pins
+//   node tools/check-github-action-versions.mjs                 offline: inventory + flag pins
 //                                                 stuck at inconsistent versions
-//   node tools/gha-versions.mjs --check-latest  also query each action's latest
+//   node tools/check-github-action-versions.mjs --check-latest  also query each action's latest
 //                                                 upstream release tag (network)
-//   node tools/gha-versions.mjs --json          machine-readable inventory
+//   node tools/check-github-action-versions.mjs --json          machine-readable inventory
 //
 // Two things need no network and are always reported: the full pin inventory,
 // and inconsistent pins — the same action pinned at >1 version across workflows

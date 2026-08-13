@@ -33,12 +33,13 @@ where no user is present to answer questions.
 1. **List what's behind.** Run `npm outdated` (it exits non-zero when anything is outdated — that's
    expected, not a failure). Capture, for each package, the **current**, **wanted**, and **latest**
    versions, and whether it's a `prod` or `dev` dependency.
-   * **GitHub Actions pins count too.** Run `npm run deps:gha` to inventory every `uses:` pin across
-     `.github/workflows/` and flag **drift** — the same action pinned at inconsistent versions
-     across files (network-free). Add `npm run deps:gha -- --check-latest` to also compare each pin
-     against its latest upstream release tag (needs unauthenticated-or-`GITHUB_TOKEN` access to
-     `api.github.com`; it degrades to `latest: unknown` when rate-limited or offline). Treat an
-     outdated or inconsistent Action pin as an upgrade candidate alongside the npm packages.
+   * **GitHub Actions pins count too.** Run `npm run check:github-actions` to inventory every
+     `uses:` pin across `.github/workflows/` and flag **drift** — the same action pinned at
+     inconsistent versions across files (network-free). Add
+     `npm run check:github-actions -- --check-latest` to also compare each pin against its latest
+     upstream release tag (needs unauthenticated-or-`GITHUB_TOKEN` access to `api.github.com`; it
+     degrades to `latest: unknown` when rate-limited or offline). Treat an outdated or inconsistent
+     Action pin as an upgrade candidate alongside the npm packages.
 2. **Classify each.** For every outdated package decide the jump:
    * **Patch/minor within range** (`wanted` move) — low risk.
    * **Major** (`latest` > `wanted`, crosses a major) — needs a migration guide and a usage audit.
@@ -100,12 +101,12 @@ Keep each commit self-contained and green so any single upgrade can be reverted 
 own.
 
 **GitHub Actions pins** follow the same one-change-per-commit discipline, minus the `npm install`:
-edit the `@vN` (or SHA) ref in each `.github/workflows/*.yml` that `npm run deps:gha` flagged —
-bring an inconsistent action onto a single version, and bump behind-latest pins to the current
-major. Check the action's release notes for breaking input/behaviour changes (a major bump can
-rename inputs or drop a Node runtime) before committing. There's nothing to typecheck, so re-run
-`npm run deps:gha` to confirm the drift is gone; the workflow itself is only truly exercised when it
-next runs on CI, so keep each Action bump to its own commit for an easy revert.
+edit the `@vN` (or SHA) ref in each `.github/workflows/*.yml` that `npm run check:github-actions`
+flagged — bring an inconsistent action onto a single version, and bump behind-latest pins to the
+current major. Check the action's release notes for breaking input/behaviour changes (a major bump
+can rename inputs or drop a Node runtime) before committing. There's nothing to typecheck, so re-run
+`npm run check:github-actions` to confirm the drift is gone; the workflow itself is only truly
+exercised when it next runs on CI, so keep each Action bump to its own commit for an easy revert.
 
 ## Phase 4 — Wrap up
 

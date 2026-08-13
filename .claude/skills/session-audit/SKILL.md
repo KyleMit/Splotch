@@ -163,11 +163,11 @@ Learned from prior runs:
   discoverability, but that assumes the doc *covers* the thing. Check whether the warning you needed
   exists for a peer and not for you: the `testing` skill names raw `npx playwright test` and its
   exact error, while the Vitest block one screen up has no equivalent warning and no filtering
-  example — same root cause (`tools/web.mjs` sets `cwd = web/`), documented once. That asymmetry is
-  the finding, and the fix is to close the gap, not to write a new doc. Related weighting: a command
-  that reports a plausible *result* when it actually failed to load (`Tests  no tests` from raw
-  `npx vitest`, which never resolved `$lib`) outranks one that errors — the error costs a retry, the
-  false negative costs a wrong conclusion about your own code.
+  example — same root cause (`tools/run-web-tool.mjs` sets `cwd = web/`), documented once. That
+  asymmetry is the finding, and the fix is to close the gap, not to write a new doc. Related
+  weighting: a command that reports a plausible *result* when it actually failed to load
+  (`Tests  no tests` from raw `npx vitest`, which never resolved `$lib`) outranks one that errors —
+  the error costs a retry, the false negative costs a wrong conclusion about your own code.
 
 ## Shared audit conventions
 

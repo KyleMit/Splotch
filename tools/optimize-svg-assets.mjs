@@ -13,8 +13,8 @@
 // record.
 //
 // Usage:
-//   node tools/image-audit.mjs           # optimize in place (writes changes)
-//   node tools/image-audit.mjs --check   # CI: exit 1 if any SVG isn't optimized
+//   node tools/optimize-svg-assets.mjs           # optimize in place (writes changes)
+//   node tools/optimize-svg-assets.mjs --check   # CI: exit 1 if any SVG isn't optimized
 //
 // Config note: we run SVGO's default (visually-lossless) preset. In SVGO 4
 // `removeViewBox` is NOT part of preset-default, so the `viewBox` every icon
@@ -105,7 +105,7 @@ const net =
 if (check) {
   console.error(
     `\n[image-audit] ${changedCount} of ${files.length} SVG(s) are not optimized ` +
-      `(${net}). Run \`npm run img:audit\` and commit the result.`
+      `(${net}). Run \`npm run optimize:svg-assets\` and commit the result.`
   );
   process.exit(1);
 }

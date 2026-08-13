@@ -4,8 +4,8 @@
 // web/. The app moved under web/ so `netlify dev --cwd web` watches only that subtree, keeping
 // the large android/ios native trees out of netlify-cli's per-directory file watcher.
 //
-// `node tools/web.mjs vite dev`      -> the dev server (syncs .svelte-kit first only if missing)
-// `node tools/web.mjs <bin> [args]`  -> any web bin (vite, svelte-check, vitest, playwright)
+// `node tools/run-web-tool.mjs vite dev`      -> the dev server (syncs .svelte-kit first only if missing)
+// `node tools/run-web-tool.mjs <bin> [args]`  -> any web bin (vite, svelte-check, vitest, playwright)
 //
 // Bins are resolved by prepending the root node_modules/.bin to the child's PATH — the .bin
 // shims aren't on PATH when netlify-cli invokes this script directly (rather than via npm), so we
@@ -21,7 +21,7 @@ process.env.PATH = `${join(ROOT, 'node_modules', '.bin')}${delimiter}${process.e
 const [cmd, ...args] = process.argv.slice(2);
 
 if (!cmd) {
-  console.error('usage: node tools/web.mjs <bin> [args...]');
+  console.error('usage: node tools/run-web-tool.mjs <bin> [args...]');
   process.exit(1);
 }
 

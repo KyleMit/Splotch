@@ -79,7 +79,7 @@ const fixtureHtml = `<!doctype html>
 </html>
 `;
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
-const checkAssetsScript = join(repoRoot, 'tools', 'check-assets.mjs');
+const checkAssetsScript = join(repoRoot, 'tools', 'check-coloring-assets.mjs');
 
 function fixturePage(directory) {
   return {
@@ -156,7 +156,7 @@ describe('native build script entry points', () => {
     state.isMainInputs.length = 0;
 
     ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
-    ({ checkAssets } = await import('../../check-assets.mjs'));
+    ({ checkAssets } = await import('../../check-coloring-assets.mjs'));
 
     const filesystemCalls = [...state.filesystemCalls];
     const sentinel = readFileSync(importSentinel, 'utf8');
@@ -181,7 +181,7 @@ describe('native build script entry points', () => {
       errors: [],
       entryArguments: [
         expect.stringMatching(/^file:.*strip-native-assets\.mjs$/),
-        expect.stringMatching(/^file:.*check-assets\.mjs$/),
+        expect.stringMatching(/^file:.*check-coloring-assets\.mjs$/),
       ],
       exits: [],
       filesystemCalls: [],
@@ -204,14 +204,14 @@ describe('native build script entry points', () => {
     try {
       vi.resetModules();
       ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
-      ({ checkAssets } = await import('../../check-assets.mjs'));
+      ({ checkAssets } = await import('../../check-coloring-assets.mjs'));
     } finally {
       state.directEntry = false;
     }
 
     expect(state.isMainInputs).toEqual([
       expect.stringMatching(/^file:.*strip-native-assets\.mjs$/),
-      expect.stringMatching(/^file:.*check-assets\.mjs$/),
+      expect.stringMatching(/^file:.*check-coloring-assets\.mjs$/),
     ]);
     expect(existsSync(join(directBuildDir, 'favicon.ico'))).toBe(false);
     expect(log).toHaveBeenCalledWith('[check-assets] all checks passed.');
@@ -234,7 +234,7 @@ describe('native build script entry points', () => {
     const fixtureRoot = join(state.root, 'strip-cli');
     for (const relativePath of [
       'tools/native/strip-native-assets.mjs',
-      'tools/lib/book-assets.mjs',
+      'tools/lib/coloring-book-assets.mjs',
       'tools/native/lib/native-export.mjs',
       'tools/lib/proc.mjs',
     ]) {
@@ -355,7 +355,7 @@ describe('native build script entry points', () => {
     try {
       vi.resetModules();
       await import('../strip-native-assets.mjs');
-      await import('../../check-assets.mjs');
+      await import('../../check-coloring-assets.mjs');
     } finally {
       state.books.length = 0;
       state.directEntry = false;

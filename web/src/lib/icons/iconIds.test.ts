@@ -9,12 +9,12 @@ import { describe, it, expect } from 'vitest';
 // own, and the collision only appears in the composed page.
 //
 // The pressure toward collision is mechanical rather than accidental. SVGO's
-// `cleanupIds` (tools/image-audit.mjs) minifies ids to `a`, `b`, … per file,
+// `cleanupIds` (tools/optimize-svg-assets.mjs) minifies ids to `a`, `b`, … per file,
 // so two independently authored icons converge on the same short name — which
 // is how more-colors.svg came to hold `id="a"`. An id that must stay stable
 // opts out by starting with `icon-`; this guard is what makes the opt-out
 // enforceable rather than a convention, and it runs against the optimized form
-// CI already pins via `img:audit:check`.
+// CI already pins via `check:svg-assets`.
 const svgs = import.meta.glob<string>('./*.svg', {
   eager: true,
   query: '?raw',

@@ -255,7 +255,7 @@ const RE_TUNE = `# 1. Build once. The sweep driver builds nothing, so this is th
 #    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
 #    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\
-  node tools/web.mjs vite build
+  node tools/run-web-tool.mjs vite build
 
 # 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
 #    CI unset for the run, and one SWEEPRESULT line per rep.

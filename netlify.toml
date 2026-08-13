@@ -1,7 +1,7 @@
 # Production deploy config — the Netlify site builds from the repo ROOT (base directory = root,
 # the default), because package.json + the lockfile live here so `npm ci` works. The SvelteKit
 # app lives in web/ (ADR-0024): `npm run build` runs the build with cwd=web/, so adapter-netlify
-# writes its output under web/; tools/stage-netlify.mjs then copies web/build -> build and
+# writes its output under web/; tools/stage-netlify-functions.mjs then copies web/build -> build and
 # web/.netlify -> .netlify so Netlify sees the standard "app at root" layout it expects.
 #
 # Local development uses web/netlify.toml instead (via `npm run dev:netlify`, which runs
@@ -13,7 +13,7 @@
   # release tag and the web version would fall back to major.minor.0+<sha>
   # (ADR-0030). `|| true` so a fetch hiccup never fails the build — the fallback
   # still produces a valid per-commit version.
-  command = "git fetch --tags --force || true; npm run build && node tools/stage-netlify.mjs"
+  command = "git fetch --tags --force || true; npm run build && node tools/stage-netlify-functions.mjs"
   # Skip the build (exit 0 = skip) when the push touched nothing the web build
   # consumes — docs, ADRs, ruler-generated agent files, scrapbook/, native trees,
   # asset-gen internals. The watched paths are everything the build reads: the
@@ -34,7 +34,7 @@
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/release releases package.json package-lock.json netlify.toml"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
-  # but adapter-netlify writes it under web/.netlify, so stage-netlify.mjs copies that one tree up.
+  # but adapter-netlify writes it under web/.netlify, so stage-netlify-functions.mjs copies that one tree up.
   publish = "web/build"
 
 [build.environment]

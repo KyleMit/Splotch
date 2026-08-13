@@ -69,9 +69,9 @@ jobs:
         run: npm run lint
 
       # Drift guard: fails if any shipped SVG under web/ isn't SVGO-optimized
-      # (a new icon landed un-optimized). Fix with `npm run img:audit`.
-      - name: SVG audit
-        run: npm run img:audit:check
+      # (a new icon landed un-optimized). Fix with `npm run optimize:svg-assets`.
+      - name: SVG optimization check
+        run: npm run check:svg-assets
 
       # Drift guard: every CLAUDE.md/AGENTS.md and the .claude/skills/ +
       # .agents/skills/ trees are generated from .ruler/ (ADR-0058). Fails if a
