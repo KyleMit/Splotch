@@ -30,3 +30,9 @@ underlying diagnostic output.
 release artifact paths. Update its API-level constant together with CI and documentation; the nested
 config test enforces that agreement. Keep Android-only lifecycle code here and cross-platform
 Maestro or static-export behavior at the mobile capability root.
+
+Run focused verification with:
+
+```sh
+npm run test:tools -- tools/mobile/android
+```

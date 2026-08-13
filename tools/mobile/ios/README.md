@@ -22,3 +22,9 @@ errors exit nonzero after cleanup.
 simulator and Xcode lifecycle behavior here, shared Maestro execution at `../lib/`, and all native
 project files under `ios/`. The release opener is intentionally specialized to the IPA output; add a
 new owner-specific entry point rather than restoring a generic repository path opener.
+
+Run focused verification with:
+
+```sh
+npm run test:tools -- tools/mobile/ios
+```

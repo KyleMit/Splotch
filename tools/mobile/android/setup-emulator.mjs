@@ -46,7 +46,7 @@ const REQUIRED = [
 
 const missing = REQUIRED.filter(({ cmd }) => !hasCommand(cmd));
 if (missing.length > 0) {
-  const lines = ['[android-setup] Missing tools — not found on PATH:', ''];
+  const lines = ['[setup-emulator] Missing tools — not found on PATH:', ''];
   for (const { cmd, fix } of missing) lines.push(`  ${cmd}:`, ...fix.map((f) => `    ${f}`));
   lines.push('', `After fixing, open a new terminal or run: source ${shellRc}`);
   fail(lines.join('\n'));
@@ -60,9 +60,9 @@ const imageDir = join(
   ABI
 );
 if (existsSync(imageDir)) {
-  console.log('[android-setup] System image already installed.');
+  console.log('[setup-emulator] System image already installed.');
 } else {
-  console.log(`[android-setup] Installing ${SYSTEM_IMAGE} (auto-accepting licenses) …`);
+  console.log(`[setup-emulator] Installing ${SYSTEM_IMAGE} (auto-accepting licenses) …`);
   run('sdkmanager', [SYSTEM_IMAGE], { input: 'y\n'.repeat(20) });
 }
 
@@ -70,9 +70,9 @@ const avds = capture('avdmanager', ['list', 'avd', '--compact'])
   .split('\n')
   .map((l) => l.trim());
 if (avds.includes(AVD_NAME)) {
-  console.log(`[android-setup] AVD "${AVD_NAME}" already exists — nothing to do.`);
+  console.log(`[setup-emulator] AVD "${AVD_NAME}" already exists — nothing to do.`);
 } else {
-  console.log(`[android-setup] Creating AVD "${AVD_NAME}" …`);
+  console.log(`[setup-emulator] Creating AVD "${AVD_NAME}" …`);
   run(
     'avdmanager',
     ['create', 'avd', '--name', AVD_NAME, '--package', SYSTEM_IMAGE, '--device', DEVICE_ID],
@@ -85,7 +85,7 @@ if (avds.includes(AVD_NAME)) {
 const localProps = join(ROOT, 'android', 'local.properties');
 if (!existsSync(localProps)) {
   writeFileSync(localProps, `sdk.dir=${ANDROID_HOME}\n`);
-  console.log(`[android-setup] Wrote android/local.properties (sdk.dir=${ANDROID_HOME})`);
+  console.log(`[setup-emulator] Wrote android/local.properties (sdk.dir=${ANDROID_HOME})`);
 }
 
 // Maestro drives the native smoke test (npm run test:android). It's a
@@ -93,10 +93,10 @@ if (!existsSync(localProps)) {
 // checked above satisfies its Java requirement. macOS/Linux have a one-line
 // installer.
 if (maestroInstalled()) {
-  console.log('[android-setup] Maestro already installed.');
+  console.log('[setup-emulator] Maestro already installed.');
 } else {
-  console.log('[android-setup] Installing Maestro (https://get.maestro.mobile.dev) …');
+  console.log('[setup-emulator] Installing Maestro (https://get.maestro.mobile.dev) …');
   run('bash', ['-c', 'curl -fsSL https://get.maestro.mobile.dev | bash']);
 }
 
-console.log('[android-setup] Done — run "npm run android:boot" then "npm run android:emulator".');
+console.log('[setup-emulator] Done — run "npm run android:boot" then "npm run android:emulator".');

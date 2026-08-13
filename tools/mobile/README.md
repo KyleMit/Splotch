@@ -34,6 +34,6 @@ owning source and the corresponding drift guard rather than duplicating another 
 Focused repository checks:
 
 ```sh
-npm run test:tools -- tools/mobile/tests
+npm run test:tools -- tools/mobile
 npm run check
 ```

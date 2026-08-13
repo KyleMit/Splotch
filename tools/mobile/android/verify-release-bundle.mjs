@@ -16,7 +16,7 @@ import { fail } from '../../lib/proc.mjs';
 import { RELEASE_AAB } from './lib/android-toolchain.mjs';
 
 if (!process.env.JAVA_HOME)
-  fail('[android-verify] JAVA_HOME is not set — cannot locate jarsigner.');
+  fail('[verify-release-bundle] JAVA_HOME is not set — cannot locate jarsigner.');
 const jarsigner = join(process.env.JAVA_HOME, 'bin', 'jarsigner');
 
 const {
@@ -25,13 +25,13 @@ const {
   status,
   error,
 } = spawnSync(jarsigner, ['-verify', RELEASE_AAB], { encoding: 'utf8' });
-if (error) fail(`[android-verify] failed to run jarsigner: ${error.message}`);
+if (error) fail(`[verify-release-bundle] failed to run jarsigner: ${error.message}`);
 
 const output = stdout + stderr;
 if (status === 0 && /^jar verified\.$/m.test(output)) {
   console.log('jar verified.');
 } else {
-  console.error('[android-verify] bundle did NOT verify. Full jarsigner output:\n');
+  console.error('[verify-release-bundle] bundle did NOT verify. Full jarsigner output:\n');
   console.error(output.trim());
   process.exit(status || 1);
 }
