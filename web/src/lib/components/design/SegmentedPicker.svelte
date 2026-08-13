@@ -286,9 +286,14 @@
   /* Collapsed, an option is a square rather than a shrunken pill: the label is
      what gave it width, and the touch-target floor is what's left. The caller
      hides .option-label at a width it chooses; this keeps the target legal
-     when it does. */
+     when it does. Both axes, and on the collapsible rule rather than the size
+     rules: the label carries the sm track's height too, so a collapsed sm
+     option would otherwise stand 29px. The floor outranks that track's
+     deliberate 1px undercut of the md step — its row alignment is worth a
+     pixel, not a target a toddler misses. */
   .segment.collapsible .option {
     min-width: 44px;
+    min-height: 44px;
   }
 
   @media (hover: hover) {
