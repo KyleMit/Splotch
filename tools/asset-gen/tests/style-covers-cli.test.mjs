@@ -11,7 +11,7 @@ const state = vi.hoisted(() => ({
   render: null,
 }));
 
-vi.mock('../lib/paths.mjs', () => ({
+vi.mock('../lib/asset-paths.mjs', () => ({
   get STYLES_DIR() {
     return state.stylesDir;
   },
@@ -24,7 +24,7 @@ vi.mock('../lib/gemini.mjs', () => ({
   generateImage: async () => ({ bytes: await state.render(), mimeType: 'image/png' }),
 }));
 
-const { run, CoverFailuresError } = await import('../bin/gen-style-covers.mjs');
+const { run, CoverFailuresError } = await import('../style-covers/gen-style-covers.mjs');
 
 const SIZE = 400;
 const FIELD = { r: 255, g: 0, b: 255 };

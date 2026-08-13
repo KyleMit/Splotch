@@ -6,12 +6,12 @@ import {
   evaluateFastSet,
   soleExercisers,
   validateFastSetHistory,
-} from '../undo-fast-set.mjs';
+} from '../lib/undo-fast-set.mjs';
 import {
   ALL_UNDO_SCENARIO_KEYS,
   FAST_UNDO_SCENARIO_KEYS,
   UNDO_SCENARIO_PATHS,
-} from '../undo-scenario-keys.mjs';
+} from '../lib/undo-scenario-keys.mjs';
 
 const result = (key, commitP95Ms) => ({ key, draw: { commitP95Ms } });
 const emptyHistory = () => ({ schemaVersion: 1, runs: [] });

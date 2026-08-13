@@ -94,5 +94,5 @@ points.
 Run focused verification with:
 
 ```sh
-npm run test:tools -- tools/page-inventory/tests/page-inventory.test.mjs tools/perf/tests/perf-actions.test.mjs
+npm run test:tools -- tools/page-inventory/tests/page-inventory.test.mjs tools/perf/tests/xcuitest-actions.test.mjs
 ```

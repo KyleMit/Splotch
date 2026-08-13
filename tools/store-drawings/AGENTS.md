@@ -7,7 +7,7 @@
 This folder is the self-contained offline pipeline that compiles authored SVG samples into static
 pointer instructions and evaluates their replay through the production Splotch canvas.
 
-* Runnable entry points live in `bin/`; shared replay helpers live in `lib/`.
+* Runnable entry points live at this capability root; shared replay helpers live in `lib/`.
 * `samples/` contains the temporary centerline SVG authoring inputs. Runtime and store screenshots
   never load them.
 * `generated/store-drawings.mjs` is machine-authored by `npm run gen:store-drawings`; never edit it

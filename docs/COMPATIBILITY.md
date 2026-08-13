@@ -82,7 +82,7 @@ OS.
 
 The mechanical change is small — `android/variables.gradle`, this document, the `mobile` skill's
 Android page, and the context-anchored API-level assertions in
-`tools/android/tests/android-config.test.mjs` — but it moves a published support floor, so it
+`tools/mobile/android/tests/android-config.test.mjs` — but it moves a published support floor, so it
 warrants an ADR rather than a quiet bump.
 
 ## How the floor is enforced
@@ -229,8 +229,8 @@ non-polyfill choices:
   nothing read them, so nothing failed when they rotted, and they went stale together — several
   drifting far enough that the cited file no longer contained the API at all.
 * Change the native Android floor in `android/variables.gradle` → `minSdkVersion`. The support-floor
-  drift guard in `tools/android/tests/android-config.test.mjs` then fails on every stale claim —
-  this document, the `mobile` skill's Android page, and the `/android-beta` constants — until each
-  moves with it (including the release label, via its API-level → release map). Read "Why the
-  Android floor is not raised to API 29" above first — it records the standing trade-off and the two
-  conditions that would justify moving it.
+  drift guard in `tools/mobile/android/tests/android-config.test.mjs` then fails on every stale
+  claim — this document, the `mobile` skill's Android page, and the `/android-beta` constants —
+  until each moves with it (including the release label, via its API-level → release map). Read "Why
+  the Android floor is not raised to API 29" above first — it records the standing trade-off and the
+  two conditions that would justify moving it.

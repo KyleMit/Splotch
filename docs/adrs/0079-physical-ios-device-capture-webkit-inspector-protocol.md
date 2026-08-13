@@ -2,6 +2,10 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
+> physical-device WebKit capture contract remains in force. Its commands are now
+> `perf:ios:webkit:gates` and `perf:analyze:web-inspector`.
+
 ## Context
 
 ADR-0032 built the profiling harness around three capture paths — headless Chromium over CDP, the

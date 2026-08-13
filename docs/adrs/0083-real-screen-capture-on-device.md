@@ -2,6 +2,11 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
+> real-screen measurement contract remains in force. Its command replacements are `perf:ipad:frames`
+> → `perf:ios:webkit:frames`, `perf:frames:analyze` → `perf:analyze:frames`, and `perf:frames:local`
+> → `perf:web:frames`.
+
 ## Context
 
 ADR-0079 automated the device gates run. On iPadOS 26.5 it reports every ADR-0066 column at ≤ 2 ms

@@ -82,13 +82,13 @@ grandchild, while `release()` hands that group to the OS instead — which is wh
 
 Everything else lives in the `lib/` of the capability that owns it, and another tool may import it
 across the boundary — cross-tool reuse is not a reason to erase ownership into `tools/lib/`:
-`tools/android/lib/android.mjs` resolves the SDK and AVD locations per platform (override the SDK
-with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/native/lib/maestro.mjs` the Maestro location, and
-`tools/native/lib/native-export.mjs` owns what the native static export drops — the web-only static
-file list plus the head-tag rewrite that keeps `strip-native-assets.mjs` from leaving a tag pointing
-at a file it deleted; `tools/release/lib/release-frontmatter.mjs` the release frontmatter/semver
-parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login + token-CRUD request
-plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
+`tools/mobile/android/lib/android-toolchain.mjs` resolves the SDK and AVD locations per platform
+(override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/mobile/lib/maestro.mjs` owns
+the Maestro location, and `tools/mobile/lib/static-export.mjs` owns what the native static export
+drops — the web-only static file list plus the head-tag rewrite that keeps `strip-static-assets.mjs`
+from leaving a tag pointing at a file it deleted; `tools/release/lib/release-frontmatter.mjs` the
+release frontmatter/semver parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login +
+token-CRUD request plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
 concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
@@ -103,8 +103,8 @@ and on a `tools/lib/` module that reaches back into a capability folder.
 * Every script must run on macOS and Linux (ADR-0017) — the project dropped Windows dev support
   (ADR-0062). Keep them plain Node `.mjs` for consistency, and put the macOS-vs-Linux differences
   that remain (SDK paths, `open` vs `xdg-open`) behind a branch in `tools/lib/` rather than
-  scattering them. Scripts bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode)
-  must fail fast with a clear message elsewhere.
+  scattering them. Scripts bound to one platform by nature (`run-simulator-smoke-test.mjs` needs
+  Xcode) must fail fast with a clear message elsewhere.
 * Every CLI script gates execution behind `isMain(import.meta.url)` (`tools/lib/proc.mjs`) and
   exports a distinctly named entry function.
 * Script options are flags via `parseArgs`; an env var is at most a documented fallback.
@@ -119,40 +119,42 @@ and on a `tools/lib/` module that reaches back into a capability folder.
 * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**
   (`tools/asset-gen/docs/architecture.md`): the AI style covers, light/dark coloring-page fills,
   thumbnails, and format/line-art utilities (`gen-style-covers`, `gen-coloring-chalk`,
-  `gen-coloring-fills`, `gen-coloring-fills-dark`, `gen-coloring-thumbs`,
-  `gen-coloring-book-proof-sheet`, `png-to-webp`). See `tools/asset-gen/docs/README.md` +
-  `tools/asset-gen/CLAUDE.md`. The **coloring-page pipeline** (pen/chalk outlines → fills → punch,
-  gates, per-category runbook) lives in `tools/asset-gen/docs/pipeline.md` — read it before
-  generating more.
+  `gen-light-fills`, `gen-night-fills`, `gen-thumbnails`, `gen-book-proof-sheet`,
+  `convert-png-to-webp`). See `tools/asset-gen/README.md` + `tools/asset-gen/CLAUDE.md`. The
+  **coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook) lives
+  in `tools/asset-gen/docs/pipeline.md` — read it before generating more.
 * `tools/audit-burndown/` is the scripted bulk burndown of `docs/AUDIT.md` (the runner-specific
   `burn-down-audits` skill — read the one for the active agent before touching these). Its Claude
   package under `.claude/` and Codex package under `.agents/` are direct sources maintained
-  independently; do not edit it through Ruler or sync one provider from the other. `burndown.mjs`
-  drives one isolated Claude Code or Codex session per role per finding (verify → implement →
-  adversarial review → fix); `agent-runner.mjs` owns native auth, invocation, session-resume, model
-  defaults, and output normalization; `pop.mjs` is the **only** thing that reads or edits
-  `docs/AUDIT.md` at that scale; `lib.mjs` holds the shared state helpers, which deliberately return
-  status instead of exiting. `prompts/*.md` are runner-neutral role prompts. Entry points are the
-  `audit:*` npm scripts. A run is a `createBurndownRun({ config, effects })` instance — the counters
-  it shares (`done`/`dropped`/`deferred`/`consecutive`/`sincePush`) live there, each lifecycle step
-  is a named helper, and `effects` is the whole outside-world surface the tests substitute — git,
-  shell, the binary probe, the agent runner, the log, and `halt` — so both `preflight()` and
-  `execute()` are drivable from a test; `readConfig(env)` resolves every knob from the supplied
-  `env` — including the `launch-command` line recorded at startup and the `AUDIT_FILE` backlog path
-  the run pops, deletes, stages, and counts, both of which the run reads from `config` rather than
-  from `process.env`, so they cannot name different files — and `main()` runs only under `isMain`,
-  so importing the driver starts nothing. The backlog surgery, the runner seam, and the driver's own
+  independently; do not edit it through Ruler or sync one provider from the other.
+  `run-burndown.mjs` drives one isolated Claude Code or Codex session per role per finding (verify →
+  implement → adversarial review → fix); `lib/agent-runner.mjs` owns native auth, invocation,
+  session-resume, model defaults, and output normalization; `pop-finding.mjs` is the **only** thing
+  that reads or edits `docs/AUDIT.md` at that scale; `lib/burndown-core.mjs` holds the shared state
+  helpers, which deliberately return status instead of exiting. `prompts/*.md` are runner-neutral
+  role prompts. Entry points are the `audit:*` npm scripts. A run is a
+  `createBurndownRun({ config, effects })` instance — the counters it shares
+  (`done`/`dropped`/`deferred`/`consecutive`/`sincePush`) live there, each lifecycle step is a named
+  helper, and `effects` is the whole outside-world surface the tests substitute — git, shell, the
+  binary probe, the agent runner, the log, and `halt` — so both `preflight()` and `execute()` are
+  drivable from a test; `readConfig(env)` resolves every knob from the supplied `env` — including
+  the `launch-command` line recorded at startup and the `AUDIT_FILE` backlog path the run pops,
+  deletes, stages, and counts, both of which the run reads from `config` rather than from
+  `process.env`, so they cannot name different files — and `main()` runs only under `isMain`, so
+  importing the driver starts nothing. The backlog surgery, the runner seam, and the driver's own
   sequencing are locked by `tools/audit-burndown/tests/*.test.mjs` (`npm run test:tools`, in CI).
-* `direct-provider-skills.mjs` declares the provider packages and notes that are edited in place.
-  `ruler-apply.mjs` snapshots and restores those paths around Ruler's atomic skill-tree replacement,
-  including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for
-  any Ruler-managed exceptional skills. The focused `tools/ruler/tests/*.test.mjs` files lock both
-  seams.
-* The app-driving generators — `gen:shots` (`store-shots.mjs`), `gen:large-image`
-  (`gen-large-image.mjs`), and the evaluation/review entries under `tools/store-drawings/bin/` —
-  drive the live app by selector through `tools/app-driver/lib/app-driver.mjs` and only run on
-  demand, so that module rots silently when app markup, element IDs, or show/hide mechanics change
-  (drawer, palette, dialogs). `test:driver:smoke` (in the CI test job) boots the app and exercises
-  the driver's entry path to catch that — after such a change, run it, and remember the driver has
-  bitten twice before (a dropped `sleep` import; `expandDrawer` broke when the drawer's buttons
-  became always-in-DOM, so its probe checks visibility, not presence).
+* `tools/ruler/lib/direct-provider-skills.mjs` declares the provider packages and notes that are
+  edited in place. `tools/ruler/apply-ruler.mjs` snapshots and restores those paths around Ruler's
+  atomic skill-tree replacement, including on failure. `tools/ruler/apply-skill-forks.mjs` then
+  replaces complete generated packages for any Ruler-managed exceptional skills. The focused
+  `tools/ruler/tests/*.test.mjs` files lock both seams.
+* The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
+  `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
+  evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,
+  `gen-brush-review.mjs`) — drive the live app by selector through
+  `tools/app-driver/lib/app-driver.mjs` and only run on demand, so that module rots silently when
+  app markup, element IDs, or show/hide mechanics change (drawer, palette, dialogs).
+  `test:driver:smoke` (in the CI test job) boots the app and exercises the driver's entry path to
+  catch that — after such a change, run it, and remember the driver has bitten twice before (a
+  dropped `sleep` import; `expandDrawer` broke when the drawer's buttons became always-in-DOM, so
+  its probe checks visibility, not presence).

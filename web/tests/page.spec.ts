@@ -216,7 +216,7 @@ test('link-preview meta tags are present and match the real OG image', async ({
 
   // og:image:width/height must match the actual PNG, or a scraper renders the
   // card with the wrong aspect box. These drifted once (declared 1200x630 while
-  // gen-large-image.mjs emitted 1920x1080); this guards against a repeat.
+  // gen-promotional-image.mjs emitted 1920x1080); this guards against a repeat.
   const declaredWidth = Number(await meta('og:image:width'));
   const declaredHeight = Number(await meta('og:image:height'));
 

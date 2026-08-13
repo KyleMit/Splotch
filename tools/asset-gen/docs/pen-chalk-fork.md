@@ -36,7 +36,7 @@ gates:
 * **Pen outline** (`{page}.outline.webp`) — black ink on white. The light-mode overlay and the
   source of every derivation (thumbs, light fills, chalk).
 * **Chalk outline** (`{page}.chalk.webp`) — the dark-mode line art:
-  `tools/asset-gen/bin/gen-coloring-chalk.mjs` has Gemini redraw the inverted pen as a chalk
+  `tools/asset-gen/coloring/gen-chalk-outlines.mjs` has Gemini redraw the inverted pen as a chalk
   drawing, making the judgment calls a blind invert can't — eye sclera and catchlights become
   deliberate SOLID WHITE, pupils stay black. Gates: every pen stroke still traced
   (`lib/outline-match.mjs` keep ≥ 92%, worst tile ≥ 80%), new ink only inside pen-enclosed interiors
@@ -52,9 +52,9 @@ gates:
 * **The punch is per-theme** (`lib/punch-fill.mjs`): light raws punch against the pen, night raws
   against the chalk. The generated white alpha overlay preserves the chalk's solid whites in the
   final combined image — the punch and renderer stay dumb; all judgment lives in the chalk.
-* **Night fills condition on the chalk** (`gen-coloring-fills-dark.mjs`): the model input is the
-  chalk as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill +
-  screened chalk over dark paper), since the chalk now owns the eye whites.
+* **Night fills condition on the chalk** (`gen-night-fills.mjs`): the model input is the chalk
+  as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill + screened
+  chalk over dark paper), since the chalk now owns the eye whites.
 * **Incremental migration:** `books.ts` lists chalk orientations per page (like `night`); absent a
   chalk, the dark alpha overlay is derived from the pen — visually matching the pre-fork inversion
   behavior, with light mode byte-identical throughout.

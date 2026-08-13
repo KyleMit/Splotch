@@ -16,9 +16,9 @@
 
 import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseSavedAgentOutput } from './agent-runner.mjs';
-import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib.mjs';
-import { commitCommentBody, findingProblem } from './comment.mjs';
+import { parseSavedAgentOutput } from './lib/agent-runner.mjs';
+import { chdirRoot, gitOut, LOGS, logLine, WORK } from './lib/burndown-core.mjs';
+import { commitCommentBody, findingProblem } from './lib/comment-sync.mjs';
 
 chdirRoot();
 

@@ -5,8 +5,8 @@ description: Drive the scripted bulk burndown of docs/AUDIT.md with isolated Cod
 
 # Burn down audits with Codex
 
-Drive `tools/audit-burndown/burndown.mjs` with Codex as every model-backed role. Keep the driver as
-the orchestrator: do not replace its one-shot subprocesses with in-session subagents.
+Drive `tools/audit-burndown/run-burndown.mjs` with Codex as every model-backed role. Keep the driver
+as the orchestrator: do not replace its one-shot subprocesses with in-session subagents.
 
 Set `AGENT_RUNNER=codex` on every preflight, canary, and relaunch. The runner defaults are:
 
@@ -51,8 +51,8 @@ approval beyond the audit commands.
   `multi_agent=false`.
 * State is `docs/AUDIT.md` plus git. A finding's entry is deleted in the same commit as its approved
   fix. Everything under `.audit-work/` is disposable run state.
-* Never read or edit `docs/AUDIT.md` directly at burndown scale. Use `tools/audit-burndown/pop.mjs`
-  for count/peek/delete operations; the driver owns deletion.
+* Never read or edit `docs/AUDIT.md` directly at burndown scale. Use
+  `tools/audit-burndown/pop-finding.mjs` for count/peek/delete operations; the driver owns deletion.
 * The driver never talks to GitHub. It pushes commits and appends
   `.audit-work/pending-comments.jsonl`; the supervising Codex agent opens/updates the PR, posts
   comments through the GitHub connector, and watches CI.
@@ -76,15 +76,15 @@ Other commands:
 | `npm run audit:status`              | Campaign-wide counts, run state, current call, comments       |
 | `npm run audit:cost`                | All retained Codex logs by role and projected remaining usage |
 | `npm run audit:watch`               | Follow `run.log`; add `-- --dash` for a refreshing summary    |
-| `pop.mjs --count`                   | Count remaining findings without loading the backlog          |
-| `pop.mjs --peek N`                  | Print finding N without changing the backlog                  |
+| `pop-finding.mjs --count`           | Count remaining findings without loading the backlog          |
+| `pop-finding.mjs --peek N`          | Print finding N without changing the backlog                  |
 | `backfill-comments.mjs next`        | Print next pending fix comment                                |
 | `backfill-comments.mjs done <sha>`  | Mark it posted, only after the GitHub call succeeds           |
 | `backfill-comments.mjs capture ...` | Rebuild missing records from logs and commits                 |
 
-`pop.mjs` also supports no argument to print the first finding and `--delete` to print and remove
-it. The driver owns deletion. It has no `--help` or source-pruning mode; do not probe unsupported
-flags or manually compensate by editing the backlog.
+`pop-finding.mjs` also supports no argument to print the first finding and `--delete` to print and
+remove it. The driver owns deletion. It has no `--help` or source-pruning mode; do not probe
+unsupported flags or manually compensate by editing the backlog.
 
 The important environment knobs are:
 
@@ -425,9 +425,9 @@ committed handoff across machines.
    reconcile any gap from terminal `DONE`/`INVALID`/`DEFERRED` events in that same scoped log. Do
    not use historical lines, the cumulative deferred list, or commit count: one finding can have
    several fix commits.
-5. Verify the remaining count with `pop.mjs --count`. The driver owns individual deletion, and the
-   helper has no safe source-pruning mode, so do not directly tidy empty `## Source:` sections while
-   findings remain. Delete `docs/AUDIT.md` only when the count is zero.
+5. Verify the remaining count with `pop-finding.mjs --count`. The driver owns individual deletion,
+   and the helper has no safe source-pruning mode, so do not directly tidy empty `## Source:`
+   sections while findings remain. Delete `docs/AUDIT.md` only when the count is zero.
 6. Add the `burn-down-audits` entry to `docs/AUDIT-LOG.md` with fixed/deferred/dropped counts and
    the PR link.
 7. Run `npm run format:check`, the relevant quality checks, and deterministic local tests. Do not

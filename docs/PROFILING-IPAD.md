@@ -6,20 +6,20 @@ This is the runbook for profiling on a **physical iPad** — the highest-fidelit
 the drawing engine, because it's the real **WebKit/JavaScriptCore engine + Apple GPU + 120 Hz
 ProMotion** display the app actually ships on.
 
-The gates run is automated by **`npm run perf:ipad`**; trusted-touch real-screen capture is
-automated by **`npm run perf:ipad:xcuitest`**, and discrete UI-action regression coverage by
-**`npm run perf:ipad:actions`**. This file covers their one-time device setup, the Timeline
-recording they deliberately do *not* replace, and the by-hand fallbacks.
+The gates run is automated by **`npm run perf:ios:webkit:gates`**; trusted-touch real-screen capture
+is automated by **`npm run perf:ios:xcuitest:screen`**, and discrete UI-action regression coverage
+by **`npm run perf:ios:xcuitest:actions`**. This file covers their one-time device setup, the
+Timeline recording they deliberately do *not* replace, and the by-hand fallbacks.
 
 Where the device sits among the harness targets:
 
 * `npm run perf:web` / `perf:android` drive Chromium/the Android WebView over CDP.
-* `npm run perf:ios` drives **Playwright's WebKit on the Mac** — the right *engine*, but not the
-  iPad's CPU, GPU, or refresh rate.
+* `npm run perf:web:webkit` drives **Playwright's WebKit on the Mac** — the right *engine*, but not
+  the iPad's CPU, GPU, or refresh rate.
 * Apple exposes no **CDP** endpoint on a physical device — but it does expose Safari's own **WebKit
   Inspector Protocol** over USB, which carries `Runtime.evaluate` and `Console.messageAdded`.
-  `npm run perf:ipad` speaks that protocol directly; Safari's Web Inspector is the same channel with
-  a UI on top.
+  `npm run perf:ios:webkit:gates` speaks that protocol directly; Safari's Web Inspector is the same
+  channel with a UI on top.
 
 Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear where the action happens.
 
@@ -27,19 +27,19 @@ Throughout, every step is tagged **⟨Mac⟩** or **⟨iPad⟩** so it's clear w
 
 ## Which approach to use
 
-| Approach                                                          | Fidelity                                                         | Determinism                                                       | Use when                                                                     |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| **A. Safari on iPad → Mac's `/dev/engine` preview** (recommended) | Real iPad WebKit + GPU + ProMotion (Safari shell, not WKWebView) | High — driven by the same scenario as `perf:undo` via the console | You want repeatable engine numbers (undo/commit/draw cost at real op volume) |
-| **Trusted MobileSafari input via XCUITest**                       | Real iPad WebKit + GPU + OS-mediated trusted touch               | High — fixed long + short native gesture                          | You need repeatable felt-lag / presentation-starvation numbers               |
-| **B. Native Capacitor app, hand-driven**                          | Real WKWebView app shell *and* hardware                          | Low — gestures by hand, no `getUndoDebug`                         | You specifically need to rule out a WKWebView-vs-Safari difference           |
+| Approach                                                          | Fidelity                                                         | Determinism                                                           | Use when                                                                     |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| **A. Safari on iPad → Mac's `/dev/engine` preview** (recommended) | Real iPad WebKit + GPU + ProMotion (Safari shell, not WKWebView) | High — driven by the same scenario as `perf:web:undo` via the console | You want repeatable engine numbers (undo/commit/draw cost at real op volume) |
+| **Trusted MobileSafari input via XCUITest**                       | Real iPad WebKit + GPU + OS-mediated trusted touch               | High — fixed long + short native gesture                              | You need repeatable felt-lag / presentation-starvation numbers               |
+| **B. Native Capacitor app, hand-driven**                          | Real WKWebView app shell *and* hardware                          | Low — gestures by hand, no `getUndoDebug`                             | You specifically need to rule out a WKWebView-vs-Safari difference           |
 
 Safari-on-iPad and the native WKWebView run the **same** WebKit engine, so for engine/canvas
 performance Approach A is the right default; Approach B is a sanity check on the app shell. Both are
 documented below.
 
-Approach A has two forms, and they produce the same table: **`npm run perf:ipad`** (next section)
-and the by-hand paste in A1–A4. Reach for the command first — the hand path exists for when it won't
-attach, and for the Timeline run in A5–A6, which stays manual.
+Approach A has two forms, and they produce the same table: **`npm run perf:ios:webkit:gates`** (next
+section) and the by-hand paste in A1–A4. Reach for the command first — the hand path exists for when
+it won't attach, and for the Timeline run in A5–A6, which stays manual.
 
 ---
 
@@ -56,15 +56,15 @@ application menu.
 **⟨Mac⟩ + ⟨iPad⟩** Connect the iPad to the Mac by **USB**, unlock the iPad, and tap **Trust This
 Computer** when prompted. Put both devices on the **same Wi‑Fi** network.
 
-**⟨Mac⟩** For `npm run perf:ipad`, install the USB relay once:
+**⟨Mac⟩** For `npm run perf:ios:webkit:gates`, install the USB relay once:
 
 ```sh
 brew install ios-webkit-debug-proxy
 ```
 
-**⟨Mac⟩ + ⟨iPad⟩** For `npm run perf:ipad:xcuitest` and `npm run perf:ipad:actions`, install Appium
-3 and its XCUITest driver, then enable **Settings → Apps → Safari → Advanced → Remote Automation**
-on the iPad:
+**⟨Mac⟩ + ⟨iPad⟩** For `npm run perf:ios:xcuitest:screen` and `npm run perf:ios:xcuitest:actions`,
+install Appium 3 and its XCUITest driver, then enable **Settings → Apps → Safari → Advanced → Remote
+Automation** on the iPad:
 
 ```sh
 npm install --global appium@3
@@ -79,17 +79,17 @@ provisioning and device registration, so use it deliberately. Omit it from norma
 
 ---
 
-## The automated gates run — `npm run perf:ipad` — **⟨Mac⟩**
+## The automated gates run — `npm run perf:ios:webkit:gates` — **⟨Mac⟩**
 
 ```sh
-npm run perf:ipad                                # all four scenarios
-npm run perf:ipad -- --scenarios=crayon-scribbles # one of them
-npm run perf:ipad --ignore-scripts               # skip the rebuild
+npm run perf:ios:webkit:gates                                # all four scenarios
+npm run perf:ios:webkit:gates -- --scenarios=crayon-scribbles # one of them
+npm run perf:ios:webkit:gates --ignore-scripts               # skip the rebuild
 ```
 
 One command does what A1–A4 do by hand: rebuilds the instrumented bundle, serves it on the LAN,
 attaches to Safari on the device, **navigates the tab to `/dev/engine`**, injects
-`ipad-console-driver.js`, and prints the same table plus the driver's warnings. It writes
+`tools/perf/probes/engine-gates.js`, and prints the same table plus the driver's warnings. It writes
 `ipad-gates.json` (the exact values, so nothing depends on copying the table out) to
 `perf-profiles/<timestamp>-ipad-<device>/`. A full run is a couple of minutes.
 
@@ -111,34 +111,34 @@ Read the table against [Reading the results](#reading-the-results) — the gates
 meanings are identical to the hand-driven run.
 
 **What it deliberately does not do:** record a Timeline. The protocol has a `Timeline` domain, but
-its event stream is not the shape `npm run perf:ios:analyze` parses, so a recording still means Web
-Inspector by hand — A5 and A6 below.
+its event stream is not the shape `npm run perf:analyze:web-inspector` parses, so a recording still
+means Web Inspector by hand — A5 and A6 below.
 
 It also cannot see the real screen at all. That is the next section.
 
 ---
 
-## The real screen — `npm run perf:ipad:frames` — **⟨Mac⟩**
+## The real screen — `npm run perf:ios:webkit:frames` — **⟨Mac⟩**
 
 ```sh
-npm run perf:ipad:frames                              # hand-drawn, full phase sweep
-npm run perf:ipad:frames -- --drive                    # synthetic input, no human hand
-npm run perf:ipad:xcuitest -- --device-id=<UDID>       # trusted native touch, no human hand
-npm run perf:ipad:xcuitest -- --device-id=<UDID> --brush=crayon --gesture-repeats=3
-npm run perf:ipad:actions -- --device-id=<UDID>        # discrete UI-action frame gates
-npm run perf:ipad:frames -- --phases=blank,page --contact-seconds=20
-npm run perf:frames:analyze -- perf-profiles/<dir>/real-screen.json
+npm run perf:ios:webkit:frames                              # hand-drawn, full phase sweep
+npm run perf:ios:webkit:frames -- --drive                    # synthetic input, no human hand
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID>       # trusted native touch, no human hand
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID> --brush=crayon --gesture-repeats=3
+npm run perf:ios:xcuitest:actions -- --device-id=<UDID>        # discrete UI-action frame gates
+npm run perf:ios:webkit:frames -- --phases=blank,page --contact-seconds=20
+npm run perf:analyze:frames -- perf-profiles/<dir>/real-screen.json
 ```
 
-**Why this exists.** `perf:ipad` reports every column ≤ 2 ms and clears every ADR-0066 gate on
-hardware while the real app at `/` visibly lags. Both are true, because `/dev/engine` is a bare
-canvas: no line-art overlay, no `PointerHalos`, no per-stroke Svelte reactivity. Those costs are
-compositor/paint and unmarked-JS work — they make the device slower **without making any `engine.*`
-measure larger**, so no amount of gates tuning can surface them. This command measures the screen
-instead of the engine, on the surface users touch.
+**Why this exists.** `perf:ios:webkit:gates` reports every column ≤ 2 ms and clears every ADR-0066
+gate on hardware while the real app at `/` visibly lags. Both are true, because `/dev/engine` is a
+bare canvas: no line-art overlay, no `PointerHalos`, no per-stroke Svelte reactivity. Those costs
+are compositor/paint and unmarked-JS work — they make the device slower **without making any
+`engine.*` measure larger**, so no amount of gates tuning can surface them. This command measures
+the screen instead of the engine, on the surface users touch.
 
-It opens `/` (not `/dev/engine`), injects `tools/perf/real-screen-probe.js`, and records four raw
-numeric tables which Node then turns into numbers (`real-screen-stats.mjs`):
+It opens `/` (not `/dev/engine`), injects `tools/perf/probes/real-screen-probe.js`, and records four
+raw numeric tables which Node then turns into numbers (`real-screen-stats.mjs`):
 
 | Metric                                                                  | What it answers                                                                                       |
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -163,10 +163,10 @@ Both matter, for opposite reasons.
   touch down to — from inside the frame loop, and drives the app's own coloring-book UI by selector
   to set up each phase. It needs no human, so it is the only way to get **identical input per
   phase**, which attribution requires.
-* **`perf:ipad:xcuitest`** uses Appium's XCUITest driver to generate OS-mediated native coordinates.
-  It is the regression path for felt lag: one WebDriver session opens MobileSafari, injects the same
-  recorder in web context, draws in `NATIVE_APP`, then returns to read the raw tables. Its
-  calibrated fidelity gate requires trusted touch events, hand-like
+* **`perf:ios:xcuitest:screen`** uses Appium's XCUITest driver to generate OS-mediated native
+  coordinates. It is the regression path for felt lag: one WebDriver session opens MobileSafari,
+  injects the same recorder in web context, draws in `NATIVE_APP`, then returns to read the raw
+  tables. Its calibrated fidelity gate requires trusted touch events, hand-like
   cadence/coalescing/pressure/contact geometry, and fails the command before a mismatched run can be
   used as lag evidence.
 
@@ -179,25 +179,25 @@ Both matter, for opposite reasons.
 > delay — a constructed event's `timeStamp` is set when the probe builds it, so `at - stamp` is ~0
 > by construction. Read those columns from a hand-drawn run only.
 
-### Trusted automation — `perf:ipad:xcuitest`
+### Trusted automation — `perf:ios:xcuitest:screen`
 
 Start Appium in one terminal, keep the USB-connected iPad unlocked, and run:
 
 ```sh
-npm run perf:ipad:xcuitest -- --device-id=<UDID>
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID>
 # First WebDriverAgent install only, when provisioning is missing:
-npm run perf:ipad:xcuitest -- --device-id=<UDID> --allow-provisioning
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID> --allow-provisioning
 # Exercise one brush for a longer session:
-npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --brush=magic --gesture-repeats=3 --repeat-pause-ms=1500
 # Score ten serial undos after twenty commands:
-npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --gesture-repeats=2 --undo-count=10
 # Exercise rebuilt patches after rotation:
-npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --gesture-repeats=2 --undo-count=10 --rotate-before-undo
 # Let a thirty-command history fully compact, then undo all retained steps:
-npm run perf:ipad:xcuitest -- --device-id=<UDID> \
+npm run perf:ios:xcuitest:screen -- --device-id=<UDID> \
   --gesture-repeats=3 --history-settle-ms=17000 --undo-count=20
 ```
 
@@ -246,7 +246,7 @@ xcrun xctrace record --template 'Animation Hitches' --device <UDID> \
 While it is recording, run the trusted gesture in another terminal:
 
 ```sh
-npm run perf:ipad:xcuitest --ignore-scripts -- --device-id=<UDID> \
+npm run perf:ios:xcuitest:screen --ignore-scripts -- --device-id=<UDID> \
   --url=http://<mac-ip>:<port>/ --no-serve --output=/tmp/splotch-probe.json
 ```
 
@@ -269,16 +269,16 @@ run also fails its existing engine/next-frame gates. `--report-only` finishes an
 artifact during diagnosis.
 
 Appium's Remote Automation Safari window is not exposed by `ios-webkit-debug-proxy`, so
-`perf:ipad:frames` cannot attach to it. The Appium session must own navigation, probe injection,
-native input, and readback as one operation.
+`perf:ios:webkit:frames` cannot attach to it. The Appium session must own navigation, probe
+injection, native input, and readback as one operation.
 
-### Discrete action automation — `perf:ipad:actions`
+### Discrete action automation — `perf:ios:xcuitest:actions`
 
 Use the same running Appium server and unlocked iPad:
 
 ```sh
-npm run perf:ipad:actions -- --device-id=<UDID>
-npm run perf:ipad:actions --ignore-scripts -- --device-id=<UDID> \
+npm run perf:ios:xcuitest:actions -- --device-id=<UDID>
+npm run perf:ios:xcuitest:actions --ignore-scripts -- --device-id=<UDID> \
   --actions=coloring,screenshot,undo,rotation --report-only
 ```
 
@@ -336,7 +336,7 @@ on a permission sheet. It does not alter rendering. Normal builds compile it out
 ### Counting the rendering work — `--timeline`
 
 ```sh
-npm run perf:ipad:frames -- --drive --timeline --phases=page --contact-seconds=10
+npm run perf:ios:webkit:frames -- --drive --timeline --phases=page --contact-seconds=10
 ```
 
 `Timeline.enable` + `Timeline.start` **do** work over the protocol and stream the full record tree —
@@ -363,7 +363,7 @@ first use, both against identical synthetic input:
 
 ### Re-reading a capture
 
-The probe records raw tables and computes nothing, so `perf:frames:analyze` recomputes every metric
+The probe records raw tables and computes nothing, so `perf:analyze:frames` recomputes every metric
 from a saved `real-screen.json`. This is not a convenience: four metric definitions were wrong in
 the first device capture (see the 60 Hz caveat, plus move gaps that spanned stroke boundaries, paint
 latency that counted the idle after a finger-lift, and a finger-lift into an idle page reported as a
@@ -373,8 +373,9 @@ latency that counted the idle after a finger-lift, and a finger-lift into an idl
 
 ## Approach A — Safari on iPad against the Mac's `/dev/engine` build
 
-A1–A4 are the hand-driven form of the section above; run them when `npm run perf:ipad` won't attach,
-or when you want to watch a step. A5–A6 are the Timeline run, which has no automated form.
+A1–A4 are the hand-driven form of the section above; run them when `npm run perf:ios:webkit:gates`
+won't attach, or when you want to watch a step. A5–A6 are the Timeline run, which has no automated
+form.
 
 ### A1. Build and serve the instrumented bundle — **⟨Mac⟩**
 
@@ -393,7 +394,7 @@ makes `/dev/engine` (and its `window.__engine` / `getUndoDebug()`) reachable
 (`PUBLIC_ENABLE_DEV_HARNESS` is read at **runtime** for the server route and compiled into the
 client's `__DEV_HARNESS__` literal, so it must be set for the build and server; `perf:serve` does
 both, and `--host` exposes it beyond localhost). Leave it running in its own terminal — and stop it
-before `perf:replay` (same port).
+before `perf:web:replay` (same port).
 
 It prints the two URLs to open on the iPad:
 
@@ -402,10 +403,10 @@ It prints the two URLs to open on the iPad:
 ➜  Harness: http://192.168.40.75:4173/dev/engine
 ```
 
-`tools/perf/serve.mjs` wraps vite to print those. Bare `vite --host` advertises one URL per bound
-interface, including the `169.254.x.x` link-local address macOS self-assigns to the virtual
-interface it creates for a USB-tethered iPad — a dead end no browser can reach. The wrapper still
-binds every interface (so `localhost` keeps working); it only filters what it advertises.
+`tools/perf/serve-profile-build.mjs` wraps vite to print those. Bare `vite --host` advertises one
+URL per bound interface, including the `169.254.x.x` link-local address macOS self-assigns to the
+virtual interface it creates for a USB-tethered iPad — a dead end no browser can reach. The wrapper
+still binds every interface (so `localhost` keeps working); it only filters what it advertises.
 
 ### A2. Open the harness — **⟨iPad⟩**
 
@@ -426,7 +427,7 @@ Timeline recording**, and its table is the ADR-0066 verdict. A4 tells you *how m
 *where* and *whether a frame dropped*. Never try to get both from one run — the reasons are in A5.
 
 In Web Inspector → **Console** tab, paste the **entire contents** of
-[`tools/perf/ipad-console-driver.js`](../tools/perf/ipad-console-driver.js) and press Enter. It runs
+[`tools/perf/probes/engine-gates.js`](../tools/perf/probes/engine-gates.js) and press Enter. It runs
 on the iPad page and:
 
 * resizes the canvas to the full iPad screen (so the raster is the real on-device size),
@@ -435,8 +436,8 @@ on the iPad page and:
   of stalling through every undo wait,
 * drives four real-volume scenarios — 22 long ~1200-op squiggles, 22 five-finger ~2400-op drags, 22
   crayon squiggles, and 22 crayon reversal-scribbles (mid-stroke pass splits) — matching
-  `npm run perf:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes, and
-  each scenario resets to blank paper **and** zero history first so its counts are its own,
+  `npm run perf:web:undo`; 22 strokes runs two past the depth-20 cap so the overflow path executes,
+  and each scenario resets to blank paper **and** zero history first so its counts are its own,
 * prints a `console.table` with, per scenario: undo entries, retained history commands, folded base
   tiles, **`commit max ms`**, **`undo avg/p95/max ms`**, and direct patch/base/total history MiB —
   then the ADR-0066 gates verbatim.
@@ -489,10 +490,10 @@ for where the time goes rather than for watching the tier demote. Override with
 `window.__perfStrokes` / `window.__perfOps` in either mode.
 
 Scenario keys are the `key` column of the A4 table — `long-squiggles`, `multi-finger`,
-`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:undo --scenarios=` takes, so a
-row that's hot here names the desktop scenario that reproduces it. Timeline mode **requires exactly
-one**: you record because A4 flagged a specific row, and Web Inspector's marker ring buffer drops
-the front of a longer run anyway. It refuses with the key list if you forget.
+`crayon-squiggles`, `crayon-scribbles` — the same keys `npm run perf:web:undo --scenarios=` takes,
+so a row that's hot here names the desktop scenario that reproduces it. Timeline mode **requires
+exactly one**: you record because A4 flagged a specific row, and Web Inspector's marker ring buffer
+drops the front of a longer run anyway. It refuses with the key list if you forget.
 
 > **Timeline mode measures shape, not magnitude.** Shorter strokes make smaller patches and cheaper
 > encodes, so its milliseconds are *not* gate numbers. Read it for where the time goes and whether a
@@ -507,12 +508,12 @@ Export the recording (**Timelines** tab → export icon → save a `.json`, e.g.
 analyzer:
 
 ```sh
-npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
+npm run perf:analyze:web-inspector -- perf-profiles/web-inspector-timeline/<export>.json
 ```
 
-> **Not** `perf:analyze`. The Web Inspector export is a different shape from a Chrome trace
-> (`{recording:{records, markers, samples}}`), and `perf:analyze` would read it as empty. Three
-> things to know about the format, all handled by `perf:ios:analyze`:
+> **Not** `perf:analyze:chrome`. The Web Inspector export is a different shape from a Chrome trace
+> (`{recording:{records, markers, samples}}`), and `perf:analyze:chrome` would read it as empty.
+> Three things to know about the format, all handled by `perf:analyze:web-inspector`:
 >
 > * It records `performance.mark()` as `markers` but **not** `performance.measure()`, so engine.\*
 >   durations aren't stored directly — the analyzer recovers most ops' main-thread cost from the
@@ -556,8 +557,8 @@ Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 
 1. **⟨iPad⟩** Open `http://<mac-lan-ip>:4173/` (the normal app).
 2. **⟨Mac⟩** Attach Web Inspector (Develop → ⟨iPad⟩ → the page) and paste the whole of
-   [`tools/perf/ipad-recorder.js`](../tools/perf/ipad-recorder.js) into the **Console**. It starts
-   recording immediately.
+   [`tools/perf/probes/input-recorder.js`](../tools/perf/probes/input-recorder.js) into the
+   **Console**. It starts recording immediately.
 3. **⟨iPad⟩** Draw, change colors, erase, undo — with your fingers or the Apple Pencil, however a
    real session goes. The recorder captures **every pointer event on the page** (canvas strokes and
    UI-targeted events alike, each with its target element, `buttons`, and pen pressure),
@@ -573,13 +574,13 @@ Recording uses the **real app at the root** (`/`), not `/dev/engine`.
 > contact `pointermove`s with **no** preceding `pointerdown` anywhere (e.g. the first Apple Pencil
 > stroke after a color-swatch tap) — and reports which element(s) received them: WebKit sometimes
 > hit-tests the down-less moves onto the canvas and sometimes keeps delivering them to the control
-> the merged tap started on. Only the canvas-targeted events are replayed by `perf:replay`; the
+> the merged tap started on. Only the canvas-targeted events are replayed by `perf:web:replay`; the
 > UI-targeted ones (`on` field present) are kept purely as diagnostics.
 
 ### C3. Replay under the profiler — **⟨Mac⟩**
 
 ```sh
-npm run perf:replay -- --recording=perf-profiles/recordings/my-session.json
+npm run perf:web:replay -- --recording=perf-profiles/recordings/my-session.json
 ```
 
 It opens `/dev/engine`, sizes the canvas to the recorded device, replays your input at its recorded
@@ -589,7 +590,7 @@ was stored + engine.draw/commit/undo cost). The replay runs in **headless Chromi
 it's for op-stream/algorithm fidelity from real input — not on-device hardware numbers (for those,
 profile the replay or your live drawing on the iPad via Approach A/B).
 
-> The replay (`perf:replay`) takes over port 4173 and will stop the `--host` recording server.
+> The replay (`perf:web:replay`) takes over port 4173 and will stop the `--host` recording server.
 > Record first, then replay.
 
 ---
@@ -607,7 +608,8 @@ Use only to confirm the app shell behaves like Safari.
 5. **⟨iPad⟩** By hand: draw one long continuous scribble (several seconds), then tap **undo**.
    Repeat a few times; try a five-finger drag too.
 6. **⟨Mac⟩** Stop the recording. Read `engine.draw` / `engine.commit` / `engine.undo` in the
-   Timeline's user-timing track, or export and `npm run perf:ios:analyze -- <export>.json`.
+   Timeline's user-timing track, or export and
+   `npm run perf:analyze:web-inspector -- <export>.json`.
 
 There's no `window.__engine` here (the real app doesn't expose the harness), so op counts aren't
 controlled and `getUndoDebug()` is unavailable — you're reading the engine marks off organic input.
@@ -653,25 +655,25 @@ What they cannot see:
   rAF deltas are the only proxy, and they measure when rAF *ran*, not when a pixel reached the
   glass.
 
-The practical rule: `perf:ipad` answers "is an engine operation expensive". `perf:ipad:frames`
-answers "did the screen keep up". A regression hunt that starts with the first one on a felt-lag
-report will find nothing, comfortably.
+The practical rule: `perf:ios:webkit:gates` answers "is an engine operation expensive".
+`perf:ios:webkit:frames` answers "did the screen keep up". A regression hunt that starts with the
+first one on a felt-lag report will find nothing, comfortably.
 
 ---
 
 ## Timeline on `/`, hand-drawn — **⟨Mac⟩** + **⟨iPad⟩**
 
 The definitive instrument for the compositor side, and the only one that shows **paint** and
-**composite** records directly. Do this when `perf:ipad:frames` has named a phase to chase and you
-need to know what the rendering pipeline was doing inside its stalls.
+**composite** records directly. Do this when `perf:ios:webkit:frames` has named a phase to chase and
+you need to know what the rendering pipeline was doing inside its stalls.
 
 It is A5–A6's procedure pointed at `/` instead of `/dev/engine`, with two differences that make it
 *more* tractable than the gates-run Timeline the runbook warns about:
 
-1. **Hand-drawing is required, not a compromise.** `perf:ios:analyze` carries its own warning that
-   frame durations are unreliable when input came from the synchronous console driver (a whole
-   stroke dispatched in one blocking tick). A hand-drawn session on `/` has no such problem — and
-   the real-screen findings only reproduce under a real hand anyway.
+1. **Hand-drawing is required, not a compromise.** `perf:analyze:web-inspector` carries its own
+   warning that frame durations are unreliable when input came from the synchronous console driver
+   (a whole stroke dispatched in one blocking tick). A hand-drawn session on `/` has no such problem
+   — and the real-screen findings only reproduce under a real hand anyway.
 2. **The volume is manageable.** A few hundred ops in a hand-drawn session, against the ~53k
    `engine.draw` markers that pin Web Inspector at 100% CPU on a gates run.
 
@@ -685,7 +687,7 @@ npm run perf:serve                                    # ⟨Mac⟩ serve the inst
 # ⟨Mac⟩ Develop → ⟨iPad⟩ → the page → Timelines → record
 # ⟨iPad⟩ draw by hand: long slow strokes, then rapid short ones, on a coloring page
 # ⟨Mac⟩ stop, export the .json, then:
-npm run perf:ios:analyze -- perf-profiles/web-inspector-timeline/<export>.json
+npm run perf:analyze:web-inspector -- perf-profiles/web-inspector-timeline/<export>.json
 ```
 
 Read the **paint** and **composite** rows against the engine rows: the shape to expect from the
@@ -699,7 +701,7 @@ findings above is negligible engine cost beside long rendering-side records.
   Pro.** Measured on iPad13,8 / iPadOS 26.5: a bare rAF sampler reports **16–17 ms both idle and
   while animating**. So a drawing loop pacing at 17 ms is *at the ceiling*, not failing, and a fixed
   8.33 ms budget reports a perfectly-paced capture as 64% late — which the first version of
-  `perf:ipad:frames` did. `perf:frames:analyze` derives the beat per capture from the observed
+  `perf:ios:webkit:frames` did. `perf:analyze:frames` derives the beat per capture from the observed
   deltas instead of assuming one.
 
   Two consequences worth carrying: **ADR-0066's 8.3 ms commit-hitch gate is stricter than the
@@ -712,22 +714,22 @@ findings above is negligible engine cost beside long rendering-side records.
 * **A JavaScript synthetic-input run is not a substitute for a hand.** One constructed `pointermove`
   per frame measured *perfectly clean* on device — zero stalls in every phase — on the same build
   where a hand stalled for 1.4 s. Use `--drive` for CSS A/B attribution, a hand-drawn run as the
-  fidelity reference, and `perf:ipad:xcuitest` only while its trusted-input gate still matches that
-  reference.
+  fidelity reference, and `perf:ios:xcuitest:screen` only while its trusted-input gate still matches
+  that reference.
 * **Safari ≠ WKWebView**, but the engine is identical; the difference is the app shell, which
   Approach B checks if needed.
 * **iPad not under the Develop menu** → re-confirm the iPad's Web Inspector toggle, re-seat the USB
   cable, re-tap **Trust This Computer**, and make sure the iPad is unlocked with the Safari tab
   foregrounded.
-* **`perf:ipad` says "No iOS device on the inspector relay"** → the same causes as the Develop-menu
-  entry above; the relay and the Develop menu read the same channel, so if one can't see the device
-  neither can the other. Check the Develop menu first — it's the faster signal.
-* **`perf:ipad` says "The iPad exposes no Safari pages"** → the device is attached but Safari has no
-  tab to attach to. Open Safari on the iPad (any page) and re-run; the command navigates whatever
-  tab it finds.
-* **`perf:ipad` reports the driver stopped early** → it surfaces the driver's own `console.error`
-  verbatim, so read that message: the two it raises are a build without `PERF_MARKS=true` and an
-  unknown `--scenarios=` key.
+* **`perf:ios:webkit:gates` says "No iOS device on the inspector relay"** → the same causes as the
+  Develop-menu entry above; the relay and the Develop menu read the same channel, so if one can't
+  see the device neither can the other. Check the Develop menu first — it's the faster signal.
+* **`perf:ios:webkit:gates` says "The iPad exposes no Safari pages"** → the device is attached but
+  Safari has no tab to attach to. Open Safari on the iPad (any page) and re-run; the command
+  navigates whatever tab it finds.
+* **`perf:ios:webkit:gates` reports the driver stopped early** → it surfaces the driver's own
+  `console.error` verbatim, so read that message: the two it raises are a build without
+  `PERF_MARKS=true` and an unknown `--scenarios=` key.
 * **More than one `Network:` URL** → `perf:serve` filters out link-local addresses but still prints
   every genuinely-routable one, so a machine on a VPN or with a second active adapter shows several.
   The Wi‑Fi one is the one the iPad can reach — `ipconfig getifaddr en0` names it. Whichever you

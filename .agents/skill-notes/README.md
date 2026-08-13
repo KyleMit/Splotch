@@ -25,14 +25,14 @@ A fully forked skill keeps its independent notes beside its independent packages
 └── codex/skill-notes/<name>.md.template
 ```
 
-`tools/ruler/apply-ruler-skill-forks.mjs` writes each note only to its matching agent tree. A fork
-note must not also exist here; that guard prevents runner-specific design history from silently
-becoming a shared contract.
+`tools/ruler/apply-skill-forks.mjs` writes each note only to its matching agent tree. A fork note
+must not also exist here; that guard prevents runner-specific design history from silently becoming
+a shared contract.
 
-Unmanaged provider packages are registered in `tools/ruler/direct-provider-skills.mjs`. Their notes
-are edited directly in the matching `.claude/skill-notes/` or `.agents/skill-notes/` tree and have
-no `.ruler/` source. `burn-down-audits` and `analyze-session-transcripts` have independent notes for
-both providers; `run-claude` and `implement-issue-stack` have Codex notes only.
+Unmanaged provider packages are registered in `tools/ruler/lib/direct-provider-skills.mjs`. Their
+notes are edited directly in the matching `.claude/skill-notes/` or `.agents/skill-notes/` tree and
+have no `.ruler/` source. `burn-down-audits` and `analyze-session-transcripts` have independent
+notes for both providers; `run-claude` and `implement-issue-stack` have Codex notes only.
 
 A skill's `SKILL.md` is a runbook: it tells an agent what to do *now*, and every line it carries is
 context the agent pays for on each invocation. That leaves no room for the other half of the story —

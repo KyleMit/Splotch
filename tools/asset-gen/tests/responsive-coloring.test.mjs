@@ -9,7 +9,7 @@ import {
   pageThumbImageSource,
   responsiveColoringAssets,
 } from '../../../web/src/lib/state/books.ts';
-import { WEB_STATIC } from '../lib/paths.mjs';
+import { WEB_STATIC } from '../lib/asset-paths.mjs';
 import { maxOverlayAlphaError, OVERLAY_MAX_CHANNEL_ERROR } from '../lib/overlay-alpha.mjs';
 import {
   RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,

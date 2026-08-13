@@ -203,7 +203,7 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 * **Docs-only images** (README screenshots and the like) live in `docs/assets/`, committed as
   optimized `.webp` — never raw PNGs.
 * **Shipped PNGs** under `web/static/` get a WebP sibling before committing:
-  `node tools/asset-gen/bin/png-to-webp.mjs`.
+  `node tools/asset-gen/convert-png-to-webp.mjs`.
 * **Committed run outputs** (proof sheets, Lighthouse reports, model tests) belong in
   [`/scrapbook`](../scrapbook/README.md), not `docs/`.
 

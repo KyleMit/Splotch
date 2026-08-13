@@ -17,8 +17,8 @@ import { describe, expect, it } from 'vitest';
 // a green suite is exactly the evidence used to conclude a move was clean.
 const repoRoot = join(import.meta.dirname, '..', '..');
 
-// Packages with their own suites and their own layout conventions.
-const SEPARATELY_CONFIGURED = /^tools\/(asset-gen|store-drawings)\//;
+// Package with its own suite and layout conventions.
+const SEPARATELY_CONFIGURED = /^tools\/asset-gen\//;
 
 // Synthetic diff fixtures: opaque strings fed to the audit-burndown diff parser,
 // deliberately naming files that do not exist.
