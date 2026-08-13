@@ -3,17 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "AI/sharp asset-generation pipeline for Splotch. NOT a workspace and NOT separately installed — its dependencies (sharp, @google/genai) live in the repo-root package.json so the root node_modules stays flat for cap sync (ADR-0029/0053). Run these via `npm run gen:*` from the repo root, or the aliases below from inside this folder; either way binaries resolve from the hoisted root node_modules. Do not `npm install` here.",
+  "description": "AI/sharp asset-generation pipeline for Splotch. NOT a workspace and NOT separately installed — its dependencies (sharp, @google/genai) live in the repo-root package.json so the root node_modules stays flat for cap sync (ADR-0029/0053). Run these via the repo-root `npm run gen:*` / `check:*` / `update:*` scripts, or the aliases below from inside this folder; either way binaries resolve from the hoisted root node_modules. Do not `npm install` here.",
   "scripts": {
     "style-covers": "node --experimental-strip-types --disable-warning=ExperimentalWarning style-covers/gen-style-covers.mjs",
     "coloring-chalk": "node --experimental-strip-types --disable-warning=ExperimentalWarning coloring/gen-chalk-outlines.mjs",
     "coloring-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning coloring/gen-light-fills.mjs",
-    "coloring-fills-dark": "node --experimental-strip-types --disable-warning=ExperimentalWarning coloring/gen-night-fills.mjs",
+    "coloring-night-fills": "node --experimental-strip-types --disable-warning=ExperimentalWarning coloring/gen-night-fills.mjs",
     "coloring-overlays": "node coloring/gen-overlays.mjs",
-    "coloring-punch": "node coloring/punch-fill-outlines.mjs",
+    "coloring-punched-fills": "node coloring/punch-fill-outlines.mjs",
     "coloring-thumbs": "node coloring/gen-thumbnails.mjs",
     "coloring-book-proof-sheet": "node --experimental-strip-types --disable-warning=ExperimentalWarning coloring/gen-book-proof-sheet.mjs",
     "asset-manifest": "node gen-asset-manifest.mjs",
-    "png-to-webp": "node convert-png-to-webp.mjs"
+    "convert-png-to-webp": "node convert-png-to-webp.mjs"
   }
 }

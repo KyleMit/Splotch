@@ -140,9 +140,9 @@ Or, from **inside this folder**, the local aliases (same flags, resolve the same
 
 ```bash
 npm run coloring-fills -- farm/dog-wide --samples 3
-npm run coloring-fills-dark -- space --max-attempts 4   # not exposed as a root gen:* script
+npm run coloring-night-fills -- space --max-attempts 4  # not exposed as a root gen:* script
 npm run coloring-book-proof-sheet -- space --source samples
-npm run png-to-webp
+npm run convert-png-to-webp
 ```
 
 The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast without it. They are
@@ -198,7 +198,7 @@ views, the outline-% badge, size constraints — lives in
 
 * **The coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook):
   [`pipeline.md`](docs/pipeline.md). Decision records live beside that runbook in `docs/`. Retired
-  techniques + history: [`legacy/`](../legacy/).
+  techniques + history: [`legacy/`](legacy/).
 * **Known outstanding issues** (shipped-asset defects, gate blind spots, tooling gaps): GitHub
   issues labeled
   [`area:asset-gen`](https://github.com/kylemit/splotch/issues?q=is%3Aissue+is%3Aopen+label%3Aarea%3Aasset-gen)

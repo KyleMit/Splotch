@@ -103,7 +103,7 @@ and adding one is a decision about what the button *produces* — not about how 
 * **`punchedFraction` is a cheap failure detector.** A run that keys far too little or far too much
   means the model gave us a shadowed, textured, or absent backdrop, and the generator says so per
   cover instead of shipping a ghost.
-* **`theme.ts` is now on the sanctioned `web/src` import list** ([`README.md`](README.md)) and
+* **`theme.ts` is now on the sanctioned `web/src` import list** ([`README.md`](../README.md)) and
   spells its own tokens import with an explicit `.ts`, because bare Node under
   `--experimental-strip-types` will not resolve an extensionless specifier the way Vite does.
 * **`AiImagePrompt.svelte` left the raw-hex allowlist** in `tools/tokens/lint-token-styles.mjs`: its
