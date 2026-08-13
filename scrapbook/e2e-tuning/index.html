@@ -549,7 +549,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
   <h3>First finding: the sweep was measuring itself</h3>
   <p>Every rep ran against one shared preview server, and the suite deliberately fills 60-second per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the managed token’s. A rep takes about as long as those windows last, so the next rep inherited a spent budget and its guard tests took a 429 where they assert a 415.</p>
   <ul class="notes"><li>On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of 12 reps — a deterministic failure counted as a flake rate.</li><li>Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.</li><li>Both are specs the earlier per-worker-count failure columns are largely made of.</li></ul>
-  <p>tools/e2e-tuning/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
+  <p>tools/e2e-tuning/run-worker-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
 </div>
     <p>
       Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the
@@ -730,7 +730,7 @@ PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
 # 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
 #    CI unset for the run, and one SWEEPRESULT line per rep.
 for w in 1 2 3 4 6 8; do
-  node tools/e2e-tuning/e2e-sweep.mjs --workers=$w --reps=30 --out=runs
+  node tools/e2e-tuning/run-worker-sweep.mjs --workers=$w --reps=30 --out=runs
 done
 
 # 3. On CI hardware the same driver runs from .github/workflows/worker-sweep.yml
@@ -746,7 +746,7 @@ done
 # and the sweep measures a flake it manufactured. A fresh server per rep clears
 # the in-memory limiter and matches what CI does: one server, one suite run.</code></pre>
     <p>
-      Then replace the datasets at the top of <code>tools/e2e-tuning/gen-e2e-tuning-report.mjs</code> and run
+      Then replace the datasets at the top of <code>tools/e2e-tuning/gen-tuning-report.mjs</code> and run
       <code>npm run gen:e2e-tuning-report</code>. The decision and its reasoning live in
       <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0078-playwright-worker-count-and-flake-tuning.md">ADR-0078</a>.
     </p>

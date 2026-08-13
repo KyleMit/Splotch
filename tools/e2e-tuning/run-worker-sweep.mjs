@@ -24,7 +24,7 @@
 // 3. **The server env declared, not inherited**, the same rule the other two
 //    throwaway servers follow. See SWEEP_SERVER_ENV.
 //
-// `node tools/e2e-tuning/e2e-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep`
+// `node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep`
 
 import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';

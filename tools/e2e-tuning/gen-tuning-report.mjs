@@ -197,7 +197,7 @@ const HARNESS_ARTIFACT = {
     'Both are specs the earlier per-worker-count failure columns are largely made of.',
   ],
   fix:
-    'tools/e2e-tuning/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory ' +
+    'tools/e2e-tuning/run-worker-sweep.mjs starts and stops a preview server per rep, which clears the in-memory ' +
     'limiter and matches what CI does anyway: one server, one suite run.',
 };
 
@@ -260,7 +260,7 @@ PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \\
 # 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
 #    CI unset for the run, and one SWEEPRESULT line per rep.
 for w in 1 2 3 4 6 8; do
-  node tools/e2e-tuning/e2e-sweep.mjs --workers=$w --reps=30 --out=runs
+  node tools/e2e-tuning/run-worker-sweep.mjs --workers=$w --reps=30 --out=runs
 done
 
 # 3. On CI hardware the same driver runs from .github/workflows/worker-sweep.yml
@@ -601,7 +601,7 @@ ${masthead({
     </p>
     <pre><code>${esc(RE_TUNE)}</code></pre>
     <p>
-      Then replace the datasets at the top of <code>tools/e2e-tuning/gen-e2e-tuning-report.mjs</code> and run
+      Then replace the datasets at the top of <code>tools/e2e-tuning/gen-tuning-report.mjs</code> and run
       <code>npm run gen:e2e-tuning-report</code>. The decision and its reasoning live in
       <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0078-playwright-worker-count-and-flake-tuning.md">ADR-0078</a>.
     </p>
