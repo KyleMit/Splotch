@@ -16,7 +16,7 @@
   let drawingBlob = $state<Blob | null>(null);
 
   // The covers are forked art, not a filtered light asset — each theme has its
-  // own Gemini render (see tools/asset-gen/bin/gen-style-covers.mjs).
+  // own Gemini render (see tools/asset-gen/style-covers/gen-style-covers.mjs).
   const theme = $derived(resolvedTheme());
 
   const previewLoader = createAiPreviewLoader(

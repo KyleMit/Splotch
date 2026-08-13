@@ -67,8 +67,8 @@ deep links). `npm run scrapbook:index` regenerates the hub alongside the top-lev
 The crayon-brush reference and acceptance art collection lives at
 `https://kylemit.github.io/Splotch/crayon-brush-samples/`. `build-sheet.mjs` produces its
 `index.html` contact sheet, while `build-compare-sheet.mjs` produces `vs-current.html` from captures
-of the shipping brush; see the [generator README](../tools/asset-gen/crayon-brush-samples/README.md)
-for the regeneration workflow.
+of the shipping brush; see the [generator README](../tools/asset-gen/crayon-reference/README.md) for
+the regeneration workflow.
 
 The icon gallery lives at `https://kylemit.github.io/Splotch/icons/` — `icons/index.html`, built by
 `npm run gen:icon-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and

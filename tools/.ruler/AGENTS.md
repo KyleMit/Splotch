@@ -117,11 +117,10 @@ and on a `tools/lib/` module that reaches back into a capability folder.
 * **The AI/`sharp` asset-generation pipeline moved to `tools/asset-gen/`**
   (`tools/asset-gen/docs/architecture.md`): the AI style covers, light/dark coloring-page fills,
   thumbnails, and format/line-art utilities (`gen-style-covers`, `gen-coloring-chalk`,
-  `gen-coloring-fills`, `gen-coloring-fills-dark`, `gen-coloring-thumbs`,
-  `gen-coloring-book-proof-sheet`, `png-to-webp`). See `tools/asset-gen/docs/README.md` +
-  `tools/asset-gen/CLAUDE.md`. The **coloring-page pipeline** (pen/chalk outlines → fills → punch,
-  gates, per-category runbook) lives in `tools/asset-gen/docs/pipeline.md` — read it before
-  generating more.
+  `gen-light-fills`, `gen-night-fills`, `gen-thumbnails`, `gen-book-proof-sheet`,
+  `convert-png-to-webp`). See `tools/asset-gen/README.md` + `tools/asset-gen/CLAUDE.md`. The
+  **coloring-page pipeline** (pen/chalk outlines → fills → punch, gates, per-category runbook) lives
+  in `tools/asset-gen/docs/pipeline.md` — read it before generating more.
 * `tools/audit-burndown/` is the scripted bulk burndown of `docs/AUDIT.md` (the runner-specific
   `burn-down-audits` skill — read the one for the active agent before touching these). Its Claude
   package under `.claude/` and Codex package under `.agents/` are direct sources maintained

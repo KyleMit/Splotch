@@ -21,7 +21,7 @@ around every chalk line (first reported on nature's proof sheet, 2026-07).
 
 Crisp the **chalk asset itself** with a smoothstep S-curve centered on the punch threshold
 (`lib/crisp-ink.mjs`, ramp 110→190 around 150): near-white pins to pure white, near-ink to pure ink,
-and only a ~1px antialias ramp survives. `gen-coloring-chalk.mjs` applies it in `toInkPolarity`, and
+and only a ~1px antialias ramp survives. `gen-chalk-outlines.mjs` applies it in `toInkPolarity`, and
 the shipped nature chalks were migrated through the identical curve (all 12 kept 100% global /
 ≥99.3% worst-tile registration; mid-grey edge pixels fell ~4.7×) followed by a night re-punch.
 

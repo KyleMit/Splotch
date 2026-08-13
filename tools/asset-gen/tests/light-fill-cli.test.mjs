@@ -3,8 +3,8 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
-import { MAX_ATTEMPTS } from '../lib/cli.mjs';
-import { run, RenderFailuresError } from '../bin/gen-coloring-fills.mjs';
+import { MAX_ATTEMPTS } from '../lib/asset-cli.mjs';
+import { run, RenderFailuresError } from '../coloring/gen-light-fills.mjs';
 
 // One page's worth of gate misses — enough to exhaust every retry and fail it.
 const exhaustPage = () => Array(MAX_ATTEMPTS).fill(false);
@@ -16,7 +16,7 @@ const state = vi.hoisted(() => ({
   overlayRequests: 0,
 }));
 
-vi.mock('../lib/paths.mjs', () => ({
+vi.mock('../lib/asset-paths.mjs', () => ({
   get REPO_ROOT() {
     return state.roots.root;
   },
@@ -33,7 +33,7 @@ vi.mock('../lib/paths.mjs', () => ({
     return rel.replaceAll('\\', '/');
   },
 }));
-vi.mock('../lib/cli.mjs', async (importOriginal) => ({
+vi.mock('../lib/asset-cli.mjs', async (importOriginal) => ({
   ...(await importOriginal()),
   fail(message) {
     throw new Error(message);

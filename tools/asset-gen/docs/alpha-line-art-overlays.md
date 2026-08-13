@@ -36,7 +36,7 @@ Every coloring-page orientation has two runtime presentation derivatives:
 {page}-{tall,wide}.dark.overlay.webp transparent white chalk; dark runtime overlay
 ```
 
-`npm run gen:coloring-overlays` runs `tools/asset-gen/bin/gen-coloring-overlays.mjs`. For each pen
+`npm run gen:coloring-overlays` runs `tools/asset-gen/coloring/gen-overlays.mjs`. For each pen
 outline it:
 
 1. Decodes luma `L` from the pen source and writes black RGB with alpha `255 − L`.

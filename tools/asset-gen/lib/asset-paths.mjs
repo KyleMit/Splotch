@@ -1,0 +1,44 @@
+// Path + tree resolution for the asset-gen scripts, self-contained so this
+// project doesn't reach back into tools/lib/ (docs/architecture.md). The generators are
+// producers for the app's committed assets: source inputs live under tools/asset-gen/,
+// shipped outputs live under web/static/, and review scratch lands in the gitignored
+// .coloring-samples*/.
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+
+// tools/asset-gen/lib/ -> the asset-gen dir is one level up, the repo root three.
+export const ASSET_GEN_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
+export const REPO_ROOT = join(ASSET_GEN_DIR, '..', '..');
+
+export const WEB_STATIC = join(REPO_ROOT, 'web', 'static');
+export const COLORING_DIR = join(WEB_STATIC, 'coloring');
+export const STYLES_DIR = join(WEB_STATIC, 'styles');
+export const STYLE_SOURCE_SVG = join(ASSET_GEN_DIR, 'style-covers', 'source.svg');
+
+// Committed source-of-truth for the colored fills WITH their outlines intact (the
+// raw model output). The shipped web/static/coloring/*.{light,night}.webp are the
+// fills-only *punch* of these — their own outlines masked out so the overlay's line
+// art isn't doubled when the magic brush reveals a fill (see punch-fill-outlines.mjs
+// and ADR-0043). The raws keep the lines so the drift auditor can still
+// score outline registration. Deliberately OUTSIDE web/static so they never ship to
+// web or native. Layout mirrors COLORING_DIR: {book}/{page}-{orient}.{light,night}.raw.webp
+export const FILL_SRC_DIR = join(ASSET_GEN_DIR, 'fill-src');
+
+// Gitignored review scratch — candidates, overlays, review sheets. Never shipped.
+export const SAMPLES_DIR = join(REPO_ROOT, '.coloring-samples');
+export const SAMPLES_DARK_DIR = join(REPO_ROOT, '.coloring-samples-dark');
+
+export async function resolveNightLineArt(penPath, pen = null) {
+  const chalkPath = penPath.replace(/\.outline\.webp$/, '.chalk.webp');
+  const chalked = existsSync(chalkPath);
+  const sourcePath = chalked ? chalkPath : penPath;
+  if (!existsSync(sourcePath)) return { sourcePath, source: null, chalk: null };
+  const source = chalked ? await readFile(sourcePath) : (pen ?? (await readFile(sourcePath)));
+  return { sourcePath, source, chalk: chalked ? source : null };
+}
+
+export function toPosix(rel) {
+  return rel.replaceAll('\\', '/');
+}
