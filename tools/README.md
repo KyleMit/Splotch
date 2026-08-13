@@ -69,28 +69,40 @@ rather than silently weakening validation when an external prerequisite is missi
 ### Production image-report fetch
 
 `fetch-image-reports.mjs` is the read-only operator bridge from ADR-0104's site-wide
-`ai-image-reports` Netlify Blobs store into the local image-model evaluation harness. Run it through
-the public command:
+`ai-image-reports` Netlify Blobs store into a local review snapshot. Run it through the public
+command:
 
 ```sh
 npm run fetch:image-reports
 ```
 
-It discovers the unique Netlify site serving `splotch.art`, validates that every listed report has
-one input image, one output image, `prompt.txt`, and versioned `metadata.json`, then downloads each
-bundle into a timestamped `.eval-tmp/ai-image-reports/<run-id>/` snapshot. The snapshot includes a
-manifest with source keys, ETags, metadata, and per-report failures. PNG inputs are also copied into
-the gitignored `tools/model-eval/inputs/` corpus; identical existing files are retained, while a
-same-named file with different bytes fails rather than being overwritten. Run
-`FILTER=report__ npm run model-eval` afterward to regenerate comparison images.
+It discovers the unique Netlify site serving `splotch.art`, then downloads every complete bundle
+into a timestamped `.eval-tmp/ai-image-reports/<run-id>/` snapshot. Each bundle must have one input
+image, one output image, `prompt.txt`, and versioned `metadata.json`. An incomplete bundle is
+recorded as a per-report failure without blocking downloads of complete reports. The snapshot
+manifest preserves source keys, ETags, metadata, and failures.
+
+The default run is snapshot-only. To deliberately copy PNG drawings into the gitignored
+`tools/model-eval/inputs/` corpus, opt in and then run the comparison:
+
+```sh
+npm run fetch:image-reports -- --import-eval-inputs
+FILTER=report__ npm run model-eval
+```
+
+An identical existing input is retained. A same-named input with different bytes is recorded as a
+manifest conflict and fails without overwriting either copy. The model-eval harness A/B-tests the
+reported drawing with its base prompt; it does not replay the resolved style prompt preserved in the
+snapshot's `prompt.txt`, so it is a model comparison rather than an exact reproduction of the
+reported generation.
 
 The command needs installed project dependencies plus a Netlify CLI session with access to the
 production site. It makes no Gemini calls and never writes to or deletes from production. Missing
-CLI access, ambiguous site resolution, unexpected keys, incomplete bundles, empty downloads, and
-metadata/content-type drift fail nonzero. Per-report download failures are retained in the new
-snapshot manifest so a retry starts from fresh evidence without disguising the failed run. Local
-snapshots and imported report inputs contain child-created content, remain gitignored, and should be
-removed when the review is complete.
+CLI access, ambiguous site resolution, unexpected keys, incomplete bundles, empty downloads,
+metadata/content-type drift, and model-eval input conflicts fail nonzero. Per-report failures are
+retained in the new snapshot manifest so a retry starts from fresh evidence without disguising the
+failed run. Local snapshots and opt-in report inputs contain child-created content, remain
+gitignored, and should be removed when the review is complete.
 
 Keep its store name imported from `web/src/lib/server/imageReportStoreName.ts`, update the npm entry
 and `scripts-info` description together, and verify changes with:

@@ -38,12 +38,13 @@ function fixtureRoot() {
 
 describe('report listing', () => {
   it('groups complete bundles and sorts their files and report ids', () => {
-    const bundles = planReportBundles({
+    const plan = planReportBundles({
       blobs: [...reportBlobs(SECOND_REPORT), ...reportBlobs(FIRST_REPORT)],
     });
 
-    expect(bundles.map(({ reportId }) => reportId)).toEqual([FIRST_REPORT, SECOND_REPORT]);
-    expect(bundles[0].files.map(({ filename }) => filename)).toEqual([
+    expect(plan.failures).toEqual([]);
+    expect(plan.bundles.map(({ reportId }) => reportId)).toEqual([FIRST_REPORT, SECOND_REPORT]);
+    expect(plan.bundles[0].files.map(({ filename }) => filename)).toEqual([
       'input.png',
       'metadata.json',
       'output.png',
@@ -51,10 +52,16 @@ describe('report listing', () => {
     ]);
   });
 
-  it('rejects incomplete and unsafe store contents before downloading', () => {
-    expect(() => planReportBundles({ blobs: reportBlobs(FIRST_REPORT).slice(0, 3) })).toThrow(
-      /missing metadata\.json/
-    );
+  it('separates incomplete reports without rejecting complete bundles', () => {
+    const plan = planReportBundles({
+      blobs: [...reportBlobs(FIRST_REPORT).slice(0, 3), ...reportBlobs(SECOND_REPORT)],
+    });
+
+    expect(plan.bundles.map(({ reportId }) => reportId)).toEqual([SECOND_REPORT]);
+    expect(plan.failures).toEqual([{ reportId: FIRST_REPORT, error: 'missing metadata.json' }]);
+  });
+
+  it('rejects unsafe store contents before downloading', () => {
     expect(() => planReportBundles({ blobs: [blob(`${FIRST_REPORT}/../../secrets.txt`)] })).toThrow(
       /Unexpected ai-image-reports key/
     );
@@ -83,7 +90,7 @@ describe('production site resolution', () => {
 });
 
 describe('fetchImageReports', () => {
-  it('downloads, validates, manifests, and imports production reports', () => {
+  it('downloads, validates, and manifests production reports without importing by default', () => {
     const root = fixtureRoot();
     const calls = [];
     const listing = { blobs: reportBlobs(FIRST_REPORT) };
@@ -126,10 +133,11 @@ describe('fetchImageReports', () => {
 
     expect(result.reports).toHaveLength(1);
     expect(readFileSync(join(reportDir, 'prompt.txt'), 'utf8')).toBe('data:prompt.txt');
-    expect(readFileSync(evalInput, 'utf8')).toBe('data:input.png');
+    expect(existsSync(evalInput)).toBe(false);
     expect(manifest.reports[0]).toMatchObject({
       reportId: FIRST_REPORT,
-      evalInputStatus: 'copied',
+      evalInput: null,
+      evalInputStatus: 'not-requested',
     });
     expect(calls.filter(({ args }) => args[0] === 'blobs:get')).toHaveLength(4);
     expect(calls.find(({ args }) => args[0] === 'blobs:list').options.env.NETLIFY_SITE_ID).toBe(
@@ -166,16 +174,61 @@ describe('fetchImageReports', () => {
       return '';
     };
 
-    fetchImageReports({ root, snapshotId: 'first', command });
-    const second = fetchImageReports({ root, snapshotId: 'second', command });
+    fetchImageReports({ root, snapshotId: 'first', command, importEvalInputs: true });
+    const second = fetchImageReports({
+      root,
+      snapshotId: 'second',
+      command,
+      importEvalInputs: true,
+    });
     expect(second.reports[0].evalInputStatus).toBe('unchanged');
 
     writeFileSync(evalInput, 'different');
-    expect(() => fetchImageReports({ root, snapshotId: 'third', command })).toThrow(
-      /Fetched 0 report\(s\).*1 failed/s
+    expect(() =>
+      fetchImageReports({ root, snapshotId: 'third', command, importEvalInputs: true })
+    ).toThrow(/1 model-eval input conflict/);
+    const manifest = JSON.parse(
+      readFileSync(join(root, '.eval-tmp', 'ai-image-reports', 'third', 'manifest.json'), 'utf8')
     );
-    expect(existsSync(join(root, '.eval-tmp', 'ai-image-reports', 'third', 'manifest.json'))).toBe(
-      true
+    expect(manifest.failures).toEqual([]);
+    expect(manifest.reports[0].evalInputStatus).toBe('conflict');
+    expect(readFileSync(evalInput, 'utf8')).toBe('different');
+  });
+
+  it('downloads complete reports and manifests incomplete ones as failures', () => {
+    const root = fixtureRoot();
+    const calls = [];
+    const metadata = JSON.stringify({
+      version: 1,
+      reportedAt: '2026-08-12T10:35:51.977Z',
+      deleteAfter: '2026-09-11T10:35:51.977Z',
+      style: 'Magical',
+      inputContentType: 'image/png',
+      outputContentType: 'image/png',
+    });
+    const command = (args) => {
+      calls.push(args);
+      if (args[0] === 'sites:list') {
+        return JSON.stringify([{ id: 'site', custom_domain: 'splotch.art' }]);
+      }
+      if (args[0] === 'blobs:list') {
+        return JSON.stringify({
+          blobs: [...reportBlobs(FIRST_REPORT).slice(0, 3), ...reportBlobs(SECOND_REPORT)],
+        });
+      }
+      const filename = args[2].slice(args[2].indexOf('/') + 1);
+      writeFileSync(args[4], filename === 'metadata.json' ? metadata : `data:${filename}`);
+      return '';
+    };
+
+    expect(() => fetchImageReports({ root, snapshotId: 'partial', command })).toThrow(
+      /Fetched 1 report\(s\).*1 failed/s
     );
+    const manifest = JSON.parse(
+      readFileSync(join(root, '.eval-tmp', 'ai-image-reports', 'partial', 'manifest.json'), 'utf8')
+    );
+    expect(manifest.reports.map(({ reportId }) => reportId)).toEqual([SECOND_REPORT]);
+    expect(manifest.failures).toEqual([{ reportId: FIRST_REPORT, error: 'missing metadata.json' }]);
+    expect(calls.filter(([commandName]) => commandName === 'blobs:get')).toHaveLength(4);
   });
 });

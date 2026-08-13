@@ -193,10 +193,11 @@ ios/local.xcconfig
 /tools/redteam/decrypted/
 /tools/redteam/output/
 
-# Image-model eval harness (tools/model-eval/). The local input corpus is
-# regenerable (npm run model-eval:fixtures) and run outputs are large, so both stay
-# local — but the Gemini-authored gen__* inputs (not reproducible) are kept in git,
-# and the published reference report lives in scrapbook/model-eval/ (ADR-0059).
+# Image-model eval harness (tools/model-eval/). Generated inputs are regenerable
+# (npm run model-eval:fixtures); opt-in report inputs are temporary child-created
+# evidence; and run outputs are large, so all stay local. Gemini-authored gen__*
+# inputs are kept in git, and the published reference report lives in
+# scrapbook/model-eval/ (ADR-0059).
 /tools/model-eval/inputs/*
 !/tools/model-eval/inputs/gen__*
 /tools/model-eval/output/
