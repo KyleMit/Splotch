@@ -19,16 +19,22 @@ Run a local measurement with explicit inputs:
 node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep
 ```
 
+If `--out` is omitted, reports go to the unignored repository-root `sweep-runs/` directory; remove
+or relocate those untracked files before staging unrelated work.
+
 The runner requires a built preview bundle, Node, and installed Playwright/Chromium dependencies. It
 creates one fresh preview server per repetition, removes `CI` and `GITHUB_ACTIONS` from the suite
 environment so retries and rebuilds do not contaminate the measurement, and writes raw Playwright
-JSON reports plus newline-delimited summaries under `--out`. It also prints greppable `SWEEPRESULT`
-and `SWEEPTOTAL` records and appends a GitHub step summary when that environment is available.
+JSON report per repetition under `--out`. It prints the newline-delimited `SWEEPRESULT` and
+`SWEEPTOTAL` records to the job log and appends a GitHub step summary when that environment is
+available.
 
 Each failed or missing report counts as a red repetition without abandoning completed work. A
-startup or CLI configuration failure exits nonzero; individual test failures remain measurement
-data. Use an unused host context for this capacity-sensitive full-suite workflow—concurrent E2E runs
-invalidate the result.
+preview server that never comes up is a red repetition too, so a sweep in which every rep failed
+still exits zero — gate on `SWEEPTOTAL`'s `redRuns`, not on the exit status. Only invalid
+`--workers`/`--reps` values or a failure to spawn the server process exit nonzero; individual test
+failures remain measurement data. Use an unused host context for this capacity-sensitive full-suite
+workflow—concurrent E2E runs invalidate the result.
 
 `tests/worker-sweep.test.mjs` owns the pure report aggregation checks and holds the runner's
 explicit server environment to `web/playwright.shared.ts`. Update both together whenever the app
@@ -44,9 +50,9 @@ output together. Do not hand-edit the generated page.
 ## Maintenance
 
 The [Worker Sweep workflow](../../.github/workflows/worker-sweep.yml) provides CI hardware, builds
-the instrumented preview once, invokes the same runner for each matrix worker count, and uploads raw
-reports. Keep the repetition loop and aggregation in the runner so local and CI measurements cannot
-drift into different protocols.
+the instrumented preview once per matrix job, invokes the same runner for each worker count, and
+uploads raw reports. Keep the repetition loop and aggregation in the runner so local and CI
+measurements cannot drift into different protocols.
 
 Run focused verification with:
 
