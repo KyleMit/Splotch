@@ -312,7 +312,7 @@ test('About opens the bundled privacy policy without a parental gate', async ({ 
   await expect(page.locator('#parentalGate')).not.toBeVisible();
 });
 
-test('setting card spacing only applies to direct section siblings', async ({ page }) => {
+test('setting groups space their cards without affecting the compact grid', async ({ page }) => {
   await page.addInitScript(
     (aiAccessToken) => localStorage.setItem(aiAccessToken, 'test-access-code'),
     STORAGE_KEYS.aiAccessToken
@@ -331,10 +331,12 @@ test('setting card spacing only applies to direct section siblings', async ({ pa
 
   await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
   await expect(page.locator('#aiCodeActive')).toBeInViewport();
-  const aiFeatureCards = page.locator('.settings-pane .ai-controls > .setting');
+  const aiFeatureCards = page.locator(
+    '.settings-section[data-section="ai"] .setting-group:has(#aiImageToggle) > .setting'
+  );
   await expect(aiFeatureCards).toHaveCount(3);
-  await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '0px');
-  await expect(aiFeatureCards.nth(2)).toHaveCSS('margin-top', '0px');
+  await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '6px');
+  await expect(aiFeatureCards.nth(2)).toHaveCSS('margin-top', '6px');
 
   await page.setViewportSize({ width: 852, height: 390 });
   await expect(modal).toHaveClass(/compact/);

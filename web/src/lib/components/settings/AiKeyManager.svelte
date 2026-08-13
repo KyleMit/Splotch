@@ -289,9 +289,9 @@
   {#if keyMessage}
     <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}>{keyMessage}</StatusMessage>
   {/if}
-
-  <AiFeatureToggles />
 </section>
+
+<AiFeatureToggles />
 
 <style>
   /* AI access code entry */
