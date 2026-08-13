@@ -448,10 +448,16 @@ describe('claude stream progress', () => {
     async () => {
       const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-sigkill-'));
       try {
+        // The init event arms the silence window, so it must wait for the grandchild's readiness
+        // byte: emitted before the SIGTERM no-op handler exists, a slow host could end the window
+        // while default SIGTERM still kills the grandchild, passing without the escalation.
+        const grandchildScript = `process.on("SIGTERM", () => {}); process.stdout.write("ready"); setTimeout(() => {}, 60000);`;
         const script = [
           `const { spawn } = require('node:child_process');`,
-          `const grandchild = spawn(process.execPath, ['-e', 'process.on("SIGTERM", () => {}); setTimeout(() => {}, 60000)'], { stdio: 'ignore' });`,
-          `console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: String(grandchild.pid), model: 'x' }));`,
+          `const grandchild = spawn(process.execPath, ['-e', '${grandchildScript}'], { stdio: ['ignore', 'pipe', 'ignore'] });`,
+          `grandchild.stdout.once('data', () => {`,
+          `  console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: String(grandchild.pid), model: 'x' }));`,
+          `});`,
           `setTimeout(() => {}, 60000);`,
         ].join('\n');
         const progress = [];
@@ -463,7 +469,7 @@ describe('claude stream progress', () => {
               logPath: join(temporaryRoot, 'sigkill.ndjson'),
               onProgress: (line) => progress.push(line),
             },
-            300,
+            2000,
             500
           )
         ).rejects.toThrow('process group was terminated');
