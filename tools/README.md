@@ -51,7 +51,7 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `print-playwright-version.mjs`     | GitHub setup actions                      | Emit the installed Playwright version for cache keys          |
 | `run-quality-checks.mjs`           | `check:quality`                           | Mirror CI's Quality job while reporting every failed step     |
 | `run-web-tool.mjs`                 | web build, check, and test commands       | Run root-installed web tools with `web/` as their working dir |
-| `stage-netlify-functions.mjs`      | Netlify production build                  | Move adapter output to the repository-root Netlify layout     |
+| `stage-netlify-functions.mjs`      | Netlify production build                  | Copy the adapter's SSR function tree to the repository root   |
 | `start-cloud-tunnel.mjs`           | `dev:tunnel`                              | Start the cloud preview server and authenticated tunnel       |
 | `stop-dev-servers.mjs`             | `dev:stop`                                | Stop listeners on the repository-owned development ports      |
 
