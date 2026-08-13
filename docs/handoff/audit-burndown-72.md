@@ -2,7 +2,7 @@
 
 > 2026-08-07 · branch `claude/audit-burn-down-vf4iui` · PR
 > [#830](https://github.com/KyleMit/Splotch/pull/830) **(merged)** · Burn down the post-triage
-> `docs/AUDIT.md` backlog with `tools/audit-burndown/burndown.mjs`, running unattended.
+> `docs/AUDIT.md` backlog with `tools/audit-burndown/run-burndown.mjs`, running unattended.
 
 ## Current state — wrapped up, resumable
 
@@ -10,7 +10,7 @@ Wrapped on request after **29 fixed · 0 dropped · 0 deferred**; backlog 72 →
 24). Nothing is in flight, `HEAD` == `origin/claude/audit-burn-down-vf4iui`, the comment store is
 drained, and `capture` reports `skipped 29 already posted` against 29 fixes. The counts close
 against git independently: zero `defer —` and zero `drop invalid finding` commits, 29 backlog
-entries consumed, and `72 − 29 == 43 == pop.mjs --count`.
+entries consumed, and `72 − 29 == 43 == pop-finding.mjs --count`.
 
 The *Silent wrong output* group drained completely (all 25) and its section was removed from
 `docs/AUDIT.md`; the other 4 fixes came from *App correctness*, which went 16 → 12. Counted at the
@@ -69,7 +69,7 @@ line and match it before launching.
 ## State
 
 * Base: 0ac5e76 (`origin/main` at launch), forked clean.
-* Backlog at launch: **72** findings (`node tools/audit-burndown/pop.mjs --count`).
+* Backlog at launch: **72** findings (`node tools/audit-burndown/pop-finding.mjs --count`).
 * Priority mix: P2 16 · P3 35 · P4 20 · P5 1 · **0 unparsable** → **21 route to
   `MODEL_IMPL_MINOR`**. Tiering was confirmed to parse before launch, not assumed.
 * Backlog groups (triage keep-criteria): silent wrong output 26 · app correctness 16 · cross-file
@@ -152,7 +152,7 @@ parsed, resume-target branch echoed as `claude/audit-burn-down-vf4iui`.
 * **Never run `npm run ruler:check`, `gen:tokens`, or `gen:assets:manifest` while the driver is
   live** — they mutate the tree and their writes land in the in-flight fix commit.
 * **`pgrep -f` and `pkill -f` match their own command line.** Anchor on
-  `'^node tools/audit-burndown/burndown.mjs'` or a wait loop never exits.
+  `'^node tools/audit-burndown/run-burndown.mjs'` or a wait loop never exits.
 * **A `Monitor` clamps to 30 minutes** regardless of `persistent`/`timeout_ms`. Re-arming is a
   routine chore; close the gap with a scoped `awk` catch-up read after each re-arm.
 
@@ -203,4 +203,5 @@ close.
 * `.claude/skills/burn-down-audits/SKILL.md` — the runbook.
 * `.claude/audit-conventions.md` — shared audit-skill conventions (§2 is the log-row format).
 * `docs/AUDIT-LOG.md` § `2026-08-07 · audit-triage` — why these 72 and not the other 271.
-* `tools/audit-burndown/lib.mjs` — `LAUNCH_KNOBS` (which env vars survive a detached launch).
+* `tools/audit-burndown/lib/burndown-core.mjs` — `LAUNCH_KNOBS` (which env vars survive a detached
+  launch).

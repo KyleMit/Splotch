@@ -8,7 +8,6 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 
-export { ROOT };
 export const WORK = '.audit-work';
 export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'tools/audit-burndown/prompts';
