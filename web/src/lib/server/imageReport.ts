@@ -1,4 +1,5 @@
 import { STYLE_SUFFIXES, type StyleName } from '$lib/ai/styles';
+import { AI_REPORT_KINDS, type AiReportKind } from '$lib/imageReport';
 import { createIssue } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
 import {
@@ -6,6 +7,7 @@ import {
   IMAGE_REPORT_RETENTION_DAYS,
   IMAGE_REPORT_STORE_NAME,
   saveImageReport,
+  type SaveImageReportInput,
   type SavedImageReport,
 } from './imageReportStore';
 
@@ -20,6 +22,7 @@ export const MAX_REPORT_REQUEST_BYTES = MAX_REPORT_BUNDLE_BYTES + MULTIPART_OVER
 const IMAGE_REPORT_LABELS = ['user-report', 'area:ai-art', 'type:bug'];
 
 export interface ImageReportInput {
+  kind: unknown;
   drawing: unknown;
   output: unknown;
   style: unknown;
@@ -36,51 +39,82 @@ function readStyle(raw: unknown): StyleName | null | undefined {
     : undefined;
 }
 
+function readReportKind(raw: unknown): AiReportKind | undefined {
+  if (raw === null) return 'picture';
+  return typeof raw === 'string' && (AI_REPORT_KINDS as readonly string[]).includes(raw)
+    ? (raw as AiReportKind)
+    : undefined;
+}
+
 function validImage(value: unknown): value is Blob {
   return value instanceof Blob && value.size > 0 && isAllowedImageType(value.type);
 }
 
 export async function submitImageReport({
+  kind: rawKind,
   drawing,
   output,
   style: rawStyle,
 }: ImageReportInput): Promise<ImageReportResult> {
+  const kind = readReportKind(rawKind);
   const style = readStyle(rawStyle);
-  if (!validImage(drawing) || !validImage(output) || style === undefined) {
-    return { ok: false, status: 400, error: 'That picture could not be reported.' };
-  }
-  if (drawing.size + output.size > MAX_REPORT_BUNDLE_BYTES) {
-    return { ok: false, status: 400, error: 'That picture is too large to report.' };
+  if (!kind || !validImage(drawing) || style === undefined) {
+    return { ok: false, status: 400, error: 'That AI report could not be sent.' };
   }
 
+  let reportInput: SaveImageReportInput;
   const prompt = resolveGenerationPrompt(style);
+  if (kind === 'picture') {
+    if (!validImage(output)) {
+      return { ok: false, status: 400, error: 'That AI report could not be sent.' };
+    }
+    reportInput = { kind, input: drawing, output, prompt, style };
+  } else {
+    if (output !== null) {
+      return { ok: false, status: 400, error: 'That AI report could not be sent.' };
+    }
+    reportInput = { kind, input: drawing, output: null, prompt, style };
+  }
+
+  if (drawing.size + (reportInput.output?.size ?? 0) > MAX_REPORT_BUNDLE_BYTES) {
+    return { ok: false, status: 400, error: 'That AI report is too large to send.' };
+  }
+
   let report: SavedImageReport;
   try {
-    report = await saveImageReport({ input: drawing, output, prompt, style });
+    report = await saveImageReport(reportInput);
   } catch (error) {
     console.error('[report-image] evidence storage failed', error);
     return {
       ok: false,
       status: 503,
-      error: 'Picture reporting is not available right now. Please try again later.',
+      error: 'AI reporting is not available right now. Please try again later.',
     };
   }
 
   const styleLabel = style ?? 'Default';
+  const refusal = kind === 'false-positive-refusal';
   try {
     await createIssue({
-      title: `[AI image] Reported ${styleLabel} picture`,
+      title: refusal
+        ? `[AI refusal] Possible false positive (${styleLabel})`
+        : `[AI image] Reported ${styleLabel} picture`,
       labels: IMAGE_REPORT_LABELS,
       body: [
-        'An AI-generated picture was reported from the result view.',
+        refusal
+          ? 'A parent reported a safety refusal as a possible false positive.'
+          : 'An AI-generated picture was reported from the result view.',
         '',
+        `- **Category:** ${kind}`,
         `- **Blob store:** \`${IMAGE_REPORT_STORE_NAME}\``,
         `- **Blob key prefix:** \`${report.keyPrefix}\``,
         `- **Style:** ${styleLabel}`,
         `- **Reported:** ${report.reportedAt}`,
         `- **Automatic deletion:** ${report.deleteAfter}`,
         '',
-        `The bundle contains the input drawing, resolved prompt, output image, and metadata. Review within 24 hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`,
+        refusal
+          ? `The bundle contains the rejected drawing, resolved prompt, and metadata. Review within 24 hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`
+          : `The bundle contains the input drawing, resolved prompt, output image, and metadata. Review within 24 hours. It is automatically deleted after ${IMAGE_REPORT_RETENTION_DAYS} days.`,
       ].join('\n'),
     });
   } catch (error) {
@@ -91,7 +125,7 @@ export async function submitImageReport({
     return {
       ok: false,
       status: 502,
-      error: 'Could not send your picture report. Please try again later.',
+      error: 'Could not send your AI report. Please try again later.',
     };
   }
 

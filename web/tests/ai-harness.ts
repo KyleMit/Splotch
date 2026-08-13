@@ -73,11 +73,12 @@ async function mockAiEndpoint(page: Page) {
     requests,
     succeed: (headers?: Record<string, string>) =>
       respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT, headers }),
-    fail: (status = 500) =>
+    fail: (status = 500, headers?: Record<string, string>) =>
       respond({
         status,
         contentType: 'application/json',
         body: JSON.stringify({ ok: false, error: 'Mock generation failure' }),
+        headers,
       }),
   };
 }

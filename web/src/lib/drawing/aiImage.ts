@@ -199,7 +199,7 @@ function applyResponse(
 ): { committedBlob: Blob } | null {
   switch (response.kind) {
     case 'safety':
-      failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety');
+      failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety', reportToken);
       return null;
     case 'throttled':
       failAiGeneration(runId, undefined, 'retry');

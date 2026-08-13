@@ -9,8 +9,9 @@ export interface AiResultState {
   resultType: string | null;
   previewUrl: string | null;
   style: StyleName | null;
-  // Proof this picture came from a free run on this server, spent by the report
-  // flow. Null on the BYOK and managed paths, which carry their own credential.
+  // Proof this AI attempt ran on this server, spent by the report flow. Safety
+  // refusals receive the same proof without persisting evidence.
+  // Null on the BYOK and managed paths, which carry their own credential.
   reportToken: string | null;
   // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
   // 'retry'   — a transient failure (timeout, server); the same drawing may work.
@@ -110,9 +111,15 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     return true;
   }
 
-  function failAiGeneration(id: number, message?: string, kind: AiErrorKind = 'generic') {
+  function failAiGeneration(
+    id: number,
+    message?: string,
+    kind: AiErrorKind = 'generic',
+    reportToken: string | null = null
+  ) {
     if (!isAiGenerationActive(id) || !resultState.open) return;
     resultState.generating = false;
+    resultState.reportToken = reportToken;
     resultState.error = { kind, message: message ?? null };
   }
 

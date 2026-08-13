@@ -131,4 +131,15 @@ describe('createAiGenerationMachine', () => {
     expect(resultState.generating).toBe(false);
     expect(resultState.error).toEqual({ kind: 'retry', message: 'Try again' });
   });
+
+  it('keeps a report token only when a reportable failure supplies one', () => {
+    const resultState = createAiResultState();
+    const machine = createAiGenerationMachine(resultState);
+    const run = machine.startAiGeneration(null);
+
+    machine.failAiGeneration(run, 'Draw something else', 'safety', 'signed-refusal-token');
+
+    expect(resultState.reportToken).toBe('signed-refusal-token');
+    expect(resultState.error?.kind).toBe('safety');
+  });
 });

@@ -325,9 +325,10 @@ re-verify if that flow changes:
   Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
   grown-up chose to supply breaks the consent story.
 * **Limited use** — ordinary generation passes the drawing to Gemini and returns the result without
-  Splotch persistence. Only a grown-up's separate, gated “Report this picture” confirmation retains
-  the input, server-resolved prompt, output, style, and timestamp in the private report store; a
-  daily purge deletes it after 30 days. `lib/server/usage.ts` separately stores only a per-token
+  Splotch persistence. Only a grown-up's separate, gated confirmation of “Report this picture” or
+  “Report this refusal” retains evidence in the private report store. Both retain the input,
+  server-resolved prompt, style, and timestamp; a picture report also retains the output. A daily
+  purge deletes the bundle after 30 days. `lib/server/usage.ts` separately stores only a per-token
   tally and `deleteUsage` drops that tally when the token is revoked.
 * **Disclosure** — `/privacy` names Gemini, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and

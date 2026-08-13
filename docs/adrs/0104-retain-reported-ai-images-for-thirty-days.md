@@ -102,3 +102,35 @@ keeps, so oversized bytes hidden in a discarded field passed it.
 * − `REPORT_TOKEN_SECRET` is new required deploy configuration. Unset, the BYOK and managed paths
   keep working and the free path alone answers 503, logged server-side.
 * − A report token expires, so a result left open long enough can no longer be reported.
+
+## Amendment (2026-08-13): confirmed false-positive refusals use the same retention boundary
+
+Safety refusals were still a blind spot after the original reporting flow shipped: the parent could
+report an inappropriate generated picture, but could not report that a harmless drawing had been
+blocked. Issue #988 extends the same deliberate feedback boundary to false positives without
+weakening the safety classifier or retaining every refusal.
+
+The refusal UI offers a visibly parent-facing “Report this refusal” action only for the `422` safety
+state. It uses the existing AI-report Parent Center policy, then a distinct confirmation naming the
+evidence before the send. Until that confirmation, the rejected drawing remains only in the open
+client state and normal generation remains ephemeral.
+
+`POST /api/report-image` now accepts the closed report kinds `picture` and `false-positive-refusal`.
+An absent kind remains `picture` for already-installed clients. Both reports retain the input
+drawing, server-reconstructed prompt, style, timestamps, and a versioned metadata category; only a
+picture report accepts and stores an output image. Private notifications also carry the category so
+support can distinguish an inappropriate result from an over-aggressive refusal.
+
+The free tier's `422` response now mints the same short-lived report token as a successful image
+response. The token still proves that this server ran the AI attempt for the installation, while the
+refusal drawing itself is not written anywhere unless the parent confirms. Managed-token and BYO-key
+setups continue to authorize the report with their existing credentials.
+
+* \+ False-positive refusals become visible to human review with the input and exact server-owned
+  instruction needed to investigate them.
+* \+ Refusals remain ephemeral by default and use the same 30-day purge and orphan-cleanup
+  guarantees as picture reports.
+* \+ The report endpoint remains a closed evidence surface: a refusal cannot smuggle an output image
+  or client-authored prompt into its bundle.
+* − A refusal response on the free tier now carries a report token for its short lifetime, even when
+  the parent never opens the report action.

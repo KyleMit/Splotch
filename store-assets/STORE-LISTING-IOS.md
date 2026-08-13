@@ -58,7 +58,7 @@ WORKS OFFLINE
 The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
 
 PRIVACY YOU CAN TRUST
-Splotch collects nothing in the background. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. Ordinary drawings stay on the device; optional AI and support features send only what a grown-up deliberately chooses. A confirmed AI-picture report is kept privately for no more than 30 days. Read the full policy at https://splotch.art/privacy.
+Splotch collects nothing in the background. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. Ordinary drawings stay on the device; optional AI and support features send only what a grown-up deliberately chooses. A confirmed AI report is kept privately for no more than 30 days. Read the full policy at https://splotch.art/privacy.
 
 Splotch is also free and open source. If you spot a problem or have an idea, you can reach us through the project on GitHub.
 
@@ -101,9 +101,9 @@ privacy policy:
 
 * **User Content → Other User Content**: collected, used for **App Functionality**, **not linked to
   identity**, and **not used for tracking**. It covers drawings sent for AI processing, typed
-  private feedback, and confirmed AI-picture reports. Ordinary generation is ephemeral; a confirmed
-  report retains the input drawing, server-resolved prompt, output, style, and timestamp privately
-  for up to 30 days.
+  private feedback, and confirmed AI reports. Ordinary generation and refusals are ephemeral; a
+  confirmed report retains the input drawing, server-resolved prompt, style, and timestamp privately
+  for up to 30 days, plus the output for a picture report.
 * **Diagnostics → Other Diagnostic Data**: collected only when a grown-up opts to attach the
   feedback form's app/device snapshot, used for **App Functionality**, **not linked to identity**,
   and **not used for tracking**.
@@ -132,10 +132,11 @@ Enter the current questionnaire from the shipped behavior:
 Splotch's optional image-to-image Gemini feature is disabled until a parent supplies an access code
 or API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum
 and constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up
-can tap “Report this picture,” review a confirmation, follow its dedicated parental-gate policy, and
-privately send the input drawing, resolved prompt, output, style, and timestamp. A human reviews
-reports within 24 hours; evidence is automatically deleted after 30 days. There is no browsing,
-chat, public sharing, or user-to-user distribution.
+can report either an inappropriate picture or a possible false-positive refusal, review a
+confirmation, follow the dedicated parental-gate policy, and privately send the evidence named
+there. A refusal report contains the input drawing, resolved prompt, style, and timestamp; a picture
+report also contains the output. A human reviews reports within 24 hours; evidence is automatically
+deleted after 30 days. There is no browsing, chat, public sharing, or user-to-user distribution.
 
 ## Screenshots (this folder)
 

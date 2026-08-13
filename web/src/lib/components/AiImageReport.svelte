@@ -11,14 +11,15 @@
   import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
   import type { StyleName } from '$lib/ai/styles';
   import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
-  import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
+  import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '$lib/imageReport';
   import { NETWORK_ERROR_MESSAGE } from '$lib/latestRequest';
   import type { Origin } from '$lib/state/modal.svelte';
   import type { ImageReportResponse } from '../../routes/api/report-image/+server';
 
   interface Props {
+    kind?: AiReportKind;
     drawingUrl: string | null;
-    outputUrl: string;
+    outputUrl: string | null;
     style: StyleName | null;
     /** The free tier's proof of generation; null on the BYOK and managed paths. */
     reportToken: string | null;
@@ -28,6 +29,7 @@
   }
 
   let {
+    kind = 'picture',
     drawingUrl,
     outputUrl,
     style,
@@ -37,6 +39,7 @@
   }: Props = $props();
 
   const REPORT_TIMEOUT_MESSAGE = "That's taking too long — please try again.";
+  const refusal = $derived(kind === 'false-positive-refusal');
 
   let message = $state('');
   let controller: AbortController | null = null;
@@ -63,7 +66,7 @@
   });
 
   async function send() {
-    if (!drawingUrl || status === 'busy') return;
+    if (!drawingUrl || (kind === 'picture' && !outputUrl) || status === 'busy') return;
     controller?.abort();
     const requestController = new AbortController();
     controller = requestController;
@@ -81,11 +84,12 @@
     try {
       const [drawingResponse, outputResponse] = await Promise.all([
         fetch(drawingUrl, { signal: requestController.signal }),
-        fetch(outputUrl, { signal: requestController.signal }),
+        outputUrl ? fetch(outputUrl, { signal: requestController.signal }) : Promise.resolve(null),
       ]);
       const form = new FormData();
+      form.set('kind', kind);
       form.set('drawing', await drawingResponse.blob(), 'drawing');
-      form.set('output', await outputResponse.blob(), 'output');
+      if (outputResponse) form.set('output', await outputResponse.blob(), 'output');
       form.set('style', style ?? '');
 
       const credentials = await aiCredentialHeaders();
@@ -95,16 +99,23 @@
         body: form,
         signal: requestController.signal,
       });
-      const result: ImageReportResponse = await response
-        .json()
-        .catch(() => ({ ok: false, error: 'Could not send your picture report.' }));
+      const result: ImageReportResponse = await response.json().catch(() => ({
+        ok: false,
+        error: refusal
+          ? 'Could not send your refusal report.'
+          : 'Could not send your picture report.',
+      }));
       if (requestController.signal.aborted) return;
       if (response.ok && result.ok) {
         status = 'success';
         message = `Thanks. We'll review it within 24 hours. Keep this report reference if you want it deleted sooner: ${result.reportId}`;
       } else {
         status = 'error';
-        message = result.ok ? 'Could not send your picture report.' : result.error;
+        message = result.ok
+          ? refusal
+            ? 'Could not send your refusal report.'
+            : 'Could not send your picture report.'
+          : result.error;
       }
     } catch {
       // An abort this component did not schedule is an unmount or a supersede —
@@ -136,6 +147,7 @@
 
 <dialog
   class="ai-report-confirm modal-dialog modal-fly-in modal-shell"
+  class:refusal
   aria-labelledby="aiReportConfirmTitle"
   use:modalDialog={() => ({
     open: confirmOpen,
@@ -149,24 +161,34 @@
 >
   <div class="ai-report-confirm-content">
     <div class="ai-report-confirm-heading">
-      <h3 id="aiReportConfirmTitle">Report this picture</h3>
+      <h3 id="aiReportConfirmTitle">
+        {refusal ? 'Report this refusal' : 'Report this picture'}
+      </h3>
       <p>
-        Both of these go to a grown-up at Splotch. We look within 24 hours, and the report is
-        deleted after {IMAGE_REPORT_RETENTION_DAYS} days.
+        {#if refusal}
+          The rejected drawing, selected art style, and exact instruction sent to the AI go to a
+          grown-up at Splotch.
+        {:else}
+          The AI picture, drawing behind it, selected art style, and exact instruction sent to the
+          AI go to a grown-up at Splotch.
+        {/if}
+        We look within 24 hours, and the report is deleted after {IMAGE_REPORT_RETENTION_DAYS} days.
       </p>
     </div>
 
     <!-- The captions carry what each picture is, so the images themselves are
          decorative — an alt describing them would only repeat the caption. -->
-    <div class="ai-report-thumbs">
-      <figure>
-        <img src={outputUrl} alt="" />
-        <figcaption>The AI picture</figcaption>
-      </figure>
+    <div class="ai-report-thumbs" class:single={!outputUrl}>
+      {#if outputUrl}
+        <figure>
+          <img src={outputUrl} alt="" />
+          <figcaption>The AI picture</figcaption>
+        </figure>
+      {/if}
       {#if drawingUrl}
         <figure>
           <img src={drawingUrl} alt="" />
-          <figcaption>The drawing behind it</figcaption>
+          <figcaption>{refusal ? 'The rejected drawing' : 'The drawing behind it'}</figcaption>
         </figure>
       {/if}
     </div>
@@ -247,6 +269,11 @@
     gap: var(--space-2);
   }
 
+  .ai-report-thumbs.single figure {
+    max-width: 144px;
+    margin-inline: auto;
+  }
+
   .ai-report-thumbs img {
     display: block;
     width: 100%;
@@ -271,6 +298,33 @@
 
   .ai-report-confirm-actions :global(.btn) {
     flex: 1;
+  }
+
+  @media (max-height: 480px) and (min-width: 520px) {
+    .ai-report-confirm.refusal {
+      width: min(92vw, 560px);
+    }
+
+    .ai-report-confirm.refusal .ai-report-confirm-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 160px;
+      grid-template-areas:
+        'heading thumbs'
+        'actions thumbs';
+      align-items: center;
+    }
+
+    .ai-report-confirm.refusal .ai-report-confirm-heading {
+      grid-area: heading;
+    }
+
+    .ai-report-confirm.refusal .ai-report-thumbs {
+      grid-area: thumbs;
+    }
+
+    .ai-report-confirm.refusal .ai-report-confirm-actions {
+      grid-area: actions;
+    }
   }
 
   /* Reduced motion: fade instead of flying in, as ParentalGate already does. */

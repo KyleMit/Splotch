@@ -1,6 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import type { StyleName } from '../ai/styles';
-import { IMAGE_REPORT_RETENTION_DAYS } from '../imageReport';
+import { IMAGE_REPORT_RETENTION_DAYS, type AiReportKind } from '../imageReport';
 import { IMAGE_REPORT_STORE_NAME } from './imageReportStoreName';
 
 export { IMAGE_REPORT_STORE_NAME };
@@ -11,20 +11,26 @@ const REPORT_RETENTION_MS = IMAGE_REPORT_RETENTION_DAYS * DAY_MS;
 const REPORT_ID_PATTERN = /^(\d+)-[0-9a-f-]+\//;
 
 interface ImageReportMetadata {
-  version: 1;
+  version: 2;
+  kind: AiReportKind;
   reportedAt: string;
   deleteAfter: string;
   style: StyleName | null;
   inputContentType: string;
-  outputContentType: string;
+  outputContentType: string | null;
 }
 
-export interface SaveImageReportInput {
+interface SaveImageReportBase {
   input: Blob;
-  output: Blob;
   prompt: string;
   style: StyleName | null;
 }
+
+export type SaveImageReportInput = SaveImageReportBase &
+  (
+    | { kind: Extract<AiReportKind, 'picture'>; output: Blob }
+    | { kind: Extract<AiReportKind, 'false-positive-refusal'>; output: null }
+  );
 
 export interface SavedImageReport {
   reportId: string;
@@ -40,12 +46,12 @@ function extensionFor(contentType: string): string {
   return 'png';
 }
 
-function keysFor(reportId: string, inputType: string, outputType: string) {
+function keysFor(reportId: string, inputType: string, outputType: string | null) {
   const keyPrefix = `${reportId}/`;
   return {
     keyPrefix,
     input: `${keyPrefix}input.${extensionFor(inputType)}`,
-    output: `${keyPrefix}output.${extensionFor(outputType)}`,
+    output: outputType ? `${keyPrefix}output.${extensionFor(outputType)}` : null,
     prompt: `${keyPrefix}prompt.txt`,
     metadata: `${keyPrefix}metadata.json`,
   };
@@ -61,30 +67,36 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
   const reportedAt = new Date(now).toISOString();
   const deleteAfter = new Date(now + REPORT_RETENTION_MS).toISOString();
   const reportId = `${now}-${crypto.randomUUID()}`;
-  const keys = keysFor(reportId, input.input.type, input.output.type);
+  const keys = keysFor(reportId, input.input.type, input.output?.type ?? null);
   const metadata: ImageReportMetadata = {
-    version: 1,
+    version: 2,
+    kind: input.kind,
     reportedAt,
     deleteAfter,
     style: input.style,
     inputContentType: input.input.type,
-    outputContentType: input.output.type,
+    outputContentType: input.output?.type ?? null,
   };
   const store = getStore(IMAGE_REPORT_STORE_NAME);
-  const writes = await Promise.allSettled([
+  const pendingWrites: Promise<{ modified: boolean }>[] = [
     store.set(keys.input, input.input, { onlyIfNew: true }),
-    store.set(keys.output, input.output, { onlyIfNew: true }),
+  ];
+  if (keys.output && input.output) {
+    pendingWrites.push(store.set(keys.output, input.output, { onlyIfNew: true }));
+  }
+  pendingWrites.push(
     store.set(keys.prompt, input.prompt, { onlyIfNew: true }),
-    store.setJSON(keys.metadata, metadata, { onlyIfNew: true }),
-  ]);
+    store.setJSON(keys.metadata, metadata, { onlyIfNew: true })
+  );
+  const writes = await Promise.allSettled(pendingWrites);
   const failed = writes.some(
     (write) =>
       write.status === 'rejected' || (write.status === 'fulfilled' && !write.value.modified)
   );
-  const saved = {
+  const saved: SavedImageReport = {
     reportId,
     keyPrefix: keys.keyPrefix,
-    keys: [keys.input, keys.output, keys.prompt, keys.metadata],
+    keys: [keys.input, ...(keys.output ? [keys.output] : []), keys.prompt, keys.metadata],
     reportedAt,
     deleteAfter,
   };

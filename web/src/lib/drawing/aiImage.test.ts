@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
+import { REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
 
 const mocks = vi.hoisted(() => ({
   exportCanvasBlob: vi.fn(),
@@ -170,7 +171,15 @@ describe('generateAiImage response handling', () => {
   it('shows child-facing safety guidance without auto-saving a refusal', async () => {
     mocks.settings.autoSaveAiEnabled = true;
     mocks.exportCanvasBlob.mockResolvedValueOnce(new Blob(['drawing']));
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('blocked', { status: 422 })));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('blocked', {
+          status: 422,
+          headers: { [REPORT_TOKEN_HEADER]: 'signed-refusal-token' },
+        })
+      )
+    );
 
     const { generateAiImage } = await import('./aiImage');
     const { aiResult } = await import('$lib/state/aiGeneration.svelte');
@@ -180,6 +189,7 @@ describe('generateAiImage response handling', () => {
     expect(aiResult.generating).toBe(false);
     expect(aiResult.error?.kind).toBe('safety');
     expect(aiResult.error?.message).toBe("Let's try drawing something else!");
+    expect(aiResult.reportToken).toBe('signed-refusal-token');
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
   });
 

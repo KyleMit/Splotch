@@ -16,9 +16,8 @@ export type ImageReportAuthorizationResult =
   | { authorized: true }
   | { authorized: false; response: Response };
 
-// Reporting accepts exactly the three credentials generation accepts, because a
-// picture that could be made must be reportable — the report is the child-safety
-// path for the very output the same credential produced.
+// Reporting accepts exactly the three credentials generation accepts, because
+// every result or refusal must be reportable through the same child-safety path.
 export async function authorizeImageReport(input: {
   apiKey: string | null;
   token: string | null;
@@ -79,7 +78,10 @@ export async function authorizeImageReport(input: {
     case 'valid':
       return { authorized: true };
     case 'expired':
-      return { authorized: false, response: fail(403, 'That picture can no longer be reported.') };
+      return {
+        authorized: false,
+        response: fail(403, 'That AI result can no longer be reported.'),
+      };
     case 'unconfigured':
       // A deploy without the signing secret can still report on the other two
       // credentials, so this fails the free path alone — loudly, because the
@@ -87,10 +89,7 @@ export async function authorizeImageReport(input: {
       console.error('[report-image] REPORT_TOKEN_SECRET is unset; free-tier reporting is closed');
       return {
         authorized: false,
-        response: fail(
-          503,
-          'Picture reporting is not available right now. Please try again later.'
-        ),
+        response: fail(503, 'AI reporting is not available right now. Please try again later.'),
       };
     default:
       return { authorized: false, response: fail(403, 'Invalid access token') };

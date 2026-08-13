@@ -94,20 +94,22 @@ and caps project-funded traffic across all installations and function instances 
 day. Provider failures and safety refusals are not refunded from that daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
-`X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this picture came
-from here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion
-is `403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
+`X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
+ran here, which `/api/report-image` requires before it will accept a free-tier report. Exhaustion is
+`403` with `{ ok:false, code:"FREE_GRANT_EXHAUSTED", error, remaining:0 }`, which sends the
 already-parent-gated client flow to BYOK setup. Failure modes are split so the client can guide the
 child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
 records the released installation reservation as `daily-limit`, not as an upstream provider failure.
 A **`422`** means Gemini refused the drawing on **safety** grounds — the child should draw something
-*different* (the app shows "let's try drawing something else!"); a **`502`** is a genuine
-upstream/empty failure (retryable). The route talks to the model through the provider-agnostic
-`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
-appears in route code. The safety vs. empty/error split is decided by `classifyGeminiResponse` /
-`isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite
-(`npm run redteam`, `tools/redteam/`).
+*different* (the app shows "let's try drawing something else!"). On the free tier that response also
+carries `X-Report-Token`, so a parent can explicitly report a possible false positive without making
+the refused drawing durable first. A **`502`** is a genuine upstream/empty failure (retryable). The
+route talks to the model through the provider-agnostic `AiImageProvider` seam
+(`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never appears in route code. The
+safety vs. empty/error split is decided by `classifyGeminiResponse` / `isSafetyError` in
+`web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite (`npm run redteam`,
+`tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:
@@ -221,50 +223,57 @@ See ADR-0060.
 
 ### `POST /api/report-image`
 
-Privately reports the AI result currently visible in `AiImageResult`. This is a separate,
-credentialed endpoint because its multipart body carries child-created image content. It accepts the
-credential each of generation's three tiers can present, picked client-side by the shared
-`aiCredentialHeaders()` (`web/src/lib/ai/credentials.ts`): `X-Api-Key` (BYOK), `X-Access-Token`
-(managed invite), or — on the free tier, where the caller holds neither — `X-Installation-Id` **plus
-`X-Report-Token`**. A managed token must still be active; a BYO key is verified against the
-provider. Valid reports are limited to 3/hour per managed token, per BYO caller IP, or per free
-caller IP. Authorization runs before multipart parsing.
+Privately reports either the AI result currently visible in `AiImageResult` or a safety refusal a
+parent believes is a false positive. This is a separate, credentialed endpoint because its multipart
+body carries child-created image content. It accepts the credential each of generation's three tiers
+can present, picked client-side by the shared `aiCredentialHeaders()`
+(`web/src/lib/ai/credentials.ts`): `X-Api-Key` (BYOK), `X-Access-Token` (managed invite), or — on
+the free tier, where the caller holds neither — `X-Installation-Id` **plus `X-Report-Token`**. A
+managed token must still be active; a BYO key is verified against the provider. Valid reports are
+limited to 3/hour per managed token, per BYO caller IP, or per free caller IP. Authorization runs
+before multipart parsing.
 
 The free tier's credential is not generation's. An installation id is a client-generated 64-hex
 string, so accepting it alone would leave an endpoint that writes image blobs and opens private
 issues an unauthenticated public write, bounded only by a rate limiter that ADR-0014 defines as a
 per-instance throttle — reset on cold start, uncoordinated across instances — rather than an
-authorization boundary. Instead `/api/generate-image` mints a **report token** on a successful free
-run (`X-Report-Token`: an HMAC over the installation id and a short expiry, keyed by
-`REPORT_TOKEN_SECRET`) and this endpoint requires it back, so every accepted report traces to a
-generation this server actually performed. With the secret unset, BYOK and managed reporting still
-work and the free path alone answers 503, logged server-side. See ADR-0104's amendment, which also
-records the two rejected alternatives (shape-only acceptance, and requiring a grant record).
+authorization boundary. Instead `/api/generate-image` mints a **report token** when a free run
+returns either an image or a safety refusal (`X-Report-Token`: an HMAC over the installation id and
+a short expiry, keyed by `REPORT_TOKEN_SECRET`) and this endpoint requires it back, so every
+accepted report traces to a generation this server actually performed. With the secret unset, BYOK
+and managed reporting still work and the free path alone answers 503, logged server-side. See
+ADR-0104's amendment, which also records the two rejected alternatives (shape-only acceptance, and
+requiring a grant record).
 
 ```text
 Content-Type: multipart/form-data
 X-Access-Token: <active token>  # or X-Api-Key, or X-Installation-Id + X-Report-Token on the free tier
 
 drawing=<png|jpeg|webp Blob>
-output=<png|jpeg|webp Blob>
+kind=<picture|false-positive-refusal>
+output=<png|jpeg|webp Blob>  # required for picture; absent for false-positive-refusal
 style=<StyleName or empty>
 ```
 
+For compatibility with already-installed clients, an absent `kind` is treated as `picture`.
+
 The raw multipart body is capped before it is parsed, at the 4 MiB bundle limit plus a fixed budget
 for part headers and boundaries; over that the request is rejected with 413 and never buffered
-whole. The two images must then each be non-empty and together total no more than 4 MiB. The
+whole. Every report requires a non-empty drawing; a picture report also requires a non-empty output,
+while a refusal report must not carry one. Retained image bytes total no more than 4 MiB. The
 pre-parse cap is what bounds the request: the bundle check runs after the payload is already in
 memory and weighs only the two images it keeps, so bytes hidden in a discarded field would otherwise
 pass it. `style` is a closed server-side enum: an arbitrary value is rejected with 400, and no
 client-supplied prompt is accepted. The server rebuilds the exact light-theme generation prompt from
 the shared base prompt and selected style.
 
-After the client disclosure is confirmed through the dedicated image-report policy configured in
-Parent Center, the server writes four objects to the site-wide `ai-image-reports` Netlify Blobs
-store under one opaque report-id prefix: the input drawing, output image, resolved `prompt.txt`, and
-`metadata.json` (report time, deletion time, style, and MIME types). It then creates a private
-support issue carrying the blob prefix. If notification fails, the bundle is deleted and the request
-fails rather than leaving unreachable evidence.
+After the client disclosure is confirmed through the dedicated AI-report policy configured in Parent
+Center, the server writes the evidence to the site-wide `ai-image-reports` Netlify Blobs store under
+one opaque report-id prefix. Every bundle contains the input drawing, resolved `prompt.txt`, and
+`metadata.json` (report category, report time, deletion time, style, and MIME types); a picture
+report additionally contains the output image. The support issue and metadata categorize refusals as
+`false-positive-refusal`. If private notification fails, the bundle is deleted and the request fails
+rather than leaving unreachable evidence.
 
 A scheduled `netlify/functions/purge-image-reports.ts` function scans every paginated store page
 daily and deletes report objects older than 30 days. Humans commit to reviewing reports within 24
@@ -274,19 +283,19 @@ hours. See ADR-0104.
 // 200 — the opaque id supports a private early-deletion request; it grants no blob access
 { "ok": true, "reportId": "1723123456789-550e8400-e29b-41d4-a716-446655440000" }
 // 400 — invalid body, images, size, or style
-{ "ok": false, "error": "That picture could not be reported." }
+{ "ok": false, "error": "That AI report could not be sent." }
 // 400 — the free tier sent no well-formed installation id
 { "ok": false, "error": "Installation grant unavailable" }
 // 403 — the free tier's report token is missing, forged, or minted for another installation
 { "ok": false, "error": "Invalid access token" }
 // 403 — the free tier's report token has expired
-{ "ok": false, "error": "That picture can no longer be reported." }
+{ "ok": false, "error": "That AI result can no longer be reported." }
 // 413 — the raw multipart body exceeds the pre-parse cap
-{ "ok": false, "error": "That picture is too large to report." }
+{ "ok": false, "error": "That AI report is too large to send." }
 // 403 — invalid or expired generation credential
 { "ok": false, "error": "Invalid access token" }
 // 503 — private reporting or evidence storage unavailable
-{ "ok": false, "error": "Picture reporting is not available right now. Please try again later." }
+{ "ok": false, "error": "AI reporting is not available right now. Please try again later." }
 ```
 
 ---

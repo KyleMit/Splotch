@@ -18,7 +18,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
     return json(
       {
         ok: false,
-        error: 'Picture reporting is not available right now. Please try again later.',
+        error: 'AI reporting is not available right now. Please try again later.',
       } satisfies ImageReportResponse,
       { status: 503 }
     );
@@ -36,7 +36,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
   const body = await readBodyWithinLimit(request, MAX_REPORT_REQUEST_BYTES);
   if (!body.ok) {
     return json(
-      { ok: false, error: 'That picture is too large to report.' } satisfies ImageReportResponse,
+      { ok: false, error: 'That AI report is too large to send.' } satisfies ImageReportResponse,
       { status: 413 }
     );
   }
@@ -52,12 +52,13 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
       headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
     }).formData();
   } catch {
-    return json({ ok: false, error: 'Expected a picture report.' } satisfies ImageReportResponse, {
+    return json({ ok: false, error: 'Expected an AI report.' } satisfies ImageReportResponse, {
       status: 400,
     });
   }
 
   const result = await submitImageReport({
+    kind: form.get('kind'),
     drawing: form.get('drawing'),
     output: form.get('output'),
     style: form.get('style'),

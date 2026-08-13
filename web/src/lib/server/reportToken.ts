@@ -2,14 +2,15 @@ import { createHmac } from 'node:crypto';
 import { constantTimeEqual } from './admin';
 import { config } from './config';
 
-// Proof that this server actually ran a free generation for this installation.
+// Proof that this server actually ran a free AI attempt for this installation.
 // The free credential is otherwise a locally-mintable 64-hex string, which would
 // leave /api/report-image an unauthenticated public write to blob storage and
 // the private issue tracker — the per-instance rate limiter is a throttle, not
 // an authorization boundary (ADR-0014 resets it on every cold start and shares
 // nothing across instances).
 //
-// generate-image mints one on a successful free run; report-image spends it.
+// generate-image mints one when a free run returns an image or safety refusal;
+// report-image spends it.
 // It is an HMAC over the installation id and an expiry, so nothing is stored
 // server-side and no blob read sits in front of a child-safety path.
 
