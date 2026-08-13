@@ -10,16 +10,22 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
 `package.json` plus `npm run info` stays the public invocation catalog (ADR-0019); reach for a
 `node tools/...` path only when no npm command covers what you need.
 
-## Where a new tool goes (ADR-0108)
+## Where a new tool goes (ADRs 0108 and 0111)
 
 * A capability with one executable and no support files starts **flat**:
-  `tools/<descriptive-name>.mjs`. A unit test alone does not force a folder — it can live in
+  `tools/<verb-object[-qualifier]>.mjs`. A unit test alone does not force a folder — it can live in
   `tools/tests/`.
 * It earns `tools/<capability>/` as soon as it owns **multiple entry points** or domain files
   (helpers, fixtures, prompts, docs, samples, outputs).
-* Entry points keep descriptive filenames inside a folder — `tools/android/android-setup.mjs`, never
-  an ambiguous `index.mjs`. The repetition is benign: search hits, stack traces, and pasted command
-  lines stay self-explanatory.
+* A runnable file uses `verb-object[-qualifier].mjs`; the capability folders already supply its
+  domain. Keep enough meaning in the leaf for search results and stack frames, but do not repeat the
+  capability mechanically. Use `tools/mobile/android/setup-emulator.mjs`, not
+  `tools/android/android-setup.mjs` or an ambiguous `index.mjs`.
+* A supporting module uses a purpose noun, adding a capability qualifier when a generic leaf would
+  be ambiguous. Do not use generic `toolchain.mjs`, `config.mjs`, `utils`, `misc`, or `helpers`
+  leaves.
+* No capability uses a `bin/` directory. Executables live at the capability root or within a named
+  sub-capability.
 * Fold by a user-recognizable capability or an existing npm namespace. Do not create `checks/`,
   `generators/`, or `assets/` grab bags — a shared filename prefix is not a shared domain.
 * Do not absorb path-owned code just because it is a script: `.ruler/skills/**`, `.claude/**`,
@@ -37,6 +43,21 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
   everything the production build runs. Its `entry` glob `tools/*/*.mjs` needs no edit. `tools/lib/`
   is deliberately excluded from `entry` so `lint:dead` still flags dead shared code; it stays
   reachable through its importers.
+* Every capability and meaningful sub-capability has a `README.md` covering purpose, entry points,
+  inputs and outputs, prerequisites, failure behavior, domain ownership, and maintenance guidance.
+  Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `generated`, `inputs`,
+  `samples`, and `probes` are documented by their nearest capability README unless they carry an
+  independent runbook.
+
+Runnable verbs describe behavior rather than forming a closed vocabulary: `check` validates without
+writing; `gen` creates an artifact; `update` intentionally replaces a committed baseline; `capture`
+records evidence; `analyze` reads evidence; `run` orchestrates; and `start`, `stop`, `serve`,
+`open`, or `show` manage lifecycle and presentation. Precise domain verbs remain valid. `audit`
+names the `audit-burndown` capability and `audit:*` npm namespace, not an executable action.
+
+Existing multi-mode executables stay intact and are named for their primary action. Naming does not
+justify splitting an implementation. Internal output identifiers and directories are behavior, not
+organization, and are unchanged by a file move.
 
 ## Libraries: one shared, many owned
 
