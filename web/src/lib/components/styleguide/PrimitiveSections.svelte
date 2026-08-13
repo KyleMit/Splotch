@@ -19,6 +19,9 @@
     { value: 'system', label: 'System', icon: 'theme-auto', disabled: true },
   ];
   let demoTheme = $state<DemoTheme>('light');
+  // The same options as the specimen above, so the pair reads as one control
+  // with and without its words rather than as two unrelated pickers.
+  let demoCollapsedTheme = $state<DemoTheme>('light');
 
   type DemoOrientation = Orientation;
   const demoOrientationOptions: SegmentedPickerOption<DemoOrientation>[] = [
@@ -89,6 +92,9 @@
     <code>segment</code> is the raised-thumb track; <code>chip</code> is the borderless toggle grid;
     radio vs toggle semantics stay with the caller. A form that must post without JavaScript renders
     the same chrome over real native radios through <code>inputName</code>.
+    <code>labels="collapsible"</code> lets a call site drop the words at a width of its own choosing:
+    each option keeps its accessible name and a 44px square target, so the collapse costs the visible
+    label and nothing else. Use it where an icon already says what the option is.
   </p>
   <div class="picker-demo">
     <SegmentedPicker
@@ -96,6 +102,16 @@
       options={demoThemeOptions}
       selected={demoTheme}
       onSelect={(value) => (demoTheme = value)}
+    />
+  </div>
+  <div class="picker-demo picker-demo-collapsed">
+    <SegmentedPicker
+      label="Theme, labels collapsed (specimen)"
+      fill={false}
+      labels="collapsible"
+      options={demoThemeOptions}
+      selected={demoCollapsedTheme}
+      onSelect={(value) => (demoCollapsedTheme = value)}
     />
   </div>
   <div class="picker-demo picker-demo-narrow">
@@ -286,6 +302,12 @@
 
   .picker-demo-narrow {
     max-width: 240px;
+  }
+
+  /* The specimen shows the mode's point, which is only visible once a caller
+     takes the words away — the prop itself changes nothing until one does. */
+  .picker-demo-collapsed :global(.option-label) {
+    display: none;
   }
 
   .status-demo {

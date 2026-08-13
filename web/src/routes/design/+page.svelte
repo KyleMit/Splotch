@@ -151,6 +151,7 @@
           <SegmentedPicker
             label="Theme"
             fill={false}
+            labels="collapsible"
             options={themeOptions}
             selected={theme}
             onSelect={setTheme}
@@ -501,6 +502,23 @@
     color: var(--brand-text);
     font-weight: var(--font-weight-semibold);
     text-decoration: none;
+  }
+
+  /* "Design system" measures ~99px in this row's own type, which is what runs
+     the header out of room on a phone. The words go first and the sun and moon
+     carry the segments; the label only goes where even that leaves it clipped.
+     Losing it costs nothing a reader needs — the H1 below and the contents row
+     both name this page. */
+  @media (max-width: 479px) {
+    .theme-toggle :global(.option-label) {
+      display: none;
+    }
+  }
+
+  @media (max-width: 389px) {
+    .header-label {
+      display: none;
+    }
   }
 
   /* Below the breakpoint the header carries the contents row too, so a heading

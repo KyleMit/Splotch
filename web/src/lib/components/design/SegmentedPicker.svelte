@@ -46,6 +46,14 @@
     inputName?: string;
     /** segment = raised-thumb track; chip = borderless toggle grid. */
     variant?: 'segment' | 'chip';
+    /**
+     * 'collapsible' lets a caller hide the option labels at a breakpoint of its
+     * own choosing — the picker does not decide *when*, which is a layout
+     * question only the caller can answer; it makes the collapse safe. The
+     * option's visible text is otherwise its accessible name, so a caller
+     * hiding it with its own CSS would be left with unnamed controls.
+     */
+    labels?: 'always' | 'collapsible';
     size?: 'md' | 'sm';
     /** false = the track hugs its content instead of stretching full-width. */
     fill?: boolean;
@@ -62,6 +70,7 @@
     mode = 'radio',
     inputName,
     variant = 'segment',
+    labels = 'always',
     size = 'md',
     fill = true,
     class: className,
@@ -105,11 +114,23 @@
 </script>
 
 <div
-  class={['picker', variant, size, fill && 'fill', className]}
+  class={[
+    'picker',
+    variant,
+    size,
+    fill && 'fill',
+    labels === 'collapsible' && 'collapsible',
+    className,
+  ]}
   role={mode === 'radio' ? 'radiogroup' : 'group'}
   aria-label={label}
   aria-describedby={describedBy}
 >
+  <!-- Both branches carry aria-label: an option's name would otherwise come from
+     its visible text — the button's own content, the wrapping label's content
+     for a native radio — which is exactly the text `labels="collapsible"` lets
+     a caller hide. Naming the control instead costs the collapse the label and
+     never the name. -->
   {#each options as option, index (option.value)}
     {@const active = isSelected(option.value)}
     {#if inputName}
@@ -120,6 +141,7 @@
           value={option.value}
           checked={active}
           disabled={option.disabled}
+          aria-label={option.label}
           onchange={() => onSelect(option.value)}
         />
         {@render optionBody(option, active)}
@@ -131,6 +153,7 @@
         class:active
         id={option.id}
         disabled={option.disabled}
+        aria-label={option.label}
         role={mode === 'radio' ? 'radio' : undefined}
         aria-checked={mode === 'radio' ? active : undefined}
         aria-pressed={mode === 'toggle' ? active : undefined}
@@ -258,6 +281,19 @@
   .segment.sm .option {
     padding: 7px var(--space-1);
     font-size: var(--font-size-xs);
+  }
+
+  /* Collapsed, an option is a square rather than a shrunken pill: the label is
+     what gave it width, and the touch-target floor is what's left. The caller
+     hides .option-label at a width it chooses; this keeps the target legal
+     when it does. Both axes, and on the collapsible rule rather than the size
+     rules: the label carries the sm track's height too, so a collapsed sm
+     option would otherwise stand 29px. The floor outranks that track's
+     deliberate 1px undercut of the md step — its row alignment is worth a
+     pixel, not a target a toddler misses. */
+  .segment.collapsible .option {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   @media (hover: hover) {
