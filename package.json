@@ -360,14 +360,14 @@
     "@dprint/typescript": "^0.96.1",
     "@eslint/js": "^10.0.1",
     "@intellectronica/ruler": "0.3.44",
-    "@playwright/test": "^1.61.1",
+    "@playwright/test": "^1.62.1",
     "dprint": "^0.55.1",
-    "eslint": "^10.8.0",
+    "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.22.0",
     "globals": "^17.7.0",
     "happy-dom": "^20.11.1",
-    "knip": "^6.31.0",
+    "knip": "^6.32.1",
     "prettier": "^3.8.4",
     "prettier-plugin-svelte": "^4.1.1",
     "scripts-info": "^1.0.5",
@@ -377,7 +377,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10",
-    "ws": "^8.21.1"
+    "ws": "^8.21.3"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.0",
