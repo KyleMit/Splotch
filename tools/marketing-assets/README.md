@@ -11,9 +11,11 @@ browser gestures in `tools/app-driver/lib/app-driver.mjs`.
 | `gen-promotional-image.mjs` | `npm run gen:promotional-image` | `web/static/large-image.png`        |
 | `gen-store-assets.mjs`      | `npm run gen:store-assets`      | `store-assets/` screenshots/graphic |
 
-The output filename `large-image.png` remains unchanged because it is both the Google Play feature
-graphic and the social/link-preview image. The generator replays `assets/promotional-image.svg`;
-renaming the source makes its broader purpose explicit without changing the shipped artifact.
+The output filename `large-image.png` remains unchanged because it is the social/link-preview image
+served from `web/static/` for Open Graph and Twitter cards. The generator replays
+`assets/promotional-image.svg`; renaming the source makes its broader purpose explicit without
+changing the shipped artifact. The separate Google Play feature graphic is
+`store-assets/feature-graphic.png`, owned by `gen-store-assets.mjs`.
 
 ## Promotional image
 
@@ -25,9 +27,9 @@ command replaces the committed PNG only after the live-app replay succeeds.
 ## Store assets
 
 `gen-store-assets.mjs` captures the named phone and tablet scenes at the exact Google Play and App
-Store pixel sizes and writes them under `store-assets/`. Existing scene selectors, optional scene
-filtering, filenames, dimensions, and output layout remain stable during the tools migration. See
-`store-assets/README.md` for the review and publishing runbook.
+Store pixel sizes and writes them under `store-assets/`. Existing scene selectors, filenames,
+dimensions, and output layout remain stable during the tools migration. See `store-assets/README.md`
+for the review and publishing runbook.
 
 ## Prerequisites and failure behavior
 

@@ -17,10 +17,11 @@ modules, not standalone commands.
 
 ## Inputs and behavior
 
-The smoke starts or reuses Splotch on `SMOKE_PORT` (4173 by default), launches Chromium, and checks
-the driver at the four store target viewports. It exercises the drawing canvas, drawer, palette,
-exact picker colors, brush and size selection, tiled-renderer ink, and coloring-book overlay. It
-also verifies that every generated store-drawing scene color remains selectable.
+The smoke starts or reuses Splotch on `SMOKE_PORT` (4173 by default) and launches Chromium. It
+exercises the drawing canvas, drawer, palette, exact picker colors, brush and size selection,
+tiled-renderer ink, and coloring-book overlay at the Google Play tablet viewport. It also verifies
+that every generated store-drawing scene color remains selectable at all four store target
+viewports.
 
 The command needs installed project dependencies and Playwright Chromium. A port may be free or
 already serving Splotch; the shared server helper reuses a compatible listener. Any failed smoke
