@@ -106,7 +106,7 @@ async function pool(thunks, size) {
   return results;
 }
 
-// Rebuild report.html from an existing run's results.json, with no API calls.
+// Rebuild report/index.html from an existing run's results.json, with no API calls.
 //   REPORT_FROM=tools/model-eval/output/<runId> [VERDICT_FILE=verdict.html] npm run model-eval
 async function reportOnly(dir) {
   const data = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));

@@ -124,15 +124,19 @@ probe; run the red-team suite before any production model swap.
 
 Missing credentials or source assets fail fast with a diagnostic and a nonzero exit. A failed model
 call is different: it is recorded as a `kind: "error"` row and leaves the exit status at zero, so
-read the `Done. N calls · N refusals · N errors` summary before trusting a run. Nothing replaces a
-successful run: every run writes its own `output/<runId>/`. A resumed evaluation keeps completed
-cells and fills only missing or failed ones. Generated `gen__*` inputs are intentionally preserved
-by deterministic fixture regeneration.
+read the `Done. N calls · N refusals · N errors` summary before trusting a run. A fresh evaluation
+writes its own `output/<runId>/`. A resumed evaluation writes into the selected existing run and
+keeps only cells whose image is already on disk; refusal and error cells are re-called, so resuming
+re-pays for the safety corpus. Generated `gen__*` inputs are intentionally preserved by
+deterministic fixture regeneration.
 
-The production request contract is imported from `web/src/lib/server/ai/`; keep the evaluation
-configuration and its runtime equality assertions intact when that contract changes. The report
-builder and request logic live in `lib/`, the browser fixture renderer remains plain `.js` because
-it executes inside the page, and focused coverage lives in `tests/model-eval.test.mjs`.
+The production request contract is mirrored here, not imported: `lib/model-eval.mjs` copies
+`DEFAULT_PROMPT` from `web/src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from
+`web/src/lib/server/ai/gemini.ts`, and `assertProductionConfig()` re-reads both files at startup so
+drift fails the run. Keep that check passing when either file changes. The only real app imports are
+`web/src/lib/design/tokens.ts` and `web/src/lib/palette.ts`. The report builder and request logic
+live in `lib/`, the browser fixture renderer remains plain `.js` because it executes inside the
+page, and focused coverage lives in `tests/model-eval.test.mjs`.
 
 Run focused verification with:
 
