@@ -11,13 +11,13 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references).
 * A skill whose implementation genuinely differs by runner is absent from the shared tree. Its
   complete, independent packages live in `.ruler/skill-forks/<runner>/skills/<name>/`.
-  `tools/ruler/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after
-  Ruler's shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also
-  exists under `.ruler/skills/` or lacks a package for either configured runner, preventing either
-  fork from inheriting shared implementation files or disappearing from one agent. Markdown fork
-  sources end in `.template`; the suffix is removed at the destination and keeps Ruler's recursive
-  rule loader from concatenating them into root instructions.
-* Direct-maintained exceptions are declared in `tools/ruler/direct-provider-skills.mjs`.
+  `tools/ruler/apply-skill-forks.mjs` replaces that whole generated skill directory after Ruler's
+  shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also exists under
+  `.ruler/skills/` or lacks a package for either configured runner, preventing either fork from
+  inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
+  in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
+  from concatenating them into root instructions.
+* Direct-maintained exceptions are declared in `tools/ruler/lib/direct-provider-skills.mjs`.
   `burn-down-audits` has independent Claude and Codex packages; `run-claude` and
   `implement-issue-stack` have only Codex packages because they orchestrate a standalone Claude
   process and Codex-native subagents respectively; `analyze-session-transcripts` has independent

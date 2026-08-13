@@ -6,9 +6,9 @@ import {
   DIRECT_PROVIDER_PATHS,
   FORBIDDEN_DIRECT_PROVIDER_SOURCES,
   withPreservedDirectProviderPaths,
-} from '../ruler-apply.mjs';
+} from '../apply-ruler.mjs';
 import { sharedNoteSource } from '../mirror-skill-notes.mjs';
-import { DIRECT_PROVIDER_SKILLS, directNoteNames } from '../direct-provider-skills.mjs';
+import { DIRECT_PROVIDER_SKILLS, directNoteNames } from '../lib/direct-provider-skills.mjs';
 
 const roots = [];
 

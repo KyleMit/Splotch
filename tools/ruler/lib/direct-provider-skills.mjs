@@ -14,7 +14,7 @@ const PROVIDER_ROOTS = {
 
 export const ALL_PROVIDERS = Object.freeze(Object.keys(PROVIDER_ROOTS));
 
-export function providerRoot(provider) {
+function providerRoot(provider) {
   const root = PROVIDER_ROOTS[provider];
   if (!root) throw new Error(`unsupported direct provider: ${provider}`);
   return root;

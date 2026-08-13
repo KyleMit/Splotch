@@ -8,9 +8,9 @@
 > Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
-> the output. Direct provider packages registered in `tools/ruler/direct-provider-skills.mjs` are
-> the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and
-> Codex implementations, while `run-claude` and `implement-issue-stack` are intentionally
+> the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
+> are the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude
+> and Codex implementations, while `run-claude` and `implement-issue-stack` are intentionally
 > Codex-only. Edit only the registered provider package and note you intend to change; never
 > manufacture a missing provider by copying another one.
 
@@ -45,13 +45,13 @@ AGENTS.md-standard agents read `AGENTS.md` files and `.agents/skills/`. See ADR-
   and `.agents/skills/` — including helper files (`driver.mjs`, extra `.md` references).
 * A skill whose implementation genuinely differs by runner is absent from the shared tree. Its
   complete, independent packages live in `.ruler/skill-forks/<runner>/skills/<name>/`.
-  `tools/ruler/apply-ruler-skill-forks.mjs` replaces that whole generated skill directory after
-  Ruler's shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also
-  exists under `.ruler/skills/` or lacks a package for either configured runner, preventing either
-  fork from inheriting shared implementation files or disappearing from one agent. Markdown fork
-  sources end in `.template`; the suffix is removed at the destination and keeps Ruler's recursive
-  rule loader from concatenating them into root instructions.
-* Direct-maintained exceptions are declared in `tools/ruler/direct-provider-skills.mjs`.
+  `tools/ruler/apply-skill-forks.mjs` replaces that whole generated skill directory after Ruler's
+  shared pass (`claude` → `.claude`, `codex` → `.agents`). It rejects a name that also exists under
+  `.ruler/skills/` or lacks a package for either configured runner, preventing either fork from
+  inheriting shared implementation files or disappearing from one agent. Markdown fork sources end
+  in `.template`; the suffix is removed at the destination and keeps Ruler's recursive rule loader
+  from concatenating them into root instructions.
+* Direct-maintained exceptions are declared in `tools/ruler/lib/direct-provider-skills.mjs`.
   `burn-down-audits` has independent Claude and Codex packages; `run-claude` and
   `implement-issue-stack` have only Codex packages because they orchestrate a standalone Claude
   process and Codex-native subagents respectively; `analyze-session-transcripts` has independent
@@ -251,7 +251,7 @@ generated from `.ruler/`; managed runner forks may be produced from `.ruler/skil
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
 under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
 implementations; Codex-only `run-claude` and `implement-issue-stack` live only under `.agents/`. See
-`tools/ruler/direct-provider-skills.mjs` for the authoritative registry.
+`tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -276,7 +276,7 @@ applies or how skills relate.
 **Prefer skills over slash commands.** Reusable agent workflows are normally authored in
 `.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
 packages under `.ruler/skill-forks/<runner>/`; only packages registered in
-`tools/ruler/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
+`tools/ruler/lib/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
 workflows as commands in `.claude/commands/`. A skill with a good `description` is both
 user-invocable (`/name`) and model-invocable, so Claude can reach for it on its own — a plain
 command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a

@@ -12,7 +12,7 @@ import {
   ALL_PROVIDERS,
   DIRECT_PROVIDER_PATHS,
   DIRECT_PROVIDER_SKILLS,
-} from './direct-provider-skills.mjs';
+} from './lib/direct-provider-skills.mjs';
 
 export { DIRECT_PROVIDER_PATHS };
 
@@ -75,7 +75,7 @@ function main() {
   withPreservedDirectProviderPaths(ROOT, () => {
     runStep('ruler', ['apply']);
     runStep(process.execPath, ['tools/ruler/mirror-skill-notes.mjs']);
-    runStep(process.execPath, ['tools/ruler/apply-ruler-skill-forks.mjs']);
+    runStep(process.execPath, ['tools/ruler/apply-skill-forks.mjs']);
   });
   runStep('dprint', ['fmt']);
 }

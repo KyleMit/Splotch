@@ -142,11 +142,11 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   `process.env`, so they cannot name different files — and `main()` runs only under `isMain`, so
   importing the driver starts nothing. The backlog surgery, the runner seam, and the driver's own
   sequencing are locked by `tools/audit-burndown/tests/*.test.mjs` (`npm run test:tools`, in CI).
-* `direct-provider-skills.mjs` declares the provider packages and notes that are edited in place.
-  `ruler-apply.mjs` snapshots and restores those paths around Ruler's atomic skill-tree replacement,
-  including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for
-  any Ruler-managed exceptional skills. The focused `tools/ruler/tests/*.test.mjs` files lock both
-  seams.
+* `lib/direct-provider-skills.mjs` declares the provider packages and notes that are edited in
+  place. `apply-ruler.mjs` snapshots and restores those paths around Ruler's atomic skill-tree
+  replacement, including on failure. `apply-skill-forks.mjs` then replaces complete generated
+  packages for any Ruler-managed exceptional skills. The focused `tools/ruler/tests/*.test.mjs`
+  files lock both seams.
 * The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
   `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
   evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,

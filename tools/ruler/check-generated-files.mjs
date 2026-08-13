@@ -3,7 +3,7 @@
 // tracked sources, so their registered paths are excluded alongside .ruler.
 
 import { run, capture, fail } from '../lib/proc.mjs';
-import { directProviderPathspecExclusions } from './direct-provider-skills.mjs';
+import { directProviderPathspecExclusions } from './lib/direct-provider-skills.mjs';
 
 run('npm', ['run', 'ruler:apply']);
 

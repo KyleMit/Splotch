@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { applyRulerSkillForks } from '../apply-ruler-skill-forks.mjs';
+import { applyRulerSkillForks } from '../apply-skill-forks.mjs';
 import { sharedNoteSource } from '../mirror-skill-notes.mjs';
 
 const roots = [];
