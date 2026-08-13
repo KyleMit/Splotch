@@ -334,7 +334,12 @@ function formatValue(value, indent = 0) {
 }
 
 export function generateModule(drawings) {
-  const blocks = ["import { drawInstructionScene } from '../lib/drawing-instructions.mjs';", ''];
+  // This specifier is relative to the emitted module in generated/, not to this generator.
+  const drawingInstructionsSpecifier = '../lib/drawing-instructions.mjs';
+  const blocks = [
+    `import { drawInstructionScene } from '${drawingInstructionsSpecifier}';`,
+    '',
+  ];
   for (const drawing of drawings) {
     const constant = drawing.functionName
       .replace(/^draw/, '')

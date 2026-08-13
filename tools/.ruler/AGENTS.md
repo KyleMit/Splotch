@@ -147,10 +147,11 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   any Ruler-managed exceptional skills. The focused `tools/ruler/tests/*.test.mjs` files lock both
   seams.
 * The app-driving generators — `gen:shots` (`store-shots.mjs`), `gen:large-image`
-  (`gen-large-image.mjs`), and the evaluation/review entries under `tools/store-drawings/bin/` —
-  drive the live app by selector through `tools/app-driver/lib/app-driver.mjs` and only run on
-  demand, so that module rots silently when app markup, element IDs, or show/hide mechanics change
-  (drawer, palette, dialogs). `test:driver:smoke` (in the CI test job) boots the app and exercises
-  the driver's entry path to catch that — after such a change, run it, and remember the driver has
-  bitten twice before (a dropped `sleep` import; `expandDrawer` broke when the drawer's buttons
-  became always-in-DOM, so its probe checks visibility, not presence).
+  (`gen-large-image.mjs`), and the evaluation/review entries at the `tools/store-drawings/` root
+  (`evaluate-drawing-fidelity.mjs`, `gen-brush-review.mjs`) — drive the live app by selector through
+  `tools/app-driver/lib/app-driver.mjs` and only run on demand, so that module rots silently when
+  app markup, element IDs, or show/hide mechanics change (drawer, palette, dialogs).
+  `test:driver:smoke` (in the CI test job) boots the app and exercises the driver's entry path to
+  catch that — after such a change, run it, and remember the driver has bitten twice before (a
+  dropped `sleep` import; `expandDrawer` broke when the drawer's buttons became always-in-DOM, so
+  its probe checks visibility, not presence).
