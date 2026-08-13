@@ -43,10 +43,12 @@ describe('native bundle scan', () => {
     expect(nativeBundleProblems('/nonexistent/build', ['x'])[0]).toMatch(/does not exist/);
   });
 
-  it('scans for Play hosts by host, not by fully composed URL', () => {
+  it('scans for store-enrollment hosts by host, not by fully composed URL', () => {
     // The bundler keeps the route's URL constants as template literals with the
     // app id interpolated, so a whole-URL match would miss the real regression.
     expect(FORBIDDEN_NATIVE_HOSTS).toContain('play.google.com');
+    expect(FORBIDDEN_NATIVE_HOSTS).toContain('testflight.apple.com');
+    expect(FORBIDDEN_NATIVE_HOSTS).toContain('apps.apple.com');
     for (const host of FORBIDDEN_NATIVE_HOSTS) expect(host).not.toContain('/');
   });
 

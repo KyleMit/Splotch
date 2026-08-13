@@ -169,7 +169,7 @@ component table above when you do.
 ## Page chrome — standalone pages
 
 Every standalone page — the link-shareable parent pages (`/privacy`, `/changelog`, `/android-beta`,
-`/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
+`/ios-beta`, `/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
 **`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
 shell (sticky header + scrollspy TOC, in its route file); it still signs itself with `BrandMark`:
 
@@ -184,18 +184,18 @@ shell (sticky header + scrollspy TOC, in its route file); it still signs itself 
 | `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
 
 **No page opts out of night mode.** Every route wearing the shell follows the parent's Appearance
-setting, `/privacy`, `/changelog` and `/android-beta` included — they pinned a light `--page-*`
-palette until 2026-08-10 and no longer do (ADR-0071's amendment records the reversal). Content
-inside the shell reads `--page-*`, never restates a color, and a page that wants a color the palette
-doesn't carry reaches for a themed app token, never a hex; `/design` styles itself from the themed
-tokens directly, so its theme toggle keeps working.
+setting, `/privacy`, `/changelog`, `/android-beta` and `/ios-beta` included — the older pages pinned
+a light `--page-*` palette until 2026-08-10 and no longer do (ADR-0071's amendment records the
+reversal). Content inside the shell reads `--page-*`, never restates a color, and a page that wants
+a color the palette doesn't carry reaches for a themed app token, never a hex; `/design` styles
+itself from the themed tokens directly, so its theme toggle keeps working.
 
 Two consequences worth knowing before styling one:
 
 * **A link hovers on its underline, not a second color.** The themed ramp stops at `--page-link`
   (`--brand-text`) — there is no deeper accessible step — so hover thickens the underline or brings
   one in. `/feedback` is the pattern.
-* **A per-item accent gets mixed, not pinned.** A color keyed to content (StepLedger's four crayon
+* **A per-item accent gets mixed, not pinned.** A color keyed to content (BetaStep's four crayon
   hues) derives its wash and ink with `color-mix()` against `--page-sheet` and `--page-ink`, which
   darkens the hue on the light sheet and lightens it on the dark one from one declaration. The mix
   strengths are named custom properties; contrast is measured on both grounds by

@@ -6,14 +6,19 @@ import {
   PLAY_STORE_LISTING_URL,
   TESTERS_GROUP_URL,
 } from '../../web/src/lib/components/androidBeta/androidBeta.ts';
+import {
+  TESTFLIGHT_APP_URL,
+  TESTFLIGHT_INVITE_URL,
+} from '../../web/src/lib/components/iosBeta/iosBeta.ts';
 import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
 // its HTML; without the build-time exclusion its JS chunk still ships, so
-// /android-beta puts Google Play URLs inside the .ipa (App Review 2.3.10) and
-// /admin puts a token-minting console inside a children's app (App Review
-// 2.3.1, Play Deceptive Behavior).
+// /android-beta puts Google Play URLs inside the .ipa (App Review 2.3.10),
+// /ios-beta puts enrollment links inside the app they enroll into, and /admin
+// puts a token-minting console inside a children's app (App Review 2.3.1, Play
+// Deceptive Behavior).
 //
 // Every sentinel below is **derived from the module that owns it** rather than
 // re-declared here, so renaming a URL or rewording the console can't leave this
@@ -64,7 +69,13 @@ export const WEB_ONLY_MODULE_MARKERS = [
 // guideline is about: no Play reference belongs in an iOS build at all.
 export const FORBIDDEN_NATIVE_HOSTS = [
   ...new Set(
-    [BETA_OPT_IN_URL, PLAY_STORE_LISTING_URL, TESTERS_GROUP_URL].map((u) => new URL(u).host)
+    [
+      BETA_OPT_IN_URL,
+      PLAY_STORE_LISTING_URL,
+      TESTERS_GROUP_URL,
+      TESTFLIGHT_APP_URL,
+      TESTFLIGHT_INVITE_URL,
+    ].map((u) => new URL(u).host)
   ),
 ];
 

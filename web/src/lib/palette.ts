@@ -42,7 +42,7 @@ export type PaletteLabel = (typeof PALETTE_SOURCE)[number]['label'];
 
 /**
  * Look up a swatch by its display label, for UI that wants a specific crayon hue
- * (the /android-beta masthead strip and its callout accents). Renaming a swatch
+ * (the beta-page masthead strips and callout accents). Renaming a swatch
  * is a compile error at every call site rather than a blank render; the throw is
  * belt-and-braces for callers that reach this from untyped code.
  * palette-source.test.mjs keeps this file the only place those hexes are written.

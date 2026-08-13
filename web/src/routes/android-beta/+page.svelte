@@ -1,16 +1,30 @@
 <script lang="ts">
-  import { BETA_OPT_IN_URL, TESTERS_GROUP_URL } from '$lib/components/androidBeta/androidBeta';
-  import Icon from '$lib/components/Icon.svelte';
-  import Disclosure from '$lib/components/design/Disclosure.svelte';
-  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
-  import PageShell from '$lib/components/page/PageShell.svelte';
-  import RuleLabel from '$lib/components/page/RuleLabel.svelte';
-  import StepLedger from '$lib/components/androidBeta/StepLedger.svelte';
+  import { onMount } from 'svelte';
+  import {
+    BETA_OPT_IN_URL,
+    MIN_ANDROID_API_LEVEL,
+    MIN_ANDROID_RELEASE,
+    PLAY_STORE_LISTING_URL,
+    TESTERS_GROUP_URL,
+  } from '$lib/components/androidBeta/androidBeta';
+  import BetaEnrollmentPage from '$lib/components/beta/BetaEnrollmentPage.svelte';
+  import BetaStep from '$lib/components/beta/BetaStep.svelte';
+  import BetaStepLedger from '$lib/components/beta/BetaStepLedger.svelte';
+  import { SITE_ORIGIN } from '$lib/siteUrl';
+  import { supportEmail } from '$lib/supportEmail';
 
-  // Sign-up instructions for the Google Play closed test. The steps are
-  // sequential rather than a menu — see StepLedger — and everything a reader
-  // only needs when something has gone wrong lives in the collapsed
-  // Troubleshooting panel below them.
+  // Step 4 prints an absolute address because testers may read this page on one
+  // device and send feedback from another. Its href stays relative so deploy
+  // previews still point to their own feedback form.
+  const FEEDBACK_URL = `${SITE_ORIGIN}/feedback`;
+
+  // Compose the support address only after hydration so address harvesters
+  // cannot find it in prerendered HTML. Without JavaScript the email card stays
+  // absent and the server-backed /feedback form remains available.
+  let support = $state('');
+  onMount(() => {
+    support = supportEmail();
+  });
 </script>
 
 <svelte:head>
@@ -26,232 +40,158 @@
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<PageShell title="Join the Android beta" wordmark="Splotch for Android">
-  {#snippet lede()}
-    Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
-    feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
-    can't catch on our own.
-  {/snippet}
+{#snippet lede()}
+  Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+  feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we can't
+  catch on our own.
+{/snippet}
 
-  <RuleLabel>How to join</RuleLabel>
+{#snippet troubleSummary()}
+  Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or stuck on
+  step 2?
+{/snippet}
 
-  <StepLedger />
-
-  <div class="trouble">
-    <Disclosure class="beta-disclosure">
-      {#snippet summary()}
-        <span class="trouble-heading">
-          <h2 class="trouble-label">Troubleshooting</h2>
-          <span class="trouble-sub">
-            Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or
-            stuck on step 2?
-          </span>
-        </span>
-        <span class="chev-disc">
-          <Icon name="chevron-right" class="chev" aria-hidden="true" />
-        </span>
-      {/snippet}
-
-      <div class="rows">
-        <div class="row">
-          <h3>“Item not found” on the store link</h3>
-          <p>
-            You aren't opted in yet, or the browser is signed in to a different Google account. Go
-            back to <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
-              >the tester page</a
-            >, check the account shown in the top-right corner, and opt in there first.
-          </p>
-        </div>
-        <div class="row">
-          <h3>The tester page says you're not a member</h3>
-          <p>
-            Joining is instant and there's no approval to wait on, so either the join never went
-            through or it went through on a different Google account. Open <a
-              href={TESTERS_GROUP_URL}
-              target="_blank"
-              rel="noopener noreferrer">the group page</a
-            > again, check the account in the top-right corner, and join from there.
-          </p>
-        </div>
-        <div class="row">
-          <h3>The phone can't find the app but your computer can</h3>
-          <p>
-            The two are signed in to different accounts. In the Play Store app, tap your profile
-            picture in the top-right to see which account is active.
-          </p>
-        </div>
-        <div class="row">
-          <h3>Everything looks right and Play still disagrees</h3>
-          <p>
-            Close and reopen the Play Store, check the active account, and try the store link again.
-            As a last resort, open Android Settings → Apps → Google Play Store → Storage and clear
-            its cache; the exact menu names vary by device.
-          </p>
-        </div>
-        <div class="row">
-          <h3>Leaving the beta</h3>
-          <p>
-            Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer"
-              >the tester page</a
-            > again and press “Leave the program”, which stops the beta updates. If a public Android version
-            is out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch
-            over; until there is one, leaving the beta also means you won't be able to reinstall the Android
-            app. No hard feelings.
-          </p>
-        </div>
-      </div>
-    </Disclosure>
+{#snippet troubleshooting()}
+  <div class="row">
+    <h3>“Item not found” on the store link</h3>
+    <p>
+      You aren't opted in yet, or the browser is signed in to a different Google account. Go back to <a
+        href={BETA_OPT_IN_URL}
+        target="_blank"
+        rel="noopener noreferrer">the tester page</a
+      >, check the account shown in the top-right corner, and opt in there first.
+    </p>
   </div>
+  <div class="row">
+    <h3>The tester page says you're not a member</h3>
+    <p>
+      Joining is instant and there's no approval to wait on, so either the join never went through
+      or it went through on a different Google account. Open <a
+        href={TESTERS_GROUP_URL}
+        target="_blank"
+        rel="noopener noreferrer">the group page</a
+      > again, check the account in the top-right corner, and join from there.
+    </p>
+  </div>
+  <div class="row">
+    <h3>The phone can't find the app but your computer can</h3>
+    <p>
+      The two are signed in to different accounts. In the Play Store app, tap your profile picture
+      in the top-right to see which account is active.
+    </p>
+  </div>
+  <div class="row">
+    <h3>Everything looks right and Play still disagrees</h3>
+    <p>
+      Close and reopen the Play Store, check the active account, and try the store link again. As a
+      last resort, open Android Settings → Apps → Google Play Store → Storage and clear its cache;
+      the exact menu names vary by device.
+    </p>
+  </div>
+  <div class="row">
+    <h3>Leaving the beta</h3>
+    <p>
+      Open <a href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">the tester page</a>
+      again and press “Leave the program”, which stops the beta updates. If a public Android version is
+      out by then, you may need to uninstall Splotch and reinstall it from Google Play to switch over;
+      until there is one, leaving the beta also means you won't be able to reinstall the Android app.
+      No hard feelings.
+    </p>
+  </div>
+{/snippet}
 
-  <!-- Last thing in the sheet, so its sentinel marks the end of the page's own
-       content: the document is the scroller here, and the cue fades the sheet
-       into itself at the foot of the viewport for as long as there are steps
-       still below. Nothing about the page's height is ours to set, so the
-       trailing-row cut the picker uses has no counterpart on this surface. -->
-  <ScrollCue />
-</PageShell>
+<BetaEnrollmentPage
+  title="Join the Android beta"
+  wordmark="Splotch for Android"
+  {lede}
+  {troubleSummary}
+  {troubleshooting}
+>
+  <BetaStepLedger>
+    <BetaStep
+      number={1}
+      title="Join the testers group"
+      actionHref={TESTERS_GROUP_URL}
+      actionLabel="Join the testers group"
+      fine="Google may ask you to sign in first. There's nobody to wait on after that."
+      cardLabel="Double check your account"
+    >
+      {#snippet body()}
+        Google Play decides who can see the beta by checking a Google Group, so this has to happen
+        first. Click <strong>Join group</strong> at the top.
+      {/snippet}
+      {#snippet cardBody()}
+        Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
+        or tablet. Using a different account is a common reason the beta never shows up.
+      {/snippet}
+    </BetaStep>
 
-<style>
-  /* Everything colored here reads PageShell's --page-* palette or a themed app
-     token, so the sign-up page follows the parent's night-mode preference like
-     every other page. Theme-invariant tokens (--duration-*, --radius-*) are
-     used directly. */
+    <BetaStep
+      number={2}
+      title="Opt in on Google Play"
+      actionHref={BETA_OPT_IN_URL}
+      actionLabel="Become a tester"
+      fine="Sign in with the same account you used in step 1."
+      cardLabel="If a link doesn't work yet"
+    >
+      {#snippet body()}
+        Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it
+        doesn't install anything yet. Once you're in, the same page should automatically show you a
+        link to “Download it on Google Play”, taking you to step 3.
+      {/snippet}
+      {#snippet cardBody()}
+        None of this is instant, and Google Play doesn't always recognize a new group membership
+        straight away. Check that both pages are signed in to the same Google account, then make a
+        cup of tea and try again a little later before assuming something is broken.
+      {/snippet}
+    </BetaStep>
 
-  .trouble {
-    margin-top: 48px;
-  }
+    <BetaStep
+      number={3}
+      title="Install Splotch"
+      actionHref={PLAY_STORE_LISTING_URL}
+      actionLabel="Open Splotch on Google Play"
+      fine={`Open this one on the Android device you want to draw on. Needs Android ${MIN_ANDROID_RELEASE} (API ${MIN_ANDROID_API_LEVEL}) or newer.`}
+      cardLabel="Please stay for 14 days"
+    >
+      {#snippet body()}
+        The store listing stays hidden until step 2 is done — before that it just says “item not
+        found”. Now it installs like any other app, and updates arrive automatically as new beta
+        builds go out.
+      {/snippet}
+      {#snippet cardBody()}
+        Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
+        seen everything you wanted to in the first ten minutes. Google requires a stretch of
+        continuously enrolled testers before Splotch can apply for a public listing, so leaving
+        early — or opting out and back in — sets that clock back for everyone. You don't have to
+        keep drawing; just stay enrolled.
+      {/snippet}
+    </BetaStep>
 
-  /* The Disclosure primitive owns the shell, the hidden native marker and its
-     own '›' pseudo-element; that last one is replaced here by the repo's
-     chevron icon, which rotates rather than swapping glyphs — Icon renders via
-     {@html}, which hydration does not reconcile (.claude/rules/svelte.md). */
-  .trouble :global(.beta-disclosure) {
-    border: var(--border-width) solid var(--page-rule);
-    border-radius: var(--radius-lg);
-    background: var(--surface-2);
-    transition:
-      background var(--duration-base) ease,
-      border-color var(--duration-base) ease;
-  }
-
-  .trouble :global(.beta-disclosure > summary) {
-    gap: 16px;
-    padding: 18px 20px;
-  }
-
-  .trouble :global(.beta-disclosure > summary::after) {
-    content: none;
-  }
-
-  /* A title alone reads as a footer slab. The subtitle names what is inside, so
-     the panel offers a reason to open it rather than a label. */
-  .trouble-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  /* A heading, not a span: without it the five <h3> rows inside the panel land
-     under "How to join" and nothing marks where the sign-up path ends. */
-  .trouble-label {
-    margin: 0;
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    color: var(--page-ink);
-  }
-
-  .trouble-sub {
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.45;
-    color: var(--page-muted);
-  }
-
-  /* The disc is the tappable affordance: the sheet's own tone ringed by a
-     hairline, so it reads as a target rather than a glyph floating on the
-     panel — lighter than the panel on the white paper, darker on the dark one. */
-  .chev-disc {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 32px;
-    height: 32px;
-    border: var(--border-width) solid var(--page-rule);
-    border-radius: 50%;
-    background: var(--page-sheet);
-  }
-
-  .trouble :global(.chev) {
-    width: 18px;
-    height: 18px;
-    transition: transform var(--duration-base) ease;
-  }
-
-  /* The rotation is the only visual signal of the panel's state, so this is a
-     non-text contrast case (WCAG 1.4.11, 3:1) rather than a decorative one.
-     --page-muted clears the floor on the disc and on the panel behind it in
-     both themes — android-beta.spec.ts measures it on each. */
-  .trouble :global(.chev svg) {
-    fill: var(--page-muted);
-  }
-
-  .trouble :global(.beta-disclosure[open] .chev) {
-    transform: rotate(90deg);
-  }
-
-  .rows {
-    padding: 0 20px 8px;
-  }
-
-  .row {
-    border-top: var(--border-width) solid var(--page-rule);
-    margin-top: 20px;
-    padding-top: 20px;
-  }
-
-  .row h3 {
-    margin: 0 0 4px;
-    font-size: var(--font-size-md);
-    font-weight: var(--font-weight-bold);
-    color: var(--page-ink);
-  }
-
-  .row p {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.6;
-    color: var(--page-body);
-  }
-
-  a {
-    color: var(--page-link);
-    text-underline-offset: 3px;
-    text-decoration-thickness: 1px;
-  }
-
-  /* Guard hover behind a real pointer: touch browsers apply :hover on tap and
-     keep it stuck until the next tap elsewhere. A surface and its hover step are
-     a hair apart on the light paper, so the panel's border carries the hover as
-     much as its fill — the pairing app.css already gives the modal close disc.
-     A link has no deeper step in the themed ramp at all, so its underline
-     thickens instead. */
-  @media (hover: hover) {
-    .trouble :global(.beta-disclosure:hover) {
-      background: var(--surface-hover);
-      border-color: var(--border-warm-strong);
-    }
-
-    a:hover {
-      text-decoration-thickness: 2px;
-    }
-  }
-
-  /* The subtitle is the first thing to wrap to three lines beside the chevron
-     disc, so the narrowest phones get the short form of the same sentence. */
-  @media (max-width: 480px) {
-    .trouble-sub-clause {
-      display: none;
-    }
-  }
-</style>
+    <!-- Step 4 is the only same-origin action. It keeps this page in place
+         rather than opening another tab like the three external handoffs. -->
+    <BetaStep
+      number={4}
+      title="Tell us what you think"
+      actionHref="/feedback"
+      actionLabel="Send feedback"
+      fine="No account, nothing to install; your note goes to our private support tracker."
+      cardLabel="Or just email me"
+      external={false}
+      optional
+      showCard={!!support}
+    >
+      {#snippet body()}
+        Found a bug, or thought of something Splotch should do? The form lives at
+        <a href="/feedback">{FEEDBACK_URL}</a> — open it on whichever device is handy, or pass it on
+        to whoever is doing the testing. Odd crashes, confusing buttons, and “my toddler did
+        <em>what</em>?” stories are all genuinely useful.
+      {/snippet}
+      {#snippet cardBody()}
+        Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all… something
+        is broken, something is confusing, an idea, or just to say your kid liked it. Good and bad are
+        both worth hearing.
+      {/snippet}
+    </BetaStep>
+  </BetaStepLedger>
+</BetaEnrollmentPage>

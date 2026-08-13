@@ -5,7 +5,7 @@ import { gotoApp, openSettingsModal } from './helpers';
 import { openParentalGate } from './flows-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
-// /changelog, /android-beta, /feedback, /design, /admin (both auth states),
+// /changelog, /android-beta, /ios-beta, /feedback, /design, /admin (both auth states),
 // and the Settings dialog.
 // The toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Settings scan
@@ -62,6 +62,13 @@ test('/android-beta has no serious accessibility violations', async ({ page }) =
   await expect(page.getByRole('heading', { name: 'Join the Android Beta' })).toBeVisible();
   // The heading is prerendered, so it is visible at first paint; step 4's
   // callout is composed after hydration and would otherwise race the scan.
+  await expect(page.locator('.step-4 .card')).toBeVisible();
+  await expectNoSeriousViolations(page);
+});
+
+test('/ios-beta has no serious accessibility violations', async ({ page }) => {
+  await page.goto('/ios-beta');
+  await expect(page.getByRole('heading', { name: 'Join the iPhone and iPad beta' })).toBeVisible();
   await expect(page.locator('.step-4 .card')).toBeVisible();
   await expectNoSeriousViolations(page);
 });
