@@ -37,10 +37,6 @@ it `safe-…`/`block-…`, drop it in `source/`, re-encrypt.
    `REDTEAM_FIXTURE_KEY` with teammates **out-of-band** — it's the key to the committed `.enc`
    corpus.
 
-Installed project dependencies are also required. A safety run needs network access and an unused
-local port (5198 by default); set `REDTEAM_PORT` to select another one. Fixture management itself is
-local and needs no network.
-
 ## Entry points
 
 | Entry point                     | Public command                                | Purpose                                   |
@@ -50,7 +46,13 @@ local and needs no network.
 
 `lib/fixture-crypto.mjs` owns AES-256-GCM corpus encryption, while `lib/safety-report.mjs` owns
 verdict labels and the self-contained report. The public command names remain stable during the
-tools naming migration.
+tools naming migration. The fixture CLI uses the symmetric `manage-` name prescribed by #975 because
+encrypt and decrypt are peer corpus operations rather than a primary action with an incidental
+secondary mode.
+
+Installed project dependencies are also required. A safety run needs network access and an unused
+local port (5198 by default); set `REDTEAM_PORT` to select another one. Fixture management itself is
+local and needs no network.
 
 ## Preparing the corpus
 
@@ -117,7 +119,8 @@ human review and do not change the exit status.
 The runner clears and rebuilds the gitignored `decrypted/` directory before each evaluation. Every
 run gets a new `output/<runId>/` directory, so prior results are not replaced. Encryption rewrites
 matching `.enc` destinations with fresh random IVs; review and commit the complete encrypted corpus
-when plaintext sources change.
+when plaintext sources change. Encryption never prunes, so retiring a probe also means deleting its
+`encrypted/*.enc` by hand: the runner discovers cases from `encrypted/`, not `source/`.
 
 Run focused structural verification with:
 
