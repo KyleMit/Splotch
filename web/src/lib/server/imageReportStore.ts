@@ -1,8 +1,9 @@
 import { getStore } from '@netlify/blobs';
 import type { StyleName } from '../ai/styles';
 import { IMAGE_REPORT_RETENTION_DAYS } from '../imageReport';
+import { IMAGE_REPORT_STORE_NAME } from './imageReportStoreName';
 
-export const IMAGE_REPORT_STORE_NAME = 'ai-image-reports';
+export { IMAGE_REPORT_STORE_NAME };
 export { IMAGE_REPORT_RETENTION_DAYS } from '../imageReport';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
