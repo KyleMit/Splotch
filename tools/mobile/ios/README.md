@@ -21,7 +21,9 @@ errors exit nonzero after cleanup.
 `tests/ios-privacy-manifest.test.mjs` guards the committed native privacy declarations. Keep
 simulator and Xcode lifecycle behavior here, shared Maestro execution at `../lib/`, and all native
 project files under `ios/`. The release opener is intentionally specialized to the IPA output; add a
-new owner-specific entry point rather than restoring a generic repository path opener.
+new owner-specific entry point rather than restoring a generic repository path opener. It also owns
+the IPA output directory and file constants imported by release publishing, keeping that path
+single-sourced without adding a support directory outside #975's mobile manifest.
 
 Run focused verification with:
 

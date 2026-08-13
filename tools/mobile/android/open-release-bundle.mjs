@@ -2,7 +2,11 @@
 // (ADR-0017). The location comes from tools/mobile/android/lib/android-toolchain.mjs so it stays
 // in step with android:bundle/android:verify.
 
-import { openInOS } from '../../lib/proc.mjs';
+import { isMain, openInOS } from '../../lib/proc.mjs';
 import { RELEASE_BUNDLE_DIR } from './lib/android-toolchain.mjs';
 
-openInOS(RELEASE_BUNDLE_DIR);
+export function openReleaseBundle() {
+  openInOS(RELEASE_BUNDLE_DIR);
+}
+
+if (isMain(import.meta.url)) openReleaseBundle();

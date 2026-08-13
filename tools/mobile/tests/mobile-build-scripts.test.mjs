@@ -134,7 +134,7 @@ function copyRepoFile(fixtureRoot, relativePath) {
   copyFileSync(join(repoRoot, relativePath), destination);
 }
 
-describe('native build script entry points', () => {
+describe('mobile build script entry points', () => {
   let checkAssets;
   let error;
   let exit;
@@ -230,7 +230,7 @@ describe('native build script entry points', () => {
     expect(result.stdout).toContain('[check-coloring-assets] all checks passed.');
   });
 
-  it('runs the real native-strip CLI against an isolated build', () => {
+  it('runs the real static-strip CLI against an isolated build', () => {
     const fixtureRoot = join(state.root, 'strip-cli');
     for (const relativePath of [
       'tools/mobile/strip-static-assets.mjs',

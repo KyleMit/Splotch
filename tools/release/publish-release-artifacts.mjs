@@ -25,8 +25,6 @@ import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
 import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 
-export { RELEASE_IPA };
-
 const PLATFORMS = ['android', 'ios'];
 
 const ARTIFACTS = {
