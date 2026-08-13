@@ -22,8 +22,8 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
 * A supporting module uses a purpose noun, adding a capability qualifier when a generic leaf would
   be ambiguous. Do not use generic `toolchain.mjs`, `config.mjs`, `utils`, `misc`, or `helpers`
   leaves.
-* No capability uses a `bin/` directory. Executables live at the capability root or within a named
-  sub-capability.
+* Executables do not belong in a `bin/` directory. They live at the capability root or within a
+  named sub-capability.
 * Fold by a user-recognizable capability or an existing npm namespace. Do not create `checks/`,
   `generators/`, or `assets/` grab bags — a shared filename prefix is not a shared domain.
 * Do not absorb path-owned code just because it is a script: `.ruler/skills/**`, `.claude/**`,
@@ -41,11 +41,14 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
   everything the production build runs. Its `entry` glob `tools/*/*.mjs` needs no edit. `tools/lib/`
   is deliberately excluded from `entry` so `lint:dead` still flags dead shared code; it stays
   reachable through its importers.
-* Every capability and meaningful sub-capability has a `README.md` covering purpose, entry points,
-  inputs and outputs, prerequisites, failure behavior, domain ownership, and maintenance guidance.
-  Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `generated`, `inputs`,
-  `samples`, and `probes` are documented by their nearest capability README unless they carry an
-  independent runbook.
+* Every capability and meaningful sub-capability must have a `README.md` covering purpose, entry
+  points, inputs and outputs, prerequisites, failure behavior, domain ownership, and maintenance
+  guidance. Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `generated`,
+  `inputs`, `samples`, and `probes` are documented by their nearest capability README unless they
+  carry an independent runbook.
+
+ADR-0111's layout is being adopted capability by capability in the migration tracked by issue 975;
+until that stack is complete, parts of the tree still follow the earlier names and folder shapes.
 
 Runnable verbs describe behavior rather than forming a closed vocabulary: `check` validates without
 writing; `gen` creates an artifact; `update` intentionally replaces a committed baseline; `capture`

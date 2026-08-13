@@ -12,9 +12,12 @@ at the root. A capability with multiple entry points, libraries, fixtures, outpu
 runbook gets a folder. Recognizable sub-capabilities such as a platform or asset family may add one
 more named layer.
 
-Runnable files use `verb-object[-qualifier].mjs`. Supporting modules use purpose nouns and add a
-capability qualifier when a generic leaf would be ambiguous. Entry points do not live in `bin/`, and
-generic leaves such as `index.mjs`, `toolchain.mjs`, or `config.mjs` are not used.
+Runnable files must use `verb-object[-qualifier].mjs`. Supporting modules use purpose nouns and add
+a capability qualifier when a generic leaf would be ambiguous. Entry points do not belong in `bin/`,
+and generic leaves such as `index.mjs`, `toolchain.mjs`, or `config.mjs` are not used.
+
+ADR-0111's layout is being adopted capability by capability in the migration tracked by issue 975;
+until that stack is complete, parts of the tree still follow the earlier names and folder shapes.
 
 The action verbs communicate behavior:
 
@@ -34,7 +37,7 @@ executable action.
 
 ## Capability documentation
 
-Every capability and meaningful sub-capability has a README that covers:
+Every capability and meaningful sub-capability must have a README that covers:
 
 * its purpose and domain owner;
 * runnable entry points and public npm commands;

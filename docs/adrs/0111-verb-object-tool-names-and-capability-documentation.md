@@ -1,6 +1,7 @@
 # ADR-0111: Verb-Object Tool Names and Capability Documentation
 
-**Status:** Active **Date:** 2026-08
+**Status:** Active **Date:** 2026-08 **Amends:** [0019](0019-npm-script-naming-and-scripts-info.md),
+[0044](0044-svg-optimization-audit.md), and [0108](0108-unified-tools-tree.md)
 
 ## Context
 
@@ -49,7 +50,10 @@ capability-prefixed filename rule is amended as follows:
   presentation. Precise domain verbs such as `convert`, `normalize`, `optimize`, `publish`,
   `encrypt`, and `archive` remain valid.
 * `audit` is not an executable action verb. It remains valid in the `audit-burndown` capability and
-  the public `audit:*` npm namespace.
+  the public `audit:*` npm namespace. ADR-0044's re-runnable SVG-optimization contract remains in
+  force, while its misleading `img:audit` and `img:audit:check` commands become
+  `optimize:svg-assets` and `check:svg-assets`, and its executable becomes
+  `optimize-svg-assets.mjs`.
 * A supporting module uses a purpose noun, with a capability qualifier when a generic leaf would be
   ambiguous. Leaf names retain enough meaning for search results and stack frames; `index.mjs`,
   `toolchain.mjs`, `config.mjs`, and repeated indistinguishable entry filenames are rejected.
@@ -69,13 +73,16 @@ Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `gen
 independent runbook. This is a documentation standard, not a layout linter.
 
 ADR-0019's npm catalog remains the public interface, and `package.json` scripts and `scripts-info`
-descriptions still change together. Its "command names do not change" precedent is narrowed:
+descriptions still change together. ADR-0108's "command names did not change" precedent is narrowed:
 affirmatively misleading commands are renamed without compatibility aliases, while commands that
-still describe their action remain stable. Verb-first page-inventory commands intentionally span the
-`capture:`, `review:`, `finalize:`, and `attach:` namespaces; this weakens namespace grouping in
-exchange for making each action clear at the call site. `promotional-image` names the generator
-rather than Google Play because its `large-image.png` output serves both store and social/link
-preview placements.
+still describe their action remain stable. ADR-0019's "namespace by domain" and "generated artifacts
+live under `gen:*`" rules are narrowed in one place: verb-first page-inventory commands
+intentionally span the `capture:`, `review:`, `finalize:`, and `attach:` namespaces. This weakens
+namespace grouping in exchange for making each action clear at the call site. The `capture:`
+namespace is deliberately adjacent to Capacitor's existing `cap:*` namespace; `record:` avoids that
+similarity but is less precise, while retaining `gen:page-inventory` would misdescribe evidence
+capture as artifact generation. `promotional-image` names the generator rather than Google Play
+because its `large-image.png` output serves both store and social/link preview placements.
 
 This migration is structural and behavior-preserving. Each capability lands in a focused stacked PR
 using `git mv`. Flags, environment variables, defaults, exit behavior, output paths, and artifact

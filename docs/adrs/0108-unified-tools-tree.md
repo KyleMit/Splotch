@@ -2,6 +2,11 @@
 
 **Status:** Active **Date:** 2026-08
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** entry
+> points use `verb-object[-qualifier].mjs` without mechanically repeating their capability, every
+> capability gains a README, `bin/` layers are removed, and affirmatively misleading npm commands
+> may change.
+
 ## Context
 
 Splotch-owned automation lived in two top-level trees with no rule separating them. `scripts/` held
