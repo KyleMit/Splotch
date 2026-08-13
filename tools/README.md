@@ -37,6 +37,9 @@ executable action.
 
 ## Capability documentation
 
+ADR-0111 adopts this requirement capability by capability; a README is added when each capability
+migrates, so unmigrated folders may not have one yet.
+
 Every capability and meaningful sub-capability must have a README that covers:
 
 * its purpose and domain owner;

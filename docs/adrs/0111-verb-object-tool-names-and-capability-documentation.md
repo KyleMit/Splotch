@@ -53,7 +53,9 @@ capability-prefixed filename rule is amended as follows:
   the public `audit:*` npm namespace. ADR-0044's re-runnable SVG-optimization contract remains in
   force, while its misleading `img:audit` and `img:audit:check` commands become
   `optimize:svg-assets` and `check:svg-assets`, and its executable becomes
-  `optimize-svg-assets.mjs`.
+  `optimize-svg-assets.mjs`. Asset-generation checks likewise move from `audit-*` executable names
+  and `gen:*:audit` commands to truthful `check-*` entry points and `check:*` commands; the one
+  write-producing eye review becomes `gen-eye-review.mjs` behind `gen:coloring-eye-review`.
 * A supporting module uses a purpose noun, with a capability qualifier when a generic leaf would be
   ambiguous. Leaf names retain enough meaning for search results and stack frames; `index.mjs`,
   `toolchain.mjs`, `config.mjs`, and repeated indistinguishable entry filenames are rejected.
@@ -76,13 +78,15 @@ ADR-0019's npm catalog remains the public interface, and `package.json` scripts 
 descriptions still change together. ADR-0108's "command names did not change" precedent is narrowed:
 affirmatively misleading commands are renamed without compatibility aliases, while commands that
 still describe their action remain stable. ADR-0019's "namespace by domain" and "generated artifacts
-live under `gen:*`" rules are narrowed in one place: verb-first page-inventory commands
-intentionally span the `capture:`, `review:`, `finalize:`, and `attach:` namespaces. This weakens
-namespace grouping in exchange for making each action clear at the call site. The `capture:`
-namespace is deliberately adjacent to Capacitor's existing `cap:*` namespace; `record:` avoids that
-similarity but is less precise, while retaining `gen:page-inventory` would misdescribe evidence
-capture as artifact generation. `promotional-image` names the generator rather than Google Play
-because its `large-image.png` output serves both store and social/link preview placements.
+live under `gen:*`" rules are narrowed in two places. SVG optimization moves the two-command `img:*`
+domain into the action-first `optimize:svg-assets` and `check:svg-assets` namespaces. Verb-first
+page-inventory commands intentionally span the `capture:`, `review:`, `finalize:`, and `attach:`
+namespaces. These choices weaken namespace grouping in exchange for making each action clear at the
+call site. The `capture:` namespace is deliberately adjacent to Capacitor's existing `cap:*`
+namespace; `record:` avoids that similarity but is less precise, while retaining
+`gen:page-inventory` would misdescribe evidence capture as artifact generation. `promotional-image`
+names the generator rather than Google Play because its `large-image.png` output serves both store
+and social/link preview placements.
 
 This migration is structural and behavior-preserving. Each capability lands in a focused stacked PR
 using `git mv`. Flags, environment variables, defaults, exit behavior, output paths, and artifact

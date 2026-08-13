@@ -40,9 +40,12 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
   (knip cannot re-include a path under a negated glob, so a blanket `tools/**` plus exclusions is
   not an option). You do not have to remember: `tools/tests/enumerated-build-paths.test.mjs` fails
   on the omission, and also pins the Netlify deploy filter's `:(glob)` pathspec and its coverage of
-  everything the production build runs. Its `entry` glob `tools/*/*.mjs` needs no edit. `tools/lib/`
-  is deliberately excluded from `entry` so `lint:dead` still flags dead shared code; it stays
-  reachable through its importers.
+  everything the production build runs. Its `entry` glob `tools/*/*.mjs` covers capability-root
+  executables only. A capability that adds runnable sub-capabilities must add explicit entry globs
+  for those exact roots, such as `tools/mobile/{android,ios}/*.mjs`; do not use a generic
+  `tools/*/*/*.mjs` glob that would promote support modules to public entries. `tools/lib/` and
+  nested capability libraries are deliberately excluded from `entry` so `lint:dead` still flags dead
+  shared code; they stay reachable through their importers.
 * Every capability and meaningful sub-capability must have a `README.md` covering purpose, entry
   points, inputs and outputs, prerequisites, failure behavior, domain ownership, and maintenance
   guidance. Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `generated`,
