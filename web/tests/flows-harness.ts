@@ -1,6 +1,13 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 
-import { draw, gotoApp, renderedCanvasHandle, retryOpen, settleFlyIn } from './helpers';
+import {
+  draw,
+  gotoApp,
+  openSettingsModal,
+  renderedCanvasHandle,
+  retryOpen,
+  settleFlyIn,
+} from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
 import { coloringPackCacheName, coloringPackMarkerPath } from '../src/lib/coloringPacks/cacheKeys';
 import {
@@ -139,6 +146,22 @@ export async function solveParentalGate(page: Page) {
       }
     }).toPass({ timeout: 15_000 });
   }
+}
+
+// One protected operation's frequency picker inside Parent Center.
+export function policyPicker(settings: Locator, feature: string) {
+  return settings.getByRole('radiogroup', { name: `${feature} parental gate frequency` });
+}
+
+// Reach the unlocked Parent Center with every check armed — the state the
+// turn-a-check-off flows start from, and the one the web build never ships.
+export async function openArmedParentCenter(page: Page) {
+  await gotoApp(page, '/', { gates: 'always' });
+  const settings = await openSettingsModal(page);
+  await settings.getByRole('button', { name: 'Parent Center' }).click();
+  await solveParentalGate(page);
+  await expect(settings.getByText(/Choose when Splotch should ask/)).toBeVisible({ timeout: 5000 });
+  return settings;
 }
 
 // Open the Brush Menu flyout and leave it open. The eraser and magic brush live
