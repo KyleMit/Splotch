@@ -1,8 +1,12 @@
 <script lang="ts">
+  import Button from '../design/Button.svelte';
   import SegmentedPicker, { type SegmentedPickerOption } from '../design/SegmentedPicker.svelte';
+  import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { getPlatform } from '$lib/platform';
   import {
+    endsParentCenterProtection,
     isParentalGateModeAvailable,
+    isParentCenterUnprotected,
     parentalGatePolicies,
     PARENTAL_GATE_FEATURES,
     PARENTAL_GATE_MODES,
@@ -44,13 +48,41 @@
     },
   };
 
+  // One sentence for both warning surfaces: the confirmation that stands in
+  // front of the choice, and the note that stands beside it for as long as the
+  // choice holds.
+  const UNPROTECTED_CONSEQUENCE =
+    "Anyone using this device can open Parent Center and change Splotch's settings and protections.";
+
   const platform = getPlatform();
+
+  const parentCenterUnprotected = $derived(isParentCenterUnprotected());
+
+  // The pending choice needs no payload: Parent Center's Never is the only one
+  // that asks, so confirming has exactly one thing left to do.
+  let confirmingUnprotected = $state(false);
 
   function optionsFor(feature: ParentalGateFeature): SegmentedPickerOption<ParentalGateMode>[] {
     return MODE_OPTIONS.map((option) => ({
       ...option,
       disabled: !isParentalGateModeAvailable(feature, option.value, platform),
     }));
+  }
+
+  // Nothing persists until the parent confirms, so the picker keeps showing the
+  // prior policy behind the dialog and a cancel leaves it exactly there.
+  function chooseMode(feature: ParentalGateFeature, mode: ParentalGateMode) {
+    if (endsParentCenterProtection(feature, mode)) confirmingUnprotected = true;
+    else setParentalGateMode(feature, mode);
+  }
+
+  function confirmUnprotected() {
+    setParentalGateMode('parentCenter', 'never');
+    confirmingUnprotected = false;
+  }
+
+  function cancelUnprotected() {
+    confirmingUnprotected = false;
   }
 </script>
 
@@ -79,6 +111,10 @@
       {@const unavailableHelpId = isParentalGateModeAvailable(featureId, 'never', platform)
         ? undefined
         : `parental-gate-${featureId}-unavailable`}
+      {@const warningId =
+        featureId === 'parentCenter' && parentCenterUnprotected
+          ? `parental-gate-${featureId}-warning`
+          : undefined}
       <article class="setting policy-card">
         <div class="protection-copy">
           <h3>{feature.label}</h3>
@@ -88,10 +124,10 @@
         <SegmentedPicker
           class="policy-picker"
           label={`${feature.label} parental gate frequency`}
-          describedBy={[helpId, unavailableHelpId].filter(Boolean).join(' ')}
+          describedBy={[helpId, unavailableHelpId, warningId].filter(Boolean).join(' ')}
           options={optionsFor(featureId)}
           selected={parentalGatePolicies[featureId]}
-          onSelect={(mode) => setParentalGateMode(featureId, mode)}
+          onSelect={(mode) => chooseMode(featureId, mode)}
         />
 
         {#if unavailableHelpId}
@@ -103,6 +139,13 @@
             </span>
           </div>
         {/if}
+
+        {#if warningId}
+          <div id={warningId} class="protection-warning" role="note">
+            <strong>This check is off</strong>
+            <span>{UNPROTECTED_CONSEQUENCE}</span>
+          </div>
+        {/if}
       </article>
     {/each}
   </div>
@@ -112,6 +155,31 @@
     <p><strong>Never</strong> skips the grown-up check on this device where available.</p>
   </div>
 </section>
+
+<!-- A sibling of the section rather than a child of it: this card is promoted to
+     the top layer over the whole Settings modal, and nesting it inside the
+     policy matrix would leave a box in that layout claiming a width the matrix
+     never gives it. -->
+<dialog
+  class="unprotected-confirm modal-dialog modal-fly-in modal-shell"
+  aria-labelledby="parentCenterUnprotectedTitle"
+  use:modalDialog={() => ({
+    open: confirmingUnprotected,
+    onRequestClose: cancelUnprotected,
+  })}
+>
+  <div class="unprotected-confirm-content">
+    <div class="unprotected-confirm-heading">
+      <h3 id="parentCenterUnprotectedTitle">Turn off the Parent Center check?</h3>
+      <p>{UNPROTECTED_CONSEQUENCE}</p>
+    </div>
+
+    <div class="unprotected-confirm-actions">
+      <Button size="lg" onclick={cancelUnprotected}>Keep it on</Button>
+      <Button variant="danger" size="lg" onclick={confirmUnprotected}>Turn it off</Button>
+    </div>
+  </div>
+</dialog>
 
 <style>
   .parent-center-intro,
@@ -174,24 +242,41 @@
     min-width: 0;
   }
 
-  .unavailable-explanation {
+  .unavailable-explanation,
+  .protection-warning {
     margin-top: var(--space-3);
     padding: var(--space-3);
     border-radius: var(--radius-md);
-    background: var(--brand-wash);
-    color: var(--text);
     font-size: var(--font-size-sm);
     line-height: 1.5;
   }
 
+  .unavailable-explanation {
+    background: var(--brand-wash);
+    color: var(--text);
+  }
+
+  /* The one note here that reports a protection being off rather than
+     explaining why a choice is unavailable, so it takes the danger wash. */
+  .protection-warning {
+    background: var(--danger-wash);
+    color: var(--danger-text);
+  }
+
   .unavailable-explanation strong,
-  .unavailable-explanation span {
+  .unavailable-explanation span,
+  .protection-warning strong,
+  .protection-warning span {
     display: block;
+  }
+
+  .unavailable-explanation strong,
+  .protection-warning strong {
+    font-weight: var(--font-weight-semibold);
   }
 
   .unavailable-explanation strong {
     color: var(--text-strong);
-    font-weight: var(--font-weight-semibold);
   }
 
   /* A footnote, not a control: no tinted panel, so the five policy tiles stay
@@ -266,7 +351,8 @@
       margin-bottom: 0;
     }
 
-    .unavailable-explanation {
+    .unavailable-explanation,
+    .protection-warning {
       grid-column: 1 / -1;
     }
 
@@ -300,6 +386,74 @@
       border-color: var(--brand);
       background: var(--brand);
       box-shadow: inset 0 0 0 4px var(--surface);
+    }
+  }
+
+  /* ── Turn-off confirmation ──────────────────────────────────────────────── */
+
+  /* Phone width and card padding are the parental gate's: this dialog stands in
+     for the check that gate performs, and the two should read as one boundary. */
+  .unprotected-confirm {
+    width: min(92vw, 336px);
+  }
+
+  .unprotected-confirm-content {
+    display: flex;
+    flex-direction: column;
+    padding: 22px var(--space-6) var(--space-5);
+    gap: var(--space-4);
+  }
+
+  /* Title and copy are one group, so they sit closer than the dialog's own
+     rhythm separates the groups from each other. */
+  .unprotected-confirm-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .unprotected-confirm-heading h3 {
+    margin: 0;
+    color: var(--text-strong);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.2;
+  }
+
+  .unprotected-confirm-heading p {
+    margin: 0;
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  /* Wraps to a column on the narrowest phones: the two labels name what each
+     choice does, and a shrunken pair would truncate exactly that. */
+  .unprotected-confirm-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .unprotected-confirm-actions :global(.btn) {
+    flex: 1 1 140px;
+  }
+
+  /* Reduced motion: fade instead of flying in, as the parental gate already does. */
+  @media (prefers-reduced-motion: reduce) {
+    .unprotected-confirm.modal-fly-in[open] {
+      animation: unprotectedConfirmFadeIn var(--duration-base) ease;
+    }
+  }
+
+  @keyframes unprotectedConfirmFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
     }
   }
 </style>

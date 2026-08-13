@@ -92,6 +92,29 @@ export const parentalGatePolicies: Record<ParentalGateFeature, ParentalGateMode>
   ) as Record<ParentalGateFeature, ParentalGateMode>
 );
 
+/**
+ * Whether Parent Center itself currently opens with no challenge in front of
+ * it. Drives the standing warning beside its policy: Settings is reachable
+ * without a check by design (ADR-0094), so this one Never is what decides
+ * whether every other policy on the device can be rewritten by whoever is
+ * holding it.
+ */
+export function isParentCenterUnprotected(): boolean {
+  return parentalGatePolicies.parentCenter === 'never';
+}
+
+/**
+ * Whether applying `mode` to `feature` is the choice that removes that last
+ * check — the one worth confirming before it persists. Already-unprotected is
+ * not a change, so it earns no second confirmation.
+ */
+export function endsParentCenterProtection(
+  feature: ParentalGateFeature,
+  mode: ParentalGateMode
+): boolean {
+  return feature === 'parentCenter' && mode === 'never' && !isParentCenterUnprotected();
+}
+
 // Operands are single digits but skip 0–2: those make products a young child
 // could guess or count to, and the challenge must stay adult-difficulty.
 export const GATE_OPERAND_MIN = 3;

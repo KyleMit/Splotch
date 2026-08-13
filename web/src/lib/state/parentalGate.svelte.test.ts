@@ -9,6 +9,8 @@ import {
   pressGateDigit,
   pressGateBackspace,
   dismissGate,
+  endsParentCenterProtection,
+  isParentCenterUnprotected,
   redirectGateToParentCenter,
   setParentalGateMode,
   reloadParentalGate,
@@ -242,6 +244,33 @@ describe('parental gate', () => {
     expect(gate.open).toBe(false);
     expect(destination).toHaveBeenCalledWith(origin);
     expect(settingsModal.open).toBe(false);
+  });
+
+  it('flags only the choice that ends Parent Center protection', () => {
+    expect(endsParentCenterProtection('parentCenter', 'never')).toBe(true);
+
+    for (const mode of ['always', 'session'] as const) {
+      expect(endsParentCenterProtection('parentCenter', mode)).toBe(false);
+    }
+    // Every other policy's Never gives up one operation's check, not the
+    // protections themselves.
+    for (const feature of PARENTAL_GATE_FEATURES.filter((f) => f !== 'parentCenter')) {
+      expect(endsParentCenterProtection(feature, 'never')).toBe(false);
+    }
+  });
+
+  it('stops asking to confirm a protection that is already off', () => {
+    expect(isParentCenterUnprotected()).toBe(false);
+
+    setParentalGateMode('parentCenter', 'never');
+
+    expect(isParentCenterUnprotected()).toBe(true);
+    expect(endsParentCenterProtection('parentCenter', 'never')).toBe(false);
+
+    setParentalGateMode('parentCenter', 'session');
+
+    expect(isParentCenterUnprotected()).toBe(false);
+    expect(endsParentCenterProtection('parentCenter', 'never')).toBe(true);
   });
 
   it('persists an independent mode for every protected feature', () => {

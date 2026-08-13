@@ -12,6 +12,7 @@ import {
   enableAiButtonWithStroke,
   openDrawer,
   openParentalGate,
+  policyPicker,
   solveParentalGate,
 } from './flows-harness';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
@@ -44,9 +45,10 @@ const PROTECTED_FEATURES = [
 const MANAGE_FOOTER = /Manage these checks in/;
 const MANAGE_SUBTITLE = 'Solve the problem to manage grown-up checks';
 
-function policyPicker(settings: Locator, feature: string) {
-  return settings.getByRole('radiogroup', { name: `${feature} parental gate frequency` });
-}
+// Turning Parent Center's own check off is confirmed first, and warned about
+// while it holds — flows-parent-center-warning.spec.ts owns that flow. The
+// persistence spec below only has to get past the confirmation.
+const UNPROTECTED_CONFIRM = 'dialog.unprotected-confirm';
 
 // The access-code param reveals the AI button (it stays hidden with no
 // credential). `gates` is the seed to leave the policies at: 'default' for a
@@ -302,6 +304,7 @@ test('Parent Center is gated before its controls appear and persists every featu
   await policyPicker(settings, 'Opening Parent Center')
     .getByRole('radio', { name: 'Never' })
     .click();
+  await page.locator(UNPROTECTED_CONFIRM).getByRole('button', { name: 'Turn it off' }).click();
 
   await settings.getByRole('button', { name: 'Close' }).click();
   await page.reload();
@@ -350,6 +353,9 @@ test('Parent Center card toggles fit a small mobile screen without horizontal sc
   await expect(cards).toHaveCount(5);
   await expect(cards.getByRole('radiogroup')).toHaveCount(5);
   await expect(cards.first().getByRole('radio')).toHaveCount(3);
+  // The web build ships Parent Center's own check off, so the standing warning
+  // is part of what has to fit here.
+  await expect(settings.locator('.protection-warning')).toBeVisible();
   await expect.poll(() => worstHorizontalOverflow(settings)).toBeLessThanOrEqual(1);
 });
 
@@ -368,6 +374,9 @@ test('Parent Center reads as a mode matrix once the settings pane is wide enough
   await expect(settings.locator('.policy-header')).toBeVisible();
   const aiImage = policyPicker(settings, 'Generating an AI image');
   await expect(aiImage.getByRole('radio', { name: 'Per session' })).toBeVisible();
+
+  // The standing warning spans both columns rather than squeezing into one.
+  await expect(settings.locator('.protection-warning')).toBeVisible();
 
   // Every policy's controls land in one shared column — that is what the matrix
   // buys over the stacked cards, and it is only honest if nothing scrolls sideways.
