@@ -377,7 +377,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10",
-    "ws": "^8.21.1"
+    "ws": "^8.21.3"
   },
   "dependencies": {
     "@aparajita/capacitor-secure-storage": "^8.0.0",
