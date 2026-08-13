@@ -54,8 +54,8 @@ coloring-book proof sheet), `gen-coloring-book-proof-sheet`, `png-to-webp`, `lib
 (since retired along with the Pixel style it served), and the `night-fills.md` runbook.
 
 What stayed in `tools/`: build-path codegen (`gen:icon-names`, `gen:releases`) and the app-driving
-Playwright generators (`gen:shots`/`store-shots.mjs`, `gen:large-image`) — those drive the live app
-and are effectively integration tests, not asset producers.
+Playwright generators (`gen:store-assets`/`gen-store-assets.mjs`, `gen:promotional-image`) — those
+drive the live app and are effectively integration tests, not asset producers.
 
 Structure:
 

@@ -191,8 +191,8 @@ generated from the real app where possible:
 * [x] **Copywriting** — Google Play fields in `store-assets/STORE-LISTING-ANDROID.md`; App Store
       fields (name, subtitle, promo text, keywords, categories, privacy label) in
       `store-assets/STORE-LISTING-IOS.md`.
-* [x] **Screenshots, both stores** — `npm run gen:shots` drives the app in headless Chromium and
-      captures Play phone/tablet sets **and** App Store iPhone 6.9" / iPad 13" sets at the exact
+* [x] **Screenshots, both stores** — `npm run gen:store-assets` drives the app in headless Chromium
+      and captures Play phone/tablet sets **and** App Store iPhone 6.9" / iPad 13" sets at the exact
       required pixel sizes, plus the Play feature graphic. Re-run after meaningful UI changes.
 * [x] **Play app icon** 512×512 (`store-assets/icon-512.png`); the App Store icon ships inside the
       binary's asset catalog (no separate upload).

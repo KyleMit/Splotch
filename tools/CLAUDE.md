@@ -148,9 +148,10 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   including on failure. `apply-ruler-skill-forks.mjs` then replaces complete generated packages for
   any Ruler-managed exceptional skills. The focused `tools/ruler/tests/*.test.mjs` files lock both
   seams.
-* The app-driving generators — `gen:shots` (`store-shots.mjs`), `gen:large-image`
-  (`gen-large-image.mjs`), and the evaluation/review entries at the `tools/store-drawings/` root
-  (`evaluate-drawing-fidelity.mjs`, `gen-brush-review.mjs`) — drive the live app by selector through
+* The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
+  `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
+  evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,
+  `gen-brush-review.mjs`) — drive the live app by selector through
   `tools/app-driver/lib/app-driver.mjs` and only run on demand, so that module rots silently when
   app markup, element IDs, or show/hide mechanics change (drawer, palette, dialogs).
   `test:driver:smoke` (in the CI test job) boots the app and exercises the driver's entry path to

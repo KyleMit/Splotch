@@ -86,8 +86,8 @@ score and two color-aware coverage scores:
 The overlays visualize occupancy separately: red-only pixels belong to the reference, blue-only
 pixels belong to the converted or runtime image, and overlapping pixels are purple-white.
 
-After reviewing the report and images, `npm run gen:shots` uses the named static drawing functions
-for the real store captures.
+After reviewing the report and images, `npm run gen:store-assets` uses the named static drawing
+functions for the real store captures.
 
 ## Brush review captures
 

@@ -1,5 +1,5 @@
 // Regenerates web/static/large-image.png by replaying the SVG drawing instructions
-// in tools/app-driver/assets/large-image.svg onto the live Splotch canvas.
+// in tools/marketing-assets/assets/promotional-image.svg onto the live Splotch canvas.
 // The output is 1920x1080 (16:9 landscape, same as Google Play tablet spec).
 //
 // This PNG is also the social/link-preview image: app.html points og:image and
@@ -9,7 +9,7 @@
 // Facebook Sharing Debugger since scrapers cache the old card for weeks.
 //
 // A dev server is started automatically (or reused if one is already on 4173):
-//   node --experimental-strip-types --disable-warning=ExperimentalWarning tools/app-driver/gen-large-image.mjs
+//   npm run gen:promotional-image
 
 import { chromium } from '@playwright/test';
 import { readFileSync } from 'node:fs';
@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 import { ROOT } from '../lib/proc.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { circlePts } from './lib/stroke-geometry.mjs';
+import { circlePts } from '../app-driver/lib/stroke-geometry.mjs';
 import {
   ensureDevServer,
   openAppPage,
@@ -27,9 +27,9 @@ import {
   setStrokeSize,
   drawStroke,
   dismissMenu,
-} from './lib/app-driver.mjs';
+} from '../app-driver/lib/app-driver.mjs';
 
-const SVG_FILE = join(ROOT, 'tools', 'app-driver', 'assets', 'large-image.svg');
+const SVG_FILE = join(ROOT, 'tools', 'marketing-assets', 'assets', 'promotional-image.svg');
 const OUT = join(ROOT, 'web', 'static', 'large-image.png');
 const PORT = 4173;
 

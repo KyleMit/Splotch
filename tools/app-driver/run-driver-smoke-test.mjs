@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Smoke test guarding tools/app-driver/lib/app-driver.mjs against silent rot. The gen:*
-// generators (gen:shots, gen:large-image) drive the live app purely by selector
+// generators (gen:store-assets, gen:promotional-image) drive the live app purely by selector
 // through that module and never run in CI, so a dropped import (e.g. `sleep`) or
 // a stale probe/selector after an app-markup change stays broken until someone
 // hand-runs a generator. This boots the real app once and exercises the driver's

@@ -457,7 +457,8 @@ Non-`keep` rows first.
 ### @playwright/test
 
 * **Version:** `^1.61.1` declared · 1.61.1 locked · dev
-* **Used for:** E2E tests and the perf/screenshot harnesses (`test:e2e`, `perf:*`, `gen:shots`).
+* **Used for:** E2E tests and the perf/screenshot harnesses (`test:e2e`, `perf:*`,
+  `gen:store-assets`).
 * **Source:** npm · [github.com/microsoft/playwright](https://github.com/microsoft/playwright) ·
   published by Microsoft
 * **License:** Apache-2.0

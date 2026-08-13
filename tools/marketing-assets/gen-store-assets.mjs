@@ -2,7 +2,7 @@
 // phone/tablet screenshots per store and the Play feature graphic, by driving
 // the real Splotch app in a headless browser.
 // A dev server is started automatically (or reused if one is already on 4173):
-//   npm run gen:shots
+//   npm run gen:store-assets
 //
 // Output lands in store-assets/. Screenshots are captured at the exact pixel
 // sizes each store wants:
@@ -31,7 +31,7 @@ import {
   waitForColoringOverlay,
   openColorPicker,
   openSettingsModal,
-} from './lib/app-driver.mjs';
+} from '../app-driver/lib/app-driver.mjs';
 
 const OUT = join(ROOT, 'store-assets');
 const PORT = 4173;

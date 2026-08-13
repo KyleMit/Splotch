@@ -144,8 +144,8 @@ chat, public sharing, or user-to-user distribution.
 | iPhone 6.9" | `screenshots/iphone69/01–05` | 1290×2796 portrait  |
 | iPad 13"    | `screenshots/ipad13/01–05`   | 2732×2048 landscape |
 
-Regenerate with `npm run gen:shots`. The App Store icon is **not** uploaded separately — App Store
-Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
+Regenerate with `npm run gen:store-assets`. The App Store icon is **not** uploaded separately — App
+Store Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
 (`ios/App/App/Assets.xcassets`).
 
 ## Kids Category notes (review will check these)

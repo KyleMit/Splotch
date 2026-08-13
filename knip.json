@@ -30,7 +30,7 @@
     "web/tests/**/*.ts",
     "netlify/**/*.ts",
     "tools/*.mjs",
-    "tools/{adrs,android,api-smoke,app-driver,audit-burndown,e2e-tuning,icons,lib,model-eval,native,page-inventory,perf,redteam,release,ruler,scrapbook,tests,tokens}/**/*.mjs",
+    "tools/{adrs,android,api-smoke,app-driver,audit-burndown,e2e-tuning,icons,lib,marketing-assets,model-eval,native,page-inventory,perf,redteam,release,ruler,scrapbook,tests,tokens}/**/*.mjs",
     "tools/asset-gen/{bin,lib}/**/*.{mjs,ts}",
     "tools/vectorize/**/*.mjs"
   ],
