@@ -21,9 +21,9 @@
 # falls through to the vite proxy.
 [dev]
   framework = "#custom"
-  command = "node ../tools/web.mjs dev"
+  command = "node ../tools/run-web-tool.mjs dev"
   # Both ports are guarded by tools/tests/dev-ports.test.mjs against vite.config.ts
-  # and the dev:kill script — declared here rather than left to netlify-cli's default
+  # and the dev:stop script — declared here rather than left to netlify-cli's default
   # so every consumer reads one source.
   targetPort = 5173
   port = 8888

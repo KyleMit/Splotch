@@ -53,4 +53,4 @@ paths:
 * After changing an endpoint, run `npm run test:api:smoke` to validate the live `/api/*` contract
   (self-contained; boots its own test server). CI also runs it on every push/PR (`test.yml` `unit`
   job), so a contract break fails CI even if the local run is skipped. Extend the smoke script
-  (`tools/api-smoke/api-smoke.mjs`) when you add an endpoint or change a response shape.
+  (`tools/api-smoke/run-local-contract.mjs`) when you add an endpoint or change a response shape.

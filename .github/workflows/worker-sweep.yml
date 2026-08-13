@@ -6,11 +6,11 @@
 # kept rather than deleted because the numbers it produces are hardware-specific
 # and go stale: a runner-image change, a big spec addition, or a suspicion that
 # the flake rate has drifted are all reasons to run it again and refresh the
-# datasets in tools/e2e-tuning/gen-e2e-tuning-report.mjs.
+# datasets in tools/e2e-tuning/gen-tuning-report.mjs.
 #
 # Each matrix job gets its own runner, so worker counts never contend with each
 # other. Everything inside a job — the server lifecycle, unsetting CI, the
-# per-rep summary — belongs to tools/e2e-tuning/e2e-sweep.mjs rather than to this file,
+# per-rep summary — belongs to tools/e2e-tuning/run-worker-sweep.mjs rather than to this file,
 # so a local re-tune and this workflow measure the same thing. The first version
 # of this sweep put that logic in shell here, and shipped three defects only the
 # other half could have caught.
@@ -64,14 +64,14 @@ jobs:
       # harness routes the specs drive. The sweep driver builds nothing, so this
       # is the only build.
       - name: Build preview bundle
-        run: node tools/web.mjs vite build
+        run: node tools/run-web-tool.mjs vite build
         env:
           PUBLIC_ENABLE_DEV_HARNESS: 'true'
           ADMIN_ACCESS_TOKEN: test-admin-secret
 
       - name: Run sweep
         run: |
-          node tools/e2e-tuning/e2e-sweep.mjs \
+          node tools/e2e-tuning/run-worker-sweep.mjs \
             --workers=${{ matrix.workers }} \
             --reps=${{ github.event.inputs.reps || '5' }} \
             --out=/tmp/sweep
