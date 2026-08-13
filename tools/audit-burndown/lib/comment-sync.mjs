@@ -1,6 +1,6 @@
 // Rendering for the per-commit PR comments the burndown posts — one comment per
 // fix carrying the issue, how it was solved, and any adversarial catch. Kept in
-// its own module so burndown.mjs and backfill-comments.mjs share one
+// its own module so run-burndown.mjs and backfill-comments.mjs share one
 // implementation rather than each rendering its own.
 
 // Pull the finding's Problem section for the "what was wrong" half of the

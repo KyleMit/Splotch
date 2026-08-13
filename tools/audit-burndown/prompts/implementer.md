@@ -14,12 +14,12 @@ work with no record that it was left undone. Deliver the whole change the brief 
 can only do part of it, return `success=false` and say which part — a deferral is recoverable, a
 silently narrowed fix is not.
 
-**Never edit the audit backlog file, and never run `pop.mjs`.** The driver deletes the finding's
-entry itself, by title, after the review approves — that is what "inside your commit" above means.
-Your commit is expected to leave the entry in place. If a review round tells you the entry was not
-removed, that reviewer is mistaken and has been told so: say exactly that in your `summary` and
-change nothing for it. Deleting it yourself is not a harmless duplicate — it is how three findings
-were destroyed on the 2026-07-25 canary.
+**Never edit the audit backlog file, and never run `pop-finding.mjs`.** The driver deletes the
+finding's entry itself, by title, after the review approves — that is what "inside your commit"
+above means. Your commit is expected to leave the entry in place. If a review round tells you the
+entry was not removed, that reviewer is mistaken and has been told so: say exactly that in your
+`summary` and change nothing for it. Deleting it yourself is not a harmless duplicate — it is how
+three findings were destroyed on the 2026-07-25 canary.
 
 These are the commands the driver gates on, so run them before you commit: the acceptance commands
 from the brief, `npm run check`, the fast unit tests (`npm run test:unit`), `npx eslint` on the

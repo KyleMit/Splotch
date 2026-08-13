@@ -23,8 +23,8 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createBurndownRun, readConfig } from '../burndown.mjs';
-import { deleteEntryByTitle } from '../lib.mjs';
+import { deleteEntryByTitle } from '../lib/burndown-core.mjs';
+import { createBurndownRun, readConfig } from '../run-burndown.mjs';
 
 const AUDIT_PATH = join('docs', 'AUDIT.md');
 const BRIEF_PATH = join('.audit-work', 'current-brief.md');
@@ -204,7 +204,7 @@ afterEach(() => {
 describe('importing the driver', () => {
   it('does not start a run', async () => {
     const before = process.cwd();
-    const module = await import('../burndown.mjs?fresh');
+    const module = await import('../run-burndown.mjs?fresh');
     expect(typeof module.createBurndownRun).toBe('function');
     // A module that ran its lifecycle on import would have chdir'd to the repo
     // root and recorded its launch before the first assertion could run.

@@ -31,7 +31,7 @@ SNAPSHOT=".audit-work/compact-snapshot.md"
 # enough that residue from a killed run stops speaking within one working day.
 MAX_AGE_SECONDS=$((24 * 60 * 60))
 
-driver_pid="$(pgrep -f '^node tools/audit-burndown/burndown.mjs' 2>/dev/null | head -1)"
+driver_pid="$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs' 2>/dev/null | head -1)"
 
 # BSD stat (macOS) and GNU stat (Linux) disagree on the flag; try each.
 mtime="$(stat -f %m "$SNAPSHOT" 2>/dev/null || stat -c %Y "$SNAPSHOT" 2>/dev/null)"

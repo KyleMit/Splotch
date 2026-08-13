@@ -1,10 +1,10 @@
-// Locks the mode vocabulary of tools/audit-burndown/pop.mjs: an unrecognized
+// Locks the mode vocabulary of tools/audit-burndown/pop-finding.mjs: an unrecognized
 // flag must exit 2 rather than falling through to the "print the first entry"
 // path, which reported success while the backlog went untouched — the shape that
 // makes a typo'd `--delete` indistinguishable from a real pop to a runbook-
 // following agent.
 //
-// pop.mjs chdirs to the real repo root, so every case points AUDIT_FILE at a
+// pop-finding.mjs chdirs to the real repo root, so every case points AUDIT_FILE at a
 // temp backlog; the rejection path exits before any read of it, and the --count
 // case only reads.
 
@@ -14,7 +14,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-const SCRIPT = join(import.meta.dirname, '..', 'pop.mjs');
+const SCRIPT = join(import.meta.dirname, '..', 'pop-finding.mjs');
 
 const BACKLOG = `# Audit
 

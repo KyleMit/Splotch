@@ -1,10 +1,14 @@
-// preflight.mjs — check everything before an unattended burndown run.
-// Read-only; run it before every launch (overnight.mjs runs it for you).
+// check-preflight.mjs — check everything before an unattended burndown run.
+// Read-only; run it before every launch (launch-overnight.mjs runs it for you).
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand } from '../lib/proc.mjs';
-import { agentAuthCommand, agentRunnerDefaults, normalizeAgentRunner } from './agent-runner.mjs';
+import {
+  agentAuthCommand,
+  agentRunnerDefaults,
+  normalizeAgentRunner,
+} from './lib/agent-runner.mjs';
 import {
   auditFile,
   chdirRoot,
@@ -15,7 +19,7 @@ import {
   PROMPTS,
   runCmd,
   WORK,
-} from './lib.mjs';
+} from './lib/burndown-core.mjs';
 
 chdirRoot();
 

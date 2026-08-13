@@ -1,4 +1,4 @@
-// burndown.mjs — drive the audit burndown with one isolated agent session per
+// run-burndown.mjs — drive the audit burndown with one isolated agent session per
 // role per issue (verify → implement → adversarial review → fix). Claude Code
 // and Codex are runner backends; this script is the orchestrator. State lives
 // in docs/AUDIT.md and git, so a crash costs one iteration, not the run.
@@ -21,7 +21,7 @@
 // * A run is a `createBurndownRun()` instance holding the counters, each of the
 //   loop's steps is a named helper, and nothing executes on import (`isMain`),
 //   so the sequencing itself is exercised by
-//   tools/audit-burndown/tests/audit-burndown-run.test.mjs rather than only in production.
+//   tools/audit-burndown/tests/run-burndown.test.mjs rather than only in production.
 
 import {
   appendFileSync,
@@ -34,7 +34,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { hasCommand, isMain, sleep } from '../lib/proc.mjs';
-import { agentRunnerDefaults, normalizeAgentRunner, runAgentStep } from './agent-runner.mjs';
+import { agentRunnerDefaults, normalizeAgentRunner, runAgentStep } from './lib/agent-runner.mjs';
 import {
   auditFile,
   briefIsStale,
@@ -73,8 +73,8 @@ import {
   shellOk,
   shellResult,
   WORK,
-} from './lib.mjs';
-import { findingProblem } from './comment.mjs';
+} from './lib/burndown-core.mjs';
+import { findingProblem } from './lib/comment-sync.mjs';
 
 // The two files the roles and the driver hand each other. The driver writes the
 // issue; the verifier writes the brief and the implementer reads it.
@@ -188,7 +188,7 @@ export function readConfig(env = process.env) {
 
 // Everything the run does to the world outside its own counters: exiting,
 // git, the shell, the agent runner, the log. Production wires the real
-// implementations in main(); tools/audit-burndown/tests/audit-burndown-run.test.mjs
+// implementations in main(); tools/audit-burndown/tests/run-burndown.test.mjs
 // substitutes recorders, which is why the run takes them as an argument
 // instead of reaching for the module imports directly.
 export function createEffects(config) {
@@ -623,7 +623,7 @@ export function createBurndownRun({ config, effects }) {
   }
 
   // Record how this run was launched, while the process that knows still exists.
-  // Nothing else can recover it: overnight.mjs launches via `env VAR=… node …`, and
+  // Nothing else can recover it: launch-overnight.mjs launches via `env VAR=… node …`, and
   // `env` execs node, so the overrides live in the environment and never reach argv,
   // leaving nothing for `ps` to scrape. This file is what
   // the Claude compaction hook and runner-specific durable checkpoints read, and

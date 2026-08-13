@@ -1,16 +1,22 @@
-// pop.mjs — deterministic surgery on docs/AUDIT.md (see lib.mjs for why no
+// pop-finding.mjs — deterministic surgery on docs/AUDIT.md (see burndown-core.mjs for why no
 // agent touches that file directly).
 //
-//   node tools/audit-burndown/pop.mjs            print the first entry
-//   node tools/audit-burndown/pop.mjs --delete   print it AND remove it
-//   node tools/audit-burndown/pop.mjs --count    print how many entries remain
-//   node tools/audit-burndown/pop.mjs --peek N   print the Nth entry, no removal
+//   node tools/audit-burndown/pop-finding.mjs            print the first entry
+//   node tools/audit-burndown/pop-finding.mjs --delete   print it AND remove it
+//   node tools/audit-burndown/pop-finding.mjs --count    print how many entries remain
+//   node tools/audit-burndown/pop-finding.mjs --peek N   print the Nth entry, no removal
 //
 // Override the target file with AUDIT_FILE=path.
 // Exit codes: 0 ok, 2 bad usage / missing file, 3 backlog empty.
 
 import { existsSync } from 'node:fs';
-import { auditFile, chdirRoot, countEntries, deleteFirstEntry, getEntry } from './lib.mjs';
+import {
+  auditFile,
+  chdirRoot,
+  countEntries,
+  deleteFirstEntry,
+  getEntry,
+} from './lib/burndown-core.mjs';
 
 chdirRoot();
 

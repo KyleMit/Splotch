@@ -1,10 +1,10 @@
-// cost.mjs — what has this burndown consumed, and what will the full run consume?
+// show-cost.mjs — what has this burndown consumed, and what will the full run consume?
 // Reads Claude JSON envelopes and Codex JSONL event streams from .audit-work/logs/.
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseSavedAgentOutput } from './agent-runner.mjs';
-import { chdirRoot, countEntries, LOGS } from './lib.mjs';
+import { parseSavedAgentOutput } from './lib/agent-runner.mjs';
+import { chdirRoot, countEntries, LOGS } from './lib/burndown-core.mjs';
 
 chdirRoot();
 

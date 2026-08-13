@@ -1,4 +1,4 @@
-// overnight.mjs — launch an unattended burndown that outlives the shell that
+// launch-overnight.mjs — launch an unattended burndown that outlives the shell that
 // started it.
 //
 //   npm run audit:burndown:overnight -- 600
@@ -10,13 +10,20 @@
 // There is no sleep assertion and no tmux here. This runs in a cloud container
 // that does not sleep, and what actually ends a run early is the container being
 // reclaimed for inactivity, which no local wakelock addresses. What protects the
-// work is pushing every finding (PUSH_EVERY in burndown.mjs), not keeping this
+// work is pushing every finding (PUSH_EVERY in run-burndown.mjs), not keeping this
 // process alive.
 
 import { spawn, spawnSync } from 'node:child_process';
 import { openSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { chdirRoot, ensureWorkDirs, LAUNCH_KNOBS, LOGS, shellQuote, WORK } from './lib.mjs';
+import {
+  chdirRoot,
+  ensureWorkDirs,
+  LAUNCH_KNOBS,
+  LOGS,
+  shellQuote,
+  WORK,
+} from './lib/burndown-core.mjs';
 
 const count = process.argv[2] ?? '600';
 if (!/^\d+$/.test(count) || Number(count) < 1) {
@@ -36,7 +43,7 @@ ensureWorkDirs();
 // residue. An operator can still force RESUME=0 to keep the strict dirty-tree halt.
 process.env.RESUME = process.env.RESUME ?? '1';
 
-const preflight = spawnSync(process.execPath, ['tools/audit-burndown/preflight.mjs'], {
+const preflight = spawnSync(process.execPath, ['tools/audit-burndown/check-preflight.mjs'], {
   stdio: 'inherit',
 });
 if (preflight.status !== 0) {
@@ -49,13 +56,13 @@ rmSync(join(WORK, 'STOP'), { force: true });
 // Forward the burndown's env knobs into the job command itself, not just this
 // process's env: the job goes through a shell, and baking the assignments in
 // keeps an override working regardless of how the child's environment is set up.
-// The list lives in lib.mjs because burndown.mjs needs the same one.
+// The list lives in burndown-core.mjs because run-burndown.mjs needs the same one.
 const forwarded = LAUNCH_KNOBS.filter((knob) => process.env[knob] != null).map(
   (knob) => `${knob}=${shellQuote(process.env[knob])}`
 );
 
 const envPrefix = [`MAX_ISSUES=${shellQuote(count)}`, ...forwarded].join(' ');
-const cmd = `env ${envPrefix} node tools/audit-burndown/burndown.mjs`;
+const cmd = `env ${envPrefix} node tools/audit-burndown/run-burndown.mjs`;
 
 const out = openSync(join(LOGS, 'overnight.log'), 'a');
 const child = spawn(cmd, { shell: true, detached: true, stdio: ['ignore', out, out] });

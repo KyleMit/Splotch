@@ -6,7 +6,7 @@
 import { spawnSync } from 'node:child_process';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT } from '../lib/proc.mjs';
+import { ROOT } from '../../lib/proc.mjs';
 
 export { ROOT };
 export const WORK = '.audit-work';
@@ -14,7 +14,7 @@ export const LOGS = join(WORK, 'logs');
 export const PROMPTS = 'tools/audit-burndown/prompts';
 
 // What separates a dropped finding from a real fix in .audit-work/completed.log.
-// burndown.mjs writes it and status.mjs splits on it, so the two cannot drift:
+// run-burndown.mjs writes it and show-status.mjs splits on it, so the two cannot drift:
 // counting drops as fixes overstates the run in the flattering direction, which
 // is the number a supervising agent copies into the AUDIT-LOG closeout row.
 export const INVALID_DROP_MARKER = '  [invalid]  ';
@@ -180,8 +180,8 @@ export function removeNewUntrackedPaths(baseline, current, removePath) {
 }
 
 // Every env knob that changes how a run behaves, and is therefore part of that
-// run's relaunch command. ONE list with two consumers, deliberately: overnight.mjs
-// bakes these into the detached job's command line, and burndown.mjs records them
+// run's relaunch command. ONE list with two consumers, deliberately: launch-overnight.mjs
+// bakes these into the detached job's command line, and run-burndown.mjs records them
 // to .audit-work/launch-command so a later session can recover them. Keeping two
 // lists in sync by hand already failed twice — the EFFORT_* knobs and AUDIT_FILE
 // were added elsewhere and missed here. An omission fails silently and late:
@@ -218,7 +218,7 @@ export const LAUNCH_KNOBS = [
 
 export const shellQuote = (value) => `'${String(value).replace(/'/g, `'\\''`)}'`;
 
-// The canary default, shared with burndown.mjs so the recorded relaunch command
+// The canary default, shared with run-burndown.mjs so the recorded relaunch command
 // can never disagree with the run it claims to reproduce: an unset MAX_ISSUES
 // means a five-accepted-fix ceiling, and a command reading `-- 600` would relaunch
 // a run 120× longer under a heading promising "this exact run". Codex canaries add
@@ -231,7 +231,7 @@ export function reachedHandledLimit({ fixed = 0, dropped = 0, deferred = 0, maxH
 }
 
 // The command that relaunches this exact run, reconstructed from the driver's own
-// environment. It cannot be recovered from the process list: overnight.mjs launches
+// environment. It cannot be recovered from the process list: launch-overnight.mjs launches
 // via `env VAR=… node …`, and `env` EXECS node, so the assignments live in the
 // environment and never appear in argv — nothing retains the string, so scraping
 // `ps` recovers nothing at all. The driver passes its own already-resolved
@@ -406,7 +406,7 @@ export function commandFailureOutput(result, maxLength = 6000) {
 // until the next entry heading or the next `## ` section heading. No agent
 // should ever read or edit AUDIT.md directly — at ~19k lines it blows out a
 // context window, and hundreds of sequential Edit calls against one file is a
-// corruption risk. These helpers (via pop.mjs) are the only thing touching it.
+// corruption risk. These helpers (via pop-finding.mjs) are the only thing touching it.
 
 export const isEntryStart = (line) => /^### \[/.test(line);
 
@@ -465,7 +465,7 @@ export function deleteFirstEntry(file = auditFile()) {
 // — and a role can invalidate that mid-finding. On the 2026-07-25 canary the
 // reviewer rejected three of five fixes for "not deleting the AUDIT.md entry"
 // (it saw the excision in neighbouring burndown commits and read its absence as
-// an omission), the implementer complied by running `pop.mjs --delete`, and the
+// an omission), the implementer complied by running `pop-finding.mjs --delete`, and the
 // driver's own positional delete then removed what had become the first entry:
 // the NEXT, never-verified finding, silently, inside an unrelated fix commit.
 // Keying on identity makes that whole class impossible — a duplicated delete is

@@ -7,7 +7,7 @@ import {
   codexRoleInstructions,
   normalizeAgentRunner,
   parseSavedAgentOutput,
-} from '../agent-runner.mjs';
+} from '../lib/agent-runner.mjs';
 
 describe('agent runner selection', () => {
   it('keeps Claude as the backward-compatible default', () => {

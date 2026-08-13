@@ -99,9 +99,9 @@ npm run test:tools
 
 Configured in `tools/vitest.config.mjs` (Node env), tests in `tools/tests/`. Covers repo automation
 helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md` surgery in
-`tools/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal, dprint-clean seams; see
-the `burn-down-audits` skill) and complete runner-specific skill replacement in
-`tools/ruler/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
+`tools/audit-burndown/lib/burndown-core.mjs` (entry-boundary parsing, pure block removal,
+dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
+in `tools/ruler/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
 shared-source collision guards). The latter covers generic Ruler-managed forks; packages listed in
 `tools/ruler/direct-provider-skills.mjs` are maintained directly in their declared provider trees
 and excluded from Ruler drift ownership. `tools/ruler/ruler-apply.mjs` snapshots and restores every

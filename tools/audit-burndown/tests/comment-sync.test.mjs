@@ -1,10 +1,15 @@
-// Locks the per-commit PR comment rendering in tools/audit-burndown/comment.mjs.
+// Locks the per-commit PR comment rendering in tools/audit-burndown/lib/comment-sync.mjs.
 // These comments are posted unattended during a burndown, so a regression here
 // silently ships malformed history onto the PR (or, via an unescaped #<n>, pings
 // unrelated issues/PRs).
 
 import { describe, expect, it } from 'vitest';
-import { commitCommentBody, escapeHashRefs, findingProblem, renderFix } from '../comment.mjs';
+import {
+  commitCommentBody,
+  escapeHashRefs,
+  findingProblem,
+  renderFix,
+} from '../lib/comment-sync.mjs';
 
 const FINDING = [
   '### [P3][duplication] Extract the shared glaze stamp',

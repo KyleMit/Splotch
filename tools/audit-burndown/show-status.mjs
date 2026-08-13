@@ -1,4 +1,4 @@
-// status.mjs — where does the burndown stand right now?
+// show-status.mjs — where does the burndown stand right now?
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,7 +12,7 @@ import {
   LOGS,
   runCmd,
   WORK,
-} from './lib.mjs';
+} from './lib/burndown-core.mjs';
 
 chdirRoot();
 
@@ -43,7 +43,10 @@ if (total > 0) {
   console.log(`progress   [${'#'.repeat(bars)}${'.'.repeat(33 - bars)}] ${pct}%`);
 }
 
-const pid = (runCmd('pgrep', ['-f', 'audit-burndown/burndown.mjs']).stdout ?? '').split('\n', 1)[0];
+const pid = (runCmd('pgrep', ['-f', 'audit-burndown/run-burndown.mjs']).stdout ?? '').split(
+  '\n',
+  1
+)[0];
 if (pid) console.log(`state      RUNNING (pid ${pid})`);
 else if (existsSync(join(WORK, 'STOP'))) {
   console.log(`state      STOPPED (STOP file present — rm ${WORK}/STOP to resume)`);

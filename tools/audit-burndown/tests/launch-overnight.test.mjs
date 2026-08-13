@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-const SCRIPT = join(import.meta.dirname, '..', 'overnight.mjs');
+const SCRIPT = join(import.meta.dirname, '..', 'launch-overnight.mjs');
 
 describe('an invalid finding count', () => {
   it.each(['6OO', '0', '1; echo detached'])('exits 2 before launching for %j', (count) => {
