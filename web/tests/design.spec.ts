@@ -67,9 +67,9 @@ test.describe('system-dark first load', () => {
 // must not cost is the option's *name*: the visible text is where a bare segment
 // gets one, so hiding it without moving the name onto the control leaves two
 // unlabelled buttons. These are the widths either side of the label threshold.
-for (const [device, viewport] of [
-  ['an iPhone 13 mini', { width: 375, height: 812 }],
-  ['an iPhone 16 Pro Max', { width: 440, height: 956 }],
+for (const { device, viewport, pageLabel } of [
+  { device: 'an iPhone 13 mini', viewport: { width: 375, height: 812 }, pageLabel: 'hidden' },
+  { device: 'an iPhone 16 Pro Max', viewport: { width: 440, height: 956 }, pageLabel: 'shown' },
 ] as const) {
   test(`the header theme options keep their names with the labels collapsed on ${device}`, async ({
     page,
@@ -90,12 +90,17 @@ for (const [device, viewport] of [
       expect(box.height).toBeGreaterThanOrEqual(44);
     }
 
-    // Whichever of the two states the label is in, it is never a clipped one:
-    // shown means shown whole.
+    // Which state the label is in is the case's own assertion, not a branch on
+    // what it happens to be: reading it off the page would let 440 pass by
+    // hiding the label, which is the half of the breakpoint this case exists
+    // to hold. Shown then means shown whole — never an ellipsized one.
     const label = page.locator('.header-label');
-    if (await label.isVisible()) {
+    if (pageLabel === 'shown') {
+      await expect(label).toBeVisible();
       const clipped = await label.evaluate((el) => el.scrollWidth > el.clientWidth);
       expect(clipped).toBe(false);
+    } else {
+      await expect(label).toBeHidden();
     }
   });
 }
