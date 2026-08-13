@@ -201,7 +201,7 @@
     display: flex;
     flex-direction: column;
     margin-top: var(--space-5);
-    gap: 6px;
+    gap: var(--space-2);
     padding: 0 var(--space-5);
   }
 
