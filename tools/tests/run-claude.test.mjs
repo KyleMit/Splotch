@@ -441,6 +441,39 @@ describe('claude stream progress', () => {
       }
     }
   );
+
+  it(
+    'escalates to group SIGKILL when a descendant ignores SIGTERM',
+    { timeout: 15_000 },
+    async () => {
+      const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-sigkill-'));
+      try {
+        const script = [
+          `const { spawn } = require('node:child_process');`,
+          `const grandchild = spawn(process.execPath, ['-e', 'process.on("SIGTERM", () => {}); setTimeout(() => {}, 60000)'], { stdio: 'ignore' });`,
+          `console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: String(grandchild.pid), model: 'x' }));`,
+          `setTimeout(() => {}, 60000);`,
+        ].join('\n');
+        const progress = [];
+        await expect(
+          runClaudeStreaming(
+            {
+              command: process.execPath,
+              args: ['-e', script],
+              logPath: join(temporaryRoot, 'sigkill.ndjson'),
+              onProgress: (line) => progress.push(line),
+            },
+            300,
+            500
+          )
+        ).rejects.toThrow('process group was terminated');
+        const grandchildPid = Number(progress[0].match(/session (\d+) model/)[1]);
+        expect(await waitForProcessExit(grandchildPid)).toBe(true);
+      } finally {
+        rmSync(temporaryRoot, { recursive: true, force: true });
+      }
+    }
+  );
 });
 
 describe('trusted Claude PR reviewer', () => {

@@ -8,6 +8,7 @@ export const STREAM_STALL_TIMEOUT_MS = 10 * 60 * 1000;
 // A stalled tree that ignores SIGTERM (a wedged test runner, an uninterruptible child) gets this
 // long to exit before the whole process group is SIGKILLed.
 const STALL_SIGKILL_GRACE_MS = 10 * 1000;
+const GROUP_LIVENESS_POLL_MS = 100;
 const PROGRESS_TEXT_MAX_CHARS = 160;
 const STDERR_TAIL_MAX_CHARS = 4096;
 // The raw stream log can embed whole tool results (file contents, command output) and lives in a
@@ -62,10 +63,14 @@ export function renderProgressEvent(event, now = new Date()) {
   return lines.map((line) => `[${stamp}] ${line}`).join('\n');
 }
 
-// `stallTimeoutMs` stays injectable so tests can trip the watchdog without waiting minutes.
+const delay = (ms) => new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
+
+// `stallTimeoutMs` and `sigkillGraceMs` stay injectable so tests can trip the watchdog and the
+// SIGKILL escalation without waiting minutes.
 export function runClaudeStreaming(
   { command, args, cwd, env, logPath, onProgress },
-  stallTimeoutMs = STREAM_STALL_TIMEOUT_MS
+  stallTimeoutMs = STREAM_STALL_TIMEOUT_MS,
+  sigkillGraceMs = STALL_SIGKILL_GRACE_MS
 ) {
   return new Promise((resolvePromise, rejectPromise) => {
     // detached puts Claude at the head of its own process group so the watchdog can terminate the
@@ -81,8 +86,17 @@ export function runClaudeStreaming(
     let lastEvent = 'none';
     let resultEvent;
     let stalled = false;
-    let killTimer;
+    let logFailure;
+    let termination;
 
+    const groupAlive = () => {
+      try {
+        process.kill(-child.pid, 0);
+        return true;
+      } catch {
+        return false;
+      }
+    };
     const signalProcessGroup = (signal) => {
       try {
         process.kill(-child.pid, signal);
@@ -90,18 +104,32 @@ export function runClaudeStreaming(
         child.kill(signal);
       }
     };
+    // The one termination sequence both failure paths share: SIGTERM, a bounded grace polling for
+    // the whole group to exit, then group SIGKILL and a final confirmation poll. Memoized so the
+    // leader closing early cannot cancel a pending escalation, and awaited before the promise
+    // settles so no descendant survives past the reported termination.
+    const terminateGroup = () => {
+      termination ??= (async () => {
+        signalProcessGroup('SIGTERM');
+        const graceDeadline = Date.now() + sigkillGraceMs;
+        while (groupAlive() && Date.now() < graceDeadline) await delay(GROUP_LIVENESS_POLL_MS);
+        if (!groupAlive()) return;
+        signalProcessGroup('SIGKILL');
+        const killDeadline = Date.now() + sigkillGraceMs;
+        while (groupAlive() && Date.now() < killDeadline) await delay(GROUP_LIVENESS_POLL_MS);
+      })();
+      return termination;
+    };
     const terminateStalledChild = () => {
       stalled = true;
-      signalProcessGroup('SIGTERM');
-      killTimer = setTimeout(() => signalProcessGroup('SIGKILL'), STALL_SIGKILL_GRACE_MS);
+      terminateGroup();
     };
     let stallTimer = setTimeout(terminateStalledChild, stallTimeoutMs);
 
     log.on('error', (error) => {
       clearTimeout(stallTimer);
-      clearTimeout(killTimer);
-      signalProcessGroup('SIGTERM');
-      rejectPromise(new Error(`stream log ${logPath} failed: ${error.message}`));
+      logFailure ??= new Error(`stream log ${logPath} failed: ${error.message}`);
+      terminateGroup();
     });
 
     child.stderr.on('data', (chunk) => {
@@ -126,30 +154,35 @@ export function runClaudeStreaming(
 
     child.on('error', (error) => {
       clearTimeout(stallTimer);
-      clearTimeout(killTimer);
       log.end();
       rejectPromise(error);
     });
 
     child.on('close', (code) => {
       clearTimeout(stallTimer);
-      clearTimeout(killTimer);
       log.end();
-      if (stalled) {
-        rejectPromise(
-          new Error(
-            `claude emitted no stream events for ${Math.round(stallTimeoutMs / 1000)}s and was terminated; last event: ${lastEvent}; full log: ${logPath}`
-          )
-        );
-      } else if (code !== 0) {
-        rejectPromise(
-          new Error(`claude exited ${code ?? 'without a status'}: ${stderrTail.trim()}`)
-        );
-      } else if (!resultEvent) {
-        rejectPromise(new Error(`claude exited without a result event; full log: ${logPath}`));
-      } else {
-        resolvePromise(resultEvent);
-      }
+      const settle = () => {
+        if (logFailure) {
+          rejectPromise(logFailure);
+        } else if (stalled) {
+          rejectPromise(
+            new Error(
+              `claude emitted no stream events for ${Math.round(stallTimeoutMs / 1000)}s and its process group was terminated; last event: ${lastEvent}; full log: ${logPath}`
+            )
+          );
+        } else if (code !== 0) {
+          rejectPromise(
+            new Error(`claude exited ${code ?? 'without a status'}: ${stderrTail.trim()}`)
+          );
+        } else if (!resultEvent) {
+          rejectPromise(new Error(`claude exited without a result event; full log: ${logPath}`));
+        } else {
+          resolvePromise(resultEvent);
+        }
+      };
+      // The leader closing does not end a termination in flight: settling waits until the whole
+      // group is confirmed gone or SIGKILLed, so cleanup never starts under surviving descendants.
+      (termination ?? Promise.resolve()).then(settle);
     });
   });
 }
