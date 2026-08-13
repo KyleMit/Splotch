@@ -41,6 +41,6 @@ packet against the repo**, flag what's stale or missing, and only then proceed. 
    git commit -m "Consume handoff for <topic>"
    ```
    The packet's content now lives in this session's context; if substantial work remains when you
-   stop, write a fresh handoff with `/create-handoff`.
+   stop, write a fresh handoff with the `create-handoff` skill.
 
 5. **Proceed** with the packet's **next 3 steps**, adjusted for anything you marked stale.

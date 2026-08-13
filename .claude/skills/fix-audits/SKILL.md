@@ -7,7 +7,7 @@ description: Work through every open type:audit GitHub issue autonomously on a d
 
 Work through **every** open GitHub issue labeled `type:audit` autonomously on a dedicated branch —
 one commit per issue — without stopping to ask the user anything **mid-run**. The `type:audit`
-issues are the durable audit backlog; `/vet-audits` files them from validated findings (see
+issues are the durable audit backlog; `vet-audits` files them from validated findings (see
 `.claude/audit-conventions.md`). This skill no longer reads `docs/AUDIT.md`.
 
 The one exception to the no-prompts rule is a single upfront question: whether to open a pull
@@ -22,12 +22,12 @@ The `type:audit` backlog mixes two shapes of issue, and "validate → fix → ve
 different for each. Read the issue's labels and body (which name the audit that surfaced it) to tell
 them apart before you delegate:
 
-* **Product-code issues** — surfaced by `/code-audit`, `/extract-audit`, `lighthouse-audit`
-  (typically carry `type:perf`/`type:bug`/`type:chore` + an `area:*`). The fix changes app source
-  under `web/src/` (or a build / perf path). Validate empirically (a failing test, a profile, a
-  query) and verify with `npm run check` + the tests covering the touched files, exactly as the
-  per-item loop describes.
-* **Tooling issues** — surfaced by `/session-audit` and any issue whose fix is a change to Splotch's
+* **Product-code issues** — surfaced by `code-audit`, `extract-audit`, `lighthouse-audit` (typically
+  carry `type:perf`/`type:bug`/`type:chore` + an `area:*`). The fix changes app source under
+  `web/src/` (or a build / perf path). Validate empirically (a failing test, a profile, a query) and
+  verify with `npm run check` + the tests covering the touched files, exactly as the per-item loop
+  describes.
+* **Tooling issues** — surfaced by `session-audit` and any issue whose fix is a change to Splotch's
   **Claude Code tooling and cloud-session workflow** rather than to production code: a skill under
   `.ruler/skills/`, a path-scoped rule in `.claude/rules/`, an instruction note in the `.ruler/`
   sources (regenerate `CLAUDE.md`/`AGENTS.md` with `npm run ruler:apply`, ADR-0058), a `docs/*`
@@ -38,7 +38,7 @@ them apart before you delegate:
 
 The two classes can coexist in one sweep; decide per issue, not per run.
 
-A `needs-triage` label on a `type:audit` issue means `/vet-audits` judged the finding valid but
+A `needs-triage` label on a `type:audit` issue means `vet-audits` judged the finding valid but
 couldn't settle the fix approach. Still attempt it — but if the subagent can't reach a confident
 approach or the issue needs a product/user decision, that's a **Skip**: leave the issue open with a
 comment (per the per-item loop), don't force a shaky fix.

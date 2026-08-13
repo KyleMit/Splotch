@@ -1,25 +1,25 @@
 ---
 name: publish-artifacts
-description: Attach the built .aab/.ipa to the GitHub Release for a version, verifying each artifact's embedded version first. Use after /release then /build, or whenever a GitHub Release is missing its binaries or has the wrong ones attached.
+description: Attach the built .aab/.ipa to the GitHub Release for a version, verifying each artifact's embedded version first. Use after the release and build skills, or whenever a GitHub Release is missing its binaries or has the wrong ones attached.
 ---
 
 You are attaching Splotch's **built store artifacts** to an existing GitHub Release. This is the
 third and last phase of shipping:
 
-| Phase      | Command              | Produces                                                |
-| ---------- | -------------------- | ------------------------------------------------------- |
-| 1. Release | `/release`           | version bump, tag, notes, GitHub Release (no artifacts) |
-| 2. Build   | `/build`             | the signed `.aab` / `.ipa` for that version             |
-| 3. Publish | `/publish-artifacts` | those artifacts attached to the release (you are here)  |
+| Phase      | Skill               | Produces                                                |
+| ---------- | ------------------- | ------------------------------------------------------- |
+| 1. Release | `release`           | version bump, tag, notes, GitHub Release (no artifacts) |
+| 2. Build   | `build`             | the signed `.aab` / `.ipa` for that version             |
+| 3. Publish | `publish-artifacts` | those artifacts attached to the release (you are here)  |
 
 **Why this is a separate phase.** A build can only carry a version that is already committed, so at
-the moment `/release` creates the GitHub Release there is no correct artifact in existence — only
+the moment `release` creates the GitHub Release there is no correct artifact in existence — only
 whatever an earlier build left behind. `release.mjs` used to attach that file, which is how v1.4.0
 shipped a 1.2.0 bundle. Splitting the phases is what makes the correct artifact possible; verifying
 the version is what makes the wrong one impossible (ADR-0077).
 
-Optional argument: a version (e.g. `/publish-artifacts 1.4.0`). If omitted it uses the current
-`package.json` version, which is the one `/release` last bumped to.
+Optional argument: a version (e.g. `1.4.0`). If omitted it uses the current `package.json` version,
+which is the one `release` last bumped to.
 
 ## Steps
 
@@ -38,14 +38,14 @@ Optional argument: a version (e.g. `/publish-artifacts 1.4.0`). If omitted it us
 
    * **A stale artifact** (version mismatch) — the build output directory still holds an older
      version's file. Tell the user which artifact and which version, and that the fix is to run
-     `/build` for this version. Never delete the stale file and upload the other one silently, and
+     `build` for this version. Never delete the stale file and upload the other one silently, and
      never pass a flag to skip the check.
-   * **Nothing built** — no artifacts on disk at all. Point at `/build`.
+   * **Nothing built** — no artifacts on disk at all. Point at `build`.
    * **Only one platform built** — normal (iOS needs macOS + Xcode). Use `--only=android` /
      `--only=ios` to publish just the one that is ready, and say which platform is still missing so
      it is a deliberate choice rather than an oversight.
-   * **No GitHub Release for the version** — `/release` has not run, or ran with `--no-publish`.
-     Point at `/release`; do not create the release here.
+   * **No GitHub Release for the version** — `release` has not run, or ran with `--no-publish`.
+     Point at `release`; do not create the release here.
 
 4. **Upload.** Once the dry run is clean, run `npm run release:publish` (adding `--only=…` if only
    one platform is ready). It refuses on mismatch and uploads with `--clobber`.

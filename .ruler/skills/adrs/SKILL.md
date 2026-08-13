@@ -10,5 +10,5 @@ the only reliable map of what has already been decided.
 
 * Read only the ADR(s) relevant to the decision at hand — never all of them — and cite the ADR
   numbers in your response.
-* If the decision space isn't covered and a significant choice is being made, document it with
-  `/create-adr`.
+* If the decision space isn't covered and a significant choice is being made, document it with the
+  `create-adr` skill.

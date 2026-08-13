@@ -8,7 +8,7 @@ source of truth; everything else (in-app About tab, store changelogs, GitHub rel
 numbers) is generated from it by `tools/release/cut-release.mjs` and
 `tools/release/gen-release-notes.mjs`. Read `releases/README.md` if you need the format.
 
-Optional argument: a target version (e.g. `/release 1.2.0`). If omitted, you will propose one.
+Optional argument: a target version (e.g. `1.2.0`). If omitted, you will propose one.
 
 Follow these steps:
 
@@ -65,12 +65,12 @@ Follow these steps:
 
 8. **Point to the next steps** — releasing is the first of three phases:
 
-   | Phase             | Command              | Produces                                       |
-   | ----------------- | -------------------- | ---------------------------------------------- |
-   | 1. Release (done) | `/release`           | version bump, tag, notes, empty GitHub Release |
-   | 2. Build          | `/build`             | the signed `.aab` / `.ipa` for that version    |
-   | 3. Publish        | `/publish-artifacts` | those artifacts attached to the release        |
+   | Phase             | Skill               | Produces                                       |
+   | ----------------- | ------------------- | ---------------------------------------------- |
+   | 1. Release (done) | `release`           | version bump, tag, notes, empty GitHub Release |
+   | 2. Build          | `build`             | the signed `.aab` / `.ipa` for that version    |
+   | 3. Publish        | `publish-artifacts` | those artifacts attached to the release        |
 
-   Tell the user to run **`/build`** next, then **`/publish-artifacts`**. The publish step verifies
+   Tell the user to run **`build`** next, then **`publish-artifacts`**. The publish step verifies
    each artifact's embedded version against the release and refuses a mismatch, so the stale-upload
    failure cannot recur silently.

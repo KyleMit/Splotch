@@ -15,7 +15,7 @@ maintenance health and recommending keep/replace per package.
 version bumps, no installs beyond what's already on disk. Its sibling `dependency-update-audit` is
 the Dependabot-like workflow that *applies* upgrades; this one decides whether a dependency
 *deserves its place at all*. If an entry here concludes a package should merely be updated, that's a
-hand-off to `/dependency-update-audit`, not work for this run.
+hand-off to `dependency-update-audit`, not work for this run.
 
 There is **one root `package.json`** for the whole repo (web + Capacitor native); run all npm
 tooling from the repo root. **Direct** dependencies are the entries in its `dependencies` /
@@ -105,7 +105,7 @@ release is "slowing," an archived repo with an old release is at least `investig
 
 **Version drift is a currency signal, not an action for this skill.** When the locked version trails
 the latest by a major (or sits several minors behind for months), note it in `Concerns` — it feeds
-the verdict and is explicitly handed to `/dependency-update-audit`. Do not silently write
+the verdict and is explicitly handed to `dependency-update-audit`. Do not silently write
 `Concerns: none` on a package that is a full major behind, and do not apply the bump here.
 
 For security/ecosystem concerns, check `npm audit --json` (map advisories to the package),
@@ -166,8 +166,8 @@ not `npm view`. Three kinds:
 
 Assign the same verdicts (keep/monitor/investigate/replace). Typical monitor triggers here: unpinned
 `npx`/`curl | bash` installs (Maestro), a third-party action a major behind, an unpinned Xcode. A
-version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to
-`/dependency-update-audit`, same as an npm minor.
+version-bump-only finding (e.g. an action `@v5` → `@v6`) is a hand-off to `dependency-update-audit`,
+same as an npm minor.
 
 ## Phase 5 — Write the report
 
@@ -190,7 +190,7 @@ File header (create the file if missing — its absence just means the first aud
 > `dependency-health-audit` skill (see `.claude/audit-conventions.md`). Refreshed in place — compare
 > runs with `git log -p docs/DEPENDENCIES.md`. External facts are snapshots; each carries the date
 > it was checked. This file records analysis only — upgrades are applied by
-> `/dependency-update-audit`, and replacements are tracked as GitHub issues.
+> `dependency-update-audit`, and replacements are tracked as GitHub issues.
 
 **Last refresh:** YYYY-MM-DD at `<short-sha>` · NN prod + NN dev direct · NNNN total installed
 ```

@@ -126,13 +126,13 @@ becomes private). The normal `GITHUB_TOKEN` cannot update a user-owned project.
 Splotch's audit skills feed the tracker, not a standing Markdown backlog (see
 `.claude/audit-conventions.md`):
 
-1. **Producers** (`/code-audit`, `/extract-audit`, `lighthouse-audit`, `/session-audit`) write raw
+1. **Producers** (`code-audit`, `extract-audit`, `lighthouse-audit`, `session-audit`) write raw
    findings to a **transient** `docs/AUDIT.md`.
-2. **`/vet-audits`** adversarially validates each finding and drains the file: it drops the ones
-   that don't hold up and **files each survivor as a GitHub issue** labeled `type:audit` plus the
+2. **`vet-audits`** adversarially validates each finding and drains the file: it drops the ones that
+   don't hold up and **files each survivor as a GitHub issue** labeled `type:audit` plus the
    applicable `area:*`/`type:*`. A finding that's valid but whose fix approach is unclear also gets
    `needs-triage`. Once drained, `docs/AUDIT.md` is deleted.
-3. **`/fix-audits`** queries open `type:audit` issues and burns them down — one commit per issue,
+3. **`fix-audits`** queries open `type:audit` issues and burns them down — one commit per issue,
    referencing it so it closes on merge.
 
 So `docs/AUDIT.md` is a staging area between a producer and `vet-audits`, never the durable backlog.

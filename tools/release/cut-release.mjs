@@ -1,5 +1,5 @@
 // Cuts a release from releases/<version>.md (which must already exist — the
-// /release slash command writes it). This is the deterministic, scriptable half
+// release skill writes it). This is the deterministic, scriptable half
 // of the workflow; the AI-drafting + review half lives in .claude/skills/release/SKILL.md.
 //
 //   node tools/release/cut-release.mjs 1.2.0              full: bump, generate, commit, tag, push, GitHub release
@@ -7,8 +7,8 @@
 //   node tools/release/cut-release.mjs 1.2.0 --dry-run    bump + generate files only, no git at all
 //
 // It never attaches store artifacts: the .aab/.ipa for this version cannot exist
-// until after this script bumps and commits the version. Building them is /build
-// and attaching them is tools/release/publish-release-artifacts.mjs (ADR-0077).
+// until after this script bumps and commits the version. Building them is the build
+// skill and attaching them is tools/release/publish-release-artifacts.mjs (ADR-0077).
 //
 // Native version numbers are set directly in the Android/iOS project files by
 // tools/release/lib/native-version.mjs so the two stay in sync; package.json is the
@@ -92,7 +92,7 @@ export const renderReleaseFile = (frontmatter, body) =>
 function releasePath(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
-    fail(`Missing ${file}\nCreate the notes first (or run the /release command), then re-run.`);
+    fail(`Missing ${file}\nCreate the notes first (or run the release skill), then re-run.`);
   }
   return file;
 }
@@ -163,8 +163,8 @@ function publish(version, body) {
   // bumped to has to be committed before an .aab/.ipa carrying it can be built,
   // so any artifact present now is necessarily from an older version — attaching
   // whatever sat in the build directory is how v1.4.0 shipped a 1.2.0 bundle.
-  // `npm run release:publish` attaches them after /build, verifying each one's
-  // embedded version against this release first (ADR-0077).
+  // `npm run release:publish` attaches them after the build skill, verifying each
+  // one's embedded version against this release first (ADR-0077).
   run('gh', [
     'release',
     'create',
@@ -180,7 +180,7 @@ function publish(version, body) {
     `\n✓ Released v${version}: https://github.com/KyleMit/Splotch/releases/tag/v${version}`
   );
   console.log('\nNext: build the store artifacts for this version, then attach them:');
-  console.log('  /build                 (or npm run android:bundle / npm run ios:ipa)');
+  console.log('  the build skill           (or npm run android:bundle / npm run ios:ipa)');
   console.log(`  npm run release:publish   attaches them to v${version}`);
 }
 
