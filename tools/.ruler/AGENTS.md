@@ -151,7 +151,12 @@ and on a `tools/lib/` module that reaches back into a capability folder.
   split: a skill named with Claude Code's `/name` or Codex's `$name` outside the tree that runner
   owns. Its vocabulary is the registered skill names, so a rename needs no edit here; what it does
   carry are the deliberate exemptions — the two names that are also live app routes (`api`,
-  `design`), and the runner-specific and historical paths.
+  `design`), and the runner-specific and historical paths. In a `.mjs` it matches over a copy with
+  every code region blanked to spaces, because the sigil only ever means a skill inside a string or
+  comment and everywhere else means a regex literal or a division. Narrowing the match instead —
+  demanding whitespace before the sigil — is the tempting shortcut, and it silently drops every
+  message that opens the name with punctuation instead, which is how the release tooling's
+  parenthesized errors read before this change.
 * The app-driving generators — `gen:store-assets` (`tools/marketing-assets/gen-store-assets.mjs`),
   `gen:promotional-image` (`tools/marketing-assets/gen-promotional-image.mjs`), and the
   evaluation/review entries at the `tools/store-drawings/` root (`evaluate-drawing-fidelity.mjs`,

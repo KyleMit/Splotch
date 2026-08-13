@@ -85,16 +85,57 @@ describe('things that are not skill references', () => {
     expect(findFileViolations(file, line, NAMES)).toEqual([]);
   });
 
-  it('ignores a regex literal in a script', () => {
-    const source = 'expect(() => parse()).toThrow(/release\\.mjs <semver>/);';
-    expect(findFileViolations('tools/release/tests/a.test.mjs', source, NAMES)).toEqual([]);
+  it.each([
+    ['a regex literal argument', 'expect(() => parse()).toThrow(/release\\.mjs <semver>/);'],
+    ['a regex literal with a colon', 'expect(source).toMatch(/release:publish/);'],
+    ['a bare regex literal', 'const pattern = /release/;'],
+    ['a regex whose body holds a quote', "const re = /don't-build/;\nfail('ok');"],
+    ['a division', 'const perBuild = total / buildCount;'],
+  ])('ignores %s in a script', (_label, source) => {
+    expect(findFileViolations('tools/release/example.mjs', source, NAMES)).toEqual([]);
   });
+});
 
-  it('still flags user-facing prose in a script', () => {
-    const source = '  fail(`Run /build (or npm run android:bundle) first.`);';
-    expect(tokensIn(findFileViolations('tools/release/publish.mjs', source, NAMES))).toEqual([
+// Masking code rather than narrowing what counts as an opener is what keeps
+// these in scope: each is a punctuation-delimited string or comment that looks
+// exactly like a regex argument until you know the delimiter is inside a
+// string. Every one is a verbatim line the guard's own PR removed from the
+// release tooling, so re-adding any of them turns the suite red.
+describe('the user-facing shapes this guard exists to catch', () => {
+  it.each([
+    [
+      'a parenthesized name inside a template literal',
+      "`Cut the release first (/release), then build, then publish.\\n${probe.stderr ?? ''}`",
+      '/release',
+    ],
+    [
+      'a name before an interpolation',
+      "`Run /build (or ${missing.map((a) => a.rebuild).join(' / ')}) first.`",
       '/build',
-    ]);
+    ],
+    [
+      'a name after an interpolation',
+      '`Missing ${file}\\nThere is no release notes file for ${v} — run /release first.`',
+      '/release',
+    ],
+    [
+      'a name inside a single-quoted string',
+      "console.log('  /build                 (or npm run android:bundle / npm run ios:ipa)');",
+      '/build',
+    ],
+    [
+      'a name opening a line comment',
+      '// /release slash command writes it). This is the deterministic, scriptable half',
+      '/release',
+    ],
+    [
+      'a name ending a line comment',
+      '// until after this script bumps and commits the version. Building them is /build',
+      '/build',
+    ],
+  ])('flags %s', (_label, source, token) => {
+    const violations = findFileViolations('tools/release/publish.mjs', source, NAMES);
+    expect(tokensIn(violations)).toEqual([token]);
   });
 });
 
@@ -106,9 +147,13 @@ describe('the repository', () => {
     expect(findViolations()).toEqual([]);
   });
 
-  // Without this exemption the suite fails on its own fixtures, and the
-  // tempting fix is to soften the matcher until they stop matching.
-  it('skips this suite, which has to spell the form it rejects', () => {
-    expect(scannedFiles()).not.toContain('tools/tests/skill-reference-syntax.test.mjs');
+  // Without this exemption the guard fails on its own fixtures and worked
+  // examples, and the tempting fix is to soften the matcher until they stop
+  // matching — which is exactly the hole this suite exists to keep shut.
+  it.each([
+    'tools/check-skill-reference-syntax.mjs',
+    'tools/tests/skill-reference-syntax.test.mjs',
+  ])('skips %s, which has to spell the form it rejects', (file) => {
+    expect(scannedFiles()).not.toContain(file);
   });
 });

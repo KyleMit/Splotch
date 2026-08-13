@@ -34,9 +34,13 @@ const CODEX_ONLY_PREFIXES = ['.agents/'];
 // that layout shipped. Rewriting it would falsify the history, not fix a bug.
 const HISTORICAL_PATHS = ['docs/adrs/0018-claude-native-knowledge-tiers.md'];
 
-// This guard's own suite has to spell the form it rejects, so it is the one
-// file whose violations are the point.
-const FIXTURE_PATHS = ['tools/tests/skill-reference-syntax.test.mjs'];
+// This guard and its suite are the two files that have to spell the form they
+// reject — one to explain it, one to prove it is caught — so their own
+// occurrences are the point rather than a defect.
+const SELF_REFERENTIAL_PATHS = [
+  'tools/check-skill-reference-syntax.mjs',
+  'tools/tests/skill-reference-syntax.test.mjs',
+];
 
 // Skill names that are also live app routes (`/api/*`, `/design`). A slash in
 // front of these is overwhelmingly the route, and no wording rule can tell the
@@ -65,13 +69,174 @@ function runnerOf(file) {
   return 'shared';
 }
 
-// In prose a sigil opens a reference: the character before it is whitespace, a
-// code fence, or an opening bracket — never another path character, and never
-// the `*` of a glob (`android/**/build`). In .mjs that same shape also describes
-// a regex literal (`toThrow(/release\.mjs/)`) and a division, so there the sigil
-// must start a line or follow whitespace — which every user-facing string and
-// comment does, and no regex literal argument does.
-const openerFor = (file) => (file.endsWith('.mjs') ? /\s/ : /[^A-Za-z0-9_/.$*\\-]/);
+// A sigil opens a reference when the character before it is whitespace, a code
+// fence, or an opening bracket — never another path character, and never the
+// `*` of a glob (`android/**/build`).
+const OPENER = /[^A-Za-z0-9_/.$*\\-]/;
+
+// Characters a `/` can follow and still be division rather than a regex literal:
+// anything that ends a value.
+const ENDS_A_VALUE = /[)\]}\w'"`]/;
+// …except where the word before it is a keyword, which cannot end a value.
+const REGEX_AFTER_KEYWORD = new Set([
+  'return',
+  'typeof',
+  'instanceof',
+  'in',
+  'of',
+  'new',
+  'delete',
+  'void',
+  'case',
+  'do',
+  'else',
+  'yield',
+  'await',
+]);
+
+const at = (stack) => stack.length - 1;
+
+// A skill reference in a script only ever lives in a string literal or a
+// comment, because that is where its user-facing text lives. Everything else a
+// `/` can open there is syntax — a regex literal (`toThrow(/release\.mjs/)`) or
+// a division. So the matcher runs over a copy with every code region blanked to
+// spaces, preserving line and column positions. Masking rather than narrowing
+// what counts as an opener is what keeps punctuation-delimited output in scope:
+// `fail('Cut the release first (/release), then build.')` is prose the guard
+// must catch, and it looks exactly like a regex argument until you know the
+// `(` is inside a string.
+export function maskCodeOutsideText(source) {
+  const out = [];
+  const keep = (index) => out.push(source[index]);
+  const blank = (index) => out.push(source[index] === '\n' ? '\n' : ' ');
+
+  // One entry per open template literal, counting the `{` depth inside its
+  // current `${ … }` so a `}` closing an interpolation is told apart from one
+  // closing an object literal.
+  const templateBraceDepth = [];
+  let inTemplateText = false;
+  let previous = '';
+  let word = '';
+
+  const noteCode = (char) => {
+    if (/\s/.test(char)) return;
+    previous = char;
+    word = /\w/.test(char) ? word + char : '';
+  };
+
+  let i = 0;
+  while (i < source.length) {
+    const char = source[i];
+
+    if (inTemplateText) {
+      if (char === '\\') {
+        blank(i);
+        if (i + 1 < source.length) blank(i + 1);
+        i += 2;
+      } else if (char === '`') {
+        blank(i);
+        templateBraceDepth.pop();
+        inTemplateText = false;
+        previous = '`';
+        word = '';
+        i += 1;
+      } else if (char === '$' && source[i + 1] === '{') {
+        blank(i);
+        blank(i + 1);
+        inTemplateText = false;
+        previous = '{';
+        word = '';
+        i += 2;
+      } else {
+        keep(i);
+        i += 1;
+      }
+      continue;
+    }
+
+    if (char === '/' && source[i + 1] === '/') {
+      blank(i);
+      blank(i + 1);
+      i += 2;
+      while (i < source.length && source[i] !== '\n') keep(i++);
+      continue;
+    }
+
+    if (char === '/' && source[i + 1] === '*') {
+      blank(i);
+      blank(i + 1);
+      i += 2;
+      while (i < source.length && !(source[i] === '*' && source[i + 1] === '/')) keep(i++);
+      if (i < source.length) {
+        blank(i);
+        blank(i + 1);
+        i += 2;
+      }
+      continue;
+    }
+
+    if (char === "'" || char === '"') {
+      blank(i++);
+      while (i < source.length && source[i] !== char && source[i] !== '\n') {
+        if (source[i] === '\\') {
+          blank(i);
+          if (i + 1 < source.length) blank(i + 1);
+          i += 2;
+          continue;
+        }
+        keep(i++);
+      }
+      if (i < source.length && source[i] === char) blank(i++);
+      previous = char;
+      word = '';
+      continue;
+    }
+
+    if (char === '`') {
+      blank(i++);
+      templateBraceDepth.push(0);
+      inTemplateText = true;
+      continue;
+    }
+
+    // Regex bodies are blanked whole, quotes included, so a `/don't/` cannot
+    // open a phantom string that un-masks the code after it.
+    if (char === '/' && (!ENDS_A_VALUE.test(previous) || REGEX_AFTER_KEYWORD.has(word))) {
+      blank(i++);
+      let inCharClass = false;
+      while (i < source.length && source[i] !== '\n') {
+        if (source[i] === '\\') {
+          blank(i);
+          if (i + 1 < source.length) blank(i + 1);
+          i += 2;
+          continue;
+        }
+        if (source[i] === '[') inCharClass = true;
+        else if (source[i] === ']') inCharClass = false;
+        else if (source[i] === '/' && !inCharClass) break;
+        blank(i++);
+      }
+      if (i < source.length && source[i] === '/') blank(i++);
+      previous = '/';
+      word = '';
+      continue;
+    }
+
+    if (char === '{' && templateBraceDepth.length) templateBraceDepth[at(templateBraceDepth)] += 1;
+    if (char === '}' && templateBraceDepth.length) {
+      if (templateBraceDepth[at(templateBraceDepth)] === 0) {
+        blank(i++);
+        inTemplateText = true;
+        continue;
+      }
+      templateBraceDepth[at(templateBraceDepth)] -= 1;
+    }
+
+    blank(i++);
+    noteCode(char);
+  }
+  return out.join('');
+}
 
 export function findFileViolations(file, text, names) {
   const runner = runnerOf(file);
@@ -83,20 +248,22 @@ export function findFileViolations(file, text, names) {
   ].filter(Boolean);
   if (!forbidden.length) return [];
 
-  const opener = openerFor(file);
+  const searchable = file.endsWith('.mjs') ? maskCodeOutsideText(text) : text;
+  const sourceLines = text.split(/\r?\n/);
   const violations = [];
-  text.split(/\r?\n/).forEach((line, index) => {
+  searchable.split(/\r?\n/).forEach((line, index) => {
     for (const { sigil, runner: sigilRunner } of forbidden) {
       for (const name of names) {
         const token = `${sigil}${name}`;
-        let at = line.indexOf(token);
-        while (at !== -1) {
-          const before = at === 0 ? '\n' : line[at - 1];
-          const after = line.slice(at + token.length);
-          if (opener.test(before) && !NOT_A_REFERENCE_SUFFIX.test(after) && !/^\w/.test(after)) {
-            violations.push({ file, line: index + 1, token, sigilRunner, text: line.trim() });
+        let found = line.indexOf(token);
+        while (found !== -1) {
+          const before = found === 0 ? '\n' : line[found - 1];
+          const after = line.slice(found + token.length);
+          if (OPENER.test(before) && !NOT_A_REFERENCE_SUFFIX.test(after) && !/^\w/.test(after)) {
+            const text = sourceLines[index].trim();
+            violations.push({ file, line: index + 1, token, sigilRunner, text });
           }
-          at = line.indexOf(token, at + 1);
+          found = line.indexOf(token, found + 1);
         }
       }
     }
@@ -112,7 +279,7 @@ export function scannedFiles(root = ROOT) {
       // Product source spells routes and directories, never skills, and
       // package-lock.json is generated registry data.
       .filter((file) => !file.startsWith('web/') && file !== 'package-lock.json')
-      .filter((file) => !FIXTURE_PATHS.includes(file))
+      .filter((file) => !SELF_REFERENTIAL_PATHS.includes(file))
   );
 }
 
