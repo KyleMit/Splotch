@@ -77,7 +77,7 @@ describe('parsePublishArgs', () => {
   });
 });
 
-// release.mjs attaching a build artifact is the bug this whole seam exists to
+// cut-release.mjs attaching a build artifact is the bug this whole seam exists to
 // prevent: at `gh release create` time the only artifact that can exist is one
 // built for an *earlier* version, because this run is what bumps the version.
 describe('cut-release.mjs', () => {

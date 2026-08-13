@@ -5,10 +5,10 @@
 //   node tools/release/publish-release-artifacts.mjs --only=android  just the .aab (or ios for just the .ipa)
 //   node tools/release/publish-release-artifacts.mjs --dry-run       verify versions, upload nothing
 //
-// This is deliberately a third step rather than part of release.mjs. A release
+// This is deliberately a third step rather than part of cut-release.mjs. A release
 // has to bump the version and tag it *before* an artifact carrying that version
 // can be built, so at no point during `npm run release` does a correct .aab
-// exist. release.mjs used to attach whatever sat in the build output directory,
+// exist. cut-release.mjs used to attach whatever sat in the build output directory,
 // which put a 1.2.0 bundle on the v1.4.0 release. See ADR-0077.
 //
 // Every artifact is verified against the release it is being attached to by

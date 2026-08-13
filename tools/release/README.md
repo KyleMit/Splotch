@@ -35,7 +35,9 @@ Markdown and regenerate them so all targets retain one source of truth.
 `releases/<version>.md`. It updates Android and iOS versions, updates `package.json` and its
 lockfile, regenerates release notes, commits the complete release set, and tags it. The normal mode
 also needs authenticated Git and GitHub access because it pushes the commit/tag and creates the
-GitHub Release.
+GitHub Release. `npm run release` additionally runs the `prerelease` hook first
+(`check:coloring-assets` + `check:assets:manifest`), so a stale asset manifest fails the release
+before any file is touched; invoking the script directly skips those checks.
 
 ```sh
 npm run release 1.6.0 -- --dry-run
