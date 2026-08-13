@@ -12,8 +12,8 @@ import { join, resolve } from 'node:path';
 import { Window } from 'happy-dom';
 import sharp from 'sharp';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { writePageInventoryFeedback } from '../attach-page-inventory-feedback.mjs';
-import { finalizePageInventoryCritique } from '../finalize-page-inventory-critique.mjs';
+import { writePageInventoryFeedback } from '../attach-page-feedback.mjs';
+import { finalizePageInventoryCritique } from '../finalize-page-critique.mjs';
 import {
   allSurfaces,
   discoverPageRoutes,
@@ -23,13 +23,13 @@ import {
   SECTION_LANDED_BAND_PX,
   selectSpotCheckItems,
   settingsSectionRowSelector,
-} from '../gen-page-inventory.mjs';
+} from '../capture-page-inventory.mjs';
 import {
   assertReviewerAvailable,
   readStructuredOutput,
   reviewerArgs,
   runReviewerProcess,
-} from '../run-page-inventory-critiques.mjs';
+} from '../run-inventory-critiques.mjs';
 import { assertCaptureRendered } from '../lib/page-inventory-capture.mjs';
 import {
   GENERAL_DESIGN_NOTES,

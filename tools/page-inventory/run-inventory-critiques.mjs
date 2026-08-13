@@ -17,7 +17,7 @@ import {
   reviewDescriptionDigest,
   validateCritiqueEntries,
 } from './lib/page-inventory-data.mjs';
-import { CHECKPOINT_SCHEMA_VERSION } from './finalize-page-inventory-critique.mjs';
+import { CHECKPOINT_SCHEMA_VERSION } from './finalize-page-critique.mjs';
 import { ROOT, hasCommand, isMain, runMain } from '../lib/proc.mjs';
 
 const MANIFEST_DEFAULT = join(ROOT, 'scrapbook/page-inventory/capture-manifest.json');

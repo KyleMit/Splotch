@@ -50,7 +50,7 @@ const SIDEBAR_TOC = readFileSync(
 );
 const IPAD_ACTIONS = readFileSync(join(ROOT, 'tools', 'perf', 'ipad-actions.mjs'), 'utf8');
 const PAGE_INVENTORY = readFileSync(
-  join(ROOT, 'tools', 'page-inventory', 'gen-page-inventory.mjs'),
+  join(ROOT, 'tools', 'page-inventory', 'capture-page-inventory.mjs'),
   'utf8'
 );
 

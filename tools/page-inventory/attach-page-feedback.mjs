@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
-import { allSurfaces } from './gen-page-inventory.mjs';
+import { allSurfaces } from './capture-page-inventory.mjs';
 import {
   pixelIdenticalReviewGroups,
   readCaptureManifest,
@@ -50,7 +50,9 @@ export function attachPageInventoryFeedback(argv = process.argv.slice(2)) {
 export function writePageInventoryFeedback(out, critiquePath, items) {
   const manifestPath = join(out, 'capture-manifest.json');
   if (!existsSync(manifestPath)) {
-    throw new Error('Page inventory has no capture-manifest.json; run npm run gen:page-inventory');
+    throw new Error(
+      'Page inventory has no capture-manifest.json; run npm run capture:page-inventory'
+    );
   }
   const manifest = readCaptureManifest(manifestPath);
   const expectedImages = items.flatMap((item) => Object.values(item.captures));
@@ -68,7 +70,7 @@ export function writePageInventoryFeedback(out, critiquePath, items) {
   );
   if (missingImages.length) {
     throw new Error(
-      `Page inventory is missing ${missingImages.length} expected image${missingImages.length === 1 ? '' : 's'}; run npm run gen:page-inventory first: ${missingImages[0].image}`
+      `Page inventory is missing ${missingImages.length} expected image${missingImages.length === 1 ? '' : 's'}; run npm run capture:page-inventory first: ${missingImages[0].image}`
     );
   }
   for (const capture of manifest.captures) {
