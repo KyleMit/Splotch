@@ -20,16 +20,18 @@ command stays stable.
 
 Publishing needs installed project dependencies and a local source file or directory. It uses no
 network and does not push; the GitHub Pages deployment happens after the resulting commit reaches
-`main`.
+`main`. [`scrapbook/README.md`](../../scrapbook/README.md) owns what qualifies as a keeper and the
+entry-page/`assets/` shape a collection must ship: it is the same document `scrapbook:check` points
+to when a collection has no reachable entry page.
 
 ```sh
 npm run scrapbook:publish -- <source> <type>/<name>
 ```
 
-The destination is resolved beneath `scrapbook/`; absolute paths and `..` escapes are rejected. The
-source is copied recursively, replacing matching destination files, then both generated landing
-pages are rebuilt. Publishing does not remove unrelated files already present in a destination
-directory, so prune retired keeper artifacts deliberately when replacing a collection.
+The destination must resolve beneath `scrapbook/`; `..` escapes and absolute paths that land outside
+it are rejected. The source is copied recursively, replacing matching destination files, then both
+generated landing pages are rebuilt. Publishing does not remove unrelated files already present in a
+destination directory, so prune retired keeper artifacts deliberately when replacing a collection.
 
 ## Rebuild and verify
 
@@ -43,7 +45,9 @@ npm run scrapbook:check
 `scrapbook/coloring-book-proof-sheets/index.html`; the direct proof-sheet command rebuilds only the
 latter. `scrapbook:check` verifies that every collection has a reachable HTML or Markdown entry,
 that proof-sheet categories and their hub agree, and that both committed generated pages are
-current. It ignores only checkout-unstable mtime dates when comparing the main index.
+current. It ignores only checkout-unstable mtime dates when comparing the main index. Preview the
+regenerated pages before committing with `npm run scrapbook:serve`, which serves the committed tree
+at <http://127.0.0.1:4174>.
 
 ## Libraries and failure behavior
 
@@ -60,6 +64,6 @@ before retrying. Index/check modes never copy an external source.
 Run focused verification with:
 
 ```sh
-npm run test:tools -- tools/scrapbook/tests/scrapbook-index.test.mjs tools/tests/tool-specifier-resolution.test.mjs
+npm run test:tools -- tools/scrapbook/tests/scrapbook-index.test.mjs tools/tests/tool-specifier-resolution.test.mjs tools/tests/scripts-info.test.mjs
 npm run scrapbook:check
 ```
