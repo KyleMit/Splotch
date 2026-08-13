@@ -40,8 +40,10 @@ specific path:
 npm run gen:icon-sheet -- --out scrapbook/icons/index.html
 ```
 
-The generator creates the destination directory and replaces the output file. It needs no network.
-Malformed or unreadable SVG input fails the run; the generator does not modify source icons.
+The generator creates the destination directory and replaces the output file. The shared scrapbook
+chrome requires installed project dependencies, but generation needs no network. Unreadable SVG
+input fails the run, while malformed markup is inlined verbatim rather than rejected; the generator
+does not modify source icons.
 
 ## Maintenance
 
