@@ -25,10 +25,12 @@ before changing it.
 | `gen-model-fixtures.mjs`   | `npm run model-eval:fixtures`   | Regenerate deterministic local input images |
 | `gen-model-inputs.mjs`     | `npm run model-eval:gen-inputs` | Add Gemini-authored input images            |
 
-The evaluation and Gemini-authored input generator require `GEMINI_API_KEY`, installed project
-dependencies, and network access. Fixture generation is deterministic and needs installed browser
-dependencies plus the committed coloring assets, but no model credentials. All three commands write
-only under this capability's `inputs/` or `output/` directories.
+All three commands need installed project dependencies, including the Playwright Chromium browser:
+the evaluation renders its report bundle in-page, and both generators rasterize their PNGs there.
+The evaluation and the Gemini-authored input generator also require `GEMINI_API_KEY` and network
+access; fixture generation is deterministic and needs only the committed coloring assets. All three
+commands write only under this capability's `inputs/` or `output/` directories. If the report step
+fails after the calls land, rebuild it with `REPORT_FROM=<run dir>` instead of paying twice.
 
 ## What's in git
 
@@ -89,15 +91,15 @@ npm run model-eval              # A/B both models over the corpus, 1 sample each
 
 ### Useful env
 
-| var           | default | effect                                                                                                       |
-| ------------- | ------- | ------------------------------------------------------------------------------------------------------------ |
-| `FILTER`      | —       | only inputs whose id contains this substring                                                                 |
-| `SAMPLES`     | `1`     | samples per (input × model); >1 surfaces run-to-run variance                                                 |
-| `CONCURRENCY` | `1`     | parallel calls; keep at 1 for clean latency numbers                                                          |
-| `OUT_TAG`     | —       | suffix on the run-dir name                                                                                   |
-| `SKIP_REPORT` | —       | skip the HTML report (results.json only)                                                                     |
-| `RESUME`      | —       | `=<run dir>`: fill only the missing/failed cells, keeping images already on disk                             |
-| `REPORT_FROM` | —       | `=<run dir>`: rebuild `report.html` from an existing `results.json`, no API calls (pair with `VERDICT_FILE`) |
+| var           | default | effect                                                                                                             |
+| ------------- | ------- | ------------------------------------------------------------------------------------------------------------------ |
+| `FILTER`      | —       | only inputs whose id contains this substring                                                                       |
+| `SAMPLES`     | `1`     | samples per (input × model); >1 surfaces run-to-run variance                                                       |
+| `CONCURRENCY` | `1`     | parallel calls; keep at 1 for clean latency numbers                                                                |
+| `OUT_TAG`     | —       | suffix on the run-dir name                                                                                         |
+| `SKIP_REPORT` | —       | skip the HTML report (results.json only)                                                                           |
+| `RESUME`      | —       | `=<run dir>`: fill only the missing/failed cells, keeping images already on disk                                   |
+| `REPORT_FROM` | —       | `=<run dir>`: rebuild `report/index.html` from an existing `results.json`, no API calls (pair with `VERDICT_FILE`) |
 
 ```bash
 FILTER=coloring npm run model-eval                       # just the coloring categories
@@ -120,10 +122,12 @@ probe; run the red-team suite before any production model swap.
 
 ## Failure behavior and maintenance
 
-Missing credentials, source assets, malformed results, or failed model calls produce diagnostics and
-a nonzero exit rather than replacing a successful run. A resumed evaluation keeps completed cells
-and fills only missing or failed ones. Generated `gen__*` inputs are intentionally preserved by
-deterministic fixture regeneration.
+Missing credentials or source assets fail fast with a diagnostic and a nonzero exit. A failed model
+call is different: it is recorded as a `kind: "error"` row and leaves the exit status at zero, so
+read the `Done. N calls · N refusals · N errors` summary before trusting a run. Nothing replaces a
+successful run: every run writes its own `output/<runId>/`. A resumed evaluation keeps completed
+cells and fills only missing or failed ones. Generated `gen__*` inputs are intentionally preserved
+by deterministic fixture regeneration.
 
 The production request contract is imported from `web/src/lib/server/ai/`; keep the evaluation
 configuration and its runtime equality assertions intact when that contract changes. The report
@@ -134,4 +138,5 @@ Run focused verification with:
 
 ```sh
 npm run test:tools -- tools/model-eval/tests/model-eval.test.mjs
+npm run test:tools -- tools/tests/manual-harness-corpora.test.mjs
 ```
