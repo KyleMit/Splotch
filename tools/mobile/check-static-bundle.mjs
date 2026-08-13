@@ -11,6 +11,7 @@ import {
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/iosBeta/iosBeta.ts';
 import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
+import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 
 // Proves the native static export really dropped the routes
@@ -165,12 +166,27 @@ export function requiredNativePageProblems(dir) {
   );
 }
 
+export function nativePrivacyFeedbackProblems(dir) {
+  const privacyPath = join(dir, 'privacy.html');
+  if (!existsSync(privacyPath)) return [];
+  const source = readFileSync(privacyPath, 'utf8');
+  return [
+    ...(source.includes(`href="${FEEDBACK_URL}"`)
+      ? []
+      : [`Native privacy page does not link to the hosted feedback form: ${FEEDBACK_URL}`]),
+    ...(source.includes('href="/feedback"')
+      ? ['Native privacy page retains a relative /feedback link']
+      : []),
+  ];
+}
+
 export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } = {}) {
   const sentinels = adminConsoleSentinels();
   const problems = [
     ...webOnlyMarkerSourceProblems(),
     ...nativeBundleProblems(dir, sentinels),
     ...requiredNativePageProblems(dir),
+    ...nativePrivacyFeedbackProblems(dir),
   ];
   if (problems.length) throw new Error(problems.join('\n'));
   log(
@@ -179,6 +195,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
       `no web-only support email; ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present; ` +
+      `privacy links to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled`
   );
 }
