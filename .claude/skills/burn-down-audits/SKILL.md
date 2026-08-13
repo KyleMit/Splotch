@@ -7,8 +7,8 @@ description: Drive the scripted bulk burndown of docs/AUDIT.md — one one-shot 
 
 Progressive, adversarial burndown of a large `docs/AUDIT.md` backlog. Each finding goes through
 verify → implement → review → fix, entirely inside one-shot `claude -p` subprocesses, so nothing
-accumulates in a long-lived context window. The driver is `tools/audit-burndown/burndown.mjs`; this
-skill is the runbook for launching, watching, and closing out a run.
+accumulates in a long-lived context window. The driver is `tools/audit-burndown/run-burndown.mjs`;
+this skill is the runbook for launching, watching, and closing out a run.
 
 **This runs in a Claude Code cloud session.** Two facts shape everything below and are not
 negotiable knobs:
@@ -35,7 +35,7 @@ couple of minutes and leave the rest." That is a selection problem, and the driv
 it pops findings in file order and spends a full verify/impl/review cycle on whatever it gets.
 Answer it by hand: index the backlog once (`findingPriority` plus body length over each entry — the
 shortest P4/P5 bodies really are the mechanical ones), then work them inline, one commit per
-finding, using `pop.mjs` and `deleteEntryByTitle` for the excision so the file surgery stays
+finding, using `pop-finding.mjs` and `deleteEntryByTitle` for the excision so the file surgery stays
 identical to a driver run.
 
 Three of the driver's economics invert here, and each one cost a real mistake on 2026-08-05:
@@ -45,11 +45,11 @@ Three of the driver's economics invert here, and each one cost a real mistake on
   `Edit`/`Write` a role makes. Neither holds by hand: batches are few, so the cost is seconds, and a
   supervising agent reaches for `sed`/`python`/heredocs constantly — which is exactly the "editing
   through `Bash`" residual risk the hook cannot see. That is what reddened CI on that run.
-* **The per-commit comments have no `comment.mjs` behind them.** The driver's whole
+* **The per-commit comments have no `comment-sync.mjs` behind them.** The driver's whole
   render→`next`→post→`done` loop exists so the SHA reaches GitHub from a tool rather than from the
   agent's memory. Writing comments by hand removes that, and 32 of 62 went out with a 7-char prefix
   padded to 12 — plausible, unlinkable, and (with this session's toolset) unrepairable except by a
-  correction comment. Either drive `comment.mjs` for the rendering, or verify every SHA before
+  correction comment. Either drive `comment-sync.mjs` for the rendering, or verify every SHA before
   posting (see the repo's "Writing on GitHub" rule).
 * **Nothing forces the adversarial second pair of eyes.** There is no blind reviewer, so a fix is as
   good as the one context that wrote it. The cheap substitute is a *negative check* on anything that
@@ -91,7 +91,7 @@ consequences worth internalising before touching the driver:
   one JSON record per fix to `.audit-work/pending-comments.jsonl` and expects you to post it.
 
 No agent — including you — should read or edit `docs/AUDIT.md` directly at burndown scale (~19k
-lines): `tools/audit-burndown/pop.mjs` is the only thing that touches it (`--count`, print,
+lines): `tools/audit-burndown/pop-finding.mjs` is the only thing that touches it (`--count`, print,
 `--peek N`, `--delete`). Role system prompts live in `tools/audit-burndown/prompts/*.md`.
 
 ## Commands
@@ -259,10 +259,10 @@ run is impossible until the base is green.
   path, red only on `startup-bundle.spec.ts` with a failing marker naming a module the commit never
   edited, attributable only by `git bisect`. The driver now scans the range's diff at each review
   round and, when it adds a static import / re-export in a client-bundle file (type-only imports,
-  server modules, and tests excluded — `diffAddsClientStaticImport` in `lib.mjs`), appends
-  `BUNDLE_SPEC` (default `tests/startup-bundle.spec.ts`) to that finding's E2E gate. The cost is a
-  production build per import-adding finding, paid via Playwright's web server; set `BUNDLE_SPEC=''`
-  to fall back to CI-only detection if a backlog makes that too slow.
+  server modules, and tests excluded — `diffAddsClientStaticImport` in `lib/burndown-core.mjs`),
+  appends `BUNDLE_SPEC` (default `tests/startup-bundle.spec.ts`) to that finding's E2E gate. The
+  cost is a production build per import-adding finding, paid via Playwright's web server; set
+  `BUNDLE_SPEC=''` to fall back to CI-only detection if a backlog makes that too slow.
 * **Cross-finding interactions the per-finding specs can't see are CI's job, not the driver's.**
   `PUSH_TEST_CMD` (the local full-suite gate) defaults to empty and does not run. Every finding is
   pushed to the draft PR, and the PR's CI runs the whole suite on that push — in parallel, off the
@@ -305,9 +305,9 @@ and `failed adversarial review` **only** when a reviewer genuinely rejected the 
 
 Each fix gets its own PR comment — the finding (issue), the implementer's own summary (how it was
 solved), and any adversarial catch the reviewer forced before approval — so the PR reads as a
-per-commit history rather than a batched dump. `tools/audit-burndown/comment.mjs` renders them
-(unit-tested in `tools/audit-burndown/tests/audit-burndown-comment.test.mjs`). Deferrals and drops
-stay in the commit log only (they carry their reason in the commit message).
+per-commit history rather than a batched dump. `tools/audit-burndown/lib/comment-sync.mjs` renders
+them (unit-tested in `tools/audit-burndown/tests/comment-sync.test.mjs`). Deferrals and drops stay
+in the commit log only (they carry their reason in the commit message).
 
 **The driver writes these records; you post them.** The instant a fix lands, one JSON line is
 appended to `COMMENT_STORE` (default `.audit-work/pending-comments.jsonl`) — written immediately
@@ -691,57 +691,59 @@ itself. No `claude` call in the sample exceeded ~13 min.
   `.audit-work/logs/*.json` still growing?) versus hung (0% CPU, static log and envelope). A
   genuinely stuck call: `pkill -TERM -f 'claude -p'` kills only that one call — the driver's
   `RETRIES` re-attempt it or the finding defers; the orchestrator and every committed fix are
-  untouched and state stays durable. Never kill `burndown.mjs` itself for a merely slow finding.
+  untouched and state stays durable. Never kill `run-burndown.mjs` itself for a merely slow finding.
 
   **`pkill -f` will also kill the shell you typed it in.** The pattern matches whole command lines,
   and your own `bash -c` wrapper contains the pattern — so the command reports a nonzero exit
   (`144`) and takes any background waiter whose command line also mentions it. Read that exit code
   as "I shot my own shell", not "the kill failed", and re-verify with a separate
-  `pgrep -af burndown.mjs | grep -v 'bash -c'`.
+  `pgrep -af run-burndown.mjs | grep -v 'bash -c'`.
 
   **The same self-match makes `pgrep` wait loops hang forever.** The obvious way to wait for a clean
-  stop — `until ! pgrep -f 'audit-burndown/burndown.mjs' >/dev/null; do sleep 15; done` — **can
+  stop — `until ! pgrep -f 'audit-burndown/run-burndown.mjs' >/dev/null; do sleep 15; done` — **can
   never exit**: the loop's own command line contains the pattern, so it matches itself and waits on
   its own death. It looks exactly like a driver that will not stop, and it will still be "waiting"
   long after the run has finished. Anchor the pattern so only the bare driver process matches:
   ```bash
-  until ! pgrep -f '^node tools/audit-burndown/burndown.mjs' >/dev/null; do sleep 15; done
+  until ! pgrep -f '^node tools/audit-burndown/run-burndown.mjs' >/dev/null; do sleep 15; done
   ```
   `env` execs node, so the real driver's cmdline starts with `node` and the anchor is safe on every
   launch path. The same anchor is what to use for the plain liveness question — an unanchored
   `pgrep -f` answering "still running" is meaningless until you have read the matched lines.
 
-* **No `claude -p` child at all, while `burndown.mjs` is still alive** → the driver is **orphaned**,
-  and this is the one case where killing the orchestrator is correct. It happens when the container
-  restarts without being reclaimed: the disk and the Node process survive, its in-flight child does
-  not, and the driver waits forever on a process that will never report. The signature is specific —
-  `pgrep -f 'claude -p'` returns nothing but the supervising session's own CLI, no new envelope for
-  tens of minutes, HEAD frozen, and **no log line of any kind**, so an event-driven monitor stays
-  silent and reads exactly like a healthy long finding. Confirm with the envelope count above, then
-  `pkill -TERM -f 'audit-burndown/burndown.mjs'`, `git reset -q --hard origin/<branch>` to drop the
-  half-done finding (its `docs/AUDIT.md` entry was never removed, so the finding is intact and will
-  be re-processed), and relaunch from the durable checkpoint.
+* **No `claude -p` child at all, while `run-burndown.mjs` is still alive** → the driver is
+  **orphaned**, and this is the one case where killing the orchestrator is correct. It happens when
+  the container restarts without being reclaimed: the disk and the Node process survive, its
+  in-flight child does not, and the driver waits forever on a process that will never report. The
+  signature is specific — `pgrep -f 'claude -p'` returns nothing but the supervising session's own
+  CLI, no new envelope for tens of minutes, HEAD frozen, and **no log line of any kind**, so an
+  event-driven monitor stays silent and reads exactly like a healthy long finding. Confirm with the
+  envelope count above, then `pkill -TERM -f 'audit-burndown/run-burndown.mjs'`,
+  `git reset -q --hard origin/<branch>` to drop the half-done finding (its `docs/AUDIT.md` entry was
+  never removed, so the finding is intact and will be re-processed), and relaunch from the durable
+  checkpoint.
 
 ### "pause" — stop cleanly after the current finding
 
 `touch .audit-work/STOP`. The driver checks it at the top of each iteration, so it **finishes the
 entire in-flight workflow** — verify → implement → review → gates → commit, and the exit flush
 pushes — then exits without starting the next finding. Wait for the process to exit, then confirm
-the end state is resumable: no `burndown.mjs` / `claude -p` process left, `git rev-parse HEAD` ==
-`origin/<branch>` (nothing unpushed), the comment store drained onto the PR, and the durable
+the end state is resumable: no `run-burndown.mjs` / `claude -p` process left, `git rev-parse HEAD`
+== `origin/<branch>` (nothing unpushed), the comment store drained onto the PR, and the durable
 checkpoint (memory / handoff) reflecting the new counts. **Leave the STOP file in place** — it holds
 the pause; a stray relaunch would exit immediately. Stand down any run-log monitor while paused.
 
 ### "resume" / "continue" — start the next finding
 
-Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/burndown.mjs` must
-be empty (if it isn't, the run is already going — say so, don't launch a second). Read the matches
-rather than counting them: `pgrep -f` matches whole command lines, so the launcher's `env … node …`
-wrapper — and any shell whose own command line happens to mention the path, including the `pgrep`
-call you just typed — matches too. Only a bare `node tools/audit-burndown/burndown.mjs` line is the
-driver. Then `rm .audit-work/STOP`, relaunch with the exact command from the durable checkpoint, and
-re-arm the event-driven monitor. The launcher self-recovers even in a brand-new session that never
-saw this run — see **Resuming a crashed run** below.
+Only after verifying **nothing is already in flight**: `pgrep -f audit-burndown/run-burndown.mjs`
+must be empty (if it isn't, the run is already going — say so, don't launch a second). Read the
+matches rather than counting them: `pgrep -f` matches whole command lines, so the launcher's
+`env … node …` wrapper — and any shell whose own command line happens to mention the path, including
+the `pgrep` call you just typed — matches too. Only a bare
+`node tools/audit-burndown/run-burndown.mjs` line is the driver. Then `rm .audit-work/STOP`,
+relaunch with the exact command from the durable checkpoint, and re-arm the event-driven monitor.
+The launcher self-recovers even in a brand-new session that never saw this run — see **Resuming a
+crashed run** below.
 
 **Re-arm the monitor as part of the relaunch** — stopping the previous one first, and confirming the
 new one caught. Both failure directions and the arming details are under **Surviving the context
@@ -833,7 +835,7 @@ state in the conversation:
   disk said 183 findings remained while preflight counted 642, because the packet's PR had merged
   the day before and a new audit had since staged a whole new backlog. **Reconcile before trusting
   anything in it**: check the packet's PR state (merged/closed → the packet is spent), and compare
-  its remaining-count against `pop.mjs --count`. A disagreement means the packet describes a
+  its remaining-count against `pop-finding.mjs --count`. A disagreement means the packet describes a
   *different* run, not that the count drifted. Delete a spent packet as part of your first commit —
   carrying its still-owed follow-ups forward — rather than leaving the next session to re-litigate
   the same contradiction.
@@ -999,9 +1001,9 @@ Notes from real runs — set these before a large run rather than discovering th
   trivially mechanical (P4/P5 dead-code, rename, dedup), so the driver routes those findings to
   `MODEL_IMPL_MINOR` (default `sonnet`) and keeps P1–P3 on `MODEL_IMPL`. The Opus review still gates
   every fix, so the cheaper model buys wall-clock at a sliver of impl-correctness margin exactly
-  where the stakes are lowest. `findingPriority` in `lib.mjs` (unit-tested) reads the priority from
-  either staging format — a leading `[P<n>]` **title** tag, or a `**Priority:** P4` **body** line,
-  which is what the whole-repo code-audit writes while tagging titles by category
+  where the stakes are lowest. `findingPriority` in `lib/burndown-core.mjs` (unit-tested) reads the
+  priority from either staging format — a leading `[P<n>]` **title** tag, or a `**Priority:** P4`
+  **body** line, which is what the whole-repo code-audit writes while tagging titles by category
   (`[Maintainability] …`). A finding stating neither is unknown and stays on the stronger model. Set
   `MODEL_IMPL_MINOR=claude-opus-5` to switch tiering off for a run where correctness dominates.
   Bigger throughput (parallel git worktrees per finding) is a real redesign, not a knob.
@@ -1016,7 +1018,7 @@ Notes from real runs — set these before a large run rather than discovering th
   scores `null`:
 
   ```bash
-  node -e "import('./tools/audit-burndown/lib.mjs').then(({findingPriority})=>{
+  node -e "import('./tools/audit-burndown/lib/burndown-core.mjs').then(({findingPriority})=>{
     const b=require('fs').readFileSync('docs/AUDIT.md','utf8').split(/^### /m).slice(1);
     const n=b.filter(x=>findingPriority(x.split('\n',1)[0],'### '+x)===null).length;
     console.log(b.length+' findings, '+n+' with no parsable priority');
@@ -1200,9 +1202,9 @@ Notes from real runs — set these before a large run rather than discovering th
   for s in $(git rev-list <base>..HEAD); do git show $s -- docs/AUDIT.md | grep -c '^-### '; done | paste -sd+ | bc
   ```
   The third number is findings *consumed*; subtract deferrals and drops for fixes, and confirm
-  `<backlog at launch> − consumed == pop.mjs --count`. If that identity fails, stop and find out why
-  before writing a log row — it is the same arithmetic that exposed the 2026-07-25 canary destroying
-  three findings while reporting a clean `5 fixed`.
+  `<backlog at launch> − consumed == pop-finding.mjs --count`. If that identity fails, stop and find
+  out why before writing a log row — it is the same arithmetic that exposed the 2026-07-25 canary
+  destroying three findings while reporting a clean `5 fixed`.
 * The deliberately-unported alternative: driving this loop with in-session subagents. Only worth it
   to watch and steer a handful of findings interactively — and that path already exists as
   `/fix-audits`.

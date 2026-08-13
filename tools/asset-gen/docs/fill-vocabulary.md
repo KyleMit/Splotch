@@ -24,9 +24,10 @@ Alternatives considered for the replacement term:
 * **"reveal"** — rejected: names the consumer (the magic brush's reveal interaction, ADR-0043), not
   the asset; a future non-brush consumer would make it wrong.
 * **"fill"** — chosen: the codebase already half-used it. The generators were named
-  `gen:coloring-fills` / `gen-coloring-fills-dark` from the start, and every doc described the
-  shipped assets as "fills-only" (outlines punched to transparency, ADR-0043). The asset literally
-  *is* the colored fills for an outline page, which is forward-looking and self-describing.
+  `gen:coloring-fills` / the then-named `gen-coloring-fills-dark` from the start, and every doc
+  described the shipped assets as "fills-only" (outlines punched to transparency, ADR-0043). The
+  asset literally *is* the colored fills for an outline page, which is forward-looking and
+  self-describing.
 
 ## Decision
 

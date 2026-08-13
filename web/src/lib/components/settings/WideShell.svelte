@@ -34,7 +34,7 @@
 
   // Constructing every section body in the one task that opens the dialog was a
   // long task several times the phone hub's on the app's low-end tablet targets
-  // (issue #910; `npm run perf:settings` scores both shells). They arrive a
+  // (issue #910; `npm run perf:web:settings` scores both shells). They arrive a
   // section per frame instead, top of the pane downwards — the same shape, and
   // the same reasoning, as the idle overlay pump in boot/bootHiddenOverlays.ts:
   // batching the work merely relocates the long task. What must not be deferred

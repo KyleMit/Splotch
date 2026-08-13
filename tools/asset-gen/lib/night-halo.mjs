@@ -21,7 +21,7 @@
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { bleedUnderMask, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
-import { quantile } from './stats.mjs';
+import { quantile } from './image-stats.mjs';
 
 export const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
 const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)

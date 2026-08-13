@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { DIRECT_PROVIDER_PATHS } from '../ruler/direct-provider-skills.mjs';
+import { DIRECT_PROVIDER_PATHS } from '../ruler/lib/direct-provider-skills.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const packageJson = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));

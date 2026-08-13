@@ -21,7 +21,7 @@
 // detected eye core aren't gated.
 import sharp from 'sharp';
 import { prepareOutlineAnalysis, prepareOutlineRegions } from './outline-analysis.mjs';
-import { quantile } from './stats.mjs';
+import { quantile } from './image-stats.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
 // eye core and its surrounding band, the lighter side must be genuinely light,

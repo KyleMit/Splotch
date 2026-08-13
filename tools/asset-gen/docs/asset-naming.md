@@ -13,7 +13,7 @@ dash-suffixed (`cat-tall-thumb.webp`, ADR-0045), and the magic-brush fills were 
 adding `.raw` (`cat-tall.color.raw.webp`, ADR-0043's build-time punch follow-up). Three problems:
 
 * **The base asset had no variant marker**, so tooling identified line art by *exclusion*
-  (`gen-coloring-thumbs.mjs` filtered out `-thumb`/`.color`/`.night`), and globs like
+  (`gen-thumbnails.mjs` filtered out `-thumb`/`.color`/`.night`), and globs like
   `*-{tall,wide}.webp` silently matched more than line art if a new variant was ever added. Every
   new variant meant touching every exclusion list.
 * **Two separator conventions** (`-thumb` vs `.color`) meant no single rule for "strip the variant
@@ -81,15 +81,13 @@ Key implementation points:
   deliberately a **no-op on other paths** (only line art has thumbnails).
 * `responsiveColoringAssets()` derives the web-only tier paths from those canonical paths;
   `bookAssetPaths()` includes them so `check:coloring-assets` rejects a partial tier.
-* The asset-gen generators select line art positively by suffix (`gen-coloring-thumbs.mjs`
-  `isSource` matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
-  `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` / `check-coloring-drift.mjs`) — no
-  exclusion lists.
+* The asset-gen generators select line art positively by suffix (`gen-thumbnails.mjs` `isSource`
+  matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
+  `gen-light-fills.mjs` / `gen-night-fills.mjs` / `check-fill-drift.mjs`) — no exclusion lists.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`, and the mask
   path by swapping `.{light,night}` → `.outline`.
-* `gen-coloring-overlays.mjs` positively selects page `.outline.webp` sources and writes
-  `.overlay.webp` plus `.dark.overlay.webp`; the dark derivative uses the `.chalk.webp` sibling
-  where present.
+* `gen-overlays.mjs` positively selects page `.outline.webp` sources and writes `.overlay.webp` plus
+  `.dark.overlay.webp`; the dark derivative uses the `.chalk.webp` sibling where present.
 * CLI page arguments stay suffix-free (`farm/dog-wide`); each script appends `.outline.webp` when
   resolving them, and the dark generator's review samples in `.coloring-samples-dark/` stay bare
   (`dog-wide.webp`) — the `.night.raw` suffix is added at ship time (the night-fill runbook, now

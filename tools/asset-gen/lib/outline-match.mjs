@@ -1,5 +1,5 @@
-// Outline-registration scoring shared by the fill generator (gen-coloring-fills.mjs,
-// the quality gate) and the drift auditor (check-coloring-drift.mjs). Given a source
+// Outline-registration scoring shared by the fill generator (gen-light-fills.mjs,
+// the quality gate) and the drift auditor (check-fill-drift.mjs). Given a source
 // line-art page and a colored candidate, it measures how well the candidate's black
 // outlines still sit on top of the source's — the whole premise of the magic-brush
 // fill (ADR-0043) is that the two register pixel-for-pixel.

@@ -5,6 +5,10 @@
 [ADR-0092](0092-direct-cdp-android-browser-action-profiling.md) and
 [ADR-0093](0093-two-tier-webkit-commit-gate-in-ci.md). **Date:** 2026-07
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
+> regression tiers and gates remain in force. Their commands are now `perf:ios:xcuitest:screen`,
+> `perf:ios:xcuitest:actions`, `perf:web:actions`, and `perf:web:frames`.
+
 ## Context
 
 The physical-iPad campaign fixed six user-visible stalls: drawing, undo, screenshot save, theme

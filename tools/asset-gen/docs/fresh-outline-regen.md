@@ -9,13 +9,13 @@ punch). The alternative (edit-style normalization of the existing pen,
 3.1's faithfulness resists erase-style edits on solid ink (ISSUES #6 caveat), while a fresh
 composition simply never draws the bad anatomy in the first place.
 
-The tool is `gen:coloring-outlines:fresh` (`gen-coloring-outlines-fresh.mjs`): a fixed baseline
-**style prompt** describing the catalog's shipped look (medium-weight black pen outlines on white,
-rounded chunky toddler-level shapes, closed colorable regions, outlined pupil ring + catchlight —
-never solid ink, no text) plus a 1–2 sentence per-page `--scene`. The scene deliberately does
-**not** describe the old composition — the point is a re-roll, not a reproduction; only the subject
-must match the catalog entry. Candidates land in `.coloring-samples/fresh/` and are gated offline
-before a human picks one:
+The tool is `gen:coloring-outlines:fresh` (`gen-fresh-outlines.mjs`): a fixed baseline **style
+prompt** describing the catalog's shipped look (medium-weight black pen outlines on white, rounded
+chunky toddler-level shapes, closed colorable regions, outlined pupil ring + catchlight — never
+solid ink, no text) plus a 1–2 sentence per-page `--scene`. The scene deliberately does **not**
+describe the old composition — the point is a re-roll, not a reproduction; only the subject must
+match the catalog entry. Candidates land in `.coloring-samples/fresh/` and are gated offline before
+a human picks one:
 
 | Gate        | Measure                                                  | Why                                                                                        |
 | ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |

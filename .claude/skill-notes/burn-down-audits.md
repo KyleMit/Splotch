@@ -73,7 +73,8 @@ translation:
 * The runbook became a skill, registered in `skills-guide`, `audit-conventions`, the knowledge map,
   and the `tools/` orientation.
 * The verifier prompt reads the pin SHA from each finding instead of the kit's hardcoded `f934d43`.
-* `pop.mjs` keeps the excision seam dprint-clean, because CI runs `dprint check` on `AUDIT.md`.
+* `pop-finding.mjs` keeps the excision seam dprint-clean, because CI runs `dprint check` on
+  `AUDIT.md`.
 * `jq` was dropped entirely — Node parses the `claude -p` envelopes.
 * The kit's deny rules for destructive git ops were merged into `.claude/settings.json`, and
   `.audit-work/` was gitignored.
@@ -88,7 +89,7 @@ different sizes.
 19k-line `AUDIT.md`, and that the header comment called hundreds of sequential edits "a corruption
 risk" — yet the entry-boundary parsing and seam-collapse logic had no committed test, only manual
 exercise against a scratch copy. The response created
-`tools/audit-burndown/tests/audit-burndown-lib.test.mjs` + `tools/vitest.config.mjs`, wired as
+`tools/audit-burndown/tests/burndown-core.test.mjs` + `tools/vitest.config.mjs`, wired as
 `npm run test:tools` into `npm test` and its own CI step. The whole repo-script test suite traces
 back to that one comment.
 
@@ -160,8 +161,8 @@ lies to whoever triages the deferral months later.
   away. One had cost roughly $4 of Opus work. `resolveImplSha` now trusts git over the envelope:
   HEAD past the base means it committed, whatever it remembered to report.
 * **Fix rounds never got that same fallback** (1f825972), and a failed fix round deferred as "failed
-  adversarial review". `deferralReason()` in `lib.mjs` now names the role that actually failed,
-  locked by unit tests.
+  adversarial review". `deferralReason()` in `lib/burndown-core.mjs` now names the role that
+  actually failed, locked by unit tests.
 * **A dropped-invalid finding incremented `done`** (54caf9a2), so `finished: N done` conflated fixes
   with drops and the closeout `AUDIT-LOG` row was wrong *in the flattering direction*. Drops now
   count separately.
@@ -175,7 +176,7 @@ finished work into a deferral and pays for it again on the re-run.**
 
 * **Per-commit PR comments** replaced a batch dump (aed45eb7). Each pushed fix gets its own comment
   carrying the issue, the implementer's summary, and any adversarial catch. Rendering lives in
-  `comment.mjs` so it is unit-testable and shared.
+  `lib/comment-sync.mjs` so it is unit-testable and shared.
 * **Dangling code fences** in a truncated finding snippet made the rest of a comment render as one
   code block (fa51bd0b). Truncation now cuts at a line boundary and closes the fence.
 * **SHAs are bare, never backticked** (6646f9db). GitHub's native linker only turns a plain-text SHA
@@ -213,18 +214,18 @@ progress another machine pushed without clobbering local commits.
 
 ### Env knobs vanishing under tmux — the same bug three times
 
-`tmux new-session` does not reliably inherit the caller's environment, so `overnight.mjs` bakes the
-run's knobs into the job command. The list of which knobs those are has now been wrong **three
-times**, and each time the failure was silent and late:
+`tmux new-session` does not reliably inherit the caller's environment, so `launch-overnight.mjs`
+bakes the run's knobs into the job command. The list of which knobs those are has now been wrong
+**three times**, and each time the failure was silent and late:
 
 1. **All of them** (70cabfac) — the original fix, adding the forwarding at all.
 2. **`MODEL_IMPL_MINOR`** (a40f534f) — added to the driver in 6646f9db without a forwarding entry.
-3. **`EFFORT_*`** (d755a0b6) — same, which is what finally moved the list into `lib.mjs` as
-   `LAUNCH_KNOBS`, shared by both consumers.
+3. **`EFFORT_*`** (d755a0b6) — same, which is what finally moved the list into
+   `lib/burndown-core.mjs` as `LAUNCH_KNOBS`, shared by both consumers.
 4. **`AUDIT_FILE`** (6e735b87) — missed even after the consolidation, because it is read via
-   `auditFile()` in `lib.mjs` rather than declared beside the other knobs.
+   `auditFile()` in `lib/burndown-core.mjs` rather than declared beside the other knobs.
 
-Why it keeps failing silently: `preflight.mjs` is spawned directly and **inherits the full
+Why it keeps failing silently: `check-preflight.mjs` is spawned directly and **inherits the full
 environment**, so it passes. Only the driver inside tmux runs without the knob. `AUDIT_FILE` is the
 worst case — the run burns down the wrong file and commits entry deletions to it, unattended.
 
@@ -246,7 +247,7 @@ agent must hold no orchestration state.
   file. Also records that **`ps` is authoritative for live monitors, not `TaskList`** — `TaskList`
   was observed empty while a monitor was still alive, and the duplicate that mistake armed
   double-reported for an hour.
-* **The launch command cannot be scraped from `ps`** (d755a0b6). `overnight.mjs` runs
+* **The launch command cannot be scraped from `ps`** (d755a0b6). `launch-overnight.mjs` runs
   `env VAR=… node …`, and `env` **execs** node, so the assignments live in the environment and never
   enter argv. macOS only appeared to work because the `caffeinate` parent incidentally retains the
   string in its own argv — and Linux drops caffeinate. The driver now records its own environment.
@@ -322,9 +323,9 @@ The chain needed three independently reasonable things to line up:
    at docs/AUDIT.md:10, unlike neighboring burndown commits 86b98e5 and 6ee1fd4 which excise the
    entry in the same commit as the fix."* That is a genuinely good observation from a blind
    reviewer. It is also exactly wrong, and nothing in its prompt could have told it so.
-3. The implementer complied — it ran `pop.mjs --delete`, confirmed it was entry #1, and said so in
-   its summary. Then the driver ran its own `deleteFirstEntry()`, which now pointed at the **next**
-   finding, and amended it into the same commit.
+3. The implementer complied — it ran `pop-finding.mjs --delete`, confirmed it was entry #1, and said
+   so in its summary. Then the driver ran its own `deleteFirstEntry()`, which now pointed at the
+   **next** finding, and amended it into the same commit.
 
 Net effect per occurrence: one unrelated finding — never verified, never implemented, never reviewed
 — deleted from the backlog inside a commit about something else. `finished: 5 fixed` was true and
@@ -342,9 +343,9 @@ drop, defer). Positional deletion is only correct while the entry being worked o
 and a role can invalidate that mid-finding; keying on the title makes a duplicated delete a no-op
 instead of a data loss. The success path logs `entry already gone — a role edited the audit file`,
 which is both the tripwire and the monitor grep. Both prompts were also corrected (reviewer: the
-excision is the driver's job, never raise it; implementer: never edit the file or run `pop.mjs`, and
-push back if a round asks you to) — but those are the backstop, not the fix. A prompt that asks a
-model not to do something is not a guarantee; the lib change is.
+excision is the driver's job, never raise it; implementer: never edit the file or run
+`pop-finding.mjs`, and push back if a round asks you to) — but those are the backstop, not the fix.
+A prompt that asks a model not to do something is not a guarantee; the lib change is.
 
 Two general lessons, both of which generalise past this bug:
 
@@ -373,8 +374,8 @@ defence: the title it is handed really is the current finding's, and that entry 
 **The title-keyed delete fixed the case where a role deletes the wrong entry, not the case where the
 driver deletes the right entry for the wrong work.**
 
-Fixed by `briefIsStale(issueWrittenAtMs, briefMtimeMs)` in `lib.mjs`, checked between the `VALID`
-verdict and the implementer call; a stale or missing brief defers as
+Fixed by `briefIsStale(issueWrittenAtMs, briefMtimeMs)` in `lib/burndown-core.mjs`, checked between
+the `VALID` verdict and the implementer call; a stale or missing brief defers as
 `verifier gave no usable
 brief`.
 
@@ -448,9 +449,10 @@ Two things made this concrete rather than theoretical on the run that fixed it:
 
 The draft is captured **before** the reset (afterwards its commits are unreachable) and the patch
 filename suffixes on collision, because silently overwriting a draft is the exact loss the feature
-exists to prevent. `renderDeferralNotes` and `draftPatchPath` live in `lib.mjs` with unit tests; one
-of them pins that a single attempt is not numbered and that a deferral with no commit gets no
-`#### Draft implementation` section at all — an empty pointer would be worse than none.
+exists to prevent. `renderDeferralNotes` and `draftPatchPath` live in `lib/burndown-core.mjs` with
+unit tests; one of them pins that a single attempt is not numbered and that a deferral with no
+commit gets no `#### Draft implementation` section at all — an empty pointer would be worse than
+none.
 
 **What was deliberately not done:** capturing a draft for a finding that was *interrupted* rather
 than deferred. The run's last finding died to a container restart mid-fix-round; its entry was never
@@ -474,12 +476,14 @@ operator error rather than design.
   disk survived, the Node process survived, its in-flight `claude -p` child did not. The driver then
   waited forever on a child that would never report. What makes it nasty is that it emits nothing:
   no `HALT`, no `DEFERRED`, no log line, so an event-driven monitor is silent and silence is the
-  designated "healthy" signal. This is the only case where killing `burndown.mjs` is right, and the
-  diagnostic that identifies it is `pgrep -f 'claude -p'` returning nothing while the driver lives.
-  Distinct from the documented "container reclaimed" case, which loses everything and is obvious.
-* **`pkill -f 'audit-burndown/burndown.mjs'` kills your own shell too**, because `-f` matches whole
-  command lines and the wrapper contains the pattern. Exit 144 reads like a failure; the kill had
-  actually worked. It also took out a background waiter whose command line mentioned the same path.
+  designated "healthy" signal. This is the only case where killing `run-burndown.mjs` is right, and
+  the diagnostic that identifies it is `pgrep -f 'claude -p'` returning nothing while the driver
+  lives. Distinct from the documented "container reclaimed" case, which loses everything and is
+  obvious.
+* **`pkill -f 'audit-burndown/run-burndown.mjs'` kills your own shell too**, because `-f` matches
+  whole command lines and the wrapper contains the pattern. Exit 144 reads like a failure; the kill
+  had actually worked. It also took out a background waiter whose command line mentioned the same
+  path.
 * **Elapsed time was twice inferred from a monitor's death.** A `Monitor` times out 30 minutes after
   it was *armed*, which is unrelated to when the current finding started. Reading the timeout as
   "this finding has run 30 minutes" produced an investigate-band alarm for a P4 that was three
@@ -565,8 +569,8 @@ comment store through the MCP tools via a `next` → post → `done` loop. Every
 minted `--session-id`, and that minted id (not `env.session_id`) is the resume handle. `PUSH_EVERY`
 drops 10 → 1 and `PUSH_TEST_CMD` defaults to empty, with CI on the draft PR as the full-suite
 backstop. Comment records are written the instant a fix lands rather than accumulated in memory.
-`overnight.mjs` loses `caffeinate`/`tmux`/`pmset`; preflight loses the `gh` checks and the macOS
-power section and gains an origin-reachability check.
+`launch-overnight.mjs` loses `caffeinate`/`tmux`/`pmset`; preflight loses the `gh` checks and the
+macOS power section and gains an origin-reachability check.
 
 The choice of **full cutover over capability-detection** was the user's, and it is the one decision
 here that a future maintainer might reasonably revisit. Three options were on the table:
@@ -635,15 +639,15 @@ unaffordable criterion is wrong at whatever rate the verifier happens to write o
 Two smaller things from the same run, both recorded because they generalise:
 
 * **`pgrep` wait loops self-match and hang forever.** The natural way to wait out a clean stop —
-  `until ! pgrep -f 'audit-burndown/burndown.mjs'; do sleep 15; done` — never exits, because the
+  `until ! pgrep -f 'audit-burndown/run-burndown.mjs'; do sleep 15; done` — never exits, because the
   loop's own command line contains the pattern and it ends up waiting on itself. It presents as a
   driver that will not die, indefinitely, long after the run has finished. This is the third
   distinct way `-f`'s whole-command-line matching has bitten a supervising agent (after `pkill`
   killing its own shell, and the orphan check matching the supervising CLI), and the first where the
   failure is a silent hang rather than a wrong answer. The anchored
   `'^node
-  tools/audit-burndown/burndown.mjs'` form fixes all three; it is now in the skill for the
-  wait loop as well as the liveness check.
+  tools/audit-burndown/run-burndown.mjs'` form fixes all three; it is now in the skill for
+  the wait loop as well as the liveness check.
 * **The verifier invalidated a finding the run itself had obsoleted, correctly and in 25 seconds.**
   An early P1 extracted the drawing shell's boot sequence into `lib/boot/`; a later P2 asked for
   wake-lock lifecycle to be pulled out of `onMount`, which the P1 had already done. The verifier
@@ -789,18 +793,18 @@ The ask was "cherry-pick the ones you could do in 1–2 minutes, leave the rest,
 cannot serve: it has no selector, pops in file order, and spends a full verify/impl/review cycle on
 whatever it gets. Run by hand instead — index by `findingPriority` + body length, work the shortest
 P4/P5 entries inline, `deleteEntryByTitle` for the excision. 58 fixed / 4 dropped / 62 consumed, 535
-→ 473, arithmetic reconciled against `pop.mjs --count`.
+→ 473, arithmetic reconciled against `pop-finding.mjs --count`.
 
 The interesting result is not the throughput, it is **which of the driver's guarantees turn out to
 be load-bearing once you remove them.** Three failed, all three predictable in hindsight, and the
 skill now carries them as a "hand-driven cherry-pick" subsection rather than as generic advice:
 
-* **Comment SHAs.** The `comment.mjs` → `next` → post → `done` loop exists so a SHA reaches GitHub
-  from a *tool*. Writing comments by hand puts the agent's transcription in that path, and 32 of 62
-  went out as a correct 7-char `%h` prefix padded with 5 invented characters — right length, right
-  leading characters, resolves to nothing. Nothing downstream validates a SHA and a bad one renders
-  as ordinary text, so it is invisible until someone clicks. Worse, `add_issue_comment` has no
-  update counterpart in *this session's* GitHub toolset, so the only remedy left was a 32-row
+* **Comment SHAs.** The `comment-sync.mjs` → `next` → post → `done` loop exists so a SHA reaches
+  GitHub from a *tool*. Writing comments by hand puts the agent's transcription in that path, and 32
+  of 62 went out as a correct 7-char `%h` prefix padded with 5 invented characters — right length,
+  right leading characters, resolves to nothing. Nothing downstream validates a SHA and a bad one
+  renders as ordinary text, so it is invisible until someone clicks. Worse, `add_issue_comment` has
+  no update counterpart in *this session's* GitHub toolset, so the only remedy left was a 32-row
   correction comment — other runners' toolsets do expose a comment updater, so check before assuming
   a correction comment is the only option. The general rule went into `.ruler/github.md` (so it
   reaches every session via CLAUDE.md/AGENTS.md, not just this skill): take SHAs from `%H`, never
@@ -943,8 +947,8 @@ reviewer says more things" is not evidence it says more useful things. And leaka
 would cost real fix rounds, the opposite of the current failure.
 
 **Cost.** ~60–90 min: `SCHEMA_REVIEW`, the conservatism paragraph in `reviewer.md`, the collection
-in `burndown.mjs` (critically, `status`/`feedback` must keep reading `findings` **only**), and
-rendering + tests in `comment.mjs`. Plus a canary to confirm `findings[]` did not inflate.
+in `run-burndown.mjs` (critically, `status`/`feedback` must keep reading `findings` **only**), and
+rendering + tests in `lib/comment-sync.mjs`. Plus a canary to confirm `findings[]` did not inflate.
 
 ### 2. Effort sweep, and `xhigh`
 
@@ -977,7 +981,7 @@ the stale timing table for free.
 
 ### 4. Smaller, unvalidated
 
-* **The acceptance-criteria slice is fragile** (`burndown.mjs`, the `acceptanceAt` block).
+* **The acceptance-criteria slice is fragile** (`run-burndown.mjs`, the `acceptanceAt` block).
   `findIndex` matches the *first* line containing "acceptance" anywhere — including prose in an
   earlier bullet — so the window can start above the real section; and the window is a fixed 40
   lines, which truncates a long criteria section silently. Anchor on a heading match

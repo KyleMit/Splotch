@@ -1,0 +1,68 @@
+// Batch CLI: derive the SHIPPED fills-only images from the committed raw fills by
+// punching out their own outline pixels, using the page's line art as the mask.
+// The punch itself (why it exists, the mask math, the encode settings) lives in
+// lib/punch-fill.mjs, shared with gen-light-fills.mjs.
+//
+// Inputs (committed, never shipped):  tools/asset-gen/fill-src/{book}/{page}-{orient}.{light,night}.raw.webp
+// Mask:                               web/static/coloring/{book}/{page}-{orient}.outline.webp (the line art)
+// Outputs (committed, shipped):       web/static/coloring/{book}/{page}-{orient}.{light,night}.webp
+//
+// Offline + deterministic: pure sharp, no network, no GEMINI_API_KEY. Safe to
+// re-run anytime; a raw fill with no matching line art fails loudly — except
+// *.input.{light,night}.raw.webp strays (a samples-dir *.input.webp debug sibling
+// swept up by a batch cp), which are skipped with a warning so one junk file
+// can't kill a whole-category run.
+//
+//   npm run gen:coloring-punched-fills                     punch every raw fill
+//   npm run gen:coloring-punched-fills -- nature farm      only these categories
+//   npm run gen:coloring-punched-fills -- nature/ant-wide  one page (both variants)
+import { parseArgs } from 'node:util';
+import { glob } from 'node:fs/promises';
+import { existsSync, statSync } from 'node:fs';
+import { join, relative, dirname } from 'node:path';
+import { fail } from '../lib/asset-cli.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/asset-paths.mjs';
+import { punchFill } from '../lib/punch-fill.mjs';
+
+// Resolve args to raw fills (default: all). An arg is a category ("nature") or a
+// page ("nature/ant-wide" — both its light and night raws).
+async function rawsUnder(sub = '') {
+  const cwd = sub ? join(FILL_SRC_DIR, sub) : FILL_SRC_DIR;
+  if (!existsSync(cwd)) return [];
+  const out = [];
+  for await (const entry of glob('**/*.raw.webp', { cwd })) out.push(join(cwd, entry));
+  return out;
+}
+async function resolveArg(arg) {
+  const asDir = join(FILL_SRC_DIR, arg);
+  if (existsSync(asDir) && statSync(asDir).isDirectory()) return rawsUnder(arg);
+  const page = await rawsUnder(dirname(arg));
+  const matches = page.filter((p) => {
+    const rel = toPosix(relative(FILL_SRC_DIR, p));
+    return rel.startsWith(`${arg}.`);
+  });
+  if (!matches.length)
+    fail(`No raw fills match "${arg}" under ${relative(REPO_ROOT, FILL_SRC_DIR)}/`);
+  return matches;
+}
+
+const { positionals } = parseArgs({ allowPositionals: true });
+const raws = (
+  positionals.length ? (await Promise.all(positionals.map(resolveArg))).flat() : await rawsUnder()
+)
+  .sort()
+  .filter((raw) => {
+    if (!/\.input\.(light|night)\.raw\.webp$/.test(raw)) return true;
+    console.warn(
+      `SKIPPING ${relative(FILL_SRC_DIR, raw)} — looks like a *.input.webp debug sibling ` +
+        `copied from the samples dir, not a real raw fill; delete it`
+    );
+    return false;
+  });
+if (!raws.length) fail(`No raw fills found under ${relative(REPO_ROOT, FILL_SRC_DIR)}/`);
+
+for (const raw of raws) {
+  const { rel, punched } = await punchFill(raw);
+  console.log(`${rel.padEnd(44)} punched ${(punched * 100).toFixed(1).padStart(4)}% of pixels`);
+}
+console.log(`\n${raws.length} fill(s) punched -> ${relative(REPO_ROOT, COLORING_DIR)}/`);

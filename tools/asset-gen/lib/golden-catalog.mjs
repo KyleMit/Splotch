@@ -23,7 +23,7 @@ const round = (v, digits) => {
 // the shape frozen in golden/golden-scores.json — the shape GOLDEN_METRICS
 // and GOLDEN_VERDICTS below address by path. `chalk` is the dark-mode line
 // art buffer when the page has forked (see docs/pen-chalk-fork.md), else
-// null; audit-golden.mjs resolves it from the real catalog layout.
+// null; check-golden-scores.mjs resolves it from the real catalog layout.
 export async function scoreGoldenPage({ pen, lightRaw, nightRaw, chalk }) {
   const analysis = await prepareOutlineAnalysis(pen);
   const [solidity, rings, frame] = await Promise.all([

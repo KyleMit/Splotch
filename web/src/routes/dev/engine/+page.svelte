@@ -114,7 +114,7 @@
       setEraserMode,
       // Magic brush (ADR-0043): with no color sheet set, the engine locks a
       // random rainbow on the first stroke — enough for perf replay of
-      // magic-heavy recordings (replay-scenario.mjs).
+      // magic-heavy recordings (replay-input-recording.mjs).
       setMagicMode,
       setSafeAreaInsets,
       undo,

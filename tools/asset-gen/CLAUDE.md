@@ -6,18 +6,19 @@
 > — edit that source, then run `npm run ruler:apply` at the repo root (ADR-0058).
 
 The AI/`sharp` tooling that produces Splotch's committed art. Layout: runnable entry points in
-`bin/`, shared helpers in `lib/`, committed regression fixtures in `golden/`, all documentation in
-`docs/`.
+`coloring/`, `style-covers/`, and `crayon-reference/` plus capability-wide entries at the root;
+shared helpers in `lib/`; committed regression fixtures in `golden/`; the primary runbook at the
+root and deeper documentation in `docs/`.
 
 ## The docs (`docs/`)
 
-Runbooks and living lists:
+Start with the root `README.md` for the command catalog and review workflow. Deeper runbooks and
+living decision records are here:
 
 | File                           | What it is                                                                                                                                                                                                                                                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `README.md`                    | The runbook — where the folder sits in the repo, every `gen:*` command, the drift audit, and the review workflow. Start here.                                                                                                                                                                                             |
 | `pipeline.md`                  | The END-TO-END picture — outline normalization, the punch, day/night fills, every quality gate and the shipped regression that motivated it, iteration methods, and where future categories will likely break. Its illustrations are frozen copies in `docs/pipeline-assets/`; keep both updated as the pipeline evolves. |
-| `coloring-book-proof-sheet.md` | The coloring-book proof sheet's CLI contract, layer/compositing model, and size constraints — read before modifying `bin/gen-coloring-book-proof-sheet.mjs` or anything under `coloring-book-proof-sheet-assets/`.                                                                                                        |
+| `coloring-book-proof-sheet.md` | The coloring-book proof sheet's CLI contract, layer/compositing model, and size constraints — read before modifying `coloring/gen-book-proof-sheet.mjs` or anything under `coloring-book-proof-sheet-assets/`.                                                                                                            |
 
 The image-quality backlog and the living list of known defects / gate blind spots / tooling gaps now
 live in **GitHub issues**, label `area:asset-gen` (they used to be `IDEAS.md` + `ISSUES.md` in this
@@ -47,22 +48,22 @@ carve-out):
   repo-root `package.json` so the root `node_modules` stays flat for `cap sync` (ADR-0029). Never
   add a `dependencies` block here or `npm install` in this folder — binaries resolve upward from the
   root tree.
-* **Paths go through `lib/paths.mjs`.** Use its exported constants (`REPO_ROOT`, `COLORING_DIR`,
-  `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode `../../..` walks
-  or import from the repo-root `tools/lib/`.
+* **Paths go through `lib/asset-paths.mjs`.** Use its exported constants (`REPO_ROOT`,
+  `COLORING_DIR`, `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode
+  `../../..` walks or import from the repo-root `tools/lib/`.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
   `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
-  are their fills-only punch (`bin/punch-fill-outlines.mjs`, root: `npm run gen:coloring-punch` —
-  offline, deterministic). Never hand-edit a shipped fill, and after changing any raw, re-punch it.
-  The drift audit scores the raws.
+  are their fills-only punch (`coloring/punch-fill-outlines.mjs`, root:
+  `npm run gen:coloring-punched-fills` — offline, deterministic). Never hand-edit a shipped fill,
+  and after changing any raw, re-punch it. The drift audit scores the raws.
 * **Line work is forked per theme (the pen/chalk split — see `docs/pipeline.md`).** The PEN outline
   (`{page}.outline.webp`, black ink on white) drives light mode and every derivation; the CHALK
-  outline (`{page}.chalk.webp`, `bin/gen-coloring-chalk.mjs`) is the dedicated dark-mode line art
-  with deliberate solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it before
-  showing it to Gemini or a human as "dark mode art". Night fills condition on the chalk and punch
-  against it; after changing a chalk, regenerate the page's night fill and re-punch.
-* **The only sanctioned imports from `web/src`** are the five modules listed in `docs/README.md`
-  (styles, prompt, theme, geminiSafety, books) — the app's single source of truth for
+  outline (`{page}.chalk.webp`, `coloring/gen-chalk-outlines.mjs`) is the dedicated dark-mode line
+  art with deliberate solid whites (eye sclera, catchlights), **stored ink-on-white** — negate it
+  before showing it to Gemini or a human as "dark mode art". Night fills condition on the chalk and
+  punch against it; after changing a chalk, regenerate the page's night fill and re-punch.
+* **The only sanctioned imports from `web/src`** are the five modules listed in `README.md` (styles,
+  prompt, theme, geminiSafety, books) — the app's single source of truth for
   prompts/safety/catalog/theme. Don't reach into anything else under `web/src`, and note the
   constraint that list carries: each of those modules must be loadable by bare Node under
   `--experimental-strip-types`, so its own imports are either type-only or spelled with an explicit
@@ -91,9 +92,9 @@ carve-out):
   shipped art into `web/static/` and review scratch into the gitignored `.coloring-samples*/`. Never
   commit the scratch dirs.
 * **`golden/` holds the committed regression fixtures — keep them in sync with the assets.** After
-  any pipeline or asset change, run `npm run gen:coloring-golden:diff` (offline, ~1 min; exit 1 = a
-  page regressed) and, when the change is intentional, adopt it with
-  `npm run gen:coloring-golden:freeze` + `npm run gen:assets:manifest` in the same commit — CI's
+  any pipeline or asset change, run `npm run check:coloring-golden-scores` (offline, ~1 min; exit 1
+  = a page regressed) and, when the change is intentional, adopt it with
+  `npm run update:coloring-golden-scores` + `npm run gen:assets:manifest` in the same commit — CI's
   `check:assets:manifest` fails on any asset byte that drifted from `golden/asset-manifest.sha256`.
   The pair is deliberate: the golden scores catch quality drift, the sha256 manifest catches byte
   swaps between score-identical renders (and enforces that a night-only pass never touches
@@ -115,17 +116,17 @@ carve-out):
 * **Manual/on-demand only** — the Gemini generators need `GEMINI_API_KEY` and are never run in CI
   (real API cost). The app never runs any of this at build time.
 * **The coloring-book proof sheet is the single asset-review surface — read
-  `docs/coloring-book-proof-sheet.md` before modifying `bin/gen-coloring-book-proof-sheet.mjs` or
+  `docs/coloring-book-proof-sheet.md` before modifying `coloring/gen-book-proof-sheet.mjs` or
   anything under `coloring-book-proof-sheet-assets/`.** It holds the CLI contract, the
   layer/compositing model, and the size constraints.
 * **Always rebuild the coloring-book proof sheet when you touch an asset.** Any time you generate,
-  retouch, regenerate, or ship a coloring fill, re-run `bin/gen-coloring-book-proof-sheet.mjs`
-  (root: `npm run gen:coloring-book-proof-sheet -- <category>`) for the affected category — **one
-  category per sheet** (`all` is rejected: the Artifact tool caps uploads at 16 MB and a
-  whole-catalog sheet exceeds it). The default `--source shipped` rebuilds from committed assets
-  only (no key/network, ~3s). Then **publish the resulting HTML with the Artifact tool** so the
-  change is visible in the session — the sheet is self-contained (images inlined as base64), so it
-  renders in the sandbox; do NOT hand-composite a PNG. Judge on the **Combined** view.
+  retouch, regenerate, or ship a coloring fill, re-run `coloring/gen-book-proof-sheet.mjs` (root:
+  `npm run gen:coloring-book-proof-sheet -- <category>`) for the affected category — **one category
+  per sheet** (`all` is rejected: the Artifact tool caps uploads at 16 MB and a whole-catalog sheet
+  exceeds it). The default `--source shipped` rebuilds from committed assets only (no key/network,
+  ~3s). Then **publish the resulting HTML with the Artifact tool** so the change is visible in the
+  session — the sheet is self-contained (images inlined as base64), so it renders in the sandbox; do
+  NOT hand-composite a PNG. Judge on the **Combined** view.
 * **Retired techniques and failed approaches live in `legacy/`** (the canonical-eye era's
   `night-fills.md` runbook and `retouch-line-art.mjs`, plus the history chronicle in
   `legacy/README.md`). Nothing in there is part of the current pipeline — `docs/pipeline.md` is the

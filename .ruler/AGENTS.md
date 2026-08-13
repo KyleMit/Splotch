@@ -4,9 +4,9 @@
 > Every `CLAUDE.md` and `AGENTS.md` in this repo and nearly every package in `.claude/skills/` and
 > `.agents/skills/` is **generated** by [ruler](https://github.com/intellectronica/ruler) — never
 > edit generated files directly. Edit their `.ruler/` source, run `npm run ruler:apply`, and commit
-> the output. Direct provider packages registered in `tools/ruler/direct-provider-skills.mjs` are
-> the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude and
-> Codex implementations, while `run-claude` and `implement-issue-stack` are intentionally
+> the output. Direct provider packages registered in `tools/ruler/lib/direct-provider-skills.mjs`
+> are the exceptions: `burn-down-audits` and `analyze-session-transcripts` have independent Claude
+> and Codex implementations, while `run-claude` and `implement-issue-stack` are intentionally
 > Codex-only. Edit only the registered provider package and note you intend to change; never
 > manufacture a missing provider by copying another one.
 
