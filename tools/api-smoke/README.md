@@ -40,7 +40,8 @@ The URL may instead be the first positional argument. The check logs into `/api/
 the token snapshot reports `persistent: true`, adds a unique probe token, reads it back, and removes
 it. Cleanup is attempted again after a failure and is idempotent, but if a run is interrupted
 inspect the admin console for a `blobs-smoke-*` token. Missing configuration exits with status 2; a
-failed contract exits nonzero.
+failed contract exits nonzero. This reversible probe is a bounded exception to ADR-0111's otherwise
+read-only `check` contract because persistence cannot be validated without a write and read-back.
 
 ## Maintenance
 
@@ -48,6 +49,12 @@ The API contract is documented in `docs/API.md` and implemented under `web/src/r
 endpoint or response shape changes, update the reference, extend the local smoke assertions, and
 keep the owned admin client request-only. Changes to deployed persistence semantics must update the
 Blobs workflow and ADR-0025 expectations together.
+
+The [Blobs Smoke workflow](../../.github/workflows/blobs-smoke.yml) runs
+`node tools/api-smoke/check-deployed-blobs.mjs` directly with `install: 'false'` and no `npm ci`, so
+that entry point and its `tools/lib/proc.mjs` and `tools/lib/smoke.mjs` imports must stay
+dependency-free. Adding an npm dependency to either shared module breaks the deploy gate at runtime
+rather than in CI's unit job.
 
 Run focused verification with:
 

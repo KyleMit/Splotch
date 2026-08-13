@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { commonWebServer } from '../../web/playwright.shared.ts';
 
 // Both throwaway servers that boot this app — the Playwright web server and the
-// one tools/api-smoke/run-local-contract.mjs spawns — must declare every private env var the app
-// reads, never inherit it. Vite gives process.env precedence over web/.env, so a
+// one tools/api-smoke/run-local-contract.mjs spawns — must declare every private
+// env var the app reads, never inherit it. Vite gives process.env precedence over web/.env, so a
 // name missing from either object silently picks up whatever a developer put in
 // their dotenv: that is how an ambient GITHUB_ISSUE_TOKEN turned the /feedback
 // failure-path spec into six real issues in the tracker (#646), and it is also
