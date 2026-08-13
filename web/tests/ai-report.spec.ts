@@ -222,7 +222,7 @@ test.describe('AI picture report', () => {
     await page.keyboard.press('Enter');
     const confirm = page.locator('dialog.ai-report-confirm');
     await expect(confirm).toContainText(
-      'The rejected drawing, selected art style, and exact instruction sent to the AI'
+      "The rejected drawing, selected art style, exact instruction sent to the AI, and the AI's refusal reason"
     );
     await expect(confirm).toContainText('the report is deleted after 30 days.');
     await expect(confirm.locator('img')).toHaveCount(1);
@@ -237,29 +237,50 @@ test.describe('AI picture report', () => {
     expect(reportHeaders?.['x-installation-id']).toMatch(/^[a-f0-9]{64}$/);
   });
 
-  test('cancelling a refusal report restores focus on a short light layout', async ({ page }) => {
-    await page.setViewportSize({ width: 740, height: 360 });
-    await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
-    await page.addInitScript(
-      (key) => localStorage.setItem(key, 'never'),
-      STORAGE_KEYS.parentalGateImageReportMode
-    );
-    const endpoint = await openAiResult(page);
-    await endpoint.fail(422);
+  for (const viewport of [
+    { width: 740, height: 360 },
+    { width: 480, height: 320 },
+  ]) {
+    test(`cancelling a refusal report restores focus at ${viewport.width}×${viewport.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
+      await page.addInitScript(
+        (key) => localStorage.setItem(key, 'never'),
+        STORAGE_KEYS.parentalGateImageReportMode
+      );
+      const endpoint = await openAiResult(page);
+      await endpoint.fail(422);
 
-    const report = page.getByRole('button', { name: 'Report this refusal' });
-    await report.focus();
-    await page.keyboard.press('Enter');
-    const confirm = page.locator('dialog.ai-report-confirm');
-    await expect(confirm).toBeVisible();
-    const confirmBox = await confirm.boundingBox();
-    expect(confirmBox?.y).toBeGreaterThanOrEqual(0);
-    expect((confirmBox?.y ?? 0) + (confirmBox?.height ?? 0)).toBeLessThanOrEqual(360);
+      const report = page.getByRole('button', { name: 'Report this refusal' });
+      await report.focus();
+      await page.keyboard.press('Enter');
+      const confirm = page.locator('dialog.ai-report-confirm');
+      await expect(confirm).toBeVisible();
+      const geometry = await confirm.evaluate((dialog) => {
+        const dialogBox = dialog.getBoundingClientRect();
+        const headingBox = dialog.querySelector('h3')!.getBoundingClientRect();
+        const disclosureBox = dialog
+          .querySelector('.ai-report-confirm-heading p')!
+          .getBoundingClientRect();
+        return {
+          dialogTop: dialogBox.top,
+          dialogBottom: dialogBox.bottom,
+          headingTop: headingBox.top,
+          disclosureTop: disclosureBox.top,
+        };
+      });
+      expect(geometry.dialogTop).toBeGreaterThanOrEqual(0);
+      expect(geometry.dialogBottom).toBeLessThanOrEqual(viewport.height);
+      expect(geometry.headingTop).toBeGreaterThanOrEqual(geometry.dialogTop);
+      expect(geometry.disclosureTop).toBeGreaterThanOrEqual(geometry.dialogTop);
 
-    await page.keyboard.press('Escape');
-    await expect(confirm).not.toBeVisible();
-    await expect(report).toBeFocused();
-  });
+      await page.keyboard.press('Escape');
+      await expect(confirm).not.toBeVisible();
+      await expect(report).toBeFocused();
+    });
+  }
 
   test('a failed refusal report offers an in-place retry without another generation', async ({
     page,

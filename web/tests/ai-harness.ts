@@ -78,7 +78,7 @@ async function mockAiEndpoint(page: Page) {
         status,
         contentType: 'application/json',
         body: JSON.stringify({ ok: false, error: 'Mock generation failure' }),
-        headers,
+        headers: headers ?? (status === 422 ? { 'X-Report-Token': MOCK_REPORT_TOKEN } : undefined),
       }),
   };
 }

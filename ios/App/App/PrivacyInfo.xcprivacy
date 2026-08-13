@@ -22,7 +22,8 @@
   declared answers. OtherUserContent covers deliberate AI generation, the
   private feedback form, and a confirmed AI report. Normal generation and
   refusals are ephemeral; a confirmed report retains its input, resolved prompt,
-  style, and timestamp for at most 30 days, plus the output for a picture report.
+  style, and timestamp for at most 30 days, plus the provider reason for a
+  refusal report or the output for a picture report.
   OtherDiagnosticData covers
   the optional device snapshot attached to a feedback report.
 -->

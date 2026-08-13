@@ -42,6 +42,7 @@ describe('submitImageReport', () => {
       drawing: new Blob(['drawing'], { type: 'image/png' }),
       output: new Blob(['output'], { type: 'image/webp' }),
       style: 'Felt',
+      reportContext: null,
     });
 
     expect(result).toEqual({ ok: true, reportId: 'report-id' });
@@ -66,6 +67,7 @@ describe('submitImageReport', () => {
         drawing: null,
         output: new Blob(['x']),
         style: 'Anything',
+        reportContext: null,
       })
     ).resolves.toEqual({
       ok: false,
@@ -83,6 +85,10 @@ describe('submitImageReport', () => {
       drawing,
       output: null,
       style: 'Felt',
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
     });
 
     expect(result).toEqual({ ok: true, reportId: 'report-id' });
@@ -91,6 +97,7 @@ describe('submitImageReport', () => {
         kind: 'false-positive-refusal',
         input: drawing,
         output: null,
+        refusalReason: 'IMAGE_SAFETY',
       })
     );
     expect(createIssue).toHaveBeenCalledWith(
@@ -99,6 +106,20 @@ describe('submitImageReport', () => {
         body: expect.stringContaining('**Category:** false-positive-refusal'),
       })
     );
+    expect(createIssue.mock.calls[0][0].body).toContain('**Refusal reason:** IMAGE_SAFETY');
+  });
+
+  it('rejects a refusal without a server-authenticated reason', async () => {
+    await expect(
+      submitImageReport({
+        kind: 'false-positive-refusal',
+        drawing: new Blob(['drawing'], { type: 'image/png' }),
+        output: null,
+        style: 'Felt',
+        reportContext: null,
+      })
+    ).resolves.toMatchObject({ ok: false, status: 503 });
+    expect(saveImageReport).not.toHaveBeenCalled();
   });
 
   it('deletes retained evidence when the private notification fails', async () => {
@@ -110,6 +131,7 @@ describe('submitImageReport', () => {
         drawing: new Blob(['drawing'], { type: 'image/png' }),
         output: new Blob(['output'], { type: 'image/png' }),
         style: '',
+        reportContext: null,
       })
     ).resolves.toMatchObject({ ok: false, status: 502 });
     expect(deleteImageReport).toHaveBeenCalledWith(saved);

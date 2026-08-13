@@ -18,6 +18,7 @@ interface ImageReportMetadata {
   style: StyleName | null;
   inputContentType: string;
   outputContentType: string | null;
+  refusalReason: string | null;
 }
 
 interface SaveImageReportBase {
@@ -29,7 +30,11 @@ interface SaveImageReportBase {
 export type SaveImageReportInput = SaveImageReportBase &
   (
     | { kind: Extract<AiReportKind, 'picture'>; output: Blob }
-    | { kind: Extract<AiReportKind, 'false-positive-refusal'>; output: null }
+    | {
+        kind: Extract<AiReportKind, 'false-positive-refusal'>;
+        output: null;
+        refusalReason: string;
+      }
   );
 
 export interface SavedImageReport {
@@ -46,12 +51,11 @@ function extensionFor(contentType: string): string {
   return 'png';
 }
 
-function keysFor(reportId: string, inputType: string, outputType: string | null) {
+function keysFor(reportId: string, inputType: string) {
   const keyPrefix = `${reportId}/`;
   return {
     keyPrefix,
     input: `${keyPrefix}input.${extensionFor(inputType)}`,
-    output: outputType ? `${keyPrefix}output.${extensionFor(outputType)}` : null,
     prompt: `${keyPrefix}prompt.txt`,
     metadata: `${keyPrefix}metadata.json`,
   };
@@ -67,7 +71,8 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
   const reportedAt = new Date(now).toISOString();
   const deleteAfter = new Date(now + REPORT_RETENTION_MS).toISOString();
   const reportId = `${now}-${crypto.randomUUID()}`;
-  const keys = keysFor(reportId, input.input.type, input.output?.type ?? null);
+  const keys = keysFor(reportId, input.input.type);
+  let outputKey: string | null = null;
   const metadata: ImageReportMetadata = {
     version: 2,
     kind: input.kind,
@@ -76,13 +81,15 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
     style: input.style,
     inputContentType: input.input.type,
     outputContentType: input.output?.type ?? null,
+    refusalReason: input.kind === 'false-positive-refusal' ? input.refusalReason : null,
   };
   const store = getStore(IMAGE_REPORT_STORE_NAME);
   const pendingWrites: Promise<{ modified: boolean }>[] = [
     store.set(keys.input, input.input, { onlyIfNew: true }),
   ];
-  if (keys.output && input.output) {
-    pendingWrites.push(store.set(keys.output, input.output, { onlyIfNew: true }));
+  if (input.kind === 'picture') {
+    outputKey = `${keys.keyPrefix}output.${extensionFor(input.output.type)}`;
+    pendingWrites.push(store.set(outputKey, input.output, { onlyIfNew: true }));
   }
   pendingWrites.push(
     store.set(keys.prompt, input.prompt, { onlyIfNew: true }),
@@ -96,7 +103,7 @@ export async function saveImageReport(input: SaveImageReportInput): Promise<Save
   const saved: SavedImageReport = {
     reportId,
     keyPrefix: keys.keyPrefix,
-    keys: [keys.input, ...(keys.output ? [keys.output] : []), keys.prompt, keys.metadata],
+    keys: [keys.input, ...(outputKey ? [outputKey] : []), keys.prompt, keys.metadata],
     reportedAt,
     deleteAfter,
   };

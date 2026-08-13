@@ -62,6 +62,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
     drawing: form.get('drawing'),
     output: form.get('output'),
     style: form.get('style'),
+    reportContext: authorization.reportContext,
   });
   return result.ok
     ? json({ ok: true, reportId: result.reportId } satisfies ImageReportResponse)

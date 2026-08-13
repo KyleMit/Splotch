@@ -6,7 +6,7 @@ import {
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
-import { issueReportToken } from '$lib/server/reportToken';
+import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
 import {
   FREE_DAILY_LIMIT_EXHAUSTED_CODE,
   FREE_GENERATION_LIMIT,
@@ -40,12 +40,25 @@ import type { RequestHandler } from './$types';
 // as a distinct 422 (vs 502 for genuine upstream failures) so the client can
 // show the right guidance. See ADR-0023.
 const SAFETY_STATUS = 422;
+
+function reportTokenBinding(authorization: GenerationAuthorization): ReportTokenBinding {
+  switch (authorization.kind) {
+    case 'byok':
+      return { kind: 'byok', credential: authorization.effectiveKey };
+    case 'managed':
+      return { kind: 'managed', credential: authorization.managedToken };
+    case 'free':
+      return { kind: 'free', credential: authorization.installationId };
+  }
+}
+
 function safetyRefusal(reason: string, authorization: GenerationAuthorization): Response {
   const headers: Record<string, string> = {};
-  if (authorization.kind === 'free') {
-    const reportToken = issueReportToken(authorization.installationId);
-    if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-  }
+  const reportToken = issueReportToken(reportTokenBinding(authorization), {
+    kind: 'false-positive-refusal',
+    refusalReason: reason,
+  });
+  if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
   return fail(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
 }
 
@@ -243,7 +256,6 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     if (result.kind === 'refusal') {
       if (authorization.kind === 'free') {
         await recordFreeGenerationFailure(authorization.installationId, 'safety', reservationId);
-        reservationId = undefined;
       }
       return safetyRefusal(result.reason, authorization);
     }
@@ -267,7 +279,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     // reported. Refusals receive the same proof in safetyRefusal above. Minted
     // off the authorized installation id, never off request-body data.
     if (authorization.kind === 'free') {
-      const reportToken = issueReportToken(authorization.installationId);
+      const reportToken = issueReportToken(reportTokenBinding(authorization));
       if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
     }
     return new Response(Buffer.from(result.data, 'base64'), { headers });

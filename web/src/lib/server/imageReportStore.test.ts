@@ -60,6 +60,7 @@ describe('saveImageReport', () => {
         style: 'Crayon',
         inputContentType: 'image/png',
         outputContentType: 'image/jpeg',
+        refusalReason: null,
       },
       { onlyIfNew: true }
     );
@@ -72,6 +73,7 @@ describe('saveImageReport', () => {
       output: null,
       prompt: 'Resolved prompt',
       style: null,
+      refusalReason: 'IMAGE_SAFETY',
     });
 
     expect(saved.keys).toEqual([
@@ -89,9 +91,25 @@ describe('saveImageReport', () => {
         version: 2,
         kind: 'false-positive-refusal',
         outputContentType: null,
+        refusalReason: 'IMAGE_SAFETY',
       }),
       { onlyIfNew: true }
     );
+  });
+
+  it('uses the picture discriminant to write an output even when its MIME type is empty', async () => {
+    const saved = await saveImageReport({
+      kind: 'picture',
+      input: new Blob(['drawing'], { type: 'image/png' }),
+      output: new Blob(['result']),
+      prompt: 'Resolved prompt',
+      style: null,
+    });
+
+    expect(saved.keys).toContain(`${saved.keyPrefix}output.png`);
+    expect(store.set).toHaveBeenCalledWith(`${saved.keyPrefix}output.png`, expect.any(Blob), {
+      onlyIfNew: true,
+    });
   });
 });
 

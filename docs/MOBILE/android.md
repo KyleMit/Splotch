@@ -327,9 +327,10 @@ re-verify if that flow changes:
 * **Limited use** — ordinary generation passes the drawing to Gemini and returns the result without
   Splotch persistence. Only a grown-up's separate, gated confirmation of “Report this picture” or
   “Report this refusal” retains evidence in the private report store. Both retain the input,
-  server-resolved prompt, style, and timestamp; a picture report also retains the output. A daily
-  purge deletes the bundle after 30 days. `lib/server/usage.ts` separately stores only a per-token
-  tally and `deleteUsage` drops that tally when the token is revoked.
+  server-resolved prompt, style, and timestamp; a refusal report also retains the provider's signed
+  refusal reason, and a picture report retains the output. A daily purge deletes the bundle after 30
+  days. `lib/server/usage.ts` separately stores only a per-token tally and `deleteUsage` drops that
+  tally when the token is revoked.
 * **Disclosure** — `/privacy` names Gemini, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing

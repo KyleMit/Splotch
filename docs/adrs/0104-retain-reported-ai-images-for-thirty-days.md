@@ -118,19 +118,23 @@ client state and normal generation remains ephemeral.
 `POST /api/report-image` now accepts the closed report kinds `picture` and `false-positive-refusal`.
 An absent kind remains `picture` for already-installed clients. Both reports retain the input
 drawing, server-reconstructed prompt, style, timestamps, and a versioned metadata category; only a
-picture report accepts and stores an output image. Private notifications also carry the category so
-support can distinguish an inappropriate result from an over-aggressive refusal.
+picture report accepts and stores an output image. Refusal metadata and private notifications also
+carry the provider's authenticated refusal reason so support can distinguish an inappropriate result
+from an over-aggressive refusal without trying to reproduce a non-deterministic model response.
 
 The free tier's `422` response now mints the same short-lived report token as a successful image
-response. The token still proves that this server ran the AI attempt for the installation, while the
-refusal drawing itself is not written anywhere unless the parent confirms. Managed-token and BYO-key
-setups continue to authorize the report with their existing credentials.
+response. Every refusal mode extends that token with an HMAC-authenticated context bound to the
+generation credential and carrying the normalized provider reason. The client returns the opaque
+token but cannot forge the retained reason. This keeps the context stateless and preserves the
+ephemeral boundary: neither the refusal drawing nor its reason is written anywhere unless the parent
+confirms. Managed-token and BYO-key setups continue to authorize the report with their existing
+credentials; their signed context is required only for refusal reports.
 
-* \+ False-positive refusals become visible to human review with the input and exact server-owned
-  instruction needed to investigate them.
+* \+ False-positive refusals become visible to human review with the input, exact server-owned
+  instruction, and authenticated provider reason needed to investigate them.
 * \+ Refusals remain ephemeral by default and use the same 30-day purge and orphan-cleanup
   guarantees as picture reports.
 * \+ The report endpoint remains a closed evidence surface: a refusal cannot smuggle an output image
   or client-authored prompt into its bundle.
-* − A refusal response on the free tier now carries a report token for its short lifetime, even when
-  the parent never opens the report action.
+* − Every refusal response now carries a credential-bound report token for its short lifetime, even
+  when the parent never opens the report action.

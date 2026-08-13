@@ -29,7 +29,7 @@ function post(body: BodyInit, headers: HeadersInit = {}) {
 
 beforeEach(() => {
   isReportingConfigured.mockReset().mockReturnValue(true);
-  authorizeImageReport.mockReset().mockResolvedValue({ authorized: true });
+  authorizeImageReport.mockReset().mockResolvedValue({ authorized: true, reportContext: null });
   submitImageReport.mockReset().mockResolvedValue({ ok: true, reportId: 'report-id' });
 });
 
@@ -56,6 +56,7 @@ describe('POST /api/report-image', () => {
       drawing: expect.any(Blob),
       output: expect.any(Blob),
       style: 'Magical',
+      reportContext: null,
     });
   });
 
@@ -116,6 +117,13 @@ describe('POST /api/report-image', () => {
   });
 
   it('hands a false-positive refusal to the core without inventing an output image', async () => {
+    authorizeImageReport.mockResolvedValue({
+      authorized: true,
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
+    });
     const body = new FormData();
     body.set('kind', 'false-positive-refusal');
     body.set('drawing', new Blob(['drawing'], { type: 'image/webp' }));
@@ -129,6 +137,10 @@ describe('POST /api/report-image', () => {
       drawing: expect.any(Blob),
       output: null,
       style: 'Felt',
+      reportContext: {
+        kind: 'false-positive-refusal',
+        refusalReason: 'IMAGE_SAFETY',
+      },
     });
   });
 

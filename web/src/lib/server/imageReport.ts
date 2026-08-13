@@ -1,5 +1,6 @@
 import { STYLE_SUFFIXES, type StyleName } from '$lib/ai/styles';
 import { AI_REPORT_KINDS, type AiReportKind } from '$lib/imageReport';
+import type { ReportTokenContext } from './reportToken';
 import { createIssue } from './github';
 import { isAllowedImageType, resolveGenerationPrompt } from './generateImagePolicy';
 import {
@@ -26,6 +27,7 @@ export interface ImageReportInput {
   drawing: unknown;
   output: unknown;
   style: unknown;
+  reportContext: ReportTokenContext | null;
 }
 
 export type ImageReportResult =
@@ -55,6 +57,7 @@ export async function submitImageReport({
   drawing,
   output,
   style: rawStyle,
+  reportContext,
 }: ImageReportInput): Promise<ImageReportResult> {
   const kind = readReportKind(rawKind);
   const style = readStyle(rawStyle);
@@ -63,9 +66,10 @@ export async function submitImageReport({
   }
 
   let reportInput: SaveImageReportInput;
+  let refusalReason: string | null = null;
   const prompt = resolveGenerationPrompt(style);
   if (kind === 'picture') {
-    if (!validImage(output)) {
+    if (!validImage(output) || reportContext?.kind === 'false-positive-refusal') {
       return { ok: false, status: 400, error: 'That AI report could not be sent.' };
     }
     reportInput = { kind, input: drawing, output, prompt, style };
@@ -73,7 +77,22 @@ export async function submitImageReport({
     if (output !== null) {
       return { ok: false, status: 400, error: 'That AI report could not be sent.' };
     }
-    reportInput = { kind, input: drawing, output: null, prompt, style };
+    if (reportContext?.kind !== 'false-positive-refusal') {
+      return {
+        ok: false,
+        status: 503,
+        error: 'AI reporting is not available right now. Please try again later.',
+      };
+    }
+    refusalReason = reportContext.refusalReason;
+    reportInput = {
+      kind,
+      input: drawing,
+      output: null,
+      prompt,
+      style,
+      refusalReason,
+    };
   }
 
   if (drawing.size + (reportInput.output?.size ?? 0) > MAX_REPORT_BUNDLE_BYTES) {
@@ -109,6 +128,7 @@ export async function submitImageReport({
         `- **Blob store:** \`${IMAGE_REPORT_STORE_NAME}\``,
         `- **Blob key prefix:** \`${report.keyPrefix}\``,
         `- **Style:** ${styleLabel}`,
+        ...(refusalReason ? [`- **Refusal reason:** ${refusalReason}`] : []),
         `- **Reported:** ${report.reportedAt}`,
         `- **Automatic deletion:** ${report.deleteAfter}`,
         '',

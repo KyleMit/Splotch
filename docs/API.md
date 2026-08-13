@@ -102,14 +102,14 @@ child correctly (ADR-0023). Exhausting the global daily provider-start ceiling i
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
 records the released installation reservation as `daily-limit`, not as an upstream provider failure.
 A **`422`** means Gemini refused the drawing on **safety** grounds — the child should draw something
-*different* (the app shows "let's try drawing something else!"). On the free tier that response also
-carries `X-Report-Token`, so a parent can explicitly report a possible false positive without making
-the refused drawing durable first. A **`502`** is a genuine upstream/empty failure (retryable). The
-route talks to the model through the provider-agnostic `AiImageProvider` seam
-(`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never appears in route code. The
-safety vs. empty/error split is decided by `classifyGeminiResponse` / `isSafetyError` in
-`web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite (`npm run redteam`,
-`tools/redteam/`).
+*different* (the app shows "let's try drawing something else!"). Every such response carries a
+credential-bound `X-Report-Token` with the signed provider reason, so a parent can explicitly report
+a possible false positive without making the refused drawing durable first. A **`502`** is a genuine
+upstream/empty failure (retryable). The route talks to the model through the provider-agnostic
+`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
+appears in route code. The safety vs. empty/error split is decided by `classifyGeminiResponse` /
+`isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite
+(`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:
@@ -238,16 +238,19 @@ string, so accepting it alone would leave an endpoint that writes image blobs an
 issues an unauthenticated public write, bounded only by a rate limiter that ADR-0014 defines as a
 per-instance throttle — reset on cold start, uncoordinated across instances — rather than an
 authorization boundary. Instead `/api/generate-image` mints a **report token** when a free run
-returns either an image or a safety refusal (`X-Report-Token`: an HMAC over the installation id and
-a short expiry, keyed by `REPORT_TOKEN_SECRET`) and this endpoint requires it back, so every
-accepted report traces to a generation this server actually performed. With the secret unset, BYOK
-and managed reporting still work and the free path alone answers 503, logged server-side. See
-ADR-0104's amendment, which also records the two rejected alternatives (shape-only acceptance, and
-requiring a grant record).
+returns an image (`X-Report-Token`: an HMAC over the installation id and a short expiry, keyed by
+`REPORT_TOKEN_SECRET`) and this endpoint requires it back, so every accepted free report traces to a
+generation this server actually performed. Every safety refusal also receives a credential-bound
+report token whose signed context carries the provider's refusal reason. The client returns that
+opaque token; it never authors the retained reason. With the secret unset, ordinary BYOK and managed
+picture reporting still work, while free reporting and refusal-context reporting answer 503. See
+ADR-0104's amendments, which also record the two rejected free-tier alternatives (shape-only
+acceptance, and requiring a grant record).
 
 ```text
 Content-Type: multipart/form-data
-X-Access-Token: <active token>  # or X-Api-Key, or X-Installation-Id + X-Report-Token on the free tier
+X-Access-Token: <active token>  # or X-Api-Key, or X-Installation-Id on the free tier
+X-Report-Token: <signed context>  # required for every refusal and every free-tier report
 
 drawing=<png|jpeg|webp Blob>
 kind=<picture|false-positive-refusal>
@@ -270,10 +273,11 @@ the shared base prompt and selected style.
 After the client disclosure is confirmed through the dedicated AI-report policy configured in Parent
 Center, the server writes the evidence to the site-wide `ai-image-reports` Netlify Blobs store under
 one opaque report-id prefix. Every bundle contains the input drawing, resolved `prompt.txt`, and
-`metadata.json` (report category, report time, deletion time, style, and MIME types); a picture
-report additionally contains the output image. The support issue and metadata categorize refusals as
-`false-positive-refusal`. If private notification fails, the bundle is deleted and the request fails
-rather than leaving unreachable evidence.
+`metadata.json` (report category, report time, deletion time, style, MIME types, and the signed
+provider refusal reason when applicable); a picture report additionally contains the output image.
+The support issue and metadata categorize refusals as `false-positive-refusal` and expose that
+server-authenticated reason to the reviewer. If private notification fails, the bundle is deleted
+and the request fails rather than leaving unreachable evidence.
 
 A scheduled `netlify/functions/purge-image-reports.ts` function scans every paginated store page
 daily and deletes report objects older than 30 days. Humans commit to reviewing reports within 24
@@ -286,9 +290,9 @@ hours. See ADR-0104.
 { "ok": false, "error": "That AI report could not be sent." }
 // 400 — the free tier sent no well-formed installation id
 { "ok": false, "error": "Installation grant unavailable" }
-// 403 — the free tier's report token is missing, forged, or minted for another installation
+// 403 — the report token is missing, forged, or bound to another generation credential
 { "ok": false, "error": "Invalid access token" }
-// 403 — the free tier's report token has expired
+// 403 — the report token has expired
 { "ok": false, "error": "That AI result can no longer be reported." }
 // 413 — the raw multipart body exceeds the pre-parse cap
 { "ok": false, "error": "That AI report is too large to send." }

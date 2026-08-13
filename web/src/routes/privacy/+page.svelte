@@ -211,13 +211,15 @@
   <p>
     If the AI refuses a harmless drawing for safety, a grown-up can instead choose “Report this
     refusal.” Its confirmation sends the rejected drawing, exact server-generated instruction,
-    selected art style, and report time. It does not include a generated picture because none was
-    made. A refusal stays ephemeral unless a grown-up confirms this report.
+    selected art style, the AI provider's refusal reason, and report time. It does not include a
+    generated picture because none was made. A refusal stays ephemeral unless a grown-up confirms
+    this report.
   </p>
   <p>
-    A confirmed picture report stores those same details plus the AI-generated picture. Confirmed
-    reports go into our private support system so we can investigate and respond within 24 hours.
-    The report bundle is automatically deleted after
+    A confirmed picture report stores the drawing, exact server-generated instruction, selected art
+    style, report time, and AI-generated picture. Confirmed reports go into our private support
+    system so we can investigate and respond within 24 hours. The report bundle is automatically
+    deleted after
     <strong>30 days</strong> by a daily cleanup job. To ask us to delete one sooner, use the
     {@render feedbackLink()} and include the report reference shown after it was sent.
   </p>

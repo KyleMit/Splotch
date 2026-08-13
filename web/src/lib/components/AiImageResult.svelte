@@ -130,11 +130,11 @@
             That picture didn't work — try drawing something different!
           </p>
           <div class="ai-refusal-report">
-            <span class="ai-refusal-report-label">For grown-ups</span>
+            <span class="ai-refusal-report-label" id="refusalReportAudience">For grown-ups</span>
             {#if !reportSettled}
               <Button
-                class="refusal-report-action"
                 size="md"
+                aria-describedby="refusalReportAudience"
                 onclick={requestReport}
                 disabled={!aiResult.previewUrl}>Report this refusal</Button
               >
@@ -376,7 +376,9 @@
     font-weight: var(--font-weight-semibold);
   }
 
-  .ai-refusal-report :global(.refusal-report-action) {
+  /* Keep this adult-only secondary action quieter than a primary `lg` decision
+     while preserving the app's minimum touch target. */
+  .ai-refusal-report :global(.btn) {
     min-height: 44px;
   }
 

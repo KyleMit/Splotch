@@ -67,7 +67,8 @@ than selecting a more favorable-sounding category.
 * **Photos and videos**: collected, optional, not linked to identity, purpose **App functionality**.
   Ordinary AI requests and refusals are processed ephemerally by Splotch. If a grown-up confirms
   “Report this picture” or “Report this refusal,” the input drawing is retained privately for up to
-  30 days; a picture report also retains the generated output.
+  30 days; a refusal report also retains the provider's reason, and a picture report retains the
+  generated output.
 * **Other user-generated content**: collected, optional, not linked to identity, purpose **App
   functionality / developer communications**. This covers typed feedback and the server-resolved
   prompt, style, and timestamp retained with a confirmed AI report.

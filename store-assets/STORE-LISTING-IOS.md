@@ -103,7 +103,8 @@ privacy policy:
   identity**, and **not used for tracking**. It covers drawings sent for AI processing, typed
   private feedback, and confirmed AI reports. Ordinary generation and refusals are ephemeral; a
   confirmed report retains the input drawing, server-resolved prompt, style, and timestamp privately
-  for up to 30 days, plus the output for a picture report.
+  for up to 30 days, plus the provider reason for a refusal report or the output for a picture
+  report.
 * **Diagnostics → Other Diagnostic Data**: collected only when a grown-up opts to attach the
   feedback form's app/device snapshot, used for **App Functionality**, **not linked to identity**,
   and **not used for tracking**.
@@ -134,9 +135,10 @@ or API key. Users cannot enter free-form prompts: the server accepts only a clos
 and constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up
 can report either an inappropriate picture or a possible false-positive refusal, review a
 confirmation, follow the dedicated parental-gate policy, and privately send the evidence named
-there. A refusal report contains the input drawing, resolved prompt, style, and timestamp; a picture
-report also contains the output. A human reviews reports within 24 hours; evidence is automatically
-deleted after 30 days. There is no browsing, chat, public sharing, or user-to-user distribution.
+there. A refusal report contains the input drawing, resolved prompt, style, provider refusal reason,
+and timestamp; a picture report contains the drawing, prompt, style, output, and timestamp. A human
+reviews reports within 24 hours; evidence is automatically deleted after 30 days. There is no
+browsing, chat, public sharing, or user-to-user distribution.
 
 ## Screenshots (this folder)
 

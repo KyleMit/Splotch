@@ -166,8 +166,8 @@
       </h3>
       <p>
         {#if refusal}
-          The rejected drawing, selected art style, and exact instruction sent to the AI go to a
-          grown-up at Splotch.
+          The rejected drawing, selected art style, exact instruction sent to the AI, and the AI's
+          refusal reason go to a grown-up at Splotch.
         {:else}
           The AI picture, drawing behind it, selected art style, and exact instruction sent to the
           AI go to a grown-up at Splotch.
@@ -300,7 +300,7 @@
     flex: 1;
   }
 
-  @media (max-height: 480px) and (min-width: 520px) {
+  @media (max-height: 480px) and (orientation: landscape) {
     .ai-report-confirm.refusal {
       width: min(92vw, 560px);
     }

@@ -109,5 +109,35 @@ describe('POST /api/generate-image', () => {
     });
     expect(mocks.failGrant).toHaveBeenCalledWith('a'.repeat(64), 'safety', 'reservation-1');
     expect(mocks.completeGrant).not.toHaveBeenCalled();
+    expect(mocks.issueReportToken).toHaveBeenCalledWith(
+      { kind: 'free', credential: 'a'.repeat(64) },
+      { kind: 'false-positive-refusal', refusalReason: 'IMAGE_SAFETY' }
+    );
+  });
+
+  it.each([
+    {
+      kind: 'managed' as const,
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+      binding: { kind: 'managed', credential: 'daycare-club' },
+    },
+    {
+      kind: 'byok' as const,
+      effectiveKey: 'parent-key',
+      binding: { kind: 'byok', credential: 'parent-key' },
+    },
+  ])('returns a signed refusal context for $kind generation', async (authorization) => {
+    mocks.authorize.mockResolvedValue({ authorized: true, ...authorization });
+    mocks.generateImage.mockResolvedValue({ kind: 'refusal', reason: 'PROHIBITED_CONTENT' });
+
+    const response = await post();
+
+    expect(response.status).toBe(422);
+    expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
+    expect(mocks.issueReportToken).toHaveBeenCalledWith(authorization.binding, {
+      kind: 'false-positive-refusal',
+      refusalReason: 'PROHIBITED_CONTENT',
+    });
   });
 });

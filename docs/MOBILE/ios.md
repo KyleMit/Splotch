@@ -188,8 +188,8 @@ policy). The Apple Kids Category adds:
 * [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content
       and optional Other Diagnostic Data exactly as written in `store-assets/STORE-LISTING-IOS.md`.
       Both are app functionality, not linked, and not tracking; confirmed AI reports alone retain
-      image evidence for up to 30 days. A refusal report retains only the rejected drawing, while a
-      picture report also retains the generated output.
+      image evidence for up to 30 days. A refusal report retains the rejected drawing and provider
+      refusal reason, while a picture report also retains the generated output.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
       generation is already disabled until a parent supplies a credential and contains no browsing,
