@@ -1088,15 +1088,15 @@ check to save 90 seconds is trusting a signal that does not exist.
 Consequences now written into the skill: run the base gates **un-chained** (the `&&` short-circuit
 hid the second failure until the first was repaired — one relaunch per gate); repair in a **separate
 commit** attributed to no finding; and **re-run the whole set after each repair**, because a repair
-can redden a different gate. That last one is not hypothetical either — `npm run img:audit` rewrote
-`line-weight.svg`, which `scrapbook/index.html` *inlines* as a card emoji, so `scrapbook:check` was
-green at base and red only after the fix.
+can redden a different gate. That last one is not hypothetical either —
+`npm run optimize:svg-assets` rewrote `line-weight.svg`, which `scrapbook/index.html` *inlines* as a
+card emoji, so `scrapbook:check` was green at base and red only after the fix.
 
 Why this matters more than it sounds: every `CHECK_CMD` gate runs at the top of *every* review
 round. A red base gate is not a nuisance, it is a guaranteed HALT after three findings, with three
 rolled-back fixes and nothing to show. The cost of not checking is the whole run.
 
-**A verification gate that can't see rendering deserves a real check.** The `img:audit` repair
+**A verification gate that can't see rendering deserves a real check.** The SVG optimization repair
 rewrote 11 freshly-designed icons, and nothing in the repo asserts that an optimized SVG still
 *looks* the same — `check:assets:manifest` guards bytes, which is precisely the thing being changed.
 Rasterizing each icon at 384 DPI before and after and counting differing subpixels took under a

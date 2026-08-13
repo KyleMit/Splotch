@@ -1,7 +1,7 @@
 # Verifies that Netlify Blobs is actually live on a deployed function — the
 # failure mode from ADR-0025, where a V1 function never gets the Blobs context,
 # getStore() throws, and token storage silently degrades to the in-memory
-# fallback. tools/api-smoke/blobs-smoke.mjs round-trips a token through the live deploy
+# fallback. tools/api-smoke/check-deployed-blobs.mjs round-trips a token through the live deploy
 # and asserts the snapshot's `persistent` flag is true.
 #
 # Runs automatically on every successful Netlify deploy (preview catches a
@@ -52,4 +52,4 @@ jobs:
         env:
           BLOBS_SMOKE_URL: ${{ github.event.inputs.url || github.event.deployment_status.environment_url }}
           ADMIN_ACCESS_TOKEN: ${{ secrets.ADMIN_ACCESS_TOKEN }}
-        run: node tools/api-smoke/blobs-smoke.mjs
+        run: node tools/api-smoke/check-deployed-blobs.mjs

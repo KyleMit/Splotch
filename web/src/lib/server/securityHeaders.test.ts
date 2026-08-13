@@ -11,7 +11,7 @@ import { SECURITY_HEADERS, securityHeadersFor } from './securityHeaders';
 // deploy time, so it can't import the module — this is the drift guard ADR-0073
 // asked for: parse the block and assert every header matches, both ways.
 
-// The unit runner (`node tools/web.mjs vitest run`) runs with cwd = web/, so
+// The unit runner (`node tools/run-web-tool.mjs vitest run`) runs with cwd = web/, so
 // the deploy config is one level up at the repo root.
 const netlifyToml = readFileSync(resolve(process.cwd(), '..', 'netlify.toml'), 'utf8');
 

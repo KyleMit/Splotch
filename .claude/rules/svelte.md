@@ -34,7 +34,7 @@ paths:
   `ActionsPanel.svelte`). Never `!important` to beat a sibling rule — fix specificity or ordering.
 * A prop that renders help/explanatory text for a control must wire it to the control (`id` +
   `aria-describedby`) — axe does not flag the omission.
-* New icons: drop the SVG in `src/lib/icons/`, run `npm run gen:icons`, then use
+* New icons: drop the SVG in `src/lib/icons/`, run `npm run gen:icon-names`, then use
   `<Icon name="..." />` — the `name` prop is type-checked against the generated union. `<Icon>` sets
   `data-icon={name}` so the icon is assertable in tests (the SVG itself goes in via `{@html}` and
   carries no identity). A full-color/"spot" icon must also be added to the `COLOR_ICONS` set in
@@ -46,8 +46,8 @@ paths:
   Icons are inlined into one document, so an id is global across every icon on screen together, and
   SVGO's `cleanupIds` otherwise minifies ids to `a`, `b`, … per file — which is how two
   independently authored icons come to collide and `url(#a)` resolves to the wrong element.
-  `tools/image-audit.mjs` preserves the `icon-` prefix from that minification; uniqueness across the
-  surviving ids is enforced by `web/src/lib/icons/iconIds.test.ts`.
+  `tools/optimize-svg-assets.mjs` preserves the `icon-` prefix from that minification; uniqueness
+  across the surviving ids is enforced by `web/src/lib/icons/iconIds.test.ts`.
 * **`{@html}` is not reconciled against SSR markup during hydration.** `Icon.svelte` renders its SVG
   via `{@html}`, so an icon whose value depends on client-only state (orientation, a
   `localStorage`-backed setting) keeps the *server-rendered* SVG after hydration until something

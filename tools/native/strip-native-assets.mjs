@@ -23,7 +23,11 @@
 
 import { globSync, readFileSync, rmSync, existsSync, statSync, writeFileSync } from 'node:fs';
 import { join, dirname, isAbsolute, relative, resolve, sep } from 'node:path';
-import { downloadableMobileBooks, nativeUnusedLineArt, webOnlyBooks } from '../lib/book-assets.mjs';
+import {
+  downloadableMobileBooks,
+  nativeUnusedLineArt,
+  webOnlyBooks,
+} from '../lib/coloring-book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/native-export.mjs';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
 import {

@@ -88,5 +88,6 @@ installation or preview tunnelling into Codex, which does not need them.
 * [`.codex/cloud/setup.sh`](../../.codex/cloud/setup.sh) — one-time cached environment setup.
 * [`.codex/cloud/maintenance.sh`](../../.codex/cloud/maintenance.sh) — cached-container refresh.
 * [`web/playwright.config.ts`](../../web/playwright.config.ts) — browser cache lookup for E2E.
-* [`tools/web.mjs`](../../tools/web.mjs) — invokes SvelteKit and Playwright from `web/`.
+* [`tools/run-web-tool.mjs`](../../tools/run-web-tool.mjs) — invokes SvelteKit and Playwright from
+  `web/`.
 * [`docs/COMPATIBILITY.md`](../COMPATIBILITY.md) — supported browser and device floor.

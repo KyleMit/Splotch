@@ -7,52 +7,92 @@
 <style>
 :root{
   color-scheme: light dark;
-  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
-  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
-  --hair:#e6e1d8; --hair-strong:#d9d3c8;
-  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
   --gold:#b1780a;
-  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
-  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
-  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
   --shadow-sm:0 1px 2px rgba(30,28,40,.05);
   --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
   --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
   --r-sm:9px; --r-md:16px; --r-lg:18px;
   --shell:1160px;
   --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
-@media (prefers-color-scheme: dark){
-  :root{
-    --paper:#131418; --paper-2:#0f1013; --card:#1d1f27; --card-2:#181a20;
-    --ink:#e9e7e2; --muted:#a8a4af; --faint:#807d89;
-    --hair:#34373f; --hair-strong:#464a55;
-    --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536;
-    --gold:#d9a441;
-    --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
-    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
-    --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
-    --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
-  }
-}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}}
 :root[data-theme=light]{
   color-scheme: light;
-  --paper:#f5f3ee; --paper-2:#efece5; --card:#fdfbf6; --card-2:#f6f3ec;
-  --ink:#23212a; --muted:#6b6774; --faint:#948f9c;
-  --hair:#e6e1d8; --hair-strong:#d9d3c8;
-  --accent:#2f6fed; --accent-ink:#1e50c4; --accent-wash:#e8effe; --gold:#b1780a;
-  --ok:#3f9d55; --warn:#e08a1e; --bad:#d24b3f;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
   --shadow-sm:0 1px 2px rgba(30,28,40,.05);
   --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
   --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
 }
 :root[data-theme=dark]{
   color-scheme: dark;
-  --paper:#131418; --paper-2:#0f1013; --card:#1c1e24; --card-2:#191b20;
-  --ink:#e9e7e2; --muted:#a19da8; --faint:#797682;
-  --hair:#2b2e36; --hair-strong:#3a3e48;
-  --accent:#7aa8ff; --accent-ink:#a9c6ff; --accent-wash:#1b2536; --gold:#d9a441;
-  --ok:#5cc078; --warn:#e6a545; --bad:#e8695c;
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
   --shadow-sm:0 1px 2px rgba(0,0,0,.3);
   --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
   --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
@@ -509,7 +549,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
   <h3>First finding: the sweep was measuring itself</h3>
   <p>Every rep ran against one shared preview server, and the suite deliberately fills 60-second per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the managed token’s. A rep takes about as long as those windows last, so the next rep inherited a spent budget and its guard tests took a 429 where they assert a 415.</p>
   <ul class="notes"><li>On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of 12 reps — a deterministic failure counted as a flake rate.</li><li>Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.</li><li>Both are specs the earlier per-worker-count failure columns are largely made of.</li></ul>
-  <p>tools/e2e-tuning/e2e-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
+  <p>tools/e2e-tuning/run-worker-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
 </div>
     <p>
       Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the
@@ -685,12 +725,12 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
 #    PUBLIC_ENABLE_DEV_HARNESS has to be set HERE — it gates the /dev/* routes
 #    the specs drive.
 PUBLIC_ENABLE_DEV_HARNESS=true ADMIN_ACCESS_TOKEN=test-admin-secret \
-  node tools/web.mjs vite build
+  node tools/run-web-tool.mjs vite build
 
 # 2. Sweep. The driver owns the whole protocol: a fresh preview server per rep,
 #    CI unset for the run, and one SWEEPRESULT line per rep.
 for w in 1 2 3 4 6 8; do
-  node tools/e2e-tuning/e2e-sweep.mjs --workers=$w --reps=30 --out=runs
+  node tools/e2e-tuning/run-worker-sweep.mjs --workers=$w --reps=30 --out=runs
 done
 
 # 3. On CI hardware the same driver runs from .github/workflows/worker-sweep.yml
@@ -706,7 +746,7 @@ done
 # and the sweep measures a flake it manufactured. A fresh server per rep clears
 # the in-memory limiter and matches what CI does: one server, one suite run.</code></pre>
     <p>
-      Then replace the datasets at the top of <code>tools/e2e-tuning/gen-e2e-tuning-report.mjs</code> and run
+      Then replace the datasets at the top of <code>tools/e2e-tuning/gen-tuning-report.mjs</code> and run
       <code>npm run gen:e2e-tuning-report</code>. The decision and its reasoning live in
       <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0078-playwright-worker-count-and-flake-tuning.md">ADR-0078</a>.
     </p>
