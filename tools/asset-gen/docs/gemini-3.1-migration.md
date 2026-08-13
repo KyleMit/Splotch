@@ -8,7 +8,7 @@ whose prompt or call arguments were customized, and the issues that remain open 
 
 ## What changed
 
-* `MODEL` in all five generators (`gen-coloring-fills{,-dark}`, `gen-coloring-chalk`,
+* `MODEL` in all five generators (then named `gen-coloring-fills{,-dark}`, `gen-coloring-chalk`,
   `gen-style-covers`, `normalize-outline-strokes`) went `gemini-2.5-flash-image` →
   `gemini-3.1-flash-image`. The app-side `web/src/lib/server/ai/gemini.ts` model is a separate
   decision and was NOT changed. Style covers were not regenerated (no gates exist for them; the swap

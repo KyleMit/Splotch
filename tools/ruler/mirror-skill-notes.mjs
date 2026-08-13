@@ -13,7 +13,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
-import { directNoteNames } from './direct-provider-skills.mjs';
+import { directNoteNames } from './lib/direct-provider-skills.mjs';
 
 // Shared note sources carry the same .md.template suffix the skill forks
 // require, for the same reason: ruler's recursive rule loader concatenates every
@@ -22,8 +22,8 @@ import { directNoteNames } from './direct-provider-skills.mjs';
 // this tree exists to prevent.
 //
 // Exported because three places have to agree on it: this mirror, the shared-note
-// collision guard in apply-ruler-skill-forks.mjs, and the forbidden-source list
-// in ruler-apply.mjs. Repeating the literal is what let those two guards go
+// collision guard in apply-skill-forks.mjs, and the forbidden-source list
+// in apply-ruler.mjs. Repeating the literal is what let those two guards go
 // blind when the suffix was introduced.
 export const SHARED_NOTE_SUFFIX = '.md.template';
 

@@ -1,5 +1,5 @@
-// Night-fill scoring shared by the dark-fill generator (bin/gen-coloring-fills-dark.mjs,
-// its per-take gates) and the golden-score auditor (bin/audit-golden.mjs). Extracted so
+// Night-fill scoring shared by the dark-fill generator (coloring/gen-night-fills.mjs,
+// its per-take gates) and the golden-score auditor (coloring/check-golden-scores.mjs). Extracted so
 // the committed night raws can be re-scored offline with EXACTLY the generation-time
 // math — the same reason lib/outline-match.mjs is shared with the light gate.
 //
@@ -11,7 +11,7 @@ import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
 import { floodBackground } from './regions.mjs';
-import { median } from './stats.mjs';
+import { median } from './image-stats.mjs';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a

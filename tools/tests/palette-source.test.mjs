@@ -27,11 +27,11 @@ const ALLOWED = new Map(
     // can't reference tokens.
     'web/src/lib/icons/more-colors.svg': 7,
     // Plain-node app driver clicking the green swatch by its hex selector.
-    'tools/app-driver/driver-smoke.mjs': 1,
+    'tools/app-driver/run-driver-smoke-test.mjs': 1,
     // Perf harness swatch-click sequence; plain node can't import TS.
-    'tools/perf/session.mjs': 6,
+    'tools/perf/lib/toddler-session.mjs': 6,
     // Comment naming a swatch selector in an event-recording example.
-    'tools/perf/ipad-recorder.js': 1,
+    'tools/perf/probes/input-recorder.js': 1,
     // Scrapbook report chrome renders palette swatches; plain node can't
     // import TS.
     'tools/scrapbook/lib/scrapbook-chrome.mjs': 7,

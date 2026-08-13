@@ -1,5 +1,5 @@
 // Solid-region scoring for coloring-page line art, shared by the outline
-// solidity auditor (audit-outline-solidity.mjs) and the thin-stroke normalizer
+// solidity auditor (check-outline-quality.mjs) and the thin-stroke normalizer
 // (normalize-outline-strokes.mjs).
 //
 // Why this exists: dark mode renders the line art through a blanket invert(1)
@@ -19,7 +19,7 @@
 import sharp from 'sharp';
 import { chamferDistance, dilateMask, erodeMask } from './morphology.mjs';
 import { prepareOutlineAnalysis } from './outline-analysis.mjs';
-import { quantile } from './stats.mjs';
+import { quantile } from './image-stats.mjs';
 
 // Same ink bar as the punch mask (lib/punch-fill.mjs OUTLINE_LUMA_THRESHOLD),
 // so "solid" is judged on exactly the pixels the punch would cut.

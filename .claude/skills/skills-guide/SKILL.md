@@ -149,7 +149,7 @@ pre-merge diff are hard to triage until the branch is current.
 Every skill must appear here in exactly one primary group (cross-reference a second group in prose
 when a skill genuinely spans two, as `lighthouse-audit` does). Most skills are generated from
 `.ruler/skills/` or `.ruler/skill-forks/`. Direct packages are registered in
-`tools/ruler/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
+`tools/ruler/lib/direct-provider-skills.mjs`: `burn-down-audits` has independent Claude and Codex
 implementations, as does `analyze-session-transcripts`; `run-claude` and `implement-issue-stack` are
 Codex-only. When editing one, change only the declared provider; never copy one implementation into
 an undeclared provider tree.

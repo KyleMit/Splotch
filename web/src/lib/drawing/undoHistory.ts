@@ -1,7 +1,7 @@
 // Shared product contracts for the tiled history implementation.
 
 // The number of committed drawing actions a child can take back. Exported so
-// tiled history, the release-note contract, and E2E coverage share one value.
+// tiled history, the perf scenarios, and E2E coverage share one value.
 export const MAX_UNDO_DEPTH = 20;
 
 export interface HistoryDebug {

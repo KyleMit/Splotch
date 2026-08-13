@@ -1,5 +1,5 @@
 // Playwright helpers for scripts that drive the live Splotch app in a browser
-// (store-shots.mjs, gen-large-image.mjs): dev-server lifecycle, page setup,
+// (gen-store-assets.mjs, gen-promotional-image.mjs): dev-server lifecycle, page setup,
 // and the UI gestures (pick a color, set stroke size, draw) the app needs.
 
 import { sleep } from '../../lib/proc.mjs';

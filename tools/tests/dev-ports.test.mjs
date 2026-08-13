@@ -41,8 +41,8 @@ const vitePortConsumers = [
     () => match(read('tools/start-cloud-tunnel.mjs'), /^const PORT = (\d+);$/m),
   ],
   [
-    'android-emulator.mjs --port',
-    () => match(read('tools/android/android-emulator.mjs'), /'--port',\s*'(\d+)'/),
+    'run-emulator.mjs --port',
+    () => match(read('tools/mobile/android/run-emulator.mjs'), /'--port',\s*'(\d+)'/),
   ],
   ['ios:live --port', () => Number(packageJson.scripts['ios:live'].match(/--port (\d+)/)[1])],
   [

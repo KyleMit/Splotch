@@ -1,7 +1,7 @@
 // Coloring-book catalog - the single source of truth for which books exist and
 // where each one is allowed to ship. This file is intentionally rune-free (and
 // is not a `.svelte.ts` module) so it can be imported both by the app and by
-// Node build scripts (see tools/native/strip-native-assets.mjs).
+// Node build scripts (see tools/mobile/strip-static-assets.mjs).
 //
 // Image storage format:
 //   static/coloring/{book}/cover.outline.webp         cover line art, 1:1
@@ -26,17 +26,17 @@
 // a Gemini redraw of the pen as a chalk drawing whose deliberate solid whites
 // (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
 // (the negation of what dark mode shows). The picker applies invert + screen;
-// gen-coloring-overlays derives the transparent white full-page presentation.
+// gen-overlays derives the transparent white full-page presentation.
 // Orientations without a chalk derive their dark overlay from the pen instead.
 //
 // Each picker-facing line-art image (cover + pages, pen AND chalk) has a
-// thumbnail sibling (tools/asset-gen/bin/gen-coloring-thumbs.mjs).
+// thumbnail sibling (tools/asset-gen/coloring/gen-thumbnails.mjs).
 // `thumbPath()` maps a pen outline to its `.thumb.webp`, `chalkThumbPath()` a
 // chalk to its `.chalk.thumb.webp`, and `pageThumb()` picks per theme — dark
 // mode shows the chalk thumb so the tile previews the same art the canvas
 // applies (covers have no chalk yet, so book tiles stay on the pen thumb).
 // The colored `.light.webp` fill is a flat-colored, pixel-aligned
-// version of the line-art page (tools/asset-gen/bin/gen-coloring-fills.mjs) that the magic
+// version of the line-art page (tools/asset-gen/coloring/gen-light-fills.mjs) that the magic
 // brush reveals where the child paints (ADR-0043); it never appears in the grid,
 // so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
 // validates them, generates the verified pack manifest, and strips native assets

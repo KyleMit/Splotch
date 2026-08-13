@@ -9,18 +9,18 @@ P95 that needs WebKit and a quiet host; its full seven-scenario form and the rea
 tests run only on tagged releases. ADR-0100's 2026-08-11 amendment records why its obsolete
 pre-merge blob-encoding guard retired.
 
-| Layer                 | Tool                | Command                         | Runs in CI                                   |
-| --------------------- | ------------------- | ------------------------------- | -------------------------------------------- |
-| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`             | every push / PR                              |
-| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`        | every push / PR                              |
-| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`   | every push / PR                              |
-| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`            | every push / PR                              |
-| E2E (web)             | Playwright          | `npm run test:e2e`              | every push / PR                              |
-| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`        | every push / PR (unit job)                   |
-| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`     | every push / PR (parallel job)               |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`          | **tagged releases only**                     |
-| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`              | **tagged releases only** (macOS runner)      |
-| WebKit commit timing  | Playwright WebKit   | `npm run perf:undo:webkit:fast` | pushes to `main`; full suite on release tags |
+| Layer                 | Tool                | Command                             | Runs in CI                                   |
+| --------------------- | ------------------- | ----------------------------------- | -------------------------------------------- |
+| Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`                 | every push / PR                              |
+| Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
+| Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
+| Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
+| E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
+| Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
+| Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only**                     |
+| Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
+| WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
@@ -99,13 +99,13 @@ npm run test:tools
 
 Configured in `tools/vitest.config.mjs` (Node env), tests in `tools/tests/`. Covers repo automation
 helpers whose regressions would be silent — currently the audit-burndown `docs/AUDIT.md` surgery in
-`tools/audit-burndown/lib.mjs` (entry-boundary parsing, pure block removal, dprint-clean seams; see
-the `burn-down-audits` skill) and complete runner-specific skill replacement in
-`tools/ruler/apply-ruler-skill-forks.mjs` (package isolation, paired-runner coverage, and
-shared-source collision guards). The latter covers generic Ruler-managed forks; packages listed in
-`tools/ruler/direct-provider-skills.mjs` are maintained directly in their declared provider trees
-and excluded from Ruler drift ownership. `tools/ruler/ruler-apply.mjs` snapshots and restores every
-registered path around generation, including its failure path. Add a test here when a `tools/`
+`tools/audit-burndown/lib/burndown-core.mjs` (entry-boundary parsing, pure block removal,
+dprint-clean seams; see the `burn-down-audits` skill) and complete runner-specific skill replacement
+in `tools/ruler/apply-skill-forks.mjs` (package isolation, paired-runner coverage, and shared-source
+collision guards). The latter covers generic Ruler-managed forks; packages listed in
+`tools/ruler/lib/direct-provider-skills.mjs` are maintained directly in their declared provider
+trees and excluded from Ruler drift ownership. `tools/ruler/apply-ruler.mjs` snapshots and restores
+every registered path around generation, including its failure path. Add a test here when a `tools/`
 helper's failure mode is corrupting state rather than crashing.
 
 The suite also hosts the **drift guards** over things prose can't keep in agreement —
@@ -392,17 +392,17 @@ npm run test:android:device   # run against an emulator you already have running
 npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcode)
 ```
 
-| Script                | What happens                                                                                                                                                                                                                                                                                            |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test:android`        | Runs `tools/android/android-emulator-smoke.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
-| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                       |
-| `test:ios`            | Runs `tools/native/ios-simulator-smoke.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.                |
+| Script                | What happens                                                                                                                                                                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test:android`        | Runs `tools/mobile/android/run-smoke-test.mjs`: boots a **headless** `Pixel_7_Pro_API_33` emulator (`-no-window …`), builds + installs (`cap:sync` then `./gradlew :app:installDebug`), runs Maestro, and **always** kills the emulator afterward — even on failure. Self-contained and self-cleaning. |
+| `test:android:device` | Just `maestro test .maestro/smoke.yaml` against whatever device is already connected. Fast inner loop — you boot the emulator and install the app yourself. This is what CI uses.                                                                                                                      |
+| `test:ios`            | Runs `tools/mobile/ios/run-simulator-smoke-test.mjs`: reuses a booted iPhone simulator (or boots the newest available one), builds the debug app with `xcodebuild`, installs via `simctl`, runs the same Maestro flow, and shuts the simulator down if the script booted it. No signing required.      |
 
 > The smoke scripts are device-lifecycle glue only — Maestro does the actual assertions, and both
 > platforms run the **same flow file**. The Android helper works on macOS and Linux (AVD name and
-> SDK locations resolve per-platform in `tools/android/lib/android.mjs`; override the SDK with
-> `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's install location
-> resolves in `tools/native/lib/maestro.mjs`.
+> SDK locations resolve per-platform in `tools/mobile/android/lib/android-toolchain.mjs`; override
+> the SDK with `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's
+> install location resolves in `tools/mobile/lib/maestro.mjs`.
 
 ### Prerequisites
 
@@ -430,7 +430,7 @@ curl -fsSL "https://get.maestro.mobile.dev" | bash
 
 > Use `get.maestro.mobile.dev` — `get.maestro.dev` does not work.
 >
-> The smoke scripts resolve Maestro via `tools/native/lib/maestro.mjs` (PATH first, then
+> The smoke scripts resolve Maestro via `tools/mobile/lib/maestro.mjs` (PATH first, then
 > `~/.maestro/bin`), so they run even before you reopen your shell to pick up the PATH entry the
 > installer adds.
 

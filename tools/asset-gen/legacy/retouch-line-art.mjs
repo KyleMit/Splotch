@@ -18,8 +18,8 @@
 // Writes candidates to the gitignored .coloring-samples-dark/retouch/ for review;
 // it does NOT touch shipped assets. Once a retouched line art is approved, copy it
 // over web/static/coloring/<cat>/<page>-<orient>.outline.webp and regenerate the whole
-// related suite from it (light fill .light.webp via gen-coloring-fills, night fill via
-// gen-coloring-fills-dark, thumbnail via gen-coloring-thumbs), then re-review in the
+// related suite from it (light fill .light.webp via gen-light-fills.mjs, night fill via
+// gen-night-fills.mjs, thumbnail via gen-thumbnails.mjs), then re-review in the
 // contact sheet's Combined view in BOTH light and dark. See ./night-fills.md (legacy).
 //
 //   node --experimental-strip-types --disable-warning=ExperimentalWarning \
@@ -34,8 +34,8 @@ import { join, dirname } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
-import { fail } from '../lib/cli.mjs';
-import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/paths.mjs';
+import { fail } from '../lib/asset-cli.mjs';
+import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
 import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
 
 const MODEL = 'gemini-3.1-flash-image';

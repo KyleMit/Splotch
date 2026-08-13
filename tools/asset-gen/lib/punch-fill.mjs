@@ -1,5 +1,5 @@
 // Punch a raw colored fill into its shipped fills-only form, shared by the batch
-// CLI (punch-fill-outlines.mjs) and the light-fill generator (gen-coloring-fills.mjs)
+// CLI (punch-fill-outlines.mjs) and the light-fill generator (gen-light-fills.mjs)
 // so the mask math can never fork between them.
 //
 // Why punching exists: the browser overlay <img> already draws the line art on top
@@ -27,11 +27,11 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from './paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from './asset-paths.mjs';
 
 // Same bar the runtime mask used before the punch moved to build time (ADR-0043):
 // darker than this is outline, lighter is fill. Exported so the halo auditor
-// (bin/audit-night-halo.mjs) rebuilds the exact shipped mask.
+// (coloring/check-night-halo.mjs) rebuilds the exact shipped mask.
 export const OUTLINE_LUMA_THRESHOLD = 150;
 // The content is flat fills revealed under brush strokes, so q85 is visually free;
 // effort 6 trades ~2.8s/file of one-off script time for bytes shipped on every
@@ -45,7 +45,7 @@ const WEBP_EFFORT = 6;
 // direction-neutral). Strokes converge in a few rings; the chalk's solid whites
 // (an eye sclera) take ~their radius. Under a stroke the result is a seam of
 // blended neighbor color that the overlay line always covers. Exported so the
-// halo auditor (bin/audit-night-halo.mjs) can build its reference punch with the
+// halo auditor (coloring/check-night-halo.mjs) can build its reference punch with the
 // identical bleed.
 export function bleedUnderMask(rgb, mask, width, height) {
   const pending = mask.slice();

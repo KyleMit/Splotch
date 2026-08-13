@@ -75,7 +75,7 @@ describe('scoreLineColor — the outlines must stay white', () => {
 // and the loops read the wrong pixels — misregistered rows, or past the end of
 // the fill entirely — which silently pushes a clean fill over a gate (invented
 // outlines, dark lines, a daytime median) instead of raising anything.
-// bin/audit-golden.mjs is the exposed caller: it scores a committed night raw
+// coloring/check-golden-scores.mjs is the exposed caller: it scores a committed night raw
 // against the line art with no alignment step of its own.
 //
 // Skewing then scoring is a round trip through the scorers' own resize, so a

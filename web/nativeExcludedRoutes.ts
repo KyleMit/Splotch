@@ -22,7 +22,7 @@ import type { Plugin } from 'vite';
 //
 // This replaces each excluded route's client module source at build time, so
 // the strings never make it into the bundle in the first place.
-// `tools/native/check-native-bundle.mjs` scans the built output and fails
+// `tools/mobile/check-static-bundle.mjs` scans the built output and fails
 // `build:cap` if a sentinel from either route survives.
 export const NATIVE_EXCLUDED_ROUTES = ['android-beta', 'admin'] as const;
 

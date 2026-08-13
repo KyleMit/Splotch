@@ -104,7 +104,7 @@ you pull `dom-size`, `largest-contentful-paint-element`, `mainthread-work-breakd
 `bootup-time` `details.items` without opening the 464 KB HTML. Always inspect `long-tasks` too. If
 every item is attributed to `_lighthouse-eval.js`, the reported TBT and derived performance score
 include Lighthouse's own injected work; the driver marks those TBT values with `*`. Do not turn that
-value into an app finding — use `npm run perf:mount` for an independent startup trace first.
+value into an app finding — use `npm run perf:web:mount` for an independent startup trace first.
 
 ### 2. Merge findings into `docs/AUDIT.md` — combine, don't overwrite
 
@@ -144,8 +144,8 @@ audit and how to read the numbers*; the findings live in `docs/AUDIT.md` (then t
 can be scaled and counted in TBT even though Lighthouse excludes the same URL from `bootup-time`.
 This reproduced in both Lighthouse 12.8.2 and 13.4.0. When every `long-tasks` item has that URL,
 treat TBT and the derived Perf score as contaminated, inspect the observed `main-thread-tasks`, and
-confirm any startup concern with `npm run perf:mount` before filing it. If an app URL also appears,
-investigate that app-attributed work normally.
+confirm any startup concern with `npm run perf:web:mount` before filing it. If an app URL also
+appears, investigate that app-attributed work normally.
 
 **False positive — don't file an audit item for it:** the `lcp-discovery-insight` audit currently
 flags *"`fetchpriority=high` should be applied: false"*. The LCP is `.paper-sheet`, whose tiny CSS

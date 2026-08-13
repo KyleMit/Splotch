@@ -92,7 +92,7 @@ tree-shaken from release output. Run the applicable release build after changing
 * **Mac web:** headed Playwright WebKit for comparable local drawing/actions.
 * **iPad web/native, physical or Simulator:** Appium/XCUITest drives native touch; the in-page probe
   measures frames. Physical MobileSafari is the calibrated iPad approval target.
-* **Android Chrome web:** direct CDP via `perf:android:web:actions` for actions. Do not approve
+* **Android Chrome web:** direct CDP via `perf:android:browser:actions` for actions. Do not approve
   browser frames from the Appium action transport.
 * **Android native:** Appium attached to the Capacitor WebView with
   `--native-app --native-webview-class=android.webkit.WebView`.

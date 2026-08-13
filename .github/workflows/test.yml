@@ -273,7 +273,7 @@ jobs:
       - uses: ./.github/actions/setup-playwright-webkit
 
       - name: Run fast WebKit commit gate
-        run: npm run perf:undo:webkit:fast
+        run: npm run perf:web:undo:webkit:fast
 
       - name: Upload WebKit undo diagnostics
         if: failure()
@@ -344,11 +344,11 @@ jobs:
             fi
           fi
           if [[ "$restore_ok" -eq 0 ]]; then
-            cp tools/perf/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
+            cp tools/perf/fixtures/undo-fast-set-history.seed.json .perf-state/undo-fast-set-history.json
           fi
 
       - name: Run full WebKit commit gate
-        run: npm run perf:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json
+        run: npm run perf:web:undo:webkit -- --fast-set-history=.perf-state/undo-fast-set-history.json
 
       - name: Persist WebKit full-run history
         if: always()

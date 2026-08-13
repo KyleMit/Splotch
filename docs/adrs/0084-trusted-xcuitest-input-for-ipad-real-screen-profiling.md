@@ -3,6 +3,10 @@
 **Status:** Active — amended by [ADR-0090](0090-tiered-real-ipad-performance-regression-gates.md).
 **Date:** 2026-07
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
+> trusted-input screen-capture contract remains in force, while its command is now
+> `perf:ios:xcuitest:screen`.
+
 ## Context
 
 ADR-0083 separated real-screen frame pacing from the engine gates, but its unattended `--drive` path

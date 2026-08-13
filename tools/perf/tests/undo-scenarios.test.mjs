@@ -33,13 +33,13 @@ vi.mock('@playwright/test', () => ({
   },
 }));
 
-vi.mock('../preview.mjs', () => ({
+vi.mock('../lib/profile-preview.mjs', () => ({
   buildAndPreview: async () => ({ base: 'http://profile.test/', stop: state.stop }),
 }));
 
 // createMeasureTimeline stays real — it is the thing under test for the
 // multi-scenario WebKit trace, and stubbing it would test the stub.
-vi.mock('../capture.mjs', async (importOriginal) => {
+vi.mock('../lib/chrome-trace-capture.mjs', async (importOriginal) => {
   const actual = await importOriginal();
   return {
     startTrace: async () => [],
@@ -53,7 +53,7 @@ vi.mock('../capture.mjs', async (importOriginal) => {
   };
 });
 
-vi.mock('../paths.mjs', () => ({ profilePath: () => state.outDir }));
+vi.mock('../lib/profile-paths.mjs', () => ({ profilePath: () => state.outDir }));
 
 vi.mock('../../lib/playwright.mjs', () => ({ chromiumExecutablePath: () => undefined }));
 
@@ -251,7 +251,7 @@ describe('undo scenario profiling', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     await runUndoScenarios();
 
     const jsonPath = join(fixtureDir, 'undo-scenarios.json');
@@ -297,7 +297,7 @@ describe('engine selection', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     await runUndoScenarios();
 
     expect(state.launched).toEqual(['webkit']);
@@ -324,7 +324,7 @@ describe('engine selection', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     await runUndoScenarios();
 
     const { traceEvents } = JSON.parse(readFileSync(join(fixtureDir, 'trace.json'), 'utf8'));
@@ -351,7 +351,7 @@ describe('engine selection', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     await runUndoScenarios();
 
     const metrics = JSON.parse(readFileSync(join(fixtureDir, 'metrics.json'), 'utf8'));
@@ -386,7 +386,7 @@ describe('engine selection', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate.fastSetEvaluation).toMatchObject({
@@ -420,7 +420,7 @@ describe('engine selection', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate.fastSetEvaluation).toMatchObject({ evaluated: true, historyWindowRuns: 2 });
@@ -443,7 +443,7 @@ describe('engine selection', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ evaluated: false });
@@ -461,7 +461,7 @@ describe('engine selection', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     await runUndoScenarios();
 
     const report = JSON.parse(readFileSync(join(fixtureDir, 'undo-scenarios.json'), 'utf8'));
@@ -479,7 +479,7 @@ describe('engine selection', () => {
   it('rejects a named suite combined with an explicit scenario subset', async () => {
     process.argv = [...process.argv, '--suite=fast', '--scenarios=multi-finger'];
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
 
     await expect(runUndoScenarios()).rejects.toThrow(
       '--suite=fast cannot be combined with --scenarios'
@@ -491,7 +491,7 @@ describe('engine selection', () => {
     const exit = vi.spyOn(process, 'exit').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    await import('../undo-scenarios.mjs');
+    await import('../web/run-undo-scenarios.mjs');
 
     expect(error).toHaveBeenCalledWith(expect.stringContaining('--engine=firefox is not a known'));
     expect(exit).toHaveBeenCalledWith(1);
@@ -504,7 +504,7 @@ describe('engine selection', () => {
       '--scenarios=multi-finger,crayon-scribblesTYPO',
     ];
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
 
     await expect(runUndoScenarios()).rejects.toThrow(
       '--scenarios contains unknown key(s): crayon-scribblesTYPO'
@@ -524,7 +524,7 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({
@@ -549,7 +549,7 @@ describe('the commit gate', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate.breaches).toEqual([]);
@@ -571,7 +571,7 @@ describe('the commit gate', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate.breaches).toEqual([]);
@@ -588,13 +588,13 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'log').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ evaluated: false, breaches: [] });
     expect(process.exitCode).toBe(1);
     expect(error).toHaveBeenCalledWith(expect.stringContaining('NOT EVALUATED on webkit'));
-    expect(error).toHaveBeenCalledWith(expect.stringContaining('npm run perf:undo:webkit'));
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('npm run perf:web:undo:webkit'));
   });
 
   it('fails rather than certifies a WebKit run with skipped scenarios', async () => {
@@ -606,7 +606,7 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ evaluated: false, skipped: 1, breaches: [] });
@@ -628,7 +628,7 @@ describe('the commit gate', () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     expect(gate).toMatchObject({ evaluated: false, skipped: 1 });
@@ -646,7 +646,7 @@ describe('the commit gate', () => {
     vi.spyOn(Date, 'now').mockImplementation(mockTickingClock());
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    const { runUndoScenarios } = await import('../undo-scenarios.mjs');
+    const { runUndoScenarios } = await import('../web/run-undo-scenarios.mjs');
     const gate = await runUndoScenarios();
 
     // Chromium cannot measure the cost this gate is about, so a hot commit here

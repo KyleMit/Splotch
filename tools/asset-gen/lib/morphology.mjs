@@ -1,6 +1,6 @@
 // Morphology and distance-transform helpers on 0/1 masks, shared by the drift
-// scorer (gen-coloring-fills-dark.mjs), the chalk-outline generator
-// (gen-coloring-chalk.mjs), and the solid-region scorer (solid-regions.mjs).
+// scorer (gen-night-fills.mjs), the chalk-outline generator
+// (gen-chalk-outlines.mjs), and the solid-region scorer (solid-regions.mjs).
 //
 // Separable box morphology: dilate = a pixel is set if ANY neighbor within r
 // is set; erode = set only if ALL neighbors within r are set. An

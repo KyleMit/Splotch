@@ -1,6 +1,6 @@
-# The coloring-book proof sheet — `bin/gen-coloring-book-proof-sheet.mjs`
+# The coloring-book proof sheet — `coloring/gen-book-proof-sheet.mjs`
 
-**Read this before modifying `bin/gen-coloring-book-proof-sheet.mjs` or anything under
+**Read this before modifying `coloring/gen-book-proof-sheet.mjs` or anything under
 `coloring-book-proof-sheet-assets/`.** It is the single review surface for the coloring-book assets
 — the pen line art, the chalk outline, the day/night fills, and the composited page — the
 review-sheet role previously split across `gen-coloring-sheet.mjs` lives here now.
@@ -21,7 +21,7 @@ capped), so the images simply grow with the viewport until they hit that cap.
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/bin/gen-coloring-book-proof-sheet.mjs <category>[/page[-orient]] \
+  tools/asset-gen/coloring/gen-book-proof-sheet.mjs <category>[/page[-orient]] \
     [--source shipped|samples|git:<ref>] [--out FILE]
 ```
 
@@ -64,7 +64,7 @@ The compositing mirrors `DrawingCanvas.svelte` + `magicBrush.ts` (ADR-0043/0052)
 ## The outline % badge
 
 Each **light** tile carries an outline-keep badge: the % of the source line art the fill preserves,
-scored by the shared `lib/outline-match.mjs` (the same scorer as the `gen:coloring-fills:audit`
+scored by the shared `lib/outline-match.mjs` (the same scorer as the `check:coloring-fill-drift`
 drift audit). It is computed from the **lined raw fill** in `fill-src/` — the shipped fill is
 punched fills-only, leaving nothing to register. Night tiles have no badge: night raws have *white*
 outlines, which the dark-ink mask can't read. Badge color buckets are defined by
@@ -72,7 +72,7 @@ outlines, which the dark-ink mask can't read. Badge color buckets are defined by
 
 ## Where the code lives
 
-* `bin/gen-coloring-book-proof-sheet.mjs` — assembles the HTML shell, embeds the images, scores the
+* `coloring/gen-book-proof-sheet.mjs` — assembles the HTML shell, embeds the images, scores the
   badges, and injects the cell data as a JSON global (`window.__COLORING_BOOK_PROOF_SHEET__`). No
   build-time string interpolation reaches the runtime.
 * `coloring-book-proof-sheet-assets/coloring-book-proof-sheet.css` — the entire look.

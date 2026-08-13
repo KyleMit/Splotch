@@ -1,5 +1,5 @@
 // Prompt assembly for AI image generation, shared by the /api/generate-image
-// endpoint and tools/asset-gen/bin/gen-style-covers.mjs (which imports it via
+// endpoint and tools/asset-gen/style-covers/gen-style-covers.mjs (which imports it via
 // --experimental-strip-types, so keep this module free of RUNTIME dependencies —
 // the type-only import below is erased and costs nothing).
 import type { ResolvedTheme } from '../theme';
