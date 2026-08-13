@@ -23,7 +23,7 @@ import {
 import {
   buildColoringBookProofSheetHub,
   PROOF_SHEET_HUB_PATH,
-} from './gen-coloring-book-proof-sheet-hub.mjs';
+} from './gen-proof-sheet-hub.mjs';
 
 // Project Pages site: https://<owner>.github.io/<repo>/ — GitHub lowercases the
 // subdomain, the repo segment keeps its casing. Owner/repo are sourced from
