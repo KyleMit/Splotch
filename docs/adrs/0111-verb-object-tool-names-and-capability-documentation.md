@@ -54,7 +54,7 @@ capability-prefixed filename rule is amended as follows:
   force, while its misleading `img:audit` and `img:audit:check` commands become
   `optimize:svg-assets` and `check:svg-assets`, and its executable becomes
   `optimize-svg-assets.mjs`. Asset-generation checks likewise move from `audit-*` executable names
-  and `gen:*:audit` commands to truthful `check-*` entry points and `check:*` commands; the one
+  and `gen:*:audit` commands to truthful `check-*` entry points and `check:*` commands; the
   write-producing eye review becomes `gen-eye-review.mjs` behind `gen:coloring-eye-review`.
 * A supporting module uses a purpose noun, with a capability qualifier when a generic leaf would be
   ambiguous. Leaf names retain enough meaning for search results and stack frames; `index.mjs`,
@@ -62,7 +62,10 @@ capability-prefixed filename rule is amended as follows:
 * No capability uses a `bin/` directory. Executables live at the capability root or within a named
   sub-capability.
 * Existing multi-mode executables are named for their primary action and keep secondary modes behind
-  flags or npm commands. Naming does not justify splitting an implementation.
+  flags or npm commands. Naming does not justify splitting an implementation. The migration's
+  `check-golden-scores.mjs` deliberately retains its `--diff` and `--freeze` modes, with the
+  baseline-replacing mode exposed through `update:coloring-golden-scores`; this is a bounded
+  exception to the otherwise read-only `check` executable contract.
 
 Verb-object names preserve the useful part of ADR-0108's greppability without repetition:
 `tools/mobile/android/setup-emulator.mjs` identifies its capability, platform, and action more
@@ -78,22 +81,25 @@ ADR-0019's npm catalog remains the public interface, and `package.json` scripts 
 descriptions still change together. ADR-0108's "command names did not change" precedent is narrowed:
 affirmatively misleading commands are renamed without compatibility aliases, while commands that
 still describe their action remain stable. ADR-0019's "namespace by domain" and "generated artifacts
-live under `gen:*`" rules are narrowed in two places. SVG optimization moves the two-command `img:*`
-domain into the action-first `optimize:svg-assets` and `check:svg-assets` namespaces. Verb-first
-page-inventory commands intentionally span the `capture:`, `review:`, `finalize:`, and `attach:`
-namespaces. These choices weaken namespace grouping in exchange for making each action clear at the
-call site. The `capture:` namespace is deliberately adjacent to Capacitor's existing `cap:*`
-namespace; `record:` avoids that similarity but is less precise, while retaining
-`gen:page-inventory` would misdescribe evidence capture as artifact generation. `promotional-image`
-names the generator rather than Google Play because its `large-image.png` output serves both store
-and social/link preview placements.
+live under `gen:*`" rules are narrowed in three places. SVG optimization moves the two-command
+`img:*` domain into the action-first `optimize:svg-assets` and `check:svg-assets` namespaces.
+Asset-generation checks move from `gen:*:audit` to `check:*`, except for the write-producing eye
+review. Verb-first page-inventory commands intentionally span the `capture:`, `review:`,
+`finalize:`, and `attach:` namespaces. These choices weaken namespace grouping in exchange for
+making each action clear at the call site. The `capture:` namespace is deliberately adjacent to
+Capacitor's existing `cap:*` namespace; `record:` avoids that similarity but is less precise, while
+retaining `gen:page-inventory` would misdescribe evidence capture as artifact generation.
+`promotional-image` names the generator rather than Google Play because its `large-image.png` output
+serves both store and social/link preview placements.
 
 This migration is structural and behavior-preserving. Each capability lands in a focused stacked PR
 using `git mv`. Flags, environment variables, defaults, exit behavior, output paths, and artifact
 identities are unchanged; internal values such as `profilePath('ipad-xcuitest', ...)` are runtime
-behavior, not organizational names. Historical and dated records retain the paths that were true at
-the time. Reusable performance components, module decomposition, new mobile wrappers, and output
-renames are deferred until the new paths stabilize.
+behavior, not organizational names. ADRs remain historical decision records regardless of Active
+status, so their command examples retain the paths that were true at the time unless this record
+explicitly amends the underlying decision. Other dated records follow the same rule; current
+operating docs and command catalogs are updated. Reusable performance components, module
+decomposition, new mobile wrappers, and output renames are deferred until the new paths stabilize.
 
 ## Consequences
 

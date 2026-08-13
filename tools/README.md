@@ -37,9 +37,6 @@ executable action.
 
 ## Capability documentation
 
-ADR-0111 adopts this requirement capability by capability; a README is added when each capability
-migrates, so unmigrated folders may not have one yet.
-
 Every capability and meaningful sub-capability must have a README that covers:
 
 * its purpose and domain owner;
@@ -48,6 +45,9 @@ Every capability and meaningful sub-capability must have a README that covers:
 * prerequisites, including platform tools and environment variables;
 * failure behavior and safe recovery;
 * maintenance guidance and the focused verification command.
+
+ADR-0111 adopts this requirement capability by capability; a README is added when each capability
+migrates, so unmigrated folders may not have one yet.
 
 Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `generated`, `inputs`,
 `samples`, and `probes` are documented by their nearest capability README unless they need an
@@ -71,9 +71,9 @@ their domain is intrinsically platform-bound, in which case they fail fast elsew
 parsed explicitly; documented environment variables are fallbacks rather than hidden interfaces.
 
 Moving a tool between directory depths requires a full reference sweep. Update imports, test mocks,
-repo-root walks, npm scripts and `scripts-info`, workflows, active docs, skills, `knip.json`, and
-the narrow Netlify deploy filter in the same capability PR. Use `git mv` so review preserves
-history.
+repo-root walks, root and capability-local `package.json` scripts, `scripts-info`, workflows, active
+docs, skills, `tools/vitest.config.mjs`, `knip.json`, and the narrow Netlify deploy filter in the
+same capability PR. Use `git mv` so review preserves history.
 
 For each capability move, run its focused suite plus:
 

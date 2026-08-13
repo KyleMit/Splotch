@@ -37,7 +37,9 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
   the documented dependency-free local-alias exception.
 * Tests follow the same shape: a flat tool's test goes in `tools/tests/`, a capability's tests in
   `tools/<capability>/tests/`. `tools/vitest.config.mjs` discovers both (`npm run test:tools`);
-  `asset-gen` and `store-drawings` are excluded because they keep their own named suites.
+  `asset-gen` and `store-drawings` are excluded because they keep their own named suites. A
+  capability that introduces sub-capability tests must extend Vitest's include glob to the new
+  depth; nested tests otherwise disappear from collection without an error.
 * A new capability folder must be added to the `project` list in `knip.json`, which enumerates them
   (knip cannot re-include a path under a negated glob, so a blanket `tools/**` plus exclusions is
   not an option). You do not have to remember: `tools/tests/enumerated-build-paths.test.mjs` fails
