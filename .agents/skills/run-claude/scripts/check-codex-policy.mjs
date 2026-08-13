@@ -12,6 +12,8 @@ const EXPECTED_CONFIG = {
   approvals_reviewer: 'auto_review',
   sandbox_mode: 'workspace-write',
 };
+// Consumed only by the CI drift guard in tools/tests/run-claude.test.mjs. It is deliberately not
+// part of checkCodexPolicy(), whose reinstall recovery cannot repair skill prose.
 export const REQUIRED_SKILL_EXECUTION_CONTRACT = new Map([
   [
     'seamless invocation instruction',
@@ -57,6 +59,7 @@ export function validateManagedRules(content) {
   }
 }
 
+// Test-only validator for the CI drift guard described above.
 export function validateSkillExecutionContract(content) {
   for (const [name, requirement] of REQUIRED_SKILL_EXECUTION_CONTRACT) {
     if (!content.includes(requirement)) {
