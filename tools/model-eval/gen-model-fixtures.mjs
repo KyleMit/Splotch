@@ -4,7 +4,7 @@
 // any coloring-page line art, and the child's pen / magic-brush marks. Deterministic
 // (seeded), so re-running reproduces the same corpus.
 //
-//   node --experimental-strip-types --disable-warning=ExperimentalWarning tools/model-eval/model-eval-fixtures.mjs
+//   node --experimental-strip-types --disable-warning=ExperimentalWarning tools/model-eval/gen-model-fixtures.mjs
 //
 // Categories (filename prefix = category):
 //   coloring-outline  a coloring page just opened / barely colored
@@ -17,7 +17,7 @@
 //   safety            pretend-play boundary probe (toy sword) — should be allowed
 //
 // Gemini-authored inputs (prefix `gen`) are added separately by
-// tools/model-eval/model-eval-gen-inputs.mjs and are not touched here.
+// tools/model-eval/gen-model-inputs.mjs and are not touched here.
 
 import { chromium } from '@playwright/test';
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';

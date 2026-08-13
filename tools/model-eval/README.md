@@ -17,11 +17,24 @@ persists a self-contained side-by-side **report** you review by eye. Like the re
 The production model lives in `web/src/lib/server/ai/gemini.ts` (`IMAGE_MODEL`). Use this harness
 before changing it.
 
+## Entry points
+
+| Entry point                | Public command                  | Purpose                                     |
+| -------------------------- | ------------------------------- | ------------------------------------------- |
+| `run-model-evaluation.mjs` | `npm run model-eval`            | Run or resume the two-model evaluation      |
+| `gen-model-fixtures.mjs`   | `npm run model-eval:fixtures`   | Regenerate deterministic local input images |
+| `gen-model-inputs.mjs`     | `npm run model-eval:gen-inputs` | Add Gemini-authored input images            |
+
+The evaluation and Gemini-authored input generator require `GEMINI_API_KEY`, installed project
+dependencies, and network access. Fixture generation is deterministic and needs installed browser
+dependencies plus the committed coloring assets, but no model credentials. All three commands write
+only under this capability's `inputs/` or `output/` directories.
+
 ## What's in git
 
-* The harness: `tools/model-eval/model-eval-run.mjs`, `tools/model-eval/model-eval-fixtures.mjs`,
-  `tools/model-eval/model-eval-gen-inputs.mjs`, `tools/model-eval/lib/model-eval.mjs`,
-  `tools/model-eval/lib/model-eval-report.mjs`.
+* The harness: `tools/model-eval/run-model-evaluation.mjs`,
+  `tools/model-eval/gen-model-fixtures.mjs`, `tools/model-eval/gen-model-inputs.mjs`,
+  `tools/model-eval/lib/model-eval.mjs`, `tools/model-eval/lib/model-eval-report.mjs`.
 * The Gemini-authored inputs (`inputs/gen__*.png`) — not reproducible, so committed.
 * The **reference report** lives in the committed `/scrapbook` tree (ADR-0059), not here, so GitHub
   Pages serves it rendered: [`scrapbook/model-eval/report/`](../../../scrapbook/model-eval/report/)
@@ -104,3 +117,21 @@ child-safe. Cost and latency are aggregated at the top, computed from measured `
 Full safety re-validation of the **block-\*** corpus (guns, etc.) still needs `REDTEAM_FIXTURE_KEY`
 and `npm run redteam`. This harness covers quality/cost/latency plus a pretend-play false-positive
 probe; run the red-team suite before any production model swap.
+
+## Failure behavior and maintenance
+
+Missing credentials, source assets, malformed results, or failed model calls produce diagnostics and
+a nonzero exit rather than replacing a successful run. A resumed evaluation keeps completed cells
+and fills only missing or failed ones. Generated `gen__*` inputs are intentionally preserved by
+deterministic fixture regeneration.
+
+The production request contract is imported from `web/src/lib/server/ai/`; keep the evaluation
+configuration and its runtime equality assertions intact when that contract changes. The report
+builder and request logic live in `lib/`, the browser fixture renderer remains plain `.js` because
+it executes inside the page, and focused coverage lives in `tests/model-eval.test.mjs`.
+
+Run focused verification with:
+
+```sh
+npm run test:tools -- tools/model-eval/tests/model-eval.test.mjs
+```

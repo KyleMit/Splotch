@@ -53,9 +53,9 @@ describe('redteam corpus (ADR-0023)', () => {
 
 describe('model-eval corpus', () => {
   const bases = [
-    ['tools/model-eval/model-eval-run.mjs', 'BASE'],
-    ['tools/model-eval/model-eval-fixtures.mjs', 'OUT'],
-    ['tools/model-eval/model-eval-gen-inputs.mjs', 'OUT'],
+    ['tools/model-eval/run-model-evaluation.mjs', 'BASE'],
+    ['tools/model-eval/gen-model-fixtures.mjs', 'OUT'],
+    ['tools/model-eval/gen-model-inputs.mjs', 'OUT'],
   ].map(([file, name]) => ({ file, base: declaredBase(file, name) }));
 
   it.each(bases)('$file points at a directory that exists', ({ base }) => {
