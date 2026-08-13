@@ -22,9 +22,10 @@ import { parseArgs } from 'node:util';
 import { ROOT, fail, run, isMain, parseOrFail } from '../lib/proc.mjs';
 import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
+import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 
-export const RELEASE_IPA = join(ROOT, 'ios', 'App', 'build', 'ipa', 'App.ipa');
+export { RELEASE_IPA };
 
 const PLATFORMS = ['android', 'ios'];
 

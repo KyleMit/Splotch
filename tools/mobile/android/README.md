@@ -26,6 +26,10 @@ bundle creation requires the ignored signing configuration documented in the mob
 tools, an unavailable emulator, Gradle failures, or an invalid bundle exit nonzero and retain the
 underlying diagnostic output.
 
+Set `ANDROID_HOME` (or the older `ANDROID_SDK_ROOT`) to override the default SDK location,
+`JAVA_HOME` to a full JDK 21 so `verify-release-bundle.mjs` can locate `jarsigner`, and
+`ANDROID_SERIAL` to pick a device when an emulator is also connected.
+
 `lib/android-toolchain.mjs` owns SDK discovery, the API level and AVD name, Gradle paths, and
 release artifact paths. Update its API-level constant together with CI and documentation; the nested
 config test enforces that agreement. Keep Android-only lifecycle code here and cross-platform
