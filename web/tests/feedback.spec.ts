@@ -36,10 +36,10 @@ test('the privacy contact stays inside Splotch and points to the feedback page',
 }) => {
   await page.goto('/privacy');
 
-  await expect(page.getByRole('link', { name: 'private feedback form' }).last()).toHaveAttribute(
-    'href',
-    '/feedback'
-  );
+  const links = page.getByRole('link', { name: 'private feedback form' });
+  await expect(links).toHaveCount(2);
+  await expect(links.first()).toHaveAttribute('href', '/feedback');
+  await expect(links.last()).toHaveAttribute('href', '/feedback');
   await expect(page.getByRole('link', { name: 'open an issue on GitHub' })).toHaveCount(0);
 });
 
