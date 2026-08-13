@@ -214,7 +214,7 @@ describe('native build script entry points', () => {
       expect.stringMatching(/^file:.*check-coloring-assets\.mjs$/),
     ]);
     expect(existsSync(join(directBuildDir, 'favicon.ico'))).toBe(false);
-    expect(log).toHaveBeenCalledWith('[check-assets] all checks passed.');
+    expect(log).toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
     expect(exit).not.toHaveBeenCalled();
   });
 
@@ -227,7 +227,7 @@ describe('native build script entry points', () => {
 
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
-    expect(result.stdout).toContain('[check-assets] all checks passed.');
+    expect(result.stdout).toContain('[check-coloring-assets] all checks passed.');
   });
 
   it('runs the real native-strip CLI against an isolated build', () => {
@@ -332,14 +332,14 @@ describe('native build script entry points', () => {
       `[strip-native-assets] no build output at ${missingBuild}`
     );
     expect(() => checkAssets(missingStatic, [webBook], [webBook])).toThrow(
-      /^\[check-assets\] \d+ error\(s\) found/
+      /^\[check-coloring-assets\] \d+ error\(s\) found/
     );
 
     expect(exit).not.toHaveBeenCalled();
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('[check-assets] PLATFORM MISMATCH:')
+      expect.stringContaining('[check-coloring-assets] PLATFORM MISMATCH:')
     );
-    expect(log).not.toHaveBeenCalledWith('[check-assets] all checks passed.');
+    expect(log).not.toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
   });
 
   it('translates direct-entry failures to exit code 1', async () => {
@@ -366,9 +366,9 @@ describe('native build script entry points', () => {
     expect(exit).toHaveBeenNthCalledWith(2, 1);
     expect(error).toHaveBeenCalledWith('[strip-native-assets] no build output at web/build');
     expect(error).toHaveBeenCalledWith(
-      expect.stringMatching(/^\[check-assets\] \d+ error\(s\) found/)
+      expect.stringMatching(/^\[check-coloring-assets\] \d+ error\(s\) found/)
     );
-    expect(log).not.toHaveBeenCalledWith('[check-assets] all checks passed.');
+    expect(log).not.toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
   });
 
   it('reports success for a complete catalog', () => {
@@ -385,7 +385,7 @@ describe('native build script entry points', () => {
 
     expect(exit).not.toHaveBeenCalled();
     expect(error).not.toHaveBeenCalled();
-    expect(log).toHaveBeenCalledWith('[check-assets] all checks passed.');
+    expect(log).toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
   });
 
   it('fails when an authoring doc sits in the publicly served static tree', () => {
@@ -400,12 +400,12 @@ describe('native build script entry points', () => {
     log.mockClear();
 
     expect(() => checkAssets(staticDir, [mobileBook], [mobileBook])).toThrow(
-      /^\[check-assets\] \d+ error\(s\) found/
+      /^\[check-coloring-assets\] \d+ error\(s\) found/
     );
 
     expect(error).toHaveBeenCalledWith(
-      expect.stringContaining('[check-assets] PUBLISHED DOC: coloring/PLANNING.md')
+      expect.stringContaining('[check-coloring-assets] PUBLISHED DOC: coloring/PLANNING.md')
     );
-    expect(log).not.toHaveBeenCalledWith('[check-assets] all checks passed.');
+    expect(log).not.toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
   });
 });

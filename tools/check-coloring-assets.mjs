@@ -20,12 +20,14 @@ function reportMissingCatalogAssets(staticDir, books) {
     for (const assetPath of bookAssetPaths(book)) {
       checked++;
       if (!existsSync(join(staticDir, assetPath))) {
-        console.error(`[check-assets] MISSING: ${assetPath}  (book: ${book.id})`);
+        console.error(`[check-coloring-assets] MISSING: ${assetPath}  (book: ${book.id})`);
         missing++;
       }
     }
   }
-  console.log(`[check-assets] ${checked} asset(s) checked across ${books.length} book(s).`);
+  console.log(
+    `[check-coloring-assets] ${checked} asset(s) checked across ${books.length} book(s).`
+  );
   return missing;
 }
 
@@ -37,14 +39,14 @@ function reportPlatformFilterMismatch(books, mobileEligibleBooks) {
 
   if (overlap.length > 0) {
     console.error(
-      `[check-assets] PLATFORM MISMATCH: book(s) simultaneously mobile-eligible and web-only: ` +
+      `[check-coloring-assets] PLATFORM MISMATCH: book(s) simultaneously mobile-eligible and web-only: ` +
         overlap.map((book) => book.id).join(', ')
     );
     return 1;
   }
 
   console.log(
-    `[check-assets] platform filtering OK — ` +
+    `[check-coloring-assets] platform filtering OK — ` +
       (webOnly.length > 0
         ? `${webOnly.length} web-only book(s) will be stripped from native: ${webOnly.map((book) => book.id).join(', ')}`
         : 'all books ship on mobile.')
@@ -60,10 +62,11 @@ function reportPubliclyServedDocs(staticDir) {
   const docs = globSync('**/*.md', { cwd: staticDir });
   for (const doc of docs) {
     console.error(
-      `[check-assets] PUBLISHED DOC: ${doc} — web/static/ is served publicly; move it under docs/`
+      `[check-coloring-assets] PUBLISHED DOC: ${doc} — web/static/ is served publicly; move it under docs/`
     );
   }
-  if (docs.length === 0) console.log('[check-assets] no authoring docs in the static tree.');
+  if (docs.length === 0)
+    console.log('[check-coloring-assets] no authoring docs in the static tree.');
   return docs.length;
 }
 
@@ -73,9 +76,9 @@ export function checkAssets(staticDir, books, mobileEligibleBooks) {
     reportPlatformFilterMismatch(books, mobileEligibleBooks) +
     reportPubliclyServedDocs(staticDir);
   if (errors > 0) {
-    throw new Error(`[check-assets] ${errors} error(s) found — fix before releasing.`);
+    throw new Error(`[check-coloring-assets] ${errors} error(s) found — fix before releasing.`);
   }
-  console.log('[check-assets] all checks passed.');
+  console.log('[check-coloring-assets] all checks passed.');
 }
 
 if (isMain(import.meta.url)) {

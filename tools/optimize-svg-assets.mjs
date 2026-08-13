@@ -60,7 +60,7 @@ const files = globSync('web/**/*.svg', { cwd: ROOT })
   .sort();
 
 if (files.length === 0) {
-  console.log('[image-audit] No SVGs found under web/.');
+  console.log('[optimize-svg-assets] No SVGs found under web/.');
   process.exit(0);
 }
 
@@ -84,7 +84,7 @@ for (const file of files) {
   const pct = Math.abs((delta / beforeBytes) * 100).toFixed(0);
   const verb = check ? 'NEEDS OPT' : 'optimized';
   const size = `${beforeBytes} -> ${afterBytes} bytes (${delta < 0 ? '+' : '-'}${pct}%)`;
-  console.log(`[image-audit] ${verb}  ${rel}  ${size}`);
+  console.log(`[optimize-svg-assets] ${verb}  ${rel}  ${size}`);
 
   if (!check) writeFileSync(file, after);
 }
@@ -92,7 +92,7 @@ for (const file of files) {
 const kib = (n) => (n / 1024).toFixed(1);
 
 if (changedCount === 0) {
-  console.log(`[image-audit] ${files.length} SVG(s) already optimal — nothing to do.`);
+  console.log(`[optimize-svg-assets] ${files.length} SVG(s) already optimal — nothing to do.`);
   process.exit(0);
 }
 
@@ -104,10 +104,10 @@ const net =
 
 if (check) {
   console.error(
-    `\n[image-audit] ${changedCount} of ${files.length} SVG(s) are not optimized ` +
+    `\n[optimize-svg-assets] ${changedCount} of ${files.length} SVG(s) are not optimized ` +
       `(${net}). Run \`npm run optimize:svg-assets\` and commit the result.`
   );
   process.exit(1);
 }
 
-console.log(`\n[image-audit] optimized ${changedCount} of ${files.length} SVG(s), ${net}.`);
+console.log(`\n[optimize-svg-assets] optimized ${changedCount} of ${files.length} SVG(s), ${net}.`);
