@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import {
   DIRECT_PROVIDER_PATHS,
   FORBIDDEN_DIRECT_PROVIDER_SOURCES,
+  RULER_STEP_PATHS,
   withPreservedDirectProviderPaths,
 } from '../apply-ruler.mjs';
 import { sharedNoteSource } from '../mirror-skill-notes.mjs';
@@ -32,6 +33,12 @@ function providerContents(root) {
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+});
+
+describe('Ruler apply steps', () => {
+  it('resolves every child step beside the entry point', () => {
+    expect(Object.values(RULER_STEP_PATHS).every(existsSync)).toBe(true);
+  });
 });
 
 describe('withPreservedDirectProviderPaths', () => {

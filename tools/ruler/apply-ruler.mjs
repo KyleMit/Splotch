@@ -14,6 +14,11 @@ import {
   DIRECT_PROVIDER_SKILLS,
 } from './lib/direct-provider-skills.mjs';
 
+export const RULER_STEP_PATHS = Object.freeze({
+  mirrorSkillNotes: fileURLToPath(new URL('mirror-skill-notes.mjs', import.meta.url)),
+  applySkillForks: fileURLToPath(new URL('apply-skill-forks.mjs', import.meta.url)),
+});
+
 export { DIRECT_PROVIDER_PATHS };
 
 export const FORBIDDEN_DIRECT_PROVIDER_SOURCES = DIRECT_PROVIDER_SKILLS.flatMap(({ name }) => [
@@ -74,8 +79,8 @@ function runStep(command, args) {
 function main() {
   withPreservedDirectProviderPaths(ROOT, () => {
     runStep('ruler', ['apply']);
-    runStep(process.execPath, ['tools/ruler/mirror-skill-notes.mjs']);
-    runStep(process.execPath, ['tools/ruler/apply-skill-forks.mjs']);
+    runStep(process.execPath, [RULER_STEP_PATHS.mirrorSkillNotes]);
+    runStep(process.execPath, [RULER_STEP_PATHS.applySkillForks]);
   });
   runStep('dprint', ['fmt']);
 }

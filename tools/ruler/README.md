@@ -16,7 +16,9 @@ the committed generated output for drift.
 
 `npm run ruler:dry-run` invokes Ruler directly and previews only the shared generation pass. It does
 not run the note mirror, managed-fork layer, direct-provider preservation wrapper, or final dprint
-formatting.
+formatting. Despite its name, `npm run ruler:check` is not read-only: it regenerates and formats
+files in place before comparing them with the staged or committed versions, so run it only with
+unrelated work committed or stashed.
 
 ## Ownership model
 
@@ -37,10 +39,14 @@ The apply command requires the repository's installed Node dependencies plus `ru
 the project command path. Missing registered provider paths, competing shared/direct sources,
 incomplete forks, unsafe Markdown suffixes, generation failures, or formatting failures produce a
 nonzero exit. Direct provider paths are restored in a `finally` path even when an intermediate
-generation step fails.
+generation step fails. Other files already regenerated before a failure remain modified and may be
+unformatted because dprint runs last; recover by rerunning `npm run ruler:apply` on a worktree with
+no unrelated edits.
 
 Edit `.ruler/**` sources rather than generated files, except for packages explicitly listed in
-`lib/direct-provider-skills.mjs`. After any instruction, skill, or note change, run:
+`lib/direct-provider-skills.mjs`. Adding a direct package to that registry also requires matching
+`linguist-generated=false` entries in `.gitattributes`; `tests/direct-provider-linguist.test.mjs`
+enforces the pair. After any instruction, skill, or note change, run:
 
 ```sh
 npm run ruler:apply
