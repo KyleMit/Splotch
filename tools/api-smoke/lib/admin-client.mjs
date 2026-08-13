@@ -1,5 +1,5 @@
 // Shared request plumbing for the admin surface both smoke tests drive
-// (api-smoke.mjs against a local vite dev, blobs-smoke.mjs against a real
+// (run-local-contract.mjs against a local vite dev, check-deployed-blobs.mjs against a real
 // deploy): the login exchange plus the /api/admin/tokens CRUD calls. Every
 // method returns the raw Response alongside the parsed JSON body so the
 // assertions stay in the smoke scripts — this module only makes the requests.

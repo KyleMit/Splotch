@@ -89,7 +89,7 @@ with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/native/lib/maestro.mjs` the M
 `tools/native/lib/native-export.mjs` owns what the native static export drops — the web-only static
 file list plus the head-tag rewrite that keeps `strip-native-assets.mjs` from leaving a tag pointing
 at a file it deleted; `tools/release/lib/frontmatter.mjs` the release frontmatter/semver parsing;
-`tools/api-smoke/lib/adminClient.mjs` the `/api/admin` login + token-CRUD request plumbing;
+`tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login + token-CRUD request plumbing;
 `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its

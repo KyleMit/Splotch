@@ -2,7 +2,7 @@
 // Deploy-time smoke test that Netlify Blobs is actually live on a DEPLOYED
 // function — the thing that silently broke in production (ADR-0025: a V1 function
 // never gets the Blobs context, so getStore() throws and everything degrades to
-// the in-memory fallback). Unlike tools/api-smoke/api-smoke.mjs (which boots a local vite
+// the in-memory fallback). Unlike tools/api-smoke/run-local-contract.mjs (which boots a local vite
 // dev with no Blobs), this runs against a real Netlify deploy: a preview
 // (https://deploy-preview-<PR>--splotchy.netlify.app) or production
 // (https://splotch.art).
@@ -25,7 +25,7 @@
 import { randomUUID } from 'node:crypto';
 import { sleep } from '../lib/proc.mjs';
 import { check, fatal, summarize } from '../lib/smoke.mjs';
-import { adminClient } from './lib/adminClient.mjs';
+import { adminClient } from './lib/admin-client.mjs';
 
 const BASE = (process.argv[2] ?? process.env.BLOBS_SMOKE_URL ?? '').replace(/\/$/, '');
 const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';

@@ -104,7 +104,7 @@ export const commonWebServer = {
   // precedence over web/.env, so this is what keeps a developer's real dotenv
   // from changing what a spec exercises — or what it reaches: an ambient
   // GITHUB_ISSUE_TOKEN made the /feedback failure-path spec file live issues in
-  // the tracker from its fixture text (tools/api-smoke/api-smoke.mjs clears it for the
+  // the tracker from its fixture text (tools/api-smoke/run-local-contract.mjs clears it for the
   // same reason). A blank value is a deliberate "unconfigured", which is the
   // state CI runs in.
   //

@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { check, fatal, summarize, json } from '../lib/smoke.mjs';
-import { adminClient } from './lib/adminClient.mjs';
+import { adminClient } from './lib/admin-client.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
 // so the absence assertions below name the same headers the hook stamps — a new
 // security header is covered here the moment it's added to that module.
@@ -125,7 +125,7 @@ async function checkTokensCrud(admin, auth) {
     `got ${list.status}`
   );
   // vite dev has no Netlify Blobs, so the snapshot must report the in-memory
-  // fallback. The deployed counterpart (tools/api-smoke/blobs-smoke.mjs) asserts the
+  // fallback. The deployed counterpart (tools/api-smoke/check-deployed-blobs.mjs) asserts the
   // opposite — persistent:true — against a real function.
   check(
     'tokens GET → persistent:false under vite dev',
