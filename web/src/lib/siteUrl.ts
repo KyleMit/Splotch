@@ -9,3 +9,4 @@
 // only clickable. A link that only has to be followed stays a relative path,
 // so deploy previews and localhost link to themselves.
 export const SITE_ORIGIN = 'https://splotch.art';
+export const FEEDBACK_URL = `${SITE_ORIGIN}/feedback`;

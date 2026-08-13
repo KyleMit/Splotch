@@ -5,6 +5,7 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { paletteHex } from '$lib/palette';
   import { COLOR_FAMILIES } from '$lib/hexPickerLayout';
+  import type { Origin } from '$lib/state/modal.svelte';
   import {
     gate,
     dismissGate,
@@ -13,6 +14,12 @@
     redirectGateToParentCenter,
     GATE_SHAKE_MS,
   } from '$lib/state/parentalGate.svelte';
+
+  interface Props {
+    manageDestination?: (origin: Origin | null) => void;
+  }
+
+  let { manageDestination }: Props = $props();
 
   // Parent Center is where these checks are managed, so a challenge standing in
   // front of it is already at that destination: it names it in the subtitle and
@@ -29,7 +36,7 @@
   // the element that owns it is still there to give it up.
   function manageGatePolicies() {
     keypadEl?.querySelector('button')?.focus();
-    redirectGateToParentCenter();
+    redirectGateToParentCenter(manageDestination);
   }
 
   // Operand splats wear crayon hues, not chrome tokens — they read as paint.

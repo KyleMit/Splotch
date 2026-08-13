@@ -10,14 +10,12 @@
   import BetaEnrollmentPage from '$lib/components/beta/BetaEnrollmentPage.svelte';
   import BetaStep from '$lib/components/beta/BetaStep.svelte';
   import BetaStepLedger from '$lib/components/beta/BetaStepLedger.svelte';
-  import { SITE_ORIGIN } from '$lib/siteUrl';
+  import { FEEDBACK_URL } from '$lib/siteUrl';
   import { supportEmail } from '$lib/supportEmail';
 
-  // Step 4 prints an absolute address because testers may read this page on one
-  // device and send feedback from another. Its href stays relative so deploy
-  // previews still point to their own feedback form.
-  const FEEDBACK_URL = `${SITE_ORIGIN}/feedback`;
-
+  // Step 4 prints the canonical absolute feedback address because testers may
+  // read this page on one device and send feedback from another. Its href stays
+  // relative so deploy previews still point to their own feedback form.
   // Compose the support address only after hydration so address harvesters
   // cannot find it in prerendered HTML. Without JavaScript the email card stays
   // absent and the server-backed /feedback form remains available.

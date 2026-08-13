@@ -31,6 +31,18 @@ test('the feedback page renders the shell and the report form', async ({ page })
   await expect(page.getByRole('button', { name: 'Send report' })).toBeVisible();
 });
 
+test('the privacy contact stays inside Splotch and points to the feedback page', async ({
+  page,
+}) => {
+  await page.goto('/privacy');
+
+  const links = page.getByRole('link', { name: 'private feedback form' });
+  await expect(links).toHaveCount(2);
+  await expect(links.first()).toHaveAttribute('href', '/feedback');
+  await expect(links.last()).toHaveAttribute('href', '/feedback');
+  await expect(page.getByRole('link', { name: 'open an issue on GitHub' })).toHaveCount(0);
+});
+
 test('the kind picker swaps the prompt and hides the device opt-in for an idea', async ({
   page,
 }) => {

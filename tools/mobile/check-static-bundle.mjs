@@ -11,6 +11,8 @@ import {
   TESTFLIGHT_INVITE_URL,
 } from '../../web/src/lib/components/iosBeta/iosBeta.ts';
 import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
+import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
+import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
@@ -129,6 +131,7 @@ export function nativeBundleProblems(
   const forbidden = [
     ...FORBIDDEN_NATIVE_HOSTS.map((value) => ({ value, what: 'web-only host' })),
     ...sentinels.map((value) => ({ value, what: 'admin console' })),
+    { value: supportEmail(), what: 'web-only support email' },
     ...WEB_ONLY_MODULE_MARKERS.map(({ feature, marker }) => ({
       value: marker,
       what: `web-only ${feature}`,
@@ -163,19 +166,36 @@ export function requiredNativePageProblems(dir) {
   );
 }
 
+export function nativePrivacyFeedbackProblems(dir) {
+  const privacyPath = join(dir, 'privacy.html');
+  if (!existsSync(privacyPath)) return [];
+  const source = readFileSync(privacyPath, 'utf8');
+  return [
+    ...(source.includes(`href="${FEEDBACK_URL}"`)
+      ? []
+      : [`Native privacy page does not link to the hosted feedback form: ${FEEDBACK_URL}`]),
+    ...(source.includes('href="/feedback"')
+      ? ['Native privacy page retains a relative /feedback link']
+      : []),
+  ];
+}
+
 export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } = {}) {
   const sentinels = adminConsoleSentinels();
   const problems = [
     ...webOnlyMarkerSourceProblems(),
     ...nativeBundleProblems(dir, sentinels),
     ...requiredNativePageProblems(dir),
+    ...nativePrivacyFeedbackProblems(dir),
   ];
   if (problems.length) throw new Error(problems.join('\n'));
   log(
     `[check-static-bundle] native export references none of: ${FORBIDDEN_NATIVE_HOSTS.join(', ')}; ` +
       `no admin-console copy (${sentinels.length} sentinel(s)); ` +
+      `no web-only support email; ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present; ` +
+      `privacy links to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled`
   );
 }

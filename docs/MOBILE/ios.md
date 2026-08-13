@@ -193,10 +193,10 @@ policy). The Apple Kids Category adds:
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
       generation is already disabled until a parent supplies a credential and contains no browsing,
       chat, or sharing.
-* [ ] Audit outbound links (About section / Settings → GitHub, privacy policy): Kids Category
-      requires external links to sit behind a parental gate. Opening Settings is not proof of
-      adulthood; gate each affected action at the point where it leaves the app, then verify the
-      interaction against the current guideline 1.3 wording before submitting.
+* [x] Audit outbound links: source on GitHub, Google AI Studio, Gemini API terms, and the hosted
+      feedback form all use Parent Center's external-link gate at the point where they leave the
+      app. The bundled privacy policy remains internal. The native bundle excludes the server-backed
+      feedback route and its conditional email fallback.
 * [ ] Confirm on a **native build** that every Parent Center policy starts at Every time. The
       defaults split by target (ADR-0094): only the store builds arm them, and the web build ships
       with all five off. `CAPACITOR=true` is what decides — a gate audited in `npm run dev` is

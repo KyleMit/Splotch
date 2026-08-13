@@ -231,6 +231,19 @@ describe('parental gate', () => {
     expect(settingsModal.open).toBe(true);
   });
 
+  it('hands Parent Center off to a caller-provided destination', () => {
+    setParentalGateMode('parentCenter', 'never');
+    const origin = { x: 12, y: 34 };
+    requireParentalGate('externalLinks', vi.fn(), origin);
+    const destination = vi.fn();
+
+    redirectGateToParentCenter(destination);
+
+    expect(gate.open).toBe(false);
+    expect(destination).toHaveBeenCalledWith(origin);
+    expect(settingsModal.open).toBe(false);
+  });
+
   it('persists an independent mode for every protected feature', () => {
     const storageKeyByFeature = {
       aiImage: STORAGE_KEYS.parentalGateAiImageMode,

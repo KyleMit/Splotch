@@ -7,13 +7,18 @@
   // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
   // wording changes.
 
+  import { onMount, type Component } from 'svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
+  import { parentalGateLink } from '$lib/actions/parentalGateLink';
+  import { scheduleIdle } from '$lib/idle';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
-  // Splotch has no email; questions/concerns go through GitHub issues.
-  import { GITHUB_NEW_ISSUE_URL as CONTACT_URL } from '$lib/githubRepo';
+  import { createSingleFlight } from '$lib/singleFlight';
+  import { FEEDBACK_URL } from '$lib/siteUrl';
+  import type { Origin } from '$lib/state/modal.svelte';
+  import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
 
-  const LAST_UPDATED = 'August 11, 2026';
+  const LAST_UPDATED = 'August 13, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -29,6 +34,65 @@
     },
     { label: 'Purple', lead: 'Works offline.', body: 'Drawing happens entirely on your device.' },
   ];
+
+  let managingPolicies = $state(false);
+  let ParentalGate = $state<Component | null>(null);
+  let SettingsModal = $state<Component | null>(null);
+  let refreshFreeGenerationGrant = $state<(() => void) | null>(null);
+
+  const loadParentalGate = createSingleFlight(
+    async () => (await import('$lib/components/ParentalGate.svelte')).default
+  );
+
+  const loadSettingsModal = createSingleFlight(async () => {
+    const [module, { hydratePersistedState }, grants] = await Promise.all([
+      import('$lib/components/SettingsModal.svelte'),
+      import('$lib/boot/persistedState'),
+      import('$lib/state/freeGenerations.svelte'),
+    ]);
+    await hydratePersistedState();
+    refreshFreeGenerationGrant ??= grants.createFreeGenerationGrantRefresher();
+    return module.default;
+  });
+
+  function mountParentalGate() {
+    void loadParentalGate()
+      .then((component) => (ParentalGate = component))
+      .catch((error) => console.error('Privacy parental gate failed to load:', error));
+  }
+
+  function privacyParentalGateLink(node: HTMLAnchorElement) {
+    node.addEventListener('click', mountParentalGate);
+    const gateLink = parentalGateLink(node);
+    return {
+      destroy() {
+        node.removeEventListener('click', mountParentalGate);
+        gateLink.destroy();
+      },
+    };
+  }
+
+  function openPrivacyParentCenter(origin: Origin | null) {
+    managingPolicies = true;
+    openParentCenterSettings(origin);
+    void loadSettingsModal()
+      .then((component) => (SettingsModal = component))
+      .catch((error) => {
+        settingsModal.hide();
+        managingPolicies = false;
+        console.error('Privacy Parent Center failed to load:', error);
+      });
+  }
+
+  $effect(() => {
+    if (managingPolicies && !settingsModal.open) managingPolicies = false;
+  });
+
+  $effect(() => {
+    refreshFreeGenerationGrant?.();
+  });
+
+  onMount(() => scheduleIdle(mountParentalGate));
 </script>
 
 <svelte:head>
@@ -38,6 +102,16 @@
     content="Splotch's privacy policy: no ads, no tracking, no accounts, and no analytics."
   />
 </svelte:head>
+
+{#snippet feedbackLink()}
+  {#if __IS_CAPACITOR__}
+    <a href={FEEDBACK_URL} target="_blank" rel="noopener noreferrer" use:privacyParentalGateLink
+      >private feedback form</a
+    >
+  {:else}
+    <a href="/feedback">private feedback form</a>
+  {/if}
+{/snippet}
 
 <PageShell title="Privacy policy" wordmark="Splotch">
   {#snippet lede()}
@@ -90,7 +164,12 @@
     </li>
     <li>
       Google generates the picture on its own systems, under the
-      <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">
+      <a
+        href="https://ai.google.dev/gemini-api/terms"
+        target="_blank"
+        rel="noopener noreferrer"
+        use:privacyParentalGateLink
+      >
         Gemini API terms</a
       >, which let it keep prompts and results for a limited time to check for abuse. That part is
       Google's, not ours.
@@ -135,8 +214,7 @@
     the report time. It goes into our private support system so we can investigate and respond
     within 24 hours. The report bundle is automatically deleted after
     <strong>30 days</strong> by a daily cleanup job. To ask us to delete one sooner, use the
-    <a href="/feedback">private feedback form</a> and include the report reference shown after it was
-    sent.
+    {@render feedbackLink()} and include the report reference shown after it was sent.
   </p>
 
   <h3>Sending feedback</h3>
@@ -189,11 +267,16 @@
 
   <h3>Contact</h3>
   <p>
-    Questions or concerns? Please
-    <a href={CONTACT_URL} target="_blank" rel="noopener noreferrer">open an issue on GitHub</a>
-    and we'll take a look.
+    Questions or concerns? Send them through our {@render feedbackLink()} and we'll take a look.
   </p>
 </PageShell>
+
+{#if ParentalGate}
+  <ParentalGate manageDestination={openPrivacyParentCenter} />
+{/if}
+{#if SettingsModal && managingPolicies}
+  <SettingsModal />
+{/if}
 
 <style>
   /* Everything colored here reads PageShell's --page-* palette or a themed app

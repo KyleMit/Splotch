@@ -20,8 +20,7 @@
   import { aiResult } from '$lib/state/aiGeneration.svelte';
   import {
     freeGenerations,
-    createFreeGenerationGrantRefreshGate,
-    refreshFreeGenerationGrant,
+    createFreeGenerationGrantRefresher,
   } from '$lib/state/freeGenerations.svelte';
   import { requireParentalGate } from '$lib/state/parentalGate.svelte';
   import { browser } from '$app/environment';
@@ -56,7 +55,7 @@
   let drawerMotion = $state(false);
   // Intentionally untracked: only the reactive drawer-expanded value should rerun this comparison.
   let lastDrawerExpanded: boolean | undefined;
-  const shouldRefreshFreeGenerationGrant = createFreeGenerationGrantRefreshGate();
+  const refreshFreeGenerationGrant = createFreeGenerationGrantRefresher();
 
   // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
   // opening one closes the other and the outside-click handler below only ever
@@ -168,7 +167,7 @@
   });
 
   $effect(() => {
-    if (shouldRefreshFreeGenerationGrant()) void refreshFreeGenerationGrant();
+    refreshFreeGenerationGrant();
   });
 
   // The stroke-size lines preview the ink you'll lay down, tinted via
