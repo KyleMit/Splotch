@@ -125,8 +125,8 @@ async function checkTokensCrud(admin, auth) {
     `got ${list.status}`
   );
   // vite dev has no Netlify Blobs, so the snapshot must report the in-memory
-  // fallback. The deployed counterpart (tools/api-smoke/check-deployed-blobs.mjs) asserts the
-  // opposite — persistent:true — against a real function.
+  // fallback. The deployed counterpart (tools/api-smoke/check-deployed-blobs.mjs)
+  // asserts the opposite — persistent:true — against a real function.
   check(
     'tokens GET → persistent:false under vite dev',
     listBody?.persistent === false,

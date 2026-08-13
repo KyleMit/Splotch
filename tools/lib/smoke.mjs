@@ -1,6 +1,6 @@
 // Shared pass/fail reporter for the smoke tests (run-local-contract.mjs,
-// check-deployed-blobs.mjs): check() tallies one assertion, fatal() records an
-// aborting error, and summarize() prints the totals and exits non-zero on any failure.
+// check-deployed-blobs.mjs): check() tallies one assertion, fatal() records an aborting
+// error, and summarize() prints the totals and exits non-zero on any failure.
 
 let passed = 0;
 let failed = 0;

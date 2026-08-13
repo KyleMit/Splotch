@@ -52,9 +52,9 @@ Blobs workflow and ADR-0025 expectations together.
 
 The [Blobs Smoke workflow](../../.github/workflows/blobs-smoke.yml) runs
 `node tools/api-smoke/check-deployed-blobs.mjs` directly with `install: 'false'` and no `npm ci`, so
-that entry point and its `tools/lib/proc.mjs` and `tools/lib/smoke.mjs` imports must stay
-dependency-free. Adding an npm dependency to either shared module breaks the deploy gate at runtime
-rather than in CI's unit job.
+that entry point and everything it loads — `lib/admin-client.mjs`, `tools/lib/proc.mjs`, and
+`tools/lib/smoke.mjs` — must stay dependency-free. Adding an npm dependency to any of those modules
+breaks the deploy gate at runtime rather than in CI's unit job.
 
 Run focused verification with:
 

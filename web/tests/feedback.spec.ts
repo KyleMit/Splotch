@@ -5,8 +5,8 @@ import { supportEmail } from '../src/lib/supportEmail';
 // Feedback section: the same fields, posted to a form action instead of
 // /api/report so it still works without JavaScript. The endpoint's validation
 // and honeypot are covered by tools/api-smoke/run-local-contract.mjs against the
-// shared core, and parseDeviceField by report.test.ts; the value here is the page — that it
-// renders, composes the payload the action reads, and can post at all.
+// shared core, and parseDeviceField by report.test.ts; the value here is the
+// page — that it renders, composes the payload the action reads, and can post at all.
 //
 // The report bucket is 5 requests/minute per IP and /api/report shares it, so
 // exactly one test here actually submits. Adding a second submitting test would
