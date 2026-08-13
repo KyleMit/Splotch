@@ -33,6 +33,14 @@ have a shared implementation, and every configured runner must provide the packa
 notes use the `.md.template` suffix under `.ruler/skill-notes/` so Ruler's recursive rule loader
 cannot concatenate design history into root instructions.
 
+## Inputs and outputs
+
+The inputs are `.ruler/` sources plus the registered direct-provider packages and notes preserved
+from `.claude/` and `.agents/`. The generated outputs are every root or nested `AGENTS.md` and
+`CLAUDE.md`, the `.claude/skills/` and `.agents/skills/` trees, and the `.claude/skill-notes/` and
+`.agents/skill-notes/` trees. Direct-provider paths inside those trees remain authored sources and
+are excluded from generated-file drift checks through the registry.
+
 ## Prerequisites and failure behavior
 
 The apply command requires the repository's installed Node dependencies plus `ruler` and `dprint` on
@@ -52,4 +60,5 @@ enforces the pair. After any instruction, skill, or note change, run:
 npm run ruler:apply
 npm run ruler:check
 npm run test:tools -- tools/ruler/tests
+npm run format:check
 ```

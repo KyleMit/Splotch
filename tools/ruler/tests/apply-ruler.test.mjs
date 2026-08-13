@@ -37,7 +37,8 @@ afterEach(() => {
 
 describe('Ruler apply steps', () => {
   it('resolves every child step beside the entry point', () => {
-    expect(Object.values(RULER_STEP_PATHS).every(existsSync)).toBe(true);
+    expect(Object.keys(RULER_STEP_PATHS)).toEqual(['mirrorSkillNotes', 'applySkillForks']);
+    expect(Object.values(RULER_STEP_PATHS).filter((path) => !existsSync(path))).toEqual([]);
   });
 });
 
