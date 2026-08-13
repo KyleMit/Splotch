@@ -107,10 +107,10 @@
     {/each}
   </div>
 
-  <p class="mode-note">
-    <strong>Per session</strong> asks once until Splotch is closed. <strong>Never</strong> skips the grown-up
-    check on this device where available.
-  </p>
+  <div class="mode-note">
+    <p><strong>Per session</strong> asks once until Splotch is closed.</p>
+    <p><strong>Never</strong> skips the grown-up check on this device where available.</p>
+  </div>
 </section>
 
 <style>
@@ -123,23 +123,24 @@
   }
 
   .parent-center-intro {
-    margin-bottom: var(--space-4);
+    margin-bottom: var(--space-6);
   }
 
   .policy-list {
-    /* Widths the matrix layout below is built from. The mode column holds the
+    /* Widths the matrix layout below is built from. The mode column clears the
        three options at the 44px minimum target plus the segmented track's own
-       4px gaps and padding; the copy column is the narrowest width that keeps
-       a protection's name to two lines. */
-    --policy-copy-min: 176px;
-    --policy-modes-column: 148px;
+       4px gaps and padding, with room left over so the radio marks aren't
+       packed against each other; the copy column keeps a protection's name to
+       two lines with the same breathing room. */
+    --policy-copy-min: 200px;
+    --policy-modes-column: 180px;
     --policy-columns: minmax(var(--policy-copy-min), 1fr) var(--policy-modes-column);
 
     container-type: inline-size;
     display: flex;
     min-width: 0;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-3);
   }
 
   .policy-header {
@@ -193,11 +194,19 @@
     font-weight: var(--font-weight-semibold);
   }
 
+  /* A footnote, not a control: no tinted panel, so the five policy tiles stay
+     the only filled surfaces and the radio marks keep the eye. The inline
+     padding lines the sentences up with the copy inside the matrix tiles. */
   .mode-note {
-    margin-top: var(--space-4);
-    padding: var(--space-4);
-    border-radius: var(--radius-lg);
-    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--space-5);
+    gap: var(--space-2);
+    padding: 0 var(--space-5);
+  }
+
+  .mode-note p {
+    margin: 0;
   }
 
   .mode-note strong {
@@ -208,23 +217,32 @@
   /* Matrix layout: the protection on the left, one shared column per mode on
      the right, so five policies read as a table instead of five stacked cards.
      It turns on once the list can give a card the copy column, the mode
-     column, the gap between them and the card's own 32px of padding —
-     176 + 148 + 16 + 32 = 372. A *container* query, not a viewport one: the
+     column, the gap between them and the card's own 40px of padding —
+     200 + 180 + 24 + 40 = 444. A *container* query, not a viewport one: the
      same viewport hands this list wildly different widths depending on which
      settings shell it lands in, and only the width it actually gets decides
      whether the matrix fits without scrolling sideways. */
-  @container (min-width: 372px) {
+  @container (min-width: 444px) {
     .policy-header,
     .policy-card {
       display: grid;
       grid-template-columns: var(--policy-columns);
       align-items: center;
-      column-gap: var(--space-4);
+      column-gap: var(--space-6);
+    }
+
+    /* Deliberately over-qualified: SettingsModal's shared card padding and
+       radius reach these tiles through `.settings-content :global(.setting)`,
+       which already carries three classes once Svelte adds its scope, so a
+       plain `.policy-card` ties it and loses on source order. */
+    .policy-list .policy-card.setting {
+      padding: var(--space-4) var(--space-5);
+      border-radius: var(--radius-md);
     }
 
     .policy-header {
-      align-items: end;
-      padding: 0 var(--space-4);
+      align-items: center;
+      padding: 0 var(--space-5);
       color: var(--text-soft);
       font-size: var(--font-size-xs);
       font-weight: var(--font-weight-bold);
@@ -237,8 +255,10 @@
     .policy-header-modes {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
+      align-items: center;
       gap: var(--space-1);
       padding: 0 var(--space-1);
+      line-height: 1.25;
       text-align: center;
     }
 
