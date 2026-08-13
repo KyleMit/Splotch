@@ -13,7 +13,7 @@ import {
   indexIntegrity,
   malformedRecordNames,
   nextAdrNumber,
-} from './lib/adr-numbering.mjs';
+} from './lib/adr-integrity.mjs';
 
 const DEFAULT_BASE_REF = 'origin/main';
 
@@ -80,7 +80,7 @@ function warn(message) {
   if (process.env.GITHUB_ACTIONS) console.log(`::warning::${message}`);
 }
 
-export function checkAdrNumbering() {
+export function checkAdrIntegrity() {
   const baseRef = argFlag('base', DEFAULT_BASE_REF);
   const head = readdirSync(join(ROOT, ADR_DIR));
   const base = baseEntries(baseRef);
@@ -168,4 +168,4 @@ export function checkAdrNumbering() {
   process.exit(1);
 }
 
-if (isMain(import.meta.url)) runMain(async () => checkAdrNumbering());
+if (isMain(import.meta.url)) runMain(async () => checkAdrIntegrity());

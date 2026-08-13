@@ -11,7 +11,7 @@ import {
   indexIntegrity,
   malformedRecordNames,
   nextAdrNumber,
-} from '../lib/adr-numbering.mjs';
+} from '../lib/adr-integrity.mjs';
 
 describe('adrNumber', () => {
   it('reads the four-digit prefix off a record filename', () => {
