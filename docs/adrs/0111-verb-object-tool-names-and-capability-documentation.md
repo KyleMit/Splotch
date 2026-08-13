@@ -1,7 +1,9 @@
 # ADR-0111: Verb-Object Tool Names and Capability Documentation
 
 **Status:** Active **Date:** 2026-08 **Amends:** [0019](0019-npm-script-naming-and-scripts-info.md),
-[0044](0044-svg-optimization-audit.md), and [0108](0108-unified-tools-tree.md)
+[0044](0044-svg-optimization-audit.md), [0083](0083-real-screen-capture-on-device.md),
+[0106](0106-hash-bound-eight-view-page-inventory-critiques.md), and
+[0108](0108-unified-tools-tree.md)
 
 ## Context
 

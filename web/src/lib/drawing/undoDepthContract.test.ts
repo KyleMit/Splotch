@@ -16,8 +16,8 @@ describe('undo depth product contract', () => {
     });
 
     expect(
-      advertisedDepths,
-      'release notes must advertise the undo depth or remove this product contract deliberately'
-    ).toContain(String(MAX_UNDO_DEPTH));
+      advertisedDepths[0],
+      'the newest undo-depth promise must equal the engine cap or be removed deliberately'
+    ).toBe(String(MAX_UNDO_DEPTH));
   });
 });
