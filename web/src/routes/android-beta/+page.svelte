@@ -13,8 +13,14 @@
   import { SITE_ORIGIN } from '$lib/siteUrl';
   import { supportEmail } from '$lib/supportEmail';
 
+  // Step 4 prints an absolute address because testers may read this page on one
+  // device and send feedback from another. Its href stays relative so deploy
+  // previews still point to their own feedback form.
   const FEEDBACK_URL = `${SITE_ORIGIN}/feedback`;
 
+  // Compose the support address only after hydration so address harvesters
+  // cannot find it in prerendered HTML. Without JavaScript the email card stays
+  // absent and the server-backed /feedback form remains available.
   let support = $state('');
   onMount(() => {
     support = supportEmail();
@@ -33,6 +39,17 @@
        would never see this tag and could still index the bare URL. -->
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
+
+{#snippet lede()}
+  Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+  feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we can't
+  catch on our own.
+{/snippet}
+
+{#snippet troubleSummary()}
+  Beta not showing up, <span class="trouble-sub-clause">“item not found”,&nbsp;</span>or stuck on
+  step 2?
+{/snippet}
 
 {#snippet troubleshooting()}
   <div class="row">
@@ -86,10 +103,8 @@
 <BetaEnrollmentPage
   title="Join the Android beta"
   wordmark="Splotch for Android"
-  intro="Joining is free and takes three quick steps — plus an optional fourth if you'd like to send feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we can't catch on our own."
-  troubleStart="Beta not showing up, "
-  troubleClause="“item not found”, "
-  troubleEnd="or stuck on step 2?"
+  {lede}
+  {troubleSummary}
   {troubleshooting}
 >
   <BetaStepLedger>
@@ -153,6 +168,8 @@
       {/snippet}
     </BetaStep>
 
+    <!-- Step 4 is the only same-origin action. It keeps this page in place
+         rather than opening another tab like the three external handoffs. -->
     <BetaStep
       number={4}
       title="Tell us what you think"

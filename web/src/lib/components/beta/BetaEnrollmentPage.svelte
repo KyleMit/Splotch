@@ -9,29 +9,16 @@
   interface Props {
     title: string;
     wordmark: string;
-    intro: string;
-    troubleStart: string;
-    troubleClause: string;
-    troubleEnd: string;
+    lede: Snippet;
+    troubleSummary: Snippet;
     troubleshooting: Snippet;
     children: Snippet;
   }
 
-  let {
-    title,
-    wordmark,
-    intro,
-    troubleStart,
-    troubleClause,
-    troubleEnd,
-    troubleshooting,
-    children,
-  }: Props = $props();
+  let { title, wordmark, lede, troubleSummary, troubleshooting, children }: Props = $props();
 </script>
 
-<PageShell {title} {wordmark}>
-  {#snippet lede()}{intro}{/snippet}
-
+<PageShell {title} {wordmark} {lede}>
   <RuleLabel>How to join</RuleLabel>
 
   {@render children()}
@@ -42,7 +29,7 @@
         <span class="trouble-heading">
           <h2 class="trouble-label">Troubleshooting</h2>
           <span class="trouble-sub">
-            {troubleStart}<span class="trouble-sub-clause">{troubleClause}</span>{troubleEnd}
+            {@render troubleSummary()}
           </span>
         </span>
         <span class="chev-disc">
@@ -168,7 +155,7 @@
   }
 
   @media (max-width: 480px) {
-    .trouble-sub-clause {
+    .trouble-sub :global(.trouble-sub-clause) {
       display: none;
     }
   }
