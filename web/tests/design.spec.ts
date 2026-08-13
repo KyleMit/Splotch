@@ -61,6 +61,45 @@ test.describe('system-dark first load', () => {
   });
 });
 
+// On a phone the header sheds the toggle's words, and below 390 the page label
+// with them — the row cannot seat the brand, a 170px track and a ~99px label in
+// 375pt, which is how "Design system" came to render as "De…". What the collapse
+// must not cost is the option's *name*: the visible text is where a bare segment
+// gets one, so hiding it without moving the name onto the control leaves two
+// unlabelled buttons. These are the widths either side of the label threshold.
+for (const [device, viewport] of [
+  ['an iPhone 13 mini', { width: 375, height: 812 }],
+  ['an iPhone 16 Pro Max', { width: 440, height: 956 }],
+] as const) {
+  test(`the header theme options keep their names with the labels collapsed on ${device}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    await page.goto('/design');
+    const picker = page.locator('header').getByRole('radiogroup', { name: 'Theme' });
+
+    // Found by accessible name with the text gone — the assertion the collapse
+    // is there to survive.
+    for (const name of ['Light', 'Dark']) {
+      const option = picker.getByRole('radio', { name });
+      await expect(option).toBeVisible();
+      await expect(option.locator('.option-label')).toBeHidden();
+      // Square rather than a shrunken pill: the label was what gave it width.
+      const box = (await option.boundingBox())!;
+      expect(box.width).toBeGreaterThanOrEqual(44);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+
+    // Whichever of the two states the label is in, it is never a clipped one:
+    // shown means shown whole.
+    const label = page.locator('.header-label');
+    if (await label.isVisible()) {
+      const clipped = await label.evaluate((el) => el.scrollWidth > el.clientWidth);
+      expect(clipped).toBe(false);
+    }
+  });
+}
+
 test('every color chip paints a real fill', async ({ page }) => {
   await page.goto('/design');
   const chips = page.locator('.color-chip');
