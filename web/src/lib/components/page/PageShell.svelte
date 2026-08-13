@@ -4,13 +4,13 @@
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
   // masthead (back link + crayon strip + wordmark) and a hero. Shared by
-  // /android-beta, /changelog, /feedback, /privacy, /design, and the admin
+  // /android-beta, /ios-beta, /changelog, /feedback, /privacy, /design, and the admin
   // console so a URL handed out in a store listing or a README lands somewhere
   // recognisably Splotch either way.
   //
   // The palette is the --page-* custom properties declared in the style block
   // below, resolved from the themed app tokens; everything nested inside — the
-  // page's own body copy, RuleLabel, StepLedger — reads them rather than
+  // page's own body copy, RuleLabel, BetaStepLedger — reads them rather than
   // restating a color. Every page wearing this shell follows the parent's
   // night-mode preference: no route pins the palette to one theme.
   interface Props {

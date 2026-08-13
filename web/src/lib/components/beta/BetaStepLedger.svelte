@@ -6,7 +6,8 @@
     MIN_ANDROID_RELEASE,
     PLAY_STORE_LISTING_URL,
     TESTERS_GROUP_URL,
-  } from './androidBeta';
+  } from '$lib/components/androidBeta/androidBeta';
+  import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_URL } from '$lib/components/iosBeta/iosBeta';
   import { supportEmail } from '$lib/supportEmail';
   import { SITE_ORIGIN } from '$lib/siteUrl';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
@@ -26,9 +27,14 @@
     support = supportEmail();
   });
 
-  // The four sign-up steps. Steps 1-3 are sequential — opting in enrolls without
-  // installing, and the store listing stays a 404 until it is done — and step 4
-  // is the optional ask afterwards.
+  interface Props {
+    platform: 'android' | 'ios';
+  }
+
+  let { platform }: Props = $props();
+
+  // Each platform has four sign-up steps. The first three are sequential and
+  // the fourth is the optional ask for feedback afterwards.
   //
   // Each step carries its own crayon hue, tying the list back to the masthead
   // strip: at full strength on its callout's rail, and mixed down into the wash
@@ -47,119 +53,223 @@
 </script>
 
 <ol class="steps">
-  <li class="step-1" style="--step-hue:{STEP_HUES[0]}">
-    <div class="head">
-      <span class="num">1</span>
-      <h3>Join the testers group</h3>
-    </div>
-    <p class="body">
-      Google Play decides who can see the beta by checking a Google Group, so this has to happen
-      first. Click <strong>Join group</strong> at the top.
-    </p>
-    <div class="action">
-      <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
-        Join the testers group
-      </a>
-      <p class="fine">Google may ask you to sign in first. There's nobody to wait on after that.</p>
-    </div>
-    <div class="card">
-      <p class="card-label">Double check your account</p>
-      <p class="card-body">
-        Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
-        or tablet. Using a different account is a common reason the beta never shows up.
+  {#if platform === 'android'}
+    <li class="step-1" style="--step-hue:{STEP_HUES[0]}">
+      <div class="head">
+        <span class="num">1</span>
+        <h3>Join the testers group</h3>
+      </div>
+      <p class="body">
+        Google Play decides who can see the beta by checking a Google Group, so this has to happen
+        first. Click <strong>Join group</strong> at the top.
       </p>
-    </div>
-  </li>
-
-  <li class="step-2" style="--step-hue:{STEP_HUES[1]}">
-    <div class="head">
-      <span class="num">2</span>
-      <h3>Opt in on Google Play</h3>
-    </div>
-    <p class="body">
-      Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it doesn't
-      install anything yet. Once you're in, the same page should automatically show you a link to
-      “Download it on Google Play”, taking you to step 3.
-    </p>
-    <div class="action">
-      <a class="btn" href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">
-        Become a tester
-      </a>
-      <p class="fine">Sign in with the same account you used in step 1.</p>
-    </div>
-    <div class="card">
-      <p class="card-label">If a link doesn't work yet</p>
-      <p class="card-body">
-        None of this is instant, and Google Play doesn't always recognize a new group membership
-        straight away. Check that both pages are signed in to the same Google account, then make a
-        cup of tea and try again a little later before assuming something is broken.
-      </p>
-    </div>
-  </li>
-
-  <li class="step-3" style="--step-hue:{STEP_HUES[2]}">
-    <div class="head">
-      <span class="num">3</span>
-      <h3>Install Splotch</h3>
-    </div>
-    <p class="body">
-      The store listing stays hidden until step 2 is done — before that it just says “item not
-      found”. Now it installs like any other app, and updates arrive automatically as new beta
-      builds go out.
-    </p>
-    <div class="action">
-      <a class="btn" href={PLAY_STORE_LISTING_URL} target="_blank" rel="noopener noreferrer">
-        Open Splotch on Google Play
-      </a>
-      <p class="fine">
-        Open this one on the Android device you want to draw on. Needs Android {MIN_ANDROID_RELEASE}
-        (API {MIN_ANDROID_API_LEVEL}) or newer.
-      </p>
-    </div>
-    <div class="card">
-      <p class="card-label">Please stay for 14 days</p>
-      <p class="card-body">
-        Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
-        seen everything you wanted to in the first ten minutes. Google requires a stretch of
-        continuously enrolled testers before Splotch can apply for a public listing, so leaving
-        early — or opting out and back in — sets that clock back for everyone. You don't have to
-        keep drawing; just stay enrolled.
-      </p>
-    </div>
-  </li>
-
-  <li class="step-4" style="--step-hue:{STEP_HUES[3]}">
-    <div class="head">
-      <span class="num">4</span>
-      <h3>Tell us what you think</h3>
-      <span class="optional">Optional</span>
-    </div>
-    <p class="body">
-      Found a bug, or thought of something Splotch should do? The form lives at
-      <a href="/feedback">{FEEDBACK_URL}</a> — open it on whichever device is handy, or pass it on
-      to whoever is doing the testing. Odd crashes, confusing buttons, and “my toddler did
-      <em>what</em>?” stories are all genuinely useful.
-    </p>
-    <div class="action">
-      <!-- The only same-origin destination in the ledger, so no target/rel: the
-           other three hand the reader off to Google and should come back to an
-           untouched sign-up page. -->
-      <a class="btn" href="/feedback">Send feedback</a>
-      <p class="fine">
-        No account, nothing to install; your note goes to our private support tracker.
-      </p>
-    </div>
-    {#if support}
-      <div class="card">
-        <p class="card-label">Or just email me</p>
-        <p class="card-body">
-          Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all… something
-          is broken, something is confusing, an idea, or just to say your kid liked it. Good and bad are
-          both worth hearing.
+      <div class="action">
+        <a class="btn" href={TESTERS_GROUP_URL} target="_blank" rel="noopener noreferrer">
+          Join the testers group
+        </a>
+        <p class="fine">
+          Google may ask you to sign in first. There's nobody to wait on after that.
         </p>
       </div>
-    {/if}
-  </li>
+      <div class="card">
+        <p class="card-label">Double check your account</p>
+        <p class="card-body">
+          Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone
+          or tablet. Using a different account is a common reason the beta never shows up.
+        </p>
+      </div>
+    </li>
+
+    <li class="step-2" style="--step-hue:{STEP_HUES[1]}">
+      <div class="head">
+        <span class="num">2</span>
+        <h3>Opt in on Google Play</h3>
+      </div>
+      <p class="body">
+        Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it
+        doesn't install anything yet. Once you're in, the same page should automatically show you a
+        link to “Download it on Google Play”, taking you to step 3.
+      </p>
+      <div class="action">
+        <a class="btn" href={BETA_OPT_IN_URL} target="_blank" rel="noopener noreferrer">
+          Become a tester
+        </a>
+        <p class="fine">Sign in with the same account you used in step 1.</p>
+      </div>
+      <div class="card">
+        <p class="card-label">If a link doesn't work yet</p>
+        <p class="card-body">
+          None of this is instant, and Google Play doesn't always recognize a new group membership
+          straight away. Check that both pages are signed in to the same Google account, then make a
+          cup of tea and try again a little later before assuming something is broken.
+        </p>
+      </div>
+    </li>
+
+    <li class="step-3" style="--step-hue:{STEP_HUES[2]}">
+      <div class="head">
+        <span class="num">3</span>
+        <h3>Install Splotch</h3>
+      </div>
+      <p class="body">
+        The store listing stays hidden until step 2 is done — before that it just says “item not
+        found”. Now it installs like any other app, and updates arrive automatically as new beta
+        builds go out.
+      </p>
+      <div class="action">
+        <a class="btn" href={PLAY_STORE_LISTING_URL} target="_blank" rel="noopener noreferrer">
+          Open Splotch on Google Play
+        </a>
+        <p class="fine">
+          Open this one on the Android device you want to draw on. Needs Android {MIN_ANDROID_RELEASE}
+          (API {MIN_ANDROID_API_LEVEL}) or newer.
+        </p>
+      </div>
+      <div class="card">
+        <p class="card-label">Please stay for 14 days</p>
+        <p class="card-body">
+          Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if
+          you've seen everything you wanted to in the first ten minutes. Google requires a stretch
+          of continuously enrolled testers before Splotch can apply for a public listing, so leaving
+          early — or opting out and back in — sets that clock back for everyone. You don't have to
+          keep drawing; just stay enrolled.
+        </p>
+      </div>
+    </li>
+
+    <li class="step-4" style="--step-hue:{STEP_HUES[3]}">
+      <div class="head">
+        <span class="num">4</span>
+        <h3>Tell us what you think</h3>
+        <span class="optional">Optional</span>
+      </div>
+      <p class="body">
+        Found a bug, or thought of something Splotch should do? The form lives at
+        <a href="/feedback">{FEEDBACK_URL}</a> — open it on whichever device is handy, or pass it on
+        to whoever is doing the testing. Odd crashes, confusing buttons, and “my toddler did
+        <em>what</em>?” stories are all genuinely useful.
+      </p>
+      <div class="action">
+        <!-- The only same-origin destination in the ledger, so no target/rel: the
+           other three hand the reader off to Google and should come back to an
+           untouched sign-up page. -->
+        <a class="btn" href="/feedback">Send feedback</a>
+        <p class="fine">
+          No account, nothing to install; your note goes to our private support tracker.
+        </p>
+      </div>
+      {#if support}
+        <div class="card">
+          <p class="card-label">Or just email me</p>
+          <p class="card-body">
+            Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all… something
+            is broken, something is confusing, an idea, or just to say your kid liked it. Good and bad
+            are both worth hearing.
+          </p>
+        </div>
+      {/if}
+    </li>
+  {:else}
+    <li class="step-1" style="--step-hue:{STEP_HUES[0]}">
+      <div class="head">
+        <span class="num">1</span>
+        <h3>Install TestFlight</h3>
+      </div>
+      <p class="body">
+        TestFlight is Apple's app for installing prerelease versions of apps. Install it from the
+        App Store on the iPhone or iPad where you'd like to try Splotch.
+      </p>
+      <div class="action">
+        <a class="btn" href={TESTFLIGHT_APP_URL} target="_blank" rel="noopener noreferrer">
+          Get TestFlight from Apple
+        </a>
+        <p class="fine">Already have TestFlight? Skip straight to step 2.</p>
+      </div>
+      <div class="card">
+        <p class="card-label">Use the device you'll draw on</p>
+        <p class="card-body">
+          Opening both links on that iPhone or iPad makes the handoff from Safari to TestFlight much
+          simpler.
+        </p>
+      </div>
+    </li>
+
+    <li class="step-2" style="--step-hue:{STEP_HUES[1]}">
+      <div class="head">
+        <span class="num">2</span>
+        <h3>Accept the invitation</h3>
+      </div>
+      <p class="body">
+        Open Splotch's public invitation and follow Apple's prompt to start testing. TestFlight may
+        ask you to sign in with your Apple Account first.
+      </p>
+      <div class="action">
+        <a class="btn" href={TESTFLIGHT_INVITE_URL} target="_blank" rel="noopener noreferrer">
+          Open the Splotch invitation
+        </a>
+        <p class="fine">The invitation opens in TestFlight once the app is installed.</p>
+      </div>
+      <div class="card">
+        <p class="card-label">If the beta isn't accepting testers</p>
+        <p class="card-body">
+          The current build may still be waiting for Apple's beta review, or enrollment may be
+          paused. Try again later or use the feedback link below to let us know.
+        </p>
+      </div>
+    </li>
+
+    <li class="step-3" style="--step-hue:{STEP_HUES[2]}">
+      <div class="head">
+        <span class="num">3</span>
+        <h3>Install Splotch</h3>
+      </div>
+      <p class="body">
+        Splotch now appears inside TestFlight. Tap <strong>Install</strong>, then open it like any
+        other app. Future beta builds will appear in TestFlight when they're ready.
+      </p>
+      <div class="action">
+        <a class="btn" href={TESTFLIGHT_INVITE_URL} target="_blank" rel="noopener noreferrer">
+          Open Splotch in TestFlight
+        </a>
+        <p class="fine">Requires iOS or iPadOS 16.4 or newer.</p>
+      </div>
+      <div class="card">
+        <p class="card-label">This is prerelease software</p>
+        <p class="card-body">
+          A beta can have rough edges. TestFlight builds expire after 90 days, but a newer build
+          will normally replace this one well before then.
+        </p>
+      </div>
+    </li>
+
+    <li class="step-4" style="--step-hue:{STEP_HUES[3]}">
+      <div class="head">
+        <span class="num">4</span>
+        <h3>Tell us what you think</h3>
+        <span class="optional">Optional</span>
+      </div>
+      <p class="body">
+        TestFlight can send feedback and screenshots directly. For a longer note, the form lives at
+        <a href="/feedback">{FEEDBACK_URL}</a>. Bugs, confusing buttons, and “my toddler did
+        <em>what</em>?” stories are all genuinely useful.
+      </p>
+      <div class="action">
+        <a class="btn" href="/feedback">Send feedback</a>
+        <p class="fine">
+          No account, nothing to install; your note goes to our private support tracker.
+        </p>
+      </div>
+      {#if support}
+        <div class="card">
+          <p class="card-label">Or just email me</p>
+          <p class="card-body">
+            Reach out to me at <a href="mailto:{support}">{support}</a> if something is broken, confusing,
+            or unexpectedly delightful. Good and bad are both worth hearing.
+          </p>
+        </div>
+      {/if}
+    </li>
+  {/if}
 </ol>
 
 <style>
