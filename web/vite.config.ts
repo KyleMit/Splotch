@@ -51,8 +51,8 @@ const downloadableColoringGlobIgnores = BOOKS.filter(
 
 export default defineConfig({
   server: {
-    // Every executable consumer of this port — netlify.toml, dev:kill,
-    // cloud-tunnel, the emulator/simulator live-reload runs, and adb:reverse —
+    // Every executable consumer of this port — netlify.toml, dev:stop,
+    // start-cloud-tunnel, the emulator/simulator live-reload runs, and adb:reverse —
     // is guarded against it by tools/tests/dev-ports.test.mjs.
     port: 5173,
     strictPort: true,

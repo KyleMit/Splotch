@@ -5,15 +5,16 @@ import { describe, expect, it } from 'vitest';
 import { commonWebServer } from '../../web/playwright.shared.ts';
 
 // Both throwaway servers that boot this app — the Playwright web server and the
-// one tools/api-smoke/api-smoke.mjs spawns — must declare every private env var the app
-// reads, never inherit it. Vite gives process.env precedence over web/.env, so a
+// one tools/api-smoke/run-local-contract.mjs spawns — must declare every private env
+// var the app reads, never inherit it. Vite gives process.env precedence over
+// web/.env, so a
 // name missing from either object silently picks up whatever a developer put in
 // their dotenv: that is how an ambient GITHUB_ISSUE_TOKEN turned the /feedback
 // failure-path spec into six real issues in the tracker (#646), and it is also
 // how a spec can pass locally on a credential CI doesn't have.
 const repoRoot = join(import.meta.dirname, '..', '..');
 const appDir = join(repoRoot, 'web', 'src');
-const apiSmokePath = join(repoRoot, 'tools', 'api-smoke', 'api-smoke.mjs');
+const apiSmokePath = join(repoRoot, 'tools', 'api-smoke', 'run-local-contract.mjs');
 const PRIVATE_ENV_IMPORT = "from '$env/dynamic/private'";
 // Only the bound `env` identifier. `process.env.X` and `import.meta.env.X` are
 // different objects that happen to end in the same characters, and demanding
@@ -67,7 +68,7 @@ function apiSmokeEnvLiteral(source) {
   return source.slice(open, cursor);
 }
 
-// api-smoke.mjs is a CLI that boots its server as a side effect of loading, so
+// run-local-contract.mjs is a CLI that boots its server as a side effect of loading, so
 // its declaration is read from the source instead of imported. A value that
 // isn't a string literal (ADMIN_SECRET, SEED_TOKENS) reads as null — the name is
 // declared, which is all this file checks of it.

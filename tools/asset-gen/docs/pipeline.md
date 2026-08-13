@@ -351,9 +351,9 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
    `npm run gen:coloring-golden:freeze` to adopt the new baseline and `npm run gen:assets:manifest`
    to re-hash the changed bytes; commit both fixture updates with the assets (CI's
    `check:assets:manifest` fails otherwise).
-5. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the coloring-book proof
-   sheet `--source shipped`, optionally verify live with the `run-splotch` skill (dark mode → apply
-   page → magic-brush reveal), commit.
+5. `npm run check:coloring-assets` + `npm run check` + `npm run test:unit`, rebuild the
+   coloring-book proof sheet `--source shipped`, optionally verify live with the `run-splotch` skill
+   (dark mode → apply page → magic-brush reveal), commit.
 
 Light mode must stay byte-identical throughout a night-fill pass — enforced by
 `golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only
@@ -455,7 +455,7 @@ The loop that has worked, per category:
    manifest (`gen:assets:manifest`) to adopt the intended changes — the two fixtures close each
    other's blind spot (the golden set catches score drift; the manifest catches byte swaps between
    score-identical renders).
-7. `check:assets` + `check` + `test:unit`, commit, push.
+7. `check:coloring-assets` + `check` + `test:unit`, commit, push.
 
 Hard-won process lessons:
 

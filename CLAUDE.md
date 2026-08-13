@@ -22,7 +22,7 @@ The SvelteKit app lives in **`web/`** (its `src/`, configs, `netlify.toml`, buil
 Capacitor native trees (`android/`, `ios/`), `capacitor.config.json`, the single root
 `package.json`/`node_modules`, and `tools/` stay at the repo root. This keeps netlify-cli's file
 watcher (run via `netlify dev --cwd web`) off the large native trees — see ADR-0024. The web
-toolchain runs with `cwd = web/` through `tools/web.mjs`.
+toolchain runs with `cwd = web/` through `tools/run-web-tool.mjs`.
 
 The `CAPACITOR=true` env var at build time is the **single signal** for all web-vs-native branching
 (`web/svelte.config.js`, `web/vite.config.ts`). Do not add runtime platform branches that could be
@@ -111,7 +111,7 @@ Codex-managed worktrees share host ports and machine capacity.
 
 * Select an explicit unused port for every server. Run targeted Playwright checks as
   `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.
-* Treat `EADDRINUSE` as a request to select another port and retry. Never run `npm run dev:kill` or
+* Treat `EADDRINUSE` as a request to select another port and retry. Never run `npm run dev:stop` or
   `kill-port`, and never terminate a listener merely because it occupies a desired port. Stop only a
   PID, process group, or tool handle created and recorded by the current session.
 * Full `npm test`/Playwright E2E suites, fixed-port Netlify workflows, performance runs, tunnels,

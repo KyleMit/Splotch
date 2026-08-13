@@ -80,7 +80,7 @@ Key implementation points:
   `.thumb.webp`, `chalkThumbPath()` swaps `.chalk.webp` → `.chalk.thumb.webp`, and each is
   deliberately a **no-op on other paths** (only line art has thumbnails).
 * `responsiveColoringAssets()` derives the web-only tier paths from those canonical paths;
-  `bookAssetPaths()` includes them so `check:assets` rejects a partial tier.
+  `bookAssetPaths()` includes them so `check:coloring-assets` rejects a partial tier.
 * The asset-gen generators select line art positively by suffix (`gen-coloring-thumbs.mjs`
   `isSource` matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
   `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` / `check-coloring-drift.mjs`) — no

@@ -8,10 +8,10 @@ import {
   summarizeSweep,
   sweepSummaryMarkdown,
   tallyFailures,
-} from '../e2e-sweep.mjs';
+} from '../run-worker-sweep.mjs';
 import { commonWebServer } from '../../../web/playwright.shared.ts';
 
-// tools/e2e-tuning/e2e-sweep.mjs is the harness behind ADR-0078's worker count, driven
+// tools/e2e-tuning/run-worker-sweep.mjs is the harness behind ADR-0078's worker count, driven
 // locally and by .github/workflows/worker-sweep.yml. It boots its own preview
 // server, which puts it outside everything playwright.config.ts arranges — and
 // every defect the first version shipped with was a consequence of re-doing that
@@ -39,7 +39,7 @@ describe('sweep workflow', () => {
   // protocol belongs to the driver, where the local half runs it too. A rep loop
   // reappearing in YAML is the regression this catches.
   it('delegates the whole rep loop to the driver', () => {
-    expect(workflow).toMatch(/node tools\/e2e-tuning\/e2e-sweep\.mjs/);
+    expect(workflow).toMatch(/node tools\/e2e-tuning\/run-worker-sweep\.mjs/);
     expect(workflow).not.toMatch(/playwright test/);
     expect(workflow).not.toMatch(/vite preview/);
   });

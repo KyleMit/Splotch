@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { nativeUnusedLineArt } from '../../lib/book-assets.mjs';
+import { nativeUnusedLineArt } from '../../lib/coloring-book-assets.mjs';
 import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from '../lib/native-export.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');

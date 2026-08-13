@@ -223,7 +223,7 @@ ios/local.xcconfig
 .coloring-samples/
 .coloring-samples-dark/
 
-# Scratch output for the icon-gallery generator (gen:icons-sheet) and other
+# Scratch output for the icon-gallery generator (gen:icon-sheet) and other
 # scrapbook-page dry runs; promote a keeper into scrapbook/ with scrapbook:publish.
 .scrapbook-scratch/
 

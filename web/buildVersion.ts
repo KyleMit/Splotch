@@ -2,7 +2,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 
 // package.json (at the repo root, one dir up from web/) holds the canonical
-// major.minor, bumped by tools/release/release.mjs. Native keeps that exact version —
+// major.minor, bumped by tools/release/cut-release.mjs. Native keeps that exact version —
 // store submissions need deliberate, controlled numbers. The web build instead
 // auto-derives the patch from git so every push to main gets a fresh version
 // (so /version.json moves and the PWA stuck-client recovery stays live):

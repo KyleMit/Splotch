@@ -17,8 +17,8 @@ The goal was **isolation of this code, a dedicated runbook, and fast local itera
 change to how assets are served. A key existing property made this tractable: **the app never runs
 these scripts.** It reads committed `.webp`/`.png` files from `web/static/`; the generators are
 manual, on-demand tools whose good outputs are reviewed and checked in. There is no build-time edge
-from the app to the pipeline (the only `pre*build` hooks are `gen:icons` / `gen:releases`, which are
-TypeScript/JSON codegen, not image generation).
+from the app to the pipeline (the only `pre*build` hooks are `gen:icon-names` / `gen:releases`,
+which are TypeScript/JSON codegen, not image generation).
 
 Three placements were considered:
 
@@ -53,7 +53,7 @@ What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`,
 coloring-book proof sheet), `gen-coloring-book-proof-sheet`, `png-to-webp`, `lib/pixelate.mjs`
 (since retired along with the Pixel style it served), and the `night-fills.md` runbook.
 
-What stayed in `tools/`: build-path codegen (`gen:icons`, `gen:releases`) and the app-driving
+What stayed in `tools/`: build-path codegen (`gen:icon-names`, `gen:releases`) and the app-driving
 Playwright generators (`gen:shots`/`store-shots.mjs`, `gen:large-image`) — those drive the live app
 and are effectively integration tests, not asset producers.
 

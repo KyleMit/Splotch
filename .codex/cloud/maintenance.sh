@@ -32,9 +32,9 @@ npx -y npm@11 install -g npm@11 \
 
 npm ci --prefer-offline --no-audit --fund=false \
   || warn "npm ci failed — dependencies may be stale or incomplete. Usually a package-lock.json/npm-version mismatch; run 'npm install' locally and commit the refreshed lockfile."
-node tools/web.mjs playwright install chromium \
+node tools/run-web-tool.mjs playwright install chromium \
   || warn "Playwright Chromium install failed — the E2E test tier may not run until the browser is cached."
-node tools/web.mjs svelte-kit sync \
+node tools/run-web-tool.mjs svelte-kit sync \
   || warn "svelte-kit sync failed — SvelteKit generated types may be missing until it is re-run."
 
 if [ "${#warnings[@]}" -gt 0 ]; then

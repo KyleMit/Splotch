@@ -2,6 +2,10 @@
 
 **Status:** Active **Date:** 2026-07
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):** the
+> re-runnable optimization contract remains in force, while the executable and misleading
+> `img:audit`/`img:audit:check` commands adopt action-accurate names.
+
 ## Context
 
 The Splotch logo and the whole `web/src/lib/icons/*.svg` set are inlined into the DOM via `{@html}`

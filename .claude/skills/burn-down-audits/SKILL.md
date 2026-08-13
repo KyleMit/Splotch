@@ -196,12 +196,12 @@ as possible:
 
   **Run them one at a time for this check, not `&&`-chained.** The chain short-circuits, so the
   first red gate hides every gate after it and you fix them one relaunch at a time. A 2026-08-06 run
-  found `img:audit:check` red at base, repaired it, and only then discovered `lint:dead` was red too
-  — the chain had never reached it. Loop instead, and collect the whole list before repairing
+  found `check:svg-assets` red at base, repaired it, and only then discovered `lint:dead` was red
+  too — the chain had never reached it. Loop instead, and collect the whole list before repairing
   anything:
 
   ```bash
-  for g in check lint:tokens gen:tokens:check scrapbook:check img:audit:check check:assets:manifest lint:dead; do
+  for g in check lint:tokens gen:tokens:check scrapbook:check check:svg-assets check:assets:manifest lint:dead; do
     npm run "$g" >/dev/null 2>&1 && echo "ok   $g" || echo "RED  $g"
   done
   ```
@@ -223,10 +223,10 @@ run is impossible until the base is green.
   so it must not ride inside one. Land it as the branch's first commit with a message saying what
   was already broken and why it blocks the run.
 * **Re-run the *whole* chain after each repair — a repair can redden a different gate.** Fixing
-  `img:audit:check` with `npm run img:audit` rewrote `line-weight.svg`, which `scrapbook/index.html`
-  **inlines** as a card emoji — so `scrapbook:check`, green at base, went red *because of the fix*
-  and needed `npm run scrapbook:index` in the same commit. Never re-run only the gate you just
-  fixed.
+  `check:svg-assets` with `npm run optimize:svg-assets` rewrote `line-weight.svg`, which
+  `scrapbook/index.html` **inlines** as a card emoji — so `scrapbook:check`, green at base, went red
+  *because of the fix* and needed `npm run scrapbook:index` in the same commit. Never re-run only
+  the gate you just fixed.
 * **A byte-level "optimization" is not self-evidently safe — prove it.** No gate in this repo
   asserts that an optimized SVG still *renders* the same, and the icons in question had landed hours
   earlier. Rasterize before and after and compare pixels rather than trusting the tool:
