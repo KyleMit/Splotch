@@ -21,8 +21,8 @@ import { pathToFileURL } from 'node:url';
 import { ROOT, fail, openInOS, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
-import { decryptDir } from './lib/fixtureCrypto.mjs';
-import { buildReport, verdict } from './lib/redteam-report.mjs';
+import { decryptDir } from './lib/fixture-crypto.mjs';
+import { buildReport, verdict } from './lib/safety-report.mjs';
 
 const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
 const BASE = `http://localhost:${PORT}`;

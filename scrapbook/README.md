@@ -103,7 +103,7 @@ only when every hash matches the new manifest. To update feedback without recapt
 ## Publishing
 
 Ephemeral tool outputs stay **gitignored** (`lighthouse-reports/`, `.coloring-samples/`,
-`web/tests/redteam/output/`, …). Promote a chosen keeper with:
+`tools/redteam/output/`, …). Promote a chosen keeper with:
 
 ```bash
 npm run scrapbook:publish -- <source> <type>/<name>

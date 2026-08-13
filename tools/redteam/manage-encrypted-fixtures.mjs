@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 // CLI to encrypt/decrypt the red-team fixture corpus (ADR-0023).
 //
-//   node tools/redteam/redteam-fixtures.mjs encrypt   # source/    -> encrypted/ (commit these)
-//   node tools/redteam/redteam-fixtures.mjs decrypt   # encrypted/ -> decrypted/ (gitignored)
+//   node tools/redteam/manage-encrypted-fixtures.mjs encrypt   # source/    -> encrypted/ (commit these)
+//   node tools/redteam/manage-encrypted-fixtures.mjs decrypt   # encrypted/ -> decrypted/ (gitignored)
 //
 // Requires REDTEAM_FIXTURE_KEY (in .env or exported). source/ and decrypted/
 // are gitignored; only encrypted/*.enc is committed.
 
 import { join } from 'node:path';
 import { ROOT, fail } from '../lib/proc.mjs';
-import { encryptDir, decryptDir } from './lib/fixtureCrypto.mjs';
+import { encryptDir, decryptDir } from './lib/fixture-crypto.mjs';
 
 const BASE = join(ROOT, 'tools', 'redteam');
 const SOURCE = join(BASE, 'source');
@@ -33,5 +33,5 @@ if (command === 'encrypt') {
       : `\nNothing to decrypt — tools/redteam/encrypted/ has no .enc files yet.`
   );
 } else {
-  fail('Usage: node tools/redteam/redteam-fixtures.mjs <encrypt|decrypt>');
+  fail('Usage: node tools/redteam/manage-encrypted-fixtures.mjs <encrypt|decrypt>');
 }

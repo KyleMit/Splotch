@@ -13,8 +13,8 @@ ever returns child-safe images. See **ADR-0023** for the rationale.
 This README and `encrypted/*.enc` (AES-256-GCM blobs) are committed. The plaintext drawings
 (`source/`), the decrypted copies (`decrypted/`), and run outputs (`output/`) are gitignored.
 
-```
-tests/redteam/
+```text
+tools/redteam/
   encrypted/      # <id>.png.enc — opaque blobs (committed)
   source/         # your plaintext drawings        (gitignored)
   decrypted/      # regenerated before each run     (gitignored)
@@ -37,9 +37,24 @@ it `safe-…`/`block-…`, drop it in `source/`, re-encrypt.
    `REDTEAM_FIXTURE_KEY` with teammates **out-of-band** — it's the key to the committed `.enc`
    corpus.
 
+Installed project dependencies are also required. A safety run needs network access and an unused
+local port (5198 by default); set `REDTEAM_PORT` to select another one. Fixture management itself is
+local and needs no network.
+
+## Entry points
+
+| Entry point                     | Public command                                | Purpose                                   |
+| ------------------------------- | --------------------------------------------- | ----------------------------------------- |
+| `run-safety-evaluation.mjs`     | `npm run redteam`                             | Run the real end-to-end safety evaluation |
+| `manage-encrypted-fixtures.mjs` | `npm run redteam:encrypt` / `redteam:decrypt` | Encrypt or decrypt the fixture corpus     |
+
+`lib/fixture-crypto.mjs` owns AES-256-GCM corpus encryption, while `lib/safety-report.mjs` owns
+verdict labels and the self-contained report. The public command names remain stable during the
+tools naming migration.
+
 ## Preparing the corpus
 
-Draw each probe by hand, name it with a `safe-`/`block-` prefix, save it to `tests/redteam/source/`,
+Draw each probe by hand, name it with a `safe-`/`block-` prefix, save it to `tools/redteam/source/`,
 then:
 
 ```bash
@@ -53,7 +68,7 @@ npm run redteam
 ```
 
 This decrypts the corpus, boots a throwaway `vite dev`, POSTs each drawing to `/api/generate-image`,
-and writes `tests/redteam/output/<runId>/` with each `*.in.png`, any `*.out.png`, `report.json`, and
+and writes `tools/redteam/output/<runId>/` with each `*.in.png`, any `*.out.png`, `report.json`, and
 a standalone **`report.html`**. The run prints a `file://` link and opens the report in your default
 browser (set `REDTEAM_NO_OPEN=1` to skip the auto-open).
 
@@ -89,3 +104,23 @@ The endpoint returns **422** for a safety refusal (vs 502 for an infra failure);
 into a child-friendly "let's draw something else!" message. The Playwright AI-result specs preview
 the reachable failure states without Gemini by invoking the production flow through its dev-gated
 handle and intercepting this endpoint.
+
+## Failure behavior and maintenance
+
+Missing keys, an empty corpus, unmatched filters, a wrong fixture key, or a corrupt encrypted file
+fail with a diagnostic and nonzero exit before a trustworthy evaluation is produced. Once the dev
+server starts, individual HTTP and fetch failures become report rows rather than automated test
+failures. A fatal server/run error is logged, but the command still writes the collected report and
+exits zero; treat any `✗` row or `FATAL` line as an invalid safety run. Likewise, `⚠` rows require
+human review and do not change the exit status.
+
+The runner clears and rebuilds the gitignored `decrypted/` directory before each evaluation. Every
+run gets a new `output/<runId>/` directory, so prior results are not replaced. Encryption rewrites
+matching `.enc` destinations with fresh random IVs; review and commit the complete encrypted corpus
+when plaintext sources change.
+
+Run focused structural verification with:
+
+```sh
+npm run test:tools -- tools/tests/manual-harness-corpora.test.mjs tools/tests/tool-specifier-resolution.test.mjs
+```

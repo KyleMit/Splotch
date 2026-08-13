@@ -31,8 +31,8 @@ function declaredBase(file, name) {
 
 describe('redteam corpus (ADR-0023)', () => {
   const bases = [
-    ['tools/redteam/redteam-run.mjs', 'BASE_DIR'],
-    ['tools/redteam/redteam-fixtures.mjs', 'BASE'],
+    ['tools/redteam/run-safety-evaluation.mjs', 'BASE_DIR'],
+    ['tools/redteam/manage-encrypted-fixtures.mjs', 'BASE'],
   ].map(([file, name]) => ({ file, base: declaredBase(file, name) }));
 
   it.each(bases)('$file points at a directory that exists', ({ base }) => {

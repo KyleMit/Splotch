@@ -1,5 +1,5 @@
 // AES-256-GCM encrypt/decrypt for the red-team fixture corpus (ADR-0023).
-// The unsafe/edge drawings under tests/redteam/ are committed as opaque .enc
+// The unsafe/edge drawings under tools/redteam/ are committed as opaque .enc
 // blobs so no viewable PNG of probe imagery ever lands in the tree. The key is
 // derived from REDTEAM_FIXTURE_KEY (in .env, shared out-of-band — never
 // committed). File layout: [12B iv][16B authTag][ciphertext].
