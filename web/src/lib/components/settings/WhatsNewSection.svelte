@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  // Generated at build time from releases/*.md (see tools/release/generate-releases.mjs).
+  // Generated at build time from releases/*.md (see tools/release/gen-release-notes.mjs).
   import releases from '$lib/releases.json';
   import CurrentReleaseNotes, { RELEASE_NOTE_SECTION_COUNT } from './CurrentReleaseNotes.svelte';
 

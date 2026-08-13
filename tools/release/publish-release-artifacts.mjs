@@ -1,9 +1,9 @@
 // Uploads the built store artifacts to the GitHub Release for a version.
 //
-//   node tools/release/publish-artifacts.mjs                 publish package.json's version
-//   node tools/release/publish-artifacts.mjs 1.4.0           publish a specific version
-//   node tools/release/publish-artifacts.mjs --only=android  just the .aab (or ios for just the .ipa)
-//   node tools/release/publish-artifacts.mjs --dry-run       verify versions, upload nothing
+//   node tools/release/publish-release-artifacts.mjs                 publish package.json's version
+//   node tools/release/publish-release-artifacts.mjs 1.4.0           publish a specific version
+//   node tools/release/publish-release-artifacts.mjs --only=android  just the .aab (or ios for just the .ipa)
+//   node tools/release/publish-release-artifacts.mjs --dry-run       verify versions, upload nothing
 //
 // This is deliberately a third step rather than part of release.mjs. A release
 // has to bump the version and tag it *before* an artifact carrying that version
@@ -20,7 +20,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { ROOT, fail, run, isMain, parseOrFail } from '../lib/proc.mjs';
-import { parseFrontmatter, SEMVER } from './lib/frontmatter.mjs';
+import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { RELEASE_AAB } from '../android/lib/android.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 
@@ -39,7 +39,7 @@ const ARTIFACTS = {
 };
 
 const PUBLISH_USAGE =
-  'Usage: node tools/release/publish-artifacts.mjs [semver] [--only=android|ios] [--dry-run]';
+  'Usage: node tools/release/publish-release-artifacts.mjs [semver] [--only=android|ios] [--dry-run]';
 
 // Strict parsing is the safety here: a mistyped --dry-run must not fall through
 // to a real upload, so an unknown flag is rejected rather than ignored. Throws

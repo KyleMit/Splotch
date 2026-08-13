@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseFrontmatter } from '../lib/frontmatter.mjs';
+import { parseFrontmatter } from '../lib/release-frontmatter.mjs';
 
 describe('parseFrontmatter', () => {
   it('parses flat keys and ignores blank lines', () => {

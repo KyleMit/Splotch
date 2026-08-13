@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findStrayReleasePaths, parseReleaseArgs, renderReleaseFile } from '../release.mjs';
-import { parseFrontmatter } from '../lib/frontmatter.mjs';
+import { findStrayReleasePaths, parseReleaseArgs, renderReleaseFile } from '../cut-release.mjs';
+import { parseFrontmatter } from '../lib/release-frontmatter.mjs';
 
 describe('parseReleaseArgs', () => {
   it('takes a version and the two flags', () => {
@@ -69,9 +69,12 @@ describe('findStrayReleasePaths', () => {
       ' M "releases/notes with spaces.md"',
       'R  tools/old.mjs -> releases/renamed.md',
       'R  releases/old.md -> tools/new.mjs',
-      ' M tools/release/release.mjs',
+      ' M tools/release/cut-release.mjs',
     ].join('\n');
 
-    expect(findStrayReleasePaths(status)).toEqual(['tools/new.mjs', 'tools/release/release.mjs']);
+    expect(findStrayReleasePaths(status)).toEqual([
+      'tools/new.mjs',
+      'tools/release/cut-release.mjs',
+    ]);
   });
 });

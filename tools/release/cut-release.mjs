@@ -2,13 +2,13 @@
 // /release slash command writes it). This is the deterministic, scriptable half
 // of the workflow; the AI-drafting + review half lives in .claude/skills/release/SKILL.md.
 //
-//   node tools/release/release.mjs 1.2.0              full: bump, generate, commit, tag, push, GitHub release
-//   node tools/release/release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh
-//   node tools/release/release.mjs 1.2.0 --dry-run    bump + generate files only, no git at all
+//   node tools/release/cut-release.mjs 1.2.0              full: bump, generate, commit, tag, push, GitHub release
+//   node tools/release/cut-release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh
+//   node tools/release/cut-release.mjs 1.2.0 --dry-run    bump + generate files only, no git at all
 //
 // It never attaches store artifacts: the .aab/.ipa for this version cannot exist
 // until after this script bumps and commits the version. Building them is /build
-// and attaching them is tools/release/publish-artifacts.mjs (ADR-0077).
+// and attaching them is tools/release/publish-release-artifacts.mjs (ADR-0077).
 //
 // Native version numbers are set directly in the Android/iOS project files by
 // tools/release/lib/native-version.mjs so the two stay in sync; package.json is the
@@ -25,7 +25,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parseArgs } from 'node:util';
 import { ROOT, fail, run, capture, isMain, parseOrFail } from '../lib/proc.mjs';
-import { parseFrontmatter, SEMVER } from './lib/frontmatter.mjs';
+import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
 const RELEASE_PATHS = [
@@ -55,7 +55,7 @@ export const findStrayReleasePaths = (status) =>
     .filter((path) => !isReleasePath(path));
 
 const RELEASE_USAGE =
-  'Usage: node tools/release/release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0';
+  'Usage: node tools/release/cut-release.mjs <semver> [--no-publish] [--dry-run]\n  <semver> must look like 1.2.0';
 
 // Strict parsing is the safety here: a mistyped --dry-run must not fall through
 // to the real publish path, so an unknown flag is rejected rather than ignored.
@@ -130,7 +130,7 @@ function bumpVersions(version, versionCode) {
 }
 
 function generateArtifacts() {
-  run('node', [join('tools', 'release', 'generate-releases.mjs')]);
+  run('node', [join('tools', 'release', 'gen-release-notes.mjs')]);
 }
 
 function assertOnlyReleasePaths() {

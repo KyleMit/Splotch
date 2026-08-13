@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
-import { compareArtifactVersion, parsePublishArgs } from '../publish-artifacts.mjs';
+import { compareArtifactVersion, parsePublishArgs } from '../publish-release-artifacts.mjs';
 
 describe('compareArtifactVersion', () => {
   it('accepts an artifact whose embedded version matches the release', () => {
@@ -63,7 +63,7 @@ describe('parsePublishArgs', () => {
   // A typo'd safety flag used to be dropped silently, which uploaded real artifacts.
   it('rejects an unknown flag instead of ignoring it', () => {
     expect(() => parsePublishArgs(['1.4.0', '--dry-rn'])).toThrow(/--dry-rn/);
-    expect(() => parsePublishArgs(['1.4.0', '--dryrun'])).toThrow(/publish-artifacts\.mjs/);
+    expect(() => parsePublishArgs(['1.4.0', '--dryrun'])).toThrow(/publish-release-artifacts\.mjs/);
     expect(() => parsePublishArgs(['1.4.0', '--only-android'])).toThrow();
   });
 
@@ -80,8 +80,8 @@ describe('parsePublishArgs', () => {
 // release.mjs attaching a build artifact is the bug this whole seam exists to
 // prevent: at `gh release create` time the only artifact that can exist is one
 // built for an *earlier* version, because this run is what bumps the version.
-describe('release.mjs', () => {
-  const source = readFileSync(join(ROOT, 'tools', 'release', 'release.mjs'), 'utf8');
+describe('cut-release.mjs', () => {
+  const source = readFileSync(join(ROOT, 'tools', 'release', 'cut-release.mjs'), 'utf8');
 
   it('never attaches a build artifact to the GitHub release it creates', () => {
     expect(source).not.toMatch(/RELEASE_AAB|RELEASE_IPA|app-release\.aab|App\.ipa/);

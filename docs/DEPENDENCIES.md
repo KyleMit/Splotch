@@ -69,7 +69,7 @@ Non-`keep` rows first.
 * [`#332`](https://github.com/KyleMit/Splotch/issues/332) — `type:chore` + `area:infra` — *Replace
   archived `capacitor-set-version` in the release script.* Upstream repo is archived (read-only,
   last commit 2023-09-27, single maintainer); the package only edits native version numbers in
-  `tools/release/release.mjs`. Investigation question: is a small in-repo helper (edit
+  `tools/release/cut-release.mjs`. Investigation question: is a small in-repo helper (edit
   `android/app/build.gradle` `versionName`/`versionCode` + iOS `MARKETING_VERSION`/
   `CURRENT_PROJECT_VERSION`) cheaper to own than a dormant dependency?
 
@@ -516,7 +516,8 @@ Non-`keep` rows first.
 ### capacitor-set-version
 
 * **Version:** `^2.2.0` declared · 2.2.0 locked · dev
-* **Used for:** Bumping native app version numbers during release, in `tools/release/release.mjs`.
+* **Used for:** Bumping native app version numbers during release, in
+  `tools/release/cut-release.mjs`.
 * **Source:** npm ·
   [github.com/HausennTechnologies/capacitor-set-version](https://github.com/HausennTechnologies/capacitor-set-version)
   · published by David Krepsky (dkrepsky)
@@ -630,7 +631,7 @@ Non-`keep` rows first.
 ### marked
 
 * **Version:** `^18.0.5` declared · 18.0.5 locked (latest 18.0.6) · dev
-* **Used for:** Rendering release-notes Markdown to HTML in `tools/release/generate-releases.mjs`.
+* **Used for:** Rendering release-notes Markdown to HTML in `tools/release/gen-release-notes.mjs`.
 * **Source:** npm · [github.com/markedjs/marked](https://github.com/markedjs/marked) · published by
   the MarkedJS org
 * **License:** MIT (GitHub reports NOASSERTION — non-SPDX-standard license file)

@@ -210,9 +210,10 @@ multi-touch input — the best way to get accurate profiles.
 * [ ] **Replace placeholder icons with final hi-res art.** Current icons are upscaled from the 512px
       web logo — produce a crisp **1024×1024** source at `assets/icon.png` (and tune
       `assets/splash.png`), then rerun `npx @capacitor/assets generate --android`.
-* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` — `tools/release/release.mjs`
-      (`setAndroidVersion`) derives both and writes them into `android/app/build.gradle`, which is
-      the source of truth. Only a hand-built release needs them set manually.
+* [ ] Confirm `npm run release` bumped `versionCode` / `versionName` —
+      `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into
+      `android/app/build.gradle`, which is the source of truth. Only a hand-built release needs them
+      set manually.
 * [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
       (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
       each August against the

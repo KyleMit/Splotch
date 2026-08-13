@@ -103,7 +103,7 @@
     "model-eval:gen-inputs": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/model-eval/gen-model-inputs.mjs",
     "vectorize": "node tools/vectorize/vectorize.mjs",
     "gen:icon-names": "node tools/icons/gen-icon-names.mjs",
-    "gen:releases": "node tools/release/generate-releases.mjs",
+    "gen:releases": "node tools/release/gen-release-notes.mjs",
     "gen:tokens": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/tokens/gen-tokens.mjs",
     "gen:tokens:check": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/tokens/gen-tokens.mjs --check",
     "gen:large-image": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/app-driver/gen-large-image.mjs",
@@ -174,8 +174,8 @@
     "audit:cost": "node tools/audit-burndown/cost.mjs",
     "audit:watch": "node tools/audit-burndown/watch.mjs",
     "prerelease": "npm run check:coloring-assets && npm run check:assets:manifest",
-    "release": "node tools/release/release.mjs",
-    "release:publish": "node tools/release/publish-artifacts.mjs"
+    "release": "node tools/release/cut-release.mjs",
+    "release:publish": "node tools/release/publish-release-artifacts.mjs"
   },
   "scripts-info": {
     "info": "Lists every npm script with its description (this output)",
