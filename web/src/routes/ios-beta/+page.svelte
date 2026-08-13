@@ -11,6 +11,12 @@
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import { supportEmail } from '$lib/supportEmail';
 
+  // Step 4 prints the canonical absolute feedback address because testers may
+  // read this page on one device and send feedback from another. Its href stays
+  // relative so deploy previews still point to their own feedback form.
+  // Compose the support address only after hydration so address harvesters
+  // cannot find it in prerendered HTML. Without JavaScript the email card stays
+  // absent and the server-backed /feedback form remains available.
   let support = $state('');
   onMount(() => {
     support = supportEmail();
@@ -25,6 +31,17 @@
   />
   <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
+
+{#snippet lede()}
+  Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
+  feedback. Thank you for helping: trying Splotch on a real iPhone or iPad finds problems we can't
+  catch on our own.
+{/snippet}
+
+{#snippet troubleSummary()}
+  Invitation not opening, <span class="trouble-sub-clause">beta unavailable,&nbsp;</span>or no
+  Install button?
+{/snippet}
 
 {#snippet troubleshooting()}
   <div class="row">
@@ -72,10 +89,8 @@
 <BetaEnrollmentPage
   title="Join the iPhone and iPad beta"
   wordmark="Splotch for iOS"
-  intro="Joining is free and takes three quick steps — plus an optional fourth if you'd like to send feedback. Thank you for helping: trying Splotch on a real iPhone or iPad finds problems we can't catch on our own."
-  troubleStart="Invitation not opening, "
-  troubleClause="beta unavailable,&nbsp;"
-  troubleEnd="or no Install button?"
+  {lede}
+  {troubleSummary}
   {troubleshooting}
 >
   <BetaStepLedger>
@@ -133,6 +148,8 @@
       {/snippet}
     </BetaStep>
 
+    <!-- Step 4 is the only same-origin action. It keeps this page in place
+         rather than opening another tab like the three external handoffs. -->
     <BetaStep
       number={4}
       title="Tell us what you think"

@@ -1,6 +1,15 @@
+<script module lang="ts">
+  import { paletteHex, type PaletteLabel } from '$lib/palette';
+
+  // The beta ledger is deliberately four steps long: the closed number prop
+  // makes a fifth step a type error instead of resolving an undefined hue.
+  // android-beta.spec.ts measures every derived ink/wash pair in both themes.
+  const STEP_HUE_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
+  const STEP_HUES = STEP_HUE_LABELS.map(paletteHex);
+</script>
+
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import { paletteHex, type PaletteLabel } from '$lib/palette';
 
   interface Props {
     number: 1 | 2 | 3 | 4;
@@ -29,9 +38,6 @@
     optional = false,
     showCard = true,
   }: Props = $props();
-
-  const STEP_HUE_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
-  const STEP_HUES = STEP_HUE_LABELS.map(paletteHex);
 </script>
 
 <li class="beta-step step-{number}" style="--step-hue:{STEP_HUES[number - 1]}">
@@ -208,6 +214,8 @@
     text-decoration-thickness: 1px;
   }
 
+  /* Touch browsers can retain :hover after a tap, so hover-only changes stay
+     behind a capability query instead of becoming sticky touch states. */
   @media (hover: hover) {
     .btn:hover {
       background: var(--page-accent-hover);
@@ -245,6 +253,10 @@
       flex: 1 0 100%;
       min-height: 48px;
       text-align: center;
+    }
+
+    .fine {
+      max-width: none;
     }
   }
 </style>

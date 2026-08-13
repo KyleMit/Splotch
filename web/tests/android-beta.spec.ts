@@ -6,6 +6,11 @@ import {
 } from '../src/lib/components/androidBeta/androidBeta';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
+import { renderedText } from './helpers';
+
+// The restored mobile rule allows content width to vary with each sentence,
+// but it must no longer be constrained to the old 34ch desktop measure.
+const MIN_MOBILE_FINE_WIDTH_FRACTION = 0.9;
 
 // The /android-beta page is a set of sign-up links; a link that points at the
 // wrong place is the only way it can fail, and nothing else in the suite would
@@ -71,6 +76,33 @@ test('the support address is absent from the served HTML and added after hydrati
     'href',
     `mailto:${supportEmail()}`
   );
+});
+
+test('mobile fine print can use the full action column', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/android-beta');
+
+  const widthRatios = await page.locator('.action').evaluateAll((actions) =>
+    actions.map((action) => {
+      const fine = action.querySelector<HTMLElement>('.fine');
+      if (!fine) throw new Error('Expected every action to contain fine print');
+      return fine.getBoundingClientRect().width / action.getBoundingClientRect().width;
+    })
+  );
+
+  for (const ratio of widthRatios) expect(ratio).toBeGreaterThan(MIN_MOBILE_FINE_WIDTH_FRACTION);
+});
+
+test('the troubleshooting summary drops only its middle clause on phones', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 844 });
+  await page.goto('/android-beta');
+  const summary = page.locator('.trouble-sub');
+  await expect
+    .poll(() => renderedText(summary))
+    .toBe('Beta not showing up, “item not found”, or stuck on step 2?');
+
+  await page.setViewportSize({ width: 400, height: 844 });
+  await expect.poll(() => renderedText(summary)).toBe('Beta not showing up, or stuck on step 2?');
 });
 
 test('the troubleshooting panel starts collapsed', async ({ page }) => {

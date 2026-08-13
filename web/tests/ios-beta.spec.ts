@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_URL } from '../src/lib/components/iosBeta/iosBeta';
 import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
+import { renderedText } from './helpers';
 
 test('the iOS beta steps link to TestFlight and feedback', async ({ page }) => {
   await page.goto('/ios-beta');
@@ -49,6 +50,20 @@ test('the support address stays out of prerendered HTML and appears after hydrat
     'href',
     `mailto:${supportEmail()}`
   );
+});
+
+test('the troubleshooting summary drops only its middle clause on phones', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 844 });
+  await page.goto('/ios-beta');
+  const summary = page.locator('.trouble-sub');
+  await expect
+    .poll(() => renderedText(summary))
+    .toBe('Invitation not opening, beta unavailable, or no Install button?');
+
+  await page.setViewportSize({ width: 400, height: 844 });
+  await expect
+    .poll(() => renderedText(summary))
+    .toBe('Invitation not opening, or no Install button?');
 });
 
 test('the TestFlight troubleshooting panel starts collapsed', async ({ page }) => {

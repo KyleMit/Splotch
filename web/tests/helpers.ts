@@ -50,6 +50,12 @@ export type Rgba = readonly [number, number, number, number];
 
 export const COLOR_CHANGE_DEBOUNCE_SETTLE_MS = COLOR_CHANGE_DEBOUNCE_MS + 50;
 
+export function renderedText(locator: Locator): Promise<string> {
+  return locator.evaluate((element) =>
+    (element as HTMLElement).innerText.replace(/\s+/g, ' ').trim()
+  );
+}
+
 export function swatch(page: Page, color: string) {
   return page.locator(`button.color-swatch[data-color="${color}"]`);
 }
