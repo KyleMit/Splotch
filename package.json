@@ -361,7 +361,7 @@
     "@eslint/js": "^10.0.1",
     "@intellectronica/ruler": "0.3.44",
     "@playwright/test": "^1.62.1",
-    "dprint": "^0.55.1",
+    "dprint": "^0.55.2",
     "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.22.0",
