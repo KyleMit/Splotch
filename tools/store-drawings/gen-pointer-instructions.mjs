@@ -334,12 +334,11 @@ function formatValue(value, indent = 0) {
 }
 
 export function generateModule(drawings) {
-  // This specifier is relative to the emitted module in generated/, not to this generator.
+  // Relative to the emitted module in generated/, not to this generator. Kept in a variable so the
+  // tools/tests/tool-specifier-resolution.test.mjs guard doesn't read this emitted string as this
+  // file's own import: it resolves from generated/, but from here it would point at tools/lib/.
   const drawingInstructionsSpecifier = '../lib/drawing-instructions.mjs';
-  const blocks = [
-    `import { drawInstructionScene } from '${drawingInstructionsSpecifier}';`,
-    '',
-  ];
+  const blocks = [`import { drawInstructionScene } from '${drawingInstructionsSpecifier}';`, ''];
   for (const drawing of drawings) {
     const constant = drawing.functionName
       .replace(/^draw/, '')
