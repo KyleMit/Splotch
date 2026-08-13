@@ -152,7 +152,7 @@ export function requiredNativePageProblems(dir) {
   );
 }
 
-export async function checkNativeBundle({ dir = BUILD_DIR, log = console.log } = {}) {
+export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } = {}) {
   const sentinels = adminConsoleSentinels();
   const problems = [
     ...webOnlyMarkerSourceProblems(),
@@ -161,7 +161,7 @@ export async function checkNativeBundle({ dir = BUILD_DIR, log = console.log } =
   ];
   if (problems.length) throw new Error(problems.join('\n'));
   log(
-    `[native-bundle] native export references none of: ${FORBIDDEN_NATIVE_HOSTS.join(', ')}; ` +
+    `[check-static-bundle] native export references none of: ${FORBIDDEN_NATIVE_HOSTS.join(', ')}; ` +
       `no admin-console copy (${sentinels.length} sentinel(s)); ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present; ` +
@@ -169,4 +169,4 @@ export async function checkNativeBundle({ dir = BUILD_DIR, log = console.log } =
   );
 }
 
-if (isMain(import.meta.url)) runMain(checkNativeBundle);
+if (isMain(import.meta.url)) runMain(checkStaticBundle);

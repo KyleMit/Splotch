@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
+const read = (p) => readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
 
 const MANIFEST_PATH = 'ios/App/App/PrivacyInfo.xcprivacy';
 const PROJECT_PATH = 'ios/App/App.xcodeproj/project.pbxproj';

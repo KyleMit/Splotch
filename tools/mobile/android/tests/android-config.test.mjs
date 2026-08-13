@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import {
   MIN_ANDROID_API_LEVEL,
   MIN_ANDROID_RELEASE,
-} from '../../../web/src/lib/components/androidBeta/androidBeta.ts';
-import { themes } from '../../../web/src/lib/design/tokens.ts';
-import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android.mjs';
+} from '../../../../web/src/lib/components/androidBeta/androidBeta.ts';
+import { themes } from '../../../../web/src/lib/design/tokens.ts';
+import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
 
-const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
+const read = (p) => readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
 
 // Files allowed to carry the emulator API level / AVD name as literals — each
 // goes red the moment a literal disagrees with ANDROID_API_LEVEL. Deliberately

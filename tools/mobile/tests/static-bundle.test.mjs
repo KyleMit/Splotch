@@ -10,7 +10,7 @@ import {
   requiredNativePageProblems,
   WEB_ONLY_MODULE_MARKERS,
   webOnlyMarkerSourceProblems,
-} from '../check-native-bundle.mjs';
+} from '../check-static-bundle.mjs';
 
 // The guard's failure mode is silence: if its sentinels stop matching anything
 // the console actually ships, `build:cap` stays green while the console returns

@@ -140,7 +140,7 @@ describe('native build script entry points', () => {
   let exit;
   let importEffects;
   let log;
-  let stripNativeAssets;
+  let stripStaticAssets;
   let warn;
 
   beforeAll(async () => {
@@ -155,7 +155,7 @@ describe('native build script entry points', () => {
     state.filesystemCalls.length = 0;
     state.isMainInputs.length = 0;
 
-    ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
+    ({ stripStaticAssets } = await import('../strip-static-assets.mjs'));
     ({ checkAssets } = await import('../../check-coloring-assets.mjs'));
 
     const filesystemCalls = [...state.filesystemCalls];
@@ -180,7 +180,7 @@ describe('native build script entry points', () => {
     expect(importEffects).toEqual({
       errors: [],
       entryArguments: [
-        expect.stringMatching(/^file:.*strip-native-assets\.mjs$/),
+        expect.stringMatching(/^file:.*strip-static-assets\.mjs$/),
         expect.stringMatching(/^file:.*check-coloring-assets\.mjs$/),
       ],
       exits: [],
@@ -203,14 +203,14 @@ describe('native build script entry points', () => {
 
     try {
       vi.resetModules();
-      ({ stripNativeAssets } = await import('../strip-native-assets.mjs'));
+      ({ stripStaticAssets } = await import('../strip-static-assets.mjs'));
       ({ checkAssets } = await import('../../check-coloring-assets.mjs'));
     } finally {
       state.directEntry = false;
     }
 
     expect(state.isMainInputs).toEqual([
-      expect.stringMatching(/^file:.*strip-native-assets\.mjs$/),
+      expect.stringMatching(/^file:.*strip-static-assets\.mjs$/),
       expect.stringMatching(/^file:.*check-coloring-assets\.mjs$/),
     ]);
     expect(existsSync(join(directBuildDir, 'favicon.ico'))).toBe(false);
@@ -233,9 +233,9 @@ describe('native build script entry points', () => {
   it('runs the real native-strip CLI against an isolated build', () => {
     const fixtureRoot = join(state.root, 'strip-cli');
     for (const relativePath of [
-      'tools/native/strip-native-assets.mjs',
+      'tools/mobile/strip-static-assets.mjs',
       'tools/lib/coloring-book-assets.mjs',
-      'tools/native/lib/native-export.mjs',
+      'tools/mobile/lib/static-export.mjs',
       'tools/lib/proc.mjs',
     ]) {
       copyRepoFile(fixtureRoot, relativePath);
@@ -255,13 +255,13 @@ describe('native build script entry points', () => {
       [
         '--experimental-strip-types',
         '--disable-warning=ExperimentalWarning',
-        join(fixtureRoot, 'tools', 'native', 'strip-native-assets.mjs'),
+        join(fixtureRoot, 'tools', 'mobile', 'strip-static-assets.mjs'),
       ],
       { cwd: fixtureRoot, encoding: 'utf8' }
     );
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('[strip-native-assets] stripped 1 web-only file(s)');
+    expect(result.stdout).toContain('[strip-static-assets] stripped 1 web-only file(s)');
     expect(existsSync(favicon)).toBe(false);
   });
 
@@ -288,7 +288,7 @@ describe('native build script entry points', () => {
     log.mockClear();
     warn.mockClear();
 
-    stripNativeAssets(buildDir, [mobileBook, downloadableBook, webBook]);
+    stripStaticAssets(buildDir, [mobileBook, downloadableBook, webBook]);
 
     expect(exit).not.toHaveBeenCalled();
     expect(existsSync(webBookDir)).toBe(false);
@@ -303,20 +303,20 @@ describe('native build script entry points', () => {
     expect(readFileSync(join(buildDir, 'about', 'index.html'), 'utf8')).not.toContain('og:title');
     expect(readFileSync(join(buildDir, 'index.html'), 'utf8')).toContain('name="viewport"');
     expect(warn).toHaveBeenCalledWith(
-      '[strip-native-assets] expected but not found: large-image.png'
+      '[strip-static-assets] expected but not found: large-image.png'
     );
     expect(warn).toHaveBeenCalledWith(
-      '[strip-native-assets] expected but not found: /coloring/mobile/page-wide.outline.webp'
+      '[strip-static-assets] expected but not found: /coloring/mobile/page-wide.outline.webp'
     );
-    expect(log).toHaveBeenCalledWith('[strip-native-assets] removed /coloring/web-only');
+    expect(log).toHaveBeenCalledWith('[strip-static-assets] removed /coloring/web-only');
     expect(log).toHaveBeenCalledWith(
-      '[strip-native-assets] stripped 1/1 downloadable coloring book(s), 0.00 MB freed.'
-    );
-    expect(log).toHaveBeenCalledWith(
-      '[strip-native-assets] stripped 1/1 canonical folder(s) for 1 web-only book(s): web-only'
+      '[strip-static-assets] stripped 1/1 downloadable coloring book(s), 0.00 MB freed.'
     );
     expect(log).toHaveBeenCalledWith(
-      '[strip-native-assets] stripped 2/2 web-responsive coloring tier root(s).'
+      '[strip-static-assets] stripped 1/1 canonical folder(s) for 1 web-only book(s): web-only'
+    );
+    expect(log).toHaveBeenCalledWith(
+      '[strip-static-assets] stripped 2/2 web-responsive coloring tier root(s).'
     );
   });
 
@@ -328,8 +328,8 @@ describe('native build script entry points', () => {
     error.mockClear();
     log.mockClear();
 
-    expect(() => stripNativeAssets(missingBuild, [])).toThrow(
-      `[strip-native-assets] no build output at ${missingBuild}`
+    expect(() => stripStaticAssets(missingBuild, [])).toThrow(
+      `[strip-static-assets] no build output at ${missingBuild}`
     );
     expect(() => checkAssets(missingStatic, [webBook], [webBook])).toThrow(
       /^\[check-coloring-assets\] \d+ error\(s\) found/
@@ -354,7 +354,7 @@ describe('native build script entry points', () => {
 
     try {
       vi.resetModules();
-      await import('../strip-native-assets.mjs');
+      await import('../strip-static-assets.mjs');
       await import('../../check-coloring-assets.mjs');
     } finally {
       state.books.length = 0;
@@ -364,7 +364,7 @@ describe('native build script entry points', () => {
 
     expect(exit).toHaveBeenNthCalledWith(1, 1);
     expect(exit).toHaveBeenNthCalledWith(2, 1);
-    expect(error).toHaveBeenCalledWith('[strip-native-assets] no build output at web/build');
+    expect(error).toHaveBeenCalledWith('[strip-static-assets] no build output at web/build');
     expect(error).toHaveBeenCalledWith(
       expect.stringMatching(/^\[check-coloring-assets\] \d+ error\(s\) found/)
     );

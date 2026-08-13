@@ -47,7 +47,6 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `check-netlify-cli.mjs`            | `predev:netlify`                          | Require an authenticated, linked Netlify CLI                  |
 | `check-pwa-precache.mjs`           | `postbuild`                               | Enforce offline-asset coverage and the precache budget        |
 | `check-release-seams.mjs`          | `postbuild`, `postbuild:cap`              | Reject profiling and development seams in release output      |
-| `open-path.mjs`                    | `ios:open`                                | Reveal a repository-relative path in the OS file manager      |
 | `optimize-svg-assets.mjs`          | `optimize:svg-assets`, `check:svg-assets` | Optimize shipped SVGs or detect optimization drift            |
 | `print-playwright-version.mjs`     | GitHub setup actions                      | Emit the installed Playwright version for cache keys          |
 | `run-quality-checks.mjs`           | `check:quality`                           | Mirror CI's Quality job while reporting every failed step     |
@@ -60,7 +59,6 @@ The check and optimization commands are deterministic and local except
 `check:github-actions -- --check-latest`, which queries GitHub and reports unknown release data when
 the network is unavailable. Despite its migration-defined name, `check:github-actions` remains an
 advisory inventory and always exits zero; changing that behavior is outside this rename-only phase.
-`open-path.mjs` remains at the root until the mobile phase specializes its sole iOS caller.
 `dev:tunnel` requires the cloud-session tunnel credentials documented in
 [`docs/CLOUD/Claude.md`](../docs/CLOUD/Claude.md). Contract-enforcing root checks fail nonzero
 rather than silently weakening validation when an external prerequisite is missing.

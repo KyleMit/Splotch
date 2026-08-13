@@ -1,5 +1,5 @@
 // Validates every asset referenced in the coloring-book catalog exists on disk,
-// that the platform filtering used by strip-native-assets.mjs is consistent with
+// that the platform filtering used by strip-static-assets.mjs is consistent with
 // booksForPlatform, and that no authoring doc sits in the publicly served static
 // tree. Run with:
 //   npm run check:coloring-assets

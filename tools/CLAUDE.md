@@ -82,13 +82,13 @@ grandchild, while `release()` hands that group to the OS instead — which is wh
 
 Everything else lives in the `lib/` of the capability that owns it, and another tool may import it
 across the boundary — cross-tool reuse is not a reason to erase ownership into `tools/lib/`:
-`tools/android/lib/android.mjs` resolves the SDK and AVD locations per platform (override the SDK
-with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/native/lib/maestro.mjs` the Maestro location, and
-`tools/native/lib/native-export.mjs` owns what the native static export drops — the web-only static
-file list plus the head-tag rewrite that keeps `strip-native-assets.mjs` from leaving a tag pointing
-at a file it deleted; `tools/release/lib/release-frontmatter.mjs` the release frontmatter/semver
-parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login + token-CRUD request
-plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
+`tools/mobile/android/lib/android-toolchain.mjs` resolves the SDK and AVD locations per platform
+(override the SDK with `ANDROID_HOME` or `ANDROID_SDK_ROOT`); `tools/mobile/lib/maestro.mjs` owns
+the Maestro location, and `tools/mobile/lib/static-export.mjs` owns what the native static export
+drops — the web-only static file list plus the head-tag rewrite that keeps `strip-static-assets.mjs`
+from leaving a tag pointing at a file it deleted; `tools/release/lib/release-frontmatter.mjs` the
+release frontmatter/semver parsing; `tools/api-smoke/lib/admin-client.mjs` the `/api/admin` login +
+token-CRUD request plumbing; `tools/app-driver/lib/app-driver.mjs` the browser gesture/selector API.
 
 Check both before writing new glue. A new helper joins the purpose-named module that owns its
 concern (or gets a new purpose-named file) — never a `utils`/`misc`/`helpers` grab-bag.
@@ -103,8 +103,8 @@ and on a `tools/lib/` module that reaches back into a capability folder.
 * Every script must run on macOS and Linux (ADR-0017) — the project dropped Windows dev support
   (ADR-0062). Keep them plain Node `.mjs` for consistency, and put the macOS-vs-Linux differences
   that remain (SDK paths, `open` vs `xdg-open`) behind a branch in `tools/lib/` rather than
-  scattering them. Scripts bound to one platform by nature (`ios-simulator-smoke.mjs` needs Xcode)
-  must fail fast with a clear message elsewhere.
+  scattering them. Scripts bound to one platform by nature (`run-simulator-smoke-test.mjs` needs
+  Xcode) must fail fast with a clear message elsewhere.
 * Every CLI script gates execution behind `isMain(import.meta.url)` (`tools/lib/proc.mjs`) and
   exports a distinctly named entry function.
 * Script options are flags via `parseArgs`; an env var is at most a documented fallback.

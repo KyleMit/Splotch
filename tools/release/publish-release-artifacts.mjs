@@ -21,7 +21,7 @@ import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { ROOT, fail, run, isMain, parseOrFail } from '../lib/proc.mjs';
 import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
-import { RELEASE_AAB } from '../android/lib/android.mjs';
+import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
 
 export const RELEASE_IPA = join(ROOT, 'ios', 'App', 'build', 'ipa', 'App.ipa');

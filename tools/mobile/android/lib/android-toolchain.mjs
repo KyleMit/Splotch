@@ -5,7 +5,7 @@
 
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { ROOT } from '../../lib/proc.mjs';
+import { ROOT } from '../../../lib/proc.mjs';
 
 export const ANDROID_API_LEVEL = 33;
 export const AVD_NAME = `Pixel_7_Pro_API_${ANDROID_API_LEVEL}`;

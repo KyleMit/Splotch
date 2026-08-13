@@ -10,7 +10,7 @@
 //      the runtime filter in ColoringBook.svelte.
 //   2. Every mobile coloring book except the starter book. These are installed
 //      as verified background downloads after the app opens.
-//   3. The web-only static files listed in lib/native-export.mjs (social card,
+//   3. The web-only static files listed in lib/static-export.mjs (social card,
 //      favicons, webmanifest, crawler files, generator inputs) — together with
 //      the head tags that reference them, so the strip can't leave a 404 behind.
 //   4. Full-resolution opaque line-art sources. Runtime presentation uses the
@@ -28,7 +28,7 @@ import {
   nativeUnusedLineArt,
   webOnlyBooks,
 } from '../lib/coloring-book-assets.mjs';
-import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/native-export.mjs';
+import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from './lib/static-export.mjs';
 import { ROOT, fail, isMain } from '../lib/proc.mjs';
 import {
   BOOKS,
@@ -50,7 +50,7 @@ function displayBuildPath(buildDir) {
 function stripWebOnlyBooks(buildDir, books) {
   const webOnly = webOnlyBooks(books);
   if (webOnly.length === 0) {
-    console.log('[strip-native-assets] no web-only books — nothing to strip.');
+    console.log('[strip-static-assets] no web-only books — nothing to strip.');
     return;
   }
 
@@ -72,15 +72,15 @@ function stripWebOnlyBooks(buildDir, books) {
     const target = join(buildDir, dir);
     if (existsSync(target)) {
       rmSync(target, { recursive: true, force: true });
-      console.log(`[strip-native-assets] removed ${dir}`);
+      console.log(`[strip-static-assets] removed ${dir}`);
       removed++;
     } else {
-      console.warn(`[strip-native-assets] expected but not found: ${dir}`);
+      console.warn(`[strip-static-assets] expected but not found: ${dir}`);
     }
   }
 
   console.log(
-    `[strip-native-assets] stripped ${removed}/${dirs.size} canonical folder(s) for ` +
+    `[strip-static-assets] stripped ${removed}/${dirs.size} canonical folder(s) for ` +
       `${webOnly.length} web-only book(s): ` +
       webOnly.map((b) => b.id).join(', ')
   );
@@ -93,7 +93,7 @@ function stripWebOnlyFiles(buildDir) {
     const target = join(buildDir, file);
     if (!existsSync(target)) {
       // A rename upstream would silently stop saving these bytes, so say so.
-      console.warn(`[strip-native-assets] expected but not found: ${file}`);
+      console.warn(`[strip-static-assets] expected but not found: ${file}`);
       continue;
     }
     freedBytes += statSync(target).size;
@@ -111,7 +111,7 @@ function stripWebOnlyFiles(buildDir) {
   }
 
   console.log(
-    `[strip-native-assets] stripped ${removed} web-only file(s), ` +
+    `[strip-static-assets] stripped ${removed} web-only file(s), ` +
       `${(freedBytes / 1024).toFixed(0)} KB freed.`
   );
 }
@@ -123,7 +123,7 @@ function stripDownloadableBooks(buildDir, books) {
   for (const book of downloadable) {
     const directory = join(buildDir, 'coloring', book.id);
     if (!existsSync(directory)) {
-      console.warn(`[strip-native-assets] expected but not found: /coloring/${book.id}`);
+      console.warn(`[strip-static-assets] expected but not found: /coloring/${book.id}`);
       continue;
     }
     for (const file of globSync('**/*', { cwd: directory })) {
@@ -135,7 +135,7 @@ function stripDownloadableBooks(buildDir, books) {
     removed++;
   }
   console.log(
-    `[strip-native-assets] stripped ${removed}/${downloadable.length} downloadable coloring book(s), ` +
+    `[strip-static-assets] stripped ${removed}/${downloadable.length} downloadable coloring book(s), ` +
       `${(freedBytes / 1048576).toFixed(2)} MB freed.`
   );
 }
@@ -146,7 +146,7 @@ function stripUnusedLineArt(buildDir, books) {
   for (const file of nativeUnusedLineArt(books)) {
     const target = join(buildDir, file);
     if (!existsSync(target)) {
-      console.warn(`[strip-native-assets] expected but not found: ${file}`);
+      console.warn(`[strip-static-assets] expected but not found: ${file}`);
       continue;
     }
     freedBytes += statSync(target).size;
@@ -154,7 +154,7 @@ function stripUnusedLineArt(buildDir, books) {
     removed++;
   }
   console.log(
-    `[strip-native-assets] stripped ${removed} asset-pipeline line-art source(s), ` +
+    `[strip-static-assets] stripped ${removed} asset-pipeline line-art source(s), ` +
       `${(freedBytes / 1048576).toFixed(2)} MB freed.`
   );
 }
@@ -164,21 +164,21 @@ function stripResponsiveColoringTiers(buildDir) {
   for (const directory of RESPONSIVE_COLORING_TIER_DIRECTORIES) {
     const target = join(buildDir, directory);
     if (!existsSync(target)) {
-      console.warn(`[strip-native-assets] expected but not found: ${directory}`);
+      console.warn(`[strip-static-assets] expected but not found: ${directory}`);
       continue;
     }
     rmSync(target, { recursive: true, force: true });
     removed++;
   }
   console.log(
-    `[strip-native-assets] stripped ${removed}/${RESPONSIVE_COLORING_TIER_DIRECTORIES.length} ` +
+    `[strip-static-assets] stripped ${removed}/${RESPONSIVE_COLORING_TIER_DIRECTORIES.length} ` +
       'web-responsive coloring tier root(s).'
   );
 }
 
-export function stripNativeAssets(buildDir, books) {
+export function stripStaticAssets(buildDir, books) {
   if (!existsSync(buildDir)) {
-    throw new Error(`[strip-native-assets] no build output at ${displayBuildPath(buildDir)}`);
+    throw new Error(`[strip-static-assets] no build output at ${displayBuildPath(buildDir)}`);
   }
 
   stripWebOnlyBooks(buildDir, books);
@@ -193,7 +193,7 @@ export function stripNativeAssets(buildDir, books) {
 
 if (isMain(import.meta.url)) {
   try {
-    stripNativeAssets(BUILD_DIR, BOOKS);
+    stripStaticAssets(BUILD_DIR, BOOKS);
   } catch (error) {
     fail(error instanceof Error ? error.message : String(error));
   }

@@ -1,6 +1,6 @@
 // cspell:ignore sdkmanager avdmanager avds cmdline playstore temurin libexec winget Adoptium
 // One-time emulator setup for local Android work: installs the Play-Store
-// system image for the API level in tools/android/lib/android.mjs, creates the
+// system image for the API level in lib/android-toolchain.mjs, creates the
 // Pixel 7 Pro AVD, writes
 // android/local.properties, and installs the Maestro smoke-test CLI. Checks the
 // required SDK tools are on PATH first and prints per-platform fix instructions
@@ -8,9 +8,9 @@
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROOT, hasCommand, run, capture, fail } from '../lib/proc.mjs';
-import { maestroInstalled } from '../native/lib/maestro.mjs';
-import { ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android.mjs';
+import { ROOT, hasCommand, run, capture, fail } from '../../lib/proc.mjs';
+import { maestroInstalled } from '../lib/maestro.mjs';
+import { ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android-toolchain.mjs';
 
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
 const SYSTEM_IMAGE = `system-images;android-${ANDROID_API_LEVEL};google_apis_playstore;${ABI}`;

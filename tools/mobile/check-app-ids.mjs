@@ -12,7 +12,7 @@ for (const [field, value] of [
   ['appName', expectedAppName],
 ]) {
   if (typeof value !== 'string' || value.length === 0) {
-    fail(`[check-native-app-id] ${configPath}: ${field} must be a non-empty string`);
+    fail(`[check-app-ids] ${configPath}: ${field} must be a non-empty string`);
   }
 }
 
@@ -155,10 +155,10 @@ for (const check of [...checks, ...appNameChecks]) {
 
 if (errors.length > 0) {
   fail(
-    `[check-native-app-id] Native app identity mismatch:\n${errors.map((error) => `  - ${error}`).join('\n')}`
+    `[check-app-ids] Native app identity mismatch:\n${errors.map((error) => `  - ${error}`).join('\n')}`
   );
 }
 
 console.log(
-  `[check-native-app-id] all native app IDs match "${expectedAppId}" and names match "${expectedAppName}".`
+  `[check-app-ids] all native app IDs match "${expectedAppId}" and names match "${expectedAppName}".`
 );

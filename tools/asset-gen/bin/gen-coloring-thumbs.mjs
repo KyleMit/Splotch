@@ -5,7 +5,7 @@
 //
 // The catalog (web/src/lib/state/books.ts) derives every thumb path from its
 // source via `thumbPath()`/`chalkThumbPath()`, and `bookAssetPaths()` lists both
-// — so check-assets validates the thumbs and strip-native-assets removes them
+// — so check:coloring-assets validates the thumbs and strip-static-assets removes them
 // alongside their source. This script is the producer for those paths; keep the
 // naming in sync.
 //

@@ -4,15 +4,15 @@
 // `npm run test:ios`.
 //
 // It's just simulator-lifecycle glue: Maestro does the actual assertions (the
-// shared flow in lib/native-smoke.mjs — the same one the Android smoke runs).
+// shared flow in ../lib/mobile-smoke-test.mjs — the same one the Android smoke runs).
 //
 // Requires macOS with full Xcode (simulators ship with it) and Maestro.
 
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { ROOT, fail, sh } from '../lib/proc.mjs';
-import { runMaestroSmoke } from './lib/native-smoke.mjs';
+import { ROOT, fail, sh } from '../../lib/proc.mjs';
+import { runMaestroSmoke } from '../lib/mobile-smoke-test.mjs';
 
 const execFileAsync = promisify(execFile);
 

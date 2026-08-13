@@ -12,7 +12,11 @@ export default defineConfig({
   root: import.meta.dirname,
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.mjs', '*/tests/**/*.test.mjs'],
+    include: [
+      'tests/**/*.test.mjs',
+      '*/tests/**/*.test.mjs',
+      'mobile/{android,ios}/tests/**/*.test.mjs',
+    ],
     exclude: ['asset-gen/**', 'store-drawings/**'],
   },
 });

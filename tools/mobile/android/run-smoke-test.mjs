@@ -3,18 +3,18 @@
 // emulator down — even if the test fails. This is `npm run test:android`.
 //
 // It's just emulator-lifecycle glue: Maestro does the actual assertions
-// (the shared flow in lib/native-smoke.mjs). For a faster inner loop against an
+// (the shared flow in ../lib/mobile-smoke-test.mjs). For a faster inner loop against an
 // emulator you keep running yourself, use `npm run test:android:device`.
 //
 // Assumes the standard local setup (see `npm run android:setup`): the AVD named
-// by AVD_NAME in lib/android.mjs, the SDK in its default location, Maestro
+// by AVD_NAME in lib/android-toolchain.mjs, the SDK in its default location, Maestro
 // installed.
 
 import { spawn, execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { pollUntil, sh } from '../lib/proc.mjs';
-import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android.mjs';
-import { runMaestroSmoke } from '../native/lib/native-smoke.mjs';
+import { pollUntil, sh } from '../../lib/proc.mjs';
+import { ADB, EMULATOR, AVD_NAME, ANDROID_DIR, GRADLEW } from './lib/android-toolchain.mjs';
+import { runMaestroSmoke } from '../lib/mobile-smoke-test.mjs';
 
 const execFileAsync = promisify(execFile);
 const EMULATOR_BOOT_TIMEOUT_MS = 5 * 60 * 1000;

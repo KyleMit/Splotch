@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { nativeUnusedLineArt } from '../../lib/coloring-book-assets.mjs';
-import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from '../lib/native-export.mjs';
+import { WEB_ONLY_STATIC_FILES, stripWebOnlyHeadTags } from '../lib/static-export.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const appHtml = readFileSync(join(repoRoot, 'web/src/app.html'), 'utf8');

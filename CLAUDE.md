@@ -137,9 +137,9 @@ Codex-managed worktrees share host ports and machine capacity.
   is imported from one exported constant; when the agreeing sites can't share code (the `app.html`
   boot script, YAML, native config, generated output), add a drift-guard test that reads both sides
   and fails on divergence — the pattern of `web/src/app.html.test.ts`,
-  `tools/android/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep in sync
-  with X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage keys,
-  query params, event names, special-case ids): declared once, imported everywhere (tests
+  `tools/mobile/android/tests/android-config.test.mjs`, and `web/src/browserFloor.test.ts`. A "keep
+  in sync with X" comment marks a defect, not a mitigation. Same rule for boundary strings (storage
+  keys, query params, event names, special-case ids): declared once, imported everywhere (tests
   deliberately excepted). A **bundle boundary** is one of the places that can't share code: a static
   import into a startup-path module hands Rollup an edge that re-partitions chunks no matter how
   small the imported module, so there the duplication is deliberate and the sharing itself is the

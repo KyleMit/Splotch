@@ -1,0 +1,24 @@
+# iOS tooling
+
+This sub-capability owns the repository wrappers that run the iOS simulator smoke and reveal built
+App Store artifacts. The remaining Xcode build, run, archive, export, live-reload, and clean
+commands stay inline in `package.json`, as documented in
+[`docs/MOBILE/ios.md`](../../../docs/MOBILE/ios.md).
+
+## Entry points
+
+| Entry point                    | Public command     | Purpose                                         |
+| ------------------------------ | ------------------ | ----------------------------------------------- |
+| `run-simulator-smoke-test.mjs` | `npm run test:ios` | Build, install, and smoke an iOS simulator      |
+| `open-release-artifacts.mjs`   | `npm run ios:open` | Reveal `ios/App/build/ipa/` in the file manager |
+
+The smoke runner requires macOS, full Xcode with an available iPhone simulator, installed project
+dependencies, and Maestro. It reuses a booted simulator when possible, otherwise boots the newest
+available iPhone, performs `cap:sync`, builds and installs the debug app, runs the shared smoke
+flow, and shuts down only a simulator it started. Toolchain, build, install, Maestro, and simulator
+errors exit nonzero after cleanup.
+
+`tests/ios-privacy-manifest.test.mjs` guards the committed native privacy declarations. Keep
+simulator and Xcode lifecycle behavior here, shared Maestro execution at `../lib/`, and all native
+project files under `ios/`. The release opener is intentionally specialized to the IPA output; add a
+new owner-specific entry point rather than restoring a generic repository path opener.

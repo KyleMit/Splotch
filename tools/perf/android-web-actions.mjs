@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { ADB } from '../android/lib/android.mjs';
+import { ADB } from '../mobile/android/lib/android-toolchain.mjs';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../lib/proc.mjs';
 import {
   MIN_GATED_SAMPLES,
