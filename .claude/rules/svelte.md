@@ -34,7 +34,7 @@ paths:
   `ActionsPanel.svelte`). Never `!important` to beat a sibling rule — fix specificity or ordering.
 * A prop that renders help/explanatory text for a control must wire it to the control (`id` +
   `aria-describedby`) — axe does not flag the omission.
-* New icons: drop the SVG in `src/lib/icons/`, run `npm run gen:icons`, then use
+* New icons: drop the SVG in `src/lib/icons/`, run `npm run gen:icon-names`, then use
   `<Icon name="..." />` — the `name` prop is type-checked against the generated union. `<Icon>` sets
   `data-icon={name}` so the icon is assertable in tests (the SVG itself goes in via `{@html}` and
   carries no identity). A full-color/"spot" icon must also be added to the `COLOR_ICONS` set in

@@ -32,7 +32,7 @@ npm run dev       # http://localhost:5173
 
 Two generators run automatically before every build (the `prebuild`/`prebuild:cap` hooks):
 
-* `gen:icons` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in
+* `gen:icon-names` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in
   `web/src/lib/icons/`
 * `gen:releases` — generates `web/src/lib/releases.json` and the fastlane store changelogs from
   `releases/*.md`
@@ -210,7 +210,7 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 ## Adding a new icon
 
 1. Drop an SVG into `web/src/lib/icons/`.
-2. Run `npm run gen:icons` (it also runs automatically before every build).
+2. Run `npm run gen:icon-names` (it also runs automatically before every build).
 3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated
    union.
 

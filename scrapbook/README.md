@@ -71,9 +71,9 @@ of the shipping brush; see the [generator README](../tools/asset-gen/crayon-brus
 for the regeneration workflow.
 
 The icon gallery lives at `https://kylemit.github.io/Splotch/icons/` — `icons/index.html`, built by
-`npm run gen:icons-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and
+`npm run gen:icon-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and
 monochrome UI glyphs. Regenerate it straight into place with
-`npm run gen:icons-sheet -- --out scrapbook/icons/index.html` after adding or changing an app icon,
+`npm run gen:icon-sheet -- --out scrapbook/icons/index.html` after adding or changing an app icon,
 then `npm run scrapbook:index`.
 
 The responsive app inventory lives at `https://kylemit.github.io/Splotch/page-inventory/`. It is

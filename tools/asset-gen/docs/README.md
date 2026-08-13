@@ -208,5 +208,5 @@ views, the outline-% badge, size constraints — lives in
 ## Not here
 
 Scripts that **drive the live app** (`gen:shots`, `gen:large-image` — Playwright against the running
-UI) or that are **build-path codegen** (`gen:icons`, `gen:releases`) stay in the repo-root `tools/`.
-They are app-coupled, not asset producers.
+UI) or that are **build-path codegen** (`gen:icon-names`, `gen:releases`) stay in the repo-root
+`tools/`. They are app-coupled, not asset producers.

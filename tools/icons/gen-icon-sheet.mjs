@@ -3,7 +3,7 @@
 // monochrome UI glyphs. Self-contained HTML (SVGs inlined) so it renders live on
 // GitHub Pages and via the Artifact tool.
 //
-//   node tools/icons/gen-icons-sheet.mjs [--out FILE]
+//   node tools/icons/gen-icon-sheet.mjs [--out FILE]
 //
 // Classification is by chroma: an icon is "spot" if it paints any genuinely
 // saturated hue (a fixed color that does not follow the theme); otherwise it is
@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { ROOT } from '../lib/proc.mjs';
 import { esc } from '../lib/html.mjs';
 import { chromeStyle, masthead, siteFooter } from '../scrapbook/lib/scrapbook-chrome.mjs';
-import { isSpot } from './lib/iconChroma.mjs';
+import { isSpot } from './lib/icon-chroma.mjs';
 
 const ICONS_DIR = join(ROOT, 'web/src/lib/icons');
 const args = process.argv.slice(2);

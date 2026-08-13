@@ -1,5 +1,5 @@
 // Chroma-based icon classification, shared by the icon-sheet generator
-// (gen-icons-sheet.mjs) and the COLOR_ICONS guard test
+// (gen-icon-sheet.mjs) and the COLOR_ICONS guard test
 // (web/src/lib/components/Icon.svelte.test.ts) so the two never drift.
 //
 // An icon is a "spot" (full-color) icon when it PAINTS at least one saturated,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isSpot, paintedValues } from '../lib/iconChroma.mjs';
+import { isSpot, paintedValues } from '../lib/icon-chroma.mjs';
 
 // paintedValues's value character class deliberately excludes `}` and `/` so
 // export shapes no icon in the corpus currently uses still parse to a clean
