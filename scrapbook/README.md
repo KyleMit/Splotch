@@ -65,36 +65,36 @@ deep links). `npm run scrapbook:index` regenerates the hub alongside the top-lev
 `npm run scrapbook:check` verifies both generated pages are current.
 
 The crayon-brush reference and acceptance art collection lives at
-`https://kylemit.github.io/Splotch/crayon-brush-samples/`. `build-sheet.mjs` produces its
-`index.html` contact sheet, while `build-compare-sheet.mjs` produces `vs-current.html` from captures
-of the shipping brush; see the [generator README](../tools/asset-gen/crayon-brush-samples/README.md)
-for the regeneration workflow.
+`https://kylemit.github.io/Splotch/crayon-brush-samples/`. `gen-reference-sheet.mjs` produces its
+`index.html` contact sheet, while `gen-comparison-sheet.mjs` produces `vs-current.html` from
+captures of the shipping brush; see the
+[generator README](../tools/asset-gen/crayon-reference/README.md) for the regeneration workflow.
 
 The icon gallery lives at `https://kylemit.github.io/Splotch/icons/` — `icons/index.html`, built by
-`npm run gen:icons-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and
+`npm run gen:icon-sheet` from the SVGs in `web/src/lib/icons/`, split into colorful spot icons and
 monochrome UI glyphs. Regenerate it straight into place with
-`npm run gen:icons-sheet -- --out scrapbook/icons/index.html` after adding or changing an app icon,
+`npm run gen:icon-sheet -- --out scrapbook/icons/index.html` after adding or changing an app icon,
 then `npm run scrapbook:index`.
 
 The responsive app inventory lives at `https://kylemit.github.io/Splotch/page-inventory/`. It is
 built from a real Playwright session across four canonical Apple devices in both portrait and
 landscape, with every surface captured in light and night mode. The generator discovers routes and
 Settings sections from source, then captures the app's dialogs, flyouts, and other notable transient
-states. Regenerate its sixteen-view matrix in place with `npm run gen:page-inventory`. Every WebP
-must decode at its expected dimensions and pass the ready-content/blankness guards before the run
-atomically replaces the keeper. The run writes `capture-manifest.json`, whose stable review IDs,
+states. Regenerate its sixteen-view matrix in place with `npm run capture:page-inventory`. Every
+WebP must decode at its expected dimensions and pass the ready-content/blankness guards before the
+run atomically replaces the keeper. The run writes `capture-manifest.json`, whose stable review IDs,
 standalone descriptions, and per-image SHA-256 values bind later feedback to the exact pixels that
 were reviewed.
 
 Critique work is one independently generated checkpoint per review ID under the gitignored
-`.scrapbook-scratch/page-inventory-critique/reviews/`. Run `npm run gen:page-inventory:review` to
-create or resume the fresh image-only reviews, then finalize them with
-`npm run gen:page-inventory:critique`; the command refuses missing, duplicate, unknown, or stale
-reviews, derives the coverage and severity totals rather than trusting model-authored counts, and
-records every group of captures that share a digest and a theme along with whether their severities
-diverge. When `design-critique.json` is present, capture preserves it but attaches it only when
-every hash matches the new manifest. To update feedback without recapturing images, run
-`npm run gen:page-inventory:feedback` (optionally `-- --critique FILE`). Then run
+`.scrapbook-scratch/page-inventory-critique/reviews/`. Run `npm run review:page-inventory` to create
+or resume the fresh image-only reviews, then finalize them with
+`npm run finalize:page-inventory-critique`; the command refuses missing, duplicate, unknown, or
+stale reviews, derives the coverage and severity totals rather than trusting model-authored counts,
+and records every group of captures that share a digest and a theme along with whether their
+severities diverge. When `design-critique.json` is present, capture preserves it but attaches it
+only when every hash matches the new manifest. To update feedback without recapturing images, run
+`npm run attach:page-inventory-feedback` (optionally `-- --critique FILE`). Then run
 `npm run scrapbook:index`.
 
 > HTML reports render because they're served by Pages. `raw.githubusercontent.com` would serve them
@@ -103,7 +103,7 @@ every hash matches the new manifest. To update feedback without recapturing imag
 ## Publishing
 
 Ephemeral tool outputs stay **gitignored** (`lighthouse-reports/`, `.coloring-samples/`,
-`web/tests/redteam/output/`, …). Promote a chosen keeper with:
+`tools/redteam/output/`, …). Promote a chosen keeper with:
 
 ```bash
 npm run scrapbook:publish -- <source> <type>/<name>

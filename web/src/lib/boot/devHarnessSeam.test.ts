@@ -53,7 +53,7 @@ it('publishes the engine mode while the dev-harness gate is open', () => {
   expect(window.__committedBrushMode?.()).toBe('magic');
 });
 
-// The on-device profiler (`perf:ipad:frames`) correlates stall onset against how
+// The on-device profiler (`perf:ios:webkit:frames`) correlates stall onset against how
 // the undo history is stored, which nothing in the DOM exposes.
 it('publishes the undo-history debug reader while the gate is open', () => {
   installDevHarnessSeam();

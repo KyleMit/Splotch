@@ -27,7 +27,7 @@ server, so they build a **fully static** export instead:
   token-minting console is exactly the shape Play's Deceptive Behavior policy and App Review 2.3.1
   are written against, and worse in an app declared for a children's audience.
 * Routes that must not reach the bundle at all are listed in `web/nativeExcludedRoutes.ts`, whose
-  Vite plugin blanks their module source at build time; `tools/native/check-native-bundle.mjs` scans
+  Vite plugin blanks their module source at build time; `tools/mobile/check-static-bundle.mjs` scans
   the built output and fails `build:cap` if a forbidden host or web-only boot-service marker
   survives. A route's `prerender` flag alone drops only its HTML — the JS chunk, and every string in
   it, still ships.
@@ -191,8 +191,8 @@ generated from the real app where possible:
 * [x] **Copywriting** — Google Play fields in `store-assets/STORE-LISTING-ANDROID.md`; App Store
       fields (name, subtitle, promo text, keywords, categories, privacy label) in
       `store-assets/STORE-LISTING-IOS.md`.
-* [x] **Screenshots, both stores** — `npm run gen:shots` drives the app in headless Chromium and
-      captures Play phone/tablet sets **and** App Store iPhone 6.9" / iPad 13" sets at the exact
+* [x] **Screenshots, both stores** — `npm run gen:store-assets` drives the app in headless Chromium
+      and captures Play phone/tablet sets **and** App Store iPhone 6.9" / iPad 13" sets at the exact
       required pixel sizes, plus the Play feature graphic. Re-run after meaningful UI changes.
 * [x] **Play app icon** 512×512 (`store-assets/icon-512.png`); the App Store icon ships inside the
       binary's asset catalog (no separate upload).

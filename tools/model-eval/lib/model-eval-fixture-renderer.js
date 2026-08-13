@@ -1,4 +1,4 @@
-// In-page canvas renderer for tools/model-eval/model-eval-fixtures.mjs. Loaded into the Playwright
+// In-page canvas renderer for tools/model-eval/gen-model-fixtures.mjs. Loaded into the Playwright
 // page with addScriptTag, so it is plain browser JS — no Node built-ins, no import/export.
 // It reads the paper colors and palette the script publishes as window.__PAPER /
 // window.__PALETTE, and exposes window.renderFixture + window.__coloredPct.

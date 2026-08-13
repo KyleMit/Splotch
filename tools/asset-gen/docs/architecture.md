@@ -17,8 +17,8 @@ The goal was **isolation of this code, a dedicated runbook, and fast local itera
 change to how assets are served. A key existing property made this tractable: **the app never runs
 these scripts.** It reads committed `.webp`/`.png` files from `web/static/`; the generators are
 manual, on-demand tools whose good outputs are reviewed and checked in. There is no build-time edge
-from the app to the pipeline (the only `pre*build` hooks are `gen:icons` / `gen:releases`, which are
-TypeScript/JSON codegen, not image generation).
+from the app to the pipeline (the only `pre*build` hooks are `gen:icon-names` / `gen:releases`,
+which are TypeScript/JSON codegen, not image generation).
 
 Three placements were considered:
 
@@ -48,28 +48,32 @@ in the repo-root `package.json`**; Node resolves them by walking up into the fla
 `node_modules`. It is **not** an npm workspace and is **not** separately installed — `node_modules`
 layout is unchanged.
 
-What moved: `gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`, `retouch-line-art`,
+What moved in the original extraction (using the leaf names from that migration):
+`gen-style-covers`, `gen-coloring-fills`, `gen-coloring-fills-dark`, `retouch-line-art`,
 `gen-coloring-thumbs`, `gen-coloring-sheet` (since retired — its review role folded into the
 coloring-book proof sheet), `gen-coloring-book-proof-sheet`, `png-to-webp`, `lib/pixelate.mjs`
 (since retired along with the Pixel style it served), and the `night-fills.md` runbook.
 
-What stayed in `tools/`: build-path codegen (`gen:icons`, `gen:releases`) and the app-driving
-Playwright generators (`gen:shots`/`store-shots.mjs`, `gen:large-image`) — those drive the live app
-and are effectively integration tests, not asset producers.
+What stayed in `tools/`: build-path codegen (`gen:icon-names`, `gen:releases`) and the app-driving
+Playwright generators (`gen:store-assets`/`gen-store-assets.mjs`, `gen:promotional-image`) — those
+drive the live app and are effectively integration tests, not asset producers.
 
 Structure:
 
-* `tools/asset-gen/lib/paths.mjs` centralizes repo-root + tree resolution (`REPO_ROOT`,
+* `tools/asset-gen/lib/asset-paths.mjs` centralizes repo-root + tree resolution (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`), so scripts don't hardcode
   `../../..` walks or import from `tools/lib/`.
-* Entry-point scripts in `bin/`, docs (the `README.md` runbook, `pipeline.md`, the decision records)
-  in `docs/`, plus `CLAUDE.md` (scoped rules) at the folder root.
+* Coloring entry points live in `coloring/`, style-cover generation and its source drawing in
+  `style-covers/`, crayon reference capture and comparison tools in `crayon-reference/`, and the two
+  capability-wide conversion/manifest entry points at the folder root. Shared support modules stay
+  in `lib/`, tests in `tests/`, the primary runbook at `README.md`, and deeper runbooks and decision
+  records in `docs/`.
 * A **dependency-free** `package.json` (`@splotch/asset-gen`, `private`) whose `scripts` block gives
   local aliases (`npm run coloring-fills` from inside the folder) for fast iteration — with no
   `dependencies`, so it never implies a second install and root `npm install` ignores it (not a
   workspace).
-* The root `gen:*` scripts stay the discoverable entry points (ADR-0019); they just point at
-  `tools/asset-gen/…`.
+* The root npm scripts stay the discoverable entry points (ADR-0019), using behavior-led `check:*`,
+  `gen:*`, and `update:*` namespaces; they just point at `tools/asset-gen/…`.
 
 **The shared-module contract.** The generators import exactly four modules from `web/src` —
 `ai/styles.ts`, `ai/prompt.ts`, `server/ai/geminiSafety.ts`, `state/books.ts` — the app's single

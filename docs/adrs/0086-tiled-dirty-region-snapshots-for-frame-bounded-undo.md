@@ -505,3 +505,20 @@ ms on the same final build.
   reallocates them. Export and empty-state scans exclude hidden tiles, a new stroke clears each
   reached tile before painting, and undo of any earlier command clears each stale backing before
   restoring its retained patch so leftover pixels cannot be composited back into view.
+
+## Amendment (2026-08-13): the release-note layer of the contract is dropped
+
+The Decision above made the depth contract executable in two layers. The second one,
+`undoDepthContract.test.ts`, required the newest entry in `web/src/lib/releases.json` to advertise
+`MAX_UNDO_DEPTH` in prose. It is deleted.
+
+Release notes record what a version shipped; they are not a standing promise the engine owes. Since
+the sentence lives in the release that raised the cap and is never repeated, the test re-pointed
+itself at each new release and failed on the first one that did not mention undo — v1.5.0, three
+days after the test landed. Restating the constant in whichever release is newest is not a product
+contract, and changing the cap does not require appending to the changelog.
+
+`flows-tile-history.spec.ts` remains the executable contract: it imports `MAX_UNDO_DEPTH` and
+requires the engine to retain and replay exactly that many commands within the patch budget. The
+"update the user-facing promise in the same change" clause above stays an editorial judgment for
+whoever reduces the budget, not a gate any test enforces.

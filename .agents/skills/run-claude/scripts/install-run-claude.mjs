@@ -19,6 +19,7 @@ export const INSTALL_PATHS = {
   reviewer: join(homedir(), '.local/libexec/splotch-claude-review-publish.mjs'),
   health: join(homedir(), '.local/libexec/splotch-claude-health.mjs'),
   subscriptionAuth: join(homedir(), '.local/libexec/splotch-claude-subscription-auth.mjs'),
+  stream: join(homedir(), '.local/libexec/splotch-claude-stream.mjs'),
   settings: join(homedir(), '.config/splotch-run-claude/settings.json'),
   runnerBoundary: join(homedir(), '.config/splotch-run-claude/runner-boundary.md'),
   rubric: join(homedir(), '.config/splotch-run-claude/reviewer-rubric.md'),
@@ -36,6 +37,7 @@ export function expectedRunClaudeFiles() {
   const subscriptionAuth = readFileSync(
     join(packageDirectory, 'scripts/splotch-claude-subscription-auth.mjs')
   );
+  const stream = readFileSync(join(packageDirectory, 'scripts/splotch-claude-stream.mjs'));
   const settings = readFileSync(join(packageDirectory, 'references/claude-settings.json'));
   const runnerBoundary = readFileSync(join(packageDirectory, 'references/runner-boundary.md'));
   const reviewerBoundary = readFileSync(
@@ -50,11 +52,12 @@ export function expectedRunClaudeFiles() {
   const manifest = Buffer.from(
     `${JSON.stringify(
       {
-        version: 2,
+        version: 3,
         runnerSha256: digest(runner),
         reviewerSha256: digest(reviewer),
         healthSha256: digest(health),
         subscriptionAuthSha256: digest(subscriptionAuth),
+        streamSha256: digest(stream),
         settingsSha256: digest(settings),
         runnerBoundarySha256: digest(runnerBoundary),
         rubricSha256: digest(rubric),
@@ -68,6 +71,7 @@ export function expectedRunClaudeFiles() {
     reviewer,
     health,
     subscriptionAuth,
+    stream,
     settings,
     runnerBoundary,
     rubric,
@@ -100,6 +104,7 @@ export function installRunClaude({ check = false, paths = INSTALL_PATHS } = {}) 
   for (const path of [paths.runner, paths.reviewer, paths.health]) chmodSync(path, 0o555);
   for (const path of [
     paths.subscriptionAuth,
+    paths.stream,
     paths.settings,
     paths.runnerBoundary,
     paths.rubric,

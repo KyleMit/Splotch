@@ -12,9 +12,21 @@ command in Codex, and restart Codex so its config and rules reload. The installe
 * installs hashed Claude settings, task boundaries, and a manifest outside the reviewed repository.
 
 The generic runner accepts only an absolute bounded prompt file, `ask|inspect` profile,
-`sonnet|opus` model, `low|medium|high` effort, and—only for `inspect`—an absolute Splotch worktree
-root. `ask` has no tools. `inspect` has only `Read`, `Grep`, and `Glob`. Neither profile authorizes
-an external write. Prompt text never enters the parent shell command.
+`sonnet|opus` model, `low|medium|high` effort, the `--persist`/`--resume <uuid>`/
+`--end-session <uuid>` session controls, and—only for `inspect`—an absolute Splotch worktree root.
+`ask` has no tools. `inspect` has only `Read`, `Grep`, and `Glob`. Neither profile authorizes an
+external write. Prompt text never enters the parent shell command.
+
+Sessions are ephemeral unless `--persist` opts in. The runner keeps one owner-only record file per
+session it issues (so concurrent wrapper invocations never contend on shared ledger state) and
+refuses to resume or end any id it holds no record for, so resumption can never reach a session
+another process created. Resuming may widen a session's profile only from `ask` to `inspect`; every
+other transition is rejected, and each resumed turn re-applies its profile's tool list, trusted
+settings, and boundary prompt. `--end-session` deletes the session's transcript file and sidecar
+directory, then removes the record. The progress stream and stall watchdog change observability only
+— the owner-only stream log is exclusively created, terminating a stalled run signals Claude's whole
+process group, and no profile gains a tool or an external write from streaming; the PR publisher
+remains one-shot with `--no-session-persistence`.
 
 The PR publisher accepts exactly `--pr <positive-integer>` for `KyleMit/Splotch`. It passes that
 same narrow authorization to Claude and runs with:

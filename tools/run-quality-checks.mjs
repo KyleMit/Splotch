@@ -4,7 +4,7 @@
 //
 // QUALITY_COMMANDS must stay in step with .github/workflows/test.yml. A YAML
 // workflow can't import from a Node module, so the agreement is enforced by
-// tools/tests/quality-checks.test.mjs, which reads the steps out of the
+// tools/tests/run-quality-checks.test.mjs, which reads the steps out of the
 // workflow and fails when either side gains, loses, or reorders a command.
 import { spawnSync } from 'node:child_process';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
@@ -13,7 +13,7 @@ export const QUALITY_COMMANDS = [
   'npm run format:check',
   'npm run check',
   'npm run lint',
-  'npm run img:audit:check',
+  'npm run check:svg-assets',
   'npm run ruler:check',
   'npm run gen:tokens:check',
   'npm run lint:tokens',

@@ -25,7 +25,7 @@ LAUNCH_FILE="$WORK/launch-command"
 
 [ -d "$WORK" ] || exit 0
 
-# The driver writes its own launch command at startup (see burndown.mjs). Prefer
+# The driver writes its own launch command at startup (see run-burndown.mjs). Prefer
 # the BRANCH recorded there over this Claude session's environment: a run started
 # with a non-default BRANCH would otherwise be measured against the wrong ref, and
 # the session that triggers compaction is not the session that launched the run.
@@ -40,7 +40,7 @@ fi
 # shell that happens to mention the path), and which pid `head -1` returns is down
 # to pid-assignment order rather than anything we control. `^node ` matches the
 # driver alone.
-driver_pid="$(pgrep -f '^node tools/audit-burndown/burndown.mjs' 2>/dev/null | head -1)"
+driver_pid="$(pgrep -f '^node tools/audit-burndown/run-burndown.mjs' 2>/dev/null | head -1)"
 
 # Unpushed fixes or an undrained comment store mean a run left work owed even if
 # nothing is executing now — worth snapshotting for the same reason.

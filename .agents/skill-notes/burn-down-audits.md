@@ -26,7 +26,7 @@ canary before its runbook was separated from the Claude Code skill.
 
 ## Native Codex runner
 
-`tools/audit-burndown/agent-runner.mjs` invokes schema-constrained `codex exec --json`, reads
+`tools/audit-burndown/lib/agent-runner.mjs` invokes schema-constrained `codex exec --json`, reads
 `thread.started.thread_id`, normalizes the JSONL event stream, and resumes repair rounds with
 `codex exec resume <thread-id>`.
 
@@ -190,13 +190,13 @@ The remaining friction was supervisory rather than correctness-related:
 * A large comment queue was safe but expensive to drain through one connector round trip per body.
   Batches of at most ten can share one orchestration cell while retaining the at-least-once `next` →
   post → `done` ordering.
-* `pop.mjs --help` is not supported. It originally fell through to printing the first finding, which
-  made any mistyped mode look like a successful pop; the mode set is now closed, so `--help` and
-  every other unrecognized flag exit 2 with `pop: unknown mode <mode> (see header for usage)` and
-  leave the backlog untouched (`tools/audit-burndown/tests/audit-burndown-pop.test.mjs`). The helper
-  also cannot prune empty source sections, so the previous closeout instruction to tidy them
-  contradicted the prohibition on direct backlog edits. The runbook now lists the supported modes
-  and removes that unsafe cleanup step.
+* `pop-finding.mjs --help` is not supported. It originally fell through to printing the first
+  finding, which made any mistyped mode look like a successful pop; the mode set is now closed, so
+  `--help` and every other unrecognized flag exit 2 with
+  `pop: unknown mode <mode> (see header for usage)` and leave the backlog untouched
+  (`tools/audit-burndown/tests/pop-finding.test.mjs`). The helper also cannot prune empty source
+  sections, so the previous closeout instruction to tidy them contradicted the prohibition on direct
+  backlog edits. The runbook now lists the supported modes and removes that unsafe cleanup step.
 
 ## PR 561 supervision retrospective
 

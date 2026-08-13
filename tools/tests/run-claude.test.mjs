@@ -1,15 +1,35 @@
 import { describe, expect, it } from 'vitest';
-import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import {
   ALLOWED_PROMPT_ROOTS,
+  authorizeResume,
   buildClaudeArgs,
   buildRunnerPrompt,
+  createSessionRecord,
+  endSession,
   parseRunArgs,
   readPromptFile,
+  readSessionRecord,
   RUNNER_PATHS,
+  sessionArguments,
+  sessionRecordPath,
+  updateSessionRecord,
 } from '../../.agents/skills/run-claude/scripts/claude-run.mjs';
+import {
+  renderProgressEvent,
+  runClaudeStreaming,
+} from '../../.agents/skills/run-claude/scripts/splotch-claude-stream.mjs';
 import {
   buildAuthorizationPrompt,
   parseReviewerArgs,
@@ -39,6 +59,21 @@ import {
 } from '../../.agents/skills/run-claude/scripts/splotch-claude-subscription-auth.mjs';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
+const SESSION_ID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+const OTHER_SESSION_ID = 'ffffffff-0000-4111-8222-333333333333';
+
+async function waitForProcessExit(pid, timeoutMs = 6000) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      process.kill(pid, 0);
+    } catch {
+      return true;
+    }
+    if (Date.now() > deadline) return false;
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
+  }
+}
 
 describe('output-only Claude runner', () => {
   it('accepts a minimal prompt and closes every optional value set', () => {
@@ -48,6 +83,8 @@ describe('output-only Claude runner', () => {
       cwd: undefined,
       model: 'sonnet',
       effort: 'high',
+      persist: false,
+      resume: undefined,
     });
     expect(() =>
       parseRunArgs(['--prompt-file', '/private/tmp/ping.txt', '--model', 'other'])
@@ -61,6 +98,25 @@ describe('output-only Claude runner', () => {
     expect(() =>
       parseRunArgs(['--prompt-file', '/private/tmp/ping.txt', '--dangerously-skip-permissions'])
     ).toThrow();
+  });
+
+  it('bounds the session controls to wrapper-issued UUID sessions', () => {
+    expect(parseRunArgs(['--prompt-file', '/private/tmp/ping.txt', '--persist']).persist).toBe(
+      true
+    );
+    expect(
+      parseRunArgs(['--prompt-file', '/private/tmp/ping.txt', '--resume', SESSION_ID]).resume
+    ).toBe(SESSION_ID);
+    expect(parseRunArgs(['--end-session', SESSION_ID])).toEqual({ endSession: SESSION_ID });
+    expect(() =>
+      parseRunArgs(['--prompt-file', '/private/tmp/ping.txt', '--resume', 'not-a-uuid'])
+    ).toThrow('UUIDs issued by this wrapper');
+    expect(() =>
+      parseRunArgs(['--prompt-file', '/private/tmp/ping.txt', '--persist', '--resume', SESSION_ID])
+    ).toThrow('mutually exclusive');
+    expect(() =>
+      parseRunArgs(['--end-session', SESSION_ID, '--prompt-file', '/private/tmp/ping.txt'])
+    ).toThrow('accepts no other options');
   });
 
   it('reads prompts only from bounded regular files', () => {
@@ -108,6 +164,8 @@ describe('output-only Claude runner', () => {
     for (const arguments_ of [ask, inspect]) {
       expect(arguments_).toContain('--safe-mode');
       expect(arguments_).toContain('--no-session-persistence');
+      expect(arguments_).toContain('stream-json');
+      expect(arguments_).toContain('--verbose');
       expect(arguments_).not.toContain('--dangerously-skip-permissions');
       expect(arguments_).not.toContain('--bare');
       expect(arguments_.at(-1)).toContain('AUTHORIZED TASK');
@@ -116,6 +174,90 @@ describe('output-only Claude runner', () => {
     expect(buildRunnerPrompt({ prompt: 'ping', profile: 'ask' })).toContain(
       'authorizes no external writes'
     );
+  });
+
+  it('persists or resumes a session only when the caller opts in', () => {
+    expect(sessionArguments()).toEqual(['--no-session-persistence']);
+    const created = buildClaudeArgs({
+      prompt: 'ping',
+      profile: 'ask',
+      model: 'sonnet',
+      effort: 'high',
+      session: { mode: 'create', id: SESSION_ID },
+    });
+    expect(created).toContain('--session-id');
+    expect(created).toContain(SESSION_ID);
+    expect(created).not.toContain('--no-session-persistence');
+    const resumed = buildClaudeArgs({
+      prompt: 'follow-up',
+      profile: 'inspect',
+      model: 'sonnet',
+      effort: 'high',
+      session: { mode: 'resume', id: SESSION_ID },
+    });
+    expect(resumed).toContain('--resume');
+    expect(resumed).toContain(SESSION_ID);
+    expect(resumed).not.toContain('--no-session-persistence');
+    expect(() => sessionArguments({ mode: 'other' })).toThrow('unsupported session mode');
+  });
+
+  it('resumes only recorded sessions and widens only ask to inspect', () => {
+    expect(authorizeResume({ profile: 'ask' }, SESSION_ID, 'ask').profile).toBe('ask');
+    expect(authorizeResume({ profile: 'ask' }, SESSION_ID, 'inspect').profile).toBe('inspect');
+    expect(() => authorizeResume(null, OTHER_SESSION_ID, 'ask')).toThrow(
+      'unknown run-claude session'
+    );
+    expect(authorizeResume({ profile: 'inspect' }, SESSION_ID, 'inspect').profile).toBe('inspect');
+    expect(() => authorizeResume({ profile: 'inspect' }, SESSION_ID, 'ask')).toThrow(
+      'widen ask to inspect'
+    );
+  });
+
+  it('keeps one owner-only record per session so concurrent sessions never collide', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-run-claude-records-'));
+    try {
+      const directory = join(temporaryRoot, 'sessions');
+      createSessionRecord(directory, SESSION_ID, { profile: 'ask' });
+      createSessionRecord(directory, OTHER_SESSION_ID, { profile: 'inspect' });
+      expect(statSync(sessionRecordPath(directory, SESSION_ID)).mode & 0o777).toBe(0o600);
+      expect(() => createSessionRecord(directory, SESSION_ID, { profile: 'ask' })).toThrow();
+      updateSessionRecord(directory, SESSION_ID, { profile: 'inspect', lastResumedAt: 'later' });
+      expect(readSessionRecord(directory, SESSION_ID)).toEqual({
+        profile: 'inspect',
+        lastResumedAt: 'later',
+      });
+      expect(readSessionRecord(directory, OTHER_SESSION_ID)).toEqual({ profile: 'inspect' });
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('ends only recorded sessions and removes transcripts with their sidecars', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-run-claude-session-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      createSessionRecord(paths.sessionsDirectory, SESSION_ID, { profile: 'ask' });
+      createSessionRecord(paths.sessionsDirectory, OTHER_SESSION_ID, { profile: 'ask' });
+      const project = join(paths.claudeProjects, 'some-project');
+      const transcript = join(project, `${SESSION_ID}.jsonl`);
+      const sidecarDirectory = join(project, SESSION_ID);
+      mkdirSync(join(sidecarDirectory, 'tool-results'), { recursive: true });
+      writeFileSync(transcript, '{}');
+      writeFileSync(join(sidecarDirectory, 'tool-results', 'toolu_1.json'), '{}');
+      endSession(SESSION_ID, paths);
+      expect(existsSync(transcript)).toBe(false);
+      expect(existsSync(sidecarDirectory)).toBe(false);
+      expect(readSessionRecord(paths.sessionsDirectory, SESSION_ID)).toBeNull();
+      expect(readSessionRecord(paths.sessionsDirectory, OTHER_SESSION_ID)).toEqual({
+        profile: 'ask',
+      });
+      expect(() => endSession(SESSION_ID, paths)).toThrow('unknown run-claude session');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
   });
 
   it('rejects API-billed environments and accepts a logged-in plan session', () => {
@@ -135,6 +277,209 @@ describe('output-only Claude runner', () => {
       'API-key'
     );
   });
+});
+
+describe('claude stream progress', () => {
+  const stamped = new Date('2026-01-01T12:34:56');
+
+  it('reduces stream events to compact one-line progress records', () => {
+    expect(
+      renderProgressEvent(
+        { type: 'system', subtype: 'init', session_id: 'abc', model: 'opus' },
+        stamped
+      )
+    ).toBe('[12:34:56] session abc model opus');
+    expect(
+      renderProgressEvent(
+        {
+          type: 'assistant',
+          message: {
+            content: [
+              { type: 'text', text: '  Reading the\n diff now.  ' },
+              { type: 'tool_use', name: 'Bash', input: { command: 'npm test' } },
+            ],
+          },
+        },
+        stamped
+      )
+    ).toBe('[12:34:56] Reading the diff now.\n[12:34:56] tool Bash: npm test');
+    expect(
+      renderProgressEvent(
+        {
+          type: 'user',
+          message: {
+            content: [{ type: 'tool_result', is_error: true, content: 'command not found' }],
+          },
+        },
+        stamped
+      )
+    ).toBe('[12:34:56] tool error: command not found');
+    expect(
+      renderProgressEvent({ type: 'result', subtype: 'success', duration_ms: 754_000 }, stamped)
+    ).toBe('[12:34:56] result success in 754s');
+  });
+
+  it('drops non-progress events and truncates long text', () => {
+    expect(
+      renderProgressEvent({
+        type: 'user',
+        message: { content: [{ type: 'tool_result', content: 'quiet success' }] },
+      })
+    ).toBeNull();
+    expect(renderProgressEvent({ type: 'stream_event' })).toBeNull();
+    const rendered = renderProgressEvent(
+      { type: 'assistant', message: { content: [{ type: 'text', text: 'x'.repeat(500) }] } },
+      stamped
+    );
+    expect(rendered.length).toBeLessThan(200);
+    expect(rendered.endsWith('…')).toBe(true);
+  });
+
+  it('streams events as they arrive, tees the raw log, and returns the result event', async () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-stream-'));
+    try {
+      const logPath = join(temporaryRoot, 'stream.ndjson');
+      const script = [
+        `console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: 's-1', model: 'sonnet' }));`,
+        `console.log(JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: '/tmp/a.ts' } }] } }));`,
+        `console.log(JSON.stringify({ type: 'result', subtype: 'success', result: 'done', duration_ms: 1200 }));`,
+      ].join('\n');
+      const progress = [];
+      const result = await runClaudeStreaming({
+        command: process.execPath,
+        args: ['-e', script],
+        logPath,
+        onProgress: (line) => progress.push(line),
+      });
+      expect(result.result).toBe('done');
+      expect(progress.some((line) => line.includes('session s-1 model sonnet'))).toBe(true);
+      expect(progress.some((line) => line.includes('tool Read: /tmp/a.ts'))).toBe(true);
+      expect(readFileSync(logPath, 'utf8').trim().split('\n')).toHaveLength(3);
+      expect(statSync(logPath).mode & 0o777).toBe(0o600);
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('terminates a silent child at the stall timeout and surfaces failures', async () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-stall-'));
+    try {
+      await expect(
+        runClaudeStreaming(
+          {
+            command: process.execPath,
+            args: ['-e', 'setTimeout(() => {}, 60000)'],
+            logPath: join(temporaryRoot, 'stall.ndjson'),
+          },
+          200
+        )
+      ).rejects.toThrow('emitted no stream events');
+      await expect(
+        runClaudeStreaming({
+          command: process.execPath,
+          args: ['-e', 'console.error("boom"); process.exit(3)'],
+          logPath: join(temporaryRoot, 'exit.ndjson'),
+        })
+      ).rejects.toThrow('claude exited 3: boom');
+      await expect(
+        runClaudeStreaming({
+          command: process.execPath,
+          args: ['-e', 'console.log("{}")'],
+          logPath: join(temporaryRoot, 'no-result.ndjson'),
+        })
+      ).rejects.toThrow('without a result event');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses a pre-existing stream log target', async () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-log-'));
+    try {
+      const logPath = join(temporaryRoot, 'existing.ndjson');
+      writeFileSync(logPath, '');
+      await expect(
+        runClaudeStreaming({
+          command: process.execPath,
+          args: ['-e', 'setTimeout(() => {}, 60000)'],
+          logPath,
+        })
+      ).rejects.toThrow('stream log');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it(
+    'terminates the whole process group, not only the direct child',
+    { timeout: 15_000 },
+    async () => {
+      const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-group-'));
+      try {
+        const script = [
+          `const { spawn } = require('node:child_process');`,
+          `const grandchild = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'ignore' });`,
+          `console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: String(grandchild.pid), model: 'x' }));`,
+          `setTimeout(() => {}, 60000);`,
+        ].join('\n');
+        const progress = [];
+        await expect(
+          runClaudeStreaming(
+            {
+              command: process.execPath,
+              args: ['-e', script],
+              logPath: join(temporaryRoot, 'group.ndjson'),
+              onProgress: (line) => progress.push(line),
+            },
+            300
+          )
+        ).rejects.toThrow('emitted no stream events');
+        const grandchildPid = Number(progress[0].match(/session (\d+) model/)[1]);
+        expect(await waitForProcessExit(grandchildPid)).toBe(true);
+      } finally {
+        rmSync(temporaryRoot, { recursive: true, force: true });
+      }
+    }
+  );
+
+  it(
+    'escalates to group SIGKILL when a descendant ignores SIGTERM',
+    { timeout: 15_000 },
+    async () => {
+      const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-sigkill-'));
+      try {
+        // The init event arms the silence window, so it must wait for the grandchild's readiness
+        // byte: emitted before the SIGTERM no-op handler exists, a slow host could end the window
+        // while default SIGTERM still kills the grandchild, passing without the escalation.
+        const grandchildScript = `process.on("SIGTERM", () => {}); process.stdout.write("ready"); setTimeout(() => {}, 60000);`;
+        const script = [
+          `const { spawn } = require('node:child_process');`,
+          `const grandchild = spawn(process.execPath, ['-e', '${grandchildScript}'], { stdio: ['ignore', 'pipe', 'ignore'] });`,
+          `grandchild.stdout.once('data', () => {`,
+          `  console.log(JSON.stringify({ type: 'system', subtype: 'init', session_id: String(grandchild.pid), model: 'x' }));`,
+          `});`,
+          `setTimeout(() => {}, 60000);`,
+        ].join('\n');
+        const progress = [];
+        await expect(
+          runClaudeStreaming(
+            {
+              command: process.execPath,
+              args: ['-e', script],
+              logPath: join(temporaryRoot, 'sigkill.ndjson'),
+              onProgress: (line) => progress.push(line),
+            },
+            2000,
+            500
+          )
+        ).rejects.toThrow('process group was terminated');
+        const grandchildPid = Number(progress[0].match(/session (\d+) model/)[1]);
+        expect(await waitForProcessExit(grandchildPid)).toBe(true);
+      } finally {
+        rmSync(temporaryRoot, { recursive: true, force: true });
+      }
+    }
+  );
 });
 
 describe('trusted Claude PR reviewer', () => {
@@ -179,6 +524,8 @@ describe('trusted Claude PR reviewer', () => {
       "'--strict-mcp-config'",
       "'--no-session-persistence'",
       "'--output-format'",
+      "'stream-json'",
+      "'--verbose'",
     ]) {
       expect(wrapper).toContain(required);
     }
@@ -196,6 +543,7 @@ describe('trusted Claude PR reviewer', () => {
       'reviewerSha256',
       'healthSha256',
       'subscriptionAuthSha256',
+      'streamSha256',
       'settingsSha256',
       'runnerBoundarySha256',
       'rubricSha256',
@@ -254,12 +602,14 @@ describe('run-claude Codex policy', () => {
       boundary: installed.runnerBoundary,
       manifest: installed.manifest,
       subscriptionAuth: installed.subscriptionAuth,
+      stream: installed.stream,
     });
     expect(REVIEWER_PATHS).toMatchObject({
       settings: installed.settings,
       rubric: installed.rubric,
       manifest: installed.manifest,
       subscriptionAuth: installed.subscriptionAuth,
+      stream: installed.stream,
     });
     expect(HEALTH_PATHS).toMatchObject({
       manifest: installed.manifest,

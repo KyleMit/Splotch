@@ -17,7 +17,10 @@ describe('screenshot timing contract', () => {
   });
 
   it('keeps the physical action observation window aligned with the shared duration', () => {
-    const actionRunner = readFileSync(join(repoRoot, 'tools', 'perf', 'ipad-actions.mjs'), 'utf8');
+    const actionRunner = readFileSync(
+      join(repoRoot, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
+      'utf8'
+    );
     const literal = actionRunner.match(/const SCREENSHOT_ACTION_SETTLE_MS = ([\d_]+);/)?.[1];
 
     expect(Number(literal?.replaceAll('_', ''))).toBe(POLAROID_OBSERVATION_MS);

@@ -32,7 +32,7 @@ npm run dev       # http://localhost:5173
 
 Two generators run automatically before every build (the `prebuild`/`prebuild:cap` hooks):
 
-* `gen:icons` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in
+* `gen:icon-names` — generates `web/src/lib/components/icon-names.d.ts` from the SVG files in
   `web/src/lib/icons/`
 * `gen:releases` — generates `web/src/lib/releases.json` and the fastlane store changelogs from
   `releases/*.md`
@@ -96,13 +96,13 @@ The SvelteKit app lives in **`web/`** (`web/src/`, the Vite/SvelteKit/test confi
 `package.json`/`node_modules`, and `tools/` stay at the repo root. `npm run dev:netlify` runs
 `netlify dev --cwd web` so netlify-cli's file watcher is scoped to `web/` and never traverses the
 large native trees (the cause of the `EMFILE` crash this layout fixes). All the npm scripts still
-run from the repo root; the web toolchain is dispatched into `web/` by `tools/web.mjs`.
+run from the repo root; the web toolchain is dispatched into `web/` by `tools/run-web-tool.mjs`.
 
 > **Production deploy.** Netlify builds from the repo **root** (where `package.json` + the lockfile
 > live). The root `netlify.toml` build command runs `npm run build` (which builds the app in `web/`)
-> then `node tools/stage-netlify.mjs`, which copies `web/build → build` and
-> `web/.netlify → .netlify` so Netlify sees the standard root layout (`publish = "build"`, SSR
-> function in `.netlify/functions-internal`). Local `netlify dev` uses `web/netlify.toml` instead.
+> then `node tools/stage-netlify-functions.mjs`, which copies `web/.netlify → .netlify` so Netlify
+> sees the SSR function in `.netlify/functions-internal`; static assets publish directly from
+> `web/build`. Local `netlify dev` uses `web/netlify.toml` instead.
 
 On native the AI button calls the **hosted** endpoint (`https://splotch.art/api/generate-image`) via
 `__NATIVE_API_BASE__`. On web it uses a same-origin relative path.
@@ -203,14 +203,14 @@ project-relative, and the broad `/tmp` scope is deliberate for session scratch f
 * **Docs-only images** (README screenshots and the like) live in `docs/assets/`, committed as
   optimized `.webp` — never raw PNGs.
 * **Shipped PNGs** under `web/static/` get a WebP sibling before committing:
-  `node tools/asset-gen/bin/png-to-webp.mjs`.
+  `node tools/asset-gen/convert-png-to-webp.mjs`.
 * **Committed run outputs** (proof sheets, Lighthouse reports, model tests) belong in
   [`/scrapbook`](../scrapbook/README.md), not `docs/`.
 
 ## Adding a new icon
 
 1. Drop an SVG into `web/src/lib/icons/`.
-2. Run `npm run gen:icons` (it also runs automatically before every build).
+2. Run `npm run gen:icon-names` (it also runs automatically before every build).
 3. Use `<Icon name="your-icon-name" />` — the `name` prop is type-checked against the generated
    union.
 

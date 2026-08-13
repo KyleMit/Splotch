@@ -7,7 +7,7 @@ generated from `.ruler/`; managed runner forks may be produced from `.ruler/skil
 Registered direct provider packages are different: `burn-down-audits` is independently maintained
 under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
 implementations; Codex-only `run-claude` and `implement-issue-stack` live only under `.agents/`. See
-`tools/ruler/direct-provider-skills.mjs` for the authoritative registry.
+`tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -32,7 +32,7 @@ applies or how skills relate.
 **Prefer skills over slash commands.** Reusable agent workflows are normally authored in
 `.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
 packages under `.ruler/skill-forks/<runner>/`; only packages registered in
-`tools/ruler/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
+`tools/ruler/lib/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
 workflows as commands in `.claude/commands/`. A skill with a good `description` is both
 user-invocable (`/name`) and model-invocable, so Claude can reach for it on its own — a plain
 command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a

@@ -67,7 +67,7 @@ input.
 
 ## Reread first
 
-* `tools/page-inventory/gen-page-inventory.mjs`, `lib/page-inventory-data.mjs`,
+* `tools/page-inventory/capture-page-inventory.mjs`, `lib/page-inventory-data.mjs`,
   `lib/page-inventory-design-notes.mjs`
 * `.claude/skills/critique-page-inventory/SKILL.md`, ADR-0106 (amended by this run), ADR-0071
 * `design` skill + `web/src/lib/design/tokens.ts`

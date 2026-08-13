@@ -36,7 +36,7 @@ Every coloring-page orientation has two runtime presentation derivatives:
 {page}-{tall,wide}.dark.overlay.webp transparent white chalk; dark runtime overlay
 ```
 
-`npm run gen:coloring-overlays` runs `tools/asset-gen/bin/gen-coloring-overlays.mjs`. For each pen
+`npm run gen:coloring-overlays` runs `tools/asset-gen/coloring/gen-overlays.mjs`. For each pen
 outline it:
 
 1. Decodes luma `L` from the pen source and writes black RGB with alpha `255 − L`.
@@ -58,7 +58,7 @@ optional chalk bookkeeping.
 
 Opaque sources and alpha overlays are both committed under `web/static/coloring` and covered by
 `golden/asset-manifest.sha256`. Web deployments retain both sets so the in-repo pipeline can keep
-its source locations. `tools/native/strip-native-assets.mjs` removes the opaque full-resolution
+its source locations. `tools/mobile/strip-static-assets.mjs` removes the opaque full-resolution
 sources from the completed native static build because native runtime code uses only alpha overlays
 and picker thumbnails.
 

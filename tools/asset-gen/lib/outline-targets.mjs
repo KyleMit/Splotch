@@ -1,7 +1,7 @@
 import { existsSync, statSync } from 'node:fs';
 import { glob } from 'node:fs/promises';
 import { join } from 'node:path';
-import { COLORING_DIR, toPosix } from './paths.mjs';
+import { COLORING_DIR, toPosix } from './asset-paths.mjs';
 
 const SORT_MODES = new Set([false, 'per-target', 'all']);
 

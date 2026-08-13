@@ -25,9 +25,9 @@ flowchart LR
     C -->|gen:coloring-thumbs| CT[".chalk.thumb.webp<br/>(picker, dark)"]
     C -->|gen:coloring-overlays| CO[".dark.overlay.webp<br/>(canvas, dark)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
-    C -->|"gen-coloring-fills-dark<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
-    LR2 -->|gen:coloring-punch| LS["shipped .light.webp<br/>(fills-only)"]
-    NR -->|gen:coloring-punch| NS["shipped .night.webp<br/>(fills-only)"]
+    C -->|"gen-night-fills<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
+    LR2 -->|gen:coloring-punched-fills| LS["shipped .light.webp<br/>(fills-only)"]
+    NR -->|gen:coloring-punched-fills| NS["shipped .night.webp<br/>(fills-only)"]
     O -.->|"punch mask"| LS
     C -.->|"punch mask"| NS
 ```
@@ -44,16 +44,16 @@ pen, so categories migrate incrementally. (Why a single shared outline couldn't 
 the white-blob problem and two earlier generations of fixes — is chronicled in
 [`legacy/README.md`](../legacy/README.md).)
 
-| Asset                           | Lives in                           | Shipped?                                                                                                                               | Produced by                                              |
-| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `{page}.outline.webp`           | `web/static/coloring/{book}/`      | yes — the PEN outline: light-mode overlay, source of all derivations                                                                   | hand-curated + `normalize-outline-strokes.mjs`           |
-| `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-coloring-chalk.mjs` from the pen                    |
-| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-coloring-thumbs.mjs`                                |
-| `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-coloring-thumbs.mjs`                                |
-| `{page}.overlay.webp`           | `web/static/coloring/{book}/`      | yes — transparent black pen for source-over light canvas presentation                                                                  | `gen-coloring-overlays.mjs`                              |
-| `{page}.dark.overlay.webp`      | `web/static/coloring/{book}/`      | yes — transparent white chalk for source-over dark canvas presentation                                                                 | `gen-coloring-overlays.mjs`                              |
-| `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-coloring-fills.mjs` / `gen-coloring-fills-dark.mjs` |
-| `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw                   |
+| Asset                           | Lives in                           | Shipped?                                                                                                                               | Produced by                                    |
+| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `{page}.outline.webp`           | `web/static/coloring/{book}/`      | yes — the PEN outline: light-mode overlay, source of all derivations                                                                   | hand-curated + `normalize-outline-strokes.mjs` |
+| `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-chalk-outlines.mjs` from the pen          |
+| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-thumbnails.mjs`                           |
+| `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-thumbnails.mjs`                           |
+| `{page}.overlay.webp`           | `web/static/coloring/{book}/`      | yes — transparent black pen for source-over light canvas presentation                                                                  | `gen-overlays.mjs`                             |
+| `{page}.dark.overlay.webp`      | `web/static/coloring/{book}/`      | yes — transparent white chalk for source-over dark canvas presentation                                                                 | `gen-overlays.mjs`                             |
+| `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`  |
+| `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw         |
 
 Everything shipped is a **static, committed artifact** — no generation at build or run time, no
 server dependency, trivially cacheable. The renderer is deliberately dumb: generated transparent
@@ -73,7 +73,7 @@ regeneration flows from a pen change**, so a pen edit means regenerating the pag
 
 ### Outline quality, and the audit that measures it
 
-`npm run gen:coloring-outlines:audit -- [category]` — deterministic, no API:
+`npm run check:coloring-outline-quality -- [category]` — deterministic, no API:
 
 | Invariant                  | Measure (lib/solid-regions.mjs, lib/eye-fill.mjs)                                                                                                            | Bar        | The regression that created it                                                                                                                                                          |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -135,7 +135,7 @@ light → chalk → night → punch. Decision record + the 2026-07-13 five-page 
 
 `npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
 [-t F] [--max-attempts N] [--force] [--dry-run]`
-— Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-coloring-chalk.mjs`),
+— Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-chalk-outlines.mjs`),
 keep-best-of-N with a rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
 with a `.display.webp` preview of what dark mode will show and a registration overlay). Four gates
 per candidate (`--rescore` re-runs them over saved candidates offline — no API — after a gate
@@ -183,9 +183,9 @@ thumbs and light fills are untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 
-`npm run gen:coloring-punch -- [pages…]` re-derives every shipped fill from its committed raw: where
-the line art is dark (luma < 150) the fill's pixels are **inpainted** — replaced by the surrounding
-fill color bled inward — and the shipped fill is fully opaque (`lib/punch-fill.mjs`;
+`npm run gen:coloring-punched-fills -- [pages…]` re-derives every shipped fill from its committed
+raw: where the line art is dark (luma < 150) the fill's pixels are **inpainted** — replaced by the
+surrounding fill color bled inward — and the shipped fill is fully opaque (`lib/punch-fill.mjs`;
 [decision record](inpainted-fill-punch.md) — the punch originally cut these pixels to transparency,
 whose alpha edge resampled against the dark paper into a dotted dark ring around every line at
 display scale). The mask is **per-theme**: light raws punch against the pen, night raws against the
@@ -232,7 +232,7 @@ partially apply a batch. `--samples N` remains review-only and cannot be combine
 
 ```bash
 node --experimental-strip-types --disable-warning=ExperimentalWarning \
-  tools/asset-gen/bin/gen-coloring-fills-dark.mjs <category|page> [flags]
+  tools/asset-gen/coloring/gen-night-fills.mjs <category|page> [flags]
 ```
 
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
@@ -319,11 +319,11 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
 1. Review the samples on the coloring-book proof sheet (`--source samples`) — Combined view, both
    themes, zoom the eyes.
 2. Copy each approved take to its raw path and re-punch. The samples dirs live at the **repo root**
-   (`lib/paths.mjs` `SAMPLES_DARK_DIR`), not inside `tools/asset-gen/`:
+   (`lib/asset-paths.mjs` `SAMPLES_DARK_DIR`), not inside `tools/asset-gen/`:
    ```bash
    cp .coloring-samples-dark/<cat>/<page>-<orient>.webp \
       tools/asset-gen/fill-src/<cat>/<page>-<orient>.night.raw.webp
-   npm run gen:coloring-punch -- <cat>
+   npm run gen:coloring-punched-fills -- <cat>
    ```
    Shipping a whole category? Every take sits beside its `<page>-<orient>.input.webp` debug sibling
    (the negated model input), so a bare `*.webp` glob manufactures bogus `*.input.night.raw.webp`
@@ -346,14 +346,14 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
    fully-generated page is just `page('ant', 'Ant')`. Only pass the `{ nightExcept, chalkExcept }`
    options object to subtract an orientation whose asset isn't generated yet, e.g.
    `page('ant', 'Ant', { nightExcept: ['portrait'] })`.
-4. Refresh the committed regression fixtures: `npm run gen:coloring-golden:diff` (review the report
-   — the changed pages should be exactly the ones you shipped), then
-   `npm run gen:coloring-golden:freeze` to adopt the new baseline and `npm run gen:assets:manifest`
-   to re-hash the changed bytes; commit both fixture updates with the assets (CI's
-   `check:assets:manifest` fails otherwise).
-5. `npm run check:assets` + `npm run check` + `npm run test:unit`, rebuild the coloring-book proof
-   sheet `--source shipped`, optionally verify live with the `run-splotch` skill (dark mode → apply
-   page → magic-brush reveal), commit.
+4. Refresh the committed regression fixtures: `npm run check:coloring-golden-scores` (review the
+   report — the changed pages should be exactly the ones you shipped), then
+   `npm run update:coloring-golden-scores` to adopt the new baseline and
+   `npm run gen:assets:manifest` to re-hash the changed bytes; commit both fixture updates with the
+   assets (CI's `check:assets:manifest` fails otherwise).
+5. `npm run check:coloring-assets` + `npm run check` + `npm run test:unit`, rebuild the
+   coloring-book proof sheet `--source shipped`, optionally verify live with the `run-splotch` skill
+   (dark mode → apply page → magic-brush reveal), commit.
 
 Light mode must stay byte-identical throughout a night-fill pass — enforced by
 `golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only
@@ -425,11 +425,10 @@ lie:
 
 The loop that has worked, per category:
 
-1. **Audit first** (`gen:coloring-outlines:audit`, `gen:coloring-fills:audit`,
-   `gen:coloring-fills:audit:eyes`) — all deterministic and free. The whole-catalog baseline is
-   already frozen in `golden/golden-scores.json` (`gen:coloring-golden:freeze`), so there's no need
-   for ad-hoc score snapshots in a scratchpad — the 3.1 wave's approach before the golden set
-   landed.
+1. **Audit first** (`check:coloring-outline-quality`, `check:coloring-fill-drift`,
+   `check:coloring-fill-eyes`) — all deterministic and free. The whole-catalog baseline is already
+   frozen in `golden/golden-scores.json` (`update:coloring-golden-scores`), so there's no need for
+   ad-hoc score snapshots in a scratchpad — the 3.1 wave's approach before the golden set landed.
 2. **Generate chalks** (`gen:coloring-chalk --apply`), eyeballing every `.display.webp` — gates have
    been fooled, each time by something no existing gate measured.
 3. **Regenerate the suite** for changed pages: thumbs → light fills → night fills → punch.
@@ -440,22 +439,22 @@ The loop that has worked, per category:
    ![coloring-book proof sheet pair](pipeline-assets/review-proof-sheet-pair.webp)
 
 5. **After a regen wave, run the invention + halo audits too** (proven in the 3.1 migration, since
-   promoted to first-class scripts): the invented-shape detector (`gen:coloring-fills:audit:shapes`)
+   promoted to first-class scripts): the invented-shape detector (`check:coloring-invented-shapes`)
    — the only thing that caught house-tall's two invented sky flowers, invisible to every standard
-   gate — and the residual-halo ranker (`gen:coloring-fills:audit:halo`); both are offline and
+   gate — and the residual-halo ranker (`check:coloring-night-halo`); both are offline and
    deterministic, and the halo table's top scorers need a human crop review (deliberate mid-dark art
    hugging lines scores like halo). For gate-blind classes (solid-pen-eye chalks, subject/background
    contrast), batch-render the night composites (`lib/night-composite.mjs`) into per-category
    montages and eyeball them — that sweep is what caught police-tall's whitened pupils and
    circle-wide's sky-colored disc.
-6. **Diff against the golden set** (`gen:coloring-golden:diff`, ~1 min offline) — the safety net
+6. **Diff against the golden set** (`check:coloring-golden-scores`, ~1 min offline) — the safety net
    that keeps "improved train-wide" from silently degrading the other 93 pages. Regressions exit
    non-zero; the changed pages should be exactly the ones you touched. Re-freeze
-   (`gen:coloring-golden:freeze`, reviewing the printed known-fail list) and regenerate the byte
+   (`update:coloring-golden-scores`, reviewing the printed known-fail list) and regenerate the byte
    manifest (`gen:assets:manifest`) to adopt the intended changes — the two fixtures close each
    other's blind spot (the golden set catches score drift; the manifest catches byte swaps between
    score-identical renders).
-7. `check:assets` + `check` + `test:unit`, commit, push.
+7. `check:coloring-assets` + `check` + `test:unit`, commit, push.
 
 Hard-won process lessons:
 
@@ -478,20 +477,20 @@ Hard-won process lessons:
 
 | Command                                                     | Purpose                                                                                         | API key? |
 | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------- |
-| `npm run gen:coloring-outlines:audit -- [cat]`              | solid regions + ring depth + page frames per pen outline                                        | no       |
+| `npm run check:coloring-outline-quality -- [cat]`           | solid regions + ring depth + page frames per pen outline                                        | no       |
 | `npm run gen:coloring-outlines:normalize -- <page…>`        | thin-stroke pen redraw, 6 gates, `--apply` to ship                                              | yes      |
 | `npm run gen:coloring-outlines:fresh -- <page> --scene "…"` | brand-new pen from a text scene (same subject, new drawing), 6 offline gates, `--apply` to ship | yes      |
 | `npm run gen:coloring-chalk -- <page-or-cat…>`              | chalk-outline redraw from the pen, 4 gates, `--apply` to ship, `--rescore` offline              | yes      |
 | `npm run gen:coloring-fills -- <pages…>`                    | gated light-fill candidates → scratch; `--apply` ships an all-passing batch                     | yes      |
-| `node … gen-coloring-fills-dark.mjs <pages…>`               | night fills (gated) → samples                                                                   | yes      |
-| `npm run gen:coloring-punch -- [pages…]`                    | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
-| `npm run gen:coloring-fills:audit -- [cat]`                 | registration drift on committed raws                                                            | no       |
-| `npm run gen:coloring-fills:audit:eyes -- [cat]`            | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
-| `npm run gen:coloring-fills:audit:shapes -- [cat]`          | invented colored shapes floating on the open background of committed raws                       | no       |
-| `npm run gen:coloring-fills:audit:halo -- [cat]`            | residual dark halo around chalk strokes in shipped night fills (ranking for crop review)        | no       |
+| `node … gen-night-fills.mjs <pages…>`                       | night fills (gated) → samples                                                                   | yes      |
+| `npm run gen:coloring-punched-fills -- [pages…]`            | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
+| `npm run check:coloring-fill-drift -- [cat]`                | registration drift on committed raws                                                            | no       |
+| `npm run check:coloring-fill-eyes -- [cat]`                 | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
+| `npm run check:coloring-invented-shapes -- [cat]`           | invented colored shapes floating on the open background of committed raws                       | no       |
+| `npm run check:coloring-night-halo -- [cat]`                | residual dark halo around chalk strokes in shipped night fills (ranking for crop review)        | no       |
 | `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
-| `npm run gen:coloring-golden:diff`                          | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
-| `npm run gen:coloring-golden:freeze`                        | adopt the current scores as the new golden baseline                                             | no       |
+| `npm run check:coloring-golden-scores`                      | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
+| `npm run update:coloring-golden-scores`                     | adopt the current scores as the new golden baseline                                             | no       |
 | `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                      | no       |
 | `npm run gen:coloring-book-proof-sheet -- <cat>`            | the review sheet (publish as Artifact)                                                          | no       |
 

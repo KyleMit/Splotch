@@ -2,6 +2,11 @@
 
 **Status:** Active **Date:** 2026-06
 
+> **Amended by [ADR-0111](0111-verb-object-tool-names-and-capability-documentation.md):**
+> action-first page-inventory, SVG-optimization, and asset-generation check commands may span
+> namespaces instead of grouping by domain or living under `gen:*`, while the npm catalog and
+> same-change `scripts-info` documentation rules remain in force.
+
 ## Context
 
 `package.json` had grown to ~48 scripts with organically inconsistent naming: generators were

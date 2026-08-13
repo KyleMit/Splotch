@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 // The dev ports are declared across a TS config, a TOML file, npm scripts, and
 // three Node drivers — surfaces that cannot import from each other — so the
 // agreement gets a drift guard instead of the "keep in sync" comments it used to
-// rely on. A silent disagreement is nasty in a specific way: dev:kill stops
+// rely on. A silent disagreement is nasty in a specific way: dev:stop stops
 // killing the listener it names, and the stale server it leaves behind then
 // fails `strictPort` on the next `npm run dev`; the live-reload and tunnel
 // consumers instead point a device or a relay at a port nothing is serving.
@@ -25,7 +25,7 @@ const match = (source, pattern, label) => {
 const vitePort = match(viteConfig, /^\s*port: (\d+),$/m, 'vite server.port');
 const netlifyPort = match(netlifyToml, /^\s*port = (\d+)$/m, 'netlify [dev].port');
 const killedPorts = (
-  read('tools/dev-kill.mjs')
+  read('tools/stop-dev-servers.mjs')
     .match(/const DEV_PORTS = \[([^\]]+)]/)?.[1]
     .match(/\d+/g) ?? []
 ).map(Number);
@@ -36,10 +36,13 @@ const killedPorts = (
 // below, and only for the ports a description actually names.
 const vitePortConsumers = [
   ['netlify [dev].targetPort', () => match(netlifyToml, /^\s*targetPort = (\d+)$/m)],
-  ['cloud-tunnel.mjs PORT', () => match(read('tools/cloud-tunnel.mjs'), /^const PORT = (\d+);$/m)],
   [
-    'android-emulator.mjs --port',
-    () => match(read('tools/android/android-emulator.mjs'), /'--port',\s*'(\d+)'/),
+    'start-cloud-tunnel.mjs PORT',
+    () => match(read('tools/start-cloud-tunnel.mjs'), /^const PORT = (\d+);$/m),
+  ],
+  [
+    'run-emulator.mjs --port',
+    () => match(read('tools/mobile/android/run-emulator.mjs'), /'--port',\s*'(\d+)'/),
   ],
   ['ios:live --port', () => Number(packageJson.scripts['ios:live'].match(/--port (\d+)/)[1])],
   [
@@ -65,7 +68,7 @@ describe('dev ports agree across their declarations', () => {
   });
 
   it('describes the killed ports accurately in scripts-info', () => {
-    const description = packageJson['scripts-info']['dev:kill'];
+    const description = packageJson['scripts-info']['dev:stop'];
     for (const port of killedPorts) expect(description).toContain(String(port));
   });
 });

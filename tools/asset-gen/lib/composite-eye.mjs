@@ -35,7 +35,7 @@
 import sharp from 'sharp';
 import { BAND_BLIND_INK_FRAC, scoreEyeFill, STRONG_LIGHT_SIDE } from './eye-fill.mjs';
 import { erodeCross } from './morphology.mjs';
-import { median } from './stats.mjs';
+import { median } from './image-stats.mjs';
 
 // A pupil check is anchored only at a CONFIRMED eye, using the same light-fill
 // oracle judgeNightEyes trusts — so shape blanket-checks and segment dots (which

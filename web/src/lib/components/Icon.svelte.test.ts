@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { COLOR_ICONS } from './Icon.svelte';
 import { iconNameFromPath } from './iconTypes';
 import type { CommonIconName } from './iconTypes';
-import { isSpot, paintedValues } from '../../../../tools/icons/lib/iconChroma.mjs';
+import { isSpot, paintedValues } from '../../../../tools/icons/lib/icon-chroma.mjs';
 import { themes } from '../design/tokens';
 
 // Guards the hand-maintained COLOR_ICONS allowlist (Icon.svelte) against a

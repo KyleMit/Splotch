@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { DIRECT_PROVIDER_PATHS } from '../direct-provider-skills.mjs';
+import { DIRECT_PROVIDER_PATHS } from '../lib/direct-provider-skills.mjs';
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
 

@@ -1,5 +1,5 @@
 // Registration-nudge undo shared by the Gemini image generators
-// (gen-coloring-fills.mjs, gen-coloring-fills-dark.mjs, normalize-outline-strokes.mjs).
+// (gen-light-fills.mjs, gen-night-fills.mjs, normalize-outline-strokes.mjs).
 //
 // The model sometimes returns its output nudged a few pixels (usually rightward)
 // even though it otherwise lines up perfectly. alignToSource detects that global

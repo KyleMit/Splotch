@@ -14,8 +14,8 @@ pierce Svelte's style scoping, so every component references them directly via `
 1. **Never edit `web/src/tokens.css`** — it's generated. Edit `tokens.ts`, run `npm run gen:tokens`,
    commit both. CI fails on drift (`npm run gen:tokens:check`). Nothing regenerates it
    automatically: `npm run dev` and the Netlify build both serve the *committed* file (unlike
-   `gen:icons`/`gen:releases` it's deliberately not in `prebuild` — the Netlify build runs on the
-   platform-default Node, which may lack `--experimental-strip-types`), so a `tokens.ts` edit is
+   `gen:icon-names`/`gen:releases` it's deliberately not in `prebuild` — the Netlify build runs on
+   the platform-default Node, which may lack `--experimental-strip-types`), so a `tokens.ts` edit is
    invisible until you rerun `gen:tokens`. If a token change doesn't show up, that's why.
 2. **No raw values where a token exists.** In component `<style>` blocks, don't write hex colors, px
    radii, px font sizes, shadow literals, or easing curves that a token already covers — use the
@@ -218,12 +218,13 @@ Two consequences worth knowing before styling one:
 * **A single path inside a spot icon can still be themed** (ADR-0102). Declare it in
   `web/src/lib/design/iconTokens.ts` — keyed by icon then part, with a `light` and a `dark` hex —
   run `npm run gen:tokens`, and paint the path with
-  `style="fill:var(--icon-<icon>-<part>,#lightHex)"`; then `npm run img:audit`. The fallback hex
-  must equal the `light` value and every declared part must be referenced by an SVG, both enforced
-  by `web/src/lib/icons/tokenFallback.test.ts`. These are **not** `ThemeTokens` entries and need no
-  `tokenUsage.ts` rule: they are a per-asset lookup table, and no component style may reference one.
-  Reach for it when a path is illegible on a theme's grounds — the spot icons rest on `--surface`,
-  `--surface-2` *and* the near-constant `--brand-solid`, so each theme's colors must clear both.
+  `style="fill:var(--icon-<icon>-<part>,#lightHex)"`; then `npm run optimize:svg-assets`. The
+  fallback hex must equal the `light` value and every declared part must be referenced by an SVG,
+  both enforced by `web/src/lib/icons/tokenFallback.test.ts`. These are **not** `ThemeTokens`
+  entries and need no `tokenUsage.ts` rule: they are a per-asset lookup table, and no component
+  style may reference one. Reach for it when a path is illegible on a theme's grounds — the spot
+  icons rest on `--surface`, `--surface-2` *and* the near-constant `--brand-solid`, so each theme's
+  colors must clear both.
 * **Paper.** The canvas is warm off-white `--paper` under the low-alpha handmade-paper grain
   (`static/icons/handmade-paper.webp`, tiled); dark paper keeps the same grain and changes only the
   color beneath. `--paper-margin` is the flat tone behind the rotation-locked sheet.

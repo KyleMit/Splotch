@@ -69,7 +69,7 @@ Non-`keep` rows first.
 * [`#332`](https://github.com/KyleMit/Splotch/issues/332) — `type:chore` + `area:infra` — *Replace
   archived `capacitor-set-version` in the release script.* Upstream repo is archived (read-only,
   last commit 2023-09-27, single maintainer); the package only edits native version numbers in
-  `tools/release/release.mjs`. Investigation question: is a small in-repo helper (edit
+  `tools/release/cut-release.mjs`. Investigation question: is a small in-repo helper (edit
   `android/app/build.gradle` `versionName`/`versionCode` + iOS `MARKETING_VERSION`/
   `CURRENT_PROJECT_VERSION`) cheaper to own than a dormant dependency?
 
@@ -457,7 +457,8 @@ Non-`keep` rows first.
 ### @playwright/test
 
 * **Version:** `^1.61.1` declared · 1.61.1 locked · dev
-* **Used for:** E2E tests and the perf/screenshot harnesses (`test:e2e`, `perf:*`, `gen:shots`).
+* **Used for:** E2E tests and the perf/screenshot harnesses (`test:e2e`, `perf:*`,
+  `gen:store-assets`).
 * **Source:** npm · [github.com/microsoft/playwright](https://github.com/microsoft/playwright) ·
   published by Microsoft
 * **License:** Apache-2.0
@@ -516,7 +517,8 @@ Non-`keep` rows first.
 ### capacitor-set-version
 
 * **Version:** `^2.2.0` declared · 2.2.0 locked · dev
-* **Used for:** Bumping native app version numbers during release, in `tools/release/release.mjs`.
+* **Used for:** Bumping native app version numbers during release, in
+  `tools/release/cut-release.mjs`.
 * **Source:** npm ·
   [github.com/HausennTechnologies/capacitor-set-version](https://github.com/HausennTechnologies/capacitor-set-version)
   · published by David Krepsky (dkrepsky)
@@ -630,7 +632,7 @@ Non-`keep` rows first.
 ### marked
 
 * **Version:** `^18.0.5` declared · 18.0.5 locked (latest 18.0.6) · dev
-* **Used for:** Rendering release-notes Markdown to HTML in `tools/release/generate-releases.mjs`.
+* **Used for:** Rendering release-notes Markdown to HTML in `tools/release/gen-release-notes.mjs`.
 * **Source:** npm · [github.com/markedjs/marked](https://github.com/markedjs/marked) · published by
   the MarkedJS org
 * **License:** MIT (GitHub reports NOASSERTION — non-SPDX-standard license file)
@@ -737,7 +739,7 @@ Non-`keep` rows first.
 ### svgo
 
 * **Version:** `^4.0.1` declared · 4.0.1 locked (latest 4.0.2) · dev
-* **Used for:** Optimizing shipped/inlined SVGs (`img:audit`/`img:audit:check`).
+* **Used for:** Optimizing shipped/inlined SVGs (`optimize:svg-assets`/`check:svg-assets`).
 * **Source:** npm · [github.com/svg/svgo](https://github.com/svg/svgo) · published by the SVGO team
 * **License:** MIT
 * **Health** (checked 2026-07-17): [22.6k stars](https://github.com/svg/svgo) · latest 4.0.2 on
@@ -904,19 +906,19 @@ tag pins are conventional. No action pins to a SHA today.
 | Tool                           | Where                                                      | Source / provisioning                                                                                                                      | Verdict                                                                                                   |
 | ------------------------------ | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
 | `netlify-cli`                  | `dev:netlify` (`netlify dev --cwd web`)                    | **global install** (`npm i -g netlify-cli`), deliberately not a project dep — `tools/check-netlify-cli.mjs` guards its presence/login/link | keep — kept out of the tree on purpose (heavy CLI); the guard documents the requirement                   |
-| Local port cleanup             | `dev:kill` (`node tools/dev-kill.mjs`)                     | repo-local script (replaced the unpinned `npx kill-port` fetch); SIGTERM → verify → SIGKILL → verify on the two dev ports                  | keep — runs project code without a registry lookup; `lsof` is the supported macOS/Linux system dependency |
+| Local port cleanup             | `dev:stop` (`node tools/stop-dev-servers.mjs`)             | repo-local script (replaced the unpinned `npx kill-port` fetch); SIGTERM → verify → SIGKILL → verify on the two dev ports                  | keep — runs project code without a registry lookup; `lsof` is the supported macOS/Linux system dependency |
 | Playwright browsers (Chromium) | `test.yml` (`npx playwright install --with-deps chromium`) | browser **binaries** downloaded by the `@playwright/test` package (in `package.json`); cached by lockfile version in CI                    | keep — versioned by the npm package; the binaries are a separate download, not a separate dep             |
 
 ### System toolchains (native builds & tests — no npm range)
 
-| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                            | Verdict                                                                                                                                                                                                                              |
-| ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Node.js                      | all CI jobs, all local dev                         | `actions/setup-node@v6` pins **node-version: 24** in CI                                                                                                       | keep — pinned in CI; keep local dev aligned                                                                                                                                                                                          |
-| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                       | keep — Android build requirement, pinned                                                                                                                                                                                             |
-| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `tools/android/gradle.mjs` (ADR-0017); patched into `@capacitor/cli` for Windows (ADR-0011) | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
-| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**api-level: 33, google_apis, x86_64**) in CI; local Android Studio SDK otherwise                                | keep — API 33 emulator target pinned in CI                                                                                                                                                                                           |
-| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                         | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                      |
-| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed by `.github/actions/install-maestro` via `curl -fsSL https://get.maestro.mobile.dev \| bash`, pinned to `MAESTRO_VERSION=2.4.0`                     | keep — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream; CI uses the installer’s documented `MAESTRO_VERSION` interface for reproducible native smoke runs. See the `testing` skill. |
+| Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                                       | Verdict                                                                                                                                                                                                                              |
+| ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Node.js                      | all CI jobs, all local dev                         | `actions/setup-node@v6` pins **node-version: 24** in CI                                                                                                                  | keep — pinned in CI; keep local dev aligned                                                                                                                                                                                          |
+| JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                                  | keep — Android build requirement, pinned                                                                                                                                                                                             |
+| Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `tools/mobile/android/run-gradle.mjs` (ADR-0017); patched into `@capacitor/cli` for Windows (ADR-0011) | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
+| Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**api-level: 33, google_apis, x86_64**) in CI; local Android Studio SDK otherwise                                           | keep — API 33 emulator target pinned in CI                                                                                                                                                                                           |
+| Xcode / `xcodebuild`         | `ios:*` scripts, `ios-deploy.yml`                  | macOS runner's system Xcode (image-provided); no explicit version pin in the workflow                                                                                    | monitor — iOS builds float on the runner's default Xcode; pin the Xcode version if a toolchain bump ever breaks a release build                                                                                                      |
+| Maestro                      | `test:android:device`, `test:ios`, native smoke CI | installed by `.github/actions/install-maestro` via `curl -fsSL https://get.maestro.mobile.dev \| bash`, pinned to `MAESTRO_VERSION=2.4.0`                                | keep — [14.9k stars](https://github.com/mobile-dev-inc/Maestro) · active · Apache-2.0, healthy upstream; CI uses the installer’s documented `MAESTRO_VERSION` interface for reproducible native smoke runs. See the `testing` skill. |
 
 **Method note:** these live outside the lockfile, so refresh them by re-reading
 `.github/workflows/`, the `package.json` scripts, and `tools/*.mjs` — not `npm view`. Version facts

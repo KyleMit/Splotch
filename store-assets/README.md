@@ -54,13 +54,13 @@ Screenshots are captured from the **real running app** (not mockups), so they al
 ships. From the repo root:
 
 ```bash
-npm run gen:shots
+npm run gen:store-assets
 ```
 
-The script (`tools/app-driver/store-shots.mjs`) starts a dev server on port 4173 (or reuses one
-already there), drives the app in headless Chromium at the exact target pixel sizes per store, draws
-on the canvas, opens each dialog, and also renders the Play feature graphic from an inline HTML
-template using `icon-512.png`.
+The script (`tools/marketing-assets/gen-store-assets.mjs`) starts a dev server on port 4173 (or
+reuses one already there), drives the app in headless Chromium at the exact target pixel sizes per
+store, draws on the canvas, opens each dialog, and also renders the Play feature graphic from an
+inline HTML template using `icon-512.png`.
 
 `icon-512.png` is `assets/icon.png` (the 1024² source) resized to 512².
 

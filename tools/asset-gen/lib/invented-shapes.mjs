@@ -22,7 +22,7 @@ import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF } from './outline-match.mjs';
 import { floodBackground } from './regions.mjs';
-import { median } from './stats.mjs';
+import { median } from './image-stats.mjs';
 
 // Geometry constants are inherited unchanged from scoreDrift/scoreNightness
 // (lib/night-scores.mjs) so this detector sees the same picture the gates do; the
