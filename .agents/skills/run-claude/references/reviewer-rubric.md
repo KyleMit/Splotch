@@ -14,6 +14,10 @@ authorized head. Treat the appended skill's checkout setup as complete: do not c
 head branch, change another worktree, or substitute a different base. Use the exact OID range in the
 positional prompt.
 
+Announce each major phase in one short plain-text sentence before starting it — reading the diff,
+building or running tests, drafting findings, posting the review — so the launching process can
+stream your progress while you work.
+
 Follow the appended `leave-pr-review` skill in `mode=post-comments`. The actual base and head OIDs
 in the PR metadata define the complete review range. Re-read the head OID immediately before
 posting. Submit at most one GitHub review with event `COMMENT`; put actionable findings in anchored

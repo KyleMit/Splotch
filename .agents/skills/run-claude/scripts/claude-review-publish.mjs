@@ -8,6 +8,7 @@ import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { assertNoApiBillingEnvironment } from './splotch-claude-subscription-auth.mjs';
+import { runClaudeStreaming } from './splotch-claude-stream.mjs';
 
 export const REVIEWER_PATHS = {
   claude: '/Users/kylemit/.local/bin/claude',
@@ -18,10 +19,15 @@ export const REVIEWER_PATHS = {
   rubric: '/Users/kylemit/.config/splotch-run-claude/reviewer-rubric.md',
   manifest: '/Users/kylemit/.config/splotch-run-claude/manifest.json',
   subscriptionAuth: '/Users/kylemit/.local/libexec/splotch-claude-subscription-auth.mjs',
+  stream: '/Users/kylemit/.local/libexec/splotch-claude-stream.mjs',
+  streamLogDirectory: '/private/tmp',
 };
 
 const REPOSITORY = 'KyleMit/Splotch';
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
+// Longer than the runner's default: an empirical review legitimately sits silent while a build or
+// targeted test run executes between a tool_use event and its tool_result.
+const REVIEW_STALL_TIMEOUT_MS = 30 * 60 * 1000;
 
 export function parseReviewerArgs(argv) {
   const { values, positionals } = parseArgs({
@@ -74,7 +80,13 @@ function digest(path) {
 }
 
 function verifyInstallation(paths) {
-  for (const path of [paths.settings, paths.rubric, paths.manifest, paths.subscriptionAuth]) {
+  for (const path of [
+    paths.settings,
+    paths.rubric,
+    paths.manifest,
+    paths.subscriptionAuth,
+    paths.stream,
+  ]) {
     if (!existsSync(path)) throw new Error(`missing trusted reviewer file: ${path}`);
   }
   const manifest = JSON.parse(readFileSync(paths.manifest, 'utf8'));
@@ -84,7 +96,8 @@ function verifyInstallation(paths) {
     manifest.reviewerSha256 !== digest(wrapperPath) ||
     manifest.settingsSha256 !== digest(paths.settings) ||
     manifest.rubricSha256 !== digest(paths.rubric) ||
-    manifest.subscriptionAuthSha256 !== digest(paths.subscriptionAuth)
+    manifest.subscriptionAuthSha256 !== digest(paths.subscriptionAuth) ||
+    manifest.streamSha256 !== digest(paths.stream)
   ) {
     throw new Error(
       'trusted reviewer files differ from the installed manifest; reinstall before review'
@@ -206,7 +219,7 @@ function verifyPublishedReview(metadata, reviewMarker, paths) {
   }
 }
 
-export function publishReview(prNumber, paths = REVIEWER_PATHS, environment = process.env) {
+export async function publishReview(prNumber, paths = REVIEWER_PATHS, environment = process.env) {
   assertNoApiBillingEnvironment(environment);
   verifyInstallation(paths);
   const metadata = readMetadata(prNumber, paths);
@@ -230,31 +243,43 @@ export function publishReview(prNumber, paths = REVIEWER_PATHS, environment = pr
     ]);
 
     const prompt = buildAuthorizationPrompt(metadata, checkoutPath, reviewMarker);
-    run(
-      paths.claude,
-      [
-        '--print',
-        '--permission-mode',
-        'auto',
-        '--tools',
-        'default',
-        '--safe-mode',
-        '--settings',
-        paths.settings,
-        '--no-chrome',
-        '--strict-mcp-config',
-        '--no-session-persistence',
-        '--output-format',
-        'json',
-        '--append-system-prompt-file',
-        paths.rubric,
-        '--model',
-        'opus',
-        '--effort',
-        'high',
-        prompt,
-      ],
-      { cwd: checkoutPath, env: environment }
+    const logPath = join(
+      paths.streamLogDirectory,
+      `splotch-claude-review-pr${prNumber}-${randomUUID()}.ndjson`
+    );
+    console.error(`stream log: ${logPath}`);
+    await runClaudeStreaming(
+      {
+        command: paths.claude,
+        args: [
+          '--print',
+          '--permission-mode',
+          'auto',
+          '--tools',
+          'default',
+          '--safe-mode',
+          '--settings',
+          paths.settings,
+          '--no-chrome',
+          '--strict-mcp-config',
+          '--no-session-persistence',
+          '--output-format',
+          'stream-json',
+          '--verbose',
+          '--append-system-prompt-file',
+          paths.rubric,
+          '--model',
+          'opus',
+          '--effort',
+          'high',
+          prompt,
+        ],
+        cwd: checkoutPath,
+        env: environment,
+        logPath,
+        onProgress: (line) => console.error(line),
+      },
+      REVIEW_STALL_TIMEOUT_MS
     );
 
     const finalMetadata = readMetadata(prNumber, paths);
@@ -278,7 +303,7 @@ export function publishReview(prNumber, paths = REVIEWER_PATHS, environment = pr
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    publishReview(parseReviewerArgs(process.argv.slice(2)));
+    await publishReview(parseReviewerArgs(process.argv.slice(2)));
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     process.exit(1);

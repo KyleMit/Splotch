@@ -1,6 +1,6 @@
 ---
 name: run-claude
-description: Launch a fresh, subscription-authenticated local Claude Code process from Codex through fixed permission-reviewed wrappers. Use when the user explicitly asks Codex to run Claude, wants an independent Claude second opinion or adversarial review, or another Codex-only workflow needs a Claude subprocess; supports output-only prompts, read-only repository inspection, and the fixed Splotch PR-review publisher.
+description: Launch a fresh, subscription-authenticated local Claude Code process from Codex through fixed permission-reviewed wrappers. Use when the user explicitly asks Codex to run Claude, wants an independent Claude second opinion or adversarial review, or another Codex-only workflow needs a Claude subprocess; supports output-only prompts, read-only repository inspection, and the fixed Splotch PR-review publisher, with streamed per-event progress and resumable multi-turn sessions.
 ---
 
 # Run Claude
@@ -101,7 +101,8 @@ gets only `Read`, `Grep`, and `Glob`; it cannot run Bash, browse, edit, or publi
 ```
 
 The runner accepts `--model sonnet|opus` and `--effort low|medium|high`; defaults are `sonnet` and
-`high`. Do not use this profile when empirical tests are required.
+`high`. It also accepts the session controls described under Multi-turn sessions below. Do not use
+this profile when empirical tests are required.
 
 Never interpolate prompt text into the shell command. The prompt-file boundary prevents arbitrary
 task content from becoming shell syntax before the wrapper starts.
@@ -117,7 +118,52 @@ exact Splotch PR:
 
 This profile creates a disposable worktree, gives Claude its normal empirical-review tools under
 Auto + safe mode, injects the trusted `leave-pr-review` rubric, and permits one `COMMENT` review on
-the validated base/head OIDs. It never approves, requests changes, merges, commits, or pushes.
+the validated base/head OIDs. It never approves, requests changes, merges, commits, or pushes. It
+streams progress like the runner (see Intermediate feedback); the review itself stays one-shot and
+is never resumable — its disposable worktree is removed when it exits.
+
+## Intermediate feedback
+
+Every wrapper invocation streams progress while Claude works, so a long run is observable instead of
+silent. stderr carries one compact timestamped line per stream event — session start, each tool
+call, assistant text, tool errors, and the final result — and the first line names an NDJSON log
+under `/private/tmp` holding every raw event for later inspection. stdout stays machine-readable: it
+carries only the final result JSON.
+
+Treat an `exec_command` yield during a run as a checkpoint, not a failure: read the new progress
+lines and decide whether to keep waiting. For a long run such as a PR review, prefer launching the
+wrapper once through the host-execution boundary with output redirected to a file, then polling that
+file with plain sandboxed reads (`tail -n 20 <file>`) so observation never re-crosses the approval
+boundary.
+
+If the stream stays silent past the stall timeout declared in `splotch-claude-stream.mjs` (the PR
+publisher uses its own longer bound for silent build/test gaps), the wrapper terminates Claude and
+exits nonzero, naming the last event and the full log path — a hung process can no longer look like
+a slow one.
+
+## Multi-turn sessions
+
+The runner is one-shot by default: no session persists. Pass `--persist` on the first invocation to
+create a resumable session; the wrapper prints `session id: <uuid>` on stderr (the id is also in the
+result JSON). Send each follow-up turn with a fresh prompt file:
+
+```sh
+/Users/kylemit/.local/libexec/splotch-claude-run.mjs \
+  --resume <session-id> \
+  --prompt-file /private/tmp/splotch-claude-prompt-<unique>.md
+```
+
+The wrapper resumes only sessions recorded in its own ledger. Each resumed turn selects a profile as
+usual, and the only permitted widening is `ask` → `inspect` — the resume-with-widened-grant path:
+when an `ask` session reports it needs repository evidence, resume it with
+`--profile inspect --cwd <absolute-splotch-checkout>` instead of starting over. Any other profile
+transition is rejected.
+
+When the task that created a session concludes, end it so no transcript outlives the work:
+
+```sh
+/Users/kylemit/.local/libexec/splotch-claude-run.mjs --end-session <session-id>
+```
 
 ## Consuming this skill
 

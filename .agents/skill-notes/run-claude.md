@@ -73,9 +73,57 @@ status, branch names, and exact OIDs. Its hidden base/head marker makes publicat
 lets `address-pr-review mode=autonomous` recognize the independent review even when Claude and Codex
 share one GitHub identity.
 
+## Intermediate feedback and multi-turn resume
+
+The original wrappers ran `spawnSync` with `--output-format json`, so a 5–20 minute PR review was
+indistinguishable from a hung process until exit. The wrappers now run Claude with
+`--output-format stream-json --verbose`, reduce each NDJSON event to one compact stderr line, tee
+the raw stream to a log under `/private/tmp`, and keep stdout as final-result JSON only. Raw
+stream-json is deliberately not forwarded: tool_result events embed entire file contents, which
+would poison the parent agent's context over a long run. A stall watchdog in the shared
+`splotch-claude-stream.mjs` module kills the child after a long silent gap — the bound lives in the
+wrapper rather than the orchestrator because a parent agent cannot be relied on to keep polling. The
+publisher's bound is longer because a build or test run emits nothing between `tool_use` and
+`tool_result`.
+
+Streaming also narrows the gap that justified rejecting a generic full-tool profile: once a wrapper
+runs outside Codex's sandbox, Codex could not inspect Claude's nested operations after approving the
+wrapper. With per-event progress, every nested tool call is visible to the orchestrator as it
+happens.
+
+Multi-turn interaction uses session resume (`--persist` to create, `--resume` to continue,
+`--end-session` to clean up), not a live `--input-format stream-json` stdin channel. Resume keeps
+every turn a discrete wrapper invocation that Codex's approval policy and the prompt-file boundary
+review individually, and a crash between turns loses nothing; a live stdin channel would make the
+wrapper a long-lived proxy whose later turns bypass the policy layer, hand-rolls what is effectively
+the Agent SDK's undocumented wire protocol, and loses the whole conversation if the exec session
+drops. A `--permission-prompt-tool` MCP handshake for mid-turn permission grants was considered and
+deferred — resume-with-widened-grant covers the need at turn granularity.
+
+The widened grant is bounded to the existing profile vocabulary: a resumed session may go `ask` →
+`inspect` and nothing else. Arbitrary `--allowedTools` widening on resume was rejected for the same
+reason as the generic profile — the fixed profiles are the reviewed authority surface. The runner's
+session records exist so `--resume` and `--end-session` can only reach sessions this wrapper
+created; without them, resume would be a door into any local Claude session and end-session could
+delete a human's interactive transcript. The records are one owner-only file per session rather than
+one shared ledger JSON — the first review of this design reproduced concurrent wrappers losing each
+other's entries through the shared file's read-modify-write cycle. The same review hardened the
+stream log (owner-only, exclusively created, because raw tool_result events embed file contents into
+a listable temp directory) and the watchdog kill (Claude runs detached at the head of its own
+process group, terminated group-wide with a bounded SIGKILL escalation, because SIGTERM to the
+Claude PID alone leaves a hung tool grandchild running — the vite-server.mjs precedent). The PR
+publisher stays one-shot: its disposable worktree teardown is part of its contract, and a resumable
+reviewer would outlive the checkout its context assumes.
+
 Open validation questions:
 
 * Whether Claude adds a stable machine-readable subscription field that should become a required
   health-check assertion.
 * Whether a future local empirical profile can permit a useful test vocabulary without allowing
   untrusted package scripts to turn that vocabulary into arbitrary host execution.
+* The widened-grant path resumes an `ask` session (created with cwd `~/.config/splotch-run-claude`)
+  from an `inspect` checkout cwd, which relies on Claude's machine-wide session lookup (added in
+  v2.1.223); on an older CLI the resume may fail to find the session. Unvalidated against the
+  installed CLI version.
+* Whether the reviewer's phase-announcement rubric line produces useful milestones in practice or
+  gets drowned out by tool-event lines.
