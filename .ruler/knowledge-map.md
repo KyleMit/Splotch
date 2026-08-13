@@ -1,18 +1,20 @@
 ## Where knowledge lives
 
-On-demand **skills** (consult when the topic comes up — don't guess from memory). Claude Code
-auto-invokes them by description (or via `/name`); agents without skill support should read the
-skill's `SKILL.md` directly from `.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are
-generated from `.ruler/`; managed runner forks may be produced from `.ruler/skill-forks/<runner>/`.
-Registered direct provider packages are different: `burn-down-audits` is independently maintained
-under `.claude/` and `.agents/`, as is `analyze-session-transcripts` with format-specific
-implementations; Codex-only `run-claude` and `implement-issue-stack` live only under `.agents/`. See
+On-demand **skills** (consult when the topic comes up — don't guess from memory). Skill-aware
+runners select them by description, and each has its own explicit-invocation sigil — Claude Code
+`/name`, Codex `$name` — so shared prose here names a skill bare (the `build` skill) and leaves the
+sigil to the runner; agents without skill support should read the skill's `SKILL.md` directly from
+`.agents/skills/<name>/` (or `.claude/skills/<name>/`). Most are generated from `.ruler/`; managed
+runner forks may be produced from `.ruler/skill-forks/<runner>/`. Registered direct provider
+packages are different: `burn-down-audits` is independently maintained under `.claude/` and
+`.agents/`, as is `analyze-session-transcripts` with format-specific implementations; Codex-only
+`run-claude` and `implement-issue-stack` live only under `.agents/`. See
 `tools/ruler/lib/direct-provider-skills.mjs` for the authoritative registry.
 
 | Skill                                   | Read it before…                                                                                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `architecture`                          | navigating unfamiliar code, placing new code, naming UI elements                                                                                                                                                         |
-| `design`                                | writing or changing component styles, picking a color/size/shadow/easing, or writing user-facing copy — the token vocabulary, primitives, voice, and the public `/design` styleguide                                     |
+| `design`                                | writing or changing component styles, picking a color/size/shadow/easing, or writing user-facing copy — the token vocabulary, primitives, voice, and the public `design` styleguide                                      |
 | `api`                                   | adding, changing, or calling any `/api/*` endpoint                                                                                                                                                                       |
 | `mobile`                                | touching anything Android/iOS/Capacitor, or store-release work                                                                                                                                                           |
 | `testing`                               | writing/running tests beyond the basics, or debugging CI failures                                                                                                                                                        |
@@ -26,18 +28,18 @@ implementations; Codex-only `run-claude` and `implement-issue-stack` live only u
 
 That table covers the highest-traffic skills. The **full catalog** — every skill, grouped by the
 workflow it belongs to and how related skills chain together (the audit lifecycle, the PR flow,
-handoffs, ADRs) — is the `skills-guide` skill (`/skills-guide`). Consult it when unsure which skill
-applies or how skills relate.
+handoffs, ADRs) — is the `skills-guide` skill. Consult it when unsure which skill applies or how
+skills relate.
 
 **Prefer skills over slash commands.** Reusable agent workflows are normally authored in
 `.ruler/skills/<name>/SKILL.md` or, when managed implementations must be isolated, as complete
 packages under `.ruler/skill-forks/<runner>/`; only packages registered in
 `tools/ruler/lib/direct-provider-skills.mjs` are authored directly in provider trees. Do not create
 workflows as commands in `.claude/commands/`. A skill with a good `description` is both
-user-invocable (`/name`) and model-invocable, so Claude can reach for it on its own — a plain
-command can't. When authoring a new reusable workflow, create a skill: give it a `name` and a
-`description` that says both what it does and when to use it (add `disable-model-invocation: true`
-if it should stay user-only), and **register it in the `skills-guide` skill**
+user-invocable and model-invocable, so the agent can reach for it on its own — a plain command
+can't. When authoring a new reusable workflow, create a skill: give it a `name` and a `description`
+that says both what it does and when to use it (add `disable-model-invocation: true` if it should
+stay user-only), and **register it in the `skills-guide` skill**
 (`.ruler/skills/skills-guide/SKILL.md`) under the group it belongs to — same when renaming or
 deleting a skill. If the user asks to create a *command*, ask whether they'd like a skill instead
 before making one.
@@ -79,26 +81,26 @@ then moves it to the project's `ToDo` status.
 
 Remaining `docs/`:
 
-| File                             | When to read it                                                                                                                                                                                                                                                                                                                                                                      |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `docs/ARCHITECTURE.md`           | Tech stack, the `web/src/lib/` source map, the route/render table, and the UI element glossary — the `architecture` skill routes here                                                                                                                                                                                                                                                |
-| `docs/API.md`                    | The full `/api/*` contract: request/response shapes, auth, CORS, and per-endpoint rate limits — the `api` skill routes here                                                                                                                                                                                                                                                          |
-| `docs/TESTING.md`                | Every test layer, its command, and what CI runs it on; flake-resistant spec authoring; Maestro setup — the `testing` skill routes here                                                                                                                                                                                                                                               |
-| `docs/MOBILE/`                   | `native.md` (how the Capacitor build works, storage, privacy posture), `android.md`, `ios.md` — toolchains, build/sign/run, and the store release + kids-compliance checklists; the `mobile` skill routes here                                                                                                                                                                       |
-| `docs/PROFILING.md`              | The `npm run perf:*` harness — which command profiles what, how capture works, and reading a report into a bottleneck; the `profiling` skill routes here                                                                                                                                                                                                                             |
-| `docs/PROFILING-IPAD.md`         | The physical-iPad profiling runbook — the highest-fidelity target (real WebKit + Apple GPU + 120 Hz); read before any on-device perf capture                                                                                                                                                                                                                                         |
-| `docs/COMPATIBILITY.md`          | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                                                                                                                                                                                    |
-| `docs/CONTRIBUTING.md`           | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                                                                                                                                                                          |
-| `docs/ISSUE-WORKFLOW.md`         | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                                                                                                                                                                                       |
-| `docs/AUDIT.md`                  | Transient staging for audit-skill findings (`/code-audit`, `/extract-audit`, `lighthouse-audit`, `/session-audit`); `/vet-audits` drains it into `type:audit` GitHub issues, which `/fix-audits` burns down — or, for a backlog of hundreds, the `burn-down-audits` skill clears it in bulk. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
-| `docs/AUDIT-LOG.md`              | Committable history of every audit-skill run (index table of date · audit, linking to a per-run summary section)                                                                                                                                                                                                                                                                     |
-| `docs/DEPENDABOT.md`             | How dependency bumps arrive and get reviewed — the Dependabot config, the Claude auto-review workflow, its one-time secret setup, and why Dependabot-triggered runs fail silently when misconfigured                                                                                                                                                                                 |
-| `docs/PROMPTS.md`                | Reusable AI art prompts for assets                                                                                                                                                                                                                                                                                                                                                   |
-| `tools/store-drawings/README.md` | How store free-draw SVG authoring inputs become static named pointer-instruction functions, how colors and widths are selected, and how SVG→points→live-app fidelity is evaluated                                                                                                                                                                                                    |
-| `docs/scratchpad/`               | Retained investigation narratives and intermediate evidence that explain how a complex result was reached; keep them when later ADRs depend on the chronology, and update stale thresholds or provenance rather than treating them as live plans                                                                                                                                     |
-| `docs/CLOUD/Claude.md`           | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                                                                                                                                                                                    |
-| `docs/CLOUD/Codex.md`            | Configuring the Codex Cloud environment, including the manually synced setup and maintenance scripts                                                                                                                                                                                                                                                                                 |
-| `docs/handoff/`                  | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by `/create-handoff`, consumed by `/resume-handoff`                                                                                                                                                                                                                                            |
+| File                             | When to read it                                                                                                                                                                                                                                                                                                                                                                                |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/ARCHITECTURE.md`           | Tech stack, the `web/src/lib/` source map, the route/render table, and the UI element glossary — the `architecture` skill routes here                                                                                                                                                                                                                                                          |
+| `docs/API.md`                    | The full `/api/*` contract: request/response shapes, auth, CORS, and per-endpoint rate limits — the `api` skill routes here                                                                                                                                                                                                                                                                    |
+| `docs/TESTING.md`                | Every test layer, its command, and what CI runs it on; flake-resistant spec authoring; Maestro setup — the `testing` skill routes here                                                                                                                                                                                                                                                         |
+| `docs/MOBILE/`                   | `native.md` (how the Capacitor build works, storage, privacy posture), `android.md`, `ios.md` — toolchains, build/sign/run, and the store release + kids-compliance checklists; the `mobile` skill routes here                                                                                                                                                                                 |
+| `docs/PROFILING.md`              | The `npm run perf:*` harness — which command profiles what, how capture works, and reading a report into a bottleneck; the `profiling` skill routes here                                                                                                                                                                                                                                       |
+| `docs/PROFILING-IPAD.md`         | The physical-iPad profiling runbook — the highest-fidelity target (real WebKit + Apple GPU + 120 Hz); read before any on-device perf capture                                                                                                                                                                                                                                                   |
+| `docs/COMPATIBILITY.md`          | The supported browser/device floor, how it's enforced, and the per-API risk register — read before raising the floor, adding a modern web API, or changing a native min-OS target                                                                                                                                                                                                              |
+| `docs/CONTRIBUTING.md`           | Human onboarding doc — keep in sync when conventions change                                                                                                                                                                                                                                                                                                                                    |
+| `docs/ISSUE-WORKFLOW.md`         | How the GitHub issue tracker is organized — issue format, label glossary (`type:*`/`area:*`/`priority:*`/meta), and the triage + won't-do flow                                                                                                                                                                                                                                                 |
+| `docs/AUDIT.md`                  | Transient staging for audit-skill findings (the `code-audit`, `extract-audit`, `lighthouse-audit`, and `session-audit` skills); `vet-audits` drains it into `type:audit` GitHub issues, which `fix-audits` burns down — or, for a backlog of hundreds, the `burn-down-audits` skill clears it in bulk. See `.claude/audit-conventions.md` for the audit-skill inventory and shared conventions |
+| `docs/AUDIT-LOG.md`              | Committable history of every audit-skill run (index table of date · audit, linking to a per-run summary section)                                                                                                                                                                                                                                                                               |
+| `docs/DEPENDABOT.md`             | How dependency bumps arrive and get reviewed — the Dependabot config, the Claude auto-review workflow, its one-time secret setup, and why Dependabot-triggered runs fail silently when misconfigured                                                                                                                                                                                           |
+| `docs/PROMPTS.md`                | Reusable AI art prompts for assets                                                                                                                                                                                                                                                                                                                                                             |
+| `tools/store-drawings/README.md` | How store free-draw SVG authoring inputs become static named pointer-instruction functions, how colors and widths are selected, and how SVG→points→live-app fidelity is evaluated                                                                                                                                                                                                              |
+| `docs/scratchpad/`               | Retained investigation narratives and intermediate evidence that explain how a complex result was reached; keep them when later ADRs depend on the chronology, and update stale thresholds or provenance rather than treating them as live plans                                                                                                                                               |
+| `docs/CLOUD/Claude.md`           | Running/previewing the app in a Claude Code on the web cloud session, and its network constraints                                                                                                                                                                                                                                                                                              |
+| `docs/CLOUD/Codex.md`            | Configuring the Codex Cloud environment, including the manually synced setup and maintenance scripts                                                                                                                                                                                                                                                                                           |
+| `docs/handoff/`                  | Transient session-to-session transfer packets — see `docs/handoff/CLAUDE.md`. Written by the `create-handoff` skill, consumed by `resume-handoff`                                                                                                                                                                                                                                              |
 
 Committed run outputs (contact sheets, Lighthouse reports, model/prompt tests) live in
 **`/scrapbook`** — a keeper's home separate from `docs/`, published live via GitHub Pages (the name
@@ -116,12 +118,12 @@ consulting them. One carve-out: decisions about the **asset-generation pipeline*
 coloring fills) live beside the pipeline as un-numbered records in `tools/asset-gen/docs/` — write
 new ones there, not as numbered ADRs (the ADR index marks the ones that moved).
 
-**When a significant decision is made or confirmed:** use `/create-adr` to document it. A decision
-is significant if it chose one approach over real alternatives, has non-obvious consequences, or
-encodes a constraint a future contributor would want to understand.
+**When a significant decision is made or confirmed:** use the `create-adr` skill to document it. A
+decision is significant if it chose one approach over real alternatives, has non-obvious
+consequences, or encodes a constraint a future contributor would want to understand.
 
 **At the end of any session that touched architecture, testing, infrastructure, or build tooling:**
-briefly consider running `/update-adrs` to catch anything that changed.
+briefly consider running the `update-adrs` skill to catch anything that changed.
 
 ADRs live in the repo and are committed alongside the code they describe. They are not internal
 memory — they're part of the project.
@@ -131,13 +133,13 @@ memory — they're part of the project.
 Claude Code's auto-memory system (`memory/`) and `docs/adrs/` serve different purposes. Use the
 right one:
 
-| What it is                                                             | Where it goes                  |
-| ---------------------------------------------------------------------- | ------------------------------ |
-| Architectural/technical decision (chose X over Y, with context)        | `docs/adrs/` via `/create-adr` |
-| Behavioral feedback (how Claude should work in this project)           | `memory/` — `feedback` type    |
-| User preferences and background                                        | `memory/` — `user` type        |
-| Temporal project context (active incidents, deadlines, in-flight work) | `memory/` — `project` type     |
-| Pointers to external systems                                           | `memory/` — `reference` type   |
+| What it is                                                             | Where it goes                           |
+| ---------------------------------------------------------------------- | --------------------------------------- |
+| Architectural/technical decision (chose X over Y, with context)        | `docs/adrs/` via the `create-adr` skill |
+| Behavioral feedback (how Claude should work in this project)           | `memory/` — `feedback` type             |
+| User preferences and background                                        | `memory/` — `user` type                 |
+| Temporal project context (active incidents, deadlines, in-flight work) | `memory/` — `project` type              |
+| Pointers to external systems                                           | `memory/` — `reference` type            |
 
 If you find yourself about to write a `project`-type memory about a technical approach or tradeoff,
 stop and write an ADR instead — it should be committed to the repo, not stored only in Claude's

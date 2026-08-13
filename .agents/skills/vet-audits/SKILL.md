@@ -62,8 +62,8 @@ with `search_issues` to avoid duplicates — enrich an existing issue rather tha
   substantive type (this is the one sanctioned exception to "one `type:` per issue"; see
   `docs/ISSUE-WORKFLOW.md`). **When the finding is valid but you can't confidently determine the fix
   approach or its right categorization, also add `needs-triage`** so a human confirms direction
-  before `/fix-audits` implements it — file the issue anyway; don't drop a valid finding just
-  because the path forward is fuzzy.
+  before `fix-audits` implements it — file the issue anyway; don't drop a valid finding just because
+  the path forward is fuzzy.
 
 `type:audit` and `needs-triage` are declared in `.github/labels.yml`. If a run needs a label that
 isn't there yet, add it to that file (the `Label Sync` workflow pushes it to GitHub) as part of the
@@ -85,7 +85,7 @@ run.
      it).
 
 Do not implement any of the findings — this is a review pass only. Implementation happens via
-`/fix-audits`, which burns down the open `type:audit` issues you filed.
+`fix-audits`, which burns down the open `type:audit` issues you filed.
 
 ## Verification angles that catch what a plain re-read misses
 
@@ -94,7 +94,7 @@ Learned from past runs — check each, not just "does the cited code still look 
 * **Verify the proposed fix, not just the problem.** A finding can be real while its fix sketch is
   wrong or harmful (e.g. a limiter placed where it would throttle legitimate traffic, or a
   build-time flag that breaks the unit-test contract). Enrich the item with the corrected fix rather
-  than letting `/fix-audits` implement the flawed one.
+  than letting `fix-audits` implement the flawed one.
 * **Verify the trigger scenario.** A race/bug can be real while the finding's named reproduction
   path is implausible; hunt for the *credible* trigger and swap it in — it changes both severity and
   where the fix belongs.

@@ -99,7 +99,9 @@ function resolveVersion(explicit) {
 function readExpected(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
-    fail(`Missing ${file}\nThere is no release notes file for ${version} — run /release first.`);
+    fail(
+      `Missing ${file}\nThere is no release notes file for ${version} — run the release skill first.`
+    );
   }
   const parsed = parseFrontmatter(readFileSync(file, 'utf8'));
   if (!parsed) fail(`${file}: malformed frontmatter`);
@@ -115,7 +117,7 @@ function assertReleaseExists(version) {
   if (probe.status !== 0) {
     fail(
       `No GitHub Release found for v${version}.\n` +
-        `Cut the release first (/release), then build, then publish.\n${probe.stderr ?? ''}`
+        `Cut the release first (the release skill), then build, then publish.\n${probe.stderr ?? ''}`
     );
   }
 }
@@ -189,7 +191,7 @@ export function main(args = process.argv.slice(2)) {
   if (!matched.length) {
     fail(
       `\nNothing to publish — no artifacts built for ${version}.\n` +
-        `Run /build (or ${missing.map((a) => a.rebuild).join(' / ')}) first.`
+        `Run the build skill (or ${missing.map((a) => a.rebuild).join(' / ')}) first.`
     );
   }
 

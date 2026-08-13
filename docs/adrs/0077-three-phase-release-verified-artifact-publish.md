@@ -5,7 +5,7 @@
 ## Context
 
 Shipping Splotch used to be two phases. `npm run release <version>` bumped every version location,
-committed, tagged, pushed, and created the GitHub Release; `/build` then compiled the signed `.aab`
+committed, tagged, pushed, and created the GitHub Release; `build` then compiled the signed `.aab`
 and `.ipa`. To get the bundle onto the GitHub Release, `release.mjs` attached whatever sat at
 `android/app/build/outputs/bundle/release/app-release.aab` at the moment it ran:
 
@@ -22,7 +22,7 @@ if (existsSync(RELEASE_AAB)) {
 N can only be built *after* the commit that sets the version to N — which is the very commit
 `release.mjs` creates. So at `gh release create` time, the only `.aab` that can possibly exist is
 one built for an **earlier** version. The `existsSync` branch treats "a file is at this path" as
-"the bundle for this release is ready", and the two are never the same thing. The `/release` skill
+"the bundle for this release is ready", and the two are never the same thing. The `release` skill
 compounded it by telling the agent to build *before* releasing to get the attachment — producing a
 bundle for the previous version, which is exactly the file that then got attached.
 
@@ -43,15 +43,15 @@ Two independent defects, and fixing either alone leaves the failure reachable:
 
 **Split shipping into three ordered phases, and make the upload verify what it is uploading.**
 
-| Phase      | Command                                          | Produces                                         |
-| ---------- | ------------------------------------------------ | ------------------------------------------------ |
-| 1. Release | `/release` → `npm run release <version>`         | version bump, tag, notes, GitHub Release (empty) |
-| 2. Build   | `/build` → `npm run android:bundle` / `ios:ipa`  | the signed `.aab` / `.ipa` for that version      |
-| 3. Publish | `/publish-artifacts` → `npm run release:publish` | those artifacts attached to the release          |
+| Phase      | Command                                         | Produces                                         |
+| ---------- | ----------------------------------------------- | ------------------------------------------------ |
+| 1. Release | `release` → `npm run release <version>`         | version bump, tag, notes, GitHub Release (empty) |
+| 2. Build   | `build` → `npm run android:bundle` / `ios:ipa`  | the signed `.aab` / `.ipa` for that version      |
+| 3. Publish | `publish-artifacts` → `npm run release:publish` | those artifacts attached to the release          |
 
 **`release.mjs` attaches nothing, unconditionally.** Not "attaches if fresh" — there is no fresh
 artifact to find, so the check itself is what had to go. An empty GitHub Release at the end of phase
-1 is the correct state, and both the script output and the `/release` skill now say so, so the gap
+1 is the correct state, and both the script output and the `release` skill now say so, so the gap
 does not read as a failure someone should "fix" by reintroducing the attach.
 
 **`scripts/publish-artifacts.mjs` verifies every artifact against the release before uploading**,
@@ -81,7 +81,7 @@ and buys nothing over ~90 lines.
   during phase 1, and phase 3 refuses one if there is. Either alone would have caught v1.4.0.
 * The check is on the *artifact*, not the workflow, so it also catches failure modes that have
   nothing to do with ordering — a Gradle build that silently no-ops and leaves the old file, an
-  `xcodebuild -exportArchive` that reuses a stale archive. `/build` now runs the same dry-run
+  `xcodebuild -exportArchive` that reuses a stale archive. `build` now runs the same dry-run
   verification for exactly this reason, rather than reporting success because a file exists.
 * `versionCode` is checked alongside `versionName`, catching a rebuild at the same semver with a
   bumped build number — which store uploads reject and a name-only check would miss.
@@ -93,7 +93,7 @@ and buys nothing over ~90 lines.
   phase 1 and phase 3. Accepted: the alternative is a release that is never briefly wrong because it
   is permanently wrong.
 * An artifact built but never published is a new way to end up with no binary on the release.
-  `/build` ends by pointing at `/publish-artifacts` to close that.
+  `build` ends by pointing at `publish-artifacts` to close that.
 * Verifying an `.ipa` needs `plutil`, so it is macOS-only. Not a real constraint — building one
   requires Xcode anyway — but Android publishing stays fully cross-platform.
 * The protobuf read is a targeted scan for two leaf fields, not a real decoder. It is pinned by

@@ -153,7 +153,7 @@ was still worth spending on: **346 findings cut to 75, the other 271 deleted.** 
 no issues were filed — this pass only decided what deserves to survive.
 
 The question behind it was whether to keep burning down the backlog or drop it and wait for real bug
-reports. The evidence said neither, quite. The value *had* been extracted: two `/vet-audits` passes
+reports. The evidence said neither, quite. The value *had* been extracted: two `vet-audits` passes
 had already drained the severity head into issues #774–#785 and successive burndowns had fixed
 roughly 300, so what remained was by construction the tail — **zero P1, and 183 of 346 (53%) sitting
 in P4/P5.** The composition had also shifted away from the product: only ~108 of the 346 were in
@@ -200,7 +200,7 @@ different name.
 
 **The intake is the actual defect.** 649 raw findings came from a single comprehensive per-section
 sweep with no scope boundary — it audited the workshop as thoroughly as the product. Scope the next
-`/code-audit` to shipped `web/src/` plus surfaces that changed since the last run, so the backlog
+`code-audit` to shipped `web/src/` plus surfaces that changed since the last run, so the backlog
 never again reaches a size that needs a pass like this one.
 
 ## 2026-08-07 · burn-down-audits (run 1)
@@ -308,7 +308,7 @@ Three findings were re-checked against the tree at 0feabf0a8ce7e8e2ca73750ff0ded
 confirmed still live — `web/static/coloring/COLORING-BOOK.md` present, `parseReleaseArgs` still on
 `args.includes`, `checkVersionMismatch` still unguarded. The rest carry the 2026-07-28
 adversarial-verification blockquote or were filed as written. Nothing was dropped: this pass filed
-only, and the remaining 424 findings still await a full `/vet-audits`.
+only, and the remaining 424 findings still await a full `vet-audits`.
 
 ## 2026-08-05 · session-audit
 
@@ -543,7 +543,7 @@ secure-storage clear) was removed: `clearSecret()` is a documented best-effort s
 rejects. One P1 was narrowed — the scribbleGuard gap is real for `ClearButton` but not
 `FullscreenToggle`, which never renders on a WebKit surface, the only place iPadOS Scribble exists.
 Verified findings carry a dated blockquote in `docs/AUDIT.md`; the remaining ~95% are unvalidated
-and still belong to `/vet-audits`.
+and still belong to the `vet-audits` skill.
 
 Eleven P1s, five spot-verified against the code: a `perf:mount` crash (`join` used but never
 imported — invisible because the `no-undef` lint carve-out covers `tools/asset-gen` but not
@@ -861,8 +861,8 @@ off-scale design values vs tokens); god-modules/functions to split (`engine.init
 `__IS_CAPACITOR__`; missing shared helpers (Gemini transport + keep-best-of-N ladder reimplemented
 5–6× in asset-gen bin, CLI arg parsing, canvas pixel scanners, flyout/segmented UI primitives); dead
 code (unused `Button` primitive, orphan icons, vestigial Windows path-normalization post-ADR-0062);
-and stale docs (`.js` references to `.ts` files, `jsdom`→happy-dom). Not yet vetted — run
-`/vet-audits` next.
+and stale docs (`.js` references to `.ts` files, `jsdom`→happy-dom). Not yet vetted — run the
+`vet-audits` skill next.
 
 ## 2026-07-23 · session-audit
 

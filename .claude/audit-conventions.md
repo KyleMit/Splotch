@@ -6,22 +6,22 @@ a shared rule, change it **here** — the skills point at this file on purpose.
 
 ## Inventory
 
-| Audit                       | Invoke                     | What it finds                                                                                             | Writes to                                         |
-| --------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| **code-audit**              | `/code-audit`              | Prioritized perf / readability / maintainability / architecture improvements across the repo              | `docs/AUDIT.md`                                   |
-| **extract-audit**           | `/extract-audit`           | Inline code blocks worth extracting into standalone, named, testable functions                            | `docs/AUDIT.md`                                   |
-| **lighthouse-audit**        | skill (`lighthouse-audit`) | Page-load / Core Web Vitals opportunities on a throttled device                                           | `docs/AUDIT.md`                                   |
-| **dependency-update-audit** | `/dependency-update-audit` | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
-| **dependency-health-audit** | `/dependency-health-audit` | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
-| **session-audit**           | `/session-audit`           | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
-| **workflow-audit**          | `/workflow-audit`          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
+| Audit                       | What it finds                                                                                             | Writes to                                         |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **code-audit**              | Prioritized perf / readability / maintainability / architecture improvements across the repo              | `docs/AUDIT.md`                                   |
+| **extract-audit**           | Inline code blocks worth extracting into standalone, named, testable functions                            | `docs/AUDIT.md`                                   |
+| **lighthouse-audit**        | Page-load / Core Web Vitals opportunities on a throttled device                                           | `docs/AUDIT.md`                                   |
+| **dependency-update-audit** | Out-of-date dependencies, upgraded one at a time with a migration guide                                   | one commit per package                            |
+| **dependency-health-audit** | Inventory + health of every third-party dependency (provenance, license, maintenance, keep/replace)       | `docs/DEPENDENCIES.md`, refreshed in place        |
+| **session-audit**           | Recurring friction from the just-finished session (code traversal / execution) + the tooling fix for each | `docs/AUDIT.md`                                   |
+| **workflow-audit**          | Claude Code config + session-history review vs. current best practice                                     | dated `docs/claude-workflow-review-YYYY-MM-DD.md` |
 
-**Consumers** of `docs/AUDIT.md` (not audits themselves): `/vet-audits` adversarially validates the
+**Consumers** of `docs/AUDIT.md` (not audits themselves): `vet-audits` adversarially validates the
 list against the current code, drops what doesn't hold up, and **files each survivor as a GitHub
-issue** labeled `type:audit` (draining and deleting the file); `/fix-audits` then burns down the
-open `type:audit` issues autonomously on its own branch + PR — it no longer reads `docs/AUDIT.md`.
-For a backlog too large to file issue-by-issue (hundreds of findings), `burn-down-audits` is the
-bulk consumer: a scripted unattended loop (`npm run audit:burndown`, `tools/audit-burndown/`) that
+issue** labeled `type:audit` (draining and deleting the file); `fix-audits` then burns down the open
+`type:audit` issues autonomously on its own branch + PR — it no longer reads `docs/AUDIT.md`. For a
+backlog too large to file issue-by-issue (hundreds of findings), `burn-down-audits` is the bulk
+consumer: a scripted unattended loop (`npm run audit:burndown`, `tools/audit-burndown/`) that
 verifies, implements, and adversarially reviews each finding in isolated provider-native
 subprocesses, deleting each entry in the same commit as its fix — replacing both the vet and fix
 stages for that backlog. Its Claude runbook under `.claude/` and Codex runbook under `.agents/` are
@@ -33,20 +33,20 @@ through GitHub tooling.
 
 The durable audit backlog lives in **GitHub Issues** (open issues labeled `type:audit`), not in a
 standing Markdown file. `docs/AUDIT.md` is the transient hand-off between a producer and
-`/vet-audits`:
+`vet-audits`:
 
 1. **Producer** (`code-audit`, `extract-audit`, `lighthouse-audit`, `session-audit`) → appends raw
    findings to `docs/AUDIT.md` (the merge rules in §1 govern this).
-2. **`/vet-audits`** → validates each finding, removes the ones that don't hold up, and promotes
-   each survivor to a GitHub issue (`type:audit` + applicable `area:*`/`type:*`; add `needs-triage`
-   when the finding is valid but its fix approach is unclear). It deletes `docs/AUDIT.md` once
-   drained. See `docs/ISSUE-WORKFLOW.md` for the label glossary.
-3. **`/fix-audits`** → queries open `type:audit` issues and clears them, one commit per issue,
+2. **`vet-audits`** → validates each finding, removes the ones that don't hold up, and promotes each
+   survivor to a GitHub issue (`type:audit` + applicable `area:*`/`type:*`; add `needs-triage` when
+   the finding is valid but its fix approach is unclear). It deletes `docs/AUDIT.md` once drained.
+   See `docs/ISSUE-WORKFLOW.md` for the label glossary.
+3. **`fix-audits`** → queries open `type:audit` issues and clears them, one commit per issue,
    referencing each so it closes on merge.
 
-So a finding's home is `docs/AUDIT.md` only until `/vet-audits` runs; after that it's a GitHub
-issue. Never treat `docs/AUDIT.md` as a long-lived backlog — between a vet run and the next producer
-it is expected to be absent.
+So a finding's home is `docs/AUDIT.md` only until `vet-audits` runs; after that it's a GitHub issue.
+Never treat `docs/AUDIT.md` as a long-lived backlog — between a vet run and the next producer it is
+expected to be absent.
 
 ## Shared conventions
 
@@ -66,7 +66,7 @@ replace the file wholesale.
 | `#`                                                             | The file title + blockquote                     | One per file (the header block below).                                                          |
 | `## Source: <audit name>`                                       | One section per audit that contributed findings | Append yours; never touch another audit's. Delete the section once its last finding is gone.    |
 | `## <criterion>`                                                | A curated group left behind by a triage pass    | Read-only to producers — never append findings to one. Delete it once its last finding is gone. |
-| `### [Category] Short title`                                    | One finding                                     | The unit `/fix-audits` and `/vet-audits` act on — added, enriched, or removed whole.            |
+| `### [Category] Short title`                                    | One finding                                     | The unit `fix-audits` and `vet-audits` act on — added, enriched, or removed whole.              |
 | `#### Problem` / `#### Proposed solution` / `#### Verification` | The three parts of a finding                    | See the canonical format below.                                                                 |
 
 A **curated group** is what a triage pass leaves behind when it cuts a large backlog down to the
@@ -112,7 +112,7 @@ paste, a profile to capture, the test that should fail before and pass after.
 ```
 
 `#### Problem` and `#### Proposed solution` are required. `#### Verification` is optional at
-creation and is what `/vet-audits` fills in — so the fix agent can reproduce the problem empirically
+creation and is what `vet-audits` fills in — so the fix agent can reproduce the problem empirically
 rather than trusting the write-up. Order findings within a section by impact: highest-value or
 lowest-risk first.
 
@@ -122,21 +122,21 @@ The `docs/AUDIT.md` header (create it if the file doesn't exist yet):
 # Audit
 
 > Transient staging for Splotch's audit skills (`.claude/audit-conventions.md`). Producers **merge**
-> findings here; `/vet-audits` validates them and files the survivors as `type:audit` GitHub issues,
-> then deletes this file. `/fix-audits` burns down those issues. Never treat this file as a
+> findings here; `vet-audits` validates them and files the survivors as `type:audit` GitHub issues,
+> then deletes this file. `fix-audits` burns down those issues. Never treat this file as a
 > long-lived backlog.
 ```
 
 **`docs/AUDIT.md` may not exist.** A missing file is a real, expected state, not an error:
-`/vet-audits` **deletes** it once it has drained the last finding into a GitHub issue, so between a
+`vet-audits` **deletes** it once it has drained the last finding into a GitHub issue, so between a
 vet run and the next producer there is often no `docs/AUDIT.md` at all. Every audit skill must
 handle its absence gracefully:
 
 * **Producers** (write findings): treat a missing file as empty and create it with the header above
   — never assume it's already there, and never error out because `cat`/read of it failed.
-* **`/vet-audits`**: a missing (or header-only) file means there's nothing to vet. Report "no audit
+* **`vet-audits`**: a missing (or header-only) file means there's nothing to vet. Report "no audit
   backlog to vet" and stop cleanly — do not treat the missing file as a failure.
-* **`/fix-audits`**: it doesn't read this file at all; its backlog is the open `type:audit` issues.
+* **`fix-audits`**: it doesn't read this file at all; its backlog is the open `type:audit` issues.
   No open `type:audit` issue means there's nothing to fix — report that and stop cleanly.
 
 Check for the file's existence before reading it, and read defensively (e.g. `test -f docs/AUDIT.md`
@@ -152,7 +152,7 @@ keeps anchors stable when a day has more than one run of the same audit. The ind
 columns; the summary belongs in the section, not the table. Keep that summary tight — a sentence for
 a quiet run, a short paragraph for a busy one.
 
-This includes the **consumer** skills (`/fix-audits`, `/vet-audits`): log the run — branch/PR for
+This includes the **consumer** skills (`fix-audits`, `vet-audits`): log the run — branch/PR for
 fix-audits, and for vet-audits the issues filed (with numbers) plus what was pruned — even though
 they don't write findings into `docs/AUDIT.md`. The Inventory's "not audits themselves" scopes §1
 only (which only producers satisfy); §2 applies to every run.
@@ -180,14 +180,14 @@ values. If a routine is added, retired, or rescheduled, update this table in the
 
 All times UTC; days are spread across the month so at most one audit fires per day.
 
-| Routine                         | Skill                      | Cadence              | Cron (UTC)    |
-| ------------------------------- | -------------------------- | -------------------- | ------------- |
-| Monthly dependency update audit | `/dependency-update-audit` | Monthly, 1st, 12:00  | `0 12 1 * *`  |
-| Monthly code audit              | `/code-audit`              | Monthly, 5th, 11:00  | `0 11 5 * *`  |
-| Monthly extract audit           | `/extract-audit`           | Monthly, 12th, 11:00 | `0 11 12 * *` |
-| Monthly dependency health audit | `/dependency-health-audit` | Monthly, 15th, 11:00 | `0 11 15 * *` |
-| Monthly lighthouse audit        | `lighthouse-audit`         | Monthly, 19th, 11:00 | `0 11 19 * *` |
-| Monthly workflow audit          | `/workflow-audit`          | Monthly, 26th, 11:00 | `0 11 26 * *` |
+| Routine                         | Skill                     | Cadence              | Cron (UTC)    |
+| ------------------------------- | ------------------------- | -------------------- | ------------- |
+| Monthly dependency update audit | `dependency-update-audit` | Monthly, 1st, 12:00  | `0 12 1 * *`  |
+| Monthly code audit              | `code-audit`              | Monthly, 5th, 11:00  | `0 11 5 * *`  |
+| Monthly extract audit           | `extract-audit`           | Monthly, 12th, 11:00 | `0 11 12 * *` |
+| Monthly dependency health audit | `dependency-health-audit` | Monthly, 15th, 11:00 | `0 11 15 * *` |
+| Monthly lighthouse audit        | `lighthouse-audit`        | Monthly, 19th, 11:00 | `0 11 19 * *` |
+| Monthly workflow audit          | `workflow-audit`          | Monthly, 26th, 11:00 | `0 11 26 * *` |
 
 **`session-audit` is deliberately not scheduled.** It's a retrospective on a live working session; a
 fresh scheduled session has no session history to reflect on. It stays invoke-at-end-of-session
@@ -200,9 +200,9 @@ so the orchestrating session keeps only concise phase summaries in context:
 
 1. **Find** — a subagent runs the audit skill itself (for `docs/AUDIT.md` producers, merging
    findings per §1).
-2. **Verify** — a *fresh* subagent runs `/vet-audits`, so validation is adversarial and independent
+2. **Verify** — a *fresh* subagent runs `vet-audits`, so validation is adversarial and independent
    of the finder's context. Survivors become `type:audit` GitHub issues.
-3. **Implement** — a subagent runs `/fix-audits` to clear the open `type:audit` backlog on its own
+3. **Implement** — a subagent runs `fix-audits` to clear the open `type:audit` backlog on its own
    branch (one commit per issue) and open **one PR**. Issues already covered by an open PR are
    skipped, so back-to-back routines don't redo in-flight work.
 

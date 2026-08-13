@@ -132,7 +132,7 @@ Add an entry to `docs/AUDIT-LOG.md` (§2 of the shared conventions) — today's 
 If anything surprising surfaced that a future caller would want to know — a durable **method**
 gotcha (a false-positive audit, a proxy quirk, an interpretation trap) — fold it into this
 `SKILL.md` as part of the same task (§3 of the shared conventions). **Do not** record the specific
-findings/opportunities here: those go to `docs/AUDIT.md`, which `/vet-audits` drains into
+findings/opportunities here: those go to `docs/AUDIT.md`, which `vet-audits` drains into
 `type:audit` GitHub issues, so a copy in the skill would only go stale. The skill carries *how to
 audit and how to read the numbers*; the findings live in `docs/AUDIT.md` (then the issues) as
 *what's currently wrong*.

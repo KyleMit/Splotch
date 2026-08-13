@@ -37,8 +37,8 @@ Read `docs/adrs/README.md` to get the full list, then for each ADR:
    * **Deprecated / superseded** — the decision has been reversed. Change `**Status:** Active` to
      `**Status:** Superseded by ADR-NNNN` or `**Status:** Deprecated`, and add a short note at the
      top explaining what replaced it. Also move the ADR's row in `docs/adrs/README.md` to the
-     Historical section (the index is tiered — see `/create-adr`), keeping supersession links
-     intact.
+     Historical section (the index is tiered — see the `create-adr` skill), keeping supersession
+     links intact.
 
 Spot-check at minimum: any ADR that references a specific version number, file path, or external
 tool (Capacitor, Node, JDK, Maestro) — these age fastest.
@@ -47,13 +47,13 @@ tool (Capacitor, Node, JDK, Maestro) — these age fastest.
 
 For each decision found in Step 1 that is not already covered by an existing ADR:
 
-* Confirm it meets the bar (see `/create-adr` for criteria).
-* Write the new ADR file following the template from `/create-adr`.
-* Allocate the number with the canonical base-aware procedure in `/create-adr` step 4. Never take
-  the lowest unused number — that reissues a gap left by a moved or retired record, such as
+* Confirm it meets the bar (see the `create-adr` skill for criteria).
+* Write the new ADR file following the template from `create-adr`.
+* Allocate the number with the canonical base-aware procedure in `create-adr` step 4. Never take the
+  lowest unused number — that reissues a gap left by a moved or retired record, such as
   `0053`–`0056`.
 * Slot a row into the matching area section of the tiered index in `docs/adrs/README.md` (see
-  `/create-adr` for where a new row belongs).
+  `create-adr` for where a new row belongs).
 
 If a decision *amends* an existing ADR (same topic, updated approach), update the existing file
 rather than creating a new one — unless the approach changed so substantially that the old reasoning

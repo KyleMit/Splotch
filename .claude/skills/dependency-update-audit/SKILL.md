@@ -114,7 +114,8 @@ exercised when it next runs on CI, so keep each Action bump to its own commit fo
     confirm the combined result is green, even if you ran lighter tiers per package.
 12. **ADR check.** If any upgrade changed an architectural constraint or encoded a non-obvious
     decision (e.g. dropping a Capacitor plugin, a build target change, a new pinned floor), consider
-    documenting it with **`/create-adr`**. If the Capacitor patch changed, update ADR-0011's notes.
+    documenting it with the **`create-adr`** skill. If the Capacitor patch changed, update
+    ADR-0011's notes.
 13. **Report.** Summarize what was upgraded (and to what) — npm packages **and** GitHub Actions pins
     — what was deferred or reverted and why, and anything still outdated by design. List the commits
     you made.

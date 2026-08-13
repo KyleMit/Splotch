@@ -53,11 +53,11 @@ Shipping is **three ordered phases** — release, build, publish (ADR-0077). The
 `.aab`/`.ipa` can only carry a version that is already committed, so the release phase deliberately
 creates the GitHub Release with **no artifacts attached**, and they are attached afterwards.
 
-| Phase      | Slash command        | By hand                                                    |
-| ---------- | -------------------- | ---------------------------------------------------------- |
-| 1. Release | `/release`           | write `releases/<version>.md`, `npm run release <version>` |
-| 2. Build   | `/build`             | `npm run android:bundle` / `npm run ios:ipa`               |
-| 3. Publish | `/publish-artifacts` | `npm run release:publish`                                  |
+| Phase      | Skill               | By hand                                                    |
+| ---------- | ------------------- | ---------------------------------------------------------- |
+| 1. Release | `release`           | write `releases/<version>.md`, `npm run release <version>` |
+| 2. Build   | `build`             | `npm run android:bundle` / `npm run ios:ipa`               |
+| 3. Publish | `publish-artifacts` | `npm run release:publish`                                  |
 
 `npm run release <version>` bumps every version location, regenerates the artifacts above, commits,
 tags `v<version>`, and publishes the GitHub Release. Pass `--no-publish` to stop after the local

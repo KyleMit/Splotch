@@ -9,12 +9,12 @@ This folder holds **transfer packets** — short, disposable notes that carry on
 work from one Claude session to the next. A handoff answers "if I got hit by a bus mid-task, what
 would the next session need to pick this up without re-deriving it?"
 
-Handoffs are **transient**, not documentation. A durable decision belongs in an ADR (`/create-adr`);
-a durable TODO belongs in a **GitHub issue** (the live backlog — see `docs/ISSUE-WORKFLOW.md`);
-behavioural feedback belongs in `memory/`. A handoff is deleted the moment it's consumed.
+Handoffs are **transient**, not documentation. A durable decision belongs in an ADR (the
+`create-adr` skill); a durable TODO belongs in a **GitHub issue** (the live backlog — see
+`docs/ISSUE-WORKFLOW.md`); behavioural feedback belongs in `memory/`. A handoff is deleted the
+moment it's consumed.
 
-Write one with the `create-handoff` skill (`/create-handoff`); consume one with the `resume-handoff`
-skill (`/resume-handoff`).
+Write one with the `create-handoff` skill; consume one with the `resume-handoff` skill.
 
 ## One file per handoff
 
