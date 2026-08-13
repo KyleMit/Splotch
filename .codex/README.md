@@ -7,7 +7,17 @@ Complete this one-time setup in the desktop app:
 
 1. Open the Splotch project in Codex.
 2. Open the project settings pane and select **Local environments**.
-3. Add a local environment whose setup script is exactly `npm ci --prefer-offline`.
+3. Add a local environment whose setup script is exactly:
+
+   ```sh
+   cd "$CODEX_WORKTREE_PATH"
+   npm run worktree:setup
+   ```
+
+   The setup script runs at the project root, so the `cd` targets the new worktree first. The repo
+   command (rather than an inline `npm ci`) keeps the bootstrap steps versioned — changing them
+   lands via git instead of re-editing every machine's environment settings. Leave the cleanup
+   script empty: removing the worktree directory is the cleanup.
 4. Save it, then commit the generated configuration file that appears under `.codex/`.
 
 Do not hand-author the generated configuration. `.worktreeinclude` separately copies `web/.env` into

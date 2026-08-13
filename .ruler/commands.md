@@ -15,8 +15,14 @@ one-line entry in the `scripts-info` block of `package.json`.
 
 ## Concurrent worktrees
 
-Codex-managed worktrees share host ports and machine capacity.
+Worktrees — Claude Code-managed, Codex-managed, or manual `git worktree add` — share host ports and
+machine capacity.
 
+* Bootstrap a fresh worktree by running `npm run worktree:setup` inside it: copies the untracked
+  files listed in `.worktreeinclude` from the main checkout, runs `npm ci --prefer-offline`, and
+  generates `.svelte-kit` types so `npm run check` and `npm run dev` work immediately. Claude Code
+  and the Codex desktop app copy `.worktreeinclude` files natively when they create a worktree, so
+  the script's copy step matters for manual worktrees and degrades to a no-op in managed ones.
 * Select an explicit unused port for every server. Run targeted Playwright checks as
   `SPLOTCH_E2E_PORT=<port> npm run test:e2e -- <spec> --workers=1`.
 * Treat `EADDRINUSE` as a request to select another port and retry. Never run `npm run dev:kill` or
