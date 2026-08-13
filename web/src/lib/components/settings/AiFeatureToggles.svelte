@@ -10,7 +10,7 @@
   import { SECTION_SLIDE } from './sections';
 </script>
 
-<div class="ai-controls">
+<section class="setting-group">
   <div class="setting">
     <ToggleRow
       icon="wand-stars"
@@ -43,11 +43,4 @@
       />
     </div>
   {/if}
-</div>
-
-<style>
-  /* AI feature toggles — spaced off from the key/code panel above them. */
-  .ai-controls {
-    margin-top: 24px;
-  }
-</style>
+</section>
