@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { supportEmail } from '../../../web/src/lib/supportEmail.ts';
 import {
   adminConsoleSentinels,
   FORBIDDEN_NATIVE_HOSTS,
@@ -60,6 +61,18 @@ describe('native bundle scan', () => {
       expect(nativeBundleProblems(root, [], 'farm')).toEqual([
         'Downloadable coloring books remain in the native bundle: dinosaur',
       ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects the conditional web-only support email', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-bundle-'));
+    try {
+      writeFileSync(join(root, 'feedback.js'), `mailto:${supportEmail()}`);
+      expect(nativeBundleProblems(root, [])).toContainEqual(
+        expect.stringContaining(`web-only support email "${supportEmail()}" remains`)
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

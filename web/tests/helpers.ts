@@ -111,21 +111,14 @@ export async function enforceProductionCsp(page: Page) {
   });
 }
 
-/** Navigate to the app and wait for hydration: the canvas mounts on the client,
- *  so once it's visible the app has hydrated.
- *
- *  Parent Center holds an independent Grown-Ups Only policy per protected
+/** Parent Center holds an independent Grown-Ups Only policy per protected
  *  feature, and this suite drives the web build, which ships every one of them
  *  at Never — only the store builds arm them (ADR-0094). A spec states which it
  *  wants rather than leaning on that: `never` (the default) so an unrelated spec
  *  reaches its target directly, `always` for the specs that exercise the real
  *  challenge, and `default` to seed nothing and assert what the build ships. */
-export async function gotoApp(
-  page: Page,
-  path = '/',
-  { gates = 'never' }: { gates?: 'never' | 'always' | 'default' } = {}
-) {
-  if (gates !== 'default') {
+export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'always' | 'default') {
+  if (mode !== 'default') {
     await page.addInitScript(
       ({ mode, modeKeys }) => {
         // Stands in for the build's default, so it only fills a policy nobody
@@ -138,7 +131,7 @@ export async function gotoApp(
         }
       },
       {
-        mode: gates,
+        mode,
         modeKeys: [
           STORAGE_KEYS.parentalGateAiImageMode,
           STORAGE_KEYS.parentalGateImageReportMode,
@@ -149,6 +142,16 @@ export async function gotoApp(
       }
     );
   }
+}
+
+/** Navigate to the app and wait for hydration: the canvas mounts on the client,
+ *  so once it's visible the app has hydrated. */
+export async function gotoApp(
+  page: Page,
+  path = '/',
+  { gates = 'never' }: { gates?: 'never' | 'always' | 'default' } = {}
+) {
+  await seedParentalGatePolicies(page, gates);
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
 }

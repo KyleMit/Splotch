@@ -8,12 +8,10 @@ import { REPORT_HONEYPOT_FIELD, REPORT_KINDS, type ReportKind } from '$lib/repor
 import type { Actions, PageServerLoad } from './$types';
 
 // The standalone feedback page. It has a form action, so it can't join the
-// site-wide prerender; that also drops its HTML from the native static export
-// (adapter-static's `strict: false`), the way /admin is handled — the route's JS
-// chunk still ships and a WebView deep-link would render a page whose POST goes
-// nowhere, but nothing in the app links there. The apps carry the form in
-// Settings and post to /api/report; this page is for the URL in the Play Store
-// listing and anywhere else a link is handed out.
+// site-wide prerender. The native route-exclusion plugin also drops its client
+// module: the form's POST has no local server there, so native links open this
+// hosted page behind the external-link gate instead. The apps carry the working
+// in-app form in Settings and post to /api/report.
 export const prerender = false;
 export const ssr = true;
 

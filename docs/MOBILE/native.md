@@ -224,9 +224,11 @@ The shared baseline both depend on:
 
 * [x] **Privacy Policy** page — created at `/privacy` (`web/src/routes/privacy/+page.svelte`), live
       at `https://splotch.art/privacy` and bundled into both native apps. ← required by both stores.
-      Contact is via GitHub issues (no email). It must state: no background collection, ads,
-      tracking, or third-party analytics; explain ordinary ephemeral AI processing, private
-      feedback, and the confirmed-report-only 30-day retention rule.
+      Contact is through Splotch's private feedback form. Native opens the hosted form behind the
+      external-link gate because the static app cannot run the form's server action; the hosted
+      page's conditional email fallback is excluded from the native bundle. The policy must state:
+      no background collection, ads, tracking, or third-party analytics; explain ordinary ephemeral
+      AI processing, private feedback, and the confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
       `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` ("Splotch can save a

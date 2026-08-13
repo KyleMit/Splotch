@@ -21,12 +21,15 @@ import type { Plugin } from 'vite';
 //    surface shipped inside a children's app is what Play's Deceptive Behavior
 //    policy and App Review 2.3.1 are written against, and the console is
 //    web-only by design (ADR-0101).
+//  * `feedback` — the standalone form depends on a server action and exposes a
+//    conditional email fallback. Native links open the hosted form behind the
+//    external-link gate instead.
 //
 // This replaces each excluded route's client module source at build time, so
 // the strings never make it into the bundle in the first place.
 // `tools/mobile/check-static-bundle.mjs` scans the built output and fails
 // `build:cap` if a sentinel from any excluded route survives.
-export const NATIVE_EXCLUDED_ROUTES = ['android-beta', 'ios-beta', 'admin'] as const;
+export const NATIVE_EXCLUDED_ROUTES = ['android-beta', 'ios-beta', 'admin', 'feedback'] as const;
 
 // Only the client-facing route modules are replaced. `+page.server.ts` and
 // friends never reach the client bundle, and they own declarations the build

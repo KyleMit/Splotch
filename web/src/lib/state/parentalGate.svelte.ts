@@ -206,16 +206,16 @@ export function requireParentalGate(
  * the solve that follows is Parent Center's own. Where Parent Center is set to
  * Never there is nothing left to solve, so the handoff runs immediately.
  */
-export function redirectGateToParentCenter() {
+export function redirectGateToParentCenter(destination?: () => void) {
   const origin = gate.origin;
-  const destination = () => openParentCenterSettings(origin);
+  const openPolicies = destination ?? (() => openParentCenterSettings(origin));
   if (!requiresParentalGate('parentCenter')) {
     dismissGate();
-    destination();
+    openPolicies();
     return;
   }
   clearTimers();
-  pendingDestination = destination;
+  pendingDestination = openPolicies;
   gate.feature = 'parentCenter';
   gate.immediate = false;
   gate.input = '';

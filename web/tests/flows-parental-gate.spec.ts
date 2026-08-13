@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { gotoApp, openSettingsModal, retryOpen } from './helpers';
+import {
+  gotoApp,
+  openSettingsModal,
+  retryOpen,
+  seedParentalGatePolicies,
+  settleFlyIn,
+} from './helpers';
 import {
   enableAiButtonWithStroke,
   openDrawer,
@@ -440,6 +446,25 @@ test('external links inside Settings follow the Every time policy', async ({ pag
   await solveParentalGate(page);
   const popupPage = await popup;
   await expect.poll(() => popupPage.url()).toContain('github.com/KyleMit/Splotch');
+  await expect(gate).not.toBeVisible();
+});
+
+test('the bundled privacy page gates its Gemini terms link', async ({ page, context }) => {
+  await context.route('https://ai.google.dev/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/html', body: '<html>stub</html>' })
+  );
+  await seedParentalGatePolicies(page, 'always');
+  await page.goto('/privacy');
+
+  const gate = page.locator('#parentalGate');
+  await retryOpen(gate, () =>
+    page.getByRole('link', { name: 'Gemini API terms' }).click({ timeout: 3000 })
+  );
+  await settleFlyIn(gate);
+  const popup = context.waitForEvent('page');
+  await solveParentalGate(page);
+  const popupPage = await popup;
+  await expect.poll(() => popupPage.url()).toContain('ai.google.dev/gemini-api/terms');
   await expect(gate).not.toBeVisible();
 });
 

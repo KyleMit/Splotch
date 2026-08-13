@@ -9,15 +9,13 @@
   } from '$lib/components/androidBeta/androidBeta';
   import { TESTFLIGHT_APP_URL, TESTFLIGHT_INVITE_URL } from '$lib/components/iosBeta/iosBeta';
   import { supportEmail } from '$lib/supportEmail';
-  import { SITE_ORIGIN } from '$lib/siteUrl';
+  import { FEEDBACK_URL } from '$lib/siteUrl';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
 
   // Step 4 shows this rather than linking the word "feedback": the sign-up page
   // is read on one device and often acted on from another, so the address has to
   // survive being copied or read aloud. The href beside it stays relative, so a
   // deploy preview links to itself.
-  const FEEDBACK_URL = `${SITE_ORIGIN}/feedback`;
-
   // Composed after hydration so the support address never appears in the
   // prerendered HTML, which is what address harvesters scrape. Without JS the
   // card is simply absent; step 4's /feedback button is the path that survives,
