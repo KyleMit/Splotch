@@ -7,13 +7,14 @@
   // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
   // wording changes.
 
+  import type { Component } from 'svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import ParentalGate from '$lib/components/ParentalGate.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
-  import SettingsModal from '$lib/components/SettingsModal.svelte';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
   import { FEEDBACK_URL } from '$lib/siteUrl';
+  import type { Origin } from '$lib/state/modal.svelte';
   import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
 
   const LAST_UPDATED = 'August 13, 2026';
@@ -34,10 +35,36 @@
   ];
 
   let managingPolicies = $state(false);
+  let SettingsModal = $state<Component | null>(null);
 
-  function openPrivacyParentCenter() {
+  // Intentionally untracked: the promise only deduplicates the one-time load;
+  // the resolved component above is the state that affects rendering.
+  let settingsLoad: Promise<Component> | null = null;
+
+  function loadSettingsModal(): Promise<Component> {
+    settingsLoad ??= Promise.all([
+      import('$lib/components/SettingsModal.svelte'),
+      import('$lib/boot/persistedState'),
+      import('$lib/state/freeGenerations.svelte'),
+    ]).then(async ([module, { hydratePersistedState }, grants]) => {
+      await hydratePersistedState();
+      if (grants.grantRefreshReady()) void grants.refreshFreeGenerationGrant();
+      else grants.setFreeGenerationsUnavailable();
+      return module.default;
+    });
+    return settingsLoad;
+  }
+
+  function openPrivacyParentCenter(origin: Origin | null) {
     managingPolicies = true;
-    openParentCenterSettings(null);
+    openParentCenterSettings(origin);
+    void loadSettingsModal()
+      .then((component) => (SettingsModal = component))
+      .catch((error) => {
+        settingsModal.hide();
+        managingPolicies = false;
+        console.error('Privacy Parent Center failed to load:', error);
+      });
   }
 
   $effect(() => {
@@ -222,7 +249,7 @@
 </PageShell>
 
 <ParentalGate manageDestination={openPrivacyParentCenter} />
-{#if managingPolicies}
+{#if SettingsModal && managingPolicies}
   <SettingsModal />
 {/if}
 

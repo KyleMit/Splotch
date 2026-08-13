@@ -6,6 +6,7 @@ import {
   retryOpen,
   seedParentalGatePolicies,
   settleFlyIn,
+  settleSettingsPane,
 } from './helpers';
 import {
   enableAiButtonWithStroke,
@@ -466,6 +467,31 @@ test('the bundled privacy page gates its Gemini terms link', async ({ page, cont
   const popupPage = await popup;
   await expect.poll(() => popupPage.url()).toContain('ai.google.dev/gemini-api/terms');
   await expect(gate).not.toBeVisible();
+});
+
+test('Parent Center reached from privacy hydrates its persisted settings', async ({ page }) => {
+  await page.route('**/api/free-generation-grant', (route) =>
+    route.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' })
+  );
+  await seedParentalGatePolicies(page, 'always');
+  await page.goto('/privacy');
+
+  const gate = page.locator('#parentalGate');
+  await retryOpen(gate, () =>
+    page.getByRole('link', { name: 'Gemini API terms' }).click({ timeout: 3000 })
+  );
+  await settleFlyIn(gate);
+  await retryOpen(gate.getByText(MANAGE_SUBTITLE), () =>
+    gate.getByRole('button', { name: MANAGE_FOOTER }).click({ timeout: 2000 })
+  );
+  await solveParentalGate(page);
+
+  const settings = page.locator('#settingsModal');
+  await expect(settings).toBeVisible();
+  await settleFlyIn(settings);
+  await settleSettingsPane(settings.locator('.settings-pane'));
+  await expect(settings.getByText('Checking your free AI creations…')).not.toBeVisible();
+  await expect(settings.getByText(/Add your own Gemini API key to create AI art/)).toBeVisible();
 });
 
 test('external links can skip a second gate only within a solved session', async ({

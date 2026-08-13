@@ -5,6 +5,7 @@
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { paletteHex } from '$lib/palette';
   import { COLOR_FAMILIES } from '$lib/hexPickerLayout';
+  import type { Origin } from '$lib/state/modal.svelte';
   import {
     gate,
     dismissGate,
@@ -15,7 +16,7 @@
   } from '$lib/state/parentalGate.svelte';
 
   interface Props {
-    manageDestination?: () => void;
+    manageDestination?: (origin: Origin | null) => void;
   }
 
   let { manageDestination }: Props = $props();
