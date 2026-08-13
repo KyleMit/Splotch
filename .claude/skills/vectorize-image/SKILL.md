@@ -14,9 +14,9 @@ which supports every parameter — so iterate there and pass `--production` exac
 keeper.
 
 ```bash
-node tools/vectorize/vectorize-image.mjs <input> --out vectorized/out.svg   # free test mode
-node tools/vectorize/vectorize-image.mjs --help                             # flags
-node tools/vectorize/vectorize-image.mjs --account                          # remaining credits (free)
+npm run vectorize -- <input> --out vectorized/out.svg   # free test mode
+npm run vectorize -- --help                             # flags
+npm run vectorize -- --account                          # remaining credits (free)
 ```
 
 `<input>` is a file path, an `http(s)` URL, or `token:<image-token>`. Output defaults to the

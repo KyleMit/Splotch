@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-// The vectorize driver spends real money: a production trace costs 1 credit of a
+// The vectorize entry point spends real money: a production trace costs 1 credit of a
 // metered 50-credit plan, and its whole safety story is that the free test mode is
 // the default and `--production` is the only way out of it. These cases guard the
 // two ways that promise could be broken silently — a request that spends despite
@@ -11,14 +11,15 @@ import { describe, expect, it } from 'vitest';
 // One copy: the driver lives in tools/, not in a skill package Ruler would
 // triplicate into .claude/ and .agents/.
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
-const DRIVERS = ['tools/vectorize/vectorize-image.mjs'];
+const ENTRY_POINT = 'tools/vectorize/vectorize-image.mjs';
 
 const load = (path) => import(pathToFileURL(join(repoRoot, path)).href);
 
 // A real repo file, so attachInput's existence and extension checks pass.
 const INPUT = join(repoRoot, 'web/static/icons/handmade-paper.webp');
 
-describe.each(DRIVERS)('vectorize driver %s', (path) => {
+describe('vectorize image entry point', () => {
+  const path = ENTRY_POINT;
   it('submits the mode it printed, whatever --param is passed', async () => {
     const { parseArgs, buildVectorizeRequest } = await load(path);
     for (const argv of [

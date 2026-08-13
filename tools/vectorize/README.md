@@ -14,7 +14,10 @@ into both `.claude/` and `.agents/` and this material is far too large to trip.
 The public npm command, CLI modes, flags, environment variables, default `vectorized/` output,
 credit safeguards, and exit behavior remain stable during the tools naming migration. Inputs and
 outputs are documented under [Driver flags](#driver-flags), credentials under
-[Credentials](#credentials), and API failure recovery in [`docs/errors.md`](docs/errors.md).
+[Credentials](#credentials), and API failure recovery in [`docs/errors.md`](docs/errors.md). A run
+that fails *after* the API call returned may still have been charged — the result is written before
+the charge and image token are printed — so check `npm run vectorize -- --account` before re-running
+a `--production` command that errored.
 
 The account this repo uses is a **metered 50-credit plan** — a production vectorization is **1
 credit**, and credits do not come back. Read
