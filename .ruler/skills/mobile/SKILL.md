@@ -21,6 +21,11 @@ The guide is `docs/MOBILE/`, split into three files — **read the one that matc
 * **[`docs/MOBILE/ios.md`](../../../docs/MOBILE/ios.md)** — iOS toolchain setup (macOS + Xcode, SPM
   not CocoaPods), build/run commands, Safari Web Inspector, and the App Store release +
   Kids-Category checklist.
+* **[`docs/MOBILE/compliance.md`](../../../docs/MOBILE/compliance.md)** — the app-store compliance
+  ledger: every implemented guideline with the store's text quoted verbatim, whether each of iOS and
+  Android requires it, the decision that answers it, and provenance (ADRs, issues, commits). Read it
+  before arguing a store-policy question from memory, and update it when a policy or mitigation
+  moves.
 
 Both platforms are active and committed (`android/`, `ios/`). Android builds on macOS or Linux; iOS
 requires macOS + Xcode. The `CAPACITOR=true` build env var is the single signal for all

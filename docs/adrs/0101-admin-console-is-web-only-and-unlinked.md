@@ -90,3 +90,10 @@ inert manifest string is accepted.
   why its sentinels are derived rather than hard-coded.
 * **−** `/admin` remains reachable by URL with no discovery path, so an operator who forgets the
   address has only the docs. Accepted: discoverability is exactly what must not exist here.
+
+## Amendment (2026-08): guard path
+
+The postbuild guard described above as `scripts/check-native-bundle.mjs` now lives at
+`tools/mobile/check-static-bundle.mjs` (moved by the mobile tooling consolidation in commit
+661ee3153bd8aff6753cb3923199dad9cd4f2328). Its behavior — derived sentinels, fail on console copy in
+built output — is unchanged.
