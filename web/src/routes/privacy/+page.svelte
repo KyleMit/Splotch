@@ -158,9 +158,11 @@
       a new picture, which is sent right back.
     </li>
     <li>
-      <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong> They
-      pass straight through our service on the way to OpenAI and back, unless a grown-up separately confirms
-      “Report this picture” or “Report this refusal.”
+      <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong>
+      Making a picture takes about a minute, so the drawing waits on our service for the few seconds it
+      takes to start and the finished picture waits there until the app collects it — each is deleted
+      the moment it is handed on, and both are gone within minutes either way. Nothing is kept afterwards,
+      unless a grown-up separately confirms “Report this picture” or “Report this refusal.”
     </li>
     <li>
       OpenAI generates the picture on its own systems, under the

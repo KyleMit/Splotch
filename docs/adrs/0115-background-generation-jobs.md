@@ -43,10 +43,17 @@ delay the compliance control rather than the feature.
 
 Four things about the split are load-bearing:
 
-**The drawing is never stored.** It travels in the worker's invocation body and lives only in that
-worker's memory. Only the finished picture is written down, and only until the poll that delivers it
-deletes it. `/privacy` promises an ordinary request keeps nothing; splitting one request into two
-must not quietly make that false.
+**The drawing is at rest for the handoff, and no longer.** The first version passed it in the
+worker's invocation body so that nothing was written down at all — and a branch preview refused it
+with a 413. A Netlify background function's invocation body is capped between 200 KB and 400 KB
+(measured), which a drawing exceeds as soon as the client cannot encode WebP: that is every Safari,
+and so most of this app's iPads. Background functions are meant to be handed a reference.
+
+So the drawing is written to the job store and the worker takes it in one read-and-delete. It is at
+rest between accepting the request and starting the generation, then gone; the finished picture is
+at rest until the poll that delivers it deletes it. This is a real change from the single-request
+flow, which kept nothing at all, and `/privacy` says so rather than repeating a promise the
+architecture no longer keeps.
 
 **The client declares a capability, the server decides.** A caller sends `X-Async-Generation` to say
 it can handle a later result; the server still answers in-line wherever there is no worker to hand
