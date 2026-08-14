@@ -1,3 +1,4 @@
+import { promiseWithResolvers } from '../promiseWithResolvers';
 import type { EncodePngPayload, EncodePngResponse, TiledPngInput } from './pngEncoderProtocol';
 
 export type { TiledPngInput } from './pngEncoderProtocol';
@@ -32,21 +33,21 @@ function createPngEncoder(): PngEncoder {
     onPreview?: (preview: ImageBitmap) => void
   ): Promise<Blob> {
     const id = ++nextRequestId;
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        const error = new Error('PNG encoder worker timed out');
-        encoder.terminate(error);
-        if (cachedEncoder === encoder) cachedEncoder = null;
-      }, ENCODE_TIMEOUT_MS);
-      pending.set(id, { resolve, reject, timeoutId, onPreview });
-      try {
-        worker.postMessage({ id, ...message }, transfer);
-      } catch (error) {
-        clearTimeout(timeoutId);
-        pending.delete(id);
-        reject(error instanceof Error ? error : new Error(String(error)));
-      }
-    });
+    const { promise, resolve, reject } = promiseWithResolvers<Blob>();
+    const timeoutId = setTimeout(() => {
+      const error = new Error('PNG encoder worker timed out');
+      encoder.terminate(error);
+      if (cachedEncoder === encoder) cachedEncoder = null;
+    }, ENCODE_TIMEOUT_MS);
+    pending.set(id, { resolve, reject, timeoutId, onPreview });
+    try {
+      worker.postMessage({ id, ...message }, transfer);
+    } catch (error) {
+      clearTimeout(timeoutId);
+      pending.delete(id);
+      reject(error instanceof Error ? error : new Error(String(error)));
+    }
+    return promise;
   }
 
   function rejectPending(error: Error) {
