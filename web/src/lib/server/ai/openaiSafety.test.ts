@@ -100,15 +100,38 @@ describe('classifyOpenAiResponse', () => {
     expect(r).toMatchObject({ kind: 'empty' });
   });
 
-  it('reads a policy block off the error code rather than waiting for prose', () => {
+  it.each(['image_content_policy_violation', 'invalid_prompt', 'bio_policy'])(
+    'reads a %s policy block off the error code rather than waiting for prose',
+    (code) => {
+      const r = classifyOpenAiResponse(
+        resp({ status: 'failed', output: [], error: { code, message: 'blocked by policy' } })
+      );
+      expect(r).toEqual({ kind: 'safety', reason: 'blocked by policy' });
+    }
+  );
+
+  it('does not treat an ordinary upstream error code as a policy block', () => {
+    const r = classifyOpenAiResponse(
+      resp({ status: 'failed', output: [], error: { code: 'server_error', message: 'boom' } })
+    );
+    expect(r).toMatchObject({ kind: 'empty' });
+  });
+
+  it('honours a typed refusal even when the image tool also failed', () => {
+    // A `refusal` content part is machine-readable in exactly the way the error
+    // codes are, so it outranks any reasoning about what the tool did. Filing it
+    // as retryable would offer the child the same drawing the model just
+    // declined.
     const r = classifyOpenAiResponse(
       resp({
-        status: 'failed',
-        output: [],
-        error: { code: 'image_content_policy_violation', message: 'blocked by policy' },
+        status: 'completed',
+        output: [
+          imageCall({ result: null, status: 'failed' }),
+          message([{ type: 'refusal', refusal: 'I cannot help with that.' }]),
+        ],
       })
     );
-    expect(r).toEqual({ kind: 'safety', reason: 'blocked by policy' });
+    expect(r).toEqual({ kind: 'safety', reason: 'I cannot help with that.' });
   });
 
   it('reads a content-filter stop off incomplete_details', () => {
