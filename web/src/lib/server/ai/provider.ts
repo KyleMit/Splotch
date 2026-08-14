@@ -24,7 +24,18 @@ type AiImageResult =
   /** Genuine upstream/empty failure — retryable (502). */
   | { kind: 'error'; reason: string };
 
-type KeyCheckResult = { ok: true } | { ok: false; reason: string };
+/**
+ * Why a key check did not succeed. The distinction is the whole point: only the
+ * provider can say a key is bad, and saying it on our own behalf — because a
+ * cold start outran a deadline, say — tells a parent something false about a
+ * credential that works.
+ */
+type KeyCheckResult =
+  | { ok: true }
+  /** The provider looked at the key and refused it. */
+  | { ok: false; kind: 'rejected'; reason: string }
+  /** We never got an answer. Says nothing about the key. */
+  | { ok: false; kind: 'unreachable'; reason: string };
 
 export interface AiImageProvider {
   generateImage(request: AiImageRequest): Promise<AiImageResult>;

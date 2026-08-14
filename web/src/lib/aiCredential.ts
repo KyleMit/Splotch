@@ -1,5 +1,9 @@
 import { apiUrl } from '$lib/api';
-import { looksLikeApiKey, looksLikeRetiredGeminiKey } from '$lib/ai/keyFormat';
+import {
+  KEY_CHECK_UNAVAILABLE_CODE,
+  looksLikeApiKey,
+  looksLikeRetiredGeminiKey,
+} from '$lib/ai/keyFormat';
 
 export { looksLikeApiKey };
 
@@ -8,9 +12,14 @@ export { looksLikeApiKey };
 // It would fail the allowlist and be reported as an invalid access code, which
 // is true but useless; naming it is what lets a parent who set one up before the
 // provider migration (ADR-0113) understand what to do.
-export type CredentialKind = 'apiKey' | 'accessCode' | 'retiredGeminiKey';
+export type CredentialKind =
+  | 'apiKey'
+  | 'accessCode'
+  | 'retiredGeminiKey'
+  /** The check never reached OpenAI — nothing was learned about the key. */
+  | 'checkUnavailable';
 
-type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string };
+type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string; code?: string };
 
 export interface VerifyCredentialResult extends VerifyPayload {
   kind: CredentialKind;
@@ -40,6 +49,10 @@ export async function verifyCredential(
     signal,
   });
   const data: VerifyPayload = await res.json().catch(() => ({}));
+
+  if (data.code === KEY_CHECK_UNAVAILABLE_CODE) {
+    return { kind: 'checkUnavailable', ok: false, error: data.error };
+  }
 
   return {
     kind,

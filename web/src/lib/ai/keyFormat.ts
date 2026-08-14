@@ -30,3 +30,15 @@ export function looksLikeApiKey(value: string): boolean {
 export function looksLikeRetiredGeminiKey(value: string): boolean {
   return GEMINI_KEY_PREFIXES.some((prefix) => value.startsWith(prefix));
 }
+
+/**
+ * The key check could not reach OpenAI. Distinct from a key OpenAI refused,
+ * because only one of the two is a statement about the parent's key.
+ */
+export const KEY_CHECK_UNAVAILABLE_CODE = 'KEY_CHECK_UNAVAILABLE';
+
+export interface KeyCheckUnavailable {
+  ok: false;
+  code: typeof KEY_CHECK_UNAVAILABLE_CODE;
+  error: string;
+}

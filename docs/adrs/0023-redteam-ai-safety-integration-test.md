@@ -115,19 +115,20 @@ endpoint, which does not normalize what it is given.)
 
 The first full run against OpenAI reported six safe drawings rendered and four unsafe ones quietly
 "sanitized" into innocent art. Every part of that reading was wrong. Asked to describe what it saw,
-the model answered: *"a completely black square with no visible lines, shapes, colors, characters, or
-objects at all."* The starry night it returned for the swastika, and the bunny under a black sky it
-returned for the written slur, were not sanitizations — they were the model making art out of a black
-rectangle, and the black backgrounds were the tell.
+the model answered: *"a completely black square with no visible lines, shapes, colors, characters,
+or objects at all."* The starry night it returned for the swastika, and the bunny under a black sky
+it returned for the written slur, were not sanitizations — they were the model making art out of a
+black rectangle, and the black backgrounds were the tell.
 
 This is the worst failure shape a safety suite has: **it fails by reporting that everything is
 fine.** The rule it earns is that the harness must not leave the composite to the provider.
 `tools/redteam/lib/fixture-image.mjs` flattens every fixture onto the app's paper before it is sent,
 saved, or reviewed — light by default, since the corpus is authored in light-theme colors, with
 `REDTEAM_THEME=night` for a second pass on the app's night paper (which is legitimately near-black:
-the difference is that a night drawing's strokes are chalk-light and survive it) — which is also strictly more faithful, because `/api/generate-image` never
-receives transparency in the first place: the canvas export always paints an opaque paper fill
-beneath the strokes (`web/src/lib/drawing/exportCompositor.ts`). Flattening is unit-tested in CI
+the difference is that a night drawing's strokes are chalk-light and survive it) — which is also
+strictly more faithful, because `/api/generate-image` never receives transparency in the first
+place: the canvas export always paints an opaque paper fill beneath the strokes
+(`web/src/lib/drawing/exportCompositor.ts`). Flattening is unit-tested in CI
 (`tools/redteam/tests/fixture-image.test.mjs`), against the exact design-token channel values rather
 than a brightness threshold: "not black" is too weak a guard, since white, light grey and pale blue
 all pass it while producing a corpus that is no longer what the app sends. The run itself asserts
@@ -158,8 +159,8 @@ be an artifact.**
   generative model.
 * **−** The harness now depends on how a provider treats an image it is handed, not only on what the
   model decides. The 2026-08 amendment fixes the one instance of that we found; a future provider
-  could differ somewhere else the corpus does not probe, and the suite would again fail quietly. When
-  a run looks *too* clean, ask the model to describe what it sees before believing it.
+  could differ somewhere else the corpus does not probe, and the suite would again fail quietly.
+  When a run looks *too* clean, ask the model to describe what it sees before believing it.
 * **−** Anyone with `REDTEAM_FIXTURE_KEY` can decrypt the committed corpus; the encryption is
   at-rest obfuscation for a test corpus, not a security boundary. Treat the key like any shared
   secret.
