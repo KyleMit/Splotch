@@ -2,7 +2,9 @@
 // Run `node tools/icons/gen-icon-names.mjs` (or any dev/build) to regenerate.
 export type IconName =
   | 'add-homescreen'
+  | 'android'
   | 'appearance'
+  | 'apple'
   | 'backspace'
   | 'brush-crayon'
   | 'brush-eraser'

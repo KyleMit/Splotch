@@ -44,8 +44,14 @@
      * without.
      */
     inputName?: string;
-    /** segment = raised-thumb track; chip = borderless toggle grid. */
-    variant?: 'segment' | 'chip';
+    /**
+     * segment = raised-thumb track; chip = borderless toggle grid; underline =
+     * tab row on a hairline, for a standalone page that switches between two
+     * views of itself rather than setting something. `underline` manages its own
+     * width: it hugs the left on a sheet and splits the row evenly on a phone,
+     * so `fill` does not apply to it (see the style block).
+     */
+    variant?: 'segment' | 'chip' | 'underline';
     /**
      * 'collapsible' lets a caller hide the option labels at a breakpoint of its
      * own choosing — the picker does not decide *when*, which is a layout
@@ -318,6 +324,82 @@
     width: 15px;
     height: 15px;
     flex-shrink: 0;
+  }
+
+  /* Underline tabs: one hairline under a row of labels, the live one carrying a
+     brand segment of it. The other two skins are controls that sit on a page;
+     this one is the page's own furniture, which is why it brings a rule rather
+     than a track — it says "two views of this page", where a track says "a
+     setting". Its icons follow the label ink instead of --icon-ink, so the live
+     tab moves as one mark. */
+  .underline {
+    /* Thicker than the rule it replaces, so the mark reads from across the row
+       — the weight SidebarToc's live rail segment already uses. */
+    --underline-segment-width: 3px;
+
+    display: flex;
+    gap: 28px;
+    border-bottom: var(--border-width) solid var(--border);
+  }
+
+  .underline .option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 2px 11px;
+    /* Sits ON the rule rather than under it, so the live segment replaces that
+       stretch of hairline instead of doubling it. */
+    margin-bottom: calc(-1 * var(--border-width));
+    border-bottom: var(--underline-segment-width) solid transparent;
+    font-size: var(--font-size-md);
+    line-height: 1.25;
+    transition:
+      color var(--duration-fast) ease,
+      border-color var(--duration-fast) ease;
+  }
+
+  /* The ramp's accessible step, and the identity hue for the segment beneath it
+     — the same pairing SidebarToc marks its live row with. */
+  .underline .option.active {
+    color: var(--brand-text);
+    border-bottom-color: var(--brand);
+  }
+
+  .underline :global(.picker-option-icon) {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .underline :global(.picker-option-icon svg) {
+    fill: currentColor;
+  }
+
+  @media (hover: hover) {
+    .underline .option:not(.active):hover {
+      color: var(--text-strong);
+    }
+  }
+
+  /* Phone: the sheet has given up its own edges (PageShell), so the row does
+     too — the cells split the width evenly and each live segment is a whole
+     cell, which is what makes the row read as a two-position switch. The caller
+     supplies the bleed past the page gutter; this only divides what it is given.
+     `fill` is deliberately not consulted: the width behavior is the variant's,
+     not a prop for a call site to get wrong. Restates PHONE_MAX_WIDTH_PX
+     (lib/breakpoints.ts) — a media query cannot import it, and phoneStep.test.ts
+     fails when this and PageShell's step disagree. */
+  @media (max-width: 540px) {
+    .underline {
+      gap: 0;
+    }
+
+    .underline .option {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 44px;
+    }
   }
 
   /* Borderless toggle chips in a two-column grid — the independent-toggles

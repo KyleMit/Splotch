@@ -3,7 +3,8 @@
 // routes, the drift guards, and the E2E specs (which run outside Vite, so a
 // `$app` import anywhere in the graph would fail to resolve) all read this one
 // vocabulary rather than restating the query key or the tab names. The device
-// sniff it takes as an argument is the page's to supply.
+// sniff it takes as an argument is the page's to supply. The tab icons are the
+// page's too, for the same reason — naming one costs a `$lib` type import.
 
 /** A store track /beta explains. Native platforms only — the web app needs no beta. */
 export type BetaPlatform = 'android' | 'ios';
@@ -27,10 +28,14 @@ export const BETA_PLATFORM_PARAM = 'os';
  */
 export const DEFAULT_BETA_PLATFORM: BetaPlatform = 'android';
 
-/** Tab labels — also each option's accessible name. */
+/**
+ * Tab labels — also each option's accessible name. Short on purpose: the tabs
+ * split a phone screen between them, and `iPhone & iPad` in half of 375px wraps
+ * to two lines. Each panel's own heading says which devices it covers.
+ */
 export const BETA_PLATFORM_LABELS: Record<BetaPlatform, string> = {
   android: 'Android',
-  ios: 'iPhone & iPad',
+  ios: 'iOS',
 };
 
 /**

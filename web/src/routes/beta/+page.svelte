@@ -18,6 +18,7 @@
   import SegmentedPicker, {
     type SegmentedPickerOption,
   } from '$lib/components/design/SegmentedPicker.svelte';
+  import type { CommonIconName } from '$lib/components/iconTypes';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import { isAndroidBrowser, isIosDevice } from '$lib/platform';
 
@@ -52,9 +53,14 @@
     return () => root.removeAttribute(BETA_PLATFORM_ATTRIBUTE);
   });
 
+  // The mark beside each label, kept here rather than in betaPlatform.ts so that
+  // module stays free of `$lib` imports the E2E specs cannot resolve.
+  const TAB_ICONS: Record<BetaPlatform, CommonIconName> = { android: 'android', ios: 'apple' };
+
   const options: SegmentedPickerOption<BetaPlatform>[] = BETA_PLATFORMS.map((value) => ({
     value,
     label: BETA_PLATFORM_LABELS[value],
+    icon: TAB_ICONS[value],
     id: `beta-platform-${value}`,
   }));
 
@@ -98,11 +104,11 @@
 
   <div class="beta-platform-picker">
     <SegmentedPicker
+      variant="underline"
       label="Which device are you installing on?"
       {options}
       selected={platform}
       onSelect={selectPlatform}
-      fill={false}
     />
   </div>
 
@@ -132,6 +138,18 @@
 <style>
   .beta-platform-picker {
     margin-bottom: 34px;
+  }
+
+  /* On a phone the sheet is the screen (PageShell drops its frame at this
+     width), so the tab row gives up the text gutter too: the rule runs to the
+     glass and the two cells split the whole screen between them. The picker
+     divides whatever width it is handed — the bleed is the page's, because the
+     gutter is. Restates PHONE_MAX_WIDTH_PX (lib/breakpoints.ts); phoneStep.test.ts
+     fails if this and PageShell's step disagree. */
+  @media (max-width: 540px) {
+    .beta-platform-picker {
+      margin-inline: calc(-1 * var(--page-gutter));
+    }
   }
 
   /* Both panels are always in the document, so the tabs are a filter rather than

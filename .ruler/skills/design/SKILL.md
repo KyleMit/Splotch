@@ -118,10 +118,15 @@ don't offer.
 | `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup with roving     |
 |                          | tabindex + arrow-key selection: the theme pickers) / `toggle` (`aria-pressed`; deselection  |
 |                          | and multi-select stay with the caller: the orientation segment, the controls chips).        |
-|                          | `variant` = `segment` (raised-thumb track) / `chip` (borderless toggle grid); sizes `md` /  |
-|                          | `sm`; `fill={false}` hugs content; `inputName` renders the options as real native radios    |
-|                          | for a form that must post without JavaScript (the report-kind row); the forwarded `class`   |
-|                          | carries call-site restyling via `:global()`                                                 |
+|                          | `variant` = `segment` (raised-thumb track) / `chip` (borderless toggle grid) / `underline`  |
+|                          | (tab row on a hairline, for a standalone page switching between two views of itself —       |
+|                          | `/beta`'s platform tabs; the live tab replaces its stretch of the rule with a brand         |
+|                          | segment and takes the brand ink, and its icon follows that ink rather than `--icon-ink`);   |
+|                          | sizes `md` / `sm`; `fill={false}` hugs content — except under `underline`, which owns its   |
+|                          | own width (hugs left on a sheet, splits the row evenly at phone width, where a caller       |
+|                          | wanting the rule at the glass supplies the bleed past its own gutter); `inputName` renders  |
+|                          | the options as real native radios for a form that must post without JavaScript (the         |
+|                          | report-kind row); the forwarded `class` carries call-site restyling via `:global()`         |
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |

@@ -59,7 +59,7 @@ test('the iOS tab swaps in the TestFlight steps and records itself in the URL', 
   page,
 }) => {
   await page.goto('/beta');
-  await tab(page, 'iPhone & iPad').click();
+  await tab(page, 'iOS').click();
 
   await expect(page).toHaveURL(betaPathFor('ios'));
   await expect(page.getByRole('heading', { name: 'How to join on iPhone or iPad' })).toBeVisible();
@@ -85,7 +85,7 @@ test('the iOS tab swaps in the TestFlight steps and records itself in the URL', 
 test('?os= opens the platform the link names', async ({ page }) => {
   await page.goto(betaPathFor('ios'));
   await expect(page.getByRole('heading', { name: 'How to join on iPhone or iPad' })).toBeVisible();
-  await expect(tab(page, 'iPhone & iPad')).toBeChecked();
+  await expect(tab(page, 'iOS')).toBeChecked();
 
   await page.goto(betaPathFor('android'));
   await expect(page.getByRole('heading', { name: 'How to join on Android' })).toBeVisible();
@@ -97,7 +97,7 @@ test.describe('an iPad opening the bare URL', () => {
 
   test('gets the TestFlight steps without asking', async ({ page }) => {
     await page.goto('/beta');
-    await expect(tab(page, 'iPhone & iPad')).toBeChecked();
+    await expect(tab(page, 'iOS')).toBeChecked();
     await expect(page.getByRole('link', { name: 'Get TestFlight from Apple' })).toBeVisible();
   });
 });
@@ -126,6 +126,66 @@ test.describe('the deprecated solo links', () => {
       await expect(page.getByRole('heading', { name: heading })).toBeVisible();
     });
   }
+});
+
+// The tab row is the one piece of this page that changes shape with the
+// viewport, and it does it in CSS with no JS to observe: on a sheet the labels
+// hug the left, and once the sheet IS the screen the two cells split it evenly
+// and the rule reaches the glass. Measured rather than assumed — a stale
+// breakpoint or a lost negative margin leaves a row that looks plausible in
+// isolation and wrong on the device.
+test('the tabs hug the left on a sheet and split the screen on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto('/beta');
+
+  const row = page.locator('.beta-platform-picker .picker');
+  const cells = page.locator('.beta-platform-picker .option');
+  const cellWidths = () =>
+    cells.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width));
+
+  const sheetRow = (await row.boundingBox())!;
+  const sheetCells = await cellWidths();
+  expect(sheetCells).toHaveLength(2);
+  expect(
+    sheetCells.reduce((total, width) => total + width, 0),
+    'on a sheet the labels take only the room they need'
+  ).toBeLessThan(sheetRow.width / 2);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const phoneRow = (await row.boundingBox())!;
+  const phoneCells = await cellWidths();
+
+  expect(phoneRow.x, 'the row bleeds past the page gutter to the left edge').toBeLessThan(1);
+  expect(phoneRow.width, 'and reaches the right edge').toBeGreaterThan(389);
+  for (const width of phoneCells) {
+    expect(Math.abs(width - phoneRow.width / 2), 'each cell is half the screen').toBeLessThan(1);
+  }
+});
+
+// The live tab is marked by a brand segment replacing its stretch of the rule,
+// and by taking the brand ink with it — the two halves of one mark, so a change
+// that drops either leaves the row looking like plain text.
+test('only the live tab carries the underline segment', async ({ page }) => {
+  await page.goto('/beta');
+
+  const marks = await page.locator('.beta-platform-picker .option').evaluateAll((els) =>
+    els.map((el) => {
+      const style = getComputedStyle(el);
+      return {
+        active: el.classList.contains('active'),
+        color: style.color,
+        segment: style.borderBottomColor,
+        width: style.borderBottomWidth,
+      };
+    })
+  );
+
+  const [live, quiet] = [marks.find((m) => m.active)!, marks.find((m) => !m.active)!];
+  expect(live.width).toBe('3px');
+  expect(quiet.width).toBe('3px');
+  expect(quiet.segment).toBe('rgba(0, 0, 0, 0)');
+  expect(live.segment).not.toBe(quiet.segment);
+  expect(live.color).not.toBe(quiet.color);
 });
 
 // Step 4 prints the address rather than hiding it behind link text, because the
@@ -237,7 +297,7 @@ test('the troubleshooting panel starts collapsed on both tabs', async ({ page })
   await shownPanel(page).getByText('Troubleshooting', { exact: true }).click();
   await expect(panel).toHaveAttribute('open', /.*/);
 
-  await tab(page, 'iPhone & iPad').click();
+  await tab(page, 'iOS').click();
   const iosPanel = shownPanel(page).locator('details.beta-disclosure');
   await expect(iosPanel).not.toHaveAttribute('open', /.*/);
   await shownPanel(page).getByText('Troubleshooting', { exact: true }).click();
