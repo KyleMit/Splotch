@@ -40,7 +40,7 @@ Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Read quick tips for locking the app to one screen using your device's built-in screen pinning, so playtime stays in Splotch.
 
 OPTIONAL AI "MAGIC IMAGE"
-For families who want it, Splotch can turn a child's drawing into a piece of AI art using Google's Gemini. This feature is off until a parent enables it with an access code or their own Google AI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
+For families who want it, Splotch can turn a child's drawing into a piece of AI art using OpenAI. This feature is off until a parent enables it with an access code or their own OpenAI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
 
 WORKS OFFLINE
 The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
@@ -61,7 +61,7 @@ than selecting a more favorable-sounding category.
 ### Data safety
 
 * Data collected: **Yes**. Data shared: **No** under Play's service-provider/user-initiated transfer
-  rules. The drawing is nevertheless sent through Splotch to Google Gemini when the user requests
+  rules. The drawing is nevertheless sent through Splotch to OpenAI when the user requests
   generation, exactly as disclosed in the privacy policy. It is not sold, used for advertising, or
   used for tracking by Splotch.
 * **Photos and videos**: collected, optional, not linked to identity, purpose **App functionality**.

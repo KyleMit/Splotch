@@ -52,7 +52,7 @@ Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Read quick tips for locking the app to one screen using your device's built-in Guided Access, so playtime stays in Splotch.
 
 OPTIONAL AI "MAGIC IMAGE"
-For families who want it, Splotch can turn a child's drawing into a piece of AI art using Google's Gemini. This feature is off until a parent enables it with an access code or their own Google AI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
+For families who want it, Splotch can turn a child's drawing into a piece of AI art using OpenAI. This feature is off until a parent enables it with an access code or their own OpenAI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
 
 WORKS OFFLINE
 The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
@@ -130,7 +130,7 @@ Enter the current questionnaire from the shipped behavior:
 
 ## App Review notes — AI safety
 
-Splotch's optional image-to-image Gemini feature is disabled until a parent supplies an access code
+Splotch's optional image-to-image AI feature is disabled until a parent supplies an access code
 or API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum
 and constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up
 can report either an inappropriate picture or a possible false-positive refusal, review a

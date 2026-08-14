@@ -14,10 +14,7 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  GENERATE_DEADLINE_MS,
-  NETLIFY_SYNC_TIMEOUT_MS,
-} from '../../../web/src/lib/ai/limits.ts';
+import { GENERATE_DEADLINE_MS, NETLIFY_SYNC_TIMEOUT_MS } from '../../../web/src/lib/ai/limits.ts';
 import { RATES } from './model-eval.mjs';
 import { esc } from '../../lib/html.mjs';
 import { chromeStyle, masthead, siteFooter } from '../../scrapbook/lib/scrapbook-chrome.mjs';
@@ -352,7 +349,9 @@ function renderReportHtml({
             ${(GENERATE_DEADLINE_MS / 1000).toFixed(0)} s deadline at the median, and
             ${overAtP90.length} of ${variants.length} exceed it at p90</b> (${overAtP90
               .map((v) => esc(v.label))
-              .join(', ')}). Serving any of those needs the generation to start and finish across two
+              .join(
+                ', '
+              )}). Serving any of those needs the generation to start and finish across two
             requests rather than inside one.</p>`
         : ''
     }

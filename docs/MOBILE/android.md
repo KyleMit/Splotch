@@ -305,15 +305,15 @@ policy). Google Play adds:
 
 Play's [User Data](https://support.google.com/googleplay/android-developer/answer/10144311) policy
 explicitly covers third-party AI integrations, and **the developer stays responsible** for limited
-use, disclosure, and consent — Google being the one running the model does not shift that. Splotch's
-one such integration is `/api/generate-image` → Gemini. What keeps it compliant, and what to
+use, disclosure, and consent — the vendor running the model does not shift that. Splotch's one such
+integration is `/api/generate-image` → OpenAI (ADR-0113). What keeps it compliant, and what to
 re-verify if that flow changes:
 
 * **Consent** — generation is never automatic; it fires only on a tap, and only after a grown-up
   supplied a credential. There are **two** unlock paths, and a Play reviewer asking how consent is
   obtained needs both:
   1. **Typed in Settings** — `AiKeyManager.svelte` verifies the input and stores it
-     (`setAiAccessToken` for an access code, `setAiUserApiKey` for a BYO Gemini key). Consent is the
+     (`setAiAccessToken` for an access code, `setAiUserApiKey` for a BYO OpenAI key). Consent is the
      grown-up's own deliberate entry. Opening Settings is not itself a parental gate; if policy
      requires a challenge for credential entry, apply it to this operation.
   2. **An invite link** — `captureAiAccessTokenFromUrl` (`state/settings.svelte.ts:236-241`) reads
@@ -324,20 +324,27 @@ re-verify if that flow changes:
 
   Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
   grown-up chose to supply breaks the consent story.
-* **Limited use** — ordinary generation passes the drawing to Gemini and returns the result without
+* **Limited use** — ordinary generation passes the drawing to OpenAI and returns the result without
   Splotch persistence. Only a grown-up's separate, gated confirmation of “Report this picture” or
   “Report this refusal” retains evidence in the private report store. Both retain the input,
   server-resolved prompt, style, and timestamp; a refusal report also retains the provider's signed
   refusal reason, and a picture report retains the output. A daily purge deletes the bundle after 30
   days. `lib/server/usage.ts` separately stores only a per-token tally and `deleteUsage` drops that
   tally when the token is revoked.
-* **Disclosure** — `/privacy` names Gemini, states the ordinary request is ephemeral, and
+* **Disclosure** — `/privacy` names OpenAI, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing
-  still passes through `/api/generate-image` with the parent's key — `aiImage.ts:158`), and a
-  **free** Gemini key runs on terms that let Google use the content to improve its products, unlike
-  our paid managed quota (ADR-0064). The exact Data safety and AI-content answers live in
-  `store-assets/STORE-LISTING-ANDROID.md`.
+  still passes through `/api/generate-image` with the parent's key — `aiImage.ts`), and the two
+  halves of OpenAI's data posture are not the same claim — API content is **not** used to train its
+  models, and it **is** retained up to 30 days for abuse monitoring. Say both. The exact Data safety
+  and AI-content answers live in `store-assets/STORE-LISTING-ANDROID.md`.
+* **Under-18 processing** — OpenAI's under-18 API guidance asks developers serving minors for
+  age-appropriate content filters, disclosures, and reporting/escalation paths, which the safety
+  instruction (ADR-0023), `/privacy`, and the in-app report flow cover. It also says personal data of
+  children under 13 should not be processed **without zero data retention enabled on the OpenAI
+  account**, which is granted by OpenAI on request rather than configured — see ADR-0114. Until that
+  is in place the 30-day abuse-monitoring window above is the accurate disclosure, so do not describe
+  the flow as leaving nothing behind anywhere.
 
 ### Policies that don't apply (verified — don't re-derive)
 

@@ -194,7 +194,7 @@ policy). The Apple Kids Category adds:
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
       generation is already disabled until a parent supplies a credential and contains no browsing,
       chat, or sharing.
-* [x] Audit outbound links: source on GitHub, Google AI Studio, Gemini API terms, and the hosted
+* [x] Audit outbound links: source on GitHub, the OpenAI API keys page, OpenAI terms, and the hosted
       feedback form all use Parent Center's external-link gate at the point where they leave the
       app. The bundled privacy policy remains internal. The native bundle excludes the server-backed
       feedback route and its conditional email fallback.

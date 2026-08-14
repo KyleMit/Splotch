@@ -18,7 +18,7 @@
   import type { Origin } from '$lib/state/modal.svelte';
   import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
 
-  const LAST_UPDATED = 'August 13, 2026';
+  const LAST_UPDATED = 'August 14, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -150,36 +150,37 @@
     Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
     illustration. Each installation gets ten successful creations free, and the operation runs
     through the grown-up check configured in Parent Center. After the free creations are used, a
-    grown-up can add a Gemini key in Settings. A drawing is sent only when someone taps the button.
+    grown-up can add an OpenAI key in Settings. A drawing is sent only when someone taps the button.
   </p>
   <ul>
     <li>
-      When tapped, the current drawing is sent to our image service (which uses Google's Gemini AI)
-      to generate a new picture, which is sent right back.
+      When tapped, the current drawing is sent to our image service (which uses OpenAI) to generate
+      a new picture, which is sent right back.
     </li>
     <li>
       <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong> They
-      pass straight through our service on the way to Google and back, unless a grown-up separately confirms
+      pass straight through our service on the way to OpenAI and back, unless a grown-up separately confirms
       “Report this picture” or “Report this refusal.”
     </li>
     <li>
-      Google generates the picture on its own systems, under the
+      OpenAI generates the picture on its own systems, under the
       <a
-        href="https://ai.google.dev/gemini-api/terms"
+        href="https://openai.com/policies/row-terms-of-use/"
         target="_blank"
         rel="noopener noreferrer"
         use:privacyParentalGateLink
       >
-        Gemini API terms</a
-      >, which let it keep prompts and results for a limited time to check for abuse. That part is
-      Google's, not ours.
+        OpenAI terms</a
+      >. Two things about that are worth knowing, because they are not the same thing:
+      <strong>OpenAI does not use what is sent through its API to train its models</strong>, and it
+      does keep a copy for up to 30 days to check for abuse before deleting it. That retention is
+      OpenAI's, not ours.
     </li>
     <li>
-      If you've added your <em>own</em> Gemini key in Settings, the drawing still passes through our
-      service on the way to Google, along with your key — which we use for that one request and
-      never store. It reaches Google under <em>your</em> account and the terms that apply to it, rather
-      than ours. On a free Gemini key, those terms let Google use the content to improve its own products,
-      so it's worth reading them before you add one.
+      If you've added your <em>own</em> OpenAI key in Settings, the drawing still passes through our
+      service on the way to OpenAI, along with your key — which we use for that one request and
+      never store. It reaches OpenAI under <em>your</em> account and the terms that apply to it, rather
+      than ours.
     </li>
     <li>
       To enforce the ten free creations, the app sends a one-way, app-purpose installation code when
