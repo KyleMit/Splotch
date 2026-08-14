@@ -216,10 +216,6 @@
           </li>
           <li>Sign in, or create an OpenAI account.</li>
           <li>
-            Add a little credit under <strong>Billing</strong> — picture-making is pay-as-you-go, with
-            no free allowance.
-          </li>
-          <li>
             Under <strong>Settings → Organization</strong>, finish
             <strong>verification</strong>. OpenAI requires it before any key can make pictures. Do
             this <em>before</em> the next step — a key made without it saves here perfectly and then fails
@@ -231,7 +227,8 @@
           </li>
         </ol>
         <p class="byok-howto-note">
-          Each picture costs roughly 6¢, so a long afternoon of drawing is still small change.
+          OpenAI bills picture-making usage to your account at its own rates, and requires the
+          account to have billing set up before a key can make pictures.
         </p>
       </Disclosure>
 
