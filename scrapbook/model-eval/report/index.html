@@ -304,43 +304,39 @@ ul.method{margin:8px 0;padding-left:20px}ul.method li{margin:5px 0;color:var(--m
 Zero safety refusals anywhere — including the <code>safety__toysword</code> pretend-play probe — so
 nothing here suggests a false-positive problem on ordinary art. One transient upstream 500.
 
-<p><b>The latency finding decides the architecture.</b> The line that matters is
-<b>24 s</b>, not Netlify's 26 s ceiling: the handler aborts first on purpose so its own error wins
-the race (ADR-0063), so <code>GENERATE_DEADLINE_MS</code> is the wall a real request hits. Against
-it, <b>all six OpenAI variants exceed the deadline at p90</b> and five of eight exceed it at the
-median, while both Gemini variants finish in about 7 s with room to spare. Even the fastest OpenAI
-tier — <code>gpt-image-1-mini · low</code>, 19.7 s median — is at 26.8 s by p90. There is no effort
-tier that keeps a buffered request/response handler viable, so moving generation to a
-start-then-poll flow is a requirement of the migration, not an optimization of it.</p>
+<p><b>Shipping: <code>gpt-image-2 · low</code></b> ($0.020/image, 26.7 s median). The tiers do not
+overlap on latency at all — <code>low</code> ran 23–35 s and <code>medium</code> 41–64 s, so
+medium's <em>fastest</em> generation was slower than low's <em>slowest</em>, every single one. For a
+two-year-old that gap is the whole experience, and low costs about a third as much.</p>
 
-<p><b>Cost goes down, not up, at the low end.</b> <code>gpt-image-1-mini · low</code> is $0.0099/image
-— <em>a quarter</em> of what the current Gemini production model costs ($0.0389). Today's spend is
-not the constraint the tier choice should be made on.</p>
+<p><b>What low gives up is interpretation, not sharpness.</b> It transcribes a child's scribbled fill
+literally: a hard green/red seam on the half-and-half <code>coloring-manual__apple</code>, and black
+bars across the <code>coloring-manual__cow</code> whose back was scribbled. <code>medium</code> reads
+the same marks as intent and blends them. Two things make that trade acceptable — low never invents a
+subject the child did not draw, and the literalism may be the base prompt's own doing, since it asks
+for "one flat, even area of that solid color". Worth a prompt experiment before blaming the model.</p>
 
-<p><b>Recommended: <code>gpt-image-2 · medium</code></b> ($0.058, 50.7 s median). It was the most
-consistent across the corpus — faithful to the child's own line colors, filling the frame, and
-composing a scene rather than reinterpreting the subject. It costs 1.5× the outgoing Gemini model,
-which is a real but small increase against a run rate this size. It is one named constant
-(<code>IMAGE_QUALITY</code> in <code>web/src/lib/server/ai/openai.ts</code>) if you disagree after
-looking at the gallery.</p>
+<p><b>The runners-up, and why they lost.</b> <code>gpt-image-1-mini · low</code> is cheapest of all
+($0.0099) and fastest (19.7 s), but it <em>hallucinates</em>: three stray blue strokes on
+<code>scribble-1color__blue</code> came back as two dragons. That is disqualifying for an app whose
+promise is turning <em>your</em> drawing into a picture. <code>gpt-image-1.5 · medium</code> looked
+like the fast-and-detailed middle on the numbers (25.1 s, 10× low's image tokens) and did not survive
+the gallery — it dropped the magic-brush reveal on <code>coloring-magic__cat</code>, shrank
+compositions, and banded the apple anyway, for 2.7× the cost. <code>gpt-image-2 · high</code> is not
+visibly better than medium here and costs 3.3× for twice the wait.</p>
 
-<p>The two runners-up and why they lost: <code>gpt-image-1.5 · medium</code> is <em>half the
-latency</em> for the same money (25.1 s vs 50.7 s) and was excellent on line art, but washed out and
-badly composed on <code>coloring-manual__cow</code>. <code>gpt-image-2 · high</code> is not visibly
-better than medium on this corpus and costs 3.3× as much for 2× the wait.</p>
+<p><b>Latency stopped being a failure mode, but not a wait.</b> Generation moved to a background
+worker with a five-minute budget (ADR-0115), so no tier can miss a deadline any more. The red cells
+below are scored against the old synchronous deadline and are kept because they are why that rework
+happened — not because a red cell is now unshippable.</p>
 
 <p><b>Where to look in the gallery.</b> <code>coloring-manual__cow</code> separates the field on
-fidelity: the child scribbled brown on the cow's back, and Gemini 2.5 rendered a black-and-white cow
-that ignored it, while <code>gpt-image-2 · low</code> went the other way and painted the scribble on
-literally as stripes. <code>line__cat</code> is the cleanest read on whether a model keeps the
-child's own stroke colors or repaints the subject — Gemini 3.1 and
-<code>gpt-image-1-mini · medium</code> both recolor the cat, the rest keep it. The OpenAI variants
-also fill the frame, where Gemini letterboxes a wide drawing into a bordered page.</p>
+fidelity: the child scribbled brown on the cow's back, Gemini 2.5 rendered a black-and-white cow that
+ignored it, and low painted the scribble on as stripes. <code>line__cat</code> is the cleanest read on
+whether a model keeps the child's own stroke colors or repaints the subject.</p>
 
-<p><b>Read the numbers with their limits.</b> One sample per cell, and the run was made at
-concurrency 6, so these are throughput-under-load figures rather than an isolated single-call floor,
-and a single slow call moves a variant's median. That caveat matters for the cheapest tier, whose
-median sits just under the deadline; it does not rescue the recommended tier at 50.7 s.</p>
+<p><b>Read the numbers with their limits.</b> One sample per cell, measured at concurrency 6, so these
+are throughput-under-load figures rather than an isolated single-call floor.</p>
 </div>
 
     <div class="section-head"><h2>Cost &amp; latency</h2><span class="desc">per variant</span></div>
