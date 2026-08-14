@@ -42,12 +42,13 @@
 {/if}
 
 <style>
-  /* Above the canvas and the action drawer, clear of the palette down the left. */
+  /* Above the action drawer (--z-panel) so it is never occluded by the chrome it
+     sits beside, and clear of the Settings Button in the corner below it. */
   .ai-waiting-chip {
     position: fixed;
     right: max(16px, env(safe-area-inset-right));
     bottom: calc(max(16px, env(safe-area-inset-bottom)) + 76px);
-    z-index: var(--z-toast, 60);
+    z-index: var(--z-banner);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -58,9 +59,9 @@
     color: var(--text-strong);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-semibold);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-control);
     cursor: pointer;
-    animation: chip-in 260ms var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1));
+    animation: chip-in 260ms var(--ease-pop);
   }
 
   .ai-waiting-chip.ready {
@@ -68,7 +69,7 @@
     /* The "springs back up" moment: it arrives, then keeps a soft pulse so a
        child who is mid-drawing still finds it a few seconds later. */
     animation:
-      chip-pop 420ms var(--ease-out-back, cubic-bezier(0.34, 1.56, 0.64, 1)),
+      chip-pop 420ms var(--ease-pop),
       chip-pulse 2.2s 420ms ease-in-out 3;
   }
 
@@ -140,14 +141,17 @@
     }
   }
 
+  /* Both keyframes name a token that resolves, or the whole animation computes
+     to `none` and the chip's one way of catching a busy child's eye does
+     nothing at all. */
   @keyframes chip-pulse {
     0%,
     100% {
-      box-shadow: var(--shadow-md);
+      box-shadow: var(--shadow-control);
     }
     50% {
       box-shadow:
-        var(--shadow-md),
+        var(--shadow-pop),
         0 0 0 6px color-mix(in srgb, var(--brand) 22%, transparent);
     }
   }

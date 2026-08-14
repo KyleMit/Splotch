@@ -1,5 +1,6 @@
 import {
   aiResult,
+  restoreAiResult,
   startAiGeneration,
   setAiPreview,
   finishAiGeneration,
@@ -290,7 +291,14 @@ export async function generateAiImage({
   drawing = null,
   style = '',
 }: { drawing?: Blob | null; style?: StyleName | '' } = {}) {
-  if (aiResult.generating) return;
+  if (aiResult.generating) {
+    // A run is already going, and this early return used to be unobservable —
+    // the modal's backdrop swallowed every tap. Now that the chrome is
+    // deliberately live while a run waits in the corner (ADR-0116), a tap on the
+    // magic button has to mean something: show me the one already running.
+    if (aiResult.minimized) restoreAiResult();
+    return;
+  }
 
   const controller = new AbortController();
 

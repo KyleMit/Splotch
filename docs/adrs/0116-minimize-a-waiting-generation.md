@@ -41,9 +41,11 @@ anything is happening.
   modal is on screen"; only the dialog's `open` expression and one flag moved.
 - **−** A child can now start a generation, minimize it, and forget it. The chip persists until
   tapped or the run is closed, which is the mitigation, but there is no timeout that tidies it away.
-- **−** Only one run can be minimized, because only one can be active — starting another while one
-  waits aborts the first, as it always did. That is unchanged, but the corner chip makes an
-  in-flight run visible in a way that might now invite it.
+- **−** Only one run can be minimized, because only one can be active. Tapping the magic button
+  while one waits does not start a second — it reveals the one already running. That early return
+  predates this change, but it used to be unobservable behind the modal's backdrop; now that the
+  chrome is deliberately live, a tap that did nothing at all would read as the app being broken,
+  which is why it restores rather than returning silently.
 - **−** Not reopening automatically means a child who wandered off sees a chip rather than their
   picture. That is the deliberate trade against interrupting a stroke, and it is the half of "flashes
   or springs back up" that respects what they are doing.

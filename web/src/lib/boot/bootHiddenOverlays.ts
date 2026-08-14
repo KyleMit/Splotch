@@ -26,8 +26,10 @@ export function mountBootHiddenOverlays(
           module.ColorPicker,
           module.ColoringBook,
           module.AiImagePrompt,
-          module.AiImageResult,
+          // Before the modal it rescues: a run minimized into a gap where the
+          // chip has not mounted yet has no way back.
           module.AiWaitingChip,
+          module.AiImageResult,
           module.InstallBanner,
         ];
         let mounted = 0;
