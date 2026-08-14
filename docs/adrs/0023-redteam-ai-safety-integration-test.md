@@ -40,13 +40,13 @@ Alternatives considered:
 
 A **manual, token-gated, human-reviewed** red-team suite, plus a safety/error split in the endpoint.
 
-**Encrypted, committed fixture corpus** (`tests/redteam/`):
+**Encrypted, committed fixture corpus** (`tools/redteam/`):
 
-* `scripts/lib/fixtureCrypto.mjs` — AES-256-GCM (`[12B iv][16B authTag][ct]`), key =
+* `tools/redteam/lib/fixture-crypto.mjs` — AES-256-GCM (`[12B iv][16B authTag][ct]`), key =
   `scryptSync(REDTEAM_FIXTURE_KEY, 'splotch-redteam', 32)`. The key lives in `.env`, shared
   out-of-band, never committed.
-* `scripts/redteam-fixtures.mjs` — `encrypt` (`source/` → `encrypted/`) / `decrypt` (`encrypted/` →
-  `decrypted/`).
+* `tools/redteam/manage-encrypted-fixtures.mjs` — `encrypt` (`source/` → `encrypted/`) / `decrypt`
+  (`encrypted/` → `decrypted/`).
 * Only `encrypted/*.enc` is committed; `source/`, `decrypted/`, `output/` are gitignored. The
   drawings are authored by hand (crude safe + unsafe probes, including the sensitive categories:
   explicit anatomy, self-harm, hate symbols, prompt-injection/slur text).
@@ -57,27 +57,27 @@ A **manual, token-gated, human-reviewed** red-team suite, plus a safety/error sp
   probes via a `redteam-gen` script and a `cases.ts` manifest; both were removed once the corpus
   became hand-drawn and prefix-categorized.)
 
-**The runner** (`scripts/redteam-run.mjs`, `npm run redteam`) — a standalone Node script (never
-matched by the Vitest/Playwright globs). It discovers cases from `encrypted/` by prefix, decrypts
-the corpus, boots a throwaway `vite dev` with `ALLOWED_TOKENS_LIST=redteam-token`, POSTs each
-drawing to `/api/generate-image`, and writes `tests/redteam/output/<runId>/` with each input, any
-output image, `report.json`, and a standalone `report.html` (input → output side by side, safe cases
-first then block cases; a missing image shows the returned error/refusal message). The run prints a
-`file://` link and opens the report in the default browser. It **always exits 0** and never asserts
-pass/fail — the verdict is the human review.
+**The runner** (`tools/redteam/run-safety-evaluation.mjs`, `npm run redteam`) — a standalone Node
+script (never matched by the Vitest/Playwright globs). It discovers cases from `encrypted/` by
+prefix, decrypts the corpus, boots a throwaway `vite dev` with `ALLOWED_TOKENS_LIST=redteam-token`,
+POSTs each drawing to `/api/generate-image`, and writes `tools/redteam/output/<runId>/` with each
+input, any output image, `report.json`, and a standalone `report.html` (input → output side by side,
+safe cases first then block cases; a missing image shows the returned error/refusal message). The
+run prints a `file://` link and opens the report in the default browser. It **always exits 0** and
+never asserts pass/fail — the verdict is the human review.
 
-**Safety classification** (`src/lib/server/ai/geminiSafety.ts`, part of the Gemini adapter behind
-the `AiImageProvider` seam — ADR-0047):
+**Safety classification** (`web/src/lib/server/ai/openaiSafety.ts`, part of the OpenAI adapter
+behind the `AiImageProvider` seam — ADR-0047/0113):
 
-* `classifyGeminiResponse()` → `image` | `safety` | `empty`, treating `promptFeedback.blockReason`
-  and policy `finishReason`s (`SAFETY`, `IMAGE_SAFETY`, `PROHIBITED_CONTENT`, `RECITATION`,
-  `BLOCKLIST`, `SPII`) as `safety`; `isSafetyError()` catches the SDK throwing on blocked content.
-* A **prose-only response (no image part) is also classified `safety`**, not `empty`. The red-team
-  run surfaced that Gemini often refuses an unsafe drawing by *replying in text* ("I cannot fulfill
-  this request… offensive content") with a plain `STOP` finishReason and **no** `IMAGE_SAFETY`
-  signal. For an image-generation model a text answer means it declined to draw, so it maps to `422`
-  ("draw something else") rather than a `502` retry that can never succeed. A response with
-  genuinely no content stays `empty` → `502`.
+* `classifyOpenAiResponse()` → `image` | `safety` | `empty`: a completed image-tool call is an
+  image, a message containing refusal or output text is a safety decline, and a response with no
+  usable output is an upstream failure. `isSafetyError()` also catches platform moderation blocks
+  thrown before the model returns a response.
+* A **prose-only response (no image output) is classified `safety`**, not `empty`. The original
+  Gemini red-team run established the provider-independent reason: image models often decline by
+  replying in text without a structured safety signal. For this endpoint, text instead of an image
+  means the model declined to draw, so it maps to `422` ("draw something else") rather than a `502`
+  retry that cannot succeed. A response with genuinely no content stays `empty` → `502`.
 * `/api/generate-image` returns **`422`** for a safety refusal (vs `502` for an upstream/empty
   failure). The client (`aiImage.ts`) maps `422` to a distinct
   `aiResult.error: { kind: 'safety', … }` (`aiGeneration.svelte.ts`); `AiImageResult.svelte` shows a

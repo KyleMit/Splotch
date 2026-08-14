@@ -1,6 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { costOf, imageDims, takePerCategory, VARIANTS } from '../lib/model-eval.mjs';
+import {
+  assertProductionConfig,
+  costOf,
+  imageDims,
+  takePerCategory,
+  VARIANTS,
+} from '../lib/model-eval.mjs';
 import { sizeForAspect } from '../lib/image-providers.mjs';
+
+describe('production config', () => {
+  it('matches the production orchestrator and prompts', () => {
+    expect(() => assertProductionConfig()).not.toThrow();
+  });
+});
 
 describe('imageDims', () => {
   it('returns PNG and SOFn JPEG dimensions in width-by-height order', () => {
@@ -88,13 +100,13 @@ describe('costOf', () => {
     };
     expect(costOf(openai, image)).toBeCloseTo(0.060967, 6);
 
-    // Orchestrator leg: 1200 in @ $1.25/M + 150 out @ $10/M = $0.0015 + $0.0015 = $0.003.
+    // Orchestrator leg: 1200 in @ $5/M + 150 out @ $30/M = $0.006 + $0.0045 = $0.0105.
     const withOrchestrator = costOf(openai, {
       ...image,
       orchInTokens: 1200,
       orchOutTokens: 150,
     });
-    expect(withOrchestrator).toBeCloseTo(0.063967, 6);
+    expect(withOrchestrator).toBeCloseTo(0.071467, 6);
   });
 
   it('bills cached orchestrator input at the cached rate, not twice', () => {
@@ -105,13 +117,13 @@ describe('costOf', () => {
       imageOutTokens: 0,
       orchOutTokens: 0,
     };
-    // 1000 uncached @ $1.25/M = $0.00125; the same 1000 all cached @ $0.125/M = $0.000125.
+    // 1000 uncached @ $5/M = $0.005; the same 1000 all cached @ $0.50/M = $0.0005.
     expect(costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 0 })).toBeCloseTo(
-      0.00125,
+      0.005,
       8
     );
     expect(costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 1000 })).toBeCloseTo(
-      0.000125,
+      0.0005,
       8
     );
   });

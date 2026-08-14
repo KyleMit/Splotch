@@ -16,7 +16,8 @@ export { ROOT };
 // The model that reads the drawing, decides whether it is safe to render, and
 // calls the image tool. Its refusal-in-prose is what the app turns into a 422,
 // so it is part of the production contract rather than an implementation detail.
-export const ORCHESTRATOR_MODEL = 'gpt-5.1';
+export const ORCHESTRATOR_MODEL = 'gpt-5.6-sol';
+export const ORCHESTRATOR_REASONING_EFFORT = 'medium';
 
 // Every cell under comparison. `key` is filesystem-safe because it names the
 // output files; `role` is what the report prints beside the label.
@@ -109,7 +110,7 @@ export const RATES = {
 };
 
 // The orchestrator's own tokens, billed separately from the image tool.
-const ORCHESTRATOR_RATES = { inPerM: 1.25, cachedInPerM: 0.125, outPerM: 10.0 };
+const ORCHESTRATOR_RATES = { inPerM: 5.0, cachedInPerM: 0.5, outPerM: 30.0 };
 
 // The only colors a child can lay down with the pen, so faithful inputs must use them.
 export const PALETTE = PALETTE_COLORS.map(({ hex, label }) => ({ hex, label }));
@@ -147,6 +148,16 @@ When you must refuse, respond with a single short sentence declining, e.g. "I ca
 // than one path only while the owning module is mid-migration: the string has to
 // still live in one of them, and naming both keeps the drift error specific.
 const PRODUCTION_SOURCES = [
+  {
+    name: 'ORCHESTRATOR_MODEL',
+    candidates: ['web/src/lib/server/ai/openai.ts'],
+    value: `const ORCHESTRATOR_MODEL = '${ORCHESTRATOR_MODEL}';`,
+  },
+  {
+    name: 'ORCHESTRATOR_REASONING_EFFORT',
+    candidates: ['web/src/lib/server/ai/openai.ts'],
+    value: `const ORCHESTRATOR_REASONING_EFFORT = '${ORCHESTRATOR_REASONING_EFFORT}';`,
+  },
   {
     name: 'SAFETY_SYSTEM_INSTRUCTION',
     candidates: ['web/src/lib/server/ai/openai.ts'],
