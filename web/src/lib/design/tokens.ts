@@ -165,6 +165,13 @@ export const zIndex = {
   // Lifting a flyout over the banner means raising zPanel, not this.
   zFlyout: 901,
   zBanner: 950, // InstallBanner — takes over the corner controls while shown
+  // AiWaitingChip — the only way back into a minimized generation (ADR-0116),
+  // so it outranks the banner that shares its corner. A tie would be settled by
+  // DOM order, and bootHiddenOverlays mounts the banner second: the chip ended
+  // up completely covered and untappable, with a paid run stranded behind it.
+  // The banner also stands down while a run is minimized; this is the guarantee
+  // that does not depend on the banner remembering to.
+  zWaitingChip: 951,
   zClearAcceptZone: 999, // below the button it rings, so the button stays on top
   zClearButton: 1000,
   // Pre-existing tie with zClearButton: both are fixed, and which one paints on

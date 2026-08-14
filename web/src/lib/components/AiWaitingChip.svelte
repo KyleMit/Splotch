@@ -42,13 +42,14 @@
 {/if}
 
 <style>
-  /* Above the action drawer (--z-panel) so it is never occluded by the chrome it
-     sits beside, and clear of the Settings Button in the corner below it. */
+  /* Above the action drawer (--z-panel) and the Install Banner (--z-banner), the
+     two things that share this corner, and clear of the Settings Button below
+     it. See the token's own note for why a tie with the banner is not enough. */
   .ai-waiting-chip {
     position: fixed;
     right: max(16px, env(safe-area-inset-right));
     bottom: calc(max(16px, env(safe-area-inset-bottom)) + 76px);
-    z-index: var(--z-banner);
+    z-index: var(--z-waiting-chip);
     display: flex;
     align-items: center;
     gap: 10px;
