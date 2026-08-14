@@ -211,24 +211,30 @@ test('only the live tab carries the underline segment', async ({ page }) => {
   await page.goto('/beta');
   await tabsAreLive(page);
 
-  const marks = await page.locator('.beta-platform-picker .option').evaluateAll((els) =>
-    els.map((el) => {
-      const style = getComputedStyle(el);
-      return {
-        active: el.classList.contains('active'),
-        color: style.color,
-        segment: style.borderBottomColor,
-        width: style.borderBottomWidth,
-      };
-    })
-  );
+  // `.active` lands at hydration and the option transitions color and
+  // border-color in, so a snapshot taken straight after tabsAreLive can read
+  // frame 0 of that transition — an active tab whose segment is still the
+  // inactive transparent. Retry the whole read until the mark has painted.
+  await expect(async () => {
+    const marks = await page.locator('.beta-platform-picker .option').evaluateAll((els) =>
+      els.map((el) => {
+        const style = getComputedStyle(el);
+        return {
+          active: el.classList.contains('active'),
+          color: style.color,
+          segment: style.borderBottomColor,
+          width: style.borderBottomWidth,
+        };
+      })
+    );
 
-  const [live, quiet] = [marks.find((m) => m.active)!, marks.find((m) => !m.active)!];
-  expect(live.width).toBe('3px');
-  expect(quiet.width).toBe('3px');
-  expect(quiet.segment).toBe('rgba(0, 0, 0, 0)');
-  expect(live.segment).not.toBe(quiet.segment);
-  expect(live.color).not.toBe(quiet.color);
+    const [live, quiet] = [marks.find((m) => m.active)!, marks.find((m) => !m.active)!];
+    expect(live.width).toBe('3px');
+    expect(quiet.width).toBe('3px');
+    expect(quiet.segment).toBe('rgba(0, 0, 0, 0)');
+    expect(live.segment).not.toBe(quiet.segment);
+    expect(live.color).not.toBe(quiet.color);
+  }).toPass();
 });
 
 // Step 4 prints the address rather than hiding it behind link text, because the

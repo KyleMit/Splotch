@@ -289,6 +289,30 @@ export async function openHubSection(page: Page, section: string, expectedField:
   }).toPass({ timeout: 10_000 });
 }
 
+const DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS = 1000;
+const DISCLOSURE_PICK_TIMEOUT_MS = 10_000;
+
+// Open a TocDisclosure (the narrow-screen contents row on /design and
+// /changelog) and prove it is hydrated before returning. The <details> toggles
+// natively, so the panel opens before the component's delegated pick handler
+// exists — a row activated inside that window gets the browser's own anchor
+// jump, the hazard TocDisclosure.svelte documents as accepted rather than
+// fixed. The computed px max-height is the hydration proof: only the
+// component's post-hydration cap effect sets it. The open itself retries
+// because hydration reconciles the natively-opened <details> back to the
+// component's closed state, swallowing an early click.
+export async function openHydratedContents(contents: Locator) {
+  const panel = contents.locator('.panel');
+  await expect(async () => {
+    if (!(await panel.isVisible().catch(() => false))) {
+      await contents.locator('summary').click({ timeout: DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS });
+    }
+    await expect(panel).toHaveCSS('max-height', /\d+px/, {
+      timeout: DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS,
+    });
+  }).toPass({ timeout: DISCLOSURE_PICK_TIMEOUT_MS });
+}
+
 // The highlighted Settings row's own seat, measured against the column that
 // holds it. Read off the nav rather than the browser viewport: the column is its
 // own scroller wherever the section list outgrows it, and that clipping is the
