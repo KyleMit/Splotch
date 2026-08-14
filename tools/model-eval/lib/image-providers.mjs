@@ -163,7 +163,15 @@ function openAiMessageText(response) {
     .trim();
 }
 
-async function callOpenAi({ apiKey, variant, image, prompt, systemInstruction, timeoutMs }) {
+async function callOpenAi({
+  apiKey,
+  variant,
+  image,
+  prompt,
+  systemInstruction,
+  timeoutMs,
+  imageToolOverrides = {},
+}) {
   const client = new OpenAI({ apiKey, timeout: timeoutMs, maxRetries: 0 });
   let response;
   try {
@@ -194,6 +202,9 @@ async function callOpenAi({ apiKey, variant, image, prompt, systemInstruction, t
           model: variant.model,
           quality: variant.quality,
           size: sizeForAspect(image.width, image.height),
+          // Experiment-only extra tool params (e.g. input_fidelity) from the
+          // adherence lab; production parity holds when this is absent.
+          ...imageToolOverrides,
         },
       ],
     });
