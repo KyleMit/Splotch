@@ -1,5 +1,6 @@
 <script lang="ts" generics="Id extends string">
   import { tick } from 'svelte';
+  import { pushState } from '$app/navigation';
   import Disclosure from '../design/Disclosure.svelte';
   import SidebarToc, { type SidebarTocItem } from './SidebarToc.svelte';
 
@@ -104,21 +105,29 @@
   // leave the document before a jump means anything — the browser computes the
   // target's position at click time and lands a full panel-height short.
   async function jumpTo(href: string) {
+    // Focus moves to the summary before the panel leaves the flow. The
+    // activated row is inside the collapsing panel, and a collapse that hides
+    // the focused element hands focus to <body> on the browser's own schedule —
+    // asynchronously, so a re-focus placed after the collapse can be undone
+    // under load, dropping a keyboard user out of the tab order at the moment
+    // they navigate. Handing focus over first means the panel never hides a
+    // focused element. preventScroll keeps the handoff from scrolling before
+    // the jump below is measured.
+    row?.querySelector('summary')?.focus({ preventScroll: true });
     open = false;
     await tick();
-    // Setting the fragment is what puts the section in the URL and in session
-    // history, so a narrow-screen pick is as shareable, and as reversible with
-    // Back, as the anchor the wide rail hands the browser. It is a no-op when
-    // the reader is already on that fragment, and picking a section still has
-    // to take them there — hence the scroll as well. Both land on the same
-    // scroll-margin-top, so the second is a no-op the rest of the time.
-    window.location.hash = href;
+    // Putting the fragment in the URL and in session history is what makes a
+    // narrow-screen pick as shareable, and as reversible with Back, as the
+    // anchor the wide rail hands the browser. pushState rather than assigning
+    // location.hash: a fragment navigation runs the browser's focusing steps
+    // for the target, and a plain section is not focusable, so the browser
+    // moves focus to <body> — on its own schedule, which can land after the
+    // handoff above and undo it. pushState records the same history entry with
+    // no navigation, leaving this function the only thing touching focus.
+    // Guarded so re-picking the current section doesn't stack a Back-trapping
+    // duplicate entry; the scroll below still takes the reader there.
+    if (window.location.hash !== href) pushState(href, {});
     document.getElementById(decodeURIComponent(href.slice(1)))?.scrollIntoView();
-    // The row that was activated is inside the panel that just closed, so focus
-    // would otherwise fall to <body> — dropping a keyboard user out of the tab
-    // order at the moment they navigate. preventScroll keeps this from undoing
-    // the jump above.
-    row?.querySelector('summary')?.focus({ preventScroll: true });
   }
 </script>
 
