@@ -130,15 +130,15 @@ Enter the current questionnaire from the shipped behavior:
 
 ## App Review notes — AI safety
 
-Splotch's optional image-to-image AI feature is disabled until a parent supplies an access code
-or API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum
-and constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up
-can report either an inappropriate picture or a possible false-positive refusal, review a
-confirmation, follow the dedicated parental-gate policy, and privately send the evidence named
-there. A refusal report contains the input drawing, resolved prompt, style, provider refusal reason,
-and timestamp; a picture report contains the drawing, prompt, style, output, and timestamp. A human
-reviews reports within 24 hours; evidence is automatically deleted after 30 days. There is no
-browsing, chat, public sharing, or user-to-user distribution.
+Splotch's optional image-to-image AI feature is disabled until a parent supplies an access code or
+API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum and
+constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up can
+report either an inappropriate picture or a possible false-positive refusal, review a confirmation,
+follow the dedicated parental-gate policy, and privately send the evidence named there. A refusal
+report contains the input drawing, resolved prompt, style, provider refusal reason, and timestamp; a
+picture report contains the drawing, prompt, style, output, and timestamp. A human reviews reports
+within 24 hours; evidence is automatically deleted after 30 days. There is no browsing, chat, public
+sharing, or user-to-user distribution.
 
 ## Screenshots (this folder)
 

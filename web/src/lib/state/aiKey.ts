@@ -1,5 +1,5 @@
 import { STORAGE_KEYS, readString, removeKey } from '../storage';
-import { looksLikeApiKey } from '../ai/keyFormat';
+import { looksLikeRetiredGeminiKey } from '../ai/keyFormat';
 import { saveApiKey, loadApiKey, clearApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 import { settings } from './settings.svelte';
@@ -73,12 +73,23 @@ export async function hydrateApiKey() {
 
   if (legacy) removeKey(STORAGE_KEYS.legacyAiUserApiKey);
 
-  // A key for the provider the app used to call is not a working credential any
-  // more (ADR-0113). Restoring it would leave AI switched on and fail every
-  // generation with an upstream error the parent cannot act on; forgetting it
-  // puts Settings back into the state that explains what to do. The stored copy
-  // goes too, so this costs one decryption rather than repeating every launch.
-  if (key && !looksLikeApiKey(key)) {
+  // Hydration lost the race, so it must not act on what it read. `loadApiKey()`
+  // above is awaited, and a parent can finish entering a key inside that window;
+  // that write goes through the coordinator, which exists so an older write
+  // cannot land on a newer one. Everything below is an older write — the delete
+  // does not go through that queue at all, and the assignment would put the
+  // value that preceded the save back into the live store. Whatever arrived
+  // while this was reading is newer than anything read here.
+  if (settings.aiUserApiKey) return;
+
+  // Deleting is driven by recognising the retired shape, not by failing to
+  // recognise the current one: a destructive step keyed off a negation removes
+  // anything a future key format is not yet known to be. A key for the provider
+  // the app used to call is not a working credential any more (ADR-0113) —
+  // restoring it would leave AI switched on and fail every generation with an
+  // upstream error the parent cannot act on, while forgetting it puts Settings
+  // back into the state that explains what to do.
+  if (key && looksLikeRetiredGeminiKey(key)) {
     await clearApiKey();
     return;
   }

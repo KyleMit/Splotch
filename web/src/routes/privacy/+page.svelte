@@ -165,22 +165,26 @@
     <li>
       OpenAI generates the picture on its own systems, under the
       <a
-        href="https://openai.com/policies/row-terms-of-use/"
+        href="https://openai.com/policies/services-agreement/"
         target="_blank"
         rel="noopener noreferrer"
         use:privacyParentalGateLink
       >
-        OpenAI terms</a
+        OpenAI Services Agreement</a
       >. Two things about that are worth knowing, because they are not the same thing:
-      <strong>OpenAI does not use what is sent through its API to train its models</strong>, and it
-      does keep a copy for up to 30 days to check for abuse before deleting it. That retention is
-      OpenAI's, not ours.
+      <strong
+        >OpenAI does not use what is sent through its API to train its models, unless the account
+        holder opts in to sharing</strong
+      >, and it does keep a copy for up to 30 days to check for abuse before deleting it. That
+      retention is OpenAI's, not ours. We also ask OpenAI not to keep the picture in its own logs,
+      which is the one part of its retention we control.
     </li>
     <li>
       If you've added your <em>own</em> OpenAI key in Settings, the drawing still passes through our
       service on the way to OpenAI, along with your key — which we use for that one request and
       never store. It reaches OpenAI under <em>your</em> account and the terms that apply to it, rather
-      than ours.
+      than ours. That includes the training setting on your account: if you have opted in to sharing,
+      it is your child's drawing that is shared, so it's worth checking before you add a key.
     </li>
     <li>
       To enforce the ten free creations, the app sends a one-way, app-purpose installation code when

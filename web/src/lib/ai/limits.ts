@@ -42,3 +42,11 @@ export const GENERATION_POLL_TIMEOUT_MS = 240_000;
 // feels prompt, spread enough that a two-minute wait is a couple of dozen
 // requests rather than a couple of hundred.
 export const GENERATION_POLL_INTERVAL_MS = 3_000;
+
+// How long a background generation stays collectible (ADR-0115). It bounds two
+// things that must not disagree: how long the job store keeps an outcome, and
+// how long a free-generation reservation is held open waiting for that outcome
+// to be settled. A lease shorter than this reclaims the slot while the picture
+// is still legitimately on its way, and the completion that follows finds no
+// reservation and silently books a success as an abandoned failure.
+export const GENERATION_JOB_TTL_MS = 20 * 60 * 1000;

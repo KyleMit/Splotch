@@ -28,7 +28,7 @@
   const PROTECTED_FEATURES: Record<ParentalGateFeature, { label: string; help: string }> = {
     aiImage: {
       label: 'Generating an AI image',
-      help: 'Before a drawing is sent to Google for image generation.',
+      help: 'Before a drawing is sent to OpenAI for image generation.',
     },
     imageReport: {
       label: 'Reporting an AI result',

@@ -8,6 +8,16 @@ import { awaitGeneration } from './aiGenerationPoll';
 
 const accepted = () => new Response(null, { status: 202 });
 const picture = () => new Response(new Blob(['png']), { status: 200 });
+const throttled = () =>
+  new Response(JSON.stringify({ ok: false, error: 'slow down' }), {
+    status: 429,
+    headers: { 'Content-Type': 'application/json', 'Retry-After': '0' },
+  });
+const unavailable = () =>
+  new Response(JSON.stringify({ ok: false, code: 'GENERATION_UNAVAILABLE', error: 'not now' }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  });
 const refused = () =>
   new Response(JSON.stringify({ ok: false, error: 'blocked' }), {
     status: 422,
@@ -58,6 +68,27 @@ describe('awaitGeneration', () => {
         throw new TypeError('network down');
       };
       expect((await run([flaky, picture])).kind).toBe('image');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps waiting through a throttled poll instead of abandoning a paid picture', async () => {
+    vi.useFakeTimers();
+    try {
+      expect((await run([accepted, throttled, picture])).kind).toBe('image');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps waiting when the store is momentarily unreadable', async () => {
+    // An unreadable store says nothing about the job — the picture may be
+    // sitting there finished. Only a machine-readable code can separate this
+    // from a generation that genuinely failed.
+    vi.useFakeTimers();
+    try {
+      expect((await run([accepted, unavailable, picture])).kind).toBe('image');
     } finally {
       vi.useRealTimers();
     }

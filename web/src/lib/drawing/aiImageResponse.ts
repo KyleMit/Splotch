@@ -1,10 +1,11 @@
 import { FREE_DAILY_LIMIT_EXHAUSTED_CODE, FREE_GRANT_EXHAUSTED_CODE } from '$lib/freeGenerations';
+import { GENERATION_UNAVAILABLE_CODE } from '$lib/ai/generationResult';
 
 export type AiImageResponse =
   | { kind: 'image'; blob: Blob }
   /** Accepted, finishing in the background — collect it from /api/generation-result. */
   | { kind: 'started'; jobId: string; pollAfterMs: number }
-  /** Not finished yet. Only a poll sees this. */
+  /** Not finished yet, or not readable just now. Only a poll sees this. */
   | { kind: 'pending' }
   | { kind: 'safety' }
   | { kind: 'throttled'; retryAfter: string | null; detail: string }
@@ -68,6 +69,10 @@ export async function readAiImageResponse(response: Response): Promise<AiImageRe
   if (response.ok) return { kind: 'image', blob: await response.blob() };
 
   const { detail, code } = await readError(response);
+  // The store could not be read; the job is very likely still there and
+  // finished. Waiting is what the code exists to make safe — abandoning here
+  // throws away a picture that has already been paid for.
+  if (code === GENERATION_UNAVAILABLE_CODE) return { kind: 'pending' };
   if (code === FREE_GRANT_EXHAUSTED_CODE) return { kind: 'free-exhausted' };
   if (code === FREE_DAILY_LIMIT_EXHAUSTED_CODE) return { kind: 'free-unavailable' };
   if (response.status === SAFETY_REFUSAL_STATUS) return { kind: 'safety' };
