@@ -531,6 +531,9 @@ try {
       // non-empty: with no key the managed-token path answers 500 from the
       // authorization step and never reaches those guards.
       OPENAI_API_KEY: 'not-a-usable-openai-key',
+      // Blank on purpose: the shipped generation deadline is what the contract
+      // should be checked against. Only the manual red-team suite raises it.
+      GENERATE_DEADLINE_MS_OVERRIDE: '',
       // Reporting stays unconfigured so the report cases assert the graceful 503
       // rather than opening a real GitHub issue.
       GITHUB_ISSUE_TOKEN: '',

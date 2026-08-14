@@ -9,7 +9,7 @@ import type { GenerateContentResponse } from '@google/genai';
 // erased type import, because those callers are plain .mjs reaching it through
 // --experimental-strip-types.
 //
-// `isSafetyError` came across with it and has no caller here: an asset run wants
+// The adapter's `isSafetyError` companion did NOT come across: an asset run wants
 // a thrown provider error to stay thrown and fail the run loudly, rather than be
 // reclassified into a refusal a batch script would shrug off.
 
@@ -63,18 +63,4 @@ export function classifyGeminiResponse(response: GenerateContentResponse): Safet
 
   // Nothing usable at all — a genuine empty/upstream failure (retryable).
   return { kind: 'empty', reason: String(finishReason ?? 'no image part returned') };
-}
-
-// A thrown Gemini error usually means a real API failure (auth, quota, 5xx), but
-// the SDK can also throw on blocked content. Treat the latter as a safety refusal
-// so the UI guides the child to a different drawing rather than "try again".
-export function isSafetyError(err: unknown): boolean {
-  const status = (err as { status?: number })?.status;
-  const msg = (err instanceof Error ? err.message : String(err)).toUpperCase();
-  // A 400 INVALID_ARGUMENT is a *request* error (a bad field/value), not a content
-  // refusal — don't let category names that appear in such a message (e.g.
-  // "safety_settings", "HARM_CATEGORY_…") get mistaken for a safety block.
-  if (/INVALID_ARGUMENT|INVALID VALUE AT/.test(msg)) return false;
-  if (status === 400 && /BLOCKED|PROHIBIT|SAFETY POLICY/.test(msg)) return true;
-  return /PROHIBITED_CONTENT|IMAGE_SAFETY/.test(msg);
 }

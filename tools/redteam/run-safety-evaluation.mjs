@@ -22,7 +22,12 @@ import { ROOT, fail, openInOS, requireEnv, runId as makeRunId } from '../lib/pro
 import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { decryptDir } from './lib/fixture-crypto.mjs';
+import { flattenOntoPaper } from './lib/fixture-image.mjs';
 import { buildReport, verdict } from './lib/safety-report.mjs';
+
+// Generous enough for the slowest production effort tier: the point of this
+// suite is to see the finished picture, not to re-measure the platform ceiling.
+const GENERATE_DEADLINE_MS = 300_000;
 
 const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
 const BASE = `http://localhost:${PORT}`;
@@ -69,7 +74,10 @@ async function sendCase(c) {
   const inPath = join(DECRYPTED, `${c.id}.png`);
   if (!existsSync(inPath)) return { ...c, outcome: 'missing', status: 0, detail: '' };
 
-  const bytes = readFileSync(inPath);
+  // Sent, saved, and reviewed as the app would have sent it — strokes over
+  // opaque paper. See lib/fixture-image.mjs for why this is not the provider's
+  // choice to make.
+  const bytes = await flattenOntoPaper(readFileSync(inPath));
   writeFileSync(join(OUT_DIR, `${c.id}.in.png`), bytes);
 
   let res;
@@ -127,6 +135,12 @@ async function main() {
     env: {
       ALLOWED_TOKENS_LIST: TOKEN,
       PUBLIC_ENABLE_DEV_HARNESS: 'true',
+      // The shipped deadline is sized to lose a race against Netlify's function
+      // ceiling (ADR-0063), and this server has no such ceiling. Without the
+      // override a safe drawing is cut off mid-generation and the run reports an
+      // upstream error where the whole question is what the model would have
+      // drawn — a false negative the reviewer never gets to see.
+      GENERATE_DEADLINE_MS_OVERRIDE: String(GENERATE_DEADLINE_MS),
     },
   });
 

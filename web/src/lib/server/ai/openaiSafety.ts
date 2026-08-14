@@ -34,10 +34,41 @@ function outputFormatOf(call: object): ImageOutputFormat {
     : 'png';
 }
 
+// Machine-readable policy signals, in the two places the API reports one. These
+// are checked before any prose, because the alternative — inferring policy from
+// whether the model happened to say something — gets both directions wrong: an
+// upstream failure that arrives with an apology becomes a 422 telling the child
+// to draw something different, and a policy block that arrives silently becomes
+// a 502 inviting a retry that can never succeed.
+const POLICY_ERROR_CODES = new Set([
+  'moderation_blocked',
+  'content_policy_violation',
+  'image_content_policy_violation',
+]);
+const POLICY_INCOMPLETE_REASONS = new Set(['content_filter']);
+
+function policySignal(response: OpenAiResponse): string | null {
+  const code = response?.error?.code;
+  if (code && POLICY_ERROR_CODES.has(code)) return response.error?.message || code;
+  const reason = response?.incomplete_details?.reason;
+  if (reason && POLICY_INCOMPLETE_REASONS.has(reason)) return reason;
+  return null;
+}
+
+/** The prose the model answered with, across every message part. */
+function messageText(response: OpenAiResponse): string {
+  return (response?.output ?? [])
+    .filter((item) => item.type === 'message')
+    .flatMap((item) => item.content ?? [])
+    .map((part) => ('refusal' in part ? part.refusal : 'text' in part ? part.text : ''))
+    .join(' ')
+    .trim();
+}
+
 /**
- * The image tool's own terminal states. `completed` without bytes and any other
- * status are upstream failures, not policy decisions — the model's policy
- * decision is to not call the tool at all.
+ * The image tool's own terminal states. A tool call that ran and failed is an
+ * upstream failure, not a policy decision — the model's policy decision is to
+ * not call the tool at all.
  */
 export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassification {
   const output = response?.output ?? [];
@@ -47,33 +78,31 @@ export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassifi
     return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
   }
 
-  // No picture, but the model said something. For an image-generation request
-  // that means it declined to draw — a `refusal` content part is the SDK's typed
-  // decline and a plain `text` part is the model following the system
-  // instruction's "reply with one short sentence" — so treat either as a safety
-  // refusal and guide the child to a different drawing rather than a "try again"
-  // that can never succeed.
-  const message = output
-    .filter((item) => item.type === 'message')
-    .flatMap((item) => item.content ?? [])
-    .map((part) => ('refusal' in part ? part.refusal : 'text' in part ? part.text : ''))
-    .join(' ')
-    .trim();
-  if (message) return { kind: 'safety', reason: message };
+  const policy = policySignal(response);
+  if (policy) return { kind: 'safety', reason: policy };
 
-  // Nothing usable at all — a genuine empty/upstream failure (retryable). Name
-  // the output items that did arrive: an image call that stopped short reads
-  // very differently from an empty output list, and the status alone says
-  // neither.
+  // The tool was called and did not produce bytes. Whatever the model said
+  // alongside that, the drawing was not declined — something broke mid-render,
+  // and the child should be offered the same drawing again rather than told to
+  // draw a different one.
   const shape = output
     .map((item) => `${item.type}${'status' in item && item.status ? `:${item.status}` : ''}`)
     .join(', ');
-  return {
-    kind: 'empty',
-    reason:
-      response?.error?.message ??
-      `no image and no text (status ${response?.status ?? 'unknown'}; output: ${shape || 'none'})`,
-  };
+  const describeFailure = () =>
+    response?.error?.message ??
+    `no image (status ${response?.status ?? 'unknown'}; output: ${shape || 'none'})`;
+  if (call) return { kind: 'empty', reason: describeFailure() };
+
+  // No tool call at all, but the model said something: it read the drawing and
+  // chose not to draw it. A `refusal` content part is the SDK's typed decline
+  // and a plain `text` part is the model following the system instruction's
+  // "reply with one short sentence" — either way, guide the child to a different
+  // drawing rather than a "try again" that can never succeed.
+  const message = messageText(response);
+  if (message) return { kind: 'safety', reason: message };
+
+  // Nothing usable at all — a genuine empty/upstream failure (retryable).
+  return { kind: 'empty', reason: describeFailure() };
 }
 
 // A thrown OpenAI error usually means a real API failure (auth, quota, 5xx), but

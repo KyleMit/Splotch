@@ -124,6 +124,10 @@ export const commonWebServer = {
     ADMIN_ACCESS_TOKEN,
     ALLOWED_TOKENS_LIST: allowedTokensList(MANAGED_ACCESS_TOKEN),
     OPENAI_API_KEY: UNUSABLE_PROVIDER_KEY,
+    // Blank on purpose: the shipped generation deadline is what the specs should
+    // exercise. Only the manual red-team suite raises it, and only because a
+    // local server has no platform ceiling to stay under.
+    GENERATE_DEADLINE_MS_OVERRIDE: '',
     GITHUB_ISSUE_TOKEN: '',
     GITHUB_ISSUE_REPO: NOWHERE_ISSUE_REPO,
     // Non-blank on purpose: the free-tier report spec needs generate-image to

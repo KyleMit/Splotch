@@ -47,6 +47,7 @@ export const SWEEP_SERVER_ENV = {
   ADMIN_ACCESS_TOKEN: 'test-admin-secret',
   ALLOWED_TOKENS_LIST: 'daycare-club,e2e-harness-probe',
   OPENAI_API_KEY: 'not-a-usable-openai-key',
+  GENERATE_DEADLINE_MS_OVERRIDE: '',
   GITHUB_ISSUE_TOKEN: '',
   GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
   REPORT_TOKEN_SECRET: 'test-report-token-secret',

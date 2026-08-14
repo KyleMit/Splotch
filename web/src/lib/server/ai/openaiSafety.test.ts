@@ -84,6 +84,51 @@ describe('classifyOpenAiResponse', () => {
     expect((r as { reason: string }).reason).toContain('image_generation_call:incomplete');
   });
 
+  it('keeps a failed image call retryable even when the model apologised for it', () => {
+    // The tool ran and broke. An apology alongside it is not the model declining
+    // the drawing, and filing it as a refusal would tell the child to draw
+    // something different when the same drawing would have worked.
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'completed',
+        output: [
+          imageCall({ result: null, status: 'failed' }),
+          message([{ type: 'output_text', text: "Sorry, I couldn't finish that." }]),
+        ],
+      })
+    );
+    expect(r).toMatchObject({ kind: 'empty' });
+  });
+
+  it('reads a policy block off the error code rather than waiting for prose', () => {
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'failed',
+        output: [],
+        error: { code: 'image_content_policy_violation', message: 'blocked by policy' },
+      })
+    );
+    expect(r).toEqual({ kind: 'safety', reason: 'blocked by policy' });
+  });
+
+  it('reads a content-filter stop off incomplete_details', () => {
+    const r = classifyOpenAiResponse(
+      resp({ status: 'incomplete', output: [], incomplete_details: { reason: 'content_filter' } })
+    );
+    expect(r).toEqual({ kind: 'safety', reason: 'content_filter' });
+  });
+
+  it('does not mistake a non-policy incomplete reason for a refusal', () => {
+    const r = classifyOpenAiResponse(
+      resp({
+        status: 'incomplete',
+        output: [],
+        incomplete_details: { reason: 'max_output_tokens' },
+      })
+    );
+    expect(r).toMatchObject({ kind: 'empty' });
+  });
+
   it('treats a blank/whitespace reply as empty, not a refusal', () => {
     const r = classifyOpenAiResponse(
       resp({ status: 'completed', output: [message([{ type: 'output_text', text: '   ' }])] })
