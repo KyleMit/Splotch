@@ -35,14 +35,19 @@
     invalid: {
       apiKey: "That key didn't work. Double-check it and try again.",
       accessCode: "That doesn't look like a valid key or access code. Please try again.",
+      retiredGeminiKey:
+        'That looks like a Google Gemini key. Splotch now uses OpenAI — create a key at platform.openai.com and paste that one instead.',
     },
     saveFailed: {
       apiKey: 'Your key works, but could not be saved securely on this device. Please try again.',
       accessCode: 'Your credential works, but could not be saved securely.',
+      // Unreachable: a retired key never verifies, so it never reaches saving.
+      retiredGeminiKey: 'That key could not be saved securely on this device.',
     },
     accepted: {
       apiKey: 'Your key works and has been accepted!',
       accessCode: 'Access granted! You have special access — no API key needed.',
+      retiredGeminiKey: '',
     },
   };
 
@@ -63,7 +68,7 @@
   // Drives the copy that tells the parent exactly where their API key is kept on
   // this platform.
   let platform = $state<Platform>('web');
-  // The single AI field accepts either a Gemini API key (BYOK) or a secret
+  // The single AI field accepts either an OpenAI API key (BYOK) or a secret
   // access code. AI unlocks when the parent has provided either one.
   let keyInput = $state('');
   let keyStatus = $state<SubmitStatus>('idle');
@@ -181,39 +186,49 @@
               ? 'creation'
               : 'creations'} left.</strong
           >
-          No setup is needed. After those are used, add your own Gemini API key to keep creating.
+          No setup is needed. After those are used, add your own OpenAI API key to keep creating.
         {:else if freeGenerations.available}
-          <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your own Gemini
+          <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your own OpenAI
           API key to keep creating.
         {:else}
-          Add your own Gemini API key to create AI art while the free allowance is unavailable.
+          Add your own OpenAI API key to create AI art while the free allowance is unavailable.
         {/if}
         Your key is saved only on this device, used only for your child's creations, and billed to your
-        Google account. We never keep a copy of it.
+        OpenAI account. We never keep a copy of it.
       </p>
 
       <Disclosure class="byok-howto">
-        {#snippet summary()}How do I get a Gemini API key?{/snippet}
+        {#snippet summary()}How do I get an OpenAI API key?{/snippet}
         <ol>
           <li>
             Open <a
-              href="https://aistudio.google.com/apikey"
+              href="https://platform.openai.com/api-keys"
               target="_blank"
               rel="noopener noreferrer"
-              use:parentalGateLink>Google AI Studio</a
+              use:parentalGateLink>the OpenAI API keys page</a
             >.
           </li>
-          <li>Sign in with a Google account.</li>
-          <li>Click <strong>Create API key</strong> and confirm.</li>
+          <li>Sign in, or create an OpenAI account.</li>
           <li>
-            Copy the key (it starts with <code>AQ.…</code> or <code>AIza…</code>) and paste it
-            below.
+            Click <strong>Create new secret key</strong>, then copy it (it starts with
+            <code>sk-…</code>) and paste it below. You only get to see it once.
+          </li>
+          <li>
+            Add a little credit under <strong>Billing</strong> — picture-making is pay-as-you-go, with
+            no free allowance.
+          </li>
+          <li>
+            Under <strong>Settings → Organization</strong>, finish
+            <strong>verification</strong>. OpenAI requires it before any key can make pictures, and
+            it's the one step that looks optional but isn't.
           </li>
         </ol>
-        <p class="byok-howto-note">The free tier is generous and is plenty for occasional use.</p>
+        <p class="byok-howto-note">
+          Each picture costs roughly 6¢, so a long afternoon of drawing is still small change.
+        </p>
       </Disclosure>
 
-      <label class="access-code-label" for="aiKeyInput">Gemini API Key</label>
+      <label class="access-code-label" for="aiKeyInput">OpenAI API Key</label>
       <div class="access-code-row">
         <input
           id="aiKeyInput"
@@ -223,7 +238,7 @@
           autocomplete="off"
           autocapitalize="none"
           spellcheck="false"
-          placeholder="Paste your Gemini API key"
+          placeholder="Paste your OpenAI API key"
           bind:value={keyInput}
           onkeydown={(e) => e.key === 'Enter' && submitKey()}
         />
@@ -245,17 +260,17 @@
     <div class="setting byok byok-active">
       {#if hasApiKey}
         <p class="byok-intro">
-          You're using <strong>your own Gemini API key</strong>. Usage is billed to your Google
+          You're using <strong>your own OpenAI API key</strong>. Usage is billed to your OpenAI
           account. Forget the key any time to switch it off.
         </p>
-        <label class="access-code-label" for="aiKeyActive">Gemini API Key</label>
+        <label class="access-code-label" for="aiKeyActive">OpenAI API Key</label>
         <div class="access-code-row">
           <input
             id="aiKeyActive"
             class="access-code-input"
             type="text"
             readonly
-            aria-label="Saved Gemini API key (masked)"
+            aria-label="Saved OpenAI API key (masked)"
             value={maskedKey}
           />
           <Button variant="danger" class="access-code-submit" onclick={forgetKey}>Forget</Button>

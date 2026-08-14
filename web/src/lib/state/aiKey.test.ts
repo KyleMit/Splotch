@@ -74,21 +74,21 @@ describe('setAiUserApiKey', () => {
         })
     );
 
-    const saving = setAiUserApiKey('AIza-persisted');
+    const saving = setAiUserApiKey('sk-persisted');
     await vi.waitFor(() => expect(saveApiKey).toHaveBeenCalledOnce());
 
     expect(settings.aiUserApiKey).toBe('');
     finishSave();
     await saving;
 
-    expect(settings.aiUserApiKey).toBe('AIza-persisted');
-    expect(secureStore.apiKey).toBe('AIza-persisted');
+    expect(settings.aiUserApiKey).toBe('sk-persisted');
+    expect(secureStore.apiKey).toBe('sk-persisted');
   });
 
   it('keeps the live key empty when secure persistence rejects', async () => {
     vi.mocked(saveApiKey).mockRejectedValueOnce(new Error('secure storage unavailable'));
 
-    await expect(setAiUserApiKey('AIza-rejected')).rejects.toThrow('secure storage unavailable');
+    await expect(setAiUserApiKey('sk-rejected')).rejects.toThrow('secure storage unavailable');
 
     expect(settings.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
@@ -148,9 +148,19 @@ describe('hydrateApiKey', () => {
   });
 
   it('hydrates the live store from secure storage', async () => {
-    secureStore.apiKey = 'stored-key';
+    secureStore.apiKey = 'sk-stored-key';
     await hydrateApiKey();
-    expect(settings.aiUserApiKey).toBe('stored-key');
+    expect(settings.aiUserApiKey).toBe('sk-stored-key');
+  });
+
+  it('forgets a stored key from the retired provider instead of restoring it', async () => {
+    // Restoring it would leave AI switched on and fail every generation with an
+    // upstream error the parent cannot act on. Forgetting it puts Settings back
+    // into the state that explains what to do.
+    secureStore.apiKey = 'AIzaSyStoredBeforeTheMigration';
+    await hydrateApiKey();
+    expect(settings.aiUserApiKey).toBe('');
+    expect(secureStore.apiKey).toBeNull();
   });
 
   it('leaves the store empty when nothing is saved anywhere', async () => {
@@ -160,33 +170,33 @@ describe('hydrateApiKey', () => {
   });
 
   it('migrates a legacy plaintext key into secure storage and scrubs the plaintext copy', async () => {
-    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'legacy-key');
+    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'sk-legacy-key');
 
     await hydrateApiKey();
 
-    expect(settings.aiUserApiKey).toBe('legacy-key');
-    expect(secureStore.apiKey).toBe('legacy-key');
+    expect(settings.aiUserApiKey).toBe('sk-legacy-key');
+    expect(secureStore.apiKey).toBe('sk-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 
   it('prefers the secure copy over a stale legacy plaintext key', async () => {
-    secureStore.apiKey = 'secure-key';
-    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'stale-legacy-key');
+    secureStore.apiKey = 'sk-secure-key';
+    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'sk-stale-legacy-key');
 
     await hydrateApiKey();
 
-    expect(settings.aiUserApiKey).toBe('secure-key');
-    expect(secureStore.apiKey).toBe('secure-key');
+    expect(settings.aiUserApiKey).toBe('sk-secure-key');
+    expect(secureStore.apiKey).toBe('sk-secure-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 
   it('two boots racing the legacy migration both end with the key intact', async () => {
-    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'legacy-key');
+    localStorage.setItem(STORAGE_KEYS.legacyAiUserApiKey, 'sk-legacy-key');
 
     await Promise.all([hydrateApiKey(), hydrateApiKey()]);
 
-    expect(settings.aiUserApiKey).toBe('legacy-key');
-    expect(secureStore.apiKey).toBe('legacy-key');
+    expect(settings.aiUserApiKey).toBe('sk-legacy-key');
+    expect(secureStore.apiKey).toBe('sk-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
   });
 });

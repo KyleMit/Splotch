@@ -501,7 +501,7 @@ test('Parent Center reached from privacy hydrates its persisted settings', async
   await settleFlyIn(settings);
   await settleSettingsPane(settings.locator('.settings-pane'));
   await expect(settings.getByText('Checking your free AI creations…')).not.toBeVisible();
-  await expect(settings.getByText(/Add your own Gemini API key to create AI art/)).toBeVisible();
+  await expect(settings.getByText(/Add your own OpenAI API key to create AI art/)).toBeVisible();
 });
 
 test('external links can skip a second gate only within a solved session', async ({

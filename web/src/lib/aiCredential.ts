@@ -1,15 +1,14 @@
 import { apiUrl } from '$lib/api';
+import { looksLikeApiKey, looksLikeRetiredGeminiKey } from '$lib/ai/keyFormat';
 
-// Gemini API keys are issued as classic "AIza…" Standard keys or the "AQ.…"
-// Auth keys Google switched to in 2026. Anything else is treated as a secret
-// access code and checked against the managed allowlist instead.
-const GEMINI_KEY_PREFIXES = ['AIza', 'AQ.'] as const;
+export { looksLikeApiKey };
 
-export function looksLikeApiKey(value: string): boolean {
-  return GEMINI_KEY_PREFIXES.some((prefix) => value.startsWith(prefix));
-}
-
-export type CredentialKind = 'apiKey' | 'accessCode';
+// A value that isn't an API key is treated as a secret access code and checked
+// against the managed allowlist instead — except a Google key, which is neither.
+// It would fail the allowlist and be reported as an invalid access code, which
+// is true but useless; naming it is what lets a parent who set one up before the
+// provider migration (ADR-0113) understand what to do.
+export type CredentialKind = 'apiKey' | 'accessCode' | 'retiredGeminiKey';
 
 type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string };
 
@@ -25,6 +24,11 @@ export async function verifyCredential(
   value: string,
   { signal }: { signal?: AbortSignal } = {}
 ): Promise<VerifyCredentialResult> {
+  // Recognised locally and never sent: a key for a provider the app no longer
+  // calls cannot pass either endpoint, and putting a credential on the wire to
+  // learn that is both pointless and worse for the parent's key.
+  if (looksLikeRetiredGeminiKey(value)) return { kind: 'retiredGeminiKey', ok: false };
+
   const kind: CredentialKind = looksLikeApiKey(value) ? 'apiKey' : 'accessCode';
   const endpoint = kind === 'apiKey' ? '/api/verify-key' : '/api/verify-access-code';
   const body = kind === 'apiKey' ? { apiKey: value } : { code: value };

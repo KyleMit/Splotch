@@ -108,7 +108,7 @@ export function sectionSubtitle(id: SectionId): string {
           : 'Free allowance unavailable';
       }
       if (!settings.aiImageEnabled) return 'Turned off';
-      return kind === 'apiKey' ? 'Your Gemini key' : 'Access code';
+      return kind === 'apiKey' ? 'Your OpenAI key' : 'Access code';
     }
     case 'parentCenter':
       return 'Choose when grown-up checks appear';
