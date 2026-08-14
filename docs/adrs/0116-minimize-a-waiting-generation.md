@@ -14,10 +14,10 @@ still — and the app's whole proposition is that the canvas is always there.
 
 ## Decision
 
-**Dismissing a still-generating result minimizes it instead of cancelling it.** The run is untouched:
-`open` stays true, which is exactly what keeps `finishAiGeneration` willing to deliver into it, and a
-new `minimized` flag is what the dialog reads. The close button relabels itself to "Keep drawing
-while this is made" so the affordance is honest about what it does.
+**Dismissing a still-generating result minimizes it instead of cancelling it.** The run is
+untouched: `open` stays true, which is exactly what keeps `finishAiGeneration` willing to deliver
+into it, and a new `minimized` flag is what the dialog reads. The close button relabels itself to
+"Keep drawing while this is made" so the affordance is honest about what it does.
 
 Once there is something to look at — a picture or an error — dismissing means dismissing again.
 Minimizing a finished result would be a way to lose it.
@@ -30,22 +30,22 @@ lands.
 **Arrival is a pop and a pulse, not a takeover.** The modal does not reopen itself. A dialog that
 seizes the screen mid-stroke would interrupt exactly the drawing the child went back to, and on a
 canvas app that is worse than a few seconds' delay in noticing. The chip pops, then pulses three
-times so a child who was looking elsewhere still finds it, and opens on tap. `prefers-reduced-motion`
-turns the animation off and slows the spinner rather than removing the only moving indication that
-anything is happening.
+times so a child who was looking elsewhere still finds it, and opens on tap.
+`prefers-reduced-motion` turns the animation off and slows the spinner rather than removing the only
+moving indication that anything is happening.
 
 ## Consequences
 
-- **+** The canvas stays usable through a generation, which is the point of a drawing app.
-- **+** The change is small because the state machine already separated "a run is active" from "the
+* **+** The canvas stays usable through a generation, which is the point of a drawing app.
+* **+** The change is small because the state machine already separated "a run is active" from "the
   modal is on screen"; only the dialog's `open` expression and one flag moved.
-- **−** A child can now start a generation, minimize it, and forget it. The chip persists until
+* **−** A child can now start a generation, minimize it, and forget it. The chip persists until
   tapped or the run is closed, which is the mitigation, but there is no timeout that tidies it away.
-- **−** Only one run can be minimized, because only one can be active. Tapping the magic button
+* **−** Only one run can be minimized, because only one can be active. Tapping the magic button
   while one waits does not start a second — it reveals the one already running. That early return
   predates this change, but it used to be unobservable behind the modal's backdrop; now that the
   chrome is deliberately live, a tap that did nothing at all would read as the app being broken,
   which is why it restores rather than returning silently.
-- **−** Not reopening automatically means a child who wandered off sees a chip rather than their
-  picture. That is the deliberate trade against interrupting a stroke, and it is the half of "flashes
-  or springs back up" that respects what they are doing.
+* **−** Not reopening automatically means a child who wandered off sees a chip rather than their
+  picture. That is the deliberate trade against interrupting a stroke, and it is the half of
+  "flashes or springs back up" that respects what they are doing.
