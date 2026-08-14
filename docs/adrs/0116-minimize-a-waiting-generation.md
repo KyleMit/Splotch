@@ -1,6 +1,7 @@
 # ADR-0116: A Waiting Generation Goes to the Corner, Not Away
 
-**Status:** Active **Date:** 2026-08
+**Status:** Active — the corner element and the return it promises are amended by
+[ADR-0117](0117-a-waiting-picture-is-a-polaroid.md) **Date:** 2026-08
 
 ## Context
 
