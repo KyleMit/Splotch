@@ -5,8 +5,14 @@
 import type { ResolvedTheme } from '../theme';
 import type { StyleName } from './styles';
 
+// The "paint directly over" framing is load-bearing: measured with the
+// composition-adherence lab (tools/model-eval/run-prompt-adherence.mjs),
+// gpt-image-2 · low under the previous "reimagine this drawing" framing
+// routinely enlarged and recentered the child's subject, and this wording
+// lifted the mean composition score from 64 to 85 over the lab corpus while
+// keeping rich backgrounds. Re-run the lab before rewording.
 const DEFAULT_PROMPT =
-  "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Pay special attention to the ground: render it as one solidly filled area of even color.";
+  "Paint directly over this child's drawing so the finished picture lines up with the original: every shape stays exactly where the child drew it, at exactly the size the child drew it. Polish each drawn shape in place into a warm, whimsical illustration — vibrant color, charming details, soft light — without moving, enlarging, shrinking, or rearranging anything, and without zooming in or cropping. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Fill the open background with the atmosphere the drawing suggests — sky, light, water, or ground color in soft, even washes — but never with new objects or characters the child did not draw.";
 
 // The dark-theme counterpart of DEFAULT_PROMPT, appended after the style suffix
 // so it has the last word on palette. Modelled on the coloring pipeline's

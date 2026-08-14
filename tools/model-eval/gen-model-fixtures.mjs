@@ -367,9 +367,11 @@ const RENDERER = join(ROOT, 'tools/model-eval/lib/model-eval-fixture-renderer.js
 
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  // Clear only the locally-generated fixtures; leave gen__* (Gemini-authored) intact.
+  // Clear only the locally-generated fixtures; leave the committed
+  // model-authored inputs (gen__* and line__*) intact.
   for (const f of readdirSync(OUT))
-    if (f.endsWith('.png') && !f.startsWith('gen__')) rmSync(join(OUT, f));
+    if (f.endsWith('.png') && !f.startsWith('gen__') && !f.startsWith('line__'))
+      rmSync(join(OUT, f));
 
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();

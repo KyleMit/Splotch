@@ -50,11 +50,12 @@ is the whole bill.
 
 ## Entry points
 
-| Entry point                | Public command                  | Purpose                                     |
-| -------------------------- | ------------------------------- | ------------------------------------------- |
-| `run-model-evaluation.mjs` | `npm run model-eval`            | Run or resume the evaluation                |
-| `gen-model-fixtures.mjs`   | `npm run model-eval:fixtures`   | Regenerate deterministic local input images |
-| `gen-model-inputs.mjs`     | `npm run model-eval:gen-inputs` | Add model-authored input images             |
+| Entry point                | Public command                  | Purpose                                        |
+| -------------------------- | ------------------------------- | ---------------------------------------------- |
+| `run-model-evaluation.mjs` | `npm run model-eval`            | Run or resume the evaluation                   |
+| `gen-model-fixtures.mjs`   | `npm run model-eval:fixtures`   | Regenerate deterministic local input images    |
+| `gen-model-inputs.mjs`     | `npm run model-eval:gen-inputs` | Add model-authored input images                |
+| `run-prompt-adherence.mjs` | `npm run model-eval:adherence`  | Compare prompt variants on composition-keeping |
 
 All three commands need installed project dependencies, including the Playwright Chromium browser:
 the evaluation renders its report bundle in-page, and both generators rasterize their PNGs there.
@@ -168,6 +169,39 @@ The latency column is scored against **Netlify's measured 26 s synchronous funct
 (ADR-0063), imported from `web/src/lib/ai/limits.ts` rather than restated: a variant whose median is
 red cannot be served by a buffered request/response handler at all, and picking it is also a
 decision to move generation to a start-then-poll flow.
+
+## The prompt-adherence lab
+
+`npm run model-eval:adherence` is the sibling experiment: the bake-off compares **models** under the
+one production config, the lab holds the production model fixed (`gpt-image-2 · low`) and compares
+**prompts** (and image-tool knobs like `input_fidelity`, which `gpt-image-2` itself rejects with a
+400 — only the `fidelity15` arm on `gpt-image-1.5` can carry it). Each output is scored by
+`lib/composition-score.mjs` for how faithfully it keeps the child's composition:
+
+* **Global**: the input's ink edges are chamfer-matched against the output's edge map, normalized by
+  the output's chance level so a busy, detail-rich output can't score well by having an edge
+  everywhere. A best-fit similarity-transform search names the drift ("best 1.4× @ (+8%, −4%)" means
+  the design was enlarged and pushed).
+* **Per element**: input ink is clustered by palette color, each cluster is located in the output by
+  color, and centroid shift + scale factor are reported per element ("the boat grew 1.9× and moved
+  to center"). Broad scribble washes are scored leniently — flooding water to the frame edge is
+  artistic license; moving a compact subject is the failure.
+* The 0-100 `layout` composite blends both. It is a **ranking instrument** calibrated so visibly
+  faithful outputs land high and enlarged/recentered ones land low; absolute values on dense
+  coloring-book inputs mean little, so judge those rows by eye.
+
+Runs land in `output/<runId>/` with full-size images, `results.json` (including each call's
+`revisedPrompt`), and a self-contained thumbnail `report/` folder ready for `scrapbook:publish`.
+`LABS` selects arms by exact key (`baseline`, `legacy`, `overlay-strict`, `layout-lock`, `anchored`,
+`fidelity15`, `night`); `INPUTS`/`FILTER` select the corpus; `REPORT_FROM=<run dir>` rebuilds a
+report with no API calls.
+
+The 2026-08 rounds behind the shipped prompt are published at
+[`scrapbook/model-eval/prompt-adherence/`](../../scrapbook/model-eval/prompt-adherence/) →
+<https://kylemit.github.io/Splotch/model-eval/prompt-adherence/>: the legacy "reimagine" prompt
+averaged 63.6 over the 19-input sweep, the shipped "paint directly over" prompt 85.4, and
+`input_fidelity: high` on `gpt-image-1.5 · low` 71.3 at 3.6× the cost. Re-run the lab before
+rewording `DEFAULT_PROMPT` — composition adherence is one stray sentence away from regressing.
 
 ## Not covered
 
