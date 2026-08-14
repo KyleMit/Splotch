@@ -163,12 +163,29 @@ describe('openAiProvider.verifyKey', () => {
     await expect(openAiProvider.verifyKey('good-key')).resolves.toEqual({ ok: true });
   });
 
-  it('returns the rejection reason when the probe call throws', async () => {
-    retrieve.mockRejectedValue(new Error('Incorrect API key provided'));
+  it('reports a key OpenAI actually refused as rejected', async () => {
+    retrieve.mockRejectedValue(
+      Object.assign(new Error('Incorrect API key provided'), { status: 401 })
+    );
     await expect(openAiProvider.verifyKey('bad-key')).resolves.toEqual({
       ok: false,
+      kind: 'rejected',
       reason: 'Incorrect API key provided',
     });
+  });
+
+  it.each([
+    ['a timeout', Object.assign(new Error('Request timed out.'), { status: undefined })],
+    ['a rate limit', Object.assign(new Error('Rate limit reached'), { status: 429 })],
+    ['an outage', Object.assign(new Error('Bad gateway'), { status: 502 })],
+    ['a dead socket', new Error('socket hang up')],
+  ])('never blames the key for %s', async (_label, err) => {
+    // Observed on a real deploy: a cold start outran the deadline and a working
+    // key came back "could not authenticate with OpenAI", which sends a parent
+    // off to make a second key that will behave identically.
+    retrieve.mockRejectedValue(err);
+    const result = await openAiProvider.verifyKey('good-key');
+    expect(result).toMatchObject({ ok: false, kind: 'unreachable' });
   });
 
   it('probes the image model generation uses, without generating', async () => {
@@ -180,11 +197,14 @@ describe('openAiProvider.verifyKey', () => {
     expect(retrieve.mock.calls[0][0]).toBe(create.mock.calls[0][0].tools[0].model);
   });
 
-  it('bounds the probe at the key-check deadline so a hung provider cannot occupy the invocation', async () => {
+  it('bounds each probe attempt at the key-check deadline, not the pair of them', async () => {
     retrieve.mockResolvedValue({ id: 'gpt-image-2' });
     await openAiProvider.verifyKey('good-key');
     expect(construct.mock.calls[0][0].timeout).toBe(VERIFY_KEY_DEADLINE_MS);
-    expect(retrieve.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+    // No explicit signal on purpose: one spans every retry, so a cold start that
+    // ate the budget would leave the retry nothing to run in — which is how a
+    // working key came back rejected.
+    expect(retrieve.mock.calls[0][1]).toBeUndefined();
   });
 
   it('retries the probe once, so a transient blip is not reported as a bad key', async () => {

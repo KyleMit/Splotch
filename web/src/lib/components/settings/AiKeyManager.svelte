@@ -37,17 +37,23 @@
       accessCode: "That doesn't look like a valid key or access code. Please try again.",
       retiredGeminiKey:
         'That looks like a Google Gemini key. Splotch now uses OpenAI — create a key at platform.openai.com and paste that one instead.',
+      // Deliberately not "that key didn't work": nothing was learned about the
+      // key, and telling a parent their working credential is bad sends them off
+      // to make another one.
+      checkUnavailable: "We couldn't check that key just now. Please try again.",
     },
     saveFailed: {
       apiKey: 'Your key works, but could not be saved securely on this device. Please try again.',
       accessCode: 'Your credential works, but could not be saved securely.',
-      // Unreachable: a retired key never verifies, so it never reaches saving.
+      // Unreachable: neither of these verifies, so neither reaches saving.
       retiredGeminiKey: 'That key could not be saved securely on this device.',
+      checkUnavailable: 'That key could not be saved securely on this device.',
     },
     accepted: {
       apiKey: 'Your key works and has been accepted!',
       accessCode: 'Access granted! You have special access — no API key needed.',
       retiredGeminiKey: '',
+      checkUnavailable: '',
     },
   };
 
@@ -216,8 +222,8 @@
           <li>
             Under <strong>Settings → Organization</strong>, finish
             <strong>verification</strong>. OpenAI requires it before any key can make pictures. Do
-            this <em>before</em> the next step — a key made without it saves here perfectly and then
-            fails at the moment your child taps the button.
+            this <em>before</em> the next step — a key made without it saves here perfectly and then fails
+            at the moment your child taps the button.
           </li>
           <li>
             Click <strong>Create new secret key</strong>, then copy it (it starts with
