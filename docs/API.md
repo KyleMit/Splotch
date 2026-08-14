@@ -89,9 +89,9 @@ succeeded (ADR-0105's 2026-08-11 amendment). Finalizing still requires a live re
 missing or already-reclaimed one is refused, so two completions can never claim one slot — but it is
 no longer allowed to destroy a delivered image: a ledger write that fails is logged and the image
 returned without the remaining-count header, leaving the daily ceiling as the spending boundary. A
-separate durable compare-and-set counter reserves every free provider start before the model is called
-and caps project-funded traffic across all installations and function instances at 500 calls per UTC
-day. Provider failures and safety refusals are not refunded from that daily ceiling.
+separate durable compare-and-set counter reserves every free provider start before the model is
+called and caps project-funded traffic across all installations and function instances at 500 calls
+per UTC day. Provider failures and safety refusals are not refunded from that daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
 `X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
@@ -101,15 +101,15 @@ already-parent-gated client flow to BYOK setup. Failure modes are split so the c
 child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
 records the released installation reservation as `daily-limit`, not as an upstream provider failure.
-A **`422`** means the model refused the drawing on **safety** grounds — the child should draw something
-*different* (the app shows "let's try drawing something else!"). Every such response carries a
-credential-bound `X-Report-Token` with the signed provider reason, so a parent can explicitly report
-a possible false positive without making the refused drawing durable first. A **`502`** is a genuine
-upstream/empty failure (retryable). The route talks to the model through the provider-agnostic
-`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
-appears in route code. The safety vs. empty/error split is decided by `classifyOpenAiResponse` /
-`isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by the manual red-team suite
-(`npm run redteam`, `tools/redteam/`).
+A **`422`** means the model refused the drawing on **safety** grounds — the child should draw
+something *different* (the app shows "let's try drawing something else!"). Every such response
+carries a credential-bound `X-Report-Token` with the signed provider reason, so a parent can
+explicitly report a possible false positive without making the refused drawing durable first. A
+**`502`** is a genuine upstream/empty failure (retryable). The route talks to the model through the
+provider-agnostic `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the
+vendor SDK never appears in route code. The safety vs. empty/error split is decided by
+`classifyOpenAiResponse` / `isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by
+the manual red-team suite (`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:
@@ -121,11 +121,11 @@ upstream, and throttling responses, uses the canonical JSON body:
 The status distinguishes the cases above; a `429` also carries its required `Retry-After` header.
 
 The model call is hardened to *increase* those refusals (the audience is toddlers). The request goes
-through the **Responses API image-generation tool** rather than `/v1/images/edits`, because only that
-shape accepts a real system `instructions` field and lets the model answer with a sentence instead of
-a picture — the prose refusal the classifier turns into the `422`. `/v1/images/edits` has neither:
-against the red-team corpus it returned a finished image for a drawn gun. `tool_choice` is left on
-`auto`, since forcing the image tool would remove the model's ability to decline at all. The
+through the **Responses API image-generation tool** rather than `/v1/images/edits`, because only
+that shape accepts a real system `instructions` field and lets the model answer with a sentence
+instead of a picture — the prose refusal the classifier turns into the `422`. `/v1/images/edits` has
+neither: against the red-team corpus it returned a finished image for a drawn gun. `tool_choice` is
+left on `auto`, since forcing the image tool would remove the model's ability to decline at all. The
 instruction and both model ids live in the adapter, `web/src/lib/server/ai/openai.ts`.
 
 ### `POST /api/verify-access-code`

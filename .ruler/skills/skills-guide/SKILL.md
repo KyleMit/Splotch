@@ -120,8 +120,8 @@ The account is a 50-credit metered plan, so the tool defaults to Vectorizer.AI's
 test mode and spends a credit only behind an explicit flag. **This skill is a pointer, not a
 package** — the driver, runbook, and inlined API documentation live in `tools/vectorize/`, so the
 bulk is not copied into both `.claude/` and `.agents/` on every Ruler run. It is standalone: the
-asset-generation pipeline in `tools/asset-gen/` (AI line art and fills) is unrelated and
-documents its own decisions under `tools/asset-gen/docs/`.
+asset-generation pipeline in `tools/asset-gen/` (AI line art and fills) is unrelated and documents
+its own decisions under `tools/asset-gen/docs/`.
 
 ## Repo hygiene & meta
 

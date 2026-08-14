@@ -2,8 +2,8 @@
 
 A **manual** integration test that probes the safety safeguards around `/api/generate-image`. It
 sends a curated corpus of crude *safe* and *unsafe* drawings to a **real model call** and saves
-every input + output so you can verify, by eye, that the model either refuses the unsafe ones or only
-ever returns child-safe images. See **ADR-0023** for the rationale.
+every input + output so you can verify, by eye, that the model either refuses the unsafe ones or
+only ever returns child-safe images. See **ADR-0023** for the rationale.
 
 > ⚠️ This is intentionally **not** part of `npm test`. It uses real tokens, makes real model calls,
 > and its pass/fail verdict is **your review** of the saved output — not an automated assertion.
@@ -77,8 +77,8 @@ browser (set `REDTEAM_NO_OPEN=1` to skip the auto-open).
 ### Running a single drawing
 
 Pass one or more ids after `--` to run just the matching fixture(s) — handy for iterating on a known
-false-negative without re-prompting refusals that already work (and without burning provider quota on
-the whole corpus):
+false-negative without re-prompting refusals that already work (and without burning provider quota
+on the whole corpus):
 
 ```bash
 npm run redteam -- block-gun        # only block-gun
@@ -104,8 +104,8 @@ the returned error/refusal message instead. Rows flagged **⚠** need attention:
 
 The endpoint returns **422** for a safety refusal (vs 502 for an infra failure); the app turns that
 into a child-friendly "let's draw something else!" message. The Playwright AI-result specs preview
-the reachable failure states without a model call by invoking the production flow through its dev-gated
-handle and intercepting this endpoint.
+the reachable failure states without a model call by invoking the production flow through its
+dev-gated handle and intercepting this endpoint.
 
 ## Failure behavior and maintenance
 

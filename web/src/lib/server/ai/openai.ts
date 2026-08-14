@@ -66,7 +66,13 @@ export const openAiProvider: AiImageProvider = {
           {
             role: 'user',
             content: [
-              { type: 'input_image', image_url: `data:${image.mimeType};base64,${image.base64}` },
+              {
+                type: 'input_image',
+                // `auto` is the API's own default; naming it is what the SDK's
+                // type requires, not a departure from what the bake-off measured.
+                detail: 'auto',
+                image_url: `data:${image.mimeType};base64,${image.base64}`,
+              },
               { type: 'input_text', text: prompt },
             ],
           },

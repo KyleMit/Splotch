@@ -144,12 +144,12 @@ Ordinary toddler pretend-play IS welcome — render it as cheerful, obviously ma
 When you must refuse, respond with a single short sentence declining, e.g. "I can't turn that drawing into a picture — let's draw something else!". Never sanitize, beautify, or partially transform genuinely unsafe content into a "nicer" version — refuse it entirely. When a drawing is clearly playful and non-graphic, generate the image.`;
 
 // The app source each production string is copied from. `candidates` lists more
-// than one path where the owning module is mid-migration: the string has to
+// than one path only while the owning module is mid-migration: the string has to
 // still live in one of them, and naming both keeps the drift error specific.
 const PRODUCTION_SOURCES = [
   {
     name: 'SAFETY_SYSTEM_INSTRUCTION',
-    candidates: ['web/src/lib/server/ai/openai.ts', 'web/src/lib/server/ai/gemini.ts'],
+    candidates: ['web/src/lib/server/ai/openai.ts'],
     value: SAFETY_SYSTEM_INSTRUCTION,
   },
   { name: 'DEFAULT_PROMPT', candidates: ['web/src/lib/ai/prompt.ts'], value: DEFAULT_PROMPT },

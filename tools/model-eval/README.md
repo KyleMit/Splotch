@@ -187,11 +187,11 @@ deterministic fixture regeneration.
 
 The production request contract is mirrored here, not imported: `lib/model-eval.mjs` copies
 `DEFAULT_PROMPT` from `web/src/lib/ai/prompt.ts` and `SAFETY_SYSTEM_INSTRUCTION` from the provider
-adapter, and `assertProductionConfig()` re-reads both files at startup so drift fails the run. It
-accepts the instruction living in either `openai.ts` or `gemini.ts` so the check keeps working
-across a provider migration; once one adapter is gone, drop the other from `PRODUCTION_SOURCES`.
-Keep that check passing when either file changes. The only real app imports are
-`web/src/lib/design/tokens.ts`, `web/src/lib/palette.ts`, and `web/src/lib/ai/limits.ts`.
+adapter, and `assertProductionConfig()` re-reads both files at startup so drift fails the run. Keep
+that check passing when either file changes; a `candidates` entry lists more than one path only
+while an adapter is being replaced, so the check keeps working across a provider migration. The only
+real app imports are `web/src/lib/design/tokens.ts`, `web/src/lib/palette.ts`, and
+`web/src/lib/ai/limits.ts`.
 
 Run focused verification with:
 

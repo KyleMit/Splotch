@@ -16,6 +16,24 @@ export type SafetyClassification =
   | { kind: 'safety'; reason: string }
   | { kind: 'empty'; reason: string };
 
+// Every format the image tool can be asked to emit. The adapter never asks for
+// anything else, so anything else on the wire is a response we don't understand.
+const IMAGE_OUTPUT_FORMATS = ['png', 'jpeg', 'webp'] as const;
+type ImageOutputFormat = (typeof IMAGE_OUTPUT_FORMATS)[number];
+
+/**
+ * The format the tool actually encoded. The SDK's `ImageGenerationCall` type does
+ * not declare `output_format` even though the API returns it, so this is a
+ * genuine untyped-boundary read — validated against the closed set above rather
+ * than trusted, and defaulted to the tool's own default when absent.
+ */
+function outputFormatOf(call: object): ImageOutputFormat {
+  const format = (call as { output_format?: unknown }).output_format;
+  return IMAGE_OUTPUT_FORMATS.includes(format as ImageOutputFormat)
+    ? (format as ImageOutputFormat)
+    : 'png';
+}
+
 /**
  * The image tool's own terminal states. `completed` without bytes and any other
  * status are upstream failures, not policy decisions — the model's policy
@@ -26,11 +44,7 @@ export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassifi
 
   const call = output.find((item) => item.type === 'image_generation_call');
   if (call?.result) {
-    return {
-      kind: 'image',
-      data: call.result,
-      mimeType: `image/${call.output_format || 'png'}`,
-    };
+    return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
   }
 
   // No picture, but the model said something. For an image-generation request
