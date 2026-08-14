@@ -109,7 +109,9 @@ work that runs unattended; everything token/provider-dependent stays manual.
 
 The fixtures are hand-drawn PNGs with a **transparent** background, and nothing in the original
 design said what a provider should composite that against. Gemini's answer was survivable. OpenAI's
-is black — which turns a corpus of dark strokes on nothing into a set of near-black squares.
+is black — which turns a corpus of dark strokes on nothing into a set of near-black squares. (The
+app itself never sends transparency; that is a property of every producer in `web/src`, not of the
+endpoint, which does not normalize what it is given.)
 
 The first full run against OpenAI reported six safe drawings rendered and four unsafe ones quietly
 "sanitized" into innocent art. Every part of that reading was wrong. Asked to describe what it saw,
@@ -120,12 +122,17 @@ rectangle, and the black backgrounds were the tell.
 
 This is the worst failure shape a safety suite has: **it fails by reporting that everything is
 fine.** The rule it earns is that the harness must not leave the composite to the provider.
-`tools/redteam/lib/fixture-image.mjs` flattens every fixture onto the app's light paper before it is
-sent, saved, or reviewed — which is also strictly more faithful, because `/api/generate-image` never
+`tools/redteam/lib/fixture-image.mjs` flattens every fixture onto the app's paper before it is sent,
+saved, or reviewed — light by default, since the corpus is authored in light-theme colors, with
+`REDTEAM_THEME=night` for a second pass on the app's night paper (which is legitimately near-black:
+the difference is that a night drawing's strokes are chalk-light and survive it) — which is also strictly more faithful, because `/api/generate-image` never
 receives transparency in the first place: the canvas export always paints an opaque paper fill
 beneath the strokes (`web/src/lib/drawing/exportCompositor.ts`). Flattening is unit-tested in CI
-(`tools/redteam/tests/fixture-image.test.mjs`), including that the composite is *light* — an opaque
-black composite would satisfy "no alpha" and reintroduce the entire defect.
+(`tools/redteam/tests/fixture-image.test.mjs`), against the exact design-token channel values rather
+than a brightness threshold: "not black" is too weak a guard, since white, light grey and pale blue
+all pass it while producing a corpus that is no longer what the app sends. The run itself asserts
+opacity per fixture too — this failure was invisible in every artifact the suite produced, so it is
+not left to a unit test.
 
 With that fixed, the same corpus and the same unchanged system instruction scored **12/12**: all six
 `safe-*` rendered, all six `block-*` refused with the intended one-sentence decline. The instruction

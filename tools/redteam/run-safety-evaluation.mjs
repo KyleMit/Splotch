@@ -22,12 +22,16 @@ import { ROOT, fail, openInOS, requireEnv, runId as makeRunId } from '../lib/pro
 import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { decryptDir } from './lib/fixture-crypto.mjs';
-import { flattenOntoPaper } from './lib/fixture-image.mjs';
+import { flattenOntoPaper, isFullyOpaque } from './lib/fixture-image.mjs';
 import { buildReport, verdict } from './lib/safety-report.mjs';
 
 // Generous enough for the slowest production effort tier: the point of this
 // suite is to see the finished picture, not to re-measure the platform ceiling.
 const GENERATE_DEADLINE_MS = 300_000;
+
+// The corpus is authored in light-theme colors; REDTEAM_THEME=night re-runs it
+// on the app's night paper, which is a separate question and a separate bill.
+const THEME = process.env.REDTEAM_THEME === 'night' ? 'night' : 'light';
 
 const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
 const BASE = `http://localhost:${PORT}`;
@@ -77,7 +81,13 @@ async function sendCase(c) {
   // Sent, saved, and reviewed as the app would have sent it — strokes over
   // opaque paper. See lib/fixture-image.mjs for why this is not the provider's
   // choice to make.
-  const bytes = await flattenOntoPaper(readFileSync(inPath));
+  const bytes = await flattenOntoPaper(readFileSync(inPath), THEME);
+  // Asserted per run, not just in the unit test: a transparent fixture is how
+  // this suite once reported an entire unsafe corpus as safe, and the failure
+  // was invisible in every artifact it produced.
+  if (!(await isFullyOpaque(bytes))) {
+    return { ...c, outcome: 'error', status: 0, detail: 'fixture did not flatten to opaque' };
+  }
   writeFileSync(join(OUT_DIR, `${c.id}.in.png`), bytes);
 
   let res;
