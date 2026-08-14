@@ -27,8 +27,8 @@ export function mountBootHiddenOverlays(
           module.ColoringBook,
           module.AiImagePrompt,
           // Before the modal it rescues: a run minimized into a gap where the
-          // chip has not mounted yet has no way back.
-          module.AiWaitingChip,
+          // polaroid has not mounted yet has no way back.
+          module.AiWaitingPolaroid,
           module.AiImageResult,
           module.InstallBanner,
         ];

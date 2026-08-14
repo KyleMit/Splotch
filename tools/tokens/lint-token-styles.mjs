@@ -50,19 +50,16 @@ const BASELINE = new Map(
     // (wash, ink, border, code chip) stay pinned on both themes; the WHY
     // comment lives on .flash-warning.
     'lib/components/admin/AdminConsole.svelte': 4,
-    // The polaroid flight's photographic near-paper whites — the print stays
-    // paper-white on both themes, like the AiResultStage picture it lands in —
-    // plus the #000 white-stroke ink keyline shared by the action buttons and
-    // the Brush/Stroke Width popovers (black reads against every pen color and
-    // both papers).
-    'app.css': 3,
+    // The polaroid flight's photographic near-paper white behind the print
+    // (the print itself is --polaroid-paper), like the AiResultStage picture it
+    // lands in — plus the #000 white-stroke ink keyline shared by the action
+    // buttons and the Brush/Stroke Width popovers (black reads against every
+    // pen color and both papers).
+    'app.css': 2,
     // /privacy, /changelog and both beta pages are absent on
     // purpose: they pinned a light-only --page-* palette until every page was
     // made to follow night mode, and now hold zero raw hexes. A new one there
     // is a page opting out of the theme again.
-    // The polaroid the card morphs into on download — a photographic near-paper
-    // white, print-white on both themes rather than either paper.
-    'lib/components/AiImageResult.svelte': 1,
     // The ground behind the picture, the same photographic white for the same
     // reason: a picture is a print, and it hangs on paper under either theme.
     'lib/components/AiResultStage.svelte': 1,

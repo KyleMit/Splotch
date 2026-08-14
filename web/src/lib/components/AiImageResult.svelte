@@ -465,7 +465,7 @@
   /* ── Polaroid send-off: tapping download morphs the whole modal into a
         polaroid that lingers, then sails off to the bottom-left and closes. ── */
   .ai-result-modal.polaroid-mode {
-    background: #fdfcf7;
+    background: var(--polaroid-paper);
     /* Tilt and settle like a freshly printed photo, then fly off after a beat.
        The fly-out's delay (0.9s) covers the morph + a brief hold in the center.
        Keeps --result-shift-y so the tilt doesn't also drop the card back down. */
