@@ -19,8 +19,10 @@ pierce Svelte's style scoping, so every component references them directly via `
    invisible until you rerun `gen:tokens`. If a token change doesn't show up, that's why.
 2. **No raw values where a token exists.** In component `<style>` blocks, don't write hex colors, px
    radii, px font sizes, shadow literals, or easing curves that a token already covers — use the
-   `var(--…)`. A raw value is only acceptable for genuine one-offs (e.g. the polaroid frame's
-   photographic white, confetti colors, canvas ink) — and say why in a comment if it isn't obvious.
+   `var(--…)`. A raw value is only acceptable for genuine one-offs (e.g. the ground behind a
+   picture, confetti colors, canvas ink) — and say why in a comment if it isn't obvious. A one-off
+   stops being one the moment a second surface wants it: the polaroids' photographic white was the
+   documented example here until a third copy of it turned up, and it is `--polaroid-paper` now.
 3. **Themed color goes through the theme tokens.** Light and dark values live side by side in
    `tokens.ts` (`themes.light` / `themes.dark` — the shared `ThemeTokens` interface keeps them
    structurally identical). If a new color should differ in dark mode, it belongs there, not in a
@@ -83,9 +85,13 @@ Foundations and only reach past a default when a rule says so.
 |           | themed `--float-shadow` (everything floating on the paper — cards, flyouts, page sheets)               |
 | Fill      | `--clear-gradient-rest` — the Clear Button's at-rest red, painted identically by the                   |
 |           | drag-to-clear coachmark ghost so the tutorial can't drift from the real control. Unthemed on           |
-|           | purpose (ADR-0052): it reads the same on both papers                                                   |
+|           | purpose (ADR-0052): it reads the same on both papers. `--polaroid-paper` / `--polaroid-ink` —          |
+|           | the print white every polaroid in the app is made of and the brand ink written on it, unthemed         |
+|           | for the same kind of reason (ADR-0117): a photograph doesn't repaint at night, so what is              |
+|           | written on it can't either                                                                             |
 | Stacking  | `--z-*` — the cross-component chrome order, `--z-canvas-chrome` (4) up to `--z-polaroid`               |
-|           | (1003), listed low-to-high in `tokens.ts`. One list, not one context: all root-context except          |
+|           | (1004, the screenshot flight), listed low-to-high in `tokens.ts`. One list, not one context: all       |
+|           | root-context except                                                                                    |
 |           | `--z-flyout`, which `.actions-panel` caps inside its own. Layers sealed inside a real context (under   |
 |           | `.canvas-stack`'s `isolation: isolate`, card close buttons) stay plain integers                        |
 | Theme     | surfaces, borders, the three-step text ramp (`--text-strong` headings · `--text` body ·                |
@@ -263,11 +269,12 @@ surface links to it — and serves it via SSR on the web. Use it to:
 Colors, type, weights, radii, easing, and the swept surfaces' spacing are migrated; **spacing
 elsewhere is not** — raw px padding/margin/gap is still the norm in older components, and only the
 hex and font-size ratchets enforce anything, so rule 2 is what governs spacing in new and edited
-styles. What remains raw beyond that is deliberate — documented one-offs (polaroid/photographic
-whites, ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
-ColoringBook's label reserve). The **light-only pages are gone**: `/admin` left that set in the
-2026-08 redesign and `/privacy`, `/changelog` and the beta sign-up page followed on 2026-08-10, so
-no surface pins a palette against `data-theme`/`prefers-color-scheme` any more.
+styles. What remains raw beyond that is deliberate — documented one-offs (the photographic white
+behind a picture, confetti colors, canvas chrome, functional literals like ColoringBook's label
+reserve; the print white itself and ClearButton's danger red are tokens, unthemed on purpose). The
+**light-only pages are gone**: `/admin` left that set in the 2026-08 redesign and `/privacy`,
+`/changelog` and the beta sign-up page followed on 2026-08-10, so no surface pins a palette against
+`data-theme`/`prefers-color-scheme` any more.
 
 CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
 allowlisted baselines (with per-file reasons) live in `tools/tokens/lint-token-styles.mjs`, plus a
