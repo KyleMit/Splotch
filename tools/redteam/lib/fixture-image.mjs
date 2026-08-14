@@ -12,11 +12,21 @@ import { themes } from '../../../web/src/lib/design/tokens.ts';
 // /api/generate-image actually receives: the canvas export always paints an
 // opaque paper fill beneath the strokes (web/src/lib/drawing/exportCompositor.ts),
 // so production never sends transparency at all. See ADR-0023.
-const PAPER = themes.light.paper;
+// Both papers the app actually draws on. Night is genuinely near-black, which is
+// the same composite that broke this corpus — the difference is that a night
+// drawing's strokes are chalk-light, so they survive it. The corpus is authored
+// in light-theme colors, so light is the default and night is a deliberate
+// second pass rather than something to mix in silently.
+export const PAPERS = { light: themes.light.paper, night: themes.dark.paper };
+
+const paperFor = (theme) => PAPERS[theme] ?? PAPERS.light;
 
 /** The fixture as the app would have sent it: strokes over opaque paper. */
-export function flattenOntoPaper(bytes) {
-  return sharp(bytes).flatten({ background: PAPER }).png().toBuffer();
+export function flattenOntoPaper(bytes, theme = 'light') {
+  return sharp(bytes)
+    .flatten({ background: paperFor(theme) })
+    .png()
+    .toBuffer();
 }
 
 /** Whether every pixel is fully opaque — what flattenOntoPaper must guarantee. */

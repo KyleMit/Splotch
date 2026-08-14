@@ -1,4 +1,7 @@
-import type { Response as OpenAiResponse } from 'openai/resources/responses/responses';
+import type {
+  Response as OpenAiResponse,
+  ResponseError,
+} from 'openai/resources/responses/responses';
 
 // Classifies an OpenAI image-generation response so the adapter (openai.ts) can
 // tell a *safety refusal* (the child should draw something else) apart from a
@@ -40,9 +43,15 @@ function outputFormatOf(call: object): ImageOutputFormat {
 // upstream failure that arrives with an apology becomes a 422 telling the child
 // to draw something different, and a policy block that arrives silently becomes
 // a 502 inviting a retry that can never succeed.
-const POLICY_ERROR_CODES = new Set([
-  'moderation_blocked',
-  'content_policy_violation',
+// Typed against the SDK's own closed union, so a code that does not exist fails
+// to compile rather than sitting here looking like coverage. Two of the three
+// this started with did not exist — and two that do, and are policy blocks, were
+// missing: `invalid_prompt` is the prompt being rejected on policy grounds, and
+// `bio_policy` the bio-risk block. Both were classified as retryable, which is
+// the "try again" that can never succeed this module exists to avoid.
+const POLICY_ERROR_CODES = new Set<ResponseError['code']>([
+  'invalid_prompt',
+  'bio_policy',
   'image_content_policy_violation',
 ]);
 const POLICY_INCOMPLETE_REASONS = new Set(['content_filter']);
@@ -55,11 +64,26 @@ function policySignal(response: OpenAiResponse): string | null {
   return null;
 }
 
+const messageParts = (response: OpenAiResponse) =>
+  (response?.output ?? [])
+    .filter((item) => item.type === 'message')
+    .flatMap((item) => item.content ?? []);
+
+/**
+ * The SDK's typed decline. This is machine-readable in exactly the way the codes
+ * above are, so it outranks any reasoning about what the image tool did — a
+ * model that emitted a `refusal` part has declined, whatever else came back.
+ */
+function typedRefusal(response: OpenAiResponse): string {
+  return messageParts(response)
+    .map((part) => ('refusal' in part ? (part.refusal ?? '') : ''))
+    .join(' ')
+    .trim();
+}
+
 /** The prose the model answered with, across every message part. */
 function messageText(response: OpenAiResponse): string {
-  return (response?.output ?? [])
-    .filter((item) => item.type === 'message')
-    .flatMap((item) => item.content ?? [])
+  return messageParts(response)
     .map((part) => ('refusal' in part ? part.refusal : 'text' in part ? part.text : ''))
     .join(' ')
     .trim();
@@ -78,7 +102,7 @@ export function classifyOpenAiResponse(response: OpenAiResponse): SafetyClassifi
     return { kind: 'image', data: call.result, mimeType: `image/${outputFormatOf(call)}` };
   }
 
-  const policy = policySignal(response);
+  const policy = policySignal(response) || typedRefusal(response);
   if (policy) return { kind: 'safety', reason: policy };
 
   // The tool was called and did not produce bytes. Whatever the model said
