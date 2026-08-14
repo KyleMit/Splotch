@@ -11,11 +11,17 @@ import type { AiImageProvider } from './provider';
 // routes.
 
 // The model that renders the picture, and how much effort it spends doing it.
-// Effort is the cost/latency/quality dial: on the bake-off corpus `low` returns
-// in ~22 s for ~$0.02, `medium` in ~55 s for ~$0.06, and `high` in ~2.5 min for
-// ~$0.22. Re-run `npm run model-eval` before moving either.
+//
+// Effort is the cost/latency/quality dial. Measured over the bake-off corpus,
+// the tiers do not overlap on latency at all: `low` ran 23-35 s, `medium`
+// 41-64 s, `high` 97-150 s — medium's fastest generation was slower than low's
+// slowest. `low` is picked because that gap is the whole experience for a
+// two-year-old, and because it costs $0.020 against medium's $0.058 while never
+// inventing a subject the child did not draw. What it gives up is
+// interpretation: it transcribes scribbled fill as flat bands where medium
+// blends it. Re-run `npm run model-eval` before moving either.
 const IMAGE_MODEL = 'gpt-image-2';
-const IMAGE_QUALITY = 'medium';
+const IMAGE_QUALITY = 'low';
 
 // The model that reads the drawing, decides whether it is safe to render, and
 // calls the image tool. It is not a wrapper: it is the safety layer. Asked to
