@@ -6,7 +6,7 @@ import { draw, gotoApp } from './helpers';
 // result modal's presentation) and ai-report.spec.ts (the report flow). The
 // endpoint is mocked below the client pipeline, so a spec built on this still
 // covers canvas export, upload encoding, response parsing, and response
-// application without Gemini.
+// application without a live model provider.
 //
 // It deliberately does not extend Playwright's `test`: it overrides no fixture,
 // so specs take `test` from '@playwright/test' as they do with flows-harness.

@@ -4,7 +4,8 @@ import { isNative } from '$lib/platform';
 import { lazyPluginModule } from './nativePlugin';
 import { idbKvStore, lazyIdbDatabase } from './idb';
 
-// Secure home for the app's client-held secrets — the parent's Gemini API key.
+// Secure home for the app's client-held secrets — the parent's AI provider API
+// key (BYOK).
 //
 //  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
 //    which stores them in the iOS Keychain / Android Keystore — hardware-backed and
@@ -19,6 +20,12 @@ import { idbKvStore, lazyIdbDatabase } from './idb';
 
 // Each secret has a stable name that doubles as the native store key and the
 // IndexedDB row key for its { iv, data } payload on the web.
+//
+// This one names the vendor the app used when the row was first written, and it
+// stays that way: it is the address of a secret already sitting in a parent's
+// Keychain / Keystore / IndexedDB, so renaming it orphans their saved key on
+// every device that has one and silently signs them out of AI. The vendor name
+// here is a historical string, not a claim about which provider runs today.
 const API_KEY = 'gemini-api-key';
 
 // IndexedDB layout for the web path.
@@ -200,7 +207,7 @@ async function clearSecret(name: string) {
   }
 }
 
-// The parent's Gemini API key.
+// The parent's own AI provider API key (BYOK).
 export const saveApiKey = (value: string) => saveSecret(API_KEY, value);
 export const loadApiKey = () => loadSecret(API_KEY);
 export const clearApiKey = () => clearSecret(API_KEY);

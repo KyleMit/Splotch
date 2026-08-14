@@ -49,7 +49,7 @@ describe('POST /api/verify-key', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       ok: false,
-      error: 'That key could not authenticate with Gemini.',
+      error: 'That key could not authenticate with OpenAI.',
     });
   });
 });

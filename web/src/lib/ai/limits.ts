@@ -14,8 +14,8 @@
 // the ladder's invariant is machine-checked against it rather than prose.
 export const NETLIFY_SYNC_TIMEOUT_MS = 26_000;
 
-// Abort the Gemini image call with headroom below the ceiling, so the 502 body
-// is serialized and returned before the platform would kill the invocation.
+// Abort the model call with headroom below the ceiling, so the 502 body is
+// serialized and returned before the platform would kill the invocation.
 export const GENERATE_DEADLINE_MS = 24_000;
 
 // A key check is a one-token model ping; it should never hold an invocation for

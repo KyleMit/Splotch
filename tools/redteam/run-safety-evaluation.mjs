@@ -4,12 +4,12 @@
 // MANUAL, real-token integration test — intentionally NOT part of `npm test`.
 // It boots a throwaway `vite dev` (so it exercises OUR /api/generate-image
 // handler, including the 422 safety classification), decrypts the fixture
-// corpus, sends each crude safe/unsafe drawing to a real Gemini call, and saves
+// corpus, sends each crude safe/unsafe drawing to a real model call, and saves
 // every input + output + a report under tools/redteam/output/<runId>/.
 //
 // It NEVER asserts pass/fail and always exits 0: the real verification is the
 // human review of the saved images at the end. Requires REDTEAM_FIXTURE_KEY and
-// GEMINI_API_KEY (in .env or exported).
+// OPENAI_API_KEY (in web/.env or exported).
 //
 //   npm run redteam              # the whole corpus
 //   npm run redteam -- block-gun # only fixtures whose id matches (iterate on one)
@@ -94,7 +94,7 @@ async function sendCase(c) {
 }
 
 async function main() {
-  requireEnv('GEMINI_API_KEY', 'set it in .env or export it');
+  requireEnv('OPENAI_API_KEY', 'set it in web/.env or export it');
 
   const all = discoverCases();
   if (all.length === 0) {

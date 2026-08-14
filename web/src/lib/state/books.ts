@@ -23,7 +23,7 @@
 //
 // The PEN outline (black ink on white) is the light-mode overlay and the source
 // every other asset derives from. The CHALK outline is the dark-mode overlay —
-// a Gemini redraw of the pen as a chalk drawing whose deliberate solid whites
+// an AI redraw of the pen as a chalk drawing whose deliberate solid whites
 // (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
 // (the negation of what dark mode shows). The picker applies invert + screen;
 // gen-overlays derives the transparent white full-page presentation.

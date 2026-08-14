@@ -3,7 +3,7 @@
 // Boots a throwaway `vite dev` with test env, exercises the CORS/preflight
 // contract, the admin auth flow, the public oracles, the csp-report receiver,
 // and generate-image's auth gate against the documented shapes, then tears the
-// server down. No Gemini key or Netlify Blobs needed — every
+// server down. No model key or Netlify Blobs needed — every
 // generate-image case here is rejected before the model call; successful
 // generation and verify-key (which make live model calls) are out of scope.
 
@@ -526,11 +526,11 @@ try {
     env: {
       ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
       ALLOWED_TOKENS_LIST: SEED_TOKENS,
-      // A key Gemini refuses, so the generate-image cases stop at the request
+      // A key the provider refuses, so the generate-image cases stop at the request
       // guards they are checking without spending anyone's quota. It has to be
       // non-empty: with no key the managed-token path answers 500 from the
       // authorization step and never reaches those guards.
-      GEMINI_API_KEY: 'not-a-usable-gemini-key',
+      OPENAI_API_KEY: 'not-a-usable-openai-key',
       // Reporting stays unconfigured so the report cases assert the graceful 503
       // rather than opening a real GitHub issue.
       GITHUB_ISSUE_TOKEN: '',

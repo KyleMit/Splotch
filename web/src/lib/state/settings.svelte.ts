@@ -131,7 +131,7 @@ interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey
   theme: ThemePreference;
   // String setting (special case): the managed-access token, persisted verbatim.
   aiAccessToken: string;
-  // Parent-supplied Gemini API key (BYOK). Held in memory only; hydrated from
+  // Parent-supplied AI provider API key (BYOK). Held in memory only; hydrated from
   // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
   aiUserApiKey: string;
   // Desktop web only: the name of the optional folder web saves are written into

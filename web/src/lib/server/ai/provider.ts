@@ -7,6 +7,11 @@
 interface AiImageRequest {
   /** Vendor API key: the server's managed key or the parent's BYO key. */
   apiKey: string;
+  /**
+   * The drawing, as bytes and nothing else. Anything an adapter needs about its
+   * pixels — the canvas shape, say — it reads out of those bytes, so an
+   * already-shipped native client never has to learn a new request field.
+   */
   image: { base64: string; mimeType: string };
   prompt: string;
 }
@@ -26,4 +31,4 @@ export interface AiImageProvider {
   verifyKey(apiKey: string): Promise<KeyCheckResult>;
 }
 
-export { geminiProvider as aiProvider } from './gemini';
+export { openAiProvider as aiProvider } from './openai';

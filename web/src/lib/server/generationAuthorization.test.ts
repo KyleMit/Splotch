@@ -32,7 +32,7 @@ const managedInput = {
 };
 
 beforeEach(() => {
-  envState.GEMINI_API_KEY = 'managed-key';
+  envState.OPENAI_API_KEY = 'managed-key';
   isAllowedToken.mockReset().mockResolvedValue(true);
   peekRateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
@@ -143,7 +143,7 @@ describe('authorizeGenerationRequest', () => {
   });
 
   it('rejects a valid managed request when no server key is configured', async () => {
-    envState.GEMINI_API_KEY = undefined;
+    envState.OPENAI_API_KEY = undefined;
 
     const result = await authorizeGenerationRequest(managedInput);
 
@@ -152,7 +152,7 @@ describe('authorizeGenerationRequest', () => {
     expect(result.response.status).toBe(500);
     expect(await result.response.json()).toEqual({
       ok: false,
-      error: 'Server is missing GEMINI_API_KEY',
+      error: 'Server is missing OPENAI_API_KEY',
     });
   });
 

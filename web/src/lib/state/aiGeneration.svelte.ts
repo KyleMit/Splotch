@@ -13,7 +13,7 @@ export interface AiResultState {
   // refusals receive the same proof without persisting evidence.
   // Null on the BYOK and managed paths, which carry their own credential.
   reportToken: string | null;
-  // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
+  // 'safety'  — the model refused the drawing; guide the child to draw something else.
   // 'retry'   — a transient failure (timeout, server); the same drawing may work.
   // 'generic' — anything else.
   error: { kind: AiErrorKind; message: string | null } | null;

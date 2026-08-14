@@ -170,7 +170,7 @@ async function exportUploadImage(
 }
 
 // Send the raw image bytes as the body — no multipart envelope for the server
-// to buffer and parse (ADR-0064). Prefer the parent's own Gemini key (BYOK),
+// to buffer and parse (ADR-0064). Prefer the parent's own API key (BYOK),
 // then a managed access token, then the non-secret installation grant
 // pseudonym. Credentials ride in headers, never the query string (which leaks
 // into logs/history). The non-secret style enum is a query param.
@@ -218,7 +218,7 @@ function applyResponse(
       openAiSettings(null);
       return null;
     case 'error':
-      // A 5xx is transient — an upstream Gemini failure or the server aborting
+      // A 5xx is transient — an upstream provider failure or the server aborting
       // a too-slow call under Netlify's 26s ceiling (ADR-0063) — so offer the
       // same drawing again rather than a dead-end generic error. A 4xx (a
       // malformed/oversized request the client never actually sends) stays

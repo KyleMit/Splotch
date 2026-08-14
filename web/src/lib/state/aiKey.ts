@@ -3,7 +3,7 @@ import { saveApiKey, loadApiKey, clearApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 import { settings } from './settings.svelte';
 
-// The parent's own Gemini API key (BYOK). Stored only on this device and sent
+// The parent's own AI provider API key (BYOK). Stored only on this device and sent
 // with each AI request so the server bills the parent's Google account instead
 // of ours. Either this OR aiAccessToken being set unlocks the AI features.
 // The key itself is no longer kept here in plaintext — it lives in secure
@@ -54,7 +54,7 @@ const aiKeyWriteCoordinator = createAiKeyWriteCoordinator(settings, persistAiUse
 
 export const { setAiUserApiKey } = aiKeyWriteCoordinator;
 
-// Pull the saved Gemini key out of secure storage into the live store on boot.
+// Pull the saved API key out of secure storage into the live store on boot.
 // One-time migration: if an earlier build left a plaintext key in localStorage,
 // move it into secure storage and scrub the plaintext copy. Safe to call on the
 // web and on native; never throws.

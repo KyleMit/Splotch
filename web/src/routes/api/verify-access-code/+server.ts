@@ -8,7 +8,7 @@ import type { RequestHandler } from './$types';
 
 /**
  * Verify a secret access code against the managed allowlist. This is the
- * "special access" path that lets a parent use AI on our Gemini key instead of
+ * "special access" path that lets a parent use AI on our own key instead of
  * bringing their own. Body: { code }. On a match we echo the code back as the
  * canonical access code for the client to persist. Returns { ok: true, accessCode }
  * on a match, or { ok: false, error } otherwise.

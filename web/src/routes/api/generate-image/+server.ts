@@ -69,7 +69,7 @@ function assertAllowedImageType(mimeType: string): void {
 }
 
 // The credentials ride in headers, not the query string: the managed access
-// token and (especially) a parent's BYO Gemini key are secrets, and query
+// token and (especially) a parent's BYO API key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
 // headers. The non-secret style enum is a plain query param. See ADR-0064.
 const asString = (value: FormDataEntryValue | null): string | null =>
@@ -182,7 +182,7 @@ function exhaustedGrant(): Response {
   const body: FreeGenerationGrantExhausted = {
     ok: false,
     code: FREE_GRANT_EXHAUSTED_CODE,
-    error: `Your ${FREE_GENERATION_LIMIT} free creations are used up. Add your own Gemini key to keep creating.`,
+    error: `Your ${FREE_GENERATION_LIMIT} free creations are used up. Add your own OpenAI key to keep creating.`,
     remaining: 0,
   };
   return Response.json(body, { status: 403 });
@@ -192,7 +192,7 @@ function exhaustedDailyLimit(): Response {
   const body: FreeGenerationDailyLimitExhausted = {
     ok: false,
     code: FREE_DAILY_LIMIT_EXHAUSTED_CODE,
-    error: 'Free creations are unavailable today. Add your own Gemini key to keep creating.',
+    error: 'Free creations are unavailable today. Add your own OpenAI key to keep creating.',
   };
   return Response.json(body, { status: 503 });
 }

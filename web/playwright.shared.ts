@@ -89,12 +89,12 @@ export function allowedTokensList(...managedCodes: string[]): string {
 const NOWHERE_ISSUE_REPO = 'splotch-tests/nowhere';
 
 /**
- * A key Gemini refuses. Non-empty on purpose: with no key at all the managed-code
+ * A key the provider refuses. Non-empty on purpose: with no key at all the managed-code
  * path answers 500 from the authorization step, before the request guards the
  * generate-image specs are there to exercise — so they would keep passing while
  * asserting nothing about the guards. No spec reaches the model call with it.
  */
-const UNUSABLE_GEMINI_KEY = 'not-a-usable-gemini-key';
+const UNUSABLE_PROVIDER_KEY = 'not-a-usable-openai-key';
 
 export const commonWebServer = {
   url: playwrightBaseURL,
@@ -123,7 +123,7 @@ export const commonWebServer = {
     PUBLIC_ENABLE_DEV_HARNESS: 'true',
     ADMIN_ACCESS_TOKEN,
     ALLOWED_TOKENS_LIST: allowedTokensList(MANAGED_ACCESS_TOKEN),
-    GEMINI_API_KEY: UNUSABLE_GEMINI_KEY,
+    OPENAI_API_KEY: UNUSABLE_PROVIDER_KEY,
     GITHUB_ISSUE_TOKEN: '',
     GITHUB_ISSUE_REPO: NOWHERE_ISSUE_REPO,
     // Non-blank on purpose: the free-tier report spec needs generate-image to

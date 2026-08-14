@@ -28,7 +28,7 @@ export async function hydratePersistedState(): Promise<void> {
     );
   }
 
-  // Durable hydration must finish before the BYOK Gemini key migration so a
+  // Durable hydration must finish before the BYOK key migration so a
   // legacy plaintext key that survived only in Preferences can move into secure
   // storage before both plaintext copies are scrubbed.
   await hydrateApiKey();

@@ -13,7 +13,7 @@
 * Playwright builds the production artifact and serves it with `vite preview` by default; set
   `DEV_SERVER=1` to iterate against `vite dev` instead. The server's private env is declared by
   `commonWebServer.env` (`playwright.shared.ts`) — known test credentials in, `GITHUB_ISSUE_TOKEN`
-  blank and `GEMINI_API_KEY` set to a key that cannot authenticate (blank would 500 upstream of the
+  blank and `OPENAI_API_KEY` set to a key that cannot authenticate (blank would 500 upstream of the
   guards the specs assert) — and it wins over `web/.env`, so never write a spec that depends on an
   ambient credential. Both Playwright configs disable server reuse and use Vite `strictPort`;
   `global-setup.ts` also proves the server that answered the port has the harness credentials as

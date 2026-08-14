@@ -6,7 +6,7 @@ import { env } from '$env/dynamic/private';
 export const DEFAULT_GITHUB_ISSUE_REPO = 'KyleMit/splotch-feedback';
 
 export const config = {
-  geminiApiKey: () => env.GEMINI_API_KEY,
+  openAiApiKey: () => env.OPENAI_API_KEY,
   githubIssueToken: () => env.GITHUB_ISSUE_TOKEN,
   githubIssueRepo: () => env.GITHUB_ISSUE_REPO?.trim() || DEFAULT_GITHUB_ISSUE_REPO,
   reportTokenSecret: () => env.REPORT_TOKEN_SECRET,
