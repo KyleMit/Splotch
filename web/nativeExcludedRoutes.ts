@@ -13,10 +13,12 @@ import type { Plugin } from 'vite';
 // That gap is why the entries below are here rather than relying on their
 // `prerender` flags:
 //
-//  * `android-beta` — Play Store URLs and the testers' group link. Google Play
-//    references inside an iOS binary are an App Review 2.3.10 rejection.
-//  * `ios-beta` — the TestFlight public invitation and App Store link. An
+//  * `beta` — both enrollment tabs: Play Store URLs and the testers' group link
+//    (Google Play references inside an iOS binary are an App Review 2.3.10
+//    rejection) plus the TestFlight public invitation and App Store link. An
 //    enrollment page for the app already being used is web-only by design.
+//  * `android-beta`, `ios-beta` — the deprecated solo paths, now redirects into
+//    `beta`. Nothing to enroll into from inside the app either way.
 //  * `admin` — the token-minting console's markup and copy. A privileged
 //    surface shipped inside a children's app is what Play's Deceptive Behavior
 //    policy and App Review 2.3.1 are written against, and the console is
@@ -29,7 +31,13 @@ import type { Plugin } from 'vite';
 // the strings never make it into the bundle in the first place.
 // `tools/mobile/check-static-bundle.mjs` scans the built output and fails
 // `build:cap` if a sentinel from any excluded route survives.
-export const NATIVE_EXCLUDED_ROUTES = ['android-beta', 'ios-beta', 'admin', 'feedback'] as const;
+export const NATIVE_EXCLUDED_ROUTES = [
+  'beta',
+  'android-beta',
+  'ios-beta',
+  'admin',
+  'feedback',
+] as const;
 
 // Only the client-facing route modules are replaced. `+page.server.ts` and
 // friends never reach the client bundle, and they own declarations the build

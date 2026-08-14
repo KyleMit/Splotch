@@ -280,6 +280,22 @@ describe('page inventory output', () => {
     expect(allSurfaces().filter(({ id }) => id.startsWith('dev'))).toEqual([]);
   });
 
+  // /beta is one route with two panels behind a platform picker, and every
+  // capture context carries an iPhone or iPad user agent, so the generic
+  // one-shot-per-route pass would photograph the iOS panel eight times and never
+  // review the Android one. Both panels earn their own surface, each deep-linked
+  // so the page's pre-paint stamp opens the tab the capture is named for.
+  it('captures each beta panel as its own surface rather than the bare route', () => {
+    expect(existsSync(join(ROOT, 'web/src/routes/beta/+page.svelte'))).toBe(true);
+    expect(discoverPageRoutes()).not.toContain('/beta');
+
+    const beta = allSurfaces().filter(({ id }) => id.startsWith('beta'));
+    expect(beta.map(({ id }) => id).sort()).toEqual(['beta-android', 'beta-ios']);
+    for (const panel of beta) {
+      expect(panel.source).toBe(`/beta?os=${panel.id.replace('beta-', '')}`);
+    }
+  });
+
   it('carries the general design notes and the per-surface note into every review input', () => {
     const item = inventoryItem({ group: 'controls', id: 'clear-coachmark' });
     const note = SURFACE_DESIGN_NOTES[designNoteKey('controls', 'clear-coachmark')];

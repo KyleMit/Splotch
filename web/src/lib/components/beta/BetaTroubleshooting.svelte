@@ -2,47 +2,34 @@
   import type { Snippet } from 'svelte';
   import Icon from '$lib/components/Icon.svelte';
   import Disclosure from '$lib/components/design/Disclosure.svelte';
-  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
-  import PageShell from '$lib/components/page/PageShell.svelte';
-  import RuleLabel from '$lib/components/page/RuleLabel.svelte';
 
+  // The collapsed panel each platform's instructions close with: a summary line
+  // naming the failures a tester actually hits, and a stack of `.row` answers.
   interface Props {
-    title: string;
-    wordmark: string;
-    lede: Snippet;
     troubleSummary: Snippet;
-    troubleshooting: Snippet;
     children: Snippet;
   }
 
-  let { title, wordmark, lede, troubleSummary, troubleshooting, children }: Props = $props();
+  let { troubleSummary, children }: Props = $props();
 </script>
 
-<PageShell {title} {wordmark} {lede}>
-  <RuleLabel>How to join</RuleLabel>
-
-  {@render children()}
-
-  <div class="trouble">
-    <Disclosure class="beta-disclosure">
-      {#snippet summary()}
-        <span class="trouble-heading">
-          <h2 class="trouble-label">Troubleshooting</h2>
-          <span class="trouble-sub">
-            {@render troubleSummary()}
-          </span>
+<div class="trouble">
+  <Disclosure class="beta-disclosure">
+    {#snippet summary()}
+      <span class="trouble-heading">
+        <h3 class="trouble-label">Troubleshooting</h3>
+        <span class="trouble-sub">
+          {@render troubleSummary()}
         </span>
-        <span class="chev-disc">
-          <Icon name="chevron-right" class="chev" aria-hidden="true" />
-        </span>
-      {/snippet}
+      </span>
+      <span class="chev-disc">
+        <Icon name="chevron-right" class="chev" aria-hidden="true" />
+      </span>
+    {/snippet}
 
-      <div class="rows">{@render troubleshooting()}</div>
-    </Disclosure>
-  </div>
-
-  <ScrollCue />
-</PageShell>
+    <div class="rows">{@render children()}</div>
+  </Disclosure>
+</div>
 
 <style>
   .trouble {
@@ -122,7 +109,7 @@
     padding-top: 20px;
   }
 
-  .rows :global(.row h3) {
+  .rows :global(.row h4) {
     margin: 0 0 4px;
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-bold);

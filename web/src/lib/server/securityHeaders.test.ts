@@ -82,15 +82,10 @@ describe('securityHeadersFor', () => {
     );
   });
 
-  it.each([
-    '/',
-    '/admin',
-    '/privacy',
-    '/android-beta',
-    '/ios-beta',
-    '/feedback/',
-    '/feedback/extra',
-  ])('leaves %s on the site-wide no-referrer', (pathname) => {
-    expect(securityHeadersFor(pathname)).toEqual(SECURITY_HEADERS);
-  });
+  it.each(['/', '/admin', '/privacy', '/beta', '/feedback/', '/feedback/extra'])(
+    'leaves %s on the site-wide no-referrer',
+    (pathname) => {
+      expect(securityHeadersFor(pathname)).toEqual(SECURITY_HEADERS);
+    }
+  );
 });

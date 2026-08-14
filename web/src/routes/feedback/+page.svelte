@@ -39,7 +39,7 @@
   // crawler could fetch: this block renders in an action's POST response (or,
   // with use:enhance, client-side after one), and a GET of /feedback has no
   // `form`. That is why it can be composed on the server here while
-  // /android-beta — a prerendered GET — has to wait for hydration.
+  // /beta — a prerendered GET — has to wait for hydration.
   const supportHref = `mailto:${supportEmail()}?subject=${encodeURIComponent('Splotch feedback')}`;
 
   // Being copied and pasted is this page's whole purpose, and the post-submit
@@ -209,7 +209,7 @@
   }
 
   /* A callout in the step ledger's language rather than three lines floating in
-     the corner — the same left-ruled, washed block /android-beta closes each
+     the corner — the same left-ruled, washed block /beta closes each
      step with, so the two pages share a second element besides the button. */
   /* Its own line inside the banner: the error is one sentence and the way out is
      another, and running them together reads as a single long apology. */

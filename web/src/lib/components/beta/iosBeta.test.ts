@@ -8,7 +8,7 @@ import {
   TESTFLIGHT_INVITE_URL,
 } from './iosBeta';
 
-describe('/ios-beta facts', () => {
+describe('/beta iOS facts', () => {
   it('states the iOS floor the Xcode project actually enforces', () => {
     const project = readFileSync(
       new URL('../../../../../ios/App/App.xcodeproj/project.pbxproj', import.meta.url),

@@ -73,6 +73,23 @@
   to = "/deny.html"
   status = 404
 
+# Deprecated tester links (ADR-0112). /android-beta and /ios-beta were single
+# pages before /beta's two tabs replaced them, and both were handed out on their
+# own, so they redirect rather than 404. Here rather than only in the app for the
+# same reason as the deny rules above: a user rule short-circuits at the edge,
+# so retiring a URL costs no function invocation. web/src/routes/*-beta/+page.ts
+# carries the same redirect for dev, `vite preview`, and the E2E suite, where
+# this file is not in play — betaPlatform.test.ts fails if the two disagree.
+[[redirects]]
+  from = "/android-beta"
+  to = "/beta?os=android"
+  status = 308
+
+[[redirects]]
+  from = "/ios-beta"
+  to = "/beta?os=ios"
+  status = 308
+
 [[headers]]
   for = "/*"
   [headers.values]

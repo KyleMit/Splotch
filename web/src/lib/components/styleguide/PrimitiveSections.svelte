@@ -39,6 +39,13 @@
   ];
   let demoKind = $state<DemoKind>('bug');
 
+  type DemoPlatform = 'android' | 'ios';
+  const demoPlatformOptions: SegmentedPickerOption<DemoPlatform>[] = [
+    { value: 'android', label: 'Android', icon: 'android' },
+    { value: 'ios', label: 'iPhone / iPad', icon: 'phone-tablet' },
+  ];
+  let demoPlatform = $state<DemoPlatform>('android');
+
   type DemoChip = 'eraser' | 'camera';
   const demoChipOptions: SegmentedPickerOption<DemoChip>[] = [
     { value: 'eraser', label: 'Eraser', icon: 'brush-eraser' },
@@ -96,6 +103,16 @@
     each option keeps its accessible name and a 44px square target, so the collapse costs the visible
     label and nothing else. Use it where an icon already says what the option is.
   </p>
+  <p class="sub-intro">
+    <code>underline</code> is the third skin, for a
+    <strong>standalone page switching between two views of itself</strong>
+    rather than setting something: a rule under a row of labels, the live one replacing its stretch of
+    that rule with a brand segment and taking the brand ink with it. Icons follow that ink rather than
+    <code>--icon-ink</code>, so the live tab moves as one mark. It is also the one variant that owns
+    its own width — it hugs the left on a sheet, and at phone width the cells split the row evenly
+    so each segment is a whole cell. A caller whose sheet reaches the screen edges supplies the
+    bleed past its own gutter; the beta page does.
+  </p>
   <div class="picker-demo">
     <SegmentedPicker
       label="Theme (specimen)"
@@ -131,6 +148,15 @@
       selected={demoKind}
       onSelect={(value) => (demoKind = value)}
       inputName="sg-demo-kind"
+    />
+  </div>
+  <div class="picker-demo">
+    <SegmentedPicker
+      variant="underline"
+      label="Platform (specimen)"
+      options={demoPlatformOptions}
+      selected={demoPlatform}
+      onSelect={(value) => (demoPlatform = value)}
     />
   </div>
   <div class="picker-demo">

@@ -6,7 +6,7 @@ import { openParentalGate } from './flows-harness';
 import { openAiResult } from './ai-harness';
 
 // Axe-core scans the adult-facing surfaces (issue #458): /privacy,
-// /changelog, /android-beta, /ios-beta, /feedback, /design, /admin (both auth states),
+// /changelog, /beta, /feedback, /design, /admin (both auth states),
 // and the Settings dialog.
 // The toddler-facing canvas chrome is deliberately out of scope — its UX rules
 // (giant wordless buttons, no reading order) aren't WCAG's — so the Settings scan
@@ -21,7 +21,7 @@ import { openAiResult } from './ai-harness';
 // "Element content is too short to determine if it is actual text content", so a
 // page whose color decisions ride on short labels would scan green with no
 // contrast checked at all. Anything that matters is asserted explicitly by the
-// owning spec — see android-beta.spec.ts.
+// owning spec — see beta.spec.ts.
 
 async function expectNoSeriousViolations(page: Page, include?: string) {
   let builder = new AxeBuilder({ page });
@@ -58,21 +58,26 @@ test('/changelog has no serious accessibility violations', async ({ page }) => {
   await expectNoSeriousViolations(page);
 });
 
-test('/android-beta has no serious accessibility violations', async ({ page }) => {
-  await page.goto('/android-beta');
-  await expect(page.getByRole('heading', { name: 'Join the Android Beta' })).toBeVisible();
-  // The heading is prerendered, so it is visible at first paint; step 4's
-  // callout is composed after hydration and would otherwise race the scan.
-  await expect(page.locator('.step-4 .card')).toBeVisible();
-  await expectNoSeriousViolations(page);
-});
-
-test('/ios-beta has no serious accessibility violations', async ({ page }) => {
-  await page.goto('/ios-beta');
-  await expect(page.getByRole('heading', { name: 'Join the iPhone and iPad beta' })).toBeVisible();
-  await expect(page.locator('.step-4 .card')).toBeVisible();
-  await expectNoSeriousViolations(page);
-});
+// Both tabs are scanned: the panel that is not on show is `hidden`, so axe
+// skips it, and each carries its own ledger, callouts, and disclosure.
+for (const [tab, heading] of [
+  ['Android', 'How to join on Android'],
+  ['iPhone / iPad', 'How to join on iPhone or iPad'],
+] as const) {
+  test(`/beta has no serious accessibility violations on the ${tab} tab`, async ({ page }) => {
+    await page.goto('/beta');
+    await expect(page.getByRole('heading', { name: 'Join the Splotch beta' })).toBeVisible();
+    // The tabs raise none of their options until hydration, so an active one is
+    // the signal that a click will reach a handler (see beta.spec.ts).
+    await expect(page.locator('.beta-platform-picker .option.active')).toHaveCount(1);
+    await page.getByRole('radio', { name: tab }).click();
+    await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+    // The headings are prerendered, so they are visible at first paint; step 4's
+    // callout is composed after hydration and would otherwise race the scan.
+    await expect(page.locator('.beta-platform-panel:visible .step-4 .card')).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+}
 
 test('/feedback has no serious accessibility violations', async ({ page }) => {
   await page.goto('/feedback');

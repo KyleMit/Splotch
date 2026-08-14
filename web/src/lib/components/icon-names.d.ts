@@ -2,6 +2,7 @@
 // Run `node tools/icons/gen-icon-names.mjs` (or any dev/build) to regenerate.
 export type IconName =
   | 'add-homescreen'
+  | 'android'
   | 'appearance'
   | 'backspace'
   | 'brush-crayon'
@@ -39,6 +40,7 @@ export type IconName =
   | 'mobile-rotate'
   | 'more-colors'
   | 'parent-center'
+  | 'phone-tablet'
   | 'photo-size-select-small'
   | 'save-picture'
   | 'settings'

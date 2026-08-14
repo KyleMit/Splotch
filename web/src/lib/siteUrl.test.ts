@@ -5,7 +5,7 @@ import { FEEDBACK_URL, SITE_ORIGIN } from './siteUrl';
 
 // The site's own address is also a literal in a template and a build config,
 // neither of which can import the constant. Moving the domain without moving
-// them would leave /android-beta printing an address that no longer resolves,
+// them would leave /beta printing an address that no longer resolves,
 // and nothing else would fail.
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');

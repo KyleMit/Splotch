@@ -118,10 +118,15 @@ don't offer.
 | `SegmentedPicker.svelte` | Controls with a **selected state**. `mode` = `radio` (choose-one radiogroup with roving     |
 |                          | tabindex + arrow-key selection: the theme pickers) / `toggle` (`aria-pressed`; deselection  |
 |                          | and multi-select stay with the caller: the orientation segment, the controls chips).        |
-|                          | `variant` = `segment` (raised-thumb track) / `chip` (borderless toggle grid); sizes `md` /  |
-|                          | `sm`; `fill={false}` hugs content; `inputName` renders the options as real native radios    |
-|                          | for a form that must post without JavaScript (the report-kind row); the forwarded `class`   |
-|                          | carries call-site restyling via `:global()`                                                 |
+|                          | `variant` = `segment` (raised-thumb track) / `chip` (borderless toggle grid) / `underline`  |
+|                          | (tab row on a hairline, for a standalone page switching between two views of itself —       |
+|                          | `/beta`'s platform tabs; the live tab replaces its stretch of the rule with a brand         |
+|                          | segment and takes the brand ink, and its icon follows that ink rather than `--icon-ink`);   |
+|                          | sizes `md` / `sm`; `fill={false}` hugs content — except under `underline`, which owns its   |
+|                          | own width (hugs left on a sheet, splits the row evenly at phone width, where a caller       |
+|                          | wanting the rule at the glass supplies the bleed past its own gutter); `inputName` renders  |
+|                          | the options as real native radios for a form that must post without JavaScript (the         |
+|                          | report-kind row); the forwarded `class` carries call-site restyling via `:global()`         |
 | `Disclosure.svelte`      | A `<details>` panel with the rotating `›` chevron. `summary` snippet + children; the        |
 |                          | forwarded `class` carries the call site's own padding/type/color (style it via `:global()`) |
 | `StatusMessage.svelte`   | The wash-filled banner a form shows after a submit resolves. `status` = `success` / `error` |
@@ -168,8 +173,8 @@ component table above when you do.
 
 ## Page chrome — standalone pages
 
-Every standalone page — the link-shareable parent pages (`/privacy`, `/changelog`, `/android-beta`,
-`/ios-beta`, `/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
+Every standalone page — the link-shareable parent pages (`/privacy`, `/changelog`, `/beta`,
+`/feedback`) and the admin console (`/admin`, via `AdminConsole`) — wears one shell, in
 **`web/src/lib/components/page/`**. The `/design` styleguide is the one standalone page with its own
 shell (sticky header + scrollspy TOC, in its route file); it still signs itself with `BrandMark`:
 
@@ -184,11 +189,11 @@ shell (sticky header + scrollspy TOC, in its route file); it still signs itself 
 | `CrayonStrip.svelte` | (in `lib/components/`) Seven rainbow pills, hues via `paletteHex` — decorative, aria-hidden |
 
 **No page opts out of night mode.** Every route wearing the shell follows the parent's Appearance
-setting, `/privacy`, `/changelog`, `/android-beta` and `/ios-beta` included — the older pages pinned
-a light `--page-*` palette until 2026-08-10 and no longer do (ADR-0071's amendment records the
-reversal). Content inside the shell reads `--page-*`, never restates a color, and a page that wants
-a color the palette doesn't carry reaches for a themed app token, never a hex; `/design` styles
-itself from the themed tokens directly, so its theme toggle keeps working.
+setting, `/privacy`, `/changelog` and `/beta` included — the older pages pinned a light `--page-*`
+palette until 2026-08-10 and no longer do (ADR-0071's amendment records the reversal). Content
+inside the shell reads `--page-*`, never restates a color, and a page that wants a color the palette
+doesn't carry reaches for a themed app token, never a hex; `/design` styles itself from the themed
+tokens directly, so its theme toggle keeps working.
 
 Two consequences worth knowing before styling one:
 
@@ -199,7 +204,7 @@ Two consequences worth knowing before styling one:
   hues) derives its wash and ink with `color-mix()` against `--page-sheet` and `--page-ink`, which
   darkens the hue on the light sheet and lightens it on the dark one from one declaration. The mix
   strengths are named custom properties; contrast is measured on both grounds by
-  `web/tests/android-beta.spec.ts` rather than assumed from the light reading.
+  `web/tests/beta.spec.ts` rather than assumed from the light reading.
 
 ## Brand & iconography
 
@@ -261,8 +266,8 @@ hex and font-size ratchets enforce anything, so rule 2 is what governs spacing i
 styles. What remains raw beyond that is deliberate — documented one-offs (polaroid/photographic
 whites, ClearButton's unthemed danger red, confetti colors, canvas chrome, functional literals like
 ColoringBook's label reserve). The **light-only pages are gone**: `/admin` left that set in the
-2026-08 redesign and `/privacy`, `/changelog` and `/android-beta` followed on 2026-08-10, so no
-surface pins a palette against `data-theme`/`prefers-color-scheme` any more.
+2026-08 redesign and `/privacy`, `/changelog` and the beta sign-up page followed on 2026-08-10, so
+no surface pins a palette against `data-theme`/`prefers-color-scheme` any more.
 
 CI enforces this with `npm run lint:tokens` — per-file raw-hex and raw-font-size ratchets whose
 allowlisted baselines (with per-file reasons) live in `tools/tokens/lint-token-styles.mjs`, plus a

@@ -72,8 +72,8 @@ test.describe('the sign-up page cues its own document scroll', () => {
   test.use({ viewport: PHONE_PORTRAIT });
 
   test('fades the steps that run past the fold, then stands down at the foot', async ({ page }) => {
-    await page.goto('/android-beta');
-    await expect(page.getByRole('heading', { name: 'Join the Android beta' })).toBeVisible();
+    await page.goto('/beta');
+    await expect(page.getByRole('heading', { name: 'Join the Splotch beta' })).toBeVisible();
 
     const cue = page.locator('.scroll-cue');
     await expect.poll(() => cueOpacity(cue)).toBe(1);
@@ -92,8 +92,8 @@ test.describe('the sign-up page cues its own document scroll', () => {
   // pins the measurement resolving to nothing rather than to the nearest
   // padded ancestor.
   test('fades to the foot of the viewport, not to the sheet inside it', async ({ page }) => {
-    await page.goto('/android-beta');
-    await expect(page.getByRole('heading', { name: 'Join the Android beta' })).toBeVisible();
+    await page.goto('/beta');
+    await expect(page.getByRole('heading', { name: 'Join the Splotch beta' })).toBeVisible();
 
     await expect
       .poll(() =>
@@ -109,8 +109,8 @@ test.describe('the sign-up page on a viewport that holds all of it', () => {
   test.use({ viewport: TALLER_THAN_THE_PAGE });
 
   test('leaves an unscrolled page uncued', async ({ page }) => {
-    await page.goto('/android-beta');
-    await expect(page.getByRole('heading', { name: 'Join the Android beta' })).toBeVisible();
+    await page.goto('/beta');
+    await expect(page.getByRole('heading', { name: 'Join the Splotch beta' })).toBeVisible();
 
     await expect
       .poll(() =>

@@ -1,4 +1,4 @@
-// The TestFlight enrollment facts rendered by /ios-beta. This side-effect-free
+// The TestFlight enrollment facts rendered by /beta's iOS tab. This side-effect-free
 // boundary gives the page, native-bundle scan, and tests one source of truth for
 // every external URL.
 
