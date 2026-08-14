@@ -97,6 +97,13 @@
       zone: 'dial',
     },
     {
+      name: 'Waiting Polaroid',
+      file: 'AiWaitingPolaroid.svelte',
+      blurb:
+        "The picture being made, pinned to the canvas's top-left corner past the palette while the child keeps drawing — and the only way back into it (ADR-0117).",
+      zone: 'waitingPolaroid',
+    },
+    {
       name: 'Polaroid overlay',
       file: 'app.css (.polaroid-*)',
       blurb:

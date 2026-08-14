@@ -1,4 +1,4 @@
-# ADR-0117: Composition-anchored generation prompt, held by a measured adherence lab
+# ADR-0118: Composition-anchored generation prompt, held by a measured adherence lab
 
 **Status:** Active **Date:** 2026-08
 

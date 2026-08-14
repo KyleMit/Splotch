@@ -61,6 +61,10 @@ export const scaleUsage: Record<keyof typeof scale, string> = {
 
   clearGradientRest:
     'Only the Clear Button at rest and its coachmark ghost — unthemed so the tutorial cannot drift from the control.',
+
+  polaroidPaper:
+    'The print white every polaroid in the app is made of — pinned on both themes, because a photograph does not repaint at night.',
+  polaroidInk: 'Brand ink written on --polaroid-paper, pinned to the paper it sits on.',
 };
 
 export const zIndexUsage: Record<keyof typeof zIndex, string> = {
@@ -72,13 +76,13 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zFlyout:
     'Orders the flyout inside .actions-panel only; the root-context tie with --z-panel is inert.',
   zBanner: 'The Install Banner, taking over the corner controls while shown.',
-  zWaitingChip:
-    'The AI Waiting Chip, above the Install Banner it shares a corner with — the only way back into a minimized run.',
   zClearAcceptZone: 'The drag-accept ring, below the button it rings.',
   zClearButton: 'The Clear Button itself.',
   zNotch: 'The safe-area Notch Band; its tie with --z-clear-button resolves by DOM order.',
   zClearCoachmark: 'The tutorial ghost button, above the real one.',
   zPalette: 'The Color Palette bar.',
+  zWaitingPolaroid:
+    'The AI Waiting Polaroid — the only way back into a minimized run, over the palette edge it is pinned beside.',
   zPolaroid: 'The save-screenshot polaroid flight — the top of the chrome order.',
 };
 

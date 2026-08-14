@@ -124,6 +124,15 @@ describe('action-button CSS fallback mirrors the layout constants', () => {
     expect(colorPaletteSource).toContain('width: var(--palette-landscape-width)');
   });
 
+  // The portrait counterpart, published for chrome that must start below the
+  // bar rather than beside it — the AI Waiting Polaroid's top inset. CSS cannot
+  // import the constant, so the two are held together here.
+  it('shares the portrait palette-bar height before hydration', () => {
+    expect(appCssSource).toMatch(
+      new RegExp(`--palette-portrait-height:\\s*${PALETTE_BAR_RESERVE}px`)
+    );
+  });
+
   it('landscape fallback matches the constants', () => {
     const [landscape] = fallbackBlocks;
     expect(landscape).toContain(scaledBase);

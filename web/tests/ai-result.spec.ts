@@ -4,12 +4,14 @@ import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import {
   invokeAiGeneration,
+  keepDrawingBlockPx,
   loadingBoxes,
   openAiResult,
   prepareAiGeneration,
   resultBoxes,
   revealAiResult,
   revealedBoxes,
+  settledStageHeight,
   stripTokens,
 } from './ai-harness';
 
@@ -166,9 +168,20 @@ test.describe('AI result modal', () => {
 
         await endpoint.succeed();
         await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
+
+        // The one thing the reveal is allowed to change: the keep-drawing pill
+        // leaves and the picture opens up into the room it was holding. The
+        // stage glides through that, so let it land before measuring.
+        const block = await keepDrawingBlockPx(page);
+        await settledStageHeight(page);
         const revealed = await revealedBoxes(page);
-        expect(revealed.card.height).toBeCloseTo(loading.card.height, 0);
-        expect(revealed.stage.height).toBeCloseTo(loading.stage.height, 0);
+
+        // Never the other way: a picture that shrank as it arrived, or a card
+        // that grew past the room the loading state proved it had.
+        expect(revealed.stage.height).toBeGreaterThanOrEqual(loading.stage.height - 1);
+        expect(revealed.stage.height - loading.stage.height).toBeLessThanOrEqual(block + 1);
+        expect(revealed.card.height).toBeLessThanOrEqual(loading.card.height + 1);
+        expect(loading.card.height - revealed.card.height).toBeLessThanOrEqual(block + 1);
       });
     }
   }
