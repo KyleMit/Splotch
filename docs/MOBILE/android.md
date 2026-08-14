@@ -336,8 +336,13 @@ re-verify if that flow changes:
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing
   still passes through `/api/generate-image` with the parent's key — `aiImage.ts`), and the two
   halves of OpenAI's data posture are not the same claim — API content is **not** used to train its
-  models, and it **is** retained up to 30 days for abuse monitoring. Say both. The exact Data safety
-  and AI-content answers live in `store-assets/STORE-LISTING-ANDROID.md`.
+  models, and it **is** retained for abuse monitoring. Say both. The retention half is a window, not
+  a deletion promise: the ordinary one is 30 days, but OpenAI's policy allows longer where the law
+  requires it or where it is needed to prevent harm, and an image its classifier flags as potential
+  CSAM is held for manual review regardless of the account's data controls. Write "normally deleted
+  after 30 days", never "deleted after 30 days" — the difference matters most for exactly this app,
+  whose inputs are children's drawings. The exact Data safety and AI-content answers live in
+  `store-assets/STORE-LISTING-ANDROID.md`.
 * **Under-18 processing** — OpenAI's under-18 API guidance asks developers serving minors for
   age-appropriate content filters, disclosures, and reporting/escalation paths, which the safety
   instruction (ADR-0023), `/privacy`, and the in-app report flow cover. It also says personal data

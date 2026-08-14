@@ -177,9 +177,19 @@
       <strong
         >OpenAI does not use what is sent through its API to train its models, unless the account
         holder opts in to sharing</strong
-      >, and it does keep a copy for up to 30 days to check for abuse before deleting it. That
-      retention is OpenAI's, not ours. We also ask OpenAI not to keep the picture in its own logs,
-      which is the one part of its retention we control.
+      >, and it does keep a copy to check for abuse. That copy is normally deleted after 30 days,
+      but OpenAI's
+      <a
+        href="https://developers.openai.com/api/docs/guides/your-data"
+        target="_blank"
+        rel="noopener noreferrer"
+        use:privacyParentalGateLink
+      >
+        published policy</a
+      > allows it to keep one longer where the law requires it or where it is needed to stop harm, and
+      a picture its scanner flags as possible child sexual abuse material is kept for a person to review
+      whatever the account's settings say. That retention is OpenAI's, not ours. We also ask OpenAI not
+      to keep the picture in its own logs, which is the one part of its retention we control.
     </li>
     <li>
       If you've added your <em>own</em> OpenAI key in Settings, the drawing still passes through our
