@@ -13,13 +13,19 @@ import { fileURLToPath } from 'node:url';
 // portrait one had the modal composing around a picture it never has to hold.
 //
 // Both are real outputs of that endpoint, committed so a run needs no provider:
-// the portrait one from the Clay style, the landscape one the wide rainbow of
-// scrapbook/model-eval/prompt-adherence, resampled from the 512×341 that eval's
-// contact sheet keeps up to the 1536×1024 IMAGE_SIZES.landscape the endpoint
-// actually returns. That size is load-bearing rather than cosmetic: the stage
-// image is never drawn past its natural size, so a fixture smaller than the box
-// the card projected for it leaves the card standing open around it — the same
-// unreachable state as the wrong shape, wearing different clothes.
+// the portrait one a Clay-style render, the landscape one the wide rainbow of
+// scrapbook/model-eval/prompt-adherence. Each is held to the exact canvas its
+// shape names in IMAGE_SIZES — the portrait art recomposed on 2:3 and the
+// landscape one resampled from the 512×341 that eval's contact sheet keeps —
+// and tools/tests/ai-output-fixtures.test.mjs reads those dimensions off the
+// endpoint's own constant rather than restating them.
+//
+// Both halves of that are load-bearing rather than cosmetic. The card takes its
+// whole width from the picture's natural ratio (--result-aspect in
+// AiImageResult), so an off-contract aspect composes a card no response can
+// produce; and the stage image is never drawn past its natural size, so a
+// picture below that canvas leaves the card standing open around it. Wrong
+// shape, wrong size: the same unreachable state, wearing different clothes.
 const FIXTURE_URLS = {
   portrait: new URL('./ai-output-portrait.jpeg', import.meta.url),
   landscape: new URL('./ai-output-landscape.jpeg', import.meta.url),
