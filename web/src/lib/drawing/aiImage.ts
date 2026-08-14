@@ -275,10 +275,12 @@ async function collectGeneration(
 ): Promise<{ response: AiImageResponse; headers: Headers }> {
   let headers = new Headers();
   const response = await awaitGeneration(jobId, pollAfterMs, signal, {
-    fetchResult: async (id) => {
+    // The poll's signal, not the caller's: it carries the wait deadline as well
+    // as the modal being closed, and this request is the part that can hang.
+    fetchResult: async (id, pollSignal) => {
       const result = await fetch(generationResultUrl(id), {
         headers: credentialHeaders,
-        signal,
+        signal: pollSignal,
       });
       headers = result.headers;
       return result;

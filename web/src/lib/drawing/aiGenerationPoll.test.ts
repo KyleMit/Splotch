@@ -26,16 +26,11 @@ const refused = () =>
 
 async function run(
   responses: (() => Response | Promise<Response>)[],
-  { signal = new AbortController().signal, clock = { t: 0 } } = {}
+  { signal = new AbortController().signal } = {}
 ) {
   let call = 0;
   const promise = awaitGeneration('job', 0, signal, {
-    fetchResult: async () => {
-      const next = responses[Math.min(call++, responses.length - 1)];
-      clock.t += 3_000;
-      return next();
-    },
-    now: () => clock.t,
+    fetchResult: async () => responses[Math.min(call++, responses.length - 1)](),
   });
   await vi.runAllTimersAsync();
   return promise;
@@ -97,11 +92,54 @@ describe('awaitGeneration', () => {
   it('gives up as retryable once it has waited longer than a child should', async () => {
     vi.useFakeTimers();
     try {
-      const clock = { t: 0 };
-      // Each poll advances the injected clock, so the budget runs out on its own.
-      const settled = await run([accepted], { clock });
-      expect(settled).toMatchObject({ kind: 'error' });
-      expect(clock.t).toBeGreaterThanOrEqual(GENERATION_POLL_TIMEOUT_MS);
+      // Never settles, so the sleeps run the budget out on their own.
+      expect(await run([accepted])).toMatchObject({ kind: 'error', status: 504 });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('bounds a poll request that never answers', async () => {
+    // The deadline used to be read from a clock before each await, which bounds
+    // only the gaps between requests. A fetch that never settles left the loop
+    // parked on it forever — and by then generateAiImage has cleared the request
+    // timer it set before the job ticket arrived, so nothing else was watching.
+    vi.useFakeTimers();
+    try {
+      const seen: AbortSignal[] = [];
+      const settled = awaitGeneration('job', 0, new AbortController().signal, {
+        fetchResult: (_id, pollSignal) =>
+          new Promise((_resolve, reject) => {
+            seen.push(pollSignal);
+            pollSignal.addEventListener('abort', () => reject(pollSignal.reason), { once: true });
+          }),
+      });
+
+      await vi.advanceTimersByTimeAsync(GENERATION_POLL_TIMEOUT_MS + 1);
+
+      await expect(settled).resolves.toMatchObject({ kind: 'error', status: 504 });
+      expect(seen[0].aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('tells its own deadline apart from the child closing the modal', async () => {
+    vi.useFakeTimers();
+    try {
+      const controller = new AbortController();
+      const promise = awaitGeneration('job', 0, controller.signal, {
+        fetchResult: (_id, pollSignal) =>
+          new Promise((_resolve, reject) => {
+            pollSignal.addEventListener('abort', () => reject(pollSignal.reason), { once: true });
+          }),
+      });
+      const settled = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+
+      await vi.advanceTimersByTimeAsync(1);
+      controller.abort();
+      await vi.runAllTimersAsync();
+      await settled;
     } finally {
       vi.useRealTimers();
     }
