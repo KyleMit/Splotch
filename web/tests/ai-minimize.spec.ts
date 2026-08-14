@@ -120,6 +120,25 @@ test.describe('a generation minimized to the corner', () => {
     await expect.poll(() => dialAngle(page)).toBeLessThan(beforeMinimize);
   });
 
+  test('stops calling the picture unfinished once it is finished', async ({ page }) => {
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await page.getByLabel('Keep drawing while this is made').click();
+    await expect(page.locator(polaroid)).toBeVisible();
+
+    await endpoint.succeed();
+    await expect(page.locator(polaroid)).toContainText('Ready!');
+
+    // The corner says "Ready!"; the control that opens it said "being made"
+    // until whenever the parent next found it — the one place in this flow a
+    // screen reader gets a different answer than the screen.
+    await openDrawer(page);
+    await expect(page.locator(magicButton)).toHaveAttribute(
+      'aria-label',
+      'Show your finished picture'
+    );
+  });
+
   test('never wiggles itself off the top of the screen', async ({ page }) => {
     // Landscape is where this binds: the print sits at the top of the canvas
     // with only its own inset above it, and the wiggle plus the badge hanging
