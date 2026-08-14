@@ -42,14 +42,24 @@ Ordinary toddler pretend-play IS welcome — render it as cheerful, obviously ma
 
 When you must refuse, respond with a single short sentence declining, e.g. "I can't turn that drawing into a picture — let's draw something else!". Never sanitize, beautify, or partially transform genuinely unsafe content into a "nicer" version — refuse it entirely. When a drawing is clearly playful and non-graphic, generate the image.`;
 
-// One shot per request. The SDK's default is to retry twice, which on this path
-// would spend the whole deadline re-asking a model that is already slow; the app
-// surfaces its own "let's try again" instead.
-const NO_SDK_RETRIES = 0;
+// Generation gets one shot: the SDK's default of two retries would spend the
+// whole deadline re-asking a model that is already slow, and the app surfaces
+// its own "let's try again" instead. The key probe is the opposite case — it is
+// a sub-second call, and reporting "that key could not authenticate" because of
+// one transient blip tells a parent something false about their key.
+const GENERATE_RETRIES = 0;
+const VERIFY_KEY_RETRIES = 1;
 
-function client(apiKey: string, timeoutMs: number): OpenAI {
-  return new OpenAI({ apiKey, timeout: timeoutMs, maxRetries: NO_SDK_RETRIES });
+function client(apiKey: string, timeoutMs: number, maxRetries: number): OpenAI {
+  return new OpenAI({ apiKey, timeout: timeoutMs, maxRetries });
 }
+
+// The SDK's own `timeout` stops counting once response headers arrive, so on a
+// call that returns a multi-megabyte base64 image it does not bound the part
+// most likely to drag. An explicit signal bounds the whole exchange, which is
+// the guarantee ADR-0063's ladder is stated in terms of. Both are set: the
+// signal is the real deadline, `timeout` keeps the SDK's own error message.
+const deadline = (ms: number) => ({ signal: AbortSignal.timeout(ms), timeout: ms });
 
 const firstLine = (err: unknown) =>
   (err instanceof Error ? err.message : String(err)).split('\n')[0];
@@ -59,39 +69,43 @@ export const openAiProvider: AiImageProvider = {
     const bytes = Buffer.from(image.base64, 'base64');
     let response;
     try {
-      response = await client(apiKey, GENERATE_DEADLINE_MS).responses.create({
-        model: ORCHESTRATOR_MODEL,
-        instructions: SAFETY_SYSTEM_INSTRUCTION,
-        input: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'input_image',
-                // `auto` is the API's own default; naming it is what the SDK's
-                // type requires, not a departure from what the bake-off measured.
-                detail: 'auto',
-                image_url: `data:${image.mimeType};base64,${image.base64}`,
-              },
-              { type: 'input_text', text: prompt },
-            ],
-          },
-        ],
-        // tool_choice is deliberately left on its default `auto`. Forcing the
-        // image tool would take away the model's ability to answer with a
-        // refusal instead, which is the entire safety mechanism above.
-        tools: [
-          {
-            type: 'image_generation',
-            model: IMAGE_MODEL,
-            quality: IMAGE_QUALITY,
-            // Match the shape the child drew on: the tool renders onto a canvas
-            // we choose, and a tall drawing on a square one loses the child's
-            // own composition.
-            size: imageSizeFor(readImageSize(bytes)),
-          },
-        ],
-      });
+      const deadlineMs = GENERATE_DEADLINE_MS;
+      response = await client(apiKey, deadlineMs, GENERATE_RETRIES).responses.create(
+        {
+          model: ORCHESTRATOR_MODEL,
+          instructions: SAFETY_SYSTEM_INSTRUCTION,
+          input: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'input_image',
+                  // `auto` is the API's own default; naming it is what the SDK's
+                  // type requires, not a departure from what the bake-off measured.
+                  detail: 'auto',
+                  image_url: `data:${image.mimeType};base64,${image.base64}`,
+                },
+                { type: 'input_text', text: prompt },
+              ],
+            },
+          ],
+          // tool_choice is deliberately left on its default `auto`. Forcing the
+          // image tool would take away the model's ability to answer with a
+          // refusal instead, which is the entire safety mechanism above.
+          tools: [
+            {
+              type: 'image_generation',
+              model: IMAGE_MODEL,
+              quality: IMAGE_QUALITY,
+              // Match the shape the child drew on: the tool renders onto a canvas
+              // we choose, and a tall drawing on a square one loses the child's
+              // own composition.
+              size: imageSizeFor(readImageSize(bytes)),
+            },
+          ],
+        },
+        deadline(deadlineMs)
+      );
     } catch (err) {
       const status = (err as { status?: number }).status;
       console.error(`OpenAI call failed (${status ?? 'unknown'}): ${firstLine(err)}`);
@@ -126,7 +140,10 @@ export const openAiProvider: AiImageProvider = {
       // It cannot prove the account has cleared OpenAI's identity verification:
       // the model is retrievable either way, and the 403 only arrives on a real
       // generation. generateImage names that failure specifically when it does.
-      await client(apiKey, VERIFY_KEY_DEADLINE_MS).models.retrieve(IMAGE_MODEL);
+      await client(apiKey, VERIFY_KEY_DEADLINE_MS, VERIFY_KEY_RETRIES).models.retrieve(
+        IMAGE_MODEL,
+        deadline(VERIFY_KEY_DEADLINE_MS)
+      );
     } catch (err) {
       return { ok: false, reason: firstLine(err) };
     }

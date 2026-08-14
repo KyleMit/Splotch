@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GENERATE_DEADLINE_MS, VERIFY_KEY_DEADLINE_MS } from '$lib/ai/limits';
 import { openAiProvider } from './openai';
 
 // Mock the SDK so the tests exercise the adapter's mapping from OpenAI
@@ -135,13 +136,23 @@ describe('openAiProvider.generateImage', () => {
     expect(create.mock.calls[0][0].tools[0].size).toBe('1536x1024');
   });
 
-  it('bounds the call and disables SDK retries so one request cannot eat the deadline', async () => {
+  it('bounds the call at the deadline the ladder specifies, not merely at something', async () => {
     create.mockResolvedValue(imageResponse);
     await openAiProvider.generateImage(request);
+    // Naming the constant is the point: a bound of "greater than zero" would
+    // keep passing if the deadline drifted past Netlify's ceiling, which is the
+    // one thing ADR-0063's ladder exists to prevent.
     expect(construct).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: 'test-key', maxRetries: 0 })
+      expect.objectContaining({ apiKey: 'test-key', timeout: GENERATE_DEADLINE_MS, maxRetries: 0 })
     );
-    expect(construct.mock.calls[0][0].timeout).toBeGreaterThan(0);
+  });
+
+  it('also passes an abort signal, which bounds the response body the SDK timeout does not', async () => {
+    create.mockResolvedValue(imageResponse);
+    await openAiProvider.generateImage(request);
+    const options = create.mock.calls[0][1];
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    expect(options.timeout).toBe(GENERATE_DEADLINE_MS);
   });
 });
 
@@ -168,9 +179,16 @@ describe('openAiProvider.verifyKey', () => {
     expect(retrieve.mock.calls[0][0]).toBe(create.mock.calls[0][0].tools[0].model);
   });
 
-  it('bounds the probe so a hung provider cannot occupy the invocation', async () => {
+  it('bounds the probe at the key-check deadline so a hung provider cannot occupy the invocation', async () => {
     retrieve.mockResolvedValue({ id: 'gpt-image-2' });
     await openAiProvider.verifyKey('good-key');
-    expect(construct.mock.calls[0][0].timeout).toBeGreaterThan(0);
+    expect(construct.mock.calls[0][0].timeout).toBe(VERIFY_KEY_DEADLINE_MS);
+    expect(retrieve.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('retries the probe once, so a transient blip is not reported as a bad key', async () => {
+    retrieve.mockResolvedValue({ id: 'gpt-image-2' });
+    await openAiProvider.verifyKey('good-key');
+    expect(construct.mock.calls[0][0].maxRetries).toBeGreaterThan(0);
   });
 });

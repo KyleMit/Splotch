@@ -36,7 +36,7 @@ import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 import { fail } from '../lib/asset-cli.mjs';
 import { COLORING_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+import { classifyGeminiResponse } from '../lib/gemini-response.ts';
 
 const MODEL = 'gemini-3.1-flash-image';
 const WEBP_QUALITY = 92;
