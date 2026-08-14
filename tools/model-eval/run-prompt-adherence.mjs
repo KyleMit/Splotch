@@ -45,12 +45,25 @@ import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
 import { callVariant } from './lib/image-providers.mjs';
 import { scoreComposition } from './lib/composition-score.mjs';
 import { esc } from '../lib/html.mjs';
-import { requireEnv, runId as makeRunId } from '../lib/proc.mjs';
+import { fail, requireEnv, runId as makeRunId } from '../lib/proc.mjs';
+
+// A zero, negative, or non-numeric count would silently produce an empty run —
+// zero workers in pool(), or zero tasks — that still writes a success-looking
+// report. For a paid measurement tool that misconfiguration must fail fast.
+function positiveIntEnv(name, fallback) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < 1) {
+    fail(`${name} must be a positive integer, got "${raw}"`);
+  }
+  return value;
+}
 
 const BASE = join(ROOT, 'tools/model-eval');
 const IN = join(BASE, 'inputs');
-const SAMPLES = Number(process.env.SAMPLES ?? 1);
-const CONCURRENCY = Number(process.env.CONCURRENCY ?? 4);
+const SAMPLES = positiveIntEnv('SAMPLES', 1);
+const CONCURRENCY = positiveIntEnv('CONCURRENCY', 4);
 const FILTER = process.env.FILTER || '';
 const LAB_FILTER = (process.env.LABS || '')
   .split(',')
@@ -264,7 +277,7 @@ function buildReportHtml({ runId, labs, inputs, results }) {
               `<div class="cell"><img src="${esc(`assets/${row.thumbFile}`)}" loading="lazy">` +
                 `<div class="score" style="color:${scoreColor(row.layoutScore)}">layout ${row.layoutScore ?? '—'}</div>` +
                 (g
-                  ? `<div class="diag">align ${g.identityRatio.toFixed(2)} · best ${g.bestScale.toFixed(2)}× @ (${g.bestOffsetXPct.toFixed(0)}%, ${g.bestOffsetYPct.toFixed(0)}%)</div>`
+                  ? `<div class="diag">align ${g.informative === false ? 'saturated' : g.identityRatio.toFixed(2)} · best ${g.bestScale.toFixed(2)}× @ (${g.bestOffsetXPct.toFixed(0)}%, ${g.bestOffsetYPct.toFixed(0)}%)</div>`
                   : '') +
                 `<details><summary>elements</summary>${elementRows(row.score?.elements ?? [])}</details></div>`
             );
