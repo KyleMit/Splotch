@@ -2,7 +2,13 @@ import { env } from '$env/dynamic/private';
 import { ASYNC_GENERATION_HEADER } from '$lib/apiHeaders';
 import { config } from './config';
 import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
-import { issueWorkTicket, markJobPending, newJobId, putJobInput } from './generationJobs';
+import {
+  discardJob,
+  issueWorkTicket,
+  markJobPending,
+  newJobId,
+  putJobInput,
+} from './generationJobs';
 import type { GenerationJobContext } from './generationJobs';
 import type { GenerationAuthorization } from './generationAuthorization';
 
@@ -81,6 +87,25 @@ export function freeSettlement(
 }
 
 /**
+ * A handoff that definitively failed leaves a job nobody will ever collect, and
+ * therefore a drawing nobody will ever delete: the caller answers in-line from
+ * here, so no poll is coming to run the collection path. The scheduled purge
+ * would get to it eventually; a child's drawing should not wait for that when
+ * the failure is already known here.
+ */
+async function abandon(jobId: string): Promise<void> {
+  try {
+    await discardJob(jobId);
+  } catch (cause) {
+    // The fallback matters more than the cleanup — the purge is the backstop.
+    console.warn(
+      '[generate-image] could not clean up the abandoned job:',
+      cause instanceof Error ? cause.message : cause
+    );
+  }
+}
+
+/**
  * Register the job and hand it to the worker. Returns null when the handoff
  * could not be made, so the caller falls back to answering in-line rather than
  * leaving a child watching a job nobody is working on.
@@ -120,6 +145,7 @@ export async function startBackgroundGeneration(
     });
     if (!response.ok) {
       console.error(`[generate-image] worker refused the job: ${response.status}`);
+      await abandon(jobId);
       return null;
     }
   } catch (cause) {
@@ -127,6 +153,7 @@ export async function startBackgroundGeneration(
       '[generate-image] could not hand off to the worker:',
       cause instanceof Error ? cause.message : cause
     );
+    await abandon(jobId);
     return null;
   }
 

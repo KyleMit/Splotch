@@ -98,7 +98,14 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   // lets the client tell this from a generation that genuinely failed — a status
   // three meanings share cannot.
   if (job.status === 'unavailable') return unavailable();
-  if (job.status === 'expired') throw error(404, 'That creation is no longer available');
+  if (job.status === 'expired') {
+    // Aged out or already gone, and either way this is the last request that
+    // will ever name this job — the client stops polling on a 404. Anything
+    // still sitting under that id has no reader left, so it goes now rather
+    // than waiting for the scheduled purge.
+    await discardJob(jobId);
+    throw error(404, 'That creation is no longer available');
+  }
   if (job.status === 'pending') return new Response(null, { status: 202 });
 
   const binding = reportBinding(request, job.context);

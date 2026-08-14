@@ -55,6 +55,15 @@ at rest until the poll that delivers it deletes it. This is a real change from t
 flow, which kept nothing at all, and `/privacy` says so rather than repeating a promise the
 architecture no longer keeps.
 
+**Deletion is a job somebody has to do, and collection is not enough of one.** A site-wide Netlify
+Blobs store has no expiry of its own, so `expiresAt` on the status record only decides what a poll
+is told — it does not remove anything. Collection deletes the jobs that get collected, which leaves
+out every one that does not: a child who closes the modal, an app killed mid-wait, a run nobody
+polls, a handoff that definitively failed. Each of those would keep a drawing and a finished picture
+indefinitely, which contradicts the paragraph above and the page it points at. So three things
+delete: collection, the start path when it knows the handoff failed, and an hourly
+`purge-generation-jobs` sweep that is the backstop for everything else.
+
 **The client declares a capability, the server decides.** A caller sends `X-Async-Generation` to say
 it can handle a later result; the server still answers in-line wherever there is no worker to hand
 the job to (a plain `vite dev`, or an unconfigured signing secret). A client that never sends the

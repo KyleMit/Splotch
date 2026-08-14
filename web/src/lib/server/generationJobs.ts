@@ -207,3 +207,45 @@ export async function discardJob(jobId: string): Promise<void> {
     store().delete(statusKey(jobId)),
   ]);
 }
+
+/**
+ * The sweep that makes `expiresAt` mean something. On its own that timestamp
+ * only changes what `readJob` answers; a site-wide Netlify Blobs store has no
+ * TTL of its own, so every key survives until something deletes it. Collection
+ * deletes the ones that get collected — but a child who closes the modal, an app
+ * that is killed mid-wait, or a run nobody ever polls leaves a drawing and a
+ * finished picture at rest indefinitely, which is neither what ADR-0115 says nor
+ * what /privacy tells parents.
+ *
+ * A job with no status record is swept too. The status is written before the
+ * input, so bytes without one are the remains of a job whose record has already
+ * gone — never a job still being started.
+ */
+export async function purgeExpiredGenerationJobs(now = Date.now()): Promise<{
+  purgedJobs: number;
+  deletedBlobs: number;
+}> {
+  const jobIds = new Set<string>();
+  for await (const page of store().list({ paginate: true })) {
+    for (const { key } of page.blobs) {
+      const slash = key.indexOf('/');
+      if (slash > 0) jobIds.add(key.slice(0, slash));
+    }
+  }
+
+  let purgedJobs = 0;
+  let deletedBlobs = 0;
+  for (const jobId of jobIds) {
+    const record = (await store().get(statusKey(jobId), { type: 'json' })) as StoredJob | null;
+    if (record && record.expiresAt >= now) continue;
+    const outcomes = await Promise.allSettled([
+      store().delete(inputKey(jobId)),
+      store().delete(imageKey(jobId)),
+      store().delete(statusKey(jobId)),
+    ]);
+    purgedJobs++;
+    deletedBlobs += outcomes.filter(({ status }) => status === 'fulfilled').length;
+  }
+
+  return { purgedJobs, deletedBlobs };
+}

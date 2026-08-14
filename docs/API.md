@@ -63,11 +63,14 @@ is `400`.
 A client that sends `X-Async-Generation: 1` is saying it can collect the picture in a later request.
 When a background worker is reachable, the response is then **`202`** with
 `{ ok: true, jobId, pollAfterMs }` and the picture is collected from `/api/generation-result`
-(ADR-0115); the drawing itself is never stored — it lives only in the worker's memory. The server
-still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured signing
-secret), and a client that never sends the header always gets the synchronous shape. Since every
-OpenAI effort tier exceeds the synchronous deadline at p90, that path now usually ends in the
-controlled `502`.
+(ADR-0115); the drawing is written to the job store for the handoff, because a background function's
+invocation body is capped in the low hundreds of KB, and the worker takes it in one read-and-delete.
+It is at rest for that handoff and no longer; the finished picture is at rest until the poll that
+hands it over deletes it, and an hourly sweep deletes whatever was never collected. The server still
+answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured signing secret),
+and a client that never sends the header always gets the synchronous shape. Since every OpenAI
+effort tier exceeds the synchronous deadline at p90, that path now usually ends in the controlled
+`502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
