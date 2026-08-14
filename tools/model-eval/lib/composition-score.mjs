@@ -264,7 +264,7 @@ function meanChamfer(points, dist, width, height, scale, cx, cy, dx, dy) {
 // and translation, both normalized by the frame's chance level (mean
 // distance-to-edge everywhere). `identityRatio` is the metric;
 // `bestScale`/`bestOffset` are the drift diagnostics.
-export function globalAlignment(points, dist, width, height) {
+function globalAlignment(points, dist, width, height) {
   if (!points.length) return null;
   let cx = 0;
   let cy = 0;
@@ -376,7 +376,7 @@ function labPalette() {
 // Input elements: ink pixels grouped by nearest palette color (each significant
 // color forms one element even when drawn as several marks — the scorer tracks
 // where the *color mass* sits, which is what a viewer reads as layout).
-export function inputElements(grid, mask) {
+function inputElements(grid, mask) {
   const { data, width, height } = grid;
   const palette = labPalette();
   const perColor = new Map();
@@ -443,7 +443,7 @@ export function inputElements(grid, mask) {
 // element's hue (a sky matching the water's blue) and are excluded; when
 // nothing but background matched, that is reported as `backgroundLike` — a
 // real observation about the output, distinct from "this color is gone".
-export function matchElement(element, outputGrid) {
+function matchElement(element, outputGrid) {
   const { data, width, height } = outputGrid;
   const mask = new Uint8Array(width * height);
   let area = 0;
@@ -483,7 +483,7 @@ export function matchElement(element, outputGrid) {
   };
 }
 
-export function compareElements(elements, outputGrid) {
+function compareElements(elements, outputGrid) {
   return elements.map((element) => {
     const match = matchElement(element, outputGrid);
     if (!match.found) {

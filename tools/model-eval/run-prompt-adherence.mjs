@@ -9,20 +9,28 @@
 // compositions where drift shows — a small subject with open paper around it
 // is what gpt-image-2 loves to enlarge and recenter.
 //
+// The 2026-08 rounds that reworded the production prompt (the runs behind
+// scrapbook/model-eval/prompt-adherence/) measured: legacy "reimagine"
+// framing 63.6 mean layout score over the 19-input sweep, the shipped
+// "paint directly over" framing 85.4, input_fidelity=high on gpt-image-1.5
+// low 71.3 at 3.6× the cost (gpt-image-2 rejects the parameter outright).
+//
 // MANUAL, real-token tool — NOT part of `npm test`. Requires OPENAI_API_KEY.
 //
-//   npm run model-eval:adherence                    # focus corpus × every lab
+//   npm run model-eval:adherence                    # focus corpus × default arms
 //   FILTER=toysword npm run model-eval:adherence    # one input
-//   LABS=baseline,fidelity npm run model-eval:adherence
+//   LABS=baseline,legacy npm run model-eval:adherence
 //   SAMPLES=2 CONCURRENCY=4 npm run model-eval:adherence
 //
-// Env: FILTER (input id substring), LABS (lab key substring, comma-separated),
+// Env: FILTER (input id substring), LABS (comma-separated exact lab keys),
 // SAMPLES (default 1), CONCURRENCY (default 4), OUT_TAG (run-dir suffix),
-// INPUTS (comma-separated input ids to replace the focus corpus).
+// INPUTS (comma-separated input ids to replace the focus corpus),
+// REPORT_FROM=<run dir> (rebuild report/ from results.json, no API calls).
 
 import { mkdirSync, writeFileSync, readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import sharp from 'sharp';
 import {
   ROOT,
   VARIANTS,
@@ -33,6 +41,7 @@ import {
   imageDims,
   imageFormat,
 } from './lib/model-eval.mjs';
+import { buildPromptForStyle } from '../../web/src/lib/ai/prompt.ts';
 import { callVariant } from './lib/image-providers.mjs';
 import { scoreComposition } from './lib/composition-score.mjs';
 import { esc } from '../lib/html.mjs';
@@ -43,12 +52,32 @@ const IN = join(BASE, 'inputs');
 const SAMPLES = Number(process.env.SAMPLES ?? 1);
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 4);
 const FILTER = process.env.FILTER || '';
-const LAB_FILTER = (process.env.LABS || '').split(',').filter(Boolean);
+const LAB_FILTER = (process.env.LABS || '')
+  .split(',')
+  .map((k) => k.trim())
+  .filter(Boolean);
 const CALL_TIMEOUT_MS = 300_000;
 
-// The lab pins the cheapest candidate tier — it is the one that drifts, and
-// the one production picked (web/src/lib/server/ai/openai.ts).
-const MODEL_VARIANT = VARIANTS.find((v) => v.key === 'gpt-image-2-low');
+// Report images are thumbnailed so a run's report/ folder is small enough to
+// promote into the committed scrapbook tree (ADR-0059); the full-size outputs
+// stay beside it in the run dir.
+const REPORT_THUMB_LONG_SIDE_PX = 512;
+const REPORT_THUMB_JPEG_QUALITY = 82;
+
+// The default arm model is the cheapest candidate tier — it is the one that
+// drifts, and the one production picked (web/src/lib/server/ai/openai.ts). A
+// lab may override `variant` to pit another model+knob combo against the same
+// prompts; gpt-image-1.5 is the newest OpenAI model that still accepts
+// input_fidelity (gpt-image-2 rejects the parameter with a 400).
+const DEFAULT_VARIANT = VARIANTS.find((v) => v.key === 'gpt-image-2-low');
+const GPT_IMAGE_1_5_LOW = {
+  key: 'gpt-image-1-5-low',
+  label: 'gpt-image-1.5 · low',
+  provider: 'openai',
+  model: 'gpt-image-1.5',
+  quality: 'low',
+  role: 'adherence-lab arm',
+};
 
 // Sparse, structured compositions where enlarging/recentering is visible; the
 // dense coloring-book categories hide drift because the subject already fills
@@ -62,42 +91,76 @@ const FOCUS_INPUT_IDS = [
   'scribble-1color__blue__tall',
 ];
 
-// The sentence block each composition-preserving candidate appends or weaves
-// in. Kept as named constants so results.json rows stay traceable to exact
-// prompt text across runs.
+// The pre-2026-08 production prompt, kept as a regression arm: it asked the
+// model to "reimagine" the drawing, and gpt-image-2 · low read that as license
+// to enlarge and recenter the subject.
+const LEGACY_PROMPT =
+  "Reimagine this child's drawing as a polished, magical illustration. Keep the original characters, shapes, and composition intact, but bring them to life with vibrant color, charming details, and a warm, whimsical feel. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Pay special attention to the ground: render it as one solidly filled area of even color.";
+
+// Retained experiment arms from the 2026-08 rounds, so a future iteration can
+// re-measure against everything already tried rather than re-deriving it.
 const LAYOUT_LOCK_SUFFIX =
   ' Keep the composition exactly as the child placed it: every element stays at its own position and its own size relative to the frame. Do not enlarge the main subject, do not zoom in, and do not move things to the center. If the child drew elements apart from each other, keep them apart — do not attach, merge, or regroup them. Areas the child left empty stay open and airy; do not fill them with new objects or scenery.';
 
-const OVERLAY_PROMPT =
+const ANCHOR_SUFFIX =
+  ' The finished illustration must line up with the child’s drawing if laid on top of it: every element the child drew keeps its own position and its own size within the frame — never enlarged, never pulled to the center, never joined to another element. If the child drew things apart, they stay apart. Enrich the open space around them with atmosphere — sky, light, and ground color — not with new objects or characters.';
+
+// The strict overlay wording without the atmosphere license: highest measured
+// adherence (91.6 vs the shipped prompt's 89.4 on the focus corpus), but it
+// leaves backgrounds bare paper — faithful yet timid.
+const OVERLAY_STRICT_PROMPT =
   "Paint directly over this child's drawing so the finished picture lines up with the original: every shape stays exactly where the child drew it, at exactly the size the child drew it. Polish each drawn shape in place into a warm, whimsical illustration — vibrant color, charming details, soft light — without moving, enlarging, shrinking, or rearranging anything, and without zooming in or cropping. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Areas the child left empty stay open — do not add objects the child did not draw.";
 
-export const LABS = [
+// The production dark-scene suffix, recovered from the app's own prompt
+// assembly rather than copied, so the night arm cannot drift from it.
+function darkScenePrompt() {
+  return buildPromptForStyle(null, {}, 'dark').slice(DEFAULT_PROMPT.length).trim();
+}
+
+const LABS = [
   { key: 'baseline', label: 'production prompt', prompt: DEFAULT_PROMPT, imageToolOverrides: {} },
   {
+    key: 'legacy',
+    label: 'pre-2026-08 "reimagine" prompt',
+    prompt: LEGACY_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'overlay-strict',
+    label: 'overlay wording without atmosphere license',
+    prompt: OVERLAY_STRICT_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
     key: 'layout-lock',
-    label: 'prod + layout-lock suffix',
-    prompt: DEFAULT_PROMPT + LAYOUT_LOCK_SUFFIX,
+    label: 'legacy + layout-lock suffix',
+    prompt: LEGACY_PROMPT + LAYOUT_LOCK_SUFFIX,
     imageToolOverrides: {},
   },
   {
-    key: 'overlay',
-    label: 'overlay rewrite',
-    prompt: OVERLAY_PROMPT,
+    key: 'anchored',
+    label: 'legacy + anchor suffix',
+    prompt: LEGACY_PROMPT + ANCHOR_SUFFIX,
     imageToolOverrides: {},
   },
   {
-    key: 'fidelity-high',
-    label: 'prod + input_fidelity high',
+    key: 'fidelity15',
+    label: 'gpt-image-1.5 low · production prompt + input_fidelity high',
     prompt: DEFAULT_PROMPT,
     imageToolOverrides: { input_fidelity: 'high' },
+    variant: GPT_IMAGE_1_5_LOW,
   },
   {
-    key: 'lock-fidelity',
-    label: 'layout-lock + input_fidelity high',
-    prompt: DEFAULT_PROMPT + LAYOUT_LOCK_SUFFIX,
-    imageToolOverrides: { input_fidelity: 'high' },
+    key: 'night',
+    label: 'production prompt + dark-scene suffix',
+    prompt: `${DEFAULT_PROMPT} ${darkScenePrompt()}`,
+    imageToolOverrides: {},
   },
 ];
+
+// Arms a bare `npm run model-eval:adherence` compares; the historical and
+// situational arms opt in via LABS.
+const DEFAULT_LAB_KEYS = ['baseline', 'legacy'];
 
 async function pool(thunks, size) {
   const results = new Array(thunks.length);
@@ -113,16 +176,15 @@ async function pool(thunks, size) {
 }
 
 function selectLabs() {
-  const selected = LABS.filter(
-    (lab) => !LAB_FILTER.length || LAB_FILTER.some((f) => lab.key.includes(f))
-  );
-  if (!selected.length) {
+  const wanted = LAB_FILTER.length ? LAB_FILTER : DEFAULT_LAB_KEYS;
+  const unknown = wanted.filter((key) => !LABS.some((lab) => lab.key === key));
+  if (unknown.length) {
     console.error(
-      `No labs matched LABS="${process.env.LABS}". Keys: ${LABS.map((l) => l.key).join(', ')}`
+      `Unknown lab key(s): ${unknown.join(', ')}. Keys: ${LABS.map((l) => l.key).join(', ')}`
     );
     process.exit(1);
   }
-  return selected;
+  return wanted.map((key) => LABS.find((lab) => lab.key === key));
 }
 
 function loadInputs() {
@@ -199,7 +261,7 @@ function buildReportHtml({ runId, labs, inputs, results }) {
             }
             const g = row.score?.global;
             sampleBlocks.push(
-              `<div class="cell"><img src="${esc(row.outFile)}" loading="lazy">` +
+              `<div class="cell"><img src="${esc(`assets/${row.thumbFile}`)}" loading="lazy">` +
                 `<div class="score" style="color:${scoreColor(row.layoutScore)}">layout ${row.layoutScore ?? '—'}</div>` +
                 (g
                   ? `<div class="diag">align ${g.identityRatio.toFixed(2)} · best ${g.bestScale.toFixed(2)}× @ (${g.bestOffsetXPct.toFixed(0)}%, ${g.bestOffsetYPct.toFixed(0)}%)</div>`
@@ -210,7 +272,7 @@ function buildReportHtml({ runId, labs, inputs, results }) {
           return `<td>${sampleBlocks.join('') || '—'}</td>`;
         })
         .join('');
-      return `<tr><td class="inputcell"><img src="${esc(`in__${input.id}.png`)}" loading="lazy"><div>${esc(input.id)}</div></td>${labCells}</tr>`;
+      return `<tr><td class="inputcell"><img src="${esc(`assets/in__${input.id}.jpg`)}" loading="lazy"><div>${esc(input.id)}</div></td>${labCells}</tr>`;
     })
     .join('');
   const promptList = labs
@@ -220,7 +282,7 @@ function buildReportHtml({ runId, labs, inputs, results }) {
           Object.keys(lab.imageToolOverrides).length
             ? ` · tool ${esc(JSON.stringify(lab.imageToolOverrides))}`
             : ''
-        }</summary><p>${esc(lab.prompt)}</p></details>`
+        }${lab.variant ? ` · model ${esc(lab.variant.label)}` : ''}</summary><p>${esc(lab.prompt)}</p></details>`
     )
     .join('');
   return `<!doctype html><meta charset="utf-8"><title>prompt adherence ${esc(runId)}</title>
@@ -238,12 +300,62 @@ details{font-size:11px;color:#444;max-width:180px}
 .cell{margin-bottom:8px}
 </style>
 <h1>Prompt-adherence lab — ${esc(runId)}</h1>
-<p>Model: ${esc(MODEL_VARIANT.label)} · scorer: lib/composition-score.mjs (higher layout = closer to the child's composition; align is identity-chamfer ÷ chance, lower = better; best names the drift transform)</p>
+<p>Default model: ${esc(DEFAULT_VARIANT.label)} · scorer: tools/model-eval/lib/composition-score.mjs (higher layout = closer to the child's composition; align is identity-chamfer ÷ chance, lower = better; best names the drift transform)</p>
 ${promptList}
 <table><tr><th>input</th>${header}</tr><tr><td><b>mean layout</b></td>${meanRow}</tr>${bodyRows}</table>`;
 }
 
+async function writeThumb(sourcePath, destPath) {
+  await sharp(sourcePath)
+    .resize(REPORT_THUMB_LONG_SIDE_PX, REPORT_THUMB_LONG_SIDE_PX, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({ quality: REPORT_THUMB_JPEG_QUALITY })
+    .toFile(destPath);
+}
+
+// The report is a self-contained folder (index.html + thumbnail assets) so a
+// keeper run can be promoted verbatim with `npm run scrapbook:publish`.
+async function buildReport({ runId, outDir, labs, inputs, results }) {
+  const reportDir = join(outDir, 'report');
+  const assetsDir = join(reportDir, 'assets');
+  mkdirSync(assetsDir, { recursive: true });
+  for (const input of inputs) {
+    await writeThumb(join(outDir, `in__${input.id}.png`), join(assetsDir, `in__${input.id}.jpg`));
+  }
+  for (const row of results) {
+    if (row.kind !== 'image' || !row.outFile) continue;
+    row.thumbFile = row.outFile.replace(/\.(png|jpg)$/, '.jpg');
+    await writeThumb(join(outDir, row.outFile), join(assetsDir, row.thumbFile));
+  }
+  const htmlPath = join(reportDir, 'index.html');
+  writeFileSync(htmlPath, buildReportHtml({ runId, labs, inputs, results }));
+  return htmlPath;
+}
+
+// REPORT_FROM=<run dir>: rebuild report/ from that run's results.json and
+// already-saved images, with no API calls.
+async function reportOnly(dir) {
+  const data = JSON.parse(readFileSync(join(dir, 'results.json'), 'utf8'));
+  const labKeys = [...new Set(data.results.map((row) => row.lab))];
+  const labs = labKeys.map(
+    (key) => data.labs.find((lab) => lab.key === key) ?? { key, label: key, imageToolOverrides: {} }
+  );
+  const inputIds = [...new Set(data.results.map((row) => row.id))];
+  const inputs = inputIds.map((id) => ({ id }));
+  const htmlPath = await buildReport({
+    runId: data.runId,
+    outDir: dir,
+    labs,
+    inputs,
+    results: data.results,
+  });
+  console.log(`Report: ${pathToFileURL(htmlPath).href}`);
+}
+
 async function main() {
+  if (process.env.REPORT_FROM) return reportOnly(process.env.REPORT_FROM);
   assertProductionConfig();
   requireEnv('OPENAI_API_KEY', 'set it in web/.env or export it');
   const labs = selectLabs();
@@ -269,11 +381,12 @@ async function main() {
   const save = () =>
     writeFileSync(
       join(outDir, 'results.json'),
-      JSON.stringify({ runId, model: MODEL_VARIANT.key, labs, results }, null, 2)
+      JSON.stringify({ runId, model: DEFAULT_VARIANT.key, labs, results }, null, 2)
     );
 
   const thunks = tasks.map(({ input, lab, sample }) => async () => {
-    const result = await callVariant(MODEL_VARIANT, {
+    const variant = lab.variant ?? DEFAULT_VARIANT;
+    const result = await callVariant(variant, {
       apiKeys: { openai: process.env.OPENAI_API_KEY },
       image: input.image,
       prompt: lab.prompt,
@@ -289,7 +402,7 @@ async function main() {
       ms: result.ms,
       reason: result.reason ?? null,
       revisedPrompt: result.revisedPrompt ?? null,
-      cost: costOf(MODEL_VARIANT, result.usage),
+      cost: costOf(variant, result.usage),
       outFile: null,
       layoutScore: null,
       score: null,
@@ -328,9 +441,8 @@ async function main() {
     );
   }
 
-  const html = buildReportHtml({ runId, labs, inputs, results });
-  const htmlPath = join(outDir, 'report.html');
-  writeFileSync(htmlPath, html);
+  const htmlPath = await buildReport({ runId, outDir, labs, inputs, results });
+  save();
   console.log(`\nSpend: $${spend.toFixed(2)}\nReport: ${pathToFileURL(htmlPath).href}`);
 }
 
