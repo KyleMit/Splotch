@@ -304,11 +304,14 @@ ul.method{margin:8px 0;padding-left:20px}ul.method li{margin:5px 0;color:var(--m
 Zero safety refusals anywhere — including the <code>safety__toysword</code> pretend-play probe — so
 nothing here suggests a false-positive problem on ordinary art. One transient upstream 500.
 
-<p><b>The latency finding decides the architecture.</b> Gemini answers in ~7 s. <em>Every</em> OpenAI
-variant sits at or past Netlify's measured 26 s synchronous ceiling by p90 — even the fastest
-(<code>gpt-image-1-mini · low</code>: 19.7 s median, 25.9 s p90, 33.0 s max). There is no effort tier
-that makes a buffered request/response handler viable, so moving generation to a start-then-poll flow
-is a requirement of the migration, not an optimization of it.</p>
+<p><b>The latency finding decides the architecture.</b> The line that matters is
+<b>24 s</b>, not Netlify's 26 s ceiling: the handler aborts first on purpose so its own error wins
+the race (ADR-0063), so <code>GENERATE_DEADLINE_MS</code> is the wall a real request hits. Against
+it, <b>all six OpenAI variants exceed the deadline at p90</b> and five of eight exceed it at the
+median, while both Gemini variants finish in about 7 s with room to spare. Even the fastest OpenAI
+tier — <code>gpt-image-1-mini · low</code>, 19.7 s median — is at 26.8 s by p90. There is no effort
+tier that keeps a buffered request/response handler viable, so moving generation to a
+start-then-poll flow is a requirement of the migration, not an optimization of it.</p>
 
 <p><b>Cost goes down, not up, at the low end.</b> <code>gpt-image-1-mini · low</code> is $0.0099/image
 — <em>a quarter</em> of what the current Gemini production model costs ($0.0389). Today's spend is
@@ -326,13 +329,18 @@ latency</em> for the same money (25.1 s vs 50.7 s) and was excellent on line art
 badly composed on <code>coloring-manual__cow</code>. <code>gpt-image-2 · high</code> is not visibly
 better than medium on this corpus and costs 3.3× as much for 2× the wait.</p>
 
-<p><b>Where to look in the gallery.</b> <code>line__one-stroke</code> — one red arc on blank paper —
-had <em>every</em> model invent a whole landscape; that is the honest picture of what happens when a
-toddler gives the model almost nothing. <code>coloring-manual__cow</code> separates the field on
+<p><b>Where to look in the gallery.</b> <code>coloring-manual__cow</code> separates the field on
 fidelity: the child scribbled brown on the cow's back, and Gemini 2.5 rendered a black-and-white cow
 that ignored it, while <code>gpt-image-2 · low</code> went the other way and painted the scribble on
-literally as stripes. The OpenAI variants also fill the frame, where Gemini letterboxes a wide
-drawing into a bordered page.</p>
+literally as stripes. <code>line__cat</code> is the cleanest read on whether a model keeps the
+child's own stroke colors or repaints the subject — Gemini 3.1 and
+<code>gpt-image-1-mini · medium</code> both recolor the cat, the rest keep it. The OpenAI variants
+also fill the frame, where Gemini letterboxes a wide drawing into a bordered page.</p>
+
+<p><b>Read the numbers with their limits.</b> One sample per cell, and the run was made at
+concurrency 6, so these are throughput-under-load figures rather than an isolated single-call floor,
+and a single slow call moves a variant's median. That caveat matters for the cheapest tier, whose
+median sits just under the deadline; it does not rescue the recommended tier at 50.7 s.</p>
 </div>
 
     <div class="section-head"><h2>Cost &amp; latency</h2><span class="desc">per variant</span></div>
@@ -349,7 +357,7 @@ drawing into a bordered page.</p>
       <td class="num">3.9×</td>
       <td class="num">$3,891</td>
       <td class="num winc">7.6 s</td>
-      <td class="num">8.6 s</td>
+      <td class="num">8.8 s</td>
       <td class="num">6.5 s / 10.5 s</td>
       <td class="num">0</td>
       <td class="num">0</td>
@@ -375,7 +383,7 @@ drawing into a bordered page.</p>
       <td class="num">2.1×</td>
       <td class="num">$2,043</td>
       <td class="num lose">26.7 s</td>
-      <td class="num">33.0 s</td>
+      <td class="num">33.1 s</td>
       <td class="num">23.3 s / 35.1 s</td>
       <td class="num">0</td>
       <td class="num">1</td>
@@ -388,7 +396,7 @@ drawing into a bordered page.</p>
       <td class="num">5.9×</td>
       <td class="num">$5,809</td>
       <td class="num lose">50.7 s</td>
-      <td class="num">60.4 s</td>
+      <td class="num">60.6 s</td>
       <td class="num">40.9 s / 63.7 s</td>
       <td class="num">0</td>
       <td class="num">0</td>
@@ -401,7 +409,7 @@ drawing into a bordered page.</p>
       <td class="num">19.2×</td>
       <td class="num">$19,061</td>
       <td class="num lose">109.1 s</td>
-      <td class="num">141.9 s</td>
+      <td class="num">142.5 s</td>
       <td class="num">97.8 s / 150.2 s</td>
       <td class="num">0</td>
       <td class="num">0</td>
@@ -413,8 +421,8 @@ drawing into a bordered page.</p>
       <td class="num">$0.0559</td>
       <td class="num">5.6×</td>
       <td class="num">$5,594</td>
-      <td class="num winc">25.1 s</td>
-      <td class="num">30.1 s</td>
+      <td class="num lose">25.1 s</td>
+      <td class="num">30.6 s</td>
       <td class="num">18.1 s / 36.8 s</td>
       <td class="num">0</td>
       <td class="num">0</td>
@@ -427,7 +435,7 @@ drawing into a bordered page.</p>
       <td class="num">1.0×</td>
       <td class="num">$991</td>
       <td class="num winc">19.7 s</td>
-      <td class="num">25.9 s</td>
+      <td class="num">26.8 s</td>
       <td class="num">15.5 s / 33.0 s</td>
       <td class="num">0</td>
       <td class="num">0</td>
@@ -439,8 +447,8 @@ drawing into a bordered page.</p>
       <td class="num">$0.0185</td>
       <td class="num">1.9×</td>
       <td class="num">$1,847</td>
-      <td class="num winc">24.5 s</td>
-      <td class="num">31.1 s</td>
+      <td class="num lose">24.5 s</td>
+      <td class="num">32.2 s</td>
       <td class="num">21.2 s / 40.5 s</td>
       <td class="num">0</td>
       <td class="num">0</td>
@@ -448,10 +456,15 @@ drawing into a bordered page.</p>
     </tr>
     </table></div>
     <p class="hint">Cost is measured token usage × published list rates, including the orchestrator's
-    own tokens on the OpenAI variants. Median latency is red when it exceeds Netlify's measured
-    26 s synchronous function ceiling (ADR-0063) — a red
-    cell cannot be served by a buffered request/response handler at all.</p>
-    <p class="lead"><b>3 of 8 variants exceed the 26 s ceiling at the median:</b> gpt-image-2 · low, gpt-image-2 · medium, gpt-image-2 · high. Serving any of them needs the generation to start and finish across two
+    own tokens on the OpenAI variants. Latency is scored against
+    <b>24 s</b>, not against Netlify's
+    26 s ceiling: the ceiling is the platform's, but the
+    handler aborts first on purpose so its own error wins the race (ADR-0063), so
+    <code>GENERATE_DEADLINE_MS</code> is the wall a real request actually hits. A red median cannot be
+    served by a buffered request/response handler at all.</p>
+    <p class="lead"><b>5 of 8 variants exceed the
+            24 s deadline at the median, and
+            6 of 8 exceed it at p90</b> (gpt-image-2 · low, gpt-image-2 · medium, gpt-image-2 · high, gpt-image-1.5 · medium, gpt-image-1-mini · low, gpt-image-1-mini · medium). Serving any of those needs the generation to start and finish across two
             requests rather than inside one.</p>
 
     <details><summary>Per-category latency mean</summary>
