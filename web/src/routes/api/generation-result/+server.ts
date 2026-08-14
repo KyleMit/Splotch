@@ -7,6 +7,7 @@ import {
   REPORT_TOKEN_HEADER,
 } from '$lib/apiHeaders';
 import { apiHandler, fail, throttled } from '$lib/server/http';
+import { GENERATION_UNAVAILABLE_CODE, type GenerationUnavailable } from '$lib/ai/generationResult';
 import { rateLimit } from '$lib/server/rateLimit';
 import { generationResultBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
@@ -27,6 +28,16 @@ import type { RequestHandler } from './$types';
 // pick up.
 
 const SAFETY_STATUS = 422;
+const UNAVAILABLE_STATUS = 503;
+
+function unavailable(): Response {
+  const body: GenerationUnavailable = {
+    ok: false,
+    code: GENERATION_UNAVAILABLE_CODE,
+    error: 'That creation could not be collected just now',
+  };
+  return Response.json(body, { status: UNAVAILABLE_STATUS });
+}
 // A job id is 256 bits of randomness handed only to the caller that started the
 // job, so possession is the authorization. Shape-checking it keeps a malformed
 // id from becoming a blob-store lookup.
@@ -82,9 +93,11 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
   if (!JOB_ID_PATTERN.test(jobId)) throw error(400, 'Unknown generation');
 
   const job = await readJob(jobId);
-  // Retryable, not gone: the client routes a 5xx to "let's try again", which is
-  // the right offer when the store is what failed rather than the job.
-  if (job.status === 'unavailable') throw error(502, 'That creation could not be collected');
+  // Retryable *and worth continuing to wait for*: the store is what failed, not
+  // the job, so the picture may well be sitting there finished. The code is what
+  // lets the client tell this from a generation that genuinely failed — a status
+  // three meanings share cannot.
+  if (job.status === 'unavailable') return unavailable();
   if (job.status === 'expired') throw error(404, 'That creation is no longer available');
   if (job.status === 'pending') return new Response(null, { status: 202 });
 
@@ -107,7 +120,14 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
     throw error(502, job.reason);
   }
 
-  const image = await takeJobImage(jobId);
+  let image: Uint8Array | null;
+  try {
+    image = await takeJobImage(jobId);
+  } catch {
+    // Same class as an unreadable status: the store, not the job. Nothing has
+    // been settled or discarded yet, so the next poll can still collect it.
+    return unavailable();
+  }
   // The status said `image` but the bytes are gone — the only way that happens
   // is the blob expiring between the two reads. Retryable, not a refusal.
   if (!image) throw error(502, 'That creation could not be collected');

@@ -340,11 +340,11 @@ re-verify if that flow changes:
   and AI-content answers live in `store-assets/STORE-LISTING-ANDROID.md`.
 * **Under-18 processing** — OpenAI's under-18 API guidance asks developers serving minors for
   age-appropriate content filters, disclosures, and reporting/escalation paths, which the safety
-  instruction (ADR-0023), `/privacy`, and the in-app report flow cover. It also says personal data of
-  children under 13 should not be processed **without zero data retention enabled on the OpenAI
+  instruction (ADR-0023), `/privacy`, and the in-app report flow cover. It also says personal data
+  of children under 13 should not be processed **without zero data retention enabled on the OpenAI
   account**, which is granted by OpenAI on request rather than configured — see ADR-0114. Until that
-  is in place the 30-day abuse-monitoring window above is the accurate disclosure, so do not describe
-  the flow as leaving nothing behind anywhere.
+  is in place the 30-day abuse-monitoring window above is the accurate disclosure, so do not
+  describe the flow as leaving nothing behind anywhere.
 
 ### Policies that don't apply (verified — don't re-derive)
 

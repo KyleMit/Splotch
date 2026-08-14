@@ -66,6 +66,13 @@ export async function awaitGeneration(
       settled = { kind: 'pending' };
     }
 
+    // A throttled poll is the app asking too often, not the picture failing.
+    // Ending the wait here abandons a finished, paid generation and sends the
+    // child back to the button to buy another one.
+    if (settled.kind === 'throttled') {
+      wait = Math.max(GENERATION_POLL_INTERVAL_MS, Number(settled.retryAfter) * 1000 || 0);
+      continue;
+    }
     if (settled.kind !== 'pending' && settled.kind !== 'started') return settled;
     wait = GENERATION_POLL_INTERVAL_MS;
   }

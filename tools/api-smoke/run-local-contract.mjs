@@ -451,15 +451,18 @@ async function checkGenerationResult(base) {
     `got ${malformed.status} ${JSON.stringify(malformedBody)}`
   );
 
-  // 404 where the job store is reachable and the job simply is not there; 502
-  // where it is not reachable at all, which is this server, since a throwaway
-  // vite dev has no Netlify Blobs. Both are the canonical envelope, and neither
-  // is the 500 an unguarded store read produced.
+  // 404 where the job store is reachable and the job simply is not there; 503
+  // with GENERATION_UNAVAILABLE where it is not reachable at all, which is this
+  // server, since a throwaway vite dev has no Netlify Blobs. The code is the
+  // point: it is what tells the client to keep waiting rather than abandon a
+  // picture that may be sitting there finished. Neither is the 500 an unguarded
+  // store read produced.
   const unknown = await fetch(`${base}/api/generation-result?job=${'b'.repeat(64)}`);
   const unknownBody = await json(unknown);
   check(
-    'generation-result unknown job → 404/502 {ok:false, error}, never a 500 crash',
-    [404, 502].includes(unknown.status) &&
+    'generation-result unknown job → 404, or 503 GENERATION_UNAVAILABLE, never a 500 crash',
+    ((unknown.status === 404 && unknownBody?.code === undefined) ||
+      (unknown.status === 503 && unknownBody?.code === 'GENERATION_UNAVAILABLE')) &&
       unknownBody?.ok === false &&
       typeof unknownBody?.error === 'string',
     `got ${unknown.status} ${JSON.stringify(unknownBody)}`

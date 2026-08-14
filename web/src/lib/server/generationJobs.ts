@@ -1,6 +1,9 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import { GENERATION_JOB_STORE_NAME } from './generationJobStoreName';
+// Relative, not `$lib`: the background worker imports this module and is built
+// without SvelteKit's aliases.
+import { GENERATION_JOB_TTL_MS } from '../ai/limits';
 
 // Where a generation lives between the request that starts it and the request
 // that collects it (ADR-0115). Alias-free and config-free on purpose: the
@@ -29,10 +32,6 @@ const HMAC_ALG = 'sha256';
 // Long enough for the platform to hand the invocation to the worker, short
 // enough that a captured ticket is useless by the time anyone could use it.
 const TICKET_TTL_MS = 60_000;
-
-// The generation itself is bounded well below this; the ceiling exists so a job
-// whose worker died can never be polled forever.
-const JOB_TTL_MS = 20 * 60 * 1000;
 
 // What the worker decided. Nothing here needs a credential or the free-grant
 // ledger: settling the reservation and minting the report token both stay with
@@ -127,7 +126,7 @@ export async function markJobPending(
   context: GenerationJobContext,
   now = Date.now()
 ): Promise<void> {
-  const record: StoredJob = { context, outcome: null, expiresAt: now + JOB_TTL_MS };
+  const record: StoredJob = { context, outcome: null, expiresAt: now + GENERATION_JOB_TTL_MS };
   await store().setJSON(statusKey(jobId), record);
 }
 
@@ -146,7 +145,7 @@ export async function completeJob(
     // is the same shape as a job that never had a reservation.
     context: existing?.context ?? { free: null, style: null },
     outcome,
-    expiresAt: now + JOB_TTL_MS,
+    expiresAt: now + GENERATION_JOB_TTL_MS,
   };
   await store().setJSON(statusKey(jobId), record);
 }
