@@ -243,27 +243,48 @@ afterEach(() => {
 // instead of by the run.
 describe('AI surface selectors', () => {
   const COMPONENTS_DIR = join(ROOT, 'web/src/lib/components');
-  const AI_COMPONENTS = readdirSync(COMPONENTS_DIR)
-    .filter((name) => /^Ai[A-Z].*\.svelte$/.test(name))
-    .map((name) => readFileSync(join(COMPONENTS_DIR, name), 'utf8'))
-    .join('\n');
+  // Whole class tokens, never a substring of the rendered markup: renaming
+  // .ai-report-confirm back to .ai-report-confirmation would satisfy a substring
+  // search of this same source while the harness waited on a class no element
+  // carries. Both spellings a component paints one by — a static class attribute
+  // and a class: directive — count; an interpolated attribute is not a token
+  // this can read, and a surface driven by one would fail here rather than pass
+  // quietly.
+  const shippedClasses = new Set(
+    readdirSync(COMPONENTS_DIR)
+      .filter((name) => /^Ai[A-Z].*\.svelte$/.test(name))
+      .flatMap((name) => {
+        const source = readFileSync(join(COMPONENTS_DIR, name), 'utf8');
+        const attributes = [...source.matchAll(/class="([^"{]*)"/g)].flatMap(([, value]) =>
+          value.split(/\s+/)
+        );
+        const directives = [...source.matchAll(/class:([\w-]+)/g)].map(([, token]) => token);
+        return [...attributes, ...directives].filter(Boolean);
+      })
+  );
+
   // Read out of the harness rather than restated, so a selector edited on either
-  // side has to still name a class the AI components carry.
+  // side has to still name a class the AI components paint.
   const waitedOn = [
-    ...readFileSync(join(ROOT, 'tools/page-inventory/capture-page-inventory.mjs'), 'utf8').matchAll(
-      /locator\('([^']+)'\)/g
+    ...new Set(
+      [
+        ...readFileSync(
+          join(ROOT, 'tools/page-inventory/capture-page-inventory.mjs'),
+          'utf8'
+        ).matchAll(/locator\('([^']+)'\)/g),
+      ]
+        .map(([, selector]) => selector)
+        .filter((selector) => /(^|\.)(ai-|stage-img|dial\b)/.test(selector))
     ),
-  ]
-    .map(([, selector]) => selector)
-    .filter((selector) => /(^|\.)(ai-|stage-img|dial\b)/.test(selector));
+  ];
 
   it('drives the AI surfaces by selector', () => {
-    expect(new Set(waitedOn).size).toBeGreaterThanOrEqual(4);
+    expect(waitedOn.length).toBeGreaterThanOrEqual(4);
   });
 
-  it.each([...new Set(waitedOn)])('waits on %s, which the AI components still ship', (selector) => {
+  it.each(waitedOn)('waits on %s, which the AI components still paint', (selector) => {
     for (const className of selector.split('.').slice(1)) {
-      expect(AI_COMPONENTS).toContain(className);
+      expect([...shippedClasses]).toContain(className);
     }
   });
 });
