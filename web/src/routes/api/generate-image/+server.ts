@@ -2,7 +2,6 @@ import { error, isHttpError } from '@sveltejs/kit';
 import {
   ACCESS_TOKEN_HEADER,
   API_KEY_HEADER,
-  ASYNC_GENERATION_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
@@ -29,7 +28,7 @@ import {
 } from '$lib/server/generateImagePolicy';
 import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import {
-  backgroundWorkerAvailable,
+  clientAcceptsBackgroundGeneration,
   freeSettlement,
   startBackgroundGeneration,
   synchronousDeadlineMs,
@@ -264,7 +263,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     // genuinely failed, and answering in-line is better than leaving a child
     // watching a job nobody is working on — even though it will usually outrun
     // the deadline.
-    if (request.headers.get(ASYNC_GENERATION_HEADER) && backgroundWorkerAvailable()) {
+    if (clientAcceptsBackgroundGeneration(request)) {
       const started = await startBackgroundGeneration(
         url.origin,
         { free: freeSettlement(authorization, reservationId), style },
