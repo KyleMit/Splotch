@@ -63,9 +63,18 @@ Two consequences of the surface change that the seam did not previously have to 
   instead of reporting it as a generic outage, because it is the one upstream failure a BYOK parent
   can act on.
 
-**Effort tier is `medium` on `gpt-image-2`,** chosen from the bake-off (`npm run model-eval`,
-published at `scrapbook/model-eval/report/`) on consistency across the corpus rather than on price.
-It is one named constant.
+**Effort tier is `low` on `gpt-image-2`,** chosen from the bake-off (`npm run model-eval`, published
+at `scrapbook/model-eval/report/`). The tiers do not overlap on latency: `low` ran 23-35 s and
+`medium` 41-64 s, so medium's *fastest* generation was slower than low's *slowest*. On an audience
+with no patience that gap is the experience, and it costs $0.020 against $0.058.
+
+The trade is interpretation, not sharpness. `low` transcribes a child's scribbled fill literally — a
+hard green/red seam on a half-and-half apple, and black bars across a cow whose back was scribbled —
+where `medium` reads the same marks as intent and blends them. Two things make that acceptable:
+`low` never invents a subject the child did not draw (the cheaper `gpt-image-1-mini` tier turned
+three stray strokes into dragons), and the literalism may be the base prompt's own doing, since it
+asks for "one flat, even area of that solid color". Worth a prompt experiment before concluding the
+model is at fault. It is one named constant either way.
 
 ## Consequences
 
