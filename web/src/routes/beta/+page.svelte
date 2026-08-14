@@ -117,23 +117,78 @@
     />
   </div>
 
-  <!-- Without JavaScript the picker cannot filter anything, so it stands down —
-       and with no platform stamped on <html>, the rules below leave both sets of
-       instructions on show, each already labelled by its own RuleLabel. Not
-       scoped by Svelte: this selector matches the class attribute below rather
-       than this component. -->
+  <!-- The whole no-JavaScript story, in one block that only exists when there is
+       no JavaScript: the picker cannot filter without it, so it stands down and
+       two real links take its place. They are the same choice as a table of
+       contents — an anchor into the panel below — and `:target` turns that jump
+       into the same filter the picker performs, so a reader with scripting off
+       gets their platform's instructions rather than a scroll past the other
+       one's. Arriving with no hash still shows both, which is what makes the
+       links safe to land on.
+
+       None of this is scoped by Svelte, and none of it needs the
+       `html:not([data-beta-os])` guard the block below uses: scripting-off is
+       the only state in which a browser renders <noscript> content at all, and
+       it is exactly the state in which nothing stamps that attribute. -->
   <noscript>
     <style>
       .beta-platform-picker {
         display: none;
       }
+
+      .beta-jump {
+        display: flex;
+        gap: 28px;
+        margin-bottom: 34px;
+        border-bottom: var(--border-width) solid var(--border);
+      }
+
+      .beta-jump a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 9px 2px 11px;
+        margin-bottom: calc(-1 * var(--border-width));
+        border-bottom: 3px solid transparent;
+        color: var(--page-muted);
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-semibold);
+        line-height: 1.25;
+        text-decoration: none;
+      }
+
+      /* The jumped-to panel is a selection, so the link that made it wears the
+         same live mark the picker's tab would. */
+      body:has(#beta-android:target) .beta-jump a[href='#beta-android'],
+      body:has(#beta-ios:target) .beta-jump a[href='#beta-ios'] {
+        color: var(--page-link);
+        border-bottom-color: var(--brand);
+      }
+
+      /* Filter to the jumped-to panel — but only once one is targeted, so the
+         bare URL still reads as two stacked sections. Where :has() is missing
+         (Firefox below 121) nothing matches and the reader keeps both panels
+         plus a working jump, which is the behavior this replaces. */
+      body:has(.beta-platform-panel:target) .beta-platform-panel:not(:target) {
+        display: none;
+      }
+
+      /* The row the reader just used stays in view above the panel it opened. */
+      .beta-platform-panel {
+        scroll-margin-top: 90px;
+      }
     </style>
+
+    <nav class="beta-jump" aria-label="Which device are you installing on?">
+      <a href="#beta-android">Android</a>
+      <a href="#beta-ios">iPhone / iPad</a>
+    </nav>
   </noscript>
 
-  <div class="beta-platform-panel" data-platform="android">
+  <div class="beta-platform-panel" id="beta-android" data-platform="android">
     <AndroidBetaPanel />
   </div>
-  <div class="beta-platform-panel" data-platform="ios">
+  <div class="beta-platform-panel" id="beta-ios" data-platform="ios">
     <IosBetaPanel />
   </div>
 

@@ -281,6 +281,27 @@ test.describe('without JavaScript', () => {
     ).toBeVisible();
     await expect(page.locator('.beta-platform-picker')).toBeHidden();
   });
+
+  // The links in the picker's place are a table of contents that also filters:
+  // the hash is a `:target`, and the panel that isn't targeted stands down. That
+  // is the whole point of them — otherwise an iPhone reader scrolls past the
+  // entire Android flow to reach their own.
+  test('a jump link filters to the platform it names', async ({ page }) => {
+    await page.goto('/beta');
+
+    await page.getByRole('link', { name: 'iPhone / iPad' }).click();
+    await expect(page).toHaveURL('/beta#beta-ios');
+    await expect(
+      page.getByRole('heading', { name: 'How to join on iPhone or iPad' })
+    ).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'How to join on Android' })).toBeHidden();
+
+    // And back the other way, so the row stays a chooser rather than a one-shot.
+    await page.getByRole('link', { name: 'Android' }).click();
+    await expect(page).toHaveURL('/beta#beta-android');
+    await expect(page.getByRole('heading', { name: 'How to join on Android' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'How to join on iPhone or iPad' })).toBeHidden();
+  });
 });
 
 // The panel a reader sees first is decided by the stamp the <head> script puts

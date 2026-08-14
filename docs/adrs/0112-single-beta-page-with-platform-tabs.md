@@ -36,9 +36,14 @@ query key, the platform names, and the fallback cannot drift; the device sniff i
 duplication of `$lib/platform`, and `betaPlatform.test.ts` reads both sides and fails on divergence
 — the same shape as `app.html`'s pre-hydration stamp and `app.html.test.ts`.
 
-**With no stamp, both panels stay visible.** No JavaScript means no attribute, no matching rule, and
-two labelled sections stacked — the picker stands down through a `<noscript>` rule. A tester with
-scripting off still gets the instructions for their device instead of the other platform's.
+**With no stamp, both panels stay visible — and the reader still gets a chooser.** No JavaScript
+means no attribute and no matching rule, so the two panels read as labelled sections stacked. The
+picker stands down (it cannot filter without JS) and a `<noscript>` block puts two real links in its
+place, anchored at the panels. `:target` then turns that jump into the same filter the picker
+performs, so scripting-off is a chooser rather than a scroll past the other platform's flow; with no
+hash both panels show, which is what makes the links safe to land on. The whole fallback lives
+inside the `<noscript>` element — the one state a browser renders it is the one state nothing stamps
+the attribute — so it needs no guard against the scripted path and cannot drift from it.
 
 **The old paths are deprecated, not deleted.** `/android-beta` and `/ios-beta` 308 to
 `/beta?os=android` / `/beta?os=ios`. They were handed out on their own, so they keep working.

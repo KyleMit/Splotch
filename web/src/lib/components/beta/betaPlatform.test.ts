@@ -89,6 +89,16 @@ describe('the pre-hydration stamp', () => {
     }
     expect(pageSource).toContain(`html[${BETA_PLATFORM_ATTRIBUTE}]`);
   });
+
+  // Without JavaScript the panels are reached by anchor instead, so each one's
+  // id, the link that points at it, and the rule that marks that link live are
+  // three spellings of the same platform. A typo in any of them is a link that
+  // scrolls nowhere, and nothing else would notice.
+  it.each(BETA_PLATFORMS)('anchors the %s panel for the scripting-off jump list', (platform) => {
+    expect(pageSource).toContain(`id="beta-${platform}"`);
+    expect(pageSource).toContain(`href="#beta-${platform}"`);
+    expect(pageSource).toContain(`#beta-${platform}:target`);
+  });
 });
 
 // The deprecated /android-beta and /ios-beta paths are retired twice over: at
