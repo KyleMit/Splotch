@@ -5,6 +5,7 @@
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
   import { aiResult, closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiProgress } from '$lib/state/aiProgress.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
@@ -19,7 +20,10 @@
 
   let dialogEl: HTMLDialogElement;
 
-  let revealed = $state(false);
+  // Owned by the run rather than the card (state/aiProgress.svelte.ts): a
+  // generation that finishes while minimized is revealed before this dialog is
+  // ever shown again, so restoring it lands on the picture, not on the dial.
+  const revealed = $derived(aiProgress.revealed);
   const loading = $derived(aiResult.open && !revealed && !aiResult.error);
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
@@ -54,14 +58,9 @@
     }
   });
 
-  // `revealed` is reset here rather than by the dial that sets it: the stage
-  // unmounts AiDial the moment generation completes, so it never sees the modal
-  // close. Without this it stays true and the spinner never mounts on the next
-  // generation.
   $effect(() => {
     if (!aiResult.open) {
       exiting = false;
-      revealed = false;
       reportStatus = 'idle';
     }
   });
@@ -155,7 +154,7 @@
         {/if}
       </div>
     {:else}
-      <AiResultStage bind:revealed {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
+      <AiResultStage {exiting} onaspect={(aspect) => (imgAspect = aspect)} />
 
       {#if loading}
         <div class="ai-loading-caption">

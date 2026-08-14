@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { createDialProgress } from './aiDialProgress';
+import { createDialProgress } from './dialProgress';
 
 const ESTIMATE = 10000;
 
