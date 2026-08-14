@@ -29,7 +29,11 @@ const IMAGE_QUALITY = 'low';
 // edit a drawn gun directly, the images endpoint returns a finished gun; asked
 // through this model with the instruction below, it declines in one sentence
 // and never spends an image generation. See ADR-0023.
-const ORCHESTRATOR_MODEL = 'gpt-5.1';
+const ORCHESTRATOR_MODEL = 'gpt-5.6-sol';
+// GPT-5.6 defaults to medium, which is the configuration the full red-team
+// corpus measured. Pin it so a provider-default change cannot move the safety
+// layer onto unreviewed behavior without changing this file.
+const ORCHESTRATOR_REASONING_EFFORT = 'medium';
 
 // The audience is toddlers (2+), so the model must REFUSE unsafe drawings rather
 // than do what it does by default — quietly "beautify" a gun into a gilded gun or
@@ -102,6 +106,7 @@ export const openAiProvider: AiImageProvider = {
       response = await client(apiKey, deadlineMs, NO_SDK_RETRIES).responses.create(
         {
           model: ORCHESTRATOR_MODEL,
+          reasoning: { effort: ORCHESTRATOR_REASONING_EFFORT },
           instructions: SAFETY_SYSTEM_INSTRUCTION,
           // Without this the API keeps the response — a child's drawing and the
           // picture made from it — for 30 days, readable in the account's logs.

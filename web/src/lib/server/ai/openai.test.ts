@@ -45,6 +45,15 @@ beforeEach(() => {
 });
 
 describe('openAiProvider.generateImage', () => {
+  it('uses the measured flagship configuration as the child-safety orchestrator', async () => {
+    create.mockResolvedValue(imageResponse);
+    await openAiProvider.generateImage(request);
+    expect(create.mock.calls[0][0]).toMatchObject({
+      model: 'gpt-5.6-sol',
+      reasoning: { effort: 'medium' },
+    });
+  });
+
   it('returns the image when the model produced one', async () => {
     create.mockResolvedValue(imageResponse);
     await expect(openAiProvider.generateImage(request)).resolves.toEqual({

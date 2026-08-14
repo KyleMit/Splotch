@@ -48,7 +48,7 @@ change can't quietly remove one, **and say plainly which ones are not met**:
 | Disclosure to the parent               | `/privacy`, written to be skimmed by a parent in 30 seconds                    |
 | Age-appropriate disclosure to the user | **Not met.** The user is two. See below                                        |
 | Age assurance where appropriate        | The parental gate in front of the AI action and outbound links (see below)     |
-| Use the most current flagship model    | **Not met.** The orchestrator is pinned to `gpt-5.1`; see the open items below |
+| Use the most current flagship model    | `gpt-5.6-sol`, revalidated against the full red-team corpus (ADR-0023)         |
 
 The disclosure rows are two different obligations and were previously answered as one. The guidance
 asks for disclosure *to the minor* about the AI tool and its responsible use; `/privacy` is written
@@ -93,6 +93,32 @@ So the elegant option is the one that becomes unavailable at exactly the moment 
 posture improves. Generation state is therefore held on our side (ADR-0115), which costs more
 plumbing and is unaffected by turning ZDR on.
 
+### Amendment (2026-08): move the safety orchestrator to GPT-5.6 Sol
+
+OpenAI's current model catalog names
+[`gpt-5.6-sol`](https://developers.openai.com/api/docs/models/gpt-5.6-sol) as the flagship model, so
+issue 1047 re-ran the complete ADR-0023 corpus before changing the production pin. The comparison
+used the same flattened inputs, safety instruction, image model, image quality, and endpoint path on
+both runs:
+
+| orchestrator config              | safe fixtures rendered | unsafe fixtures refused | flagged rows |
+| -------------------------------- | ---------------------: | ----------------------: | -----------: |
+| `gpt-5.1` · none (default)       |                    6/6 |                     6/6 |            0 |
+| `gpt-5.6-sol` · medium (default) |                    6/6 |                     6/6 |            0 |
+
+Every saved input and output was reviewed visually rather than trusting the status table alone. The
+inputs were legible on the app's light paper, every safe result stayed child-appropriate and
+preserved its intended subject, and no unsafe fixture produced an image. The six safe results also
+provided a narrow check of the `gpt-image-2` low-quality tier behind the new orchestrator: none
+showed a safety or subject-fidelity reason to reopen ADR-0113's tier decision. That is not a
+replacement for the broader model-eval corpus if the image model or quality tier changes.
+
+Production therefore moves to `gpt-5.6-sol` and pins `medium` reasoning explicitly: that is the
+configuration the run measured, and relying on the provider default would let the safety behavior
+change without a code change. The model-eval harness mirrors both pins and the model's published
+token rates, with a drift check against the production declarations so future changes cannot leave
+its quality or cost report on the old orchestrator silently.
+
 ## Consequences
 
 * **+** The privacy disclosure is true today, not true-once-a-sales-conversation-happens.
@@ -109,14 +135,12 @@ plumbing and is unaffected by turning ZDR on.
   not a task in the backlog, and it is the single biggest open item in the migration.
 * **−** ZDR is unavailable for some endpoints and models regardless of approval, so eligibility has
   to be confirmed for the specific image path this app uses, not in general.
-* **−** **The safety orchestrator is a model behind.** The guidance asks applications serving minors
-  to use OpenAI's most current flagship models; `ORCHESTRATOR_MODEL` is `gpt-5.1` and the current
-  flagship is `gpt-5.6-sol`. This is deliberately not a slug change: that model is not a wrapper
-  around the image tool, it is the thing that decides whether a drawing is refused, and swapping it
-  unmeasured trades a documented gap for an undocumented safety one. The disposition is to re-run
-  the red-team corpus (ADR-0023) against the current flagship and either adopt it or record the
-  measured exception here — tracked as issue 1047, because it costs a paid run and a human looking
-  at every result.
+* **+** The safety orchestrator is the current flagship model, and the change retained the prior
+  12/12 red-team result on both halves of the corpus instead of treating the model slug as a
+  sufficient safety argument.
+* **−** GPT-5.6 Sol's orchestrator tokens cost more than GPT-5.1's. Image generation still dominates
+  a successful request, while refusals remain much cheaper because they never call the image tool;
+  the model-eval report includes the new orchestrator rates in its whole-request estimate.
 * **−** **There is no disclosure the user themselves receives**, and for a two-year-old audience
   there may not be a meaningful one. The parental gate stands in for it. Worth revisiting if the app
   ever gains a surface a child reads, or an older audience.
