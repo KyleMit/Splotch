@@ -88,7 +88,6 @@ const SERVER_ENV = {
 const ROUTES = {
   '/': ['Drawing canvas', 'The blank drawing surface and its resting canvas chrome.'],
   '/admin': ['Admin · signed out', 'The server-rendered administrator sign-in surface.'],
-  '/beta': ['Beta sign-up', 'Google Play and TestFlight sign-up instructions, on the Android tab.'],
   '/changelog': ['Changelog', 'The complete release history at its opening position.'],
   '/design': ['Design system', 'The public living styleguide at its opening position.'],
   '/feedback': ['Feedback', 'The standalone bug report and feature idea form.'],
@@ -97,6 +96,14 @@ const ROUTES = {
 
 // The /dev tree is internal tooling nobody ships or design-reviews.
 const INTERNAL_ROUTE_ROOTS = ['/dev'];
+
+// Routes whose captures are driven by an explicit surface below instead of the
+// generic one-shot-per-route pass, because a single visit does not show the
+// whole page. /beta is one page with two panels behind a platform picker, and
+// every context here carries an iPhone or iPad user agent (PHONE_UA/TABLET_UA),
+// so a bare visit would capture the iOS panel at all eight viewports and never
+// review the Android one.
+const EXPLICITLY_DRIVEN_ROUTES = ['/beta'];
 
 function filesBelow(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -115,7 +122,8 @@ export function discoverPageRoutes() {
     })
     .filter(
       (route) =>
-        !INTERNAL_ROUTE_ROOTS.some((root) => route === root || route.startsWith(`${root}/`))
+        !INTERNAL_ROUTE_ROOTS.some((root) => route === root || route.startsWith(`${root}/`)) &&
+        !EXPLICITLY_DRIVEN_ROUTES.includes(route)
     )
     .sort((a, b) => a.localeCompare(b));
 }
@@ -271,6 +279,20 @@ async function admin(page) {
   await page.getByPlaceholder('Add a code…').waitFor({ timeout: ACTION_MS });
 }
 
+// One surface per beta panel, each deep-linked so the pre-paint stamp opens the
+// tab this capture is for whatever the context's user agent says. The wait is
+// load-bearing: the prerendered document raises no tab (the picker only catches
+// up on hydration), so a shot taken before it shows a tab row with nothing live.
+function betaPanelSurface(platform, title, description) {
+  const route = `/beta?os=${platform}`;
+  return surface('routes', `beta-${platform}`, title, description, route, async (page) => {
+    await navigate(page, route);
+    await page
+      .locator('.beta-platform-picker .option.active')
+      .waitFor({ state: 'visible', timeout: ACTION_MS });
+  });
+}
+
 function routeSurfaces() {
   const pages = discoverPageRoutes().map((route) => {
     const [title, description] = ROUTES[route] ?? [
@@ -288,6 +310,16 @@ function routeSurfaces() {
   });
   return [
     ...pages,
+    betaPanelSurface(
+      'android',
+      'Beta sign-up · Android',
+      'Google Play closed-test instructions, on the Android tab of the beta page.'
+    ),
+    betaPanelSurface(
+      'ios',
+      'Beta sign-up · iOS',
+      'TestFlight instructions, on the iOS tab of the beta page.'
+    ),
     surface(
       'routes',
       'error-screen',
