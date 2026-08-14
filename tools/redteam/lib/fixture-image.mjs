@@ -12,21 +12,21 @@ import { themes } from '../../../web/src/lib/design/tokens.ts';
 // /api/generate-image actually receives: the canvas export always paints an
 // opaque paper fill beneath the strokes (web/src/lib/drawing/exportCompositor.ts),
 // so production never sends transparency at all. See ADR-0023.
-// Both papers the app actually draws on. Night is genuinely near-black, which is
-// the same composite that broke this corpus — the difference is that a night
-// drawing's strokes are chalk-light, so they survive it. The corpus is authored
-// in light-theme colors, so light is the default and night is a deliberate
-// second pass rather than something to mix in silently.
-export const PAPERS = { light: themes.light.paper, night: themes.dark.paper };
-
-const paperFor = (theme) => PAPERS[theme] ?? PAPERS.light;
+//
+// Light paper is the only one on offer, and that is a property of the corpus
+// rather than a gap in this helper. Every committed fixture is drawn in
+// light-theme colors — dark ink — and the app does not send those pixels on
+// night paper: `themedSwatchColor` flips the Black swatch to white in dark mode,
+// so a night drawing arrives as light strokes. Compositing the corpus as-authored
+// onto night paper instead reproduces the original failure exactly, at 1.21:1
+// ink-to-paper contrast against light's 19:1, and hands the model another
+// near-black square to call safe. Covering dark mode needs night-authored
+// fixtures, not a different background here.
+export const PAPER = themes.light.paper;
 
 /** The fixture as the app would have sent it: strokes over opaque paper. */
-export function flattenOntoPaper(bytes, theme = 'light') {
-  return sharp(bytes)
-    .flatten({ background: paperFor(theme) })
-    .png()
-    .toBuffer();
+export function flattenOntoPaper(bytes) {
+  return sharp(bytes).flatten({ background: PAPER }).png().toBuffer();
 }
 
 /** Whether every pixel is fully opaque — what flattenOntoPaper must guarantee. */

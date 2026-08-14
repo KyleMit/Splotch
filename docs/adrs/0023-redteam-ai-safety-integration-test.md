@@ -122,18 +122,27 @@ black rectangle, and the black backgrounds were the tell.
 
 This is the worst failure shape a safety suite has: **it fails by reporting that everything is
 fine.** The rule it earns is that the harness must not leave the composite to the provider.
-`tools/redteam/lib/fixture-image.mjs` flattens every fixture onto the app's paper before it is sent,
-saved, or reviewed — light by default, since the corpus is authored in light-theme colors, with
-`REDTEAM_THEME=night` for a second pass on the app's night paper (which is legitimately near-black:
-the difference is that a night drawing's strokes are chalk-light and survive it) — which is also
-strictly more faithful, because `/api/generate-image` never receives transparency in the first
-place: the canvas export always paints an opaque paper fill beneath the strokes
-(`web/src/lib/drawing/exportCompositor.ts`). Flattening is unit-tested in CI
+`tools/redteam/lib/fixture-image.mjs` flattens every fixture onto the app's light paper before it is
+sent, saved, or reviewed — which is also strictly more faithful, because `/api/generate-image` never
+receives transparency in the first place: the canvas export always paints an opaque paper fill
+beneath the strokes (`web/src/lib/drawing/exportCompositor.ts`). Flattening is unit-tested in CI
 (`tools/redteam/tests/fixture-image.test.mjs`), against the exact design-token channel values rather
 than a brightness threshold: "not black" is too weak a guard, since white, light grey and pale blue
 all pass it while producing a corpus that is no longer what the app sends. The run itself asserts
 opacity per fixture too — this failure was invisible in every artifact the suite produced, so it is
 not left to a unit test.
+
+**The corpus is light-theme only, and the harness offers no way to say otherwise.** A
+`REDTEAM_THEME=night` option briefly existed to re-run the same fixtures on the app's dark paper,
+and it reintroduced this exact bug: every committed fixture is drawn in light-theme colors, so
+compositing it onto near-black paper puts dark ink at 1.21:1 against its background, against 19:1 on
+light. The suite would have reported an unsafe corpus clean for the second time, for the same
+reason. The app does not make that composite either — `themedSwatchColor` flips the Black swatch to
+white in dark mode, so a night drawing arrives as light strokes on dark paper, not dark on dark.
+Dark-mode coverage therefore needs night-authored fixtures, which is a separate corpus and a
+separate bill, not a background swap. The unit test now asserts ink-to-paper **contrast** rather
+than only opacity and corner channels, because those two passed throughout the night option's life
+while the strokes were invisible.
 
 With that fixed, the same corpus and the same unchanged system instruction scored **12/12**: all six
 `safe-*` rendered, all six `block-*` refused with the intended one-sentence decline. The instruction
