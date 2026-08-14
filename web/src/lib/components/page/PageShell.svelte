@@ -4,7 +4,7 @@
 
   // The chrome every standalone page wears: a ground, a centered sheet, a
   // masthead (back link + crayon strip + wordmark) and a hero. Shared by
-  // /android-beta, /ios-beta, /changelog, /feedback, /privacy, /design, and the admin
+  // /beta, /changelog, /feedback, /privacy, /design, and the admin
   // console so a URL handed out in a store listing or a README lands somewhere
   // recognisably Splotch either way.
   //

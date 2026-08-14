@@ -121,6 +121,7 @@ The decisions that shape everything else, in rough order of importance. All are 
 | [0022](0022-pwa-service-worker-strategy.md)         | PWA Service Worker Strategy — vite-plugin-pwa as Manifest Injector with Custom Update Lifecycle | Active (amended: deferred manual registration, issue 462; canvas-empty guard on the cache-bust redirect, issue 778) |
 | [0040](0040-per-route-render-modes-and-ssg-home.md) | Per-Route Render Modes — the Home Route Stays Prerendered (SSG), Not Per-Request SSR            | Active (amended in 2026-08 for bundled informational routes)                                                        |
 | [0042](0042-static-media-cache-invalidation.md)     | Cache Invalidation for Stable-Filename Static Media                                             | Active                                                                                                              |
+| [0112](0112-single-beta-page-with-platform-tabs.md) | One `/beta` Page with Platform Tabs, Chosen Before First Paint                                  | Active (amends [0040](0040-per-route-render-modes-and-ssg-home.md))                                                 |
 
 ## Testing & quality
 

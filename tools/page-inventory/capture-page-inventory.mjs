@@ -88,8 +88,7 @@ const SERVER_ENV = {
 const ROUTES = {
   '/': ['Drawing canvas', 'The blank drawing surface and its resting canvas chrome.'],
   '/admin': ['Admin · signed out', 'The server-rendered administrator sign-in surface.'],
-  '/android-beta': ['Android beta', 'Google Play closed-test sign-up instructions.'],
-  '/ios-beta': ['iOS beta', 'TestFlight public-link sign-up instructions.'],
+  '/beta': ['Beta sign-up', 'Google Play and TestFlight sign-up instructions, on the Android tab.'],
   '/changelog': ['Changelog', 'The complete release history at its opening position.'],
   '/design': ['Design system', 'The public living styleguide at its opening position.'],
   '/feedback': ['Feedback', 'The standalone bug report and feature idea form.'],

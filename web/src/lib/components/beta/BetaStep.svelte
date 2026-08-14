@@ -3,7 +3,7 @@
 
   // The beta ledger is deliberately four steps long: the closed number prop
   // makes a fifth step a type error instead of resolving an undefined hue.
-  // android-beta.spec.ts measures every derived ink/wash pair in both themes.
+  // beta.spec.ts measures every derived ink/wash pair in both themes.
   const STEP_HUE_LABELS: PaletteLabel[] = ['Red', 'Orange', 'Green', 'Blue'];
   const STEP_HUES = STEP_HUE_LABELS.map(paletteHex);
 </script>

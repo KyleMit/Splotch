@@ -1,4 +1,4 @@
-// The closed-testing facts the /android-beta page renders, in a side-effect-free
+// The closed-testing facts /beta's Android tab renders, in a side-effect-free
 // module so the drift guards can read them: androidBeta.test.ts checks
 // MIN_ANDROID_API_LEVEL against android/variables.gradle, and
 // tools/mobile/check-app-ids.mjs checks PLAY_STORE_APP_ID against

@@ -9,7 +9,7 @@ import {
   TESTERS_GROUP_URL,
 } from './androidBeta';
 
-describe('/android-beta facts', () => {
+describe('/beta Android facts', () => {
   it('states the Android floor Google Play actually enforces', () => {
     const gradle = readFileSync(
       new URL('../../../../../android/variables.gradle', import.meta.url),

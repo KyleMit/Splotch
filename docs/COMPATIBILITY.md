@@ -205,9 +205,9 @@ non-polyfill choices:
 
 * Change the web floor in `web/browserTargets.ts`. Change the native iOS floor in
   `IPHONEOS_DEPLOYMENT_TARGET`; keep the web target's iOS/Safari version ≤ the native iOS target
-  (`web/src/browserFloor.test.ts` fails otherwise). The `/ios-beta` claim is guarded by
-  `web/src/lib/components/iosBeta/iosBeta.test.ts`, which requires every deployment target in the
-  Xcode project to match `MIN_IOS_RELEASE`.
+  (`web/src/browserFloor.test.ts` fails otherwise). The `/beta` iOS claim is guarded by
+  `web/src/lib/components/beta/iosBeta.test.ts`, which requires every deployment target in the Xcode
+  project to match `MIN_IOS_RELEASE`.
 * When adding a new web API, check its Baseline status against this floor and either confirm it's
   covered or feature-detect it — then add a row here.
 * **`Where` answers "where is the guard", not "where is every use."** A site earns its own anchor
@@ -232,7 +232,7 @@ non-polyfill choices:
   drifting far enough that the cited file no longer contained the API at all.
 * Change the native Android floor in `android/variables.gradle` → `minSdkVersion`. The support-floor
   drift guard in `tools/mobile/android/tests/android-config.test.mjs` then fails on every stale
-  claim — this document, the `mobile` skill's Android page, and the `/android-beta` constants —
+  claim — this document, the `mobile` skill's Android page, and the `/beta` Android constants —
   until each moves with it (including the release label, via its API-level → release map). Read "Why
   the Android floor is not raised to API 29" above first — it records the standing trade-off and the
   two conditions that would justify moving it.

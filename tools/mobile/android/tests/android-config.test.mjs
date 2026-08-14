@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MIN_ANDROID_API_LEVEL,
   MIN_ANDROID_RELEASE,
-} from '../../../../web/src/lib/components/androidBeta/androidBeta.ts';
+} from '../../../../web/src/lib/components/beta/androidBeta.ts';
 import { themes } from '../../../../web/src/lib/design/tokens.ts';
 import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
 
@@ -101,7 +101,7 @@ describe('Android support floor single source', () => {
     expect(GRADLE_MIN_RELEASE, `add ${GRADLE_MIN_SDK} to ANDROID_RELEASE_BY_MIN_SDK`).toBeDefined();
   });
 
-  it('the /android-beta constants track minSdkVersion', () => {
+  it('the /beta Android constants track minSdkVersion', () => {
     expect(MIN_ANDROID_API_LEVEL).toBe(GRADLE_MIN_SDK);
     expect(MIN_ANDROID_RELEASE).toBe(GRADLE_MIN_RELEASE);
   });

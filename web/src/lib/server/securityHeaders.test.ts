@@ -86,8 +86,7 @@ describe('securityHeadersFor', () => {
     '/',
     '/admin',
     '/privacy',
-    '/android-beta',
-    '/ios-beta',
+    '/beta',
     '/feedback/',
     '/feedback/extra',
   ])('leaves %s on the site-wide no-referrer', (pathname) => {
