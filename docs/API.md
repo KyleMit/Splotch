@@ -195,6 +195,12 @@ Verifies a parent-supplied OpenAI API key with a minimal live call. Rate-limited
 { "ok": false, "error": "No API key provided" }
 ```
 
+A key check that never reached OpenAI is a **third** answer, not the second one:
+`503 { ok:false, code:"KEY_CHECK_UNAVAILABLE", error }`. Only a `401`/`403` from OpenAI means the
+key is bad; a timeout, a `429`, a `5xx`, or a dead socket means we failed to ask, and reporting that
+as a bad key tells a parent something false about a credential that works. Observed on a real
+deploy: a cold start outran `VERIFY_KEY_DEADLINE_MS` and a valid key came back rejected.
+
 ### `GET /api/free-generation-grant`
 
 Returns the server-authoritative free allowance for `X-Installation-Id`. The read is rate-limited

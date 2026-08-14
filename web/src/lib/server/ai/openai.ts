@@ -66,6 +66,21 @@ const deadline = (ms: number) => ({ signal: AbortSignal.timeout(ms), timeout: ms
 const firstLine = (err: unknown) =>
   (err instanceof Error ? err.message : String(err)).split('\n')[0];
 
+// The only statuses that mean the provider looked at this key and refused it.
+// Everything else — a timeout, a 429, a 5xx, a socket that never opened — is us
+// failing to ask, and must never be reported as the key being bad.
+const KEY_REJECTING_STATUSES = new Set([401, 403]);
+
+function keyCheckFailure(err: unknown): {
+  ok: false;
+  kind: 'rejected' | 'unreachable';
+  reason: string;
+} {
+  const status = (err as { status?: number })?.status;
+  const kind = status && KEY_REJECTING_STATUSES.has(status) ? 'rejected' : 'unreachable';
+  return { ok: false, kind, reason: firstLine(err) };
+}
+
 export const openAiProvider: AiImageProvider = {
   async generateImage({ apiKey, image, prompt, deadlineMs }) {
     const bytes = Buffer.from(image.base64, 'base64');
@@ -143,18 +158,20 @@ export const openAiProvider: AiImageProvider = {
       // Retrieve the image model itself rather than any model: model
       // availability varies per account, so authenticating against a different
       // model can accept a key that cannot actually generate. It is a free,
-      // sub-second call. The SDK timeout bounds it — without one a hung provider
-      // would occupy the whole invocation until Netlify kills it (ADR-0063).
+      // sub-second call.
+      //
+      // Bounded by the SDK's own per-attempt timeout and NOT by an explicit
+      // signal: a signal spans every retry, so a cold start that eats the budget
+      // leaves the retry nothing to run in — which is exactly how a working key
+      // came back rejected on a real deploy. The response here is a few hundred
+      // bytes, so the header-only bound the SDK gives is the whole request.
       //
       // It cannot prove the account has cleared OpenAI's identity verification:
       // the model is retrievable either way, and the 403 only arrives on a real
       // generation. generateImage names that failure specifically when it does.
-      await client(apiKey, VERIFY_KEY_DEADLINE_MS, VERIFY_KEY_RETRIES).models.retrieve(
-        IMAGE_MODEL,
-        deadline(VERIFY_KEY_DEADLINE_MS)
-      );
+      await client(apiKey, VERIFY_KEY_DEADLINE_MS, VERIFY_KEY_RETRIES).models.retrieve(IMAGE_MODEL);
     } catch (err) {
-      return { ok: false, reason: firstLine(err) };
+      return keyCheckFailure(err);
     }
     return { ok: true };
   },

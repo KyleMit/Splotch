@@ -469,6 +469,38 @@ async function checkGenerationResult(base) {
   );
 }
 
+async function checkVerifyKey(base) {
+  // The server is started with a key that cannot authenticate, so this is the
+  // rejected path: 200 with the canonical envelope, never a 5xx, and never the
+  // KEY_CHECK_UNAVAILABLE code reserved for "we could not ask OpenAI at all".
+  const rejected = await fetch(`${base}/api/verify-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ apiKey: 'sk-not-a-real-key' }),
+  });
+  const rejectedBody = await json(rejected);
+  check(
+    'verify-key with a bad key → 200 {ok:false, error} and no unavailable code',
+    rejected.status === 200 &&
+      rejectedBody?.ok === false &&
+      typeof rejectedBody?.error === 'string' &&
+      rejectedBody?.code === undefined,
+    `got ${rejected.status} ${JSON.stringify(rejectedBody)}`
+  );
+
+  const empty = await fetch(`${base}/api/verify-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const emptyBody = await json(empty);
+  check(
+    'verify-key with no key → 400 {ok:false, error}',
+    empty.status === 400 && emptyBody?.ok === false && typeof emptyBody?.error === 'string',
+    `got ${empty.status} ${JSON.stringify(emptyBody)}`
+  );
+}
+
 async function checkFreeGenerationGrant(base) {
   const installationId = 'a'.repeat(64);
   const status = await fetch(`${base}/api/free-generation-grant`, {
@@ -545,6 +577,7 @@ async function run() {
   await checkCspReport(BASE);
   await checkGenerateImage(BASE);
   await checkGenerationResult(BASE);
+  await checkVerifyKey(BASE);
   await checkFreeGenerationGrant(BASE);
   await checkThrottling(BASE);
 }
