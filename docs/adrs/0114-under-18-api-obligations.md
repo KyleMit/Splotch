@@ -46,7 +46,21 @@ future change can't quietly remove one:
 | Age-appropriate content filters        | The safety system instruction + orchestrator refusal path (ADR-0023, ADR-0113) |
 | Age-appropriate disclosure             | `/privacy`, written to be skimmed by a parent in 30 seconds                    |
 | Reporting and escalation for high risk | The in-app "Report this picture" / "Report this refusal" flow (ADR-0104)       |
-| Age assurance where appropriate        | The parental gate in front of every AI credential and outbound link            |
+| Age assurance where appropriate        | The parental gate in front of the AI action and outbound links (see below)     |
+
+That last row is the weakest of the four and should not be read as more than it is.
+`PARENTAL_GATE_FEATURES` covers `aiImage`, `imageReport`, `externalLinks`, `feedback`, and
+`parentCenter` — the *action*, not the credential. There is no gate in front of entering a key
+(deliberately: gates never sit in front of Settings, ADR-0094), the `?ai_access_token=` invite path
+is not gated at all, and web builds default every gate to `never`. It is a speed bump on the action,
+not age assurance, and OpenAI's guidance asks for the latter "where required or otherwise
+appropriate".
+
+**Set `store: false` on every request.** This is the one retention leg that is ours to control, and
+it was initially missed: without it the API keeps the response — the child's drawing and the picture
+made from it — for 30 days, readable in the account's logs, and on a BYOK run that is the parent's
+own dashboard. It is entirely separate from the abuse-monitoring copy, and nothing in the app reads
+a response back later, so there is nothing to trade for it.
 
 **Do not build anything that depends on OpenAI storing the request.** This is the architectural
 consequence, and it is the reason this ADR exists rather than a checklist item. The obvious answer
@@ -66,9 +80,10 @@ plumbing and is unaffected by turning ZDR on.
 * **+** Every under-18 obligation now has a named owner in the codebase, so deleting one is a
   reviewable act rather than an oversight.
 * **−** **ZDR is not enabled, and cannot be enabled from this repo.** Until OpenAI grants it, the
-  app processes under-13 personal data with a 30-day abuse-monitoring retention on the provider
-  side, which is what the guidance asks developers not to do. This is an outstanding action on the
-  account owner, not a task in the backlog, and it is the single biggest open item in the migration.
+  app processes under-13 personal data with a 30-day abuse-monitoring copy on the provider side,
+  which is what the guidance asks developers not to do. `store: false` removes the retention leg we
+  control; abuse monitoring is not one of them. This is an outstanding action on the account owner,
+  not a task in the backlog, and it is the single biggest open item in the migration.
 * **−** ZDR is unavailable for some endpoints and models regardless of approval, so eligibility has
   to be confirmed for the specific image path this app uses, not in general.
 * **−** The guidance is a third-party document that can change. It is worth re-reading whenever the
