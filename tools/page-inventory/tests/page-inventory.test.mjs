@@ -235,6 +235,39 @@ afterEach(() => {
   for (const root of fixtures.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
+// The AI surfaces are driven to a state and then waited on by class, and a
+// screenshot of the wrong state never fails — only the wait does, after the
+// timeout, on a run nobody starts between UI changes. Moving the confirmation
+// into its own dialog renamed the class the harness waits for (5b6e4e5) and left
+// that surface uncapturable until the next full run, so the pair is held here
+// instead of by the run.
+describe('AI surface selectors', () => {
+  const COMPONENTS_DIR = join(ROOT, 'web/src/lib/components');
+  const AI_COMPONENTS = readdirSync(COMPONENTS_DIR)
+    .filter((name) => /^Ai[A-Z].*\.svelte$/.test(name))
+    .map((name) => readFileSync(join(COMPONENTS_DIR, name), 'utf8'))
+    .join('\n');
+  // Read out of the harness rather than restated, so a selector edited on either
+  // side has to still name a class the AI components carry.
+  const waitedOn = [
+    ...readFileSync(join(ROOT, 'tools/page-inventory/capture-page-inventory.mjs'), 'utf8').matchAll(
+      /locator\('([^']+)'\)/g
+    ),
+  ]
+    .map(([, selector]) => selector)
+    .filter((selector) => /(^|\.)(ai-|stage-img|dial\b)/.test(selector));
+
+  it('drives the AI surfaces by selector', () => {
+    expect(new Set(waitedOn).size).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each([...new Set(waitedOn)])('waits on %s, which the AI components still ship', (selector) => {
+    for (const className of selector.split('.').slice(1)) {
+      expect(AI_COMPONENTS).toContain(className);
+    }
+  });
+});
+
 describe('page inventory output', () => {
   it('defines portrait and landscape variants for every canonical device', () => {
     expect(PAGE_INVENTORY_VIEWPORTS).toHaveLength(8);

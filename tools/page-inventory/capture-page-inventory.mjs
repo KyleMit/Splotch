@@ -678,7 +678,7 @@ function aiSurfaces() {
         await aiResult(page, 'success');
         await page.locator('.stage-img.result.shown').waitFor({ timeout: ACTION_MS });
         await page.getByRole('button', { name: 'Report this picture' }).click();
-        await page.locator('.ai-report-confirmation').waitFor();
+        await page.locator('dialog.ai-report-confirm').waitFor();
       }
     ),
     failure('safety', 'safety', 'AI result · safety refusal', 'The child-safe refusal treatment.'),
