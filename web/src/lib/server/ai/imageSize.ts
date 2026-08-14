@@ -35,8 +35,10 @@ const PNG_IHDR_WIDTH_OFFSET = 16;
 const PNG_IHDR_HEIGHT_OFFSET = 20;
 // RIFF container: "RIFF" <u32 size> "WEBP" <4-byte chunk tag> …
 const WEBP_CHUNK_TAG_OFFSET = 12;
-// Every WebP variant packs its dimensions at a fixed offset past the tag, and
-// each stores (dimension - 1), so all three add one back.
+// Each WebP variant packs its dimensions at its own fixed offset past the tag,
+// and they do NOT agree on the encoding: lossy VP8 stores the dimension itself,
+// while VP8L and VP8X store (dimension - 1) and have to add it back. Verified
+// against real sharp-encoded images of every variant in imageSize.test.ts.
 const VP8_DIMENSION_OFFSET = 26;
 const VP8L_DIMENSION_OFFSET = 21;
 const VP8X_DIMENSION_OFFSET = 24;
