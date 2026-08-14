@@ -143,6 +143,28 @@ test.describe('a generation minimized to the corner', () => {
     );
   });
 
+  test('says the run failed rather than promising a picture that is not coming', async ({
+    page,
+  }) => {
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await page.getByLabel('Keep drawing while this is made').click();
+    await expect(page.locator(polaroid)).toBeVisible();
+
+    await endpoint.fail();
+    await expect(page.locator(polaroid)).toContainText('Oh no');
+
+    // A failed run leaves `generating` false too, so the arm that announces a
+    // finished picture also caught the one state where there is no picture —
+    // the button and the print it opens told a screen reader opposite things.
+    await openDrawer(page);
+    await expect(page.locator(magicButton)).toHaveAttribute('aria-label', "Show what didn't work");
+    await expect(page.locator(polaroid)).toHaveAttribute(
+      'aria-label',
+      "That didn't work — tap to see"
+    );
+  });
+
   test('never wiggles itself off the top of the screen', async ({ page }) => {
     // Landscape is where this binds: the print sits at the top of the canvas
     // with only its own inset above it, and the wiggle plus the badge hanging

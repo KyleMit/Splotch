@@ -443,7 +443,9 @@
         aria-label={aiResult.minimized
           ? aiResult.generating
             ? 'Show the picture being made'
-            : 'Show your finished picture'
+            : aiResult.error
+              ? "Show what didn't work"
+              : 'Show your finished picture'
           : settings.aiUserApiKey || settings.aiAccessToken
             ? 'Create AI image'
             : freeGenerations.available && freeGenerations.remaining > 0
