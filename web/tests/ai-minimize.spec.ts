@@ -21,11 +21,15 @@ const magicButton = '#aiImageButton';
 
 // The dial's remaining wedge, which shrinks from 360deg as the run fills. Read
 // off the live element because it is the only published trace of where the run
-// actually is.
+// actually is. A dial that hasn't mounted yet reads as "no progress at all"
+// rather than throwing, so the polls below wait for it instead of failing on a
+// starved worker that hasn't rendered the reopened modal yet.
 function dialAngle(page: Page) {
-  return page
-    .locator('.dial')
-    .evaluate((el) => Number.parseFloat(getComputedStyle(el).getPropertyValue('--angle')));
+  return page.evaluate(() => {
+    const dial = document.querySelector('.dial');
+    if (!dial) return Number.POSITIVE_INFINITY;
+    return Number.parseFloat(getComputedStyle(dial).getPropertyValue('--angle'));
+  });
 }
 
 test.describe('a generation minimized to the corner', () => {
