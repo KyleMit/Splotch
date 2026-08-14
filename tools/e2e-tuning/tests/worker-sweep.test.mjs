@@ -3,45 +3,54 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
-  SWEEP_SERVER_ENV,
   summarizeReport,
   summarizeSweep,
   sweepSummaryMarkdown,
   tallyFailures,
 } from '../run-worker-sweep.mjs';
-import { commonWebServer } from '../../../web/playwright.shared.ts';
 
 // tools/e2e-tuning/run-worker-sweep.mjs is the harness behind ADR-0078's worker count, driven
-// locally and by .github/workflows/worker-sweep.yml. It boots its own preview
-// server, which puts it outside everything playwright.config.ts arranges — and
-// every defect the first version shipped with was a consequence of re-doing that
-// setup by hand. So the parts that can be checked, are.
+// locally and by .github/workflows/worker-sweep.yml. Playwright boots the
+// preview servers (one fresh server per rep, env declared by
+// commonWebServer.env), so what the sweep owns — the up-front build, the
+// prebuilt handshake with the config, and the report accounting — is what gets
+// checked here.
 
-describe('sweep server env', () => {
-  // The sweep cannot import commonWebServer.env: that module reaches the specs'
-  // helpers through extensionless imports, which node --experimental-strip-types
-  // does not resolve. So it declares a mirror, and this is what holds the mirror
-  // to it — the pattern in CLAUDE.md, "Cross-file agreement is never maintained
-  // by prose". Adding a private env var goes red here rather than silently
-  // letting a developer's web/.env supply it during a measurement.
-  it('declares exactly what the Playwright web server declares', () => {
-    expect(SWEEP_SERVER_ENV).toEqual(commonWebServer.env);
+const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
+
+describe('prebuilt handshake', () => {
+  // The sweep builds once and tells playwright.config.ts to serve that bundle
+  // preview-only through SPLOTCH_E2E_PREBUILT. The sweep is plain Node and the
+  // config is TS reaching the specs' helpers through extensionless imports, so
+  // the name cannot be one imported constant — the pattern in CLAUDE.md,
+  // "Cross-file agreement is never maintained by prose". If either side drops
+  // or renames the variable, every rep silently pays a rebuild again.
+  it('names the same env var in the sweep and the Playwright config', () => {
+    const sweep = readFileSync(
+      join(REPO_ROOT, 'tools', 'e2e-tuning', 'run-worker-sweep.mjs'),
+      'utf8'
+    );
+    const config = readFileSync(join(REPO_ROOT, 'web', 'playwright.config.ts'), 'utf8');
+    expect(sweep).toContain("SPLOTCH_E2E_PREBUILT: 'true'");
+    expect(config).toContain('process.env.SPLOTCH_E2E_PREBUILT');
   });
 });
 
 describe('sweep workflow', () => {
   const workflow = readFileSync(
-    join(import.meta.dirname, '..', '..', '..', '.github', 'workflows', 'worker-sweep.yml'),
+    join(REPO_ROOT, '.github', 'workflows', 'worker-sweep.yml'),
     'utf8'
   );
 
-  // The workflow's job is to supply hardware and a build; the measurement
-  // protocol belongs to the driver, where the local half runs it too. A rep loop
-  // reappearing in YAML is the regression this catches.
-  it('delegates the whole rep loop to the driver', () => {
+  // The workflow's job is to supply hardware; the measurement protocol — the
+  // build, the rep loop, the servers — belongs to the driver, where the local
+  // half runs it too. Any of those reappearing in YAML is the regression this
+  // catches.
+  it('delegates the whole measurement to the driver', () => {
     expect(workflow).toMatch(/node tools\/e2e-tuning\/run-worker-sweep\.mjs/);
     expect(workflow).not.toMatch(/playwright test/);
     expect(workflow).not.toMatch(/vite preview/);
+    expect(workflow).not.toMatch(/vite build/);
   });
 });
 
@@ -108,6 +117,40 @@ describe('summarizeReport', () => {
     expect(summary.cpuMs).toBe(350);
   });
 
+  // The aborted-run shape issue #1044 shipped: Playwright's webServer failed to
+  // boot, the run executed nothing, and the JSON report still exists — empty
+  // suites, ~25ms duration, the abort in top-level `errors`. That rep must come
+  // back error-shaped (no `failed`) so summarizeSweep counts it red, carrying
+  // the report's own first error line as its reason.
+  it('reports a zero-execution run as the abort its report carries', () => {
+    const summary = summarizeReport(
+      JSON.stringify({
+        stats: { duration: 25 },
+        suites: [],
+        errors: [
+          { message: 'Error: http://localhost:4173 is already used\n    at Object.<anonymous>' },
+        ],
+      }),
+      { workers: 4, rep: 1, jobSeconds: 3 }
+    );
+    expect(summary).toEqual({
+      w: 4,
+      rep: 1,
+      jobSeconds: 3,
+      error: 'Error: http://localhost:4173 is already used',
+    });
+  });
+
+  it('reports a zero-execution run without recorded errors as itself', () => {
+    const summary = summarizeReport(JSON.stringify({ stats: { duration: 25 }, suites: [] }), {
+      workers: 2,
+      rep: 2,
+      jobSeconds: 1,
+    });
+    expect(summary.error).toBe('report holds zero test executions');
+    expect(summary.failed).toBeUndefined();
+  });
+
   it('reports an unreadable report as itself', () => {
     expect(summarizeReport('not json', { workers: 4, rep: 1, jobSeconds: 1 }).error).toBeTruthy();
   });
@@ -161,11 +204,12 @@ describe('summarizeSweep', () => {
     });
   });
 
-  // A rep that never produced a report has no `failed` — counting it as green
-  // would understate the very rate the sweep exists to measure.
-  it('counts a rep that produced no report as red', () => {
+  // A rep that never produced a report — or produced one holding zero
+  // executions — has no `failed`; counting it as green would understate the
+  // very rate the sweep exists to measure.
+  it('counts a rep that never ran as red', () => {
     const total = summarizeSweep([{ w: 4, rep: 1, error: 'boom' }], { workers: 4, reps: 1 });
-    expect(total).toMatchObject({ redRuns: 1, medianWallMs: null });
+    expect(total).toMatchObject({ redRuns: 1, execs: 0, medianWallMs: null });
   });
 
   it('renders a step summary that names the specs', () => {

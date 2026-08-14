@@ -549,7 +549,7 @@ code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42e
   <h3>First finding: the sweep was measuring itself</h3>
   <p>Every rep ran against one shared preview server, and the suite deliberately fills 60-second per-IP rate-limit windows — generate-image.spec.ts exhausts the BYOK bucket and bursts the managed token’s. A rep takes about as long as those windows last, so the next rep inherited a spent budget and its guard tests took a 429 where they assert a 415.</p>
   <ul class="notes"><li>On ubuntu-latest at 4 workers, “throttles a managed token hammered in a burst” failed in 12 of 12 reps — a deterministic failure counted as a flake rate.</li><li>Locally at 4 workers, the BYOK guard tests were 4 of 5 failures across 7 reps.</li><li>Both are specs the earlier per-worker-count failure columns are largely made of.</li></ul>
-  <p>tools/e2e-tuning/run-worker-sweep.mjs starts and stops a preview server per rep, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run.</p>
+  <p>Every rep gets a fresh preview server, which clears the in-memory limiter and matches what CI does anyway: one server, one suite run. (The sweep driver booted that server itself at the time; Playwright’s own webServer boots it per rep now — issue 1044.)</p>
 </div>
     <p>
       Re-run on the same runner image with an independent server per rep. <b>Red runs</b> is the

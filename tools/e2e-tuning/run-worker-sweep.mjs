@@ -8,21 +8,37 @@
 // playwright.shared.ts (and drifted), and neither the local nor the CI half could
 // check the other.
 //
+// Playwright owns the servers: each rep is one `playwright test` invocation,
+// and with server reuse disabled unconditionally (playwright.config.ts), every
+// rep boots a fresh preview server whose env is declared by
+// commonWebServer.env. Fresh matters — the suite leaves per-IP rate-limit
+// windows full (tests/generate-image.spec.ts deliberately exhausts the BYOK
+// bucket and bursts the managed token's), so a server shared across reps hands
+// the next rep a 429 where it expects a 415 and the sweep measures a flake it
+// manufactured. An earlier version of this sweep booted its own server for
+// Playwright to reuse; when the config stopped reusing servers, that server
+// collided with the config's webServer and every rep silently reported 0 tests
+// as 0 failures (issue #1044). The three responsibilities below are what
+// remain — and the zero-execution accounting exists so a regression of this
+// kind can never read as green again.
+//
 // Three things this owns that a `playwright test` loop cannot:
 //
-// 1. **A fresh server per rep.** The suite leaves per-IP rate-limit windows full
-//    — tests/generate-image.spec.ts deliberately exhausts the BYOK bucket and
-//    bursts the managed token's, each of which then takes the window in
-//    lib/server/rateLimitPolicy.ts to clear. Reps run back to back in about that
-//    time, so a shared server hands the next rep a 429 where it expects a 415,
-//    and the sweep measures a flake it manufactured. Restarting clears the
-//    in-memory limiter, and it also matches what CI actually does: one server,
-//    one suite run.
-// 2. **CI unset for the run.** `CI` turns on the two config branches that would
-//    corrupt the measurement — `retries: 2` masks the very rate being measured,
-//    and `reuseExistingServer: false` would make Playwright rebuild per rep.
-// 3. **The server env declared, not inherited**, the same rule the other two
-//    throwaway servers follow. See SWEEP_SERVER_ENV.
+// 1. **One build, shared by every rep.** The config's default webServer command
+//    is `vite build && vite preview`, which would spend a full rebuild of an
+//    identical bundle inside every rep. runSweep builds up front and sets
+//    SPLOTCH_E2E_PREBUILT so each rep's webServer serves that bundle
+//    preview-only — and because the sweep rebuilds every run, it cannot
+//    measure a stale bundle. `--prebuilt` skips the build for a caller that
+//    just produced one (the CI sweep smoke reuses the e2e shard's build).
+// 2. **CI unset for the rep.** `CI` turns on the config branch that would
+//    corrupt the measurement: `retries: 2` masks the very unretried rate being
+//    measured. (It also selects the CI worker count, but `--workers` overrides
+//    that either way.)
+// 3. **Zero-execution accounting.** A rep whose report holds no test
+//    executions is a red rep carrying the report's own error as its reason,
+//    and a sweep in which no rep executed anything exits nonzero — "0
+//    failures" must never mean "0 tests".
 //
 // `node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep`
 
@@ -30,28 +46,22 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { argFlag, fail, isMain, ROOT, runMain } from '../lib/proc.mjs';
-import { waitForUrl } from '../lib/net.mjs';
-import { freePort, spawnViteServer } from '../lib/vite-server.mjs';
 
-const PORT = 4173;
-const SERVER_BOOT_BUDGET_MS = 60_000;
+const RUN_WEB_TOOL = join(ROOT, 'tools', 'run-web-tool.mjs');
 
-// A mirror of commonWebServer.env (web/playwright.shared.ts), which this file
-// cannot import: that module reaches the specs' helpers through extensionless
-// imports, which node --experimental-strip-types does not resolve.
-// tools/e2e-tuning/tests/worker-sweep.test.mjs compares the two objects key for key, so a
-// name added there fails here rather than silently arriving from a developer's
-// web/.env — which is the whole point of declaring it.
-export const SWEEP_SERVER_ENV = {
-  PUBLIC_ENABLE_DEV_HARNESS: 'true',
-  ADMIN_ACCESS_TOKEN: 'test-admin-secret',
-  ALLOWED_TOKENS_LIST: 'daycare-club,e2e-harness-probe',
-  OPENAI_API_KEY: 'not-a-usable-openai-key',
-  GENERATE_DEADLINE_MS_OVERRIDE: '',
-  GITHUB_ISSUE_TOKEN: '',
-  GITHUB_ISSUE_REPO: 'splotch-tests/nowhere',
-  REPORT_TOKEN_SECRET: 'test-report-token-secret',
-};
+// PUBLIC_ENABLE_DEV_HARNESS must be set at BUILD time — vite.config.ts reads it
+// to compile in the /dev/* harness routes the specs drive (they 404 otherwise),
+// and every rep's preview server serves whatever this build baked in. The
+// server-side credentials are runtime env and come from commonWebServer.env
+// when Playwright boots each preview, so they are not needed here.
+function buildPreviewBundle() {
+  const build = spawnSync(process.execPath, [RUN_WEB_TOOL, 'vite', 'build'], {
+    cwd: ROOT,
+    env: { ...process.env, PUBLIC_ENABLE_DEV_HARNESS: 'true' },
+    stdio: ['ignore', 'ignore', 'inherit'],
+  });
+  if (build.status !== 0) fail('vite build failed — there is no bundle to measure');
+}
 
 /** Every test execution in a Playwright JSON report, flattened. */
 function flatten(suite, ancestry, out) {
@@ -82,6 +92,15 @@ export function summarizeReport(reportJson, { workers, rep, jobSeconds }) {
     const results = [];
     for (const suite of report.suites) flatten(suite, [], results);
     const attempts = results.filter((r) => r.retry === 0);
+    // A report holding no executions is an aborted run, not a clean one — a
+    // webServer that failed to boot leaves exactly this shape (empty `suites`,
+    // ~25ms duration, the abort in top-level `errors`), and counting it as "0
+    // failed" is how issue #1044's sweeps green-lit reps that never ran. Come
+    // back error-shaped instead, so summarizeSweep counts the rep red.
+    if (attempts.length === 0) {
+      const abort = report.errors?.[0]?.message?.split('\n', 1)[0];
+      return { w: workers, rep, jobSeconds, error: abort ?? 'report holds zero test executions' };
+    }
     const failures = attempts.filter((r) => r.status !== 'passed');
 
     return {
@@ -105,7 +124,16 @@ export function summarizeReport(reportJson, { workers, rep, jobSeconds }) {
 
 /** The suite's own environment, minus the two vars that would reconfigure it. */
 function runnerEnv(reportPath) {
-  const env = { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: reportPath };
+  const env = {
+    ...process.env,
+    PLAYWRIGHT_JSON_OUTPUT_NAME: reportPath,
+    // The sweep built once up front (buildPreviewBundle, or the --prebuilt
+    // caller); this points each rep's webServer at that bundle preview-only.
+    // Drift-guarded against playwright.config.ts by
+    // tools/e2e-tuning/tests/worker-sweep.test.mjs — the config's TS module
+    // graph is not importable from plain Node, so the name cannot be shared.
+    SPLOTCH_E2E_PREBUILT: 'true',
+  };
   // Deleted rather than blanked: playwright.config.ts reads both for
   // truthiness, and `env -u` is what its comments describe.
   delete env.CI;
@@ -113,27 +141,19 @@ function runnerEnv(reportPath) {
   return env;
 }
 
-async function runOneRep({ workers, rep, outDir }) {
-  freePort(PORT);
-  const { stop } = spawnViteServer(PORT, { env: SWEEP_SERVER_ENV, command: 'preview' });
+function runOneRep({ workers, rep, grep, outDir }) {
   const reportPath = join(outDir, `w${workers}-rep${rep}.json`);
   const startedAt = Date.now();
   try {
-    // A server that never answers is one bad rep too, not just a report that
-    // never got written — and on a 35-rep sweep a port still held by the previous
-    // rep is a realistic way to get there. Letting it throw would lose SWEEPTOTAL
-    // and the job summary for every rep already measured.
-    await waitForUrl(`http://localhost:${PORT}/`, SERVER_BOOT_BUDGET_MS).catch((error) => {
-      throw new Error(`preview server never came up: ${error.message ?? error}`);
-    });
     spawnSync(
       process.execPath,
       [
-        join(ROOT, 'tools', 'run-web-tool.mjs'),
+        RUN_WEB_TOOL,
         'playwright',
         'test',
         `--workers=${workers}`,
         '--reporter=json',
+        ...(grep ? [`--grep=${grep}`] : []),
       ],
       { cwd: ROOT, env: runnerEnv(reportPath), stdio: ['ignore', 'ignore', 'inherit'] }
     );
@@ -146,8 +166,6 @@ async function runOneRep({ workers, rep, outDir }) {
     return summarizeReport(readFileSync(reportPath, 'utf8'), meta);
   } catch (error) {
     return { w: workers, rep, error: String(error.message ?? error) };
-  } finally {
-    stop();
   }
 }
 
@@ -168,11 +186,12 @@ export function tallyFailures(summaries) {
   return [...reps].sort((a, b) => b[1] - a[1]);
 }
 
-export async function runSweep({ workers, reps, outDir }) {
+export function runSweep({ workers, reps, grep = '', prebuilt = false, outDir }) {
   mkdirSync(outDir, { recursive: true });
+  if (!prebuilt) buildPreviewBundle();
   const summaries = [];
   for (let rep = 1; rep <= reps; rep++) {
-    const summary = await runOneRep({ workers, rep, outDir });
+    const summary = runOneRep({ workers, rep, grep, outDir });
     summaries.push(summary);
     console.log('SWEEPRESULT ' + JSON.stringify(summary));
   }
@@ -219,12 +238,21 @@ export function sweepSummaryMarkdown(total) {
 }
 
 if (isMain(import.meta.url)) {
+  // async because runMain chains .catch onto its callback's return value.
   runMain(async () => {
     const workers = Number(argFlag('workers'));
     const reps = Number(argFlag('reps', '5'));
+    const grep = argFlag('grep', '');
+    const prebuilt = process.argv.includes('--prebuilt');
     const outDir = argFlag('out', join(ROOT, 'sweep-runs'));
     if (!Number.isInteger(workers) || workers < 1) fail('--workers=<positive integer> is required');
     if (!Number.isInteger(reps) || reps < 1) fail('--reps must be a positive integer');
-    await runSweep({ workers, reps, outDir });
+    const summaries = runSweep({ workers, reps, grep, prebuilt, outDir });
+    // Individual red reps are measurement data, but a sweep in which nothing
+    // ever executed measured nothing — that is a broken harness, and it must
+    // not exit as if it had verified something (issue #1044).
+    if (!summaries.some((s) => (s.tests ?? 0) > 0)) {
+      fail('no rep executed a single test — see the SWEEPRESULT errors above');
+    }
   });
 }

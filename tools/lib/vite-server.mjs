@@ -74,9 +74,8 @@ export function spawnViteServer(
   };
 
   // stop() and release() drop their own safety-net listeners, so a caller that
-  // boots one server per iteration (tools/e2e-tuning/run-worker-sweep.mjs) doesn't accumulate a
-  // listener and a captured child per rep — Node starts warning about the leak
-  // at eleven.
+  // boots one server per iteration doesn't accumulate a listener and a captured
+  // child per rep — Node starts warning about the leak at eleven.
   const dropSafetyNets = () => {
     process.off('exit', kill);
     process.off('SIGINT', onInterrupt);
