@@ -9,8 +9,8 @@
 # datasets in tools/e2e-tuning/gen-tuning-report.mjs.
 #
 # Each matrix job gets its own runner, so worker counts never contend with each
-# other. Everything inside a job — the server lifecycle, unsetting CI, the
-# per-rep summary — belongs to tools/e2e-tuning/run-worker-sweep.mjs rather than to this file,
+# other. Everything inside a job — the build, unsetting CI, the per-rep
+# summary — belongs to tools/e2e-tuning/run-worker-sweep.mjs rather than to this file,
 # so a local re-tune and this workflow measure the same thing. The first version
 # of this sweep put that logic in shell here, and shipped three defects only the
 # other half could have caught.
@@ -60,15 +60,8 @@ jobs:
           lscpu | grep -E "^CPU\(s\)|Thread\(s\) per core|Core\(s\) per socket|Model name" || true
           free -g | head -2 || true
 
-      # PUBLIC_ENABLE_DEV_HARNESS must be set at BUILD time — it gates the /dev/*
-      # harness routes the specs drive. The sweep driver builds nothing, so this
-      # is the only build.
-      - name: Build preview bundle
-        run: node tools/run-web-tool.mjs vite build
-        env:
-          PUBLIC_ENABLE_DEV_HARNESS: 'true'
-          ADMIN_ACCESS_TOKEN: test-admin-secret
-
+      # The driver builds the instrumented preview bundle itself (once, shared
+      # by every rep) — a build step here would duplicate it.
       - name: Run sweep
         run: |
           node tools/e2e-tuning/run-worker-sweep.mjs \

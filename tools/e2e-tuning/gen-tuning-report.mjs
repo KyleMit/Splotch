@@ -197,8 +197,9 @@ const HARNESS_ARTIFACT = {
     'Both are specs the earlier per-worker-count failure columns are largely made of.',
   ],
   fix:
-    'tools/e2e-tuning/run-worker-sweep.mjs starts and stops a preview server per rep, which clears the in-memory ' +
-    'limiter and matches what CI does anyway: one server, one suite run.',
+    'Every rep gets a fresh preview server, which clears the in-memory limiter and matches what CI ' +
+    'does anyway: one server, one suite run. (The sweep driver booted that server itself at the ' +
+    'time; Playwright’s own webServer boots it per rep now — issue 1044.)',
 };
 
 // What the re-measured numbers mean, and the retry count they settle. Raw HTML so

@@ -274,7 +274,13 @@ made of.
 the run, one summary line per rep — and both the local sweep and the workflow drive it. That is the
 general lesson too: every defect the shell-in-YAML version shipped with (a missing managed code, a
 missing harness probe code, this) existed because only one of its two callers could ever have caught
-it.
+it. *(2026-08, issue \#1044: the driver — now `tools/e2e-tuning/run-worker-sweep.mjs` — no longer
+boots that server itself. Once `reuseExistingServer: false` became unconditional, the sweep-owned
+server collided with the config's own webServer and every rep silently reported 0 tests as 0
+failures. Playwright now boots the fresh per-rep server; the driver builds once up front and sets
+`SPLOTCH_E2E_PREBUILT` so reps serve that bundle preview-only, a zero-execution rep counts as red,
+and `npm run test:sweep:smoke` exercises one grepped rep on every PR so the harness can't rot
+unnoticed between re-tunes.)*
 
 **Re-measured**, 15 reps per configuration, one runner each, retries off (run 30512081902):
 
@@ -512,14 +518,14 @@ only appears at one worker count will reproduce on only one of them.
 The full study — every configuration, both hardware profiles, the charts, and the hypotheses that
 were falsified — is committed at
 [`scrapbook/e2e-tuning/`](https://kylemit.github.io/Splotch/e2e-tuning/), regenerated with
-`npm run gen:e2e-tuning-report` from the datasets recorded in `scripts/gen-e2e-tuning-report.mjs`.
-That page carries the exact commands for a re-sweep.
+`npm run gen:e2e-tuning-report` from the datasets recorded in
+`tools/e2e-tuning/gen-tuning-report.mjs`. That page carries the exact commands for a re-sweep.
 
 Both halves of the sweep now run one driver, so a local re-tune and the CI one measure the same
-thing (§4). Build once, then:
+thing (§4). The driver builds the instrumented bundle itself, so it is one command:
 
 ```sh
-node scripts/e2e-sweep.mjs --workers=4 --reps=30 --out=runs
+node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=30 --out=runs
 ```
 
 On CI hardware it is **Actions → "Worker sweep (manual)" → Run workflow**, whose `workers` input

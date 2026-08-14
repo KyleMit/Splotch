@@ -54,7 +54,15 @@ export const commonPlaywrightConfig = {
 } satisfies PlaywrightTestConfig;
 
 export const developmentServerCommand = `npx vite dev --port ${playwrightPort} --strictPort`;
-export const productionPreviewCommand = `npx vite build && npx vite preview --port ${playwrightPort} --strictPort`;
+/**
+ * Serves an already-built bundle without rebuilding it. Selected by
+ * SPLOTCH_E2E_PREBUILT (playwright.config.ts) for a caller that just built and
+ * runs `playwright test` repeatedly — the worker sweep
+ * (tools/e2e-tuning/run-worker-sweep.mjs) builds once so its reps don't spend
+ * a full `vite build` each inside the measurement.
+ */
+export const previewOnlyCommand = `npx vite preview --port ${playwrightPort} --strictPort`;
+export const productionPreviewCommand = `npx vite build && ${previewOnlyCommand}`;
 const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS = 180_000;
 
 /** The managed access code tests/generate-image.spec.ts bursts against. */

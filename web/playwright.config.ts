@@ -8,6 +8,7 @@ import {
   commonWebServer,
   developmentServerCommand,
   managedAccessTokenForRetry,
+  previewOnlyCommand,
   productionPreviewCommand,
 } from './playwright.shared';
 import { WEBKIT_ONLY } from './tests/tags';
@@ -191,8 +192,15 @@ export default defineConfig({
     // minification) instead of the dev server. PUBLIC_ENABLE_DEV_HARNESS unlocks
     // the /dev/* test harnesses in the built app (404 otherwise); it's never set
     // in the Netlify deploy. Set DEV_SERVER=1 for fast local iteration against
-    // `vite dev`.
-    command: process.env.DEV_SERVER ? developmentServerCommand : productionPreviewCommand,
+    // `vite dev`. SPLOTCH_E2E_PREBUILT skips the build and serves the existing
+    // bundle — set it only from a harness that just built (the worker sweep
+    // builds once for all its reps), never to dodge a build: a stale bundle
+    // passes tests against code that no longer exists.
+    command: process.env.DEV_SERVER
+      ? developmentServerCommand
+      : process.env.SPLOTCH_E2E_PREBUILT
+        ? previewOnlyCommand
+        : productionPreviewCommand,
     reuseExistingServer: false,
   },
 });

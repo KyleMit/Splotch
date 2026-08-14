@@ -190,6 +190,15 @@ jobs:
         if: ${{ matrix.shard == 1 }}
         run: npm run test:driver:smoke
 
+      # The worker sweep only ever runs from the manual worker-sweep.yml, so a
+      # config change that breaks its harness stays invisible until the next
+      # re-tune — issue #1044 was exactly that, every rep green-lighting zero
+      # tests. One grepped rep proves a sweep still executes tests; --prebuilt
+      # reuses the bundle the e2e step above just built.
+      - name: Worker-sweep smoke
+        if: ${{ matrix.shard == 1 }}
+        run: npm run test:sweep:smoke
+
       - name: Upload report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
