@@ -103,6 +103,19 @@ describe('edge map and distance transform', () => {
   });
 });
 
+// Deterministic RGB noise: an edge at nearly every pixel, preserving nothing.
+const noiseOutput = () => {
+  let seed = 42;
+  const next = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32;
+  const width = 160;
+  const height = 160;
+  const rgb = Buffer.alloc(width * height * 3);
+  for (let i = 0; i < rgb.length; i++) rgb[i] = Math.floor(next() * 256);
+  return sharp(rgb, { raw: { width, height, channels: 3 } })
+    .png()
+    .toBuffer();
+};
+
 describe('scoreComposition', () => {
   it('scores a faithful restyle far above an enlarged-and-recentered one', async () => {
     const inputBytes = await inputDrawing();
@@ -110,8 +123,18 @@ describe('scoreComposition', () => {
     const drifted = await scoreComposition({ inputBytes, outputBytes: await driftedOutput() });
 
     expect(faithful.layoutScore).toBeGreaterThanOrEqual(80);
+    expect(faithful.global.informative).toBe(true);
     expect(drifted.layoutScore).toBeLessThan(faithful.layoutScore - 25);
     expect(faithful.global.identityRatio).toBeLessThan(drifted.global.identityRatio);
+  });
+
+  it('treats an edge-saturated output as non-informative, not as a perfect match', async () => {
+    const inputBytes = await inputDrawing();
+    const noisy = await scoreComposition({ inputBytes, outputBytes: await noiseOutput() });
+
+    expect(noisy.global.informative).toBe(false);
+    expect(noisy.global.identityRatio).toBeLessThan(0.05);
+    expect(noisy.layoutScore).toBeLessThan(45);
   });
 
   it('names the drift per element: the red subject grew and moved', async () => {

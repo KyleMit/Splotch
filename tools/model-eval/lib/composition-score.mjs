@@ -81,6 +81,19 @@ const BACKGROUND_BORDER_CONTACT_FRACTION = 0.22;
 const INPUT_COLOR_MATCH_DELTA_E = 22;
 const OUTPUT_COLOR_MATCH_DELTA_E = 26;
 
+// Below this chance level (mean distance-to-edge as % of the frame diagonal)
+// the output's edge map is saturated — noise or wall-to-wall texture puts an
+// edge at nearly every pixel, so "the input's edges land on output edges" is
+// true of ANY point set and the global match measures nothing. The floor sits
+// in the measured gap: the densest real output in the reference corpus (a
+// coloring page's line art) measures ~0.23%, while RGB noise measures ~0.01%.
+const MIN_INFORMATIVE_CHANCE_PCT = 0.1;
+
+// What the global term scores when the edge map is saturated: poor — the same
+// as a lost element, not perfect — so a texture-flooded output cannot outrank
+// a faithful one on the strength of a meaningless match.
+const SATURATED_EDGE_MAP_VALUE = 0.2;
+
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
 // --- color space -------------------------------------------------------------
@@ -310,6 +323,7 @@ function globalAlignment(points, dist, width, height) {
   return {
     identityChamferPct,
     chanceChamferPct,
+    informative: chanceChamferPct >= MIN_INFORMATIVE_CHANCE_PCT,
     identityRatio: identityChamferPct / safeChance,
     bestChamferPct: best.chamferPct,
     bestRatio: best.chamferPct / safeChance,
@@ -537,7 +551,12 @@ export function compositeScore(global, elementComparisons) {
   if (global) {
     terms.push({
       weight: 1,
-      value: Math.exp(-((global.identityRatio / RATIO_TOLERANCE) ** 2)),
+      // Only an explicit false is saturation — rows scored before the flag
+      // existed carry no `informative` key and stay trusted.
+      value:
+        global.informative === false
+          ? SATURATED_EDGE_MAP_VALUE
+          : Math.exp(-((global.identityRatio / RATIO_TOLERANCE) ** 2)),
     });
   }
   for (const element of elementComparisons) {
