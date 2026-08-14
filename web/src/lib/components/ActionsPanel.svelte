@@ -441,7 +441,11 @@
         class:loading={aiResult.generating && !aiResult.minimized}
         id="aiImageButton"
         aria-label={aiResult.minimized
-          ? 'Show the picture being made'
+          ? aiResult.generating
+            ? 'Show the picture being made'
+            : aiResult.error
+              ? "Show what didn't work"
+              : 'Show your finished picture'
           : settings.aiUserApiKey || settings.aiAccessToken
             ? 'Create AI image'
             : freeGenerations.available && freeGenerations.remaining > 0

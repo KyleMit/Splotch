@@ -12,6 +12,7 @@
     | 'halos'
     | 'dial'
     | 'polaroid'
+    | 'waitingPolaroid'
     | 'shell'
     | 'breadcrumb'
     | 'settings'
@@ -73,9 +74,13 @@
     dial: [
       'left:36px;top:20px;width:24px;height:24px;border-radius:50%;border:3px solid var(--brand);border-top-color:var(--control-track);background:var(--surface)',
     ],
+    waitingPolaroid: [
+      paletteBar,
+      'left:18px;top:6px;width:19px;height:21px;background:var(--polaroid-paper);border-radius:1.5px;box-shadow:0 2px 5px rgba(0,0,0,0.28);transform:rotate(-5deg)',
+      'left:20px;top:8px;width:15px;height:12px;background:var(--control-track);border-radius:1px;transform:rotate(-5deg)',
+    ],
     polaroid: [
-      // Photographic polaroid white, matching app.css .polaroid-frame.
-      'left:33px;top:14px;width:30px;height:32px;background:#fdfcf7;border-radius:1.5px;box-shadow:0 2px 5px rgba(0,0,0,0.3);transform:rotate(-5deg)',
+      'left:33px;top:14px;width:30px;height:32px;background:var(--polaroid-paper);border-radius:1.5px;box-shadow:0 2px 5px rgba(0,0,0,0.3);transform:rotate(-5deg)',
       'left:37px;top:17px;width:22px;height:19px;background:var(--brand-wash);transform:rotate(-5deg)',
     ],
     shell: [

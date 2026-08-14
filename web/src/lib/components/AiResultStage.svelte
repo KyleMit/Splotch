@@ -3,23 +3,22 @@
   import AiDial from './AiDial.svelte';
   import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiProgress } from '$lib/state/aiProgress.svelte';
   import { pinchZoom } from '$lib/actions/pinchZoom.svelte';
 
   interface Props {
-    // Owned here because the dial decides it, and read by the card for the
-    // footer and the disclosure strip.
-    revealed?: boolean;
     // The card's send-off animation, which the pinch has to stand down for.
     exiting: boolean;
     // The picture's own ratio, which the card sizes itself from.
     onaspect: (aspect: number) => void;
   }
 
-  let { revealed = $bindable(false), exiting, onaspect }: Props = $props();
+  let { exiting, onaspect }: Props = $props();
 
   let stageEl = $state<HTMLDivElement | undefined>();
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
-  let progress = $state(0);
+
+  const revealed = $derived(aiProgress.revealed);
 
   const MIN_BLUR_PX = 2;
   const MAX_EXTRA_BLUR_PX = 16;
@@ -48,14 +47,6 @@
     return () => ro.disconnect();
   });
 
-  // Zeroed here for the same reason the card zeroes `revealed`: `{#if !revealed}`
-  // below unmounts AiDial the moment generation completes, so the dial never sees
-  // the modal close and the next generation would open on a stale, nearly
-  // sharpened blur until its first frame reset it.
-  $effect(() => {
-    if (!aiResult.open) progress = 0;
-  });
-
   function handleImgLoad(e: Event) {
     if (!(e.currentTarget instanceof HTMLImageElement)) return;
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -63,7 +54,7 @@
   }
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
-  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - progress)}px`);
+  const previewBlur = $derived(`${MIN_BLUR_PX + MAX_EXTRA_BLUR_PX * (1 - aiProgress.value)}px`);
 
   // Keep the confetti's mask hole on the round dial, which means matching the
   // dial's own two-part size: a fraction of the stage until it stops at its cap.
@@ -140,7 +131,7 @@
 
   {#if !revealed}
     <AiConfetti />
-    <AiDial bind:revealed bind:progress />
+    <AiDial />
   {/if}
 </div>
 
@@ -191,6 +182,17 @@
        tall to project that way is held by the height alone and sits centered. */
     max-width: 100%;
     max-height: var(--result-stage-max-h);
+    /* The budget it sizes against changes once at the reveal, when the
+       keep-drawing pill leaves and gives its room back to the picture. Gliding
+       through that means the picture opens up as it lands instead of the
+       blurred preview stretching in the single frame the card swaps states. */
+    transition: max-height var(--duration-slow) var(--ease-glide);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-sizer {
+      transition: none;
+    }
   }
 
   /* No image yet (modal opened before the export finished): a box in the

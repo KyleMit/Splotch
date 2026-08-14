@@ -1,7 +1,16 @@
-// The AI result dial's progress engine, factored out of AiDial.svelte so the
-// fill-curve / overrun / done-ramp math can be unit tested without a live DOM.
-// It owns no Svelte reactivity: the component pumps `tick(now)` from its rAF
-// loop and copies the returned fields onto its own $state.
+// The progress engine behind every surface that shows how far along a
+// generation is — the result modal's dial and the waiting polaroid's caption
+// bar. It owns no Svelte reactivity: state/aiProgress.svelte.ts pumps
+// `tick(now)` from its rAF loop and publishes the returned fields.
+
+// How long a generation is expected to take, which paces the fill curve — not a
+// timeout. The overrun phase below covers everything past it, up to the poll's
+// own GENERATION_POLL_TIMEOUT_MS (limits.ts). Measured against the OpenAI
+// provider (ADR-0113), where a typical run lands around 25s: an estimate under
+// the real arrival leaves the dial stalled in its overrun pulse for the last
+// stretch of every successful generation, which reads as stuck rather than
+// nearly done. The loading copy is written from this number (loadingCopy.ts).
+export const AI_ESTIMATE_MS = 30_000;
 
 // Progress the estimate phase can fill to before the request actually resolves.
 const ESTIMATE_CEILING = 0.92;

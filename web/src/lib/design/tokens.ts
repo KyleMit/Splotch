@@ -126,6 +126,16 @@ export const scale = {
   // The Clear Button's at-rest fill, mirrored by the drag-to-clear coachmark
   // ghost so the tutorial always matches the real control.
   clearGradientRest: 'linear-gradient(135deg, #ff6b6b, #ee5a6f)',
+
+  // Every polaroid in the app is the same physical object: the screenshot
+  // flight, the card's download send-off, the waiting print in the canvas
+  // corner, and the styleguide's map of them. A photograph does not repaint at
+  // night, so the print white is pinned rather than themed — and the brand ink
+  // written on it is pinned with it (--brand-text's dark reading would be pale
+  // lavender on white). This is --brand-text's light value, held to the paper
+  // it sits on.
+  polaroidPaper: '#fdfcf7',
+  polaroidInk: '#7c50bb',
 } as const;
 
 // The cross-component stacking order, low to high. Scoped to "chrome" — the
@@ -165,13 +175,6 @@ export const zIndex = {
   // Lifting a flyout over the banner means raising zPanel, not this.
   zFlyout: 901,
   zBanner: 950, // InstallBanner — takes over the corner controls while shown
-  // AiWaitingChip — the only way back into a minimized generation (ADR-0116),
-  // so it outranks the banner that shares its corner. A tie would be settled by
-  // DOM order, and bootHiddenOverlays mounts the banner second: the chip ended
-  // up completely covered and untappable, with a paid run stranded behind it.
-  // The banner also stands down while a run is minimized; this is the guarantee
-  // that does not depend on the banner remembering to.
-  zWaitingChip: 951,
   zClearAcceptZone: 999, // below the button it rings, so the button stays on top
   zClearButton: 1000,
   // Pre-existing tie with zClearButton: both are fixed, and which one paints on
@@ -180,7 +183,15 @@ export const zIndex = {
   zNotch: 1000,
   zClearCoachmark: 1001, // the ghost button, above the real one
   zPalette: 1002,
-  zPolaroid: 1003, // app.css .polaroid-overlay
+  // AiWaitingPolaroid — the only way back into a minimized generation
+  // (ADR-0116), and it is pinned to the canvas corner the Color Palette shares,
+  // where its tilt and shadow graze the palette's edge. Above the palette so
+  // that edge paints over it rather than being clipped under it, and well above
+  // the Install Banner it once merely tied with: a tie is settled by DOM order,
+  // and bootHiddenOverlays mounts the banner second, which left the print
+  // completely covered and a paid run stranded behind it.
+  zWaitingPolaroid: 1003,
+  zPolaroid: 1004, // app.css .polaroid-overlay — the save-screenshot flight
 } as const;
 
 // Themed tokens. Dark mode swaps these — and only these — so themed chrome

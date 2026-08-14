@@ -1,85 +1,19 @@
 <script lang="ts">
   import { scale } from 'svelte/transition';
   import { backOut } from 'svelte/easing';
-  import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiProgress } from '$lib/state/aiProgress.svelte';
   import { DIAL_MAX_SIZE_PX, DIAL_STAGE_FRACTION } from './aiDialGeometry';
-  import { createDialProgress } from './aiDialProgress';
 
-  interface Props {
-    revealed?: boolean;
-    progress?: number;
-  }
-
-  let { revealed = $bindable(false), progress = $bindable(0) }: Props = $props();
-
-  // Typical successful generation time; the dial's overrun phase (aiDialProgress.ts) covers the
-  // tail beyond this up to the ~24s server deadline in ai/limits.ts. Not derived from that
-  // constant — this paces the UI's fill curve, not a hard timeout.
-  const ESTIMATE_MS = 10000;
   const HUE_START_DEG = 282;
   const HUE_SWEEP_DEG = 132;
   const HUE_SECOND_STOP_OFFSET_DEG = 46;
   const DIAL_EXIT_MS = 480;
   const DIAL_EXIT_START_SCALE = 1.35;
 
-  let waiting = $state(false);
-  let rafId = 0; // rAF handle — intentionally untracked
-  const dial = createDialProgress(ESTIMATE_MS);
-
-  function loop(now: number) {
-    const step = dial.tick(now);
-    progress = step.progress;
-    waiting = step.waiting;
-    if (step.revealed) {
-      revealed = true;
-      rafId = 0;
-      return;
-    }
-    rafId = requestAnimationFrame(loop);
-  }
-
-  function startDial() {
-    cancelAnimationFrame(rafId);
-    dial.start(performance.now());
-    progress = 0;
-    revealed = false;
-    waiting = false;
-    rafId = requestAnimationFrame(loop);
-  }
-
-  function stopDial() {
-    cancelAnimationFrame(rafId);
-    rafId = 0;
-  }
-
-  $effect(() => {
-    if (aiResult.open && aiResult.generating) startDial();
-  });
-
-  $effect(() => {
-    if (aiResult.open && !aiResult.generating && aiResult.resultUrl) {
-      dial.markDone();
-      if (!rafId) rafId = requestAnimationFrame(loop);
-    }
-  });
-
-  $effect(() => {
-    if (aiResult.error) stopDial();
-  });
-
-  // The reactive stop paths above are skipped if the parent unmounts this
-  // component in the same flush (e.g. the aiResult.error branch swap), so the rAF
-  // loop must also be cancelled unconditionally at destroy.
-  $effect(() => () => cancelAnimationFrame(rafId));
-
-  $effect(() => {
-    if (!aiResult.open) {
-      stopDial();
-      progress = 0;
-      revealed = false;
-      waiting = false;
-    }
-  });
+  // A pure view of the shared progress (state/aiProgress.svelte.ts): the loop
+  // that fills this belongs to the run, not to the dial, so minimizing and
+  // restoring the modal never restarts it.
+  const progress = $derived(aiProgress.value);
 
   // A friendly violet → blue → teal → green sweep as the dial fills.
   const hueA = $derived(HUE_START_DEG - HUE_SWEEP_DEG * progress);
@@ -91,7 +25,7 @@
 <div class="dial-wrap">
   <div
     class="dial"
-    class:waiting
+    class:waiting={aiProgress.waiting}
     style="--c1: {dialColor}; --c2: {dialColor2}; --angle: {wedgeAngle}; --dial-size: min({DIAL_STAGE_FRACTION *
       100}%, {DIAL_MAX_SIZE_PX}px);"
     out:scale={{

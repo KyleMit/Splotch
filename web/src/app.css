@@ -52,6 +52,10 @@ body {
   --palette-landscape-width: 156px;
   --action-btn-first-paint-count: 5;
   --action-btn-first-paint-gap-total: 48px;
+  /* The portrait bar's counterpart, for chrome that has to start below it —
+     the same height actionButtonLayout.ts reserves as PALETTE_BAR_RESERVE,
+     guarded against it by actionButtonLayout.fallback.test.ts. */
+  --palette-portrait-height: 76px;
 }
 
 @media (orientation: landscape) and (min-height: 444px) {
@@ -686,7 +690,7 @@ body {
   --from-x: 0px;
   --from-y: 0px;
 
-  background: #fdfcf7;
+  background: var(--polaroid-paper);
   padding: 16px 16px 64px;
   border-radius: 3px;
   box-shadow:
