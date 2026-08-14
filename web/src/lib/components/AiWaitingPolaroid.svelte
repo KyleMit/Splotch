@@ -4,10 +4,10 @@
   import { aiProgress } from '$lib/state/aiProgress.svelte';
 
   // The picture-in-progress, pinned to the top-left of the canvas while the
-  // child keeps drawing (ADR-0116). A photo rather than a chip: what is waiting
-  // is a picture, and a print that develops in the corner says so without any
-  // reading. It is also deliberately the only way back — minimizing must never
-  // be a way to lose a picture that is already being paid for.
+  // child keeps drawing (ADR-0116, ADR-0117). A photo rather than a chip: what
+  // is waiting is a picture, and a print that develops in the corner says so
+  // without any reading. It is also deliberately the only way back — minimizing
+  // must never be a way to lose a picture that is already being paid for.
 
   const waiting = $derived(aiResult.open && aiResult.minimized && aiResult.generating);
   const ready = $derived(aiResult.open && aiResult.minimized && !aiResult.generating);
