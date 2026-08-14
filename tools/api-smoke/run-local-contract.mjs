@@ -466,6 +466,9 @@ async function checkGenerationResult(base) {
       unknownBody?.ok === false &&
       typeof unknownBody?.error === 'string',
     `got ${unknown.status} ${JSON.stringify(unknownBody)}`
+  );
+}
+
 async function checkVerifyKey(base) {
   // The server is started with a key that cannot authenticate, so this is the
   // rejected path: 200 with the canonical envelope, never a 5xx, and never the
