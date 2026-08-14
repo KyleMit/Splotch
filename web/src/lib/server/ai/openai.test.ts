@@ -54,6 +54,18 @@ describe('openAiProvider.generateImage', () => {
     });
   });
 
+  it('asks OpenAI not to store the request', async () => {
+    // The one retention leg this app controls, and the promise /privacy makes to
+    // a parent (ADR-0114). Without this the child's drawing and the picture made
+    // from it sit in the account's dashboard for 30 days — the parent's own
+    // dashboard on a BYOK run. Nothing reads a response back later, so there is
+    // nothing to trade for it, and no other assertion here would notice its
+    // removal: the mocked create ignores every option it is handed.
+    create.mockResolvedValue(imageResponse);
+    await openAiProvider.generateImage(request);
+    expect(create.mock.calls[0][0].store).toBe(false);
+  });
+
   it('maps a prose reply to a refusal', async () => {
     create.mockResolvedValue({
       status: 'completed',
@@ -197,19 +209,56 @@ describe('openAiProvider.verifyKey', () => {
     expect(retrieve.mock.calls[0][0]).toBe(create.mock.calls[0][0].tools[0].model);
   });
 
-  it('bounds each probe attempt at the key-check deadline, not the pair of them', async () => {
+  it('gives the first attempt the whole key-check budget', async () => {
     retrieve.mockResolvedValue({ id: 'gpt-image-2' });
     await openAiProvider.verifyKey('good-key');
     expect(construct.mock.calls[0][0].timeout).toBe(VERIFY_KEY_DEADLINE_MS);
-    // No explicit signal on purpose: one spans every retry, so a cold start that
-    // ate the budget would leave the retry nothing to run in — which is how a
-    // working key came back rejected.
-    expect(retrieve.mock.calls[0][1]).toBeUndefined();
   });
 
-  it('retries the probe once, so a transient blip is not reported as a bad key', async () => {
-    retrieve.mockResolvedValue({ id: 'gpt-image-2' });
+  it('never lets the SDK retry, since its retry sleeps an upstream Retry-After', async () => {
+    // The SDK's `timeout` is per attempt and its backoff honours the server's
+    // requested delay verbatim, so a 429 asking for longer than the platform
+    // ceiling would strand the invocation past any deadline stated here.
+    retrieve.mockRejectedValue(Object.assign(new Error('Rate limit reached'), { status: 429 }));
     await openAiProvider.verifyKey('good-key');
-    expect(construct.mock.calls[0][0].maxRetries).toBeGreaterThan(0);
+    for (const [options] of construct.mock.calls) expect(options.maxRetries).toBe(0);
+  });
+
+  it('retries once itself, so a transient blip is not reported as a bad key', async () => {
+    retrieve
+      .mockRejectedValueOnce(new Error('socket hang up'))
+      .mockResolvedValueOnce({ id: 'gpt-image-2' });
+    await expect(openAiProvider.verifyKey('good-key')).resolves.toEqual({ ok: true });
+    expect(retrieve).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not re-ask when OpenAI already refused the key', async () => {
+    retrieve.mockRejectedValue(Object.assign(new Error('Incorrect API key'), { status: 401 }));
+    await openAiProvider.verifyKey('bad-key');
+    expect(retrieve).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the whole probe inside the deadline, retry included', async () => {
+    // The invariant ADR-0063 states: the probe returns before the platform would
+    // kill the invocation, however the attempts fall. A first attempt that burns
+    // the entire budget must not buy a second one a fresh clock.
+    vi.useFakeTimers();
+    try {
+      retrieve.mockImplementation(() => {
+        vi.advanceTimersByTime(VERIFY_KEY_DEADLINE_MS);
+        return Promise.reject(new Error('socket hang up'));
+      });
+
+      const started = Date.now();
+      await expect(openAiProvider.verifyKey('good-key')).resolves.toMatchObject({
+        ok: false,
+        kind: 'unreachable',
+      });
+
+      expect(Date.now() - started).toBeLessThanOrEqual(VERIFY_KEY_DEADLINE_MS);
+      expect(retrieve).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

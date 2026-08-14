@@ -50,13 +50,20 @@ Ordinary toddler pretend-play IS welcome — render it as cheerful, obviously ma
 
 When you must refuse, respond with a single short sentence declining, e.g. "I can't turn that drawing into a picture — let's draw something else!". Never sanitize, beautify, or partially transform genuinely unsafe content into a "nicer" version — refuse it entirely. When a drawing is clearly playful and non-graphic, generate the image.`;
 
-// Generation gets one shot: the SDK's default of two retries would spend the
-// whole deadline re-asking a model that is already slow, and the app surfaces
-// its own "let's try again" instead. The key probe is the opposite case — it is
-// a sub-second call, and reporting "that key could not authenticate" because of
-// one transient blip tells a parent something false about their key.
-const GENERATE_RETRIES = 0;
-const VERIFY_KEY_RETRIES = 1;
+// The SDK never retries for us. Its `timeout` bounds a single attempt, and its
+// retry path sleeps an upstream `Retry-After` verbatim, so any value above zero
+// leaves the call with no ceiling this side can state: a 429 asking for a minute
+// holds the invocation until Netlify kills it with a bare platform 502, which is
+// the failure every deadline here exists to replace (ADR-0063).
+const NO_SDK_RETRIES = 0;
+
+// Generation gets one shot regardless — re-asking a model that is already slow
+// spends the whole deadline, and the app surfaces its own "let's try again".
+// The key probe is the opposite case: it is a sub-second call, and telling a
+// parent "that key could not authenticate" because of one transient blip says
+// something false about their key. So it retries, but under this module's own
+// budget, with the second attempt run only if the first left time for it.
+const VERIFY_KEY_ATTEMPTS = 2;
 
 function client(apiKey: string, timeoutMs: number, maxRetries: number): OpenAI {
   return new OpenAI({ apiKey, timeout: timeoutMs, maxRetries });
@@ -92,7 +99,7 @@ export const openAiProvider: AiImageProvider = {
     const bytes = Buffer.from(image.base64, 'base64');
     let response;
     try {
-      response = await client(apiKey, deadlineMs, GENERATE_RETRIES).responses.create(
+      response = await client(apiKey, deadlineMs, NO_SDK_RETRIES).responses.create(
         {
           model: ORCHESTRATOR_MODEL,
           instructions: SAFETY_SYSTEM_INSTRUCTION,
@@ -160,25 +167,42 @@ export const openAiProvider: AiImageProvider = {
   },
 
   async verifyKey(apiKey) {
-    try {
-      // Retrieve the image model itself rather than any model: model
-      // availability varies per account, so authenticating against a different
-      // model can accept a key that cannot actually generate. It is a free,
-      // sub-second call.
-      //
-      // Bounded by the SDK's own per-attempt timeout and NOT by an explicit
-      // signal: a signal spans every retry, so a cold start that eats the budget
-      // leaves the retry nothing to run in — which is exactly how a working key
-      // came back rejected on a real deploy. The response here is a few hundred
-      // bytes, so the header-only bound the SDK gives is the whole request.
-      //
-      // It cannot prove the account has cleared OpenAI's identity verification:
-      // the model is retrievable either way, and the 403 only arrives on a real
-      // generation. generateImage names that failure specifically when it does.
-      await client(apiKey, VERIFY_KEY_DEADLINE_MS, VERIFY_KEY_RETRIES).models.retrieve(IMAGE_MODEL);
-    } catch (err) {
-      return keyCheckFailure(err);
+    // Retrieve the image model itself rather than any model: model availability
+    // varies per account, so authenticating against a different model can accept
+    // a key that cannot actually generate. It is a free, sub-second call.
+    //
+    // It cannot prove the account has cleared OpenAI's identity verification:
+    // the model is retrievable either way, and the 403 only arrives on a real
+    // generation. generateImage names that failure specifically when it does.
+    //
+    // Every attempt shares one budget, and each is capped at whatever is left of
+    // it, so the whole probe returns inside VERIFY_KEY_DEADLINE_MS however the
+    // attempts fall. A single signal spanning all of them was the previous shape
+    // and is the wrong one: a slow cold start consumed the budget and left the
+    // retry nothing to run in, which is how a working key came back rejected on
+    // a real deploy. Per-attempt caps under a total deadline give the retry the
+    // rest of the budget instead of the remains of a shared clock.
+    const giveUpAt = Date.now() + VERIFY_KEY_DEADLINE_MS;
+    let failure: ReturnType<typeof keyCheckFailure> = {
+      ok: false,
+      kind: 'unreachable',
+      reason: 'The key check ran out of time',
+    };
+
+    for (let attempt = 0; attempt < VERIFY_KEY_ATTEMPTS; attempt++) {
+      const remaining = giveUpAt - Date.now();
+      if (remaining <= 0) break;
+      try {
+        await client(apiKey, remaining, NO_SDK_RETRIES).models.retrieve(IMAGE_MODEL);
+        return { ok: true };
+      } catch (err) {
+        failure = keyCheckFailure(err);
+        // OpenAI looked at the key and said no. Asking again gets the same
+        // answer and spends a parent's wait getting it.
+        if (failure.kind === 'rejected') return failure;
+      }
     }
-    return { ok: true };
+
+    return failure;
   },
 };

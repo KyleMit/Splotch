@@ -170,6 +170,12 @@ async function callOpenAi({ apiKey, variant, image, prompt, systemInstruction, t
     response = await client.responses.create({
       model: ORCHESTRATOR_MODEL,
       instructions: systemInstruction,
+      // The same invariant production holds (ADR-0114). The corpus here is
+      // synthetic rather than a child's drawing, so this is not the privacy
+      // blocker that one is — but a bake-off run is 150-odd responses retained
+      // for 30 days under whoever's key ran it, with nothing that ever reads
+      // them back. "Every request" should mean every request.
+      store: false,
       input: [
         {
           role: 'user',
