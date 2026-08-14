@@ -1,3 +1,4 @@
+import { promiseWithResolvers } from '../promiseWithResolvers';
 import type { MagicSheetWorkerRequest, MagicSheetWorkerResponse } from './magicSheet.worker';
 
 interface PendingWorkerRaster {
@@ -100,20 +101,20 @@ function magicSheetRasterWorker() {
 
 export function rasterizeMagicSheetInWorker(request: Omit<MagicSheetWorkerRequest, 'id'>) {
   const id = ++nextRasterRequestId;
-  return new Promise<ImageBitmap>((resolve, reject) => {
-    let worker: Worker;
-    try {
-      worker = magicSheetRasterWorker();
-    } catch (error) {
-      reject(error instanceof Error ? error : new Error(String(error)));
-      return;
-    }
-    const timeoutId = setTimeout(() => timeoutWorkerRaster(id), MAGIC_SHEET_WORKER_TIMEOUT_MS);
-    pendingWorkerRasters.set(id, { resolve, reject, timeoutId, worker, request });
-    try {
-      worker.postMessage({ ...request, id });
-    } catch (error) {
-      failRasterWorker(worker, error instanceof Error ? error : new Error(String(error)));
-    }
-  });
+  const { promise, resolve, reject } = promiseWithResolvers<ImageBitmap>();
+  let worker: Worker;
+  try {
+    worker = magicSheetRasterWorker();
+  } catch (error) {
+    reject(error instanceof Error ? error : new Error(String(error)));
+    return promise;
+  }
+  const timeoutId = setTimeout(() => timeoutWorkerRaster(id), MAGIC_SHEET_WORKER_TIMEOUT_MS);
+  pendingWorkerRasters.set(id, { resolve, reject, timeoutId, worker, request });
+  try {
+    worker.postMessage({ ...request, id });
+  } catch (error) {
+    failRasterWorker(worker, error instanceof Error ? error : new Error(String(error)));
+  }
+  return promise;
 }

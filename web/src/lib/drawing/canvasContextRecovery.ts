@@ -1,3 +1,5 @@
+import { promiseWithResolvers } from '../promiseWithResolvers';
+
 export const CANVAS_CONTEXT_RECOVERY_ERROR_CODE = 'canvas-context-recovery-failed';
 export type CanvasContextRecoveryErrorCode = typeof CANVAS_CONTEXT_RECOVERY_ERROR_CODE;
 
@@ -52,14 +54,8 @@ function isContextLost(context: OffscreenCanvasRenderingContext2D) {
 
 function monitorContextLoss(surface: RecoverableCanvas2dSurface) {
   let lostByEvent = false;
-  let resolveLost!: () => void;
-  let resolveRestored!: () => void;
-  const lost = new Promise<void>((resolve) => {
-    resolveLost = resolve;
-  });
-  const restored = new Promise<void>((resolve) => {
-    resolveRestored = resolve;
-  });
+  const { promise: lost, resolve: resolveLost } = promiseWithResolvers<void>();
+  const { promise: restored, resolve: resolveRestored } = promiseWithResolvers<void>();
   const onContextLost = () => {
     lostByEvent = true;
     resolveLost();
