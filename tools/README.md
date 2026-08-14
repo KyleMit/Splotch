@@ -91,14 +91,14 @@ FILTER=report__ npm run model-eval
 ```
 
 An identical existing input is retained. A same-named input with different bytes is recorded as a
-manifest conflict and fails without overwriting either copy. The model-eval harness A/B-tests the
-reported drawing with its base prompt; it does not replay the resolved style prompt preserved in the
-snapshot's `prompt.txt`, so it is a model comparison rather than an exact reproduction of the
-reported generation.
+manifest conflict and fails without overwriting either copy. The model-eval harness runs the
+reported drawing through every candidate variant with its base prompt; it does not replay the
+resolved style prompt preserved in the snapshot's `prompt.txt`, so it is a model comparison rather
+than an exact reproduction of the reported generation.
 
 The command needs installed project dependencies plus a Netlify CLI session with access to the
-production site. It makes no Gemini calls and never writes to or deletes from production. Missing
-CLI access, ambiguous site resolution, unexpected keys, incomplete bundles, empty downloads,
+production site. It makes no model calls and never writes to or deletes from production. Missing CLI
+access, ambiguous site resolution, unexpected keys, incomplete bundles, empty downloads,
 metadata/content-type drift, and model-eval input conflicts fail nonzero. Per-report failures are
 retained in the new snapshot manifest so a retry starts from fresh evidence without disguising the
 failed run. Local snapshots and opt-in report inputs contain child-created content, remain
