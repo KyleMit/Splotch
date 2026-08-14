@@ -268,11 +268,13 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         url.origin,
         { free: freeSettlement(authorization, reservationId), style },
         {
-          apiKey: authorization.effectiveKey,
-          prompt: finalPrompt,
-          imageBase64,
+          bytes: inputBytes.buffer.slice(
+            inputBytes.byteOffset,
+            inputBytes.byteOffset + inputBytes.byteLength
+          ) as ArrayBuffer,
           mimeType: imageMimeType,
-        }
+        },
+        { apiKey: authorization.effectiveKey, prompt: finalPrompt }
       );
       if (started) {
         // The reservation now belongs to the job; the catch below must not

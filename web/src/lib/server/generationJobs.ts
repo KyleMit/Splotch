@@ -11,11 +11,17 @@ import { GENERATION_JOB_TTL_MS } from '../ai/limits';
 // SvelteKit's `$lib`/`$env` nor a way to reach them — so the signing secret is
 // passed in by whichever side has it.
 //
-// What is deliberately NOT here is the child's drawing. It rides in the worker
-// invocation body and never leaves the worker's memory, so the promise on
-// /privacy — that an ordinary request keeps nothing — survives the split into
-// two requests. Only the finished picture is stored, and only until the poll
-// that hands it over deletes it.
+// The child's drawing passes through here, and that is a platform constraint
+// rather than a choice: a Netlify background function's invocation body is
+// capped between 200 KB and 400 KB (measured against a deploy), which a drawing
+// exceeds as soon as the client cannot encode WebP — which is every Safari, and
+// so most of this app's iPads. Background functions are meant to be handed a
+// reference, not data.
+//
+// So the input is written here and taken by the worker in one read-and-delete:
+// it is at rest for the handoff and no longer. The finished picture is at rest
+// until the poll that hands it over deletes it. That is a real change from the
+// single-request flow, which kept nothing at all, and /privacy says so.
 
 // A job id is a capability: whoever holds it collects that picture. It is 256
 // bits of randomness, handed only to the caller that started the job, deleted on
@@ -68,6 +74,7 @@ interface StoredJob {
 }
 
 const statusKey = (jobId: string) => `${jobId}/status.json`;
+const inputKey = (jobId: string) => `${jobId}/input`;
 const imageKey = (jobId: string) => `${jobId}/image`;
 
 function store() {
@@ -130,6 +137,22 @@ export async function markJobPending(
   await store().setJSON(statusKey(jobId), record);
 }
 
+/** The drawing the worker will render, written before the worker is invoked. */
+export async function putJobInput(jobId: string, image: ArrayBuffer): Promise<void> {
+  await store().set(inputKey(jobId), image);
+}
+
+/**
+ * Read the drawing and delete it in the same step. The worker holds it in memory
+ * from here on, so leaving a copy behind would keep a child's drawing at rest
+ * for the whole generation to no purpose.
+ */
+export async function takeJobInput(jobId: string): Promise<Uint8Array | null> {
+  const bytes = (await store().get(inputKey(jobId), { type: 'arrayBuffer' })) as ArrayBuffer | null;
+  await store().delete(inputKey(jobId));
+  return bytes ? new Uint8Array(bytes) : null;
+}
+
 export async function completeJob(
   jobId: string,
   outcome: GenerationJobOutcome,
@@ -176,5 +199,11 @@ export async function takeJobImage(jobId: string): Promise<Uint8Array | null> {
 
 /** Collected means finished with: the picture has been handed over, so nothing is kept. */
 export async function discardJob(jobId: string): Promise<void> {
-  await Promise.allSettled([store().delete(imageKey(jobId)), store().delete(statusKey(jobId))]);
+  await Promise.allSettled([
+    // The input is normally gone already — the worker takes it — but a job that
+    // never reached a worker must not leave a drawing behind.
+    store().delete(inputKey(jobId)),
+    store().delete(imageKey(jobId)),
+    store().delete(statusKey(jobId)),
+  ]);
 }
