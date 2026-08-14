@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { ASYNC_GENERATION_HEADER } from '$lib/apiHeaders';
 import { config } from './config';
 import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
 import { issueWorkTicket, markJobPending, newJobId } from './generationJobs';
@@ -8,10 +9,13 @@ import type { GenerationAuthorization } from './generationAuthorization';
 // Handing a generation to the background worker (ADR-0115).
 //
 // The worker is a Netlify background function, so it exists only where Netlify
-// is running the site. Under a plain `vite dev` there is nothing at that path,
-// which is why availability is decided here rather than by the client: a caller
-// says it *can* handle a later result, and this decides whether there is one to
-// wait for.
+// is serving the site — under a plain `vite dev` there is nothing at that path.
+// Availability is therefore established by *attempting the handoff*, not by
+// reading an environment variable. The first version probed `process.env.NETLIFY`
+// and silently never engaged on a real deploy: NETLIFY is a build-time variable,
+// so it is set while the site is being built and absent while it is running.
+// A guess that fails closed looks exactly like a platform that has no worker,
+// which is the one failure this path cannot afford to be quiet about.
 
 const WORKER_PATH = '/.netlify/functions/generate-image-background';
 
@@ -41,16 +45,12 @@ export interface GenerationWork {
 }
 
 /**
- * Whether a background worker exists to hand this job to. `NETLIFY` is set both
- * in the deployed environment and by `netlify dev`, which are exactly the two
- * places the function is reachable.
+ * Whether the caller is willing to collect the picture in a later request. The
+ * server decides separately whether there is a worker to hand it to — by trying,
+ * not by guessing (see startBackgroundGeneration).
  */
-export function backgroundWorkerAvailable(): boolean {
-  // `process.env`, not `$env/dynamic/private`: this is the platform's own marker
-  // for "Netlify is running me", not app configuration, and the throwaway
-  // servers must not be made to declare it — e2e-server-env.test.mjs draws that
-  // line and names NETLIFY as the example.
-  return Boolean(process.env.NETLIFY) && Boolean(config.reportTokenSecret());
+export function clientAcceptsBackgroundGeneration(request: Request): boolean {
+  return Boolean(request.headers.get(ASYNC_GENERATION_HEADER));
 }
 
 /** The generation deadline for a request answered in-line, not by the worker. */
@@ -89,7 +89,14 @@ export async function startBackgroundGeneration(
   const jobId = newJobId();
   const payload = JSON.stringify({ ...work, jobId, deadlineMs: WORKER_DEADLINE_MS });
   const ticket = issueWorkTicket(jobId, payload, config.reportTokenSecret());
-  if (!ticket) return null;
+  if (!ticket) {
+    // Not "no worker here" — the worker cannot be invoked safely without a
+    // signing secret, and on a platform that does have one this is a
+    // misconfiguration that would otherwise present as every generation timing
+    // out for no visible reason.
+    console.error('[generate-image] REPORT_TOKEN_SECRET is unset; cannot dispatch to the worker');
+    return null;
+  }
 
   try {
     await markJobPending(jobId, context);
