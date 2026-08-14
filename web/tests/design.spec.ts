@@ -1,6 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { themes, toCssVarName, type ThemeTokens } from '../src/lib/design/tokens';
-import { gotoApp, openSettingsModal } from './helpers';
+import { gotoApp, openHydratedContents, openSettingsModal } from './helpers';
 
 // /design is the public living styleguide (ADR-0096). Axe coverage lives in
 // a11y.spec.ts; the value here is the regressions a scan can't see: the
@@ -319,7 +319,7 @@ test.describe('phone contents', () => {
   test('picking a section from the panel lands it clear of the header', async ({ page }) => {
     await page.goto('/design');
     const contents = page.locator('.header-toc');
-    await contents.locator('summary').click();
+    await openHydratedContents(contents);
     await contents.getByRole('link', { name: 'Named chrome' }).click();
     await expect(contents.locator('details')).not.toHaveAttribute('open');
 
@@ -349,7 +349,7 @@ test.describe('phone contents', () => {
   test('activating a row from the keyboard leaves focus on the collapsed row', async ({ page }) => {
     await page.goto('/design');
     const contents = page.locator('.header-toc');
-    await contents.locator('summary').click();
+    await openHydratedContents(contents);
 
     await contents.getByRole('link', { name: 'Named chrome' }).focus();
     await page.keyboard.press('Enter');

@@ -1,21 +1,8 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 import releases from '../src/lib/releases.json' with { type: 'json' };
 
-const DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS = 1000;
-const DISCLOSURE_PICK_TIMEOUT_MS = 10_000;
-
-async function openHydratedContents(contents: Locator) {
-  const panel = contents.locator('.panel');
-  await expect(async () => {
-    if (!(await panel.isVisible().catch(() => false))) {
-      await contents.locator('summary').click({ timeout: DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS });
-    }
-    await expect(panel).toHaveCSS('max-height', /\d+px/, {
-      timeout: DISCLOSURE_PICK_ATTEMPT_TIMEOUT_MS,
-    });
-  }).toPass({ timeout: DISCLOSURE_PICK_TIMEOUT_MS });
-}
+import { openHydratedContents } from './helpers';
 
 test('the changelog renders every release with its notes', async ({ page }) => {
   await page.goto('/changelog');
