@@ -30,6 +30,14 @@ function tab(page: Page, name: string) {
   return page.getByRole('radio', { name });
 }
 
+// The prerendered document deliberately raises no tab: the panel is chosen by
+// the head stamp, and the picker only catches up on hydration. So an `.active`
+// option is this page's own "the tabs are wired" signal — clicking before it
+// lands on markup with no handler and silently does nothing.
+async function tabsAreLive(page: Page) {
+  await expect(page.locator('.beta-platform-picker .option.active')).toHaveCount(1);
+}
+
 test('the Android tab links to the group, the opt-in page, the listing, and /feedback', async ({
   page,
 }) => {
@@ -59,6 +67,7 @@ test('the iOS tab swaps in the TestFlight steps and records itself in the URL', 
   page,
 }) => {
   await page.goto('/beta');
+  await tabsAreLive(page);
   await tab(page, 'iOS').click();
 
   await expect(page).toHaveURL(betaPathFor('ios'));
@@ -167,10 +176,7 @@ test('the tabs hug the left on a sheet and split the screen on a phone', async (
 // that drops either leaves the row looking like plain text.
 test('only the live tab carries the underline segment', async ({ page }) => {
   await page.goto('/beta');
-  // The prerendered document deliberately raises no tab — the panel is chosen by
-  // the head stamp, and the picker only catches up on hydration — so the live
-  // tab has to be waited for rather than assumed present at first paint.
-  await expect(page.locator('.beta-platform-picker .option.active')).toHaveCount(1);
+  await tabsAreLive(page);
 
   const marks = await page.locator('.beta-platform-picker .option').evaluateAll((els) =>
     els.map((el) => {
@@ -295,6 +301,7 @@ test('the troubleshooting summary drops only its middle clause on phones', async
 
 test('the troubleshooting panel starts collapsed on both tabs', async ({ page }) => {
   await page.goto('/beta');
+  await tabsAreLive(page);
   await expect(page.getByRole('link', { name: supportEmail() })).toBeVisible();
   const panel = shownPanel(page).locator('details.beta-disclosure');
   await expect(panel).not.toHaveAttribute('open', /.*/);

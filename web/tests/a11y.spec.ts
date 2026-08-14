@@ -67,6 +67,9 @@ for (const [tab, heading] of [
   test(`/beta has no serious accessibility violations on the ${tab} tab`, async ({ page }) => {
     await page.goto('/beta');
     await expect(page.getByRole('heading', { name: 'Join the Splotch beta' })).toBeVisible();
+    // The tabs raise none of their options until hydration, so an active one is
+    // the signal that a click will reach a handler (see beta.spec.ts).
+    await expect(page.locator('.beta-platform-picker .option.active')).toHaveCount(1);
     await page.getByRole('radio', { name: tab }).click();
     await expect(page.getByRole('heading', { name: heading })).toBeVisible();
     // The headings are prerendered, so they are visible at first paint; step 4's
