@@ -48,6 +48,19 @@ test.describe('a generation minimized to the corner', () => {
     await expect(page.locator(polaroid)).toBeHidden();
   });
 
+  test('says how to leave, rather than leaving it to the X', async ({ page }) => {
+    await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await expect(page.locator(modal)).toBeVisible();
+
+    // The X and the backdrop do the same thing, but both read as cancelling the
+    // picture — which is the one thing minimizing must never be taken for.
+    await page.getByRole('button', { name: 'Keep drawing while you wait' }).click();
+
+    await expect(page.locator(polaroid)).toBeVisible();
+    await expect(page.locator(modal)).toBeHidden();
+  });
+
   test('is what the Magic Button reveals while it is still running', async ({ page }) => {
     await prepareAiGeneration(page);
     await invokeAiGeneration(page);

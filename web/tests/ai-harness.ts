@@ -188,6 +188,34 @@ export async function revealedBoxes(page: Page) {
   });
 }
 
+// The stage glides to its new height when the keep-drawing pill leaves, so a
+// height read on the frame the picture became visible is a height mid-glide.
+export async function settledStageHeight(page: Page) {
+  let previous = Number.NaN;
+  await expect
+    .poll(async () => {
+      const { stage } = await revealedBoxes(page);
+      const settled = stage.height === previous;
+      previous = stage.height;
+      return settled;
+    })
+    .toBe(true);
+  return previous;
+}
+
+// The room the waiting card owes the keep-drawing pill — the pill's own height
+// plus the gap above it — read off the card rather than restated, so the
+// geometry assertions track the card's budget when it is retuned.
+export function keepDrawingBlockPx(page: Page) {
+  return page.evaluate(() => {
+    const card = document.querySelector('dialog.ai-result-modal');
+    if (!card) throw new Error('the AI result card is not mounted');
+    const style = getComputedStyle(card);
+    const read = (name: string) => Number.parseFloat(style.getPropertyValue(name));
+    return read('--keep-drawing-height') + read('--space-3');
+  });
+}
+
 // The strip's placement below the card and the room the card's height budget
 // keeps clear for it come from the same custom properties, so the geometry
 // assertions read them off the page instead of restating their values.

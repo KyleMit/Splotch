@@ -182,6 +182,17 @@
        tall to project that way is held by the height alone and sits centered. */
     max-width: 100%;
     max-height: var(--result-stage-max-h);
+    /* The budget it sizes against changes once at the reveal, when the
+       keep-drawing pill leaves and gives its room back to the picture. Gliding
+       through that means the picture opens up as it lands instead of the
+       blurred preview stretching in the single frame the card swaps states. */
+    transition: max-height var(--duration-slow) var(--ease-glide);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stage-sizer {
+      transition: none;
+    }
   }
 
   /* No image yet (modal opened before the export finished): a box in the

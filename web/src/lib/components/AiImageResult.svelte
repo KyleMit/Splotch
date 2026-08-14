@@ -25,6 +25,10 @@
   // ever shown again, so restoring it lands on the picture, not on the dial.
   const revealed = $derived(aiProgress.revealed);
   const loading = $derived(aiResult.open && !revealed && !aiResult.error);
+  // The window in which leaving is a real offer: once the picture has landed
+  // there is nothing to go back to the canvas for, and minimizing a finished
+  // result would be a way to lose it (ADR-0116).
+  const waiting = $derived(loading && aiResult.generating);
   let exiting = $state(false);
   let reportStatus = $state<ImageReportStatus>('idle');
   let reportOrigin = $state<Origin | null>(null);
@@ -98,6 +102,7 @@
   class:autosave={settings.autoSaveAiEnabled}
   class:errored={!!aiResult.error}
   class:loading
+  class:waiting
   style={cardStyle}
   bind:this={dialogEl}
   use:modalDialog={() => ({
@@ -163,6 +168,15 @@
         </div>
       {/if}
 
+      <!-- The X and the backdrop have done this since ADR-0116, but both read as
+           "cancel" — the one thing this must never be mistaken for. Half a minute
+           is long enough that the way out should be written down. -->
+      {#if waiting}
+        <div class="ai-keep-drawing">
+          <Button variant="wash" onclick={minimizeAiResult}>Keep drawing while you wait</Button>
+        </div>
+      {/if}
+
       {#if revealed && aiResult.resultUrl}
         <div class="ai-result-footer">
           {#if settings.autoSaveAiEnabled}
@@ -197,6 +211,7 @@
   .ai-result-modal {
     --result-autosave-footer-reserve: 95px;
     --loading-caption-height: 46px;
+    --keep-drawing-height: 44px;
     --result-sizing-air: 1px;
     --result-loading-reserve: calc(
       var(--space-4) + var(--space-4) + var(--space-3) + var(--loading-caption-height) +
@@ -296,6 +311,17 @@
     --result-footer-reserve: var(--result-autosave-footer-reserve);
   }
 
+  /* The keep-drawing pill is the one thing under the picture that has no
+     counterpart after the reveal, so while it is up the stage keeps its height
+     out of the budget. It follows .autosave deliberately: whichever footer the
+     revealed card will have, the waiting card owes room for this one first. The
+     finished picture is never the thing that pays for it. */
+  .ai-result-modal.waiting {
+    --result-footer-reserve: calc(
+      var(--result-loading-reserve) + var(--space-3) + var(--keep-drawing-height)
+    );
+  }
+
   .ai-result-content {
     padding: var(--space-4);
     position: relative;
@@ -334,6 +360,15 @@
     color: var(--text-soft);
     font-size: var(--font-size-sm);
     font-weight: var(--font-weight-medium);
+  }
+
+  /* Shaped like the Download button it stands in the same place as, so the two
+     read as one slot the card fills differently before and after the picture. */
+  .ai-keep-drawing :global(.btn) {
+    min-height: var(--keep-drawing-height);
+    padding: 0 22px;
+    border-radius: var(--radius-pill);
+    font-weight: var(--font-weight-bold);
   }
 
   /* ── Error state ── */
