@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  runOneRep,
   summarizeReport,
   summarizeSweep,
   sweepSummaryMarkdown,
@@ -54,28 +56,63 @@ describe('sweep workflow', () => {
   });
 });
 
-describe('summarizeReport', () => {
-  /** A Playwright JSON report with one suite of one spec per given result. */
-  const report = (results) =>
-    JSON.stringify({
-      stats: { duration: 61_800 },
-      suites: [
-        {
-          title: 'chromium',
-          suites: [
-            {
-              title: 'flows.spec.ts',
-              specs: results.map(({ title, status, duration, retry = 0 }) => ({
-                file: 'flows.spec.ts',
-                title,
-                tests: [{ results: [{ status, duration, retry }] }],
-              })),
-            },
-          ],
-        },
-      ],
-    });
+/** A Playwright JSON report with one suite of one spec per given result. */
+const report = (results) =>
+  JSON.stringify({
+    stats: { duration: 61_800 },
+    suites: [
+      {
+        title: 'chromium',
+        suites: [
+          {
+            title: 'flows.spec.ts',
+            specs: results.map(({ title, status, duration, retry = 0 }) => ({
+              file: 'flows.spec.ts',
+              title,
+              tests: [{ results: [{ status, duration, retry }] }],
+            })),
+          },
+        ],
+      },
+    ],
+  });
 
+describe('runOneRep', () => {
+  const outDirs = [];
+  const freshOutDir = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'worker-sweep-test-'));
+    outDirs.push(dir);
+    return dir;
+  };
+  afterEach(() => {
+    for (const dir of outDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+  });
+
+  // A reusable --out means a rep's report path can hold a report from a
+  // previous sweep. A child that dies before writing one (a config-load error,
+  // say) must not hand that stale file to the accounting as a fresh green rep —
+  // the reproduced false-green from the PR #1052 review: pre-seed the report,
+  // break the config, and the old code re-read the stale file as tests passing.
+  it('cannot pass a failed child off a stale report', () => {
+    const outDir = freshOutDir();
+    writeFileSync(
+      join(outDir, 'w1-rep1.json'),
+      report([{ title: 'stale pass', status: 'passed', duration: 900 }])
+    );
+    const summary = runOneRep({ workers: 1, rep: 1, outDir }, () => {});
+    expect(summary).toMatchObject({ w: 1, rep: 1, error: 'playwright wrote no JSON report' });
+  });
+
+  it('accepts the report its own child wrote', () => {
+    const outDir = freshOutDir();
+    const summary = runOneRep({ workers: 1, rep: 1, outDir }, ({ reportPath }) =>
+      writeFileSync(reportPath, report([{ title: 'fresh pass', status: 'passed', duration: 900 }]))
+    );
+    expect(summary).toMatchObject({ tests: 1, failed: 0 });
+  });
+});
+
+describe('summarizeReport', () => {
   it('counts first attempts and names what failed', () => {
     const summary = summarizeReport(
       report([
@@ -139,6 +176,31 @@ describe('summarizeReport', () => {
       jobSeconds: 3,
       error: 'Error: http://localhost:4173 is already used',
     });
+  });
+
+  // A skipped row means the test body never ran, so it can neither satisfy the
+  // zero-execution guard (a skipped-only selection would keep test:sweep:smoke
+  // green while executing nothing — PR #1052 review) nor count as a failure (a
+  // deliberate conditional skip is not a flake).
+  it('treats a skipped-only report as zero executions', () => {
+    const summary = summarizeReport(report([{ title: 'skips', status: 'skipped', duration: 0 }]), {
+      workers: 1,
+      rep: 1,
+      jobSeconds: 2,
+    });
+    expect(summary.error).toBe('report holds zero test executions');
+  });
+
+  it('counts a skip as neither an execution nor a failure', () => {
+    const summary = summarizeReport(
+      report([
+        { title: 'runs', status: 'passed', duration: 100 },
+        { title: 'skips', status: 'skipped', duration: 0 },
+      ]),
+      { workers: 1, rep: 1, jobSeconds: 30 }
+    );
+    expect(summary).toMatchObject({ tests: 1, failed: 0 });
+    expect(summary.failures).toEqual([]);
   });
 
   it('reports a zero-execution run without recorded errors as itself', () => {

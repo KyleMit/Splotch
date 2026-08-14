@@ -34,13 +34,15 @@ environment is available. `--grep=<pattern>` narrows a repetition to matching te
 `npm run test:sweep:smoke` uses to prove the harness end-to-end in CI.
 
 Each failed, missing, or **empty** report counts as a red repetition without abandoning completed
-work: a repetition whose report holds zero test executions is red with the report's own recorded
-error as its reason, so an aborted run can never read as "0 failures" (issue 1044). A sweep in which
-some repetitions failed still exits zero — gate on `SWEEPTOTAL`'s `redRuns`, not on the exit status.
-The exit code turns nonzero only for invalid `--workers`/`--reps` values, a failed build, or a sweep
-in which **no** repetition executed a single test — a harness that measured nothing must not exit as
-if it verified something. Individual test failures remain measurement data. Use an unused host
-context for this capacity-sensitive full-suite workflow—concurrent E2E runs invalidate the result.
+work: a repetition whose report holds zero test executions (skipped rows are not executions, and a
+stale report from a previous run at the same `--out` is deleted before the repetition starts, so it
+cannot stand in for a missing one) is red with the report's own recorded error as its reason, so an
+aborted run can never read as "0 failures" (issue 1044). A sweep in which some repetitions failed
+still exits zero — gate on `SWEEPTOTAL`'s `redRuns`, not on the exit status. The exit code turns
+nonzero only for invalid `--workers`/`--reps` values, a failed build, or a sweep in which **no**
+repetition executed a single test — a harness that measured nothing must not exit as if it verified
+something. Individual test failures remain measurement data. Use an unused host context for this
+capacity-sensitive full-suite workflow—concurrent E2E runs invalidate the result.
 
 `tests/worker-sweep.test.mjs` owns the pure report-aggregation checks (including the
 zero-execution-is-red accounting) and drift-guards the `SPLOTCH_E2E_PREBUILT` handshake between the

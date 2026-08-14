@@ -42,7 +42,7 @@
 //
 // `node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep`
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { argFlag, fail, isMain, ROOT, runMain } from '../lib/proc.mjs';
@@ -91,7 +91,11 @@ export function summarizeReport(reportJson, { workers, rep, jobSeconds }) {
     const report = JSON.parse(reportJson);
     const results = [];
     for (const suite of report.suites) flatten(suite, [], results);
-    const attempts = results.filter((r) => r.retry === 0);
+    // A skipped row is not an execution: counting it would let a skipped-only
+    // selection satisfy the zero-execution guard below with a test body that
+    // never ran, and would read a deliberate conditional skip as a failure in
+    // the flake tally.
+    const attempts = results.filter((r) => r.retry === 0 && r.status !== 'skipped');
     // A report holding no executions is an aborted run, not a clean one — a
     // webServer that failed to boot leaves exactly this shape (empty `suites`,
     // ~25ms duration, the abort in top-level `errors`), and counting it as "0
@@ -141,22 +145,34 @@ function runnerEnv(reportPath) {
   return env;
 }
 
-function runOneRep({ workers, rep, grep, outDir }) {
+function spawnPlaywrightRep({ workers, grep, reportPath }) {
+  spawnSync(
+    process.execPath,
+    [
+      RUN_WEB_TOOL,
+      'playwright',
+      'test',
+      `--workers=${workers}`,
+      '--reporter=json',
+      ...(grep ? [`--grep=${grep}`] : []),
+    ],
+    { cwd: ROOT, env: runnerEnv(reportPath), stdio: ['ignore', 'ignore', 'inherit'] }
+  );
+}
+
+// The spawnRep parameter is a seam for tests only: the stale-report regression
+// test substitutes a child that writes nothing.
+export function runOneRep({ workers, rep, grep = '', outDir }, spawnRep = spawnPlaywrightRep) {
   const reportPath = join(outDir, `w${workers}-rep${rep}.json`);
+  // A previous sweep pointed at the same --out leaves this rep's report on
+  // disk, and a child that dies before writing one (a config error, say) would
+  // hand that stale file to the accounting as a fresh green rep — the
+  // false-green this harness exists to rule out. Deleted up front, so the
+  // existsSync below can only be satisfied by a report this rep's child wrote.
+  rmSync(reportPath, { force: true });
   const startedAt = Date.now();
   try {
-    spawnSync(
-      process.execPath,
-      [
-        RUN_WEB_TOOL,
-        'playwright',
-        'test',
-        `--workers=${workers}`,
-        '--reporter=json',
-        ...(grep ? [`--grep=${grep}`] : []),
-      ],
-      { cwd: ROOT, env: runnerEnv(reportPath), stdio: ['ignore', 'ignore', 'inherit'] }
-    );
+    spawnRep({ workers, grep, reportPath });
     const meta = { workers, rep, jobSeconds: Math.round((Date.now() - startedAt) / 1000) };
     // Whatever went wrong with a rep — no server, no report, a crash — it is one
     // bad rep, not a reason to abandon the other thirty. An unattended sweep has
