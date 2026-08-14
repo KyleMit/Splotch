@@ -49,9 +49,10 @@ hold:
 The first handle is `window.__aiGenerate = generateAiImage`. It is declared as an optional type in
 `web/src/app.d.ts`, installed beside the existing drawing-route seams, and removed on teardown.
 `web/tests/ai-result.spec.ts` invokes it with `{ style: 'Magical' }` while intercepting
-`/api/generate-image`. The successful mock returns `web/tests/artifacts/ai-output.jpeg`; the drawing
-preview comes from the real canvas export, so the old drawing fixture is gone. The page-inventory
-generator drives the same handle and endpoint boundary.
+`/api/generate-image`. The successful mock returns the `web/tests/artifacts/` generated picture
+whose orientation matches the viewport (`ai-output-fixtures.ts`); the drawing preview comes from the
+real canvas export, so the old drawing fixture is gone. The page-inventory generator drives the same
+handle and endpoint boundary.
 
 Inspection seams remain read-only. The distinction is behavioral: observing production state is
 allowed, invoking a production transition is allowed under the conditions above, and directly

@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { expect, type Page } from '@playwright/test';
+import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
 import { draw, gotoApp } from './helpers';
 
 // Shared harness for the AI generation flow, used by ai-result.spec.ts (the
@@ -11,7 +11,6 @@ import { draw, gotoApp } from './helpers';
 // It deliberately does not extend Playwright's `test`: it overrides no fixture,
 // so specs take `test` from '@playwright/test' as they do with flows-harness.
 
-const AI_OUTPUT = readFileSync(new URL('./artifacts/ai-output.jpeg', import.meta.url));
 const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 
 interface AiMockResponse {
@@ -71,8 +70,16 @@ async function mockAiEndpoint(page: Page) {
 
   return {
     requests,
+    // The picture is picked at delivery rather than at mock time because a spec
+    // sets its viewport after the harness is wired, and several specs measure
+    // the result geometry on a landscape screen.
     succeed: (headers?: Record<string, string>) =>
-      respond({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT, headers }),
+      respond({
+        status: 200,
+        contentType: 'image/jpeg',
+        body: aiOutputFor(page.viewportSize()),
+        headers,
+      }),
     fail: (status = 500, headers?: Record<string, string>) =>
       respond({
         status,

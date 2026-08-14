@@ -35,6 +35,9 @@ import {
   renderPageInventoryReport,
 } from './lib/page-inventory-report.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
+// TypeScript, so both entry points that reach it run under
+// --experimental-strip-types (capture:page-inventory, attach:page-inventory-feedback).
+import { aiOutputFor } from '../../web/tests/artifacts/ai-output-fixtures.ts';
 
 const PORT_DEFAULT = 4319;
 const OUT_DEFAULT = join(ROOT, 'scrapbook/page-inventory');
@@ -48,7 +51,6 @@ const CAPTURE_MANIFEST_NAME = 'capture-manifest.json';
 const SPOT_CHECK_RECORDS_NAME = 'spot-check-captures.json';
 const SETTINGS_WIDE_MIN_WIDTH_PX = 700;
 const SCROLL_END_EPSILON_PX = 1;
-const AI_OUTPUT = readFileSync(join(ROOT, 'web/tests/artifacts/ai-output.jpeg'));
 // The wide shell parks a jumped-to section just clear of the pane's top edge
 // rather than flush against it, and the pane's own padding holds the first
 // section clear of it too — so a landed section sits in a band below that edge,
@@ -251,7 +253,11 @@ async function aiResult(page, outcome = 'pending') {
       return;
     }
     if (outcome === 'success') {
-      await route.fulfill({ status: 200, contentType: 'image/jpeg', body: AI_OUTPUT });
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/jpeg',
+        body: aiOutputFor(page.viewportSize()),
+      });
       return;
     }
     const status = outcome === 'safety' ? 422 : 500;
