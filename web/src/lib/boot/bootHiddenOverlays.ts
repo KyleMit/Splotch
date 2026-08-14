@@ -27,6 +27,7 @@ export function mountBootHiddenOverlays(
           module.ColoringBook,
           module.AiImagePrompt,
           module.AiImageResult,
+          module.AiWaitingChip,
           module.InstallBanner,
         ];
         let mounted = 0;
