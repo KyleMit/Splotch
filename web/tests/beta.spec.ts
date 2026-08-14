@@ -167,6 +167,10 @@ test('the tabs hug the left on a sheet and split the screen on a phone', async (
 // that drops either leaves the row looking like plain text.
 test('only the live tab carries the underline segment', async ({ page }) => {
   await page.goto('/beta');
+  // The prerendered document deliberately raises no tab — the panel is chosen by
+  // the head stamp, and the picker only catches up on hydration — so the live
+  // tab has to be waited for rather than assumed present at first paint.
+  await expect(page.locator('.beta-platform-picker .option.active')).toHaveCount(1);
 
   const marks = await page.locator('.beta-platform-picker .option').evaluateAll((els) =>
     els.map((el) => {
