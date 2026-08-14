@@ -1,5 +1,9 @@
 import { aiProvider } from '../../web/src/lib/server/ai/provider';
-import { completeJob, verifyWorkTicket } from '../../web/src/lib/server/generationJobs';
+import {
+  completeJob,
+  takeJobInput,
+  verifyWorkTicket,
+} from '../../web/src/lib/server/generationJobs';
 
 // The long half of image generation (ADR-0115). A background function gets 15
 // minutes where the request that started this one had to answer in under 26.
@@ -10,11 +14,13 @@ import { completeJob, verifyWorkTicket } from '../../web/src/lib/server/generati
 // result — and that constraint is a feature: nothing secret has to be written
 // down for a later request to pick up.
 
+// Deliberately small: a background function's invocation body is capped in the
+// low hundreds of KB (measured against a deploy), so the drawing is fetched from
+// the job store rather than carried here.
 interface WorkPayload {
   jobId: string;
   apiKey: string;
   prompt: string;
-  imageBase64: string;
   mimeType: string;
   deadlineMs: number;
 }
@@ -46,9 +52,17 @@ export default async (request: Request): Promise<Response> => {
   }
 
   try {
+    // Read and delete in one step: from here the drawing lives in this worker's
+    // memory, and a copy left at rest for the whole generation serves nothing.
+    const input = await takeJobInput(work.jobId);
+    if (!input) {
+      await completeJob(work.jobId, { status: 'error', reason: 'the drawing was not there' }, null);
+      return new Response(null, { status: 200 });
+    }
+
     const result = await aiProvider.generateImage({
       apiKey: work.apiKey,
-      image: { base64: work.imageBase64, mimeType: work.mimeType },
+      image: { base64: Buffer.from(input).toString('base64'), mimeType: work.mimeType },
       prompt: work.prompt,
       deadlineMs: work.deadlineMs,
     });

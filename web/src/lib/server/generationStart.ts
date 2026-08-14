@@ -2,7 +2,7 @@ import { env } from '$env/dynamic/private';
 import { ASYNC_GENERATION_HEADER } from '$lib/apiHeaders';
 import { config } from './config';
 import { GENERATE_DEADLINE_MS } from '$lib/ai/limits';
-import { issueWorkTicket, markJobPending, newJobId } from './generationJobs';
+import { issueWorkTicket, markJobPending, newJobId, putJobInput } from './generationJobs';
 import type { GenerationJobContext } from './generationJobs';
 import type { GenerationAuthorization } from './generationAuthorization';
 
@@ -35,11 +35,15 @@ export interface StartedGeneration {
   pollAfterMs: number;
 }
 
+/**
+ * What the worker is told. Small on purpose: a background function's invocation
+ * body is capped in the low hundreds of KB, so the drawing goes to the job store
+ * and only its job id travels here.
+ */
 export interface GenerationWork {
   jobId: string;
   apiKey: string;
   prompt: string;
-  imageBase64: string;
   mimeType: string;
   deadlineMs: number;
 }
@@ -84,10 +88,16 @@ export function freeSettlement(
 export async function startBackgroundGeneration(
   origin: string,
   context: GenerationJobContext,
-  work: Omit<GenerationWork, 'jobId' | 'deadlineMs'>
+  image: { bytes: ArrayBuffer; mimeType: string },
+  work: Omit<GenerationWork, 'jobId' | 'deadlineMs' | 'mimeType'>
 ): Promise<StartedGeneration | null> {
   const jobId = newJobId();
-  const payload = JSON.stringify({ ...work, jobId, deadlineMs: WORKER_DEADLINE_MS });
+  const payload = JSON.stringify({
+    ...work,
+    jobId,
+    mimeType: image.mimeType,
+    deadlineMs: WORKER_DEADLINE_MS,
+  });
   const ticket = issueWorkTicket(jobId, payload, config.reportTokenSecret());
   if (!ticket) {
     // Not "no worker here" — the worker cannot be invoked safely without a
@@ -100,6 +110,7 @@ export async function startBackgroundGeneration(
 
   try {
     await markJobPending(jobId, context);
+    await putJobInput(jobId, image.bytes);
     // A background function answers 202 as soon as it has accepted the work, so
     // this await is the handoff, not the generation.
     const response = await fetch(`${origin}${WORKER_PATH}`, {
