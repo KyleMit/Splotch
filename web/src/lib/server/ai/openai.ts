@@ -86,6 +86,14 @@ export const openAiProvider: AiImageProvider = {
         {
           model: ORCHESTRATOR_MODEL,
           instructions: SAFETY_SYSTEM_INSTRUCTION,
+          // Without this the API keeps the response — a child's drawing and the
+          // picture made from it — for 30 days, readable in the account's logs.
+          // That is a second retention leg entirely separate from abuse
+          // monitoring, it is the one we control, and on a BYOK run it would
+          // land in the parent's own dashboard. Nothing reads a response back
+          // later — ADR-0115 keeps job state on our side precisely so it does
+          // not need to — so there is nothing to trade for it. See ADR-0114.
+          store: false,
           input: [
             {
               role: 'user',
