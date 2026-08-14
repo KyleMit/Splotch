@@ -82,8 +82,11 @@
   <!-- Runs before first paint, so the tab this reader wants is the one that
        paints. Injected rather than written inline because the script is built
        from the same constants the page reads (betaPlatform.ts) — a literal here
-       would be a second copy of the query key and the platform names. -->
-  {@html `<script>${BETA_PLATFORM_BOOT_SCRIPT}</script>`}
+       would be a second copy of the query key and the platform names. The
+       closing tag is split so neither the Svelte nor the ESLint parser reads it
+       as the end of a script block. -->
+  <!-- eslint-disable-next-line svelte/no-at-html-tags -- a module constant, never input -->
+  {@html `<script>${BETA_PLATFORM_BOOT_SCRIPT}${'<'}/script>`}
 </svelte:head>
 
 <PageShell title="Join the Splotch beta" wordmark="Splotch beta">
