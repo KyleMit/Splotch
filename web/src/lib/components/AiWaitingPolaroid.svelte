@@ -70,9 +70,12 @@
     --polaroid-photo-height: 68px;
     --polaroid-tilt: -5deg;
     --polaroid-clearance: 28px;
-    /* 5px more than the Clear Button's matching inset, so the ready wiggle's
-       upswing has somewhere to go and never clips off the top of the screen. */
-    --polaroid-headroom: 21px;
+    /* Deeper than the inset this corner would otherwise take, because the print
+       is not the topmost thing here: the ready wiggle lifts it another ~20px and
+       the badge hangs above that again. Measured at the wiggle's peak — the
+       badge cleared the screen by 4px at 21px of headroom, which is to say it
+       didn't. */
+    --polaroid-headroom: 30px;
     /* The quiet ink for a caption that isn't celebrating anything. Pinned, like
        everything else on this print: --polaroid-paper stays white at night, so
        what is written on it has to stay dark. */
@@ -112,6 +115,13 @@
      mid-stroke gets a picture waiting patiently, not one that nags. */
   .ai-waiting-polaroid.ready {
     animation: polaroidWiggle 1.65s 150ms ease-in-out 3;
+  }
+
+  /* One pass for a run that failed. The change still has to be noticed — the
+     print is already on screen, so nothing else marks the moment — but three
+     passes of delight over "Oh no" is the app celebrating a disappointment. */
+  .ai-waiting-polaroid.ready.failed {
+    animation-iteration-count: 1;
   }
 
   .polaroid-window {

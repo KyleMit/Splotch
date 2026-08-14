@@ -120,6 +120,52 @@ test.describe('a generation minimized to the corner', () => {
     await expect.poll(() => dialAngle(page)).toBeLessThan(beforeMinimize);
   });
 
+  test('never wiggles itself off the top of the screen', async ({ page }) => {
+    // Landscape is where this binds: the print sits at the top of the canvas
+    // with only its own inset above it, and the wiggle plus the badge hanging
+    // off its corner reach higher than the print ever does at rest.
+    await page.setViewportSize({ width: 1024, height: 700 });
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await page.getByLabel('Keep drawing while this is made').click();
+    await expect(page.locator(polaroid)).toBeVisible();
+
+    await endpoint.succeed();
+    await expect(page.locator(polaroid)).toContainText('Ready!');
+
+    // One pass of the wiggle covers every extreme; the two after it repeat.
+    const WIGGLE_PASS_MS = 1800;
+    const highest = await page.evaluate(
+      (durationMs) =>
+        new Promise<{ print: number; badge: number; left: number }>((resolve) => {
+          const print = document.querySelector('.ai-waiting-polaroid');
+          const badge = document.querySelector('.polaroid-badge');
+          if (!print || !badge) throw new Error('the ready polaroid is not mounted');
+          const started = performance.now();
+          const seen = { print: Infinity, badge: Infinity, left: Infinity };
+          const sample = () => {
+            const printBox = print.getBoundingClientRect();
+            seen.print = Math.min(seen.print, printBox.top);
+            seen.left = Math.min(seen.left, printBox.left);
+            seen.badge = Math.min(seen.badge, badge.getBoundingClientRect().top);
+            if (performance.now() - started > durationMs) {
+              resolve(seen);
+              return;
+            }
+            requestAnimationFrame(sample);
+          };
+          requestAnimationFrame(sample);
+        }),
+      WIGGLE_PASS_MS
+    );
+
+    // The badge is the part that reaches highest, and it went 4px past the top
+    // of the screen before the print's inset was sized for it.
+    expect(highest.badge).toBeGreaterThanOrEqual(0);
+    expect(highest.print).toBeGreaterThanOrEqual(0);
+    expect(highest.left).toBeGreaterThanOrEqual(0);
+  });
+
   test('keeps its polaroid above the chrome it is pinned beside', async ({ page }) => {
     await prepareAiGeneration(page);
     await invokeAiGeneration(page);
