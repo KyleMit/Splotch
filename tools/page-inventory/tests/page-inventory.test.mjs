@@ -235,6 +235,60 @@ afterEach(() => {
   for (const root of fixtures.splice(0)) rmSync(root, { recursive: true, force: true });
 });
 
+// The AI surfaces are driven to a state and then waited on by class, and a
+// screenshot of the wrong state never fails — only the wait does, after the
+// timeout, on a run nobody starts between UI changes. Moving the confirmation
+// into its own dialog renamed the class the harness waits for (5b6e4e5) and left
+// that surface uncapturable until the next full run, so the pair is held here
+// instead of by the run.
+describe('AI surface selectors', () => {
+  const COMPONENTS_DIR = join(ROOT, 'web/src/lib/components');
+  // Whole class tokens, never a substring of the rendered markup: renaming
+  // .ai-report-confirm back to .ai-report-confirmation would satisfy a substring
+  // search of this same source while the harness waited on a class no element
+  // carries. Both spellings a component paints one by — a static class attribute
+  // and a class: directive — count; an interpolated attribute is not a token
+  // this can read, and a surface driven by one would fail here rather than pass
+  // quietly.
+  const shippedClasses = new Set(
+    readdirSync(COMPONENTS_DIR)
+      .filter((name) => /^Ai[A-Z].*\.svelte$/.test(name))
+      .flatMap((name) => {
+        const source = readFileSync(join(COMPONENTS_DIR, name), 'utf8');
+        const attributes = [...source.matchAll(/class="([^"{]*)"/g)].flatMap(([, value]) =>
+          value.split(/\s+/)
+        );
+        const directives = [...source.matchAll(/class:([\w-]+)/g)].map(([, token]) => token);
+        return [...attributes, ...directives].filter(Boolean);
+      })
+  );
+
+  // Read out of the harness rather than restated, so a selector edited on either
+  // side has to still name a class the AI components paint.
+  const waitedOn = [
+    ...new Set(
+      [
+        ...readFileSync(
+          join(ROOT, 'tools/page-inventory/capture-page-inventory.mjs'),
+          'utf8'
+        ).matchAll(/locator\('([^']+)'\)/g),
+      ]
+        .map(([, selector]) => selector)
+        .filter((selector) => /(^|\.)(ai-|stage-img|dial\b)/.test(selector))
+    ),
+  ];
+
+  it('drives the AI surfaces by selector', () => {
+    expect(waitedOn.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it.each(waitedOn)('waits on %s, which the AI components still paint', (selector) => {
+    for (const className of selector.split('.').slice(1)) {
+      expect([...shippedClasses]).toContain(className);
+    }
+  });
+});
+
 describe('page inventory output', () => {
   it('defines portrait and landscape variants for every canonical device', () => {
     expect(PAGE_INVENTORY_VIEWPORTS).toHaveLength(8);
