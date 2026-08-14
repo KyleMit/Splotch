@@ -3,9 +3,11 @@
 // Boots a throwaway `vite dev` with test env, exercises the CORS/preflight
 // contract, the admin auth flow, the public oracles, the csp-report receiver,
 // and generate-image's auth gate against the documented shapes, then tears the
-// server down. No model key or Netlify Blobs needed — every
-// generate-image case here is rejected before the model call; successful
-// generation and verify-key (which make live model calls) are out of scope.
+// server down. No model key or Netlify Blobs needed — every case here is
+// answered before any model call: generate-image's are rejected at the auth
+// gate and verify-key's at body validation. Anything that would reach OpenAI —
+// a successful generation, a real key probe — is out of scope, because a run
+// must fail on a contract regression and nothing else.
 
 import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from '../lib/vite-server.mjs';
@@ -470,24 +472,13 @@ async function checkGenerationResult(base) {
 }
 
 async function checkVerifyKey(base) {
-  // The server is started with a key that cannot authenticate, so this is the
-  // rejected path: 200 with the canonical envelope, never a 5xx, and never the
-  // KEY_CHECK_UNAVAILABLE code reserved for "we could not ask OpenAI at all".
-  const rejected = await fetch(`${base}/api/verify-key`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ apiKey: 'sk-not-a-real-key' }),
-  });
-  const rejectedBody = await json(rejected);
-  check(
-    'verify-key with a bad key → 200 {ok:false, error} and no unavailable code',
-    rejected.status === 200 &&
-      rejectedBody?.ok === false &&
-      typeof rejectedBody?.error === 'string' &&
-      rejectedBody?.code === undefined,
-    `got ${rejected.status} ${JSON.stringify(rejectedBody)}`
-  );
-
+  // Only the case the server can answer by itself. A key in the request body is
+  // the one the route probes — the server's own env key is not consulted — so
+  // any case that reaches the provider makes this suite a live OpenAI
+  // integration test: blocked DNS, an outage, or a 429 all produce the correct
+  // 503 KEY_CHECK_UNAVAILABLE and fail the run for external state rather than a
+  // contract regression. Both provider branches are covered where they can be
+  // driven deterministically, in the route's own unit test.
   const empty = await fetch(`${base}/api/verify-key`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
