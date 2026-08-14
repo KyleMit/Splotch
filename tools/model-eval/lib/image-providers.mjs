@@ -54,6 +54,20 @@ export function sizeForAspect(width, height) {
 
 const firstLine = (err) => (err?.message || String(err)).split('\n')[0];
 
+// Gemini can throw on blocked content rather than answering with a block reason,
+// and the production adapter routes that to its refusal path. Mirrored here so a
+// refused drawing is not counted as an upstream error — which would understate
+// the refusal column the safety headline is read off.
+function isGeminiSafetyError(err) {
+  const status = err?.status;
+  const message = firstLine(err).toUpperCase();
+  // A 400 INVALID_ARGUMENT is a *request* error, not a content refusal — don't
+  // let category names inside such a message look like a safety block.
+  if (/INVALID_ARGUMENT|INVALID VALUE AT/.test(message)) return false;
+  if (status === 400 && /BLOCKED|PROHIBIT|SAFETY POLICY/.test(message)) return true;
+  return /PROHIBITED_CONTENT|IMAGE_SAFETY/.test(message);
+}
+
 function geminiUsage(metadata) {
   if (!metadata) return null;
   const imageOut =
@@ -91,6 +105,7 @@ async function callGemini({ apiKey, variant, image, prompt, systemInstruction, t
       },
     });
   } catch (err) {
+    if (isGeminiSafetyError(err)) return { kind: 'refusal', reason: firstLine(err), usage: null };
     return { kind: 'error', reason: firstLine(err), usage: null };
   }
 

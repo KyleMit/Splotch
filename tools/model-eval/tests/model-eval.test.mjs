@@ -61,34 +61,40 @@ describe('costOf', () => {
   const gemini = VARIANTS.find((v) => v.model === 'gemini-2.5-flash-image');
   const openai = VARIANTS.find((v) => v.key === 'gpt-image-2-medium');
 
+  // The expected figures below are written out as literal dollars, computed by
+  // hand from the vendors' published rates. Deriving them from RATES instead
+  // would make these tests restate the implementation: a wrong rate would flow
+  // into both sides and pass, which is the one failure that matters here —
+  // a wrong rate produces a confident, wrong model recommendation.
   it('prices a Gemini response off its prompt and image-output tokens', () => {
-    // 1000 in @ $0.30/M + 1290 image out @ $30/M
+    // 1000 prompt tokens @ $0.30/M = $0.0003; 1290 image-out @ $30/M = $0.0387.
     const cost = costOf(gemini, {
       textInTokens: 0,
       imageInTokens: 1000,
       textOutTokens: 0,
       imageOutTokens: 1290,
     });
-    expect(cost).toBeCloseTo((1000 * 0.3 + 1290 * 30) / 1e6, 10);
+    expect(cost).toBeCloseTo(0.039, 6);
   });
 
   it('adds the orchestrator tokens to an OpenAI response', () => {
-    const imageOnly = costOf(openai, {
+    // Image leg: 19 text-in @ $5/M + 1024 image-in @ $8/M + 1756 image-out @ $30/M
+    //          = $0.000095 + $0.008192 + $0.05268 = $0.060967.
+    const image = {
       textInTokens: 19,
       imageInTokens: 1024,
       textOutTokens: 0,
       imageOutTokens: 1756,
-    });
+    };
+    expect(costOf(openai, image)).toBeCloseTo(0.060967, 6);
+
+    // Orchestrator leg: 1200 in @ $1.25/M + 150 out @ $10/M = $0.0015 + $0.0015 = $0.003.
     const withOrchestrator = costOf(openai, {
-      textInTokens: 19,
-      imageInTokens: 1024,
-      textOutTokens: 0,
-      imageOutTokens: 1756,
+      ...image,
       orchInTokens: 1200,
       orchOutTokens: 150,
     });
-    expect(withOrchestrator).toBeGreaterThan(imageOnly);
-    expect(withOrchestrator - imageOnly).toBeCloseTo((1200 * 1.25 + 150 * 10) / 1e6, 10);
+    expect(withOrchestrator).toBeCloseTo(0.063967, 6);
   });
 
   it('bills cached orchestrator input at the cached rate, not twice', () => {
@@ -99,10 +105,15 @@ describe('costOf', () => {
       imageOutTokens: 0,
       orchOutTokens: 0,
     };
-    const uncached = costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 0 });
-    const cached = costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 1000 });
-    expect(uncached).toBeCloseTo((1000 * 1.25) / 1e6, 10);
-    expect(cached).toBeCloseTo((1000 * 0.125) / 1e6, 10);
+    // 1000 uncached @ $1.25/M = $0.00125; the same 1000 all cached @ $0.125/M = $0.000125.
+    expect(costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 0 })).toBeCloseTo(
+      0.00125,
+      8
+    );
+    expect(costOf(openai, { ...base, orchInTokens: 1000, orchCachedTokens: 1000 })).toBeCloseTo(
+      0.000125,
+      8
+    );
   });
 
   it('returns null rather than a wrong number when usage is missing', () => {

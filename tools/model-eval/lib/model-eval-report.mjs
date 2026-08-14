@@ -14,7 +14,10 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { NETLIFY_SYNC_TIMEOUT_MS } from '../../../web/src/lib/ai/limits.ts';
+import {
+  GENERATE_DEADLINE_MS,
+  NETLIFY_SYNC_TIMEOUT_MS,
+} from '../../../web/src/lib/ai/limits.ts';
 import { RATES } from './model-eval.mjs';
 import { esc } from '../../lib/html.mjs';
 import { chromeStyle, masthead, siteFooter } from '../../scrapbook/lib/scrapbook-chrome.mjs';
@@ -68,10 +71,17 @@ function median(arr) {
 function mean(arr) {
   return arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 }
+// Linear interpolation between neighbours, not a floored index. With ~19 samples
+// per variant a floored p90 is always one of the observed values and always the
+// lower one, which biases every latency figure toward "fits" — the exact
+// direction that would flatter a variant sitting near the deadline.
 function percentile(arr, p) {
   if (!arr.length) return null;
   const s = [...arr].sort((a, b) => a - b);
-  return s[Math.min(s.length - 1, Math.floor((s.length - 1) * p))];
+  const rank = (s.length - 1) * p;
+  const low = Math.floor(rank);
+  const high = Math.ceil(rank);
+  return low === high ? s[low] : Math.round(s[low] + (rank - low) * (s[high] - s[low]));
 }
 
 function statsFor(results, variantKey) {
@@ -213,7 +223,7 @@ function renderReportHtml({
   const summaryRows = variants
     .map((v) => {
       const s = agg[v.key];
-      const overCeiling = s.medianMs != null && s.medianMs > NETLIFY_SYNC_TIMEOUT_MS;
+      const overCeiling = s.medianMs != null && s.medianMs > GENERATE_DEADLINE_MS;
       const costRatio = cheapest && s.avgCost ? s.avgCost / cheapest : null;
       return `<tr>
       <td class="vname" style="${varStyle(v)}">${esc(v.label)}<small>${esc(v.role)}</small></td>
@@ -303,8 +313,11 @@ function renderReportHtml({
     `<span class="vs"><b>${ids.length}</b>&nbsp;<span class="role">inputs · ${cats.length} categories · ${samples} sample(s) · ${results.length} calls</span></span>` +
     `</div>`;
 
-  const overCeiling = variants.filter(
-    (v) => agg[v.key].medianMs != null && agg[v.key].medianMs > NETLIFY_SYNC_TIMEOUT_MS
+  const overAtMedian = variants.filter(
+    (v) => agg[v.key].medianMs != null && agg[v.key].medianMs > GENERATE_DEADLINE_MS
+  );
+  const overAtP90 = variants.filter(
+    (v) => agg[v.key].p90Ms != null && agg[v.key].p90Ms > GENERATE_DEADLINE_MS
   );
 
   const body = `${masthead({
@@ -327,14 +340,19 @@ function renderReportHtml({
     ${summaryRows}
     </table></div>
     <p class="hint">Cost is measured token usage × published list rates, including the orchestrator's
-    own tokens on the OpenAI variants. Median latency is red when it exceeds Netlify's measured
-    ${(NETLIFY_SYNC_TIMEOUT_MS / 1000).toFixed(0)} s synchronous function ceiling (ADR-0063) — a red
-    cell cannot be served by a buffered request/response handler at all.</p>
+    own tokens on the OpenAI variants. Latency is scored against
+    <b>${(GENERATE_DEADLINE_MS / 1000).toFixed(0)} s</b>, not against Netlify's
+    ${(NETLIFY_SYNC_TIMEOUT_MS / 1000).toFixed(0)} s ceiling: the ceiling is the platform's, but the
+    handler aborts first on purpose so its own error wins the race (ADR-0063), so
+    <code>GENERATE_DEADLINE_MS</code> is the wall a real request actually hits. A red median cannot be
+    served by a buffered request/response handler at all.</p>
     ${
-      overCeiling.length
-        ? `<p class="lead"><b>${overCeiling.length} of ${variants.length} variants exceed the ${(NETLIFY_SYNC_TIMEOUT_MS / 1000).toFixed(0)} s ceiling at the median:</b> ${overCeiling
-            .map((v) => esc(v.label))
-            .join(', ')}. Serving any of them needs the generation to start and finish across two
+      overAtP90.length
+        ? `<p class="lead"><b>${overAtMedian.length} of ${variants.length} variants exceed the
+            ${(GENERATE_DEADLINE_MS / 1000).toFixed(0)} s deadline at the median, and
+            ${overAtP90.length} of ${variants.length} exceed it at p90</b> (${overAtP90
+              .map((v) => esc(v.label))
+              .join(', ')}). Serving any of those needs the generation to start and finish across two
             requests rather than inside one.</p>`
         : ''
     }

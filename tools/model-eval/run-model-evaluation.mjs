@@ -150,19 +150,27 @@ function loadInputs() {
   });
 }
 
+const cellKey = (row) => `${row.id}::${row.variant}::${row.sample}`;
+
 // Cells already satisfied by a previous run of the same dir, so a resume can
-// skip them without re-paying. Only an image counts — refusals and errors are
-// re-called, because those are exactly the cells a resume exists to retry.
+// skip them without re-paying. Only an image counts as *done* — refusals and
+// errors are re-called, because those are exactly the cells a resume exists to
+// retry.
+//
+// Every previous row is carried forward regardless, because save() rewrites
+// results.json wholesale: dropping the non-image rows here would make a resume
+// under a narrower FILTER permanently delete the refusal and error rows that a
+// safety reading is counted off, and it would look like a clean run.
 function loadResume(outDir) {
   const previous = JSON.parse(readFileSync(join(outDir, 'results.json'), 'utf8'));
-  const results = previous.results.filter(
+  const done = previous.results.filter(
     (row) => row.kind === 'image' && row.outFile && existsSync(join(outDir, row.outFile))
   );
   return {
     runId: previous.runId,
     samples: previous.samples ?? SAMPLES,
-    results,
-    doneCells: new Set(results.map((row) => `${row.id}::${row.variant}::${row.sample}`)),
+    results: previous.results,
+    doneCells: new Set(done.map(cellKey)),
   };
 }
 
@@ -260,7 +268,11 @@ async function main() {
     }
 
     const row = resultRow(task, result, outFile, outBytes);
-    results.push(row);
+    // A re-called cell replaces its previous row rather than joining it, so a
+    // resumed run never reports one cell twice.
+    const previousIndex = results.findIndex((existing) => cellKey(existing) === cellKey(row));
+    if (previousIndex === -1) results.push(row);
+    else results[previousIndex] = row;
     done++;
     console.log(
       `  [${done}/${tasks.length}] ${task.id} · ${task.variant.label} #${task.sample} → ` +
