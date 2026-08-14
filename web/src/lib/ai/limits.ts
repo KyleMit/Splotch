@@ -30,3 +30,15 @@ export const VERIFY_KEY_DEADLINE_MS = 10_000;
 // under the same ceiling, and an unbounded wait there strands the parent under
 // a modal with no way out.
 export const CLIENT_REQUEST_TIMEOUT_MS = 27_000;
+
+// A generation handed to the background worker is collected by polling
+// /api/generation-result (ADR-0115), so the client's bound is no longer the
+// platform's — it is how long a child should be left waiting before the app
+// admits it isn't coming. Sized past the slowest effort tier measured in the
+// bake-off, with room for the handoff either side.
+export const GENERATION_POLL_TIMEOUT_MS = 240_000;
+
+// How often to look while waiting. Frequent enough that a fast generation still
+// feels prompt, spread enough that a two-minute wait is a couple of dozen
+// requests rather than a couple of hundred.
+export const GENERATION_POLL_INTERVAL_MS = 3_000;

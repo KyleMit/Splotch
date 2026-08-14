@@ -1,0 +1,96 @@
+import { describe, expect, it, vi } from 'vitest';
+import { GENERATION_POLL_TIMEOUT_MS } from '$lib/ai/limits';
+import { awaitGeneration } from './aiGenerationPoll';
+
+// `fetchResult` is the injected seam, so the loop is driven here without a
+// network and without waiting out its real intervals — fake timers make the
+// sleeps instant.
+
+const accepted = () => new Response(null, { status: 202 });
+const picture = () => new Response(new Blob(['png']), { status: 200 });
+const refused = () =>
+  new Response(JSON.stringify({ ok: false, error: 'blocked' }), {
+    status: 422,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+async function run(
+  responses: (() => Response | Promise<Response>)[],
+  { signal = new AbortController().signal, clock = { t: 0 } } = {}
+) {
+  let call = 0;
+  const promise = awaitGeneration('job', 0, signal, {
+    fetchResult: async () => {
+      const next = responses[Math.min(call++, responses.length - 1)];
+      clock.t += 3_000;
+      return next();
+    },
+    now: () => clock.t,
+  });
+  await vi.runAllTimersAsync();
+  return promise;
+}
+
+describe('awaitGeneration', () => {
+  it('keeps waiting while the job is pending, then returns the picture', async () => {
+    vi.useFakeTimers();
+    try {
+      const settled = await run([accepted, accepted, picture]);
+      expect(settled.kind).toBe('image');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('returns a safety refusal as a refusal, not as something to retry', async () => {
+    vi.useFakeTimers();
+    try {
+      expect((await run([accepted, refused])).kind).toBe('safety');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps waiting through a failed poll rather than discarding a paid picture', async () => {
+    vi.useFakeTimers();
+    try {
+      const flaky = () => {
+        throw new TypeError('network down');
+      };
+      expect((await run([flaky, picture])).kind).toBe('image');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('gives up as retryable once it has waited longer than a child should', async () => {
+    vi.useFakeTimers();
+    try {
+      const clock = { t: 0 };
+      // Each poll advances the injected clock, so the budget runs out on its own.
+      const settled = await run([accepted], { clock });
+      expect(settled).toMatchObject({ kind: 'error' });
+      expect(clock.t).toBeGreaterThanOrEqual(GENERATION_POLL_TIMEOUT_MS);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('propagates an abort instead of turning it into a retry', async () => {
+    vi.useFakeTimers();
+    try {
+      const controller = new AbortController();
+      const promise = awaitGeneration('job', 5_000, controller.signal, {
+        fetchResult: async () => accepted(),
+      });
+      // Attach the expectation before aborting: the rejection is otherwise
+      // unhandled for a tick and reported as an error even though it is asserted.
+      const settled = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
+      controller.abort();
+      await vi.runAllTimersAsync();
+      await settled;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

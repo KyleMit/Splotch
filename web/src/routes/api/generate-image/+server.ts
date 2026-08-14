@@ -2,6 +2,7 @@ import { error, isHttpError } from '@sveltejs/kit';
 import {
   ACCESS_TOKEN_HEADER,
   API_KEY_HEADER,
+  ASYNC_GENERATION_HEADER,
   FREE_GENERATIONS_REMAINING_HEADER,
   INSTALLATION_ID_HEADER,
   REPORT_TOKEN_HEADER,
@@ -27,6 +28,12 @@ import {
   resolveGenerationPrompt,
 } from '$lib/server/generateImagePolicy';
 import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
+import {
+  backgroundWorkerAvailable,
+  freeSettlement,
+  startBackgroundGeneration,
+  synchronousDeadlineMs,
+} from '$lib/server/generationStart';
 import {
   completeFreeGeneration,
   failFreeGeneration,
@@ -248,10 +255,39 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
 
     recordGenerationUsage(authorization, style, finalPrompt, platform);
 
+    const imageBase64 = inputBytes.toString('base64');
+    const imageMimeType = mimeType || 'image/png';
+
+    // Hand the long half to the background worker when the caller can wait for
+    // it in a later request and there is a worker to hand it to (ADR-0115). The
+    // fallback is not a fallback in name only: a `null` here means the handoff
+    // genuinely failed, and answering in-line is better than leaving a child
+    // watching a job nobody is working on — even though it will usually outrun
+    // the deadline.
+    if (request.headers.get(ASYNC_GENERATION_HEADER) && backgroundWorkerAvailable()) {
+      const started = await startBackgroundGeneration(
+        url.origin,
+        { free: freeSettlement(authorization, reservationId), style },
+        {
+          apiKey: authorization.effectiveKey,
+          prompt: finalPrompt,
+          imageBase64,
+          mimeType: imageMimeType,
+        }
+      );
+      if (started) {
+        // The reservation now belongs to the job; the catch below must not
+        // release it on this request's way out.
+        reservationId = undefined;
+        return Response.json({ ok: true, ...started }, { status: 202 });
+      }
+    }
+
     const result = await aiProvider.generateImage({
       apiKey: authorization.effectiveKey,
-      image: { base64: inputBytes.toString('base64'), mimeType: mimeType || 'image/png' },
+      image: { base64: imageBase64, mimeType: imageMimeType },
       prompt: finalPrompt,
+      deadlineMs: synchronousDeadlineMs(),
     });
     if (result.kind === 'refusal') {
       if (authorization.kind === 'free') {

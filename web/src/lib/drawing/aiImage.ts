@@ -10,7 +10,11 @@ import {
 } from '$lib/state/aiGeneration.svelte';
 import { settings } from '$lib/state/settings.svelte';
 import { apiUrl } from '$lib/api';
-import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
+import {
+  ASYNC_GENERATION_HEADER,
+  FREE_GENERATIONS_REMAINING_HEADER,
+  REPORT_TOKEN_HEADER,
+} from '$lib/apiHeaders';
 import { aiCredentialHeaders } from '$lib/ai/credentials';
 import {
   setFreeGenerationsRemaining,
@@ -19,6 +23,7 @@ import {
 import { openAiSettings } from '$lib/state/ui.svelte';
 import { exportCanvasBlob } from './engine';
 import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
+import { awaitGeneration, generationResultUrl } from './aiGenerationPoll';
 import { CLIENT_REQUEST_TIMEOUT_MS } from '$lib/ai/limits';
 import { AI_IMAGE_BASENAME, DRAWING_BASENAME } from '$lib/saveNaming';
 import type { StyleName } from '$lib/ai/styles';
@@ -181,6 +186,10 @@ function buildRequest(
 ): { endpoint: string; headers: Record<string, string>; body: Blob } {
   const headers: Record<string, string> = {
     'Content-Type': uploadBlob.type || 'image/png',
+    // Declares that a job ticket is an acceptable answer. The server still
+    // decides — it answers in-line wherever it has no background worker to hand
+    // the drawing to (ADR-0115).
+    [ASYNC_GENERATION_HEADER]: '1',
     ...credentialHeaders,
   };
 
@@ -198,6 +207,13 @@ function applyResponse(
   reportToken: string | null
 ): { committedBlob: Blob } | null {
   switch (response.kind) {
+    case 'started':
+    case 'pending':
+      // Unreachable: generateAiImage resolves both into a settled outcome before
+      // it gets here, and the compiler holds that true if a third waiting state
+      // is ever added.
+      failAiGeneration(runId, undefined, 'retry');
+      return null;
     case 'safety':
       failAiGeneration(runId, AI_SAFETY_REFUSAL_MESSAGE, 'safety', reportToken);
       return null;
@@ -241,6 +257,35 @@ function applyResponse(
     : null;
 }
 
+function applyFreeRemaining(headers: Headers): void {
+  const remainingHeader = headers.get(FREE_GENERATIONS_REMAINING_HEADER);
+  if (remainingHeader === null) return;
+  const remaining = Number(remainingHeader);
+  if (Number.isInteger(remaining)) setFreeGenerationsRemaining(remaining);
+}
+
+// Wait for a job the server accepted, keeping the response headers that came
+// back with the picture rather than the ones that came back with the ticket.
+async function collectGeneration(
+  jobId: string,
+  pollAfterMs: number,
+  signal: AbortSignal,
+  credentialHeaders: Record<string, string>
+): Promise<{ response: AiImageResponse; headers: Headers }> {
+  let headers = new Headers();
+  const response = await awaitGeneration(jobId, pollAfterMs, signal, {
+    fetchResult: async (id) => {
+      const result = await fetch(generationResultUrl(id), {
+        headers: credentialHeaders,
+        signal,
+      });
+      headers = result.headers;
+      return result;
+    },
+  });
+  return { response, headers };
+}
+
 export async function generateAiImage({
   drawing = null,
   style = '',
@@ -265,11 +310,14 @@ export async function generateAiImage({
     const exported = await exportUploadImage(drawing, runId);
     if (!exported) return;
 
-    const { endpoint, headers, body } = buildRequest(
-      exported.upload,
-      style,
-      await aiCredentialHeaders()
-    );
+    const credentialHeaders = await aiCredentialHeaders();
+    const { endpoint, headers, body } = buildRequest(exported.upload, style, credentialHeaders);
+    // This bound belongs to the synchronous shape only: it is sized just past
+    // the platform ceiling so the server's own error always wins the race
+    // (ADR-0063). A job that finished being accepted is no longer racing that
+    // ceiling, so it is cleared below and the poll's own timeout takes over —
+    // otherwise every background generation would be cancelled at 27s, which is
+    // before the fastest tier even finishes.
     timeoutId = setTimeout(() => controller.abort(), CLIENT_REQUEST_TIMEOUT_MS);
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -277,13 +325,25 @@ export async function generateAiImage({
       body,
       signal: controller.signal,
     });
-    const remainingHeader = res.headers.get(FREE_GENERATIONS_REMAINING_HEADER);
-    if (remainingHeader !== null) {
-      const remaining = Number(remainingHeader);
-      if (Number.isInteger(remaining)) setFreeGenerationsRemaining(remaining);
+    const started = await readAiImageResponse(res);
+    // A started job is collected from a second endpoint, so the run's remaining
+    // count and report token come from whichever response actually carries the
+    // picture — not from the one that only accepted the work.
+    if (started.kind === 'started' && timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
     }
-    const response = await readAiImageResponse(res);
-    const committed = applyResponse(runId, response, res.headers.get(REPORT_TOKEN_HEADER));
+    const { response, headers: settledHeaders } =
+      started.kind === 'started'
+        ? await collectGeneration(
+            started.jobId,
+            started.pollAfterMs,
+            controller.signal,
+            credentialHeaders
+          )
+        : { response: started, headers: res.headers };
+    applyFreeRemaining(settledHeaders);
+    const committed = applyResponse(runId, response, settledHeaders.get(REPORT_TOKEN_HEADER));
     if (committed && settings.autoSaveAiEnabled) {
       await autoSaveImages(committed.committedBlob, exported.preview, runId);
     }

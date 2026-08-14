@@ -2,6 +2,10 @@ import { FREE_DAILY_LIMIT_EXHAUSTED_CODE, FREE_GRANT_EXHAUSTED_CODE } from '$lib
 
 export type AiImageResponse =
   | { kind: 'image'; blob: Blob }
+  /** Accepted, finishing in the background — collect it from /api/generation-result. */
+  | { kind: 'started'; jobId: string; pollAfterMs: number }
+  /** Not finished yet. Only a poll sees this. */
+  | { kind: 'pending' }
   | { kind: 'safety' }
   | { kind: 'throttled'; retryAfter: string | null; detail: string }
   | { kind: 'free-exhausted' }
@@ -10,6 +14,26 @@ export type AiImageResponse =
 
 const SAFETY_REFUSAL_STATUS = 422;
 const THROTTLED_STATUS = 429;
+const ACCEPTED_STATUS = 202;
+
+async function readStarted(
+  response: Response
+): Promise<Extract<AiImageResponse, { kind: 'started' }> | null> {
+  try {
+    const body: unknown = await response.json();
+    if (typeof body !== 'object' || body === null) return null;
+    const jobId = 'jobId' in body ? body.jobId : null;
+    const pollAfterMs = 'pollAfterMs' in body ? body.pollAfterMs : null;
+    if (typeof jobId !== 'string' || !jobId) return null;
+    return {
+      kind: 'started',
+      jobId,
+      pollAfterMs: typeof pollAfterMs === 'number' && pollAfterMs >= 0 ? pollAfterMs : 0,
+    };
+  } catch {
+    return null;
+  }
+}
 
 async function readError(response: Response): Promise<{ detail: string; code: string | null }> {
   let text: string;
@@ -33,6 +57,14 @@ async function readError(response: Response): Promise<{ detail: string; code: st
 }
 
 export async function readAiImageResponse(response: Response): Promise<AiImageResponse> {
+  // 202 is inside `response.ok`, so it has to be taken first — otherwise a job
+  // ticket is read as an image and the child is shown an empty picture. The
+  // start endpoint answers it with a job to collect; a poll answers it with
+  // nothing, meaning "not yet".
+  if (response.status === ACCEPTED_STATUS) {
+    const started = await readStarted(response);
+    return started ?? { kind: 'pending' };
+  }
   if (response.ok) return { kind: 'image', blob: await response.blob() };
 
   const { detail, code } = await readError(response);

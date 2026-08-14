@@ -14,6 +14,12 @@ interface AiImageRequest {
    */
   image: { base64: string; mimeType: string };
   prompt: string;
+  /**
+   * How long this call may take. It is the caller's to decide, not the
+   * adapter's: the same provider is driven both by a request that must beat a
+   * platform ceiling and by a background worker that has minutes (ADR-0115).
+   */
+  deadlineMs: number;
 }
 
 type AiImageResult =

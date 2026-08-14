@@ -60,6 +60,15 @@ exclusive; a key takes the BYOK path). The non-secret style enum is the one fiel
 body is capped at 15 MiB (`413`); a present, non-allow-listed `Content-Type` is `415`; an empty body
 is `400`.
 
+A client that sends `X-Async-Generation: 1` is saying it can collect the picture in a later request.
+When a background worker is reachable, the response is then **`202`** with
+`{ ok: true, jobId, pollAfterMs }` and the picture is collected from `/api/generation-result`
+(ADR-0115); the drawing itself is never stored — it lives only in the worker's memory. The server
+still answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured signing
+secret), and a client that never sends the header always gets the synchronous shape. Since every
+OpenAI effort tier exceeds the synchronous deadline at p90, that path now usually ends in the
+controlled `502`.
+
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
 and can only be updated via an app-store release (and PWA clients can run a stale service worker),
@@ -127,6 +136,31 @@ instead of a picture — the prose refusal the classifier turns into the `422`. 
 neither: against the red-team corpus it returned a finished image for a drawn gun. `tool_choice` is
 left on `auto`, since forcing the image tool would remove the model's ability to decline at all. The
 instruction and both model ids live in the adapter, `web/src/lib/server/ai/openai.ts`.
+
+### `GET /api/generation-result`
+
+Collects a generation that `POST /api/generate-image` handed to the background worker (ADR-0115).
+`?job=<64 hex chars>` is the whole request: the job id is 256 bits of randomness handed only to the
+caller that started the job, so possession is the authorization, and it is deleted the moment the
+picture is handed over.
+
+| status | meaning                                                                        |
+| ------ | ------------------------------------------------------------------------------ |
+| `202`  | Not finished yet — poll again. Empty body.                                     |
+| `200`  | The picture, with the same headers the synchronous shape returns               |
+| `422`  | Safety refusal, same body and `X-Report-Token` as the synchronous shape        |
+| `502`  | Upstream/empty failure (retryable)                                             |
+| `404`  | No such job, or it expired — a job lives 20 minutes and is deleted on delivery |
+| `400`  | Malformed job id                                                               |
+
+Send the same credential headers as the generation itself. They are not re-authorized (the job id
+already is the capability) — they are what the report token is bound to, and omitting them only
+costs the ability to report that picture. Rate-limited per IP, with a budget sized for waiting
+rather than guessing.
+
+Settling the free-generation reservation and minting the report token both happen **here**, not in
+the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why
+no credential is ever written into the job record.
 
 ### `POST /api/verify-access-code`
 

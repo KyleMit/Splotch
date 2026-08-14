@@ -27,6 +27,7 @@ const request = {
   apiKey: 'test-key',
   image: { base64: PNG_1X1, mimeType: 'image/png' },
   prompt: 'a prompt',
+  deadlineMs: GENERATE_DEADLINE_MS,
 };
 
 const imageResponse = {

@@ -81,7 +81,7 @@ async function checkCorsContract(base, noAuth) {
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
     'access-control-allow-headers':
-      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id, X-Report-Token',
+      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token',
     // X-Report-Token is sent one way and read back the other, so it appears in
     // both lists: generate-image returns it, report-image consumes it.
     'access-control-expose-headers': 'X-Free-Generations-Remaining, X-Report-Token',
@@ -436,6 +436,36 @@ async function checkGenerateImage(base) {
   );
 }
 
+async function checkGenerationResult(base) {
+  // The collect half of the async flow (ADR-0115). Both cases are reachable
+  // without a worker or a model call: the job id is the whole request, so a
+  // malformed one and an unknown one are the two shapes a client can actually
+  // land on when a picture goes missing.
+  const malformed = await fetch(`${base}/api/generation-result?job=not-a-job-id`);
+  const malformedBody = await json(malformed);
+  check(
+    'generation-result malformed job id → 400 {ok:false, error}',
+    malformed.status === 400 &&
+      malformedBody?.ok === false &&
+      typeof malformedBody?.error === 'string',
+    `got ${malformed.status} ${JSON.stringify(malformedBody)}`
+  );
+
+  // 404 where the job store is reachable and the job simply is not there; 502
+  // where it is not reachable at all, which is this server, since a throwaway
+  // vite dev has no Netlify Blobs. Both are the canonical envelope, and neither
+  // is the 500 an unguarded store read produced.
+  const unknown = await fetch(`${base}/api/generation-result?job=${'b'.repeat(64)}`);
+  const unknownBody = await json(unknown);
+  check(
+    'generation-result unknown job → 404/502 {ok:false, error}, never a 500 crash',
+    [404, 502].includes(unknown.status) &&
+      unknownBody?.ok === false &&
+      typeof unknownBody?.error === 'string',
+    `got ${unknown.status} ${JSON.stringify(unknownBody)}`
+  );
+}
+
 async function checkFreeGenerationGrant(base) {
   const installationId = 'a'.repeat(64);
   const status = await fetch(`${base}/api/free-generation-grant`, {
@@ -511,6 +541,7 @@ async function run() {
   await checkImageReport(BASE);
   await checkCspReport(BASE);
   await checkGenerateImage(BASE);
+  await checkGenerationResult(BASE);
   await checkFreeGenerationGrant(BASE);
   await checkThrottling(BASE);
 }

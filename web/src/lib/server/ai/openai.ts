@@ -1,8 +1,9 @@
 import OpenAI from 'openai';
-import { env } from '$env/dynamic/private';
 import { classifyOpenAiResponse, isSafetyError, isVerificationError } from './openaiSafety';
 import { imageSizeFor, readImageSize } from './imageSize';
-import { GENERATE_DEADLINE_MS, VERIFY_KEY_DEADLINE_MS } from '$lib/ai/limits';
+// Relative, not `$lib`: this module is imported by the background worker under
+// netlify/, which is built without SvelteKit's aliases (ADR-0115).
+import { VERIFY_KEY_DEADLINE_MS } from '../../ai/limits';
 import type { AiImageProvider } from './provider';
 
 // The OpenAI implementation of the AiImageProvider seam (ADR-0047). This module
@@ -62,26 +63,14 @@ function client(apiKey: string, timeoutMs: number, maxRetries: number): OpenAI {
 // signal is the real deadline, `timeout` keeps the SDK's own error message.
 const deadline = (ms: number) => ({ signal: AbortSignal.timeout(ms), timeout: ms });
 
-// The generation deadline exists to lose the race to Netlify's platform ceiling
-// on purpose, so the app's own 502 is what a slow call returns (ADR-0063). A
-// local dev server has no such ceiling, and the manual red-team suite needs a
-// generation to actually finish before a human can review whether it was safe to
-// return. That suite is the only caller that sets this; production never does,
-// and a missing or unparseable value keeps the shipped deadline.
-function generateDeadlineMs(): number {
-  const override = Number(env.GENERATE_DEADLINE_MS_OVERRIDE);
-  return Number.isFinite(override) && override > 0 ? override : GENERATE_DEADLINE_MS;
-}
-
 const firstLine = (err: unknown) =>
   (err instanceof Error ? err.message : String(err)).split('\n')[0];
 
 export const openAiProvider: AiImageProvider = {
-  async generateImage({ apiKey, image, prompt }) {
+  async generateImage({ apiKey, image, prompt, deadlineMs }) {
     const bytes = Buffer.from(image.base64, 'base64');
     let response;
     try {
-      const deadlineMs = generateDeadlineMs();
       response = await client(apiKey, deadlineMs, GENERATE_RETRIES).responses.create(
         {
           model: ORCHESTRATOR_MODEL,
