@@ -28,6 +28,12 @@ import {
 } from '$lib/server/generateImagePolicy';
 import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import {
+  clientAcceptsBackgroundGeneration,
+  freeSettlement,
+  startBackgroundGeneration,
+  synchronousDeadlineMs,
+} from '$lib/server/generationStart';
+import {
   completeFreeGeneration,
   failFreeGeneration,
   reserveDailyFreeGeneration,
@@ -69,7 +75,7 @@ function assertAllowedImageType(mimeType: string): void {
 }
 
 // The credentials ride in headers, not the query string: the managed access
-// token and (especially) a parent's BYO Gemini key are secrets, and query
+// token and (especially) a parent's BYO API key are secrets, and query
 // strings leak into server/CDN access logs, browser history, and Referer
 // headers. The non-secret style enum is a plain query param. See ADR-0064.
 const asString = (value: FormDataEntryValue | null): string | null =>
@@ -182,7 +188,7 @@ function exhaustedGrant(): Response {
   const body: FreeGenerationGrantExhausted = {
     ok: false,
     code: FREE_GRANT_EXHAUSTED_CODE,
-    error: `Your ${FREE_GENERATION_LIMIT} free creations are used up. Add your own Gemini key to keep creating.`,
+    error: `Your ${FREE_GENERATION_LIMIT} free creations are used up. Add your own OpenAI key to keep creating.`,
     remaining: 0,
   };
   return Response.json(body, { status: 403 });
@@ -192,7 +198,7 @@ function exhaustedDailyLimit(): Response {
   const body: FreeGenerationDailyLimitExhausted = {
     ok: false,
     code: FREE_DAILY_LIMIT_EXHAUSTED_CODE,
-    error: 'Free creations are unavailable today. Add your own Gemini key to keep creating.',
+    error: 'Free creations are unavailable today. Add your own OpenAI key to keep creating.',
   };
   return Response.json(body, { status: 503 });
 }
@@ -248,10 +254,41 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
 
     recordGenerationUsage(authorization, style, finalPrompt, platform);
 
+    const imageBase64 = inputBytes.toString('base64');
+    const imageMimeType = mimeType || 'image/png';
+
+    // Hand the long half to the background worker when the caller can wait for
+    // it in a later request and there is a worker to hand it to (ADR-0115). The
+    // fallback is not a fallback in name only: a `null` here means the handoff
+    // genuinely failed, and answering in-line is better than leaving a child
+    // watching a job nobody is working on — even though it will usually outrun
+    // the deadline.
+    if (clientAcceptsBackgroundGeneration(request)) {
+      const started = await startBackgroundGeneration(
+        url.origin,
+        { free: freeSettlement(authorization, reservationId), style },
+        {
+          bytes: inputBytes.buffer.slice(
+            inputBytes.byteOffset,
+            inputBytes.byteOffset + inputBytes.byteLength
+          ) as ArrayBuffer,
+          mimeType: imageMimeType,
+        },
+        { apiKey: authorization.effectiveKey, prompt: finalPrompt }
+      );
+      if (started) {
+        // The reservation now belongs to the job; the catch below must not
+        // release it on this request's way out.
+        reservationId = undefined;
+        return Response.json({ ok: true, ...started }, { status: 202 });
+      }
+    }
+
     const result = await aiProvider.generateImage({
       apiKey: authorization.effectiveKey,
-      image: { base64: inputBytes.toString('base64'), mimeType: mimeType || 'image/png' },
+      image: { base64: imageBase64, mimeType: imageMimeType },
       prompt: finalPrompt,
+      deadlineMs: synchronousDeadlineMs(),
     });
     if (result.kind === 'refusal') {
       if (authorization.kind === 'free') {

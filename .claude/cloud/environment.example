@@ -15,7 +15,7 @@ playwright.download.prss.microsoft.com          # E2E browser download
 [env]
 # Secrets — set the values in the dialog, NEVER commit them.
 TUNNEL_AUTH=                                     # chisel shared secret (matches the Fly `AUTH` secret)
-GEMINI_API_KEY=                                  # /api/generate-image model calls
+OPENAI_API_KEY=                                  # /api/generate-image model calls
 ADMIN_ACCESS_TOKEN=                              # /admin console + /api/admin/* auth
 ALLOWED_TOKENS_LIST=                             # seed access codes
 # Non-secret — safe to pin here. Lets plain `npm run dev` accept the tunnel host (vite

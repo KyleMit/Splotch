@@ -63,7 +63,7 @@ None are required for local development. The app works fully offline without any
 | `PUBLIC_ENABLE_DEV_HARNESS` | `.env.local`  | Unlocks the `/dev/*` test routes in the browser                               |
 | `AI_ACCESS_TOKENS`          | Netlify env   | Comma-separated list of valid AI invite tokens (server-only)                  |
 | `ADMIN_PASSWORD`            | Netlify env   | Password for the `/admin` token console (server-only)                         |
-| `GOOGLE_API_KEY`            | Netlify env   | Gemini API key for the hosted image generation endpoint (server-only)         |
+| `OPENAI_API_KEY`            | Netlify env   | OpenAI API key for the hosted image generation endpoint (server-only)         |
 
 To test the AI flow locally, run `npm run dev:netlify` instead of `npm run dev` — this starts the
 Netlify Dev server so the `/api/*` serverless functions are available. This requires the Netlify

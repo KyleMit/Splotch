@@ -63,12 +63,12 @@ beforeEach(() => {
 describe('hydratePersistedState', () => {
   it('migrates a legacy API key restored from Preferences and scrubs both plaintext copies', async () => {
     ctrl.native = true;
-    prefsStore.set(STORAGE_KEYS.legacyAiUserApiKey, 'durable-legacy-key');
+    prefsStore.set(STORAGE_KEYS.legacyAiUserApiKey, 'sk-durable-legacy-key');
 
     await hydratePersistedState();
 
-    expect(settings.aiUserApiKey).toBe('durable-legacy-key');
-    expect(secureStore.apiKey).toBe('durable-legacy-key');
+    expect(settings.aiUserApiKey).toBe('sk-durable-legacy-key');
+    expect(secureStore.apiKey).toBe('sk-durable-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiUserApiKey)).toBe(false));
   });

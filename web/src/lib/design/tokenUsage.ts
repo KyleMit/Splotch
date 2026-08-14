@@ -72,6 +72,8 @@ export const zIndexUsage: Record<keyof typeof zIndex, string> = {
   zFlyout:
     'Orders the flyout inside .actions-panel only; the root-context tie with --z-panel is inert.',
   zBanner: 'The Install Banner, taking over the corner controls while shown.',
+  zWaitingChip:
+    'The AI Waiting Chip, above the Install Banner it shares a corner with — the only way back into a minimized run.',
   zClearAcceptZone: 'The drag-accept ring, below the button it rings.',
   zClearButton: 'The Clear Button itself.',
   zNotch: 'The safe-area Notch Band; its tie with --z-clear-button resolves by DOM order.',

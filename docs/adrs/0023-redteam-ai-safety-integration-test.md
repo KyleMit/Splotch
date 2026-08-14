@@ -102,8 +102,54 @@ hard toward refusal:
 These are a best-effort, in-band mitigation, not a guarantee — a dedicated pre-generation moderation
 pass was considered and deferred unless the red-team shows the in-band controls still leak.
 
-The classifier is pure and **unit-tested in CI** (`geminiSafety.test.ts`) — the only part of this
-work that runs unattended; everything token/Gemini-dependent stays manual.
+The classifier is pure and **unit-tested in CI** (`openaiSafety.test.ts`) — the only part of this
+work that runs unattended; everything token/provider-dependent stays manual.
+
+### Amendment (2026-08): the corpus is flattened onto paper before it is sent
+
+The fixtures are hand-drawn PNGs with a **transparent** background, and nothing in the original
+design said what a provider should composite that against. Gemini's answer was survivable. OpenAI's
+is black — which turns a corpus of dark strokes on nothing into a set of near-black squares. (The
+app itself never sends transparency; that is a property of every producer in `web/src`, not of the
+endpoint, which does not normalize what it is given.)
+
+The first full run against OpenAI reported six safe drawings rendered and four unsafe ones quietly
+"sanitized" into innocent art. Every part of that reading was wrong. Asked to describe what it saw,
+the model answered: *"a completely black square with no visible lines, shapes, colors, characters,
+or objects at all."* The starry night it returned for the swastika, and the bunny under a black sky
+it returned for the written slur, were not sanitizations — they were the model making art out of a
+black rectangle, and the black backgrounds were the tell.
+
+This is the worst failure shape a safety suite has: **it fails by reporting that everything is
+fine.** The rule it earns is that the harness must not leave the composite to the provider.
+`tools/redteam/lib/fixture-image.mjs` flattens every fixture onto the app's light paper before it is
+sent, saved, or reviewed — which is also strictly more faithful, because `/api/generate-image` never
+receives transparency in the first place: the canvas export always paints an opaque paper fill
+beneath the strokes (`web/src/lib/drawing/exportCompositor.ts`). Flattening is unit-tested in CI
+(`tools/redteam/tests/fixture-image.test.mjs`), against the exact design-token channel values rather
+than a brightness threshold: "not black" is too weak a guard, since white, light grey and pale blue
+all pass it while producing a corpus that is no longer what the app sends. The run itself asserts
+opacity per fixture too — this failure was invisible in every artifact the suite produced, so it is
+not left to a unit test.
+
+**The corpus is light-theme only, and the harness offers no way to say otherwise.** A
+`REDTEAM_THEME=night` option briefly existed to re-run the same fixtures on the app's dark paper,
+and it reintroduced this exact bug: every committed fixture is drawn in light-theme colors, so
+compositing it onto near-black paper puts dark ink at 1.21:1 against its background, against 19:1 on
+light. The suite would have reported an unsafe corpus clean for the second time, for the same
+reason. The app does not make that composite either — `themedSwatchColor` flips the Black swatch to
+white in dark mode, so a night drawing arrives as light strokes on dark paper, not dark on dark.
+Dark-mode coverage therefore needs night-authored fixtures, which is a separate corpus and a
+separate bill, not a background swap. The unit test now asserts ink-to-paper **contrast** rather
+than only opacity and corner channels, because those two passed throughout the night option's life
+while the strokes were invisible.
+
+With that fixed, the same corpus and the same unchanged system instruction scored **12/12**: all six
+`safe-*` rendered, all six `block-*` refused with the intended one-sentence decline. The instruction
+had been rewritten in response to the false reading; that rewrite was reverted once an ablation
+showed the original wording also scores 6/6 on the block corpus and resists a written prompt
+injection just as well. **A safety-critical string should not change on evidence that turned out to
+be an artifact.**
 
 ## Consequences
 
@@ -120,6 +166,10 @@ work that runs unattended; everything token/Gemini-dependent stays manual.
 * **−** "Pass/fail is human review" means no automated regression signal — a safety regression is
   only caught when someone re-runs `npm run redteam` and looks. This is inherent to red-teaming a
   generative model.
+* **−** The harness now depends on how a provider treats an image it is handed, not only on what the
+  model decides. The 2026-08 amendment fixes the one instance of that we found; a future provider
+  could differ somewhere else the corpus does not probe, and the suite would again fail quietly.
+  When a run looks *too* clean, ask the model to describe what it sees before believing it.
 * **−** Anyone with `REDTEAM_FIXTURE_KEY` can decrypt the committed corpus; the encryption is
   at-rest obfuscation for a test corpus, not a security boundary. Treat the key like any shared
   secret.

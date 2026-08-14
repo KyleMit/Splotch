@@ -11,7 +11,7 @@ endpoints cross-origin via `apiUrl()` (`web/src/lib/api.ts`, base injected at bu
 `X-Free-Generations-Remaining` and `X-Report-Token` exposed and `Access-Control-Max-Age: 86400` so
 native clients can read the updated allowance and cache the preflight instead of paying an OPTIONS
 round trip per request. The wildcard is safe because every endpoint is either gated by a credential
-the caller must already hold (access token, Gemini key, or admin session) or rate-limited and
+the caller must already hold (access token, OpenAI key, or admin session) or rate-limited and
 bounded. The credential-less `report` endpoint creates a sanitized private support issue;
 `csp-report` is size-capped and bounded to log lines. Nothing under `/api` uses cookies. See
 ADR-0007.
@@ -54,11 +54,23 @@ small; the allowlist is `image/png`, `image/jpeg`, `image/webp`, and an absent t
 There is no multipart envelope for the buffered function to parse and copy (ADR-0064). The
 credential rides in a header, **never** the query string, because both are secrets that would
 otherwise leak into access logs, browser history, and `Referer`: send
-`X-Access-Token: <allow-listed access token>` **or** `X-Api-Key: <BYO Gemini key>` (mutually
+`X-Access-Token: <allow-listed access token>` **or** `X-Api-Key: <BYO OpenAI key>` (mutually
 exclusive; a key takes the BYOK path). The non-secret style enum is the one field in the URL —
 `?style=Magical` (any value not in `STYLE_SUFFIXES` is ignored and the base prompt is used). The
 body is capped at 15 MiB (`413`); a present, non-allow-listed `Content-Type` is `415`; an empty body
 is `400`.
+
+A client that sends `X-Async-Generation: 1` is saying it can collect the picture in a later request.
+When a background worker is reachable, the response is then **`202`** with
+`{ ok: true, jobId, pollAfterMs }` and the picture is collected from `/api/generation-result`
+(ADR-0115); the drawing is written to the job store for the handoff, because a background function's
+invocation body is capped in the low hundreds of KB, and the worker takes it in one read-and-delete.
+It is at rest for that handoff and no longer; the finished picture is at rest until the poll that
+hands it over deletes it, and an hourly sweep deletes whatever was never collected. The server still
+answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured signing secret),
+and a client that never sends the header always gets the synchronous shape. Since every OpenAI
+effort tier exceeds the synchronous deadline at p90, that path now usually ends in the controlled
+`502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -89,9 +101,9 @@ succeeded (ADR-0105's 2026-08-11 amendment). Finalizing still requires a live re
 missing or already-reclaimed one is refused, so two completions can never claim one slot — but it is
 no longer allowed to destroy a delivered image: a ledger write that fails is logged and the image
 returned without the remaining-count header, leaving the daily ceiling as the spending boundary. A
-separate durable compare-and-set counter reserves every free provider start before Gemini is called
-and caps project-funded traffic across all installations and function instances at 500 calls per UTC
-day. Provider failures and safety refusals are not refunded from that daily ceiling.
+separate durable compare-and-set counter reserves every free provider start before the model is
+called and caps project-funded traffic across all installations and function instances at 500 calls
+per UTC day. Provider failures and safety refusals are not refunded from that daily ceiling.
 
 On success returns the image bytes. A free-grant response also carries
 `X-Free-Generations-Remaining` and `X-Report-Token` — the latter the signed proof this AI attempt
@@ -101,15 +113,15 @@ already-parent-gated client flow to BYOK setup. Failure modes are split so the c
 child correctly (ADR-0023). Exhausting the global daily provider-start ceiling is `503` with
 `{ ok:false, code:"FREE_DAILY_LIMIT_EXHAUSTED", error }`; the client routes it to BYOK setup and
 records the released installation reservation as `daily-limit`, not as an upstream provider failure.
-A **`422`** means Gemini refused the drawing on **safety** grounds — the child should draw something
-*different* (the app shows "let's try drawing something else!"). Every such response carries a
-credential-bound `X-Report-Token` with the signed provider reason, so a parent can explicitly report
-a possible false positive without making the refused drawing durable first. A **`502`** is a genuine
-upstream/empty failure (retryable). The route talks to the model through the provider-agnostic
-`AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the vendor SDK never
-appears in route code. The safety vs. empty/error split is decided by `classifyGeminiResponse` /
-`isSafetyError` in `web/src/lib/server/ai/geminiSafety.ts`, and probed by the manual red-team suite
-(`npm run redteam`, `tools/redteam/`).
+A **`422`** means the model refused the drawing on **safety** grounds — the child should draw
+something *different* (the app shows "let's try drawing something else!"). Every such response
+carries a credential-bound `X-Report-Token` with the signed provider reason, so a parent can
+explicitly report a possible false positive without making the refused drawing durable first. A
+**`502`** is a genuine upstream/empty failure (retryable). The route talks to the model through the
+provider-agnostic `AiImageProvider` seam (`web/src/lib/server/ai/provider.ts`, ADR-0047) — the
+vendor SDK never appears in route code. The safety vs. empty/error split is decided by
+`classifyOpenAiResponse` / `isSafetyError` in `web/src/lib/server/ai/openaiSafety.ts`, and probed by
+the manual red-team suite (`npm run redteam`, `tools/redteam/`).
 
 Every deliberate failure, including validation, authorization, safety, server-configuration,
 upstream, and throttling responses, uses the canonical JSON body:
@@ -120,11 +132,38 @@ upstream, and throttling responses, uses the canonical JSON body:
 
 The status distinguishes the cases above; a `429` also carries its required `Retry-After` header.
 
-The Gemini call is hardened to *increase* those refusals (the audience is toddlers): a
-`systemInstruction` tells the model to decline unsafe drawings in plain text rather than "beautify"
-them, and `safetySettings` set every configurable harm category to `BLOCK_LOW_AND_ABOVE` (the
-`HARM_CATEGORY_IMAGE_*` output categories are deliberately omitted — the image model's endpoint
-rejects them with a 400). Both live in the Gemini adapter, `web/src/lib/server/ai/gemini.ts`.
+The model call is hardened to *increase* those refusals (the audience is toddlers). The request goes
+through the **Responses API image-generation tool** rather than `/v1/images/edits`, because only
+that shape accepts a real system `instructions` field and lets the model answer with a sentence
+instead of a picture — the prose refusal the classifier turns into the `422`. `/v1/images/edits` has
+neither: against the red-team corpus it returned a finished image for a drawn gun. `tool_choice` is
+left on `auto`, since forcing the image tool would remove the model's ability to decline at all. The
+instruction and both model ids live in the adapter, `web/src/lib/server/ai/openai.ts`.
+
+### `GET /api/generation-result`
+
+Collects a generation that `POST /api/generate-image` handed to the background worker (ADR-0115).
+`?job=<64 hex chars>` is the whole request: the job id is 256 bits of randomness handed only to the
+caller that started the job, so possession is the authorization, and it is deleted the moment the
+picture is handed over.
+
+| status | meaning                                                                        |
+| ------ | ------------------------------------------------------------------------------ |
+| `202`  | Not finished yet — poll again. Empty body.                                     |
+| `200`  | The picture, with the same headers the synchronous shape returns               |
+| `422`  | Safety refusal, same body and `X-Report-Token` as the synchronous shape        |
+| `502`  | Upstream/empty failure (retryable)                                             |
+| `404`  | No such job, or it expired — a job lives 20 minutes and is deleted on delivery |
+| `400`  | Malformed job id                                                               |
+
+Send the same credential headers as the generation itself. They are not re-authorized (the job id
+already is the capability) — they are what the report token is bound to, and omitting them only
+costs the ability to report that picture. Rate-limited per IP, with a budget sized for waiting
+rather than guessing.
+
+Settling the free-generation reservation and minting the report token both happen **here**, not in
+the worker: the worker is built without SvelteKit's aliases and can reach neither, which is also why
+no credential is ever written into the job record.
 
 ### `POST /api/verify-access-code`
 
@@ -146,7 +185,7 @@ valid families behind one NAT never spend it.
 
 ### `POST /api/verify-key`
 
-Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited per IP.
+Verifies a parent-supplied OpenAI API key with a minimal live call. Rate-limited per IP.
 
 ```json
 // request
@@ -154,15 +193,21 @@ Verifies a parent-supplied Gemini API key with a minimal live call. Rate-limited
 // 200 — key verified
 { "ok": true }
 // 200 — present but rejected key
-{ "ok": false, "error": "That key could not authenticate with Gemini." }
+{ "ok": false, "error": "That key could not authenticate with OpenAI." }
 // 400 — missing, non-string, or blank key
 { "ok": false, "error": "No API key provided" }
 ```
 
+A key check that never reached OpenAI is a **third** answer, not the second one:
+`503 { ok:false, code:"KEY_CHECK_UNAVAILABLE", error }`. Only a `401`/`403` from OpenAI means the
+key is bad; a timeout, a `429`, a `5xx`, or a dead socket means we failed to ask, and reporting that
+as a bad key tells a parent something false about a credential that works. Observed on a real
+deploy: a cold start outran `VERIFY_KEY_DEADLINE_MS` and a valid key came back rejected.
+
 ### `GET /api/free-generation-grant`
 
 Returns the server-authoritative free allowance for `X-Installation-Id`. The read is rate-limited
-per IP and never creates or spends a grant. It returns `503` when the project Gemini key is absent
+per IP and never creates or spends a grant. It returns `503` when the project OpenAI key is absent
 or the durable daily provider-start ceiling is exhausted, allowing clients without another
 credential to hide the unavailable AI path.
 
@@ -434,7 +479,7 @@ and neither carrying the SSR `SECURITY_HEADERS`), the `verify-access-code` shape
 validation + honeypot + graceful-unconfigured path (no `GITHUB_ISSUE_TOKEN` in the smoke env, so no
 real issue is created), `csp-report`'s two payload formats + caps, and `generate-image`'s auth gate
 (invalid token → 403, then the shared per-IP 429 once the verify budget is burned; valid token minus
-image → 400 — every case is rejected before the model call), then tears the server down. No Gemini
+image → 400 — every case is rejected before the model call), then tears the server down. No model
 key or Netlify Blobs needed; successful generation and `verify-key` (which make live model calls)
 are out of scope. Use it to sanity-check the contract after changing any endpoint — it's the cheap
 counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `unit` job of

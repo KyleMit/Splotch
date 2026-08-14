@@ -4,12 +4,12 @@
 // MANUAL, real-token integration test — intentionally NOT part of `npm test`.
 // It boots a throwaway `vite dev` (so it exercises OUR /api/generate-image
 // handler, including the 422 safety classification), decrypts the fixture
-// corpus, sends each crude safe/unsafe drawing to a real Gemini call, and saves
+// corpus, sends each crude safe/unsafe drawing to a real model call, and saves
 // every input + output + a report under tools/redteam/output/<runId>/.
 //
 // It NEVER asserts pass/fail and always exits 0: the real verification is the
 // human review of the saved images at the end. Requires REDTEAM_FIXTURE_KEY and
-// GEMINI_API_KEY (in .env or exported).
+// OPENAI_API_KEY (in web/.env or exported).
 //
 //   npm run redteam              # the whole corpus
 //   npm run redteam -- block-gun # only fixtures whose id matches (iterate on one)
@@ -22,7 +22,12 @@ import { ROOT, fail, openInOS, requireEnv, runId as makeRunId } from '../lib/pro
 import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { decryptDir } from './lib/fixture-crypto.mjs';
+import { flattenOntoPaper, isFullyOpaque } from './lib/fixture-image.mjs';
 import { buildReport, verdict } from './lib/safety-report.mjs';
+
+// Generous enough for the slowest production effort tier: the point of this
+// suite is to see the finished picture, not to re-measure the platform ceiling.
+const GENERATE_DEADLINE_MS = 300_000;
 
 const PORT = Number(process.env.REDTEAM_PORT ?? 5198);
 const BASE = `http://localhost:${PORT}`;
@@ -69,7 +74,16 @@ async function sendCase(c) {
   const inPath = join(DECRYPTED, `${c.id}.png`);
   if (!existsSync(inPath)) return { ...c, outcome: 'missing', status: 0, detail: '' };
 
-  const bytes = readFileSync(inPath);
+  // Sent, saved, and reviewed as the app would have sent it — strokes over
+  // opaque paper. See lib/fixture-image.mjs for why this is not the provider's
+  // choice to make.
+  const bytes = await flattenOntoPaper(readFileSync(inPath));
+  // Asserted per run, not just in the unit test: a transparent fixture is how
+  // this suite once reported an entire unsafe corpus as safe, and the failure
+  // was invisible in every artifact it produced.
+  if (!(await isFullyOpaque(bytes))) {
+    return { ...c, outcome: 'error', status: 0, detail: 'fixture did not flatten to opaque' };
+  }
   writeFileSync(join(OUT_DIR, `${c.id}.in.png`), bytes);
 
   let res;
@@ -94,7 +108,7 @@ async function sendCase(c) {
 }
 
 async function main() {
-  requireEnv('GEMINI_API_KEY', 'set it in .env or export it');
+  requireEnv('OPENAI_API_KEY', 'set it in web/.env or export it');
 
   const all = discoverCases();
   if (all.length === 0) {
@@ -127,6 +141,12 @@ async function main() {
     env: {
       ALLOWED_TOKENS_LIST: TOKEN,
       PUBLIC_ENABLE_DEV_HARNESS: 'true',
+      // The shipped deadline is sized to lose a race against Netlify's function
+      // ceiling (ADR-0063), and this server has no such ceiling. Without the
+      // override a safe drawing is cut off mid-generation and the run reports an
+      // upstream error where the whole question is what the model would have
+      // drawn — a false negative the reviewer never gets to see.
+      GENERATE_DEADLINE_MS_OVERRIDE: String(GENERATE_DEADLINE_MS),
     },
   });
 

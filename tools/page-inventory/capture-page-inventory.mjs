@@ -80,7 +80,7 @@ const SERVER_ENV = {
   PUBLIC_ENABLE_DEV_HARNESS: 'true',
   ADMIN_ACCESS_TOKEN: 'page-inventory-admin-secret',
   ALLOWED_TOKENS_LIST: 'daycare-club,page-inventory-harness',
-  GEMINI_API_KEY: 'not-a-usable-gemini-key',
+  OPENAI_API_KEY: 'not-a-usable-openai-key',
   GITHUB_ISSUE_TOKEN: '',
   GITHUB_ISSUE_REPO: 'splotch-page-inventory/nowhere',
 };

@@ -17,7 +17,7 @@
     SCREENSHOT_BUTTON_ID,
   } from '$lib/state/ui.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
-  import { aiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiResult, restoreAiResult } from '$lib/state/aiGeneration.svelte';
   import {
     freeGenerations,
     createFreeGenerationGrantRefresher,
@@ -115,6 +115,14 @@
   const buttonCount = $derived(browser ? visibleActionButtonCount() : MAX_ACTION_BUTTON_COUNT);
   const layoutButtonCount = $derived(Math.max(1, buttonCount));
   const aiImageButtonVisible = $derived(isAiImageButtonVisible());
+
+  // A minimized run is the one state where a generation is in flight and this
+  // button is still live: it is what reveals the run again, so it must not be
+  // disabled by the same flag that stops a second one being started. An empty
+  // canvas cannot block it either — the drawing was already sent.
+  const aiImageButtonBlocked = $derived(
+    aiResult.minimized ? false : canvasState.canvasEmpty || aiResult.generating
+  );
 
   const buttonSize = $derived(
     !browser
@@ -311,6 +319,14 @@
   // tap runs through the parental gate before the prompt opens or a
   // generation starts.
   async function handleAiImageClick() {
+    // A run waiting in the corner claims this tap before anything else: it is
+    // the same button that started it, and ADR-0116 promises it reveals the one
+    // already running. No gate — the gate was passed to start this very run, and
+    // asking again to look at it would be a second toll on one action.
+    if (aiResult.minimized) {
+      restoreAiResult();
+      return;
+    }
     if (aiResult.generating || canvasState.canvasEmpty || !aiBtnEl) return;
 
     const origin = buttonCenter(aiBtnEl);
@@ -421,23 +437,28 @@
            script can't know pre-paint, so there's no first-paint value to seed. -->
       <button
         class="action-button"
-        class:disabled={canvasState.canvasEmpty || aiResult.generating}
-        class:loading={aiResult.generating}
+        class:disabled={aiImageButtonBlocked}
+        class:loading={aiResult.generating && !aiResult.minimized}
         id="aiImageButton"
-        aria-label={settings.aiUserApiKey || settings.aiAccessToken
-          ? 'Create AI image'
-          : freeGenerations.available && freeGenerations.remaining > 0
-            ? `Create AI image, ${freeGenerations.remaining} free left`
-            : freeGenerations.available
-              ? 'Set up AI image'
-              : 'Create AI image'}
-        aria-busy={aiResult.generating}
-        disabled={canvasState.canvasEmpty || aiResult.generating}
+        aria-label={aiResult.minimized
+          ? 'Show the picture being made'
+          : settings.aiUserApiKey || settings.aiAccessToken
+            ? 'Create AI image'
+            : freeGenerations.available && freeGenerations.remaining > 0
+              ? `Create AI image, ${freeGenerations.remaining} free left`
+              : freeGenerations.available
+                ? 'Set up AI image'
+                : 'Create AI image'}
+        aria-busy={aiResult.generating && !aiResult.minimized}
+        disabled={aiImageButtonBlocked}
         hidden={!aiImageButtonVisible}
         use:scribbleTap={handleAiImageClick}
         bind:this={aiBtnEl}
       >
-        <Icon name={aiResult.generating ? 'loading' : 'wand-stars'} class="action-icon" />
+        <Icon
+          name={aiResult.generating && !aiResult.minimized ? 'loading' : 'wand-stars'}
+          class="action-icon"
+        />
         {#if !settings.aiUserApiKey && !settings.aiAccessToken && freeGenerations.available}
           <span class="free-count" aria-hidden="true">{freeGenerations.remaining}</span>
         {/if}

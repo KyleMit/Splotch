@@ -13,4 +13,5 @@ export { default as ColoringBook } from './ColoringBook.svelte';
 export { default as SettingsModal } from './SettingsModal.svelte';
 export { default as AiImagePrompt } from './AiImagePrompt.svelte';
 export { default as AiImageResult } from './AiImageResult.svelte';
+export { default as AiWaitingChip } from './AiWaitingChip.svelte';
 export { default as InstallBanner } from './InstallBanner.svelte';

@@ -3,9 +3,11 @@
 // Boots a throwaway `vite dev` with test env, exercises the CORS/preflight
 // contract, the admin auth flow, the public oracles, the csp-report receiver,
 // and generate-image's auth gate against the documented shapes, then tears the
-// server down. No Gemini key or Netlify Blobs needed — every
-// generate-image case here is rejected before the model call; successful
-// generation and verify-key (which make live model calls) are out of scope.
+// server down. No model key or Netlify Blobs needed — every case here is
+// answered before any model call: generate-image's are rejected at the auth
+// gate and verify-key's at body validation. Anything that would reach OpenAI —
+// a successful generation, a real key probe — is out of scope, because a run
+// must fail on a contract regression and nothing else.
 
 import { randomUUID } from 'node:crypto';
 import { spawnViteServer } from '../lib/vite-server.mjs';
@@ -81,7 +83,7 @@ async function checkCorsContract(base, noAuth) {
     'access-control-allow-origin': '*',
     'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
     'access-control-allow-headers':
-      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Installation-Id, X-Report-Token',
+      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token',
     // X-Report-Token is sent one way and read back the other, so it appears in
     // both lists: generate-image returns it, report-image consumes it.
     'access-control-expose-headers': 'X-Free-Generations-Remaining, X-Report-Token',
@@ -436,6 +438,60 @@ async function checkGenerateImage(base) {
   );
 }
 
+async function checkGenerationResult(base) {
+  // The collect half of the async flow (ADR-0115). Both cases are reachable
+  // without a worker or a model call: the job id is the whole request, so a
+  // malformed one and an unknown one are the two shapes a client can actually
+  // land on when a picture goes missing.
+  const malformed = await fetch(`${base}/api/generation-result?job=not-a-job-id`);
+  const malformedBody = await json(malformed);
+  check(
+    'generation-result malformed job id → 400 {ok:false, error}',
+    malformed.status === 400 &&
+      malformedBody?.ok === false &&
+      typeof malformedBody?.error === 'string',
+    `got ${malformed.status} ${JSON.stringify(malformedBody)}`
+  );
+
+  // 404 where the job store is reachable and the job simply is not there; 503
+  // with GENERATION_UNAVAILABLE where it is not reachable at all, which is this
+  // server, since a throwaway vite dev has no Netlify Blobs. The code is the
+  // point: it is what tells the client to keep waiting rather than abandon a
+  // picture that may be sitting there finished. Neither is the 500 an unguarded
+  // store read produced.
+  const unknown = await fetch(`${base}/api/generation-result?job=${'b'.repeat(64)}`);
+  const unknownBody = await json(unknown);
+  check(
+    'generation-result unknown job → 404, or 503 GENERATION_UNAVAILABLE, never a 500 crash',
+    ((unknown.status === 404 && unknownBody?.code === undefined) ||
+      (unknown.status === 503 && unknownBody?.code === 'GENERATION_UNAVAILABLE')) &&
+      unknownBody?.ok === false &&
+      typeof unknownBody?.error === 'string',
+    `got ${unknown.status} ${JSON.stringify(unknownBody)}`
+  );
+}
+
+async function checkVerifyKey(base) {
+  // Only the case the server can answer by itself. A key in the request body is
+  // the one the route probes — the server's own env key is not consulted — so
+  // any case that reaches the provider makes this suite a live OpenAI
+  // integration test: blocked DNS, an outage, or a 429 all produce the correct
+  // 503 KEY_CHECK_UNAVAILABLE and fail the run for external state rather than a
+  // contract regression. Both provider branches are covered where they can be
+  // driven deterministically, in the route's own unit test.
+  const empty = await fetch(`${base}/api/verify-key`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({}),
+  });
+  const emptyBody = await json(empty);
+  check(
+    'verify-key with no key → 400 {ok:false, error}',
+    empty.status === 400 && emptyBody?.ok === false && typeof emptyBody?.error === 'string',
+    `got ${empty.status} ${JSON.stringify(emptyBody)}`
+  );
+}
+
 async function checkFreeGenerationGrant(base) {
   const installationId = 'a'.repeat(64);
   const status = await fetch(`${base}/api/free-generation-grant`, {
@@ -511,6 +567,8 @@ async function run() {
   await checkImageReport(BASE);
   await checkCspReport(BASE);
   await checkGenerateImage(BASE);
+  await checkGenerationResult(BASE);
+  await checkVerifyKey(BASE);
   await checkFreeGenerationGrant(BASE);
   await checkThrottling(BASE);
 }
@@ -526,11 +584,14 @@ try {
     env: {
       ADMIN_ACCESS_TOKEN: ADMIN_SECRET,
       ALLOWED_TOKENS_LIST: SEED_TOKENS,
-      // A key Gemini refuses, so the generate-image cases stop at the request
+      // A key the provider refuses, so the generate-image cases stop at the request
       // guards they are checking without spending anyone's quota. It has to be
       // non-empty: with no key the managed-token path answers 500 from the
       // authorization step and never reaches those guards.
-      GEMINI_API_KEY: 'not-a-usable-gemini-key',
+      OPENAI_API_KEY: 'not-a-usable-openai-key',
+      // Blank on purpose: the shipped generation deadline is what the contract
+      // should be checked against. Only the manual red-team suite raises it.
+      GENERATE_DEADLINE_MS_OVERRIDE: '',
       // Reporting stays unconfigured so the report cases assert the graceful 503
       // rather than opening a real GitHub issue.
       GITHUB_ISSUE_TOKEN: '',

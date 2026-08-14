@@ -4,7 +4,7 @@
   import AiResultDisclosure from './AiResultDisclosure.svelte';
   import AiResultStage from './AiResultStage.svelte';
   import Button from './design/Button.svelte';
-  import { aiResult, closeAiResult } from '$lib/state/aiGeneration.svelte';
+  import { aiResult, closeAiResult, minimizeAiResult } from '$lib/state/aiGeneration.svelte';
   import { settings } from '$lib/state/settings.svelte';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
   import { buttonCenter, type Origin } from '$lib/state/modal.svelte';
@@ -102,13 +102,12 @@
   style={cardStyle}
   bind:this={dialogEl}
   use:modalDialog={() => ({
-    open: aiResult.open,
-    onRequestClose: closeAiResult,
-    // While the image is still generating, neither a backdrop tap nor Esc may
-    // dismiss — that would throw away an in-flight request the child can't get
-    // back. Only the X closes the spinner; once revealed or errored, off-taps
-    // and Esc dismiss as usual.
-    allowDismiss: () => !aiResult.generating,
+    open: aiResult.open && !aiResult.minimized,
+    // While the picture is still being made, dismissing tucks it into the corner
+    // rather than throwing away an in-flight request the child can't get back
+    // (ADR-0116). Once there is something to look at, dismissing means dismissing.
+    onRequestClose: () => (aiResult.generating ? minimizeAiResult() : closeAiResult()),
+    allowDismiss: () => true,
     // During the polaroid send-off the modal is animating away; swallow stray
     // backdrop taps without dismissing (the fly-out's end closes it).
     blockBackdropAt: () => exiting,
@@ -116,7 +115,11 @@
   onanimationend={handleAnimationEnd}
 >
   <div class="ai-result-content">
-    <button class="ai-result-close modal-close-btn" aria-label="Close" onclick={closeAiResult}>
+    <button
+      class="ai-result-close modal-close-btn"
+      aria-label={aiResult.generating ? 'Keep drawing while this is made' : 'Close'}
+      onclick={() => (aiResult.generating ? minimizeAiResult() : closeAiResult())}
+    >
       <Icon name="close" class="modal-close-icon" />
     </button>
 

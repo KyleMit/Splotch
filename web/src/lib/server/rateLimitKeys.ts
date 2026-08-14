@@ -25,6 +25,13 @@ export function freeGenerationGrantStatusBucket(address: string): string {
   return `free-generation-grant-status:${address}`;
 }
 
+// A poll runs every few seconds for the length of a generation, so its budget is
+// sized for waiting rather than for guessing: it reads a capability the caller
+// already holds and spends nothing when the answer is "not yet".
+export function generationResultBucket(address: string): string {
+  return `generation-result:${address}`;
+}
+
 export function verifyKeyBucket(address: string): string {
   return `verify-key:${address}`;
 }

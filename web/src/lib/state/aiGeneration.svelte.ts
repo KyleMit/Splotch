@@ -5,6 +5,10 @@ export type AiErrorKind = 'generic' | 'safety' | 'retry';
 export interface AiResultState {
   generating: boolean;
   open: boolean;
+  // Tucked into the corner so the child can keep drawing while the picture is
+  // made (ADR-0116). The run is untouched — `open` stays true, which is what
+  // keeps finishAiGeneration willing to deliver into it.
+  minimized: boolean;
   resultUrl: string | null;
   resultType: string | null;
   previewUrl: string | null;
@@ -13,7 +17,7 @@ export interface AiResultState {
   // refusals receive the same proof without persisting evidence.
   // Null on the BYOK and managed paths, which carry their own credential.
   reportToken: string | null;
-  // 'safety'  — Gemini refused the drawing; guide the child to draw something else.
+  // 'safety'  — the model refused the drawing; guide the child to draw something else.
   // 'retry'   — a transient failure (timeout, server); the same drawing may work.
   // 'generic' — anything else.
   error: { kind: AiErrorKind; message: string | null } | null;
@@ -22,6 +26,7 @@ export interface AiResultState {
 export const aiResult: AiResultState = $state({
   generating: false,
   open: false,
+  minimized: false,
   resultUrl: null,
   resultType: null,
   previewUrl: null,
@@ -67,6 +72,7 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     const id = ++nextAiGenerationId;
     activeAiGeneration = { id, controller };
     resetAiRunUi(previewUrl);
+    resultState.minimized = false;
     resultState.style = style;
     resultState.generating = true;
     resultState.open = true;
@@ -128,8 +134,23 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     activeAiGeneration = null;
     resultState.open = false;
     resultState.generating = false;
+    resultState.minimized = false;
     resultState.style = null;
     resetAiRunUi(null);
+  }
+
+  /**
+   * Send the waiting modal to the corner. Only meaningful while a picture is
+   * still being made — once there is something to look at, dismissing means
+   * dismissing.
+   */
+  function minimizeAiResult() {
+    if (!resultState.open || !resultState.generating) return;
+    resultState.minimized = true;
+  }
+
+  function restoreAiResult() {
+    resultState.minimized = false;
   }
 
   return {
@@ -140,6 +161,8 @@ export function createAiGenerationMachine(resultState: AiResultState) {
     finishAiGeneration,
     failAiGeneration,
     closeAiResult,
+    minimizeAiResult,
+    restoreAiResult,
   };
 }
 
@@ -153,4 +176,6 @@ export const {
   finishAiGeneration,
   failAiGeneration,
   closeAiResult,
+  minimizeAiResult,
+  restoreAiResult,
 } = aiGenerationMachine;

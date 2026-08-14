@@ -112,7 +112,7 @@ Learned from past runs — check each, not just "does the cited code still look 
   testable function" item is only worth it if the module can actually be imported and the extracted
   unit carries real logic. If the CLI runs everything at top level with no main-module guard,
   extraction first needs that guard added; and if the loop is just I/O orchestration around pure
-  helpers that already live in `lib/` (Gemini calls + file writes), the testability win is small.
+  helpers that already live in `lib/` (model calls + file writes), the testability win is small.
   Weigh the guard-plus-thread-a-context cost against that thin payoff before keeping it.
 * Findings' line numbers may cite the wrong span even when the claim is right (state declarations vs
   the function body) — re-cite from the current code.

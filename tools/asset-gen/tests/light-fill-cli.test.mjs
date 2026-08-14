@@ -83,7 +83,7 @@ vi.mock('@google/genai', () => ({
     models = { generateContent: async () => ({}) };
   },
 }));
-vi.mock('../../../web/src/lib/server/ai/geminiSafety.ts', () => ({
+vi.mock('../lib/gemini-response.ts', () => ({
   classifyGeminiResponse: () => ({
     kind: 'image',
     data: state.candidate.toString('base64'),

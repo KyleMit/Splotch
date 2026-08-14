@@ -77,7 +77,7 @@ npm run test:asset-gen
 ```
 
 Configured in `tools/asset-gen/vitest.config.mjs`. These run in Node against committed fixtures and
-mocked generator workflows, with no Gemini calls or network access. CI runs them in the browser-free
+mocked generator workflows, with no model calls or network access. CI runs them in the browser-free
 `unit` job, after the app-unit suite and alongside the repo-script suite, in parallel with the e2e
 shards.
 

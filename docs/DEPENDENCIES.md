@@ -643,6 +643,25 @@ Non-`keep` rows first.
 * **Alternatives:** `markdown-it` if features are ever needed; none needed
 * **Verdict:** keep — build-time Markdown rendering; healthy
 
+### openai
+
+* **Version:** `^7.4.0` declared · 7.4.0 locked (latest 7.4.0) · prod
+* **Used for:** OpenAI image generation via the Responses API image-generation tool — the
+  `/api/generate-image` server path and the model-eval tooling. Used in
+  `tools/model-eval/lib/image-providers.mjs`.
+* **Source:** npm · [github.com/openai/openai-node](https://github.com/openai/openai-node) ·
+  published by OpenAI
+* **License:** Apache-2.0
+* **Health** (checked 2026-08-14): [11.1k stars](https://github.com/openai/openai-node) · latest
+  7.4.0 · last push 2026-08-14 · 31 open issues · frequent releases
+* **Maintenance:** active — official OpenAI SDK, largely code-generated from the API spec, small
+  issue backlog
+* **Concerns:** fast-moving SDK (frequent majors track API changes) — pin and update deliberately.
+  Zero runtime dependencies and no install script, which is a smaller supply-chain surface than the
+  Gemini SDK it replaces.
+* **Alternatives:** REST calls to the OpenAI API directly; none needed
+* **Verdict:** keep — the official SDK for a core feature; healthy
+
 ### prettier
 
 * **Version:** `^3.8.4` declared · 3.8.4 locked (latest 3.9.5) · dev

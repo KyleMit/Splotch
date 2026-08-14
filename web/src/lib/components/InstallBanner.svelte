@@ -13,6 +13,7 @@
     autoDismissInstallIfDue,
   } from '$lib/state/install.svelte';
   import { SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
+  import { aiResult } from '$lib/state/aiGeneration.svelte';
 
   // The banner sits above the corner controls (the actions toggle and the Settings Button), so
   // it must not linger: once the child has kept drawing past it, clear it and
@@ -38,11 +39,16 @@
   let partingTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Wait until the child has actually drawn a little, so the prompt feels earned
-  // and never competes with the very first finger-on-screen moment.
+  // and never competes with the very first finger-on-screen moment. It also
+  // stands down while a generation waits in the corner: both live in the same
+  // place, and of the two only the chip is the way back to a picture already
+  // paid for (ADR-0116). An install prompt is re-offerable — it returns next
+  // session, and Settings carries the same action.
   const visible = $derived(
     !install.installed &&
       !install.dismissed &&
       install.mode !== 'none' &&
+      !aiResult.minimized &&
       canvasState.strokeCount >= SETTLED_IN_STROKES
   );
 

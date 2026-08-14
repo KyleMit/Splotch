@@ -495,7 +495,7 @@ test('an API key stays locked with storage-specific feedback when secure saving 
     };
   });
 
-  await submitAiKey(page, 'AIza-storage-failure');
+  await submitAiKey(page, 'sk-storage-failure');
 
   await expect(page.getByRole('alert')).toContainText('could not be saved securely');
   await expect(page.locator('#aiKeyInput')).toBeVisible();
@@ -524,13 +524,13 @@ test('only the current API key verification can persist across a close and reope
   await gotoApp(page);
   await openAiSettings(page);
 
-  await submitAiKey(page, 'AIza-credential-AAAA');
+  await submitAiKey(page, 'sk-credential-AAAA');
   await expect.poll(() => requestCount).toBe(1);
 
   await page.getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('#settingsModal')).toBeHidden();
   await openAiSettings(page);
-  await submitAiKey(page, 'AIza-credential-BBBB');
+  await submitAiKey(page, 'sk-credential-BBBB');
 
   await expect(page.locator('#aiKeyActive')).toHaveValue(/BBBB$/);
   releaseFirst();

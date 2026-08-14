@@ -11,7 +11,7 @@ import { tinyPngBuffer } from './fixtures';
 // flips the handler into BYOK mode, which skips the token allowlist; an
 // `X-Access-Token` exercises the managed allowlist), the image type is the
 // body's Content-Type, and the style enum is a query param. A bad payload is
-// rejected *before* any Gemini call, so a throwaway key is fine here.
+// rejected *before* any model call, so a throwaway key is fine here.
 //
 // Every BYOK request from this file shares one per-IP limiter bucket, so the
 // tests must run in declaration order (burst test last) — opt this file out of
@@ -69,7 +69,7 @@ test('returns the authorization error wire shape for an invalid managed token', 
 });
 
 test('lets a normal-sized, allowed upload past the guards', async ({ request }) => {
-  // The throwaway key means the Gemini call itself fails downstream (≈502), but
+  // The throwaway key means the model call itself fails downstream (≈502), but
   // the point is only that the size/type guards do NOT reject it.
   const res = await postImage(request, tinyPngBuffer(), 'image/png');
   expect(res.status()).not.toBe(413);
@@ -119,7 +119,7 @@ test('still accepts the legacy multipart contract (shipped native clients)', asy
 
 test('throttles a managed token hammered in a burst', async ({ request }, testInfo) => {
   // Use a deliberately unsupported type (gif → 415) so each request is rejected
-  // *before* the Gemini call — the per-token rate limiter counts the hit first,
+  // *before* the model call — the per-token rate limiter counts the hit first,
   // so we exhaust the window without spending any real quota.
   //
   // The limiter window is per token, lasts 60s, and rejected hits don't extend
@@ -139,7 +139,7 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
   // Requests within the limit clear the throttle, and the type guard is what
   // rejects them — assert that rather than merely "not throttled", or the burst
   // still passes when something upstream of the guard (a 403 from an allowlist
-  // that lost this code, a 500 from a server with no GEMINI_API_KEY) rejects
+  // that lost this code, a 500 from a server with no OPENAI_API_KEY) rejects
   // every request for a reason this test isn't about.
   expect(new Set(statuses), 'each in-limit request must reach the image-type guard').toEqual(
     new Set([UNSUPPORTED_TYPE_STATUS])
@@ -153,7 +153,7 @@ test('throttles a managed token hammered in a burst', async ({ request }, testIn
 
 test('throttles BYOK requests per IP after a generous burst', async ({ request }) => {
   // Same gif trick as above: the per-IP limiter counts the hit before the type
-  // guard rejects, so no Gemini call is spent. Earlier tests in this file used
+  // guard rejects, so no model call is spent. Earlier tests in this file used
   // a few BYOK hits from this IP, so the 429 can arrive slightly before the
   // full BYOK_LIMIT — the assertion only requires it within the limit + 1.
   const statuses: number[] = [];

@@ -11,7 +11,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { GoogleGenAI } from '@google/genai';
-import { classifyGeminiResponse } from '../../../web/src/lib/server/ai/geminiSafety.ts';
+import { classifyGeminiResponse } from '../lib/gemini-response.ts';
 import { SAMPLES } from './lib/sample-catalog.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));

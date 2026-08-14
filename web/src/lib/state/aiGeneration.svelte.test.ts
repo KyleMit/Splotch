@@ -5,6 +5,7 @@ function createAiResultState(): AiResultState {
   return {
     generating: false,
     open: false,
+    minimized: false,
     resultUrl: null,
     resultType: null,
     previewUrl: null,
@@ -141,5 +142,50 @@ describe('createAiGenerationMachine', () => {
 
     expect(resultState.reportToken).toBe('signed-refusal-token');
     expect(resultState.error?.kind).toBe('safety');
+  });
+});
+
+describe('minimizing a waiting generation', () => {
+  it('keeps the run alive so the picture can still be delivered into it', () => {
+    const state = createAiResultState();
+    const machine = createAiGenerationMachine(state);
+    const id = machine.startAiGeneration(null);
+
+    machine.minimizeAiResult();
+    expect(state.minimized).toBe(true);
+    // The whole trick: `open` stays true, which is what finishAiGeneration
+    // checks. Minimizing must not become a way to throw away a paid picture.
+    expect(state.open).toBe(true);
+    expect(machine.finishAiGeneration(id, 'blob:done', 'image/png')).toBe(true);
+    expect(state.resultUrl).toBe('blob:done');
+  });
+
+  it('refuses to minimize a result there is already something to look at', () => {
+    const state = createAiResultState();
+    const machine = createAiGenerationMachine(state);
+    const id = machine.startAiGeneration(null);
+    machine.finishAiGeneration(id, 'blob:done', 'image/png');
+
+    machine.minimizeAiResult();
+    expect(state.minimized).toBe(false);
+  });
+
+  it('restores, and clears the flag when the run is closed or a new one starts', () => {
+    const state = createAiResultState();
+    const machine = createAiGenerationMachine(state);
+    machine.startAiGeneration(null);
+
+    machine.minimizeAiResult();
+    machine.restoreAiResult();
+    expect(state.minimized).toBe(false);
+
+    machine.minimizeAiResult();
+    machine.closeAiResult();
+    expect(state.minimized).toBe(false);
+
+    machine.startAiGeneration(null);
+    machine.minimizeAiResult();
+    machine.startAiGeneration(null);
+    expect(state.minimized).toBe(false);
   });
 });

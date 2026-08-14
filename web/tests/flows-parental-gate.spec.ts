@@ -460,8 +460,8 @@ test('external links inside Settings follow the Every time policy', async ({ pag
   await expect(gate).not.toBeVisible();
 });
 
-test('the bundled privacy page gates its Gemini terms link', async ({ page, context }) => {
-  await context.route('https://ai.google.dev/**', (route) =>
+test('the bundled privacy page gates its provider terms link', async ({ page, context }) => {
+  await context.route('https://openai.com/**', (route) =>
     route.fulfill({ status: 200, contentType: 'text/html', body: '<html>stub</html>' })
   );
   await seedParentalGatePolicies(page, 'always');
@@ -469,13 +469,13 @@ test('the bundled privacy page gates its Gemini terms link', async ({ page, cont
 
   const gate = page.locator('#parentalGate');
   await retryOpen(gate, () =>
-    page.getByRole('link', { name: 'Gemini API terms' }).click({ timeout: 3000 })
+    page.getByRole('link', { name: 'OpenAI Services Agreement' }).click({ timeout: 3000 })
   );
   await settleFlyIn(gate);
   const popup = context.waitForEvent('page');
   await solveParentalGate(page);
   const popupPage = await popup;
-  await expect.poll(() => popupPage.url()).toContain('ai.google.dev/gemini-api/terms');
+  await expect.poll(() => popupPage.url()).toContain('openai.com/policies/services-agreement');
   await expect(gate).not.toBeVisible();
 });
 
@@ -488,7 +488,7 @@ test('Parent Center reached from privacy hydrates its persisted settings', async
 
   const gate = page.locator('#parentalGate');
   await retryOpen(gate, () =>
-    page.getByRole('link', { name: 'Gemini API terms' }).click({ timeout: 3000 })
+    page.getByRole('link', { name: 'OpenAI Services Agreement' }).click({ timeout: 3000 })
   );
   await settleFlyIn(gate);
   await retryOpen(gate.getByText(MANAGE_SUBTITLE), () =>
@@ -501,7 +501,7 @@ test('Parent Center reached from privacy hydrates its persisted settings', async
   await settleFlyIn(settings);
   await settleSettingsPane(settings.locator('.settings-pane'));
   await expect(settings.getByText('Checking your free AI creations…')).not.toBeVisible();
-  await expect(settings.getByText(/Add your own Gemini API key to create AI art/)).toBeVisible();
+  await expect(settings.getByText(/Add your own OpenAI API key to create AI art/)).toBeVisible();
 });
 
 test('external links can skip a second gate only within a solved session', async ({

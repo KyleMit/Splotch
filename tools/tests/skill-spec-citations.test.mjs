@@ -56,6 +56,10 @@ const EXCLUDED_DIRS = new Set([
   'playwright-report',
   'Pods',
   'DerivedData',
+  // A git worktree is a second checkout of this same repo, so walking into one
+  // scans every instruction file twice and attributes the copy's path to a
+  // finding. Agent worktrees live under .claude/worktrees/ and come and go.
+  'worktrees',
 ]);
 
 function walk(dir, keep, found = []) {

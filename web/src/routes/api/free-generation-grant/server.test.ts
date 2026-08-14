@@ -28,7 +28,7 @@ function getStatus() {
 }
 
 beforeEach(() => {
-  envState.GEMINI_API_KEY = 'managed-key';
+  envState.OPENAI_API_KEY = 'managed-key';
   rateLimit.mockReset().mockReturnValue({ limited: false, retryAfter: 0 });
   getDailyStatus.mockReset().mockResolvedValue({ available: true, starts: 0 });
   getGrantStatus.mockReset().mockResolvedValue({ remaining: 8 });
@@ -36,7 +36,7 @@ beforeEach(() => {
 
 describe('GET /api/free-generation-grant', () => {
   it('reports unavailable without a configured project key', async () => {
-    envState.GEMINI_API_KEY = undefined;
+    envState.OPENAI_API_KEY = undefined;
 
     const response = await getStatus();
 

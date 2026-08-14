@@ -4,10 +4,11 @@ import { verifyKeyBucket } from '$lib/server/rateLimitKeys';
 import { rateLimitPolicy } from '$lib/server/rateLimitPolicy';
 import { apiHandler, asRecord, readJsonBody, throttled } from '$lib/server/http';
 import { aiProvider } from '$lib/server/ai/provider';
+import { KEY_CHECK_UNAVAILABLE_CODE, type KeyCheckUnavailable } from '$lib/ai/keyFormat';
 import type { RequestHandler } from './$types';
 
 /**
- * Confirm a parent-supplied Gemini API key actually works by making a tiny
+ * Confirm a parent-supplied OpenAI API key actually works by making a tiny
  * live call. Body: { apiKey }. Returns { ok: true } on success, or
  * { ok: false, error } when the key can't authenticate.
  */
@@ -28,8 +29,20 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
 
   const check = await aiProvider.verifyKey(apiKey);
   if (!check.ok) {
-    console.warn('[verify-key] key rejected:', check.reason);
-    return json({ ok: false, error: 'That key could not authenticate with Gemini.' });
+    console.warn(`[verify-key] ${check.kind}: ${check.reason}`);
+    // Only OpenAI can say a key is bad. A check that never got an answer —
+    // a cold start outrunning the deadline is the observed case — must not be
+    // reported as one, or a parent is told a working credential is invalid and
+    // goes off to make another one.
+    if (check.kind === 'unreachable') {
+      const body: KeyCheckUnavailable = {
+        ok: false,
+        code: KEY_CHECK_UNAVAILABLE_CODE,
+        error: "We couldn't check that key just now. Please try again.",
+      };
+      return json(body, { status: 503 });
+    }
+    return json({ ok: false, error: 'That key could not authenticate with OpenAI.' });
   }
 
   return json({ ok: true });

@@ -43,10 +43,10 @@ paths:
   console never loops through the API.
 * `/api/admin/tokens` mutations return the full snapshot shape (`tokens` + `invites`) so clients
   never need a follow-up fetch — preserve this for new admin endpoints.
-* The model-vendor SDK (`@google/genai`) is imported only inside `src/lib/server/ai/` (ADR-0047).
-  Routes and other server modules go through the `AiImageProvider` seam
-  (`src/lib/server/ai/provider.ts`) — never import the SDK or Gemini types outside that directory.
-  (The dev-time asset scripts in `tools/` are the one sanctioned exception.)
+* The model-vendor SDK (`openai`) is imported only inside `src/lib/server/ai/` (ADR-0047). Routes
+  and other server modules go through the `AiImageProvider` seam (`src/lib/server/ai/provider.ts`) —
+  never import the SDK or vendor types outside that directory. (The dev-time asset scripts in
+  `tools/` are the one sanctioned exception.)
 * When adding or changing an endpoint, update the API reference in `docs/API.md` as part of the same
   change. It is authored in place — the `api` skill only points at it (ADR-0107), so there is
   nothing to regenerate.

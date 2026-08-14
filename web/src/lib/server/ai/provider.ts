@@ -7,8 +7,19 @@
 interface AiImageRequest {
   /** Vendor API key: the server's managed key or the parent's BYO key. */
   apiKey: string;
+  /**
+   * The drawing, as bytes and nothing else. Anything an adapter needs about its
+   * pixels — the canvas shape, say — it reads out of those bytes, so an
+   * already-shipped native client never has to learn a new request field.
+   */
   image: { base64: string; mimeType: string };
   prompt: string;
+  /**
+   * How long this call may take. It is the caller's to decide, not the
+   * adapter's: the same provider is driven both by a request that must beat a
+   * platform ceiling and by a background worker that has minutes (ADR-0115).
+   */
+  deadlineMs: number;
 }
 
 type AiImageResult =
@@ -19,11 +30,22 @@ type AiImageResult =
   /** Genuine upstream/empty failure — retryable (502). */
   | { kind: 'error'; reason: string };
 
-type KeyCheckResult = { ok: true } | { ok: false; reason: string };
+/**
+ * Why a key check did not succeed. The distinction is the whole point: only the
+ * provider can say a key is bad, and saying it on our own behalf — because a
+ * cold start outran a deadline, say — tells a parent something false about a
+ * credential that works.
+ */
+type KeyCheckResult =
+  | { ok: true }
+  /** The provider looked at the key and refused it. */
+  | { ok: false; kind: 'rejected'; reason: string }
+  /** We never got an answer. Says nothing about the key. */
+  | { ok: false; kind: 'unreachable'; reason: string };
 
 export interface AiImageProvider {
   generateImage(request: AiImageRequest): Promise<AiImageResult>;
   verifyKey(apiKey: string): Promise<KeyCheckResult>;
 }
 
-export { geminiProvider as aiProvider } from './gemini';
+export { openAiProvider as aiProvider } from './openai';

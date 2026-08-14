@@ -1,5 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // Single-source guard for the brand palette (web/src/lib/palette.ts): a copy
@@ -44,19 +45,27 @@ const SCAN_ROOTS = ['web/src', 'tools'];
 const SCAN_EXTENSIONS = /\.(ts|js|mjs|cjs|svelte|css|html|svg|json|md|ya?ml)$/;
 const EXCLUDED_DIRS = /(^|\/)(node_modules|legacy|ideas-exploration)(\/|$)/;
 
+// Tracked files only. This guard polices *source* for drifted copies of a
+// palette hex, and a walk of the filesystem instead reads whatever the last
+// local run left behind — a model-eval report bundle or a scrapbook scratch dir
+// both embed the palette legitimately, and both are gitignored, so a filesystem
+// walk fails for anyone who has run those tools and passes in CI. `git ls-files`
+// is the same inventory tool-specifier-resolution.test.mjs already scans by.
 function scannedFiles() {
-  return SCAN_ROOTS.flatMap((root) =>
-    readdirSync(join(repoRoot, root), { withFileTypes: true, recursive: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => relative(repoRoot, join(entry.parentPath, entry.name)))
-      .filter(
-        (rel) =>
-          SCAN_EXTENSIONS.test(rel) &&
-          !EXCLUDED_DIRS.test(rel) &&
-          !/\.test\./.test(rel) &&
-          rel !== 'web/src/lib/palette.ts'
-      )
-  );
+  return execFileSync('git', ['ls-files', '-z', ...SCAN_ROOTS], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  })
+    .split('\0')
+    .filter(
+      (rel) =>
+        rel &&
+        SCAN_EXTENSIONS.test(rel) &&
+        !EXCLUDED_DIRS.test(rel) &&
+        !/\.test\./.test(rel) &&
+        rel !== 'web/src/lib/palette.ts'
+    );
 }
 
 function countPaletteHexes(text) {

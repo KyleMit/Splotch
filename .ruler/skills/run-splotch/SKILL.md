@@ -185,7 +185,7 @@ host-exclusive. Useless headless — it just waits for a browser.
 * **Full E2E** (production build + Playwright, what CI runs): `npm run test:e2e`
 * **Unit / internal functions** (Vitest, happy-dom — for PRs that touch one module, not the UI):
   `npm run test:unit`
-* **API contract smoke** (self-contained, no Gemini/Blobs): `npm run test:api:smoke`
+* **API contract smoke** (self-contained, no model/Blobs credentials): `npm run test:api:smoke`
 
 The `/dev/engine` route is an in-app harness for the drawing engine (gated behind
 `PUBLIC_ENABLE_DEV_HARNESS`, which the driver sets automatically).

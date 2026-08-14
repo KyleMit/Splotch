@@ -1,9 +1,9 @@
 // Shared config for the image-model evaluation harness (tools/model-eval/*.mjs).
 //
-// The harness A/B-compares the two candidate production image models against a
-// corpus of canvas-plausible toddler drawings, using the EXACT production request
-// config, and persists a side-by-side quality/cost/latency report. See
-// tools/model-eval/README.md.
+// The harness compares every candidate production image variant — a
+// provider + model + effort tier — against a corpus of canvas-plausible toddler
+// drawings, using the EXACT production request config, and persists a
+// side-by-side quality/cost/latency report. See tools/model-eval/README.md.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,18 +13,103 @@ import { ROOT } from '../../lib/proc.mjs';
 
 export { ROOT };
 
-// The two models under comparison: the live production model and the candidate.
-export const MODELS = [
-  { id: 'gemini-2.5-flash-image', label: '2.5-flash-image', role: 'current prod' },
-  { id: 'gemini-3.1-flash-image', label: '3.1-flash-image', role: 'candidate' },
+// The model that reads the drawing, decides whether it is safe to render, and
+// calls the image tool. Its refusal-in-prose is what the app turns into a 422,
+// so it is part of the production contract rather than an implementation detail.
+export const ORCHESTRATOR_MODEL = 'gpt-5.1';
+
+// Every cell under comparison. `key` is filesystem-safe because it names the
+// output files; `role` is what the report prints beside the label.
+export const VARIANTS = [
+  {
+    key: 'gemini-2-5-flash-image',
+    label: 'gemini-2.5-flash-image',
+    provider: 'gemini',
+    model: 'gemini-2.5-flash-image',
+    quality: null,
+    role: 'current prod',
+  },
+  {
+    key: 'gemini-3-1-flash-image',
+    label: 'gemini-3.1-flash-image',
+    provider: 'gemini',
+    model: 'gemini-3.1-flash-image',
+    quality: null,
+    role: 'gemini candidate',
+  },
+  {
+    key: 'gpt-image-2-low',
+    label: 'gpt-image-2 · low',
+    provider: 'openai',
+    model: 'gpt-image-2',
+    quality: 'low',
+    role: 'openai candidate',
+  },
+  {
+    key: 'gpt-image-2-medium',
+    label: 'gpt-image-2 · medium',
+    provider: 'openai',
+    model: 'gpt-image-2',
+    quality: 'medium',
+    role: 'openai candidate',
+  },
+  {
+    key: 'gpt-image-2-high',
+    label: 'gpt-image-2 · high',
+    provider: 'openai',
+    model: 'gpt-image-2',
+    quality: 'high',
+    role: 'openai candidate',
+  },
+  {
+    key: 'gpt-image-1-5-medium',
+    label: 'gpt-image-1.5 · medium',
+    provider: 'openai',
+    model: 'gpt-image-1.5',
+    quality: 'medium',
+    role: 'openai candidate',
+  },
+  {
+    key: 'gpt-image-1-mini-low',
+    label: 'gpt-image-1-mini · low',
+    provider: 'openai',
+    model: 'gpt-image-1-mini',
+    quality: 'low',
+    role: 'openai budget',
+  },
+  {
+    key: 'gpt-image-1-mini-medium',
+    label: 'gpt-image-1-mini · medium',
+    provider: 'openai',
+    model: 'gpt-image-1-mini',
+    quality: 'medium',
+    role: 'openai budget',
+  },
 ];
 
-// Published Gemini pricing (July 2026), $ per 1M tokens. Image output tokens
-// dominate the per-image cost; input + text-output are included for completeness.
+// Published list rates, $ per 1M tokens. Image-output tokens dominate the
+// per-image cost; the input and text-output legs are carried so the measured
+// cost is the whole bill rather than its largest term.
 export const RATES = {
-  'gemini-2.5-flash-image': { inPerM: 0.3, textOutPerM: 2.5, imgOutPerM: 30.0 },
-  'gemini-3.1-flash-image': { inPerM: 0.25, textOutPerM: 1.5, imgOutPerM: 60.0 },
+  'gemini-2.5-flash-image': {
+    textInPerM: 0.3,
+    imageInPerM: 0.3,
+    textOutPerM: 2.5,
+    imageOutPerM: 30.0,
+  },
+  'gemini-3.1-flash-image': {
+    textInPerM: 0.25,
+    imageInPerM: 0.25,
+    textOutPerM: 1.5,
+    imageOutPerM: 60.0,
+  },
+  'gpt-image-2': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 5.0, imageOutPerM: 30.0 },
+  'gpt-image-1.5': { textInPerM: 5.0, imageInPerM: 8.0, textOutPerM: 5.0, imageOutPerM: 32.0 },
+  'gpt-image-1-mini': { textInPerM: 2.0, imageInPerM: 2.5, textOutPerM: 2.0, imageOutPerM: 8.0 },
 };
+
+// The orchestrator's own tokens, billed separately from the image tool.
+const ORCHESTRATOR_RATES = { inPerM: 1.25, cachedInPerM: 0.125, outPerM: 10.0 };
 
 // The only colors a child can lay down with the pen, so faithful inputs must use them.
 export const PALETTE = PALETTE_COLORS.map(({ hex, label }) => ({ hex, label }));
@@ -36,8 +121,8 @@ export const PAPER = {
 };
 
 // --- Production request config -------------------------------------------------
-// The base prompt lives in web/src/lib/ai/prompt.ts and the system instruction +
-// safety settings in web/src/lib/server/ai/gemini.ts. We copy them here and assert
+// The base prompt lives in web/src/lib/ai/prompt.ts and the system instruction in
+// the provider adapter under web/src/lib/server/ai/. We copy them here and assert
 // at runtime that they still match the app source, so this harness measures what
 // production actually sends and can't silently drift from it.
 
@@ -58,70 +143,78 @@ Ordinary toddler pretend-play IS welcome — render it as cheerful, obviously ma
 
 When you must refuse, respond with a single short sentence declining, e.g. "I can't turn that drawing into a picture — let's draw something else!". Never sanitize, beautify, or partially transform genuinely unsafe content into a "nicer" version — refuse it entirely. When a drawing is clearly playful and non-graphic, generate the image.`;
 
+// The app source each production string is copied from. `candidates` lists more
+// than one path only while the owning module is mid-migration: the string has to
+// still live in one of them, and naming both keeps the drift error specific.
+const PRODUCTION_SOURCES = [
+  {
+    name: 'SAFETY_SYSTEM_INSTRUCTION',
+    candidates: ['web/src/lib/server/ai/openai.ts'],
+    value: SAFETY_SYSTEM_INSTRUCTION,
+  },
+  { name: 'DEFAULT_PROMPT', candidates: ['web/src/lib/ai/prompt.ts'], value: DEFAULT_PROMPT },
+];
+
+const normalizeEol = (s) => s.replace(/\r\n/g, '\n');
+
+function readIfPresent(path) {
+  try {
+    return normalizeEol(readFileSync(join(ROOT, path), 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 // Verify the copies above still match the app source; throw loudly on drift.
 export function assertProductionConfig() {
-  const gemini = readFileSync(join(ROOT, 'web/src/lib/server/ai/gemini.ts'), 'utf8');
-  const prompt = readFileSync(join(ROOT, 'web/src/lib/ai/prompt.ts'), 'utf8');
-  const norm = (s) => s.replace(/\r\n/g, '\n');
-  if (!norm(gemini).includes(norm(SAFETY_SYSTEM_INSTRUCTION)))
-    throw new Error('SAFETY_SYSTEM_INSTRUCTION drifted from web/src/lib/server/ai/gemini.ts');
-  if (!norm(prompt).includes(norm(DEFAULT_PROMPT)))
-    throw new Error('DEFAULT_PROMPT drifted from web/src/lib/ai/prompt.ts');
+  for (const { name, candidates, value } of PRODUCTION_SOURCES) {
+    const present = candidates.filter((path) => readIfPresent(path) !== null);
+    if (!present.length) {
+      throw new Error(`${name}: none of its app sources exist (${candidates.join(', ')})`);
+    }
+    if (!present.some((path) => readIfPresent(path).includes(normalizeEol(value)))) {
+      throw new Error(`${name} drifted from ${present.join(' / ')}`);
+    }
+  }
 }
 
-// Build the safety settings array using the SDK's enums. Kept as a function so the
-// SDK import stays local to callers that actually make requests.
-export function safetySettings(HarmCategory, HarmBlockThreshold) {
-  return [
-    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-    HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-    HarmCategory.HARM_CATEGORY_HARASSMENT,
-  ].map((category) => ({ category, threshold: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE }));
+// $ cost of one response from its measured token usage. `usage` is the
+// provider-neutral shape the adapters in image-providers.mjs return.
+export function costOf(variant, usage) {
+  if (!usage) return null;
+  const rate = RATES[variant.model];
+  if (!rate) return null;
+  const imageModelCost =
+    ((usage.textInTokens ?? 0) * rate.textInPerM +
+      (usage.imageInTokens ?? 0) * rate.imageInPerM +
+      (usage.textOutTokens ?? 0) * rate.textOutPerM +
+      (usage.imageOutTokens ?? 0) * rate.imageOutPerM) /
+    1e6;
+  const billedOrchIn = Math.max(0, (usage.orchInTokens ?? 0) - (usage.orchCachedTokens ?? 0));
+  const orchestratorCost =
+    (billedOrchIn * ORCHESTRATOR_RATES.inPerM +
+      (usage.orchCachedTokens ?? 0) * ORCHESTRATOR_RATES.cachedInPerM +
+      (usage.orchOutTokens ?? 0) * ORCHESTRATOR_RATES.outPerM) /
+    1e6;
+  return imageModelCost + orchestratorCost;
 }
 
-// Mirror of the app's classifyGeminiResponse (web/src/lib/server/ai/geminiSafety.ts),
-// reduced to what the harness records: image / refusal / error.
-const SAFETY_REASONS = new Set([
-  'SAFETY',
-  'IMAGE_SAFETY',
-  'PROHIBITED_CONTENT',
-  'RECITATION',
-  'BLOCKLIST',
-  'SPII',
-]);
-export function classify(response) {
-  const blockReason = response?.promptFeedback?.blockReason;
-  if (blockReason) return { kind: 'refusal', reason: String(blockReason) };
-  const cand = response?.candidates?.[0];
-  const parts = cand?.content?.parts ?? [];
-  const img = parts.find((p) => p.inlineData?.data);
-  if (img)
-    return {
-      kind: 'image',
-      data: img.inlineData.data,
-      mimeType: img.inlineData.mimeType || 'image/png',
-    };
-  const finish = cand?.finishReason;
-  const text = parts.find((p) => typeof p.text === 'string' && p.text.trim());
-  if (finish && SAFETY_REASONS.has(String(finish)))
-    return { kind: 'refusal', reason: String(finish) };
-  if (text) return { kind: 'refusal', reason: text.text.trim().slice(0, 200) };
-  return { kind: 'error', reason: String(finish ?? 'empty') };
+/** An input's category — the segment before the first `__` in its id/filename. */
+export function categoryOf(idOrFile) {
+  return idOrFile.split('__')[0];
 }
 
-export function imageOutputTokens(usage) {
-  return usage?.candidatesTokensDetails?.find((x) => x.modality === 'IMAGE')?.tokenCount ?? null;
-}
-
-// $ cost of one image response from its measured token usage.
-export function costOf(model, usage) {
-  const rt = RATES[model];
-  if (!rt || !usage) return null;
-  const img = imageOutputTokens(usage) ?? 0;
-  const text = Math.max(0, (usage.candidatesTokenCount ?? 0) - img);
-  const inp = usage.promptTokenCount ?? 0;
-  return (inp * rt.inPerM + text * rt.textOutPerM + img * rt.imgOutPerM) / 1e6;
+// The first `limit` inputs of each category, in the order they arrive, so a
+// capped run still sees every kind of drawing rather than a prefix of one.
+export function takePerCategory(files, limit) {
+  const taken = new Map();
+  return files.filter((file) => {
+    const category = categoryOf(file);
+    const count = taken.get(category) ?? 0;
+    if (count >= limit) return false;
+    taken.set(category, count + 1);
+    return true;
+  });
 }
 
 const isPng = (buf) => buf[0] === 0x89 && buf[1] === 0x50;

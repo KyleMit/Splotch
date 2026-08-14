@@ -18,7 +18,7 @@
   import type { Origin } from '$lib/state/modal.svelte';
   import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
 
-  const LAST_UPDATED = 'August 13, 2026';
+  const LAST_UPDATED = 'August 14, 2026';
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -150,36 +150,53 @@
     Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
     illustration. Each installation gets ten successful creations free, and the operation runs
     through the grown-up check configured in Parent Center. After the free creations are used, a
-    grown-up can add a Gemini key in Settings. A drawing is sent only when someone taps the button.
+    grown-up can add an OpenAI key in Settings. A drawing is sent only when someone taps the button.
   </p>
   <ul>
     <li>
-      When tapped, the current drawing is sent to our image service (which uses Google's Gemini AI)
-      to generate a new picture, which is sent right back.
+      When tapped, the current drawing is sent to our image service (which uses OpenAI) to generate
+      a new picture, which is sent right back.
     </li>
     <li>
-      <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong> They
-      pass straight through our service on the way to Google and back, unless a grown-up separately confirms
-      “Report this picture” or “Report this refusal.”
+      <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong>
+      Making a picture takes about a minute, so the drawing waits on our service for the few seconds it
+      takes to start and the finished picture waits there until the app collects it — each is deleted
+      the moment it is handed on, and both are gone within minutes either way. Nothing is kept afterwards,
+      unless a grown-up separately confirms “Report this picture” or “Report this refusal.”
     </li>
     <li>
-      Google generates the picture on its own systems, under the
+      OpenAI generates the picture on its own systems, under the
       <a
-        href="https://ai.google.dev/gemini-api/terms"
+        href="https://openai.com/policies/services-agreement/"
         target="_blank"
         rel="noopener noreferrer"
         use:privacyParentalGateLink
       >
-        Gemini API terms</a
-      >, which let it keep prompts and results for a limited time to check for abuse. That part is
-      Google's, not ours.
+        OpenAI Services Agreement</a
+      >. Two things about that are worth knowing, because they are not the same thing:
+      <strong
+        >OpenAI does not use what is sent through its API to train its models, unless the account
+        holder opts in to sharing</strong
+      >, and it does keep a copy to check for abuse. That copy is normally deleted after 30 days,
+      but OpenAI's
+      <a
+        href="https://developers.openai.com/api/docs/guides/your-data"
+        target="_blank"
+        rel="noopener noreferrer"
+        use:privacyParentalGateLink
+      >
+        published policy</a
+      > allows it to keep one longer where the law requires it or where it is needed to stop harm, and
+      a picture its scanner flags as possible child sexual abuse material is kept for a person to review
+      whatever the account's settings say. That retention is OpenAI's, not ours. We also ask OpenAI not
+      to keep the picture in its own logs, which is the one part of its retention we control.
     </li>
     <li>
-      If you've added your <em>own</em> Gemini key in Settings, the drawing still passes through our
-      service on the way to Google, along with your key — which we use for that one request and
-      never store. It reaches Google under <em>your</em> account and the terms that apply to it, rather
-      than ours. On a free Gemini key, those terms let Google use the content to improve its own products,
-      so it's worth reading them before you add one.
+      If you've added your <em>own</em> OpenAI key in Settings, the drawing still passes through our
+      service on the way to OpenAI, along with your key — which we use for that one request and
+      never store. It reaches OpenAI under <em>your</em> account and the terms that apply to it, rather
+      than ours. That includes the training setting on your account: if you have opted in to sharing,
+      it is your child's drawing that is shared, so it's worth checking before you add a key.
     </li>
     <li>
       To enforce the ten free creations, the app sends a one-way, app-purpose installation code when

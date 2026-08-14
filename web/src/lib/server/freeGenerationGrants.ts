@@ -1,5 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { dev } from '$app/environment';
+import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
 import {
   FREE_GENERATION_LIMIT,
   type FreeGenerationFailureKind,
@@ -9,7 +10,19 @@ import {
 const STORE_NAME = 'free-generation-grants';
 const INSTALLATION_ID_PATTERN = /^[a-f0-9]{64}$/;
 const DAILY_PROVIDER_START_KEY_PREFIX = 'daily-provider-starts/';
-const RESERVATION_LEASE_MS = 60_000;
+// A reservation is held until the generation settles, and settling no longer
+// happens inside the request that reserved (ADR-0115) — it happens when the poll
+// collects a job that may legitimately have been running for minutes. So the
+// lease has to outlive the job, not the request: anything shorter reclaims the
+// slot while the picture is still on its way, and the completion that follows
+// finds no reservation, books the success as an abandoned failure, and never
+// moves the counter the child is watching.
+//
+// The cost of the longer lease is that a run which dies without settling holds
+// its slot until the job would have expired anyway. That is the right way round:
+// a slot briefly held is recoverable, a picture delivered but never counted is
+// not.
+const RESERVATION_LEASE_MS = GENERATION_JOB_TTL_MS;
 const CAS_ATTEMPTS = 12;
 const CAS_BACKOFF_MS = 20;
 export const FREE_GENERATION_DAILY_PROVIDER_START_LIMIT = 500;
@@ -273,11 +286,10 @@ export async function reserveFreeGeneration(
 // Holding a live reservation is what proves this completion owns a slot. A
 // reclaimed lease may already have been re-reserved and spent by a later
 // request, so incrementing without it would let two completions claim one slot
-// and push `successful` past the limit. The deadline ladder keeps this
-// unreachable for a live invocation — the platform kills the function at
-// NETLIFY_SYNC_TIMEOUT_MS, less than half the lease (ADR-0063) — so a missing
-// reservation means something anomalous, and the caller decides what to do with
-// the image rather than this ledger guessing.
+// and push `successful` past the limit. The lease is sized to outlive the job it
+// belongs to (RESERVATION_LEASE_MS above), so a missing reservation means
+// something anomalous, and the caller decides what to do with the image rather
+// than this ledger guessing.
 export async function completeFreeGeneration(
   installationId: string,
   reservationId: string

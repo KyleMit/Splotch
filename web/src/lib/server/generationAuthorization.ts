@@ -47,9 +47,9 @@ export async function authorizeGenerationRequest(input: {
     if (generation.limited) {
       return { authorized: false, response: throttled(generation.retryAfter) };
     }
-    const effectiveKey = config.geminiApiKey();
+    const effectiveKey = config.openAiApiKey();
     if (!effectiveKey) {
-      return { authorized: false, response: fail(500, 'Server is missing GEMINI_API_KEY') };
+      return { authorized: false, response: fail(500, 'Server is missing OPENAI_API_KEY') };
     }
     return {
       authorized: true,
@@ -70,9 +70,9 @@ export async function authorizeGenerationRequest(input: {
     if (!isInstallationId(input.installationId)) {
       return { authorized: false, response: fail(400, 'Installation grant unavailable') };
     }
-    const effectiveKey = config.geminiApiKey();
+    const effectiveKey = config.openAiApiKey();
     if (!effectiveKey) {
-      return { authorized: false, response: fail(500, 'Server is missing GEMINI_API_KEY') };
+      return { authorized: false, response: fail(500, 'Server is missing OPENAI_API_KEY') };
     }
     return { authorized: true, kind: 'free', effectiveKey, installationId: input.installationId };
   }

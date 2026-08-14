@@ -70,7 +70,7 @@ describe('POST /api/generate-image', () => {
     await expect(response.json()).resolves.toEqual({
       ok: false,
       code: 'FREE_DAILY_LIMIT_EXHAUSTED',
-      error: 'Free creations are unavailable today. Add your own Gemini key to keep creating.',
+      error: 'Free creations are unavailable today. Add your own OpenAI key to keep creating.',
     });
     expect(mocks.failGrant).toHaveBeenCalledWith('a'.repeat(64), 'daily-limit', 'reservation-1');
     expect(mocks.generateImage).not.toHaveBeenCalled();

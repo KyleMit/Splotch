@@ -69,10 +69,11 @@ describe('model-eval corpus', () => {
     }
   });
 
-  it('finds the tracked gen__* inputs under that base', () => {
+  // Both authored prefixes are tracked because neither is reproducible: a rerun
+  // of the generator draws different art. The deterministic fixtures under the
+  // other prefixes are gitignored and rebuilt on demand.
+  it.each(['gen__', 'line__'])('finds the tracked %s inputs under that base', (prefix) => {
     const inputs = join(repoRoot, bases[1].base);
-    expect(readdirSync(inputs).filter((name) => name.startsWith('gen__')).length).toBeGreaterThan(
-      0
-    );
+    expect(readdirSync(inputs).filter((name) => name.startsWith(prefix)).length).toBeGreaterThan(0);
   });
 });

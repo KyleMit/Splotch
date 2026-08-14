@@ -149,7 +149,7 @@ jobs:
       # canonical error envelope) has no other CI coverage — blobs-smoke.yml
       # checks only Blobs persistence, post-deploy. Self-contained: boots its
       # own throwaway vite dev server on the smoke's default port, needs no
-      # browser and no Gemini/Blobs credentials.
+      # browser and no model/Blobs credentials.
       - name: API contract smoke
         run: npm run test:api:smoke
 

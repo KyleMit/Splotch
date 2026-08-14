@@ -14,45 +14,58 @@ function stubFetch(status: number, body: unknown) {
 }
 
 describe('looksLikeApiKey', () => {
-  it('is true for a Standard key prefix', () => {
-    expect(looksLikeApiKey('AIzaSyExampleKey1234')).toBe(true);
-  });
-
-  it('is true for an Auth key prefix', () => {
-    expect(looksLikeApiKey('AQ.Ab8ExampleKey1234')).toBe(true);
-  });
+  // One prefix covers project, service-account, and legacy user keys.
+  it.each(['sk-proj-ExampleKey1234', 'sk-svcacct-ExampleKey1234', 'sk-ExampleKey1234'])(
+    'is true for %s',
+    (key) => {
+      expect(looksLikeApiKey(key)).toBe(true);
+    }
+  );
 
   it('is false for an access code', () => {
     expect(looksLikeApiKey('sunny-meadow')).toBe(false);
   });
 
-  it('is false for a value that merely contains a key prefix later on', () => {
-    expect(looksLikeApiKey('xAIzaSyKey')).toBe(false);
-    expect(looksLikeApiKey('xAQ.Key')).toBe(false);
+  it('is false for a value that merely contains the key prefix later on', () => {
+    expect(looksLikeApiKey('xsk-Key')).toBe(false);
+  });
+
+  it("is false for the retired provider's key shapes", () => {
+    expect(looksLikeApiKey('AIzaSyExampleKey1234')).toBe(false);
+    expect(looksLikeApiKey('AQ.Ab8ExampleKey1234')).toBe(false);
   });
 });
 
 describe('verifyCredential', () => {
+  it('recognises a retired provider key locally and never puts it on the wire', async () => {
+    const fetchMock = stubFetch(200, { ok: true });
+    const result = await verifyCredential('AIzaSyExampleKey1234');
+    expect(result).toEqual({ kind: 'retiredGeminiKey', ok: false });
+    // The whole point: a credential for a provider we no longer call cannot pass
+    // either endpoint, so sending it would leak the parent's key to learn nothing.
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('routes an API key to /api/verify-key and reports success', async () => {
     const fetchMock = stubFetch(200, { ok: true });
 
-    const result = await verifyCredential('AIzaSyKey');
+    const result = await verifyCredential('sk-proj-Key');
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/api/verify-key');
-    expect(JSON.parse(init.body as string)).toEqual({ apiKey: 'AIzaSyKey' });
+    expect(JSON.parse(init.body as string)).toEqual({ apiKey: 'sk-proj-Key' });
     expect(result).toMatchObject({ kind: 'apiKey', ok: true });
   });
 
-  it('routes an Auth key to /api/verify-key', async () => {
+  it('routes a service-account key to /api/verify-key', async () => {
     const fetchMock = stubFetch(200, { ok: true });
 
-    const result = await verifyCredential('AQ.Ab8Key');
+    const result = await verifyCredential('sk-svcacct-Key');
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toContain('/api/verify-key');
-    expect(JSON.parse(init.body as string)).toEqual({ apiKey: 'AQ.Ab8Key' });
+    expect(JSON.parse(init.body as string)).toEqual({ apiKey: 'sk-svcacct-Key' });
     expect(result).toMatchObject({ kind: 'apiKey', ok: true });
   });
 
@@ -70,7 +83,7 @@ describe('verifyCredential', () => {
   it('maps a rejected key to ok:false and surfaces the server error message', async () => {
     stubFetch(400, { ok: false, error: 'Nope.' });
 
-    const result = await verifyCredential('AIzaBad');
+    const result = await verifyCredential('sk-proj-Bad');
 
     expect(result).toMatchObject({ kind: 'apiKey', ok: false, error: 'Nope.' });
   });
@@ -87,7 +100,7 @@ describe('verifyCredential', () => {
     const fetchMock = stubFetch(200, { ok: true });
     const controller = new AbortController();
 
-    await verifyCredential('AIzaKey', { signal: controller.signal });
+    await verifyCredential('sk-proj-Key', { signal: controller.signal });
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.signal).toBe(controller.signal);
