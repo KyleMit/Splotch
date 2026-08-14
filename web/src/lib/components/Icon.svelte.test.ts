@@ -53,13 +53,13 @@ describe('monochrome icon fill', () => {
   // render subtly off. Locked from the values actually painted at HEAD.
   const ALLOWED_PAINTS: readonly string[] = [themes.light.iconInk];
 
-  // These bake no fill/stroke at all (github only a fill-rule) — they inherit
-  // their color from the <svg> wrapper they're rendered into, so they have
-  // nothing for this guard to check. For the two platform marks that is the
-  // point rather than an accident: SegmentedPicker's underline tabs paint them
-  // with `fill: currentColor` so the mark takes the live tab's ink, which a
+  // These bake no fill/stroke at all (github and phone-tablet only a fill-rule)
+  // — they inherit their color from the <svg> wrapper they're rendered into, so
+  // they have nothing for this guard to check. For the two beta tab marks that
+  // is the point rather than an accident: SegmentedPicker's underline tabs paint
+  // them with `fill: currentColor` so the mark takes the live tab's ink, which a
   // baked fill on the path would override.
-  const NO_PAINT_EXCEPTIONS = new Set(['github', 'android', 'apple']);
+  const NO_PAINT_EXCEPTIONS = new Set(['github', 'android', 'phone-tablet']);
 
   const monochrome = Object.keys(svgs)
     .map(iconNameFromPath)

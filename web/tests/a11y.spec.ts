@@ -62,7 +62,7 @@ test('/changelog has no serious accessibility violations', async ({ page }) => {
 // skips it, and each carries its own ledger, callouts, and disclosure.
 for (const [tab, heading] of [
   ['Android', 'How to join on Android'],
-  ['iOS', 'How to join on iPhone or iPad'],
+  ['iPhone / iPad', 'How to join on iPhone or iPad'],
 ] as const) {
   test(`/beta has no serious accessibility violations on the ${tab} tab`, async ({ page }) => {
     await page.goto('/beta');

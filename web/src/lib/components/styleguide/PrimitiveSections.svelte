@@ -42,7 +42,7 @@
   type DemoPlatform = 'android' | 'ios';
   const demoPlatformOptions: SegmentedPickerOption<DemoPlatform>[] = [
     { value: 'android', label: 'Android', icon: 'android' },
-    { value: 'ios', label: 'iOS', icon: 'apple' },
+    { value: 'ios', label: 'iPhone / iPad', icon: 'phone-tablet' },
   ];
   let demoPlatform = $state<DemoPlatform>('android');
 

@@ -54,8 +54,13 @@
   });
 
   // The mark beside each label, kept here rather than in betaPlatform.ts so that
-  // module stays free of `$lib` imports the E2E specs cannot resolve.
-  const TAB_ICONS: Record<BetaPlatform, CommonIconName> = { android: 'android', ios: 'apple' };
+  // module stays free of `$lib` imports the E2E specs cannot resolve. The Apple
+  // side carries a generic phone-and-tablet glyph: Apple's marketing guidance
+  // rules out the standalone Apple logo, and the label names the products.
+  const TAB_ICONS: Record<BetaPlatform, CommonIconName> = {
+    android: 'android',
+    ios: 'phone-tablet',
+  };
 
   const options: SegmentedPickerOption<BetaPlatform>[] = BETA_PLATFORMS.map((value) => ({
     value,

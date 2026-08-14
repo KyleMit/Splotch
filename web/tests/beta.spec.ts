@@ -68,7 +68,7 @@ test('the iOS tab swaps in the TestFlight steps and records itself in the URL', 
 }) => {
   await page.goto('/beta');
   await tabsAreLive(page);
-  await tab(page, 'iOS').click();
+  await tab(page, 'iPhone / iPad').click();
 
   await expect(page).toHaveURL(betaPathFor('ios'));
   await expect(page.getByRole('heading', { name: 'How to join on iPhone or iPad' })).toBeVisible();
@@ -94,7 +94,7 @@ test('the iOS tab swaps in the TestFlight steps and records itself in the URL', 
 test('?os= opens the platform the link names', async ({ page }) => {
   await page.goto(betaPathFor('ios'));
   await expect(page.getByRole('heading', { name: 'How to join on iPhone or iPad' })).toBeVisible();
-  await expect(tab(page, 'iOS')).toBeChecked();
+  await expect(tab(page, 'iPhone / iPad')).toBeChecked();
 
   await page.goto(betaPathFor('android'));
   await expect(page.getByRole('heading', { name: 'How to join on Android' })).toBeVisible();
@@ -106,7 +106,7 @@ test.describe('an iPad opening the bare URL', () => {
 
   test('gets the TestFlight steps without asking', async ({ page }) => {
     await page.goto('/beta');
-    await expect(tab(page, 'iOS')).toBeChecked();
+    await expect(tab(page, 'iPhone / iPad')).toBeChecked();
     await expect(page.getByRole('link', { name: 'Get TestFlight from Apple' })).toBeVisible();
   });
 });
@@ -168,6 +168,39 @@ test('the tabs hug the left on a sheet and split the screen on a phone', async (
   expect(phoneRow.width, 'and reaches the right edge').toBeGreaterThan(389);
   for (const width of phoneCells) {
     expect(Math.abs(width - phoneRow.width / 2), 'each cell is half the screen').toBeLessThan(1);
+  }
+
+  // Half a phone screen is the tightest the labels ever get, and `iPhone / iPad`
+  // is the longest of them — measured rather than eyeballed, because a wrapped
+  // label is what would push the row past the touch-target floor below.
+  const labelLines = await page.locator('.beta-platform-picker .option-label').evaluateAll((els) =>
+    els.map((el) => {
+      const style = getComputedStyle(el);
+      return el.getBoundingClientRect().height / Number.parseFloat(style.lineHeight);
+    })
+  );
+  for (const lines of labelLines) expect(lines, 'each label stays on one line').toBeLessThan(1.5);
+});
+
+// The design system's interaction floor is a property of the control, not of the
+// viewport: a touch-capable tablet sits above the phone step and still gets
+// fingers, and the underline row's padding alone leaves it a pixel short.
+test('the tabs clear the 44px touch floor at every width', async ({ page }) => {
+  for (const viewport of [
+    { width: 1100, height: 900 },
+    { width: 768, height: 1024 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/beta');
+    const heights = await page
+      .locator('.beta-platform-picker .option')
+      .evaluateAll((els) => els.map((el) => el.getBoundingClientRect().height));
+
+    expect(heights).toHaveLength(2);
+    for (const height of heights) {
+      expect(height, `tab height at ${viewport.width}px`).toBeGreaterThanOrEqual(44);
+    }
   }
 });
 
@@ -308,7 +341,7 @@ test('the troubleshooting panel starts collapsed on both tabs', async ({ page })
   await shownPanel(page).getByText('Troubleshooting', { exact: true }).click();
   await expect(panel).toHaveAttribute('open', /.*/);
 
-  await tab(page, 'iOS').click();
+  await tab(page, 'iPhone / iPad').click();
   const iosPanel = shownPanel(page).locator('details.beta-disclosure');
   await expect(iosPanel).not.toHaveAttribute('open', /.*/);
   await shownPanel(page).getByText('Troubleshooting', { exact: true }).click();

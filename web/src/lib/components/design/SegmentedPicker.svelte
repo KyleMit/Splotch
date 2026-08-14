@@ -347,6 +347,10 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
+    /* The interaction-target floor is a property of the control, not of the
+       viewport: a touch-capable tablet sits above the phone step and still gets
+       fingers. Padding alone leaves the box a pixel short of it. */
+    min-height: 44px;
     padding: 9px 2px 11px;
     /* Sits ON the rule rather than under it, so the live segment replaces that
        stretch of hairline instead of doubling it. */
@@ -398,7 +402,6 @@
     .underline .option {
       flex: 1 1 0;
       min-width: 0;
-      min-height: 44px;
     }
   }
 

@@ -29,13 +29,14 @@ export const BETA_PLATFORM_PARAM = 'os';
 export const DEFAULT_BETA_PLATFORM: BetaPlatform = 'android';
 
 /**
- * Tab labels — also each option's accessible name. Short on purpose: the tabs
- * split a phone screen between them, and `iPhone & iPad` in half of 375px wraps
- * to two lines. Each panel's own heading says which devices it covers.
+ * Tab labels — also each option's accessible name. The Apple side names the two
+ * products rather than the OS, which is the form Apple's marketing guidance asks
+ * for; the slash keeps it to one line in half a 375px screen, where the tabs
+ * split the row between them (beta.spec.ts measures the labels there).
  */
 export const BETA_PLATFORM_LABELS: Record<BetaPlatform, string> = {
   android: 'Android',
-  ios: 'iOS',
+  ios: 'iPhone / iPad',
 };
 
 /**
