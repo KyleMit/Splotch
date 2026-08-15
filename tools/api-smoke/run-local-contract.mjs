@@ -207,18 +207,6 @@ async function checkReport(base) {
   const badKind = await report({ kind: 'nope', message: 'hi' });
   check('report invalid kind → 400', badKind.status === 400, `got ${badKind.status}`);
 
-  const honeypot = await report({
-    kind: 'bug',
-    message: 'spam',
-    [REPORT_HONEYPOT_FIELD]: 'iam-a-bot',
-  });
-  const honeypotBody = await json(honeypot);
-  check(
-    'report with filled honeypot → 200 {ok:true} and no issue',
-    honeypot.status === 200 && honeypotBody?.ok === true && honeypotBody?.url === undefined,
-    `got ${honeypot.status} ${JSON.stringify(honeypotBody)}`
-  );
-
   const unconfigured = await report({ kind: 'feature', message: 'A stamps tool please' });
   const unconfiguredBody = await json(unconfigured);
   check(
@@ -227,6 +215,25 @@ async function checkReport(base) {
       unconfiguredBody?.ok === false &&
       typeof unconfiguredBody?.error === 'string',
     `got ${unconfigured.status} ${JSON.stringify(unconfiguredBody)}`
+  );
+
+  // The honeypot's contract is indistinguishability, not a fixed 200: whatever a
+  // real submission gets on this server, a caught bot gets too. Asserting a
+  // literal instead is what let the trap answer 200 while a real submitter with
+  // the same payload got 503 — an oracle naming the field in one request. So this
+  // compares the two rather than either one against a constant, and the shape is
+  // therefore whatever the env makes it (503 here, 200 with a token set).
+  const honeypot = await report({
+    kind: 'feature',
+    message: 'A stamps tool please',
+    [REPORT_HONEYPOT_FIELD]: 'iam-a-bot',
+  });
+  const honeypotBody = await json(honeypot);
+  check(
+    'report with filled honeypot → answered exactly as the same payload without it',
+    honeypot.status === unconfigured.status &&
+      JSON.stringify(honeypotBody) === JSON.stringify(unconfiguredBody),
+    `got ${honeypot.status} ${JSON.stringify(honeypotBody)}, real got ${unconfigured.status} ${JSON.stringify(unconfiguredBody)}`
   );
 
   // report has its own tighter per-IP bucket (5/min); burst past it. Every burst
