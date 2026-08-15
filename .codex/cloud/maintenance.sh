@@ -26,12 +26,12 @@ warn() {
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 
-# Pin npm@11 to match package-lock.json's authoring npm — see docs/CLOUD/Codex.md.
-npx -y npm@11 install -g npm@11 \
-  || warn "npm 11 pin skipped — npm ci may fail on a package-lock.json/npm-version optional-peer mismatch."
+# Provision pnpm at the packageManager-pinned version — see docs/CLOUD/Codex.md.
+corepack enable pnpm && corepack install \
+  || warn "pnpm setup skipped — the install below will fail until corepack can provision pnpm."
 
-npm ci --prefer-offline --no-audit --fund=false \
-  || warn "npm ci failed — dependencies may be stale or incomplete. Usually a package-lock.json/npm-version mismatch; run 'npm install' locally and commit the refreshed lockfile."
+pnpm install --frozen-lockfile --prefer-offline \
+  || warn "pnpm install failed — dependencies may be stale or incomplete. Usually pnpm-lock.yaml disagreeing with package.json; run 'pnpm install' locally and commit the refreshed lockfile."
 node tools/run-web-tool.mjs playwright install chromium \
   || warn "Playwright Chromium install failed — the E2E test tier may not run until the browser is cached."
 node tools/run-web-tool.mjs svelte-kit sync \

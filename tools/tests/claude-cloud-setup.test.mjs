@@ -28,15 +28,13 @@ function runSetup(failures, { cwd = repoRoot, projectDir } = {}) {
 
   writeExecutable(
     join(bin, 'npx'),
-    `if [[ "$*" == *"npm@11 install -g npm@11"* ]]; then
-  exit "\${FAIL_NPM:-0}"
-fi
-if [[ "$*" == *"playwright@"* ]]; then
+    `if [[ "$*" == *"playwright@"* ]]; then
   printf 'playwright install invoked\n'
   exit "\${FAIL_PLAYWRIGHT:-0}"
 fi
 exit 1`
   );
+  writeExecutable(join(bin, 'corepack'), `exit "\${FAIL_COREPACK:-0}"`);
   writeExecutable(
     join(bin, 'node'),
     `if [[ "$*" == "-p "*"require('./package.json')"*"@playwright/test"* ]]; then
@@ -70,7 +68,7 @@ printf 'stub chisel'`
       ...process.env,
       PATH: bin,
       ...(projectDir ? { CLAUDE_PROJECT_DIR: projectDir } : {}),
-      FAIL_NPM: String(failures.npm ?? 0),
+      FAIL_COREPACK: String(failures.corepack ?? 0),
       FAIL_PLAYWRIGHT: String(failures.playwright ?? 0),
       FAIL_PLAYWRIGHT_VERSION: String(failures.playwrightVersionDerivation ?? 0),
       PLAYWRIGHT_VERSION: failures.playwrightVersion ?? '1.61.1',
@@ -85,13 +83,13 @@ afterEach(() => {
 
 describe('Claude cloud setup warnings', () => {
   it('keeps one failure non-fatal and includes it in the final summary', () => {
-    const result = runSetup({ npm: 1 });
+    const result = runSetup({ corepack: 1 });
 
     expect(result.status).toBe(0);
     expect(result.stderr.match(/CLAUDE SETUP WARNING/g)).toHaveLength(1);
     expect(result.stderr.slice(result.stderr.indexOf('==> Claude setup finished'))).toBe(
       `==> Claude setup finished with 1 warning(s):
-    - npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)
+    - pnpm setup skipped — the SessionStart hook's install will fail until corepack can provision pnpm
 ==> The environment is up but may be incomplete; address the warnings above.
 `
     );

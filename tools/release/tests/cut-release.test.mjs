@@ -59,7 +59,6 @@ describe('findStrayReleasePaths', () => {
   it('keeps only paths outside release artifacts after normalizing porcelain output', () => {
     const status = [
       ' M package.json',
-      ' M package-lock.json',
       ' M web/src/lib/releases.json',
       ' M web/src/lib/components/settings/CurrentReleaseNotes.svelte',
       ' M web/src/lib/components/page/ReleaseHistory.svelte',
@@ -76,5 +75,12 @@ describe('findStrayReleasePaths', () => {
       'tools/new.mjs',
       'tools/release/cut-release.mjs',
     ]);
+  });
+
+  // A version bump does not rewrite pnpm-lock.yaml the way it rewrote
+  // package-lock.json, so a dirty lockfile here is somebody else's change
+  // and `git add -A` would sweep it into the release commit.
+  it('treats a dirty lockfile as a stray change', () => {
+    expect(findStrayReleasePaths(' M pnpm-lock.yaml')).toEqual(['pnpm-lock.yaml']);
   });
 });

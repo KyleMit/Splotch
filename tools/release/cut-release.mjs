@@ -28,9 +28,11 @@ import { ROOT, fail, run, capture, isMain, parseOrFail } from '../lib/proc.mjs';
 import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
+// No lockfile entry: pnpm-lock.yaml records dependency resolutions, not the root
+// package's own version, so a version bump leaves it untouched and a dirty
+// lockfile during a release is a stray change worth aborting on.
 const RELEASE_PATHS = [
   'package.json',
-  'package-lock.json',
   'web/src/lib/releases.json',
   'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
   'web/src/lib/components/page/ReleaseHistory.svelte',
@@ -126,7 +128,9 @@ function bumpVersions(version, versionCode) {
   } else {
     console.log('(no ios/ project yet — skipping iOS version bump)');
   }
-  run('npm', ['version', version, '--no-git-tag-version', '--allow-same-version']);
+  // pnpm, not npm: `npm version` syncs the lockfile it expects to find, which
+  // would author a competing package-lock.json alongside pnpm-lock.yaml.
+  run('pnpm', ['version', version, '--no-git-tag-version', '--allow-same-version']);
 }
 
 function generateArtifacts() {

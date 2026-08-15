@@ -44,11 +44,22 @@ function shadowedRules(rules) {
 }
 
 describe('Claude Code Bash permissions', () => {
-  it('allows only bare npm install and npm ci commands', () => {
-    expect(isBashAllowed('npm install')).toBe(true);
-    expect(isBashAllowed('npm ci')).toBe(true);
-    expect(isBashAllowed('npm install some-package')).toBe(false);
-    expect(isBashAllowed('npm install --ignore-scripts')).toBe(false);
+  // Reproducing the committed tree is allowed; adding a package or skipping the
+  // install-script gating is a decision that belongs to a human.
+  it('allows only the two bare pnpm install shapes', () => {
+    expect(isBashAllowed('pnpm install')).toBe(true);
+    expect(isBashAllowed('pnpm install --frozen-lockfile')).toBe(true);
+    expect(isBashAllowed('pnpm install some-package')).toBe(false);
+    expect(isBashAllowed('pnpm add some-package')).toBe(false);
+    expect(isBashAllowed('pnpm install --ignore-scripts')).toBe(false);
+  });
+
+  // npm still runs the script graph (`npm run …` works against a pnpm tree), but
+  // `npm install` would author a competing package-lock.json.
+  it('never allows npm to install', () => {
+    expect(isBashAllowed('npm install')).toBe(false);
+    expect(isBashAllowed('npm ci')).toBe(false);
+    expect(isBashAllowed('npm run build')).toBe(true);
   });
 
   it('never allows destructive command shapes', () => {

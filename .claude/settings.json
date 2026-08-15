@@ -54,8 +54,10 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(npm test*)",
-      "Bash(npm ci)",
-      "Bash(npm install)",
+      "Bash(pnpm run *)",
+      "Bash(pnpm test*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm install --frozen-lockfile)",
       "Bash(npx *)",
       "Bash(node tools/**)",
 
