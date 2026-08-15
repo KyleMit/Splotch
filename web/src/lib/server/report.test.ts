@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseDeviceField, submitReport } from './report';
+import { MAX_REPORT_MESSAGE_LENGTH } from '$lib/report';
 import type { CreateIssueInput } from './github';
 
 const createIssue = vi.fn(async (_input: CreateIssueInput) => {});
@@ -97,5 +98,44 @@ describe('submitReport and the device opt-in', () => {
     await submitReport({ ...base, device: { nope: 'x' }, wantsDevice: true });
 
     expect(issueBody()).toContain(NOTE);
+  });
+
+  // The message is attacker-controlled and rendered as issue Markdown, so a
+  // mention or ref that reaches the body unescaped notifies or links a real
+  // account/issue. The issue-1066 kill-check found dropping the escaping left
+  // every suite green, so the property is pinned here where the escaping lives.
+  it('neutralizes mentions, refs, and embeds in the message before they reach the issue', async () => {
+    await submitReport({
+      ...base,
+      message: 'ping @someone about #123 and ![img](x) via <img src=x>',
+      device: null,
+    });
+
+    expect(issueBody()).toContain('\\@someone');
+    expect(issueBody()).toContain('\\#123');
+    expect(issueBody()).toContain('\\![img]');
+    expect(issueBody()).toContain('\\<img');
+  });
+
+  it('escapes device values the same way as the message', async () => {
+    await submitReport({
+      ...base,
+      device: { platform: 'Web <img src=x>' },
+      wantsDevice: true,
+    });
+
+    expect(issueBody()).toContain('**Platform:** Web \\<img');
+  });
+
+  it(`caps the message at ${MAX_REPORT_MESSAGE_LENGTH} characters`, async () => {
+    const overflow = 'tail-that-must-not-survive';
+    await submitReport({
+      ...base,
+      message: 'x'.repeat(MAX_REPORT_MESSAGE_LENGTH) + overflow,
+      device: null,
+    });
+
+    expect(issueBody()).not.toContain(overflow);
+    expect(issueBody()).toContain('x'.repeat(MAX_REPORT_MESSAGE_LENGTH));
   });
 });
