@@ -68,14 +68,9 @@ export async function ensureDevServer(port, timeout = 90_000) {
 
 // Open the app in a fresh browser context sized to `device`; resolves once the
 // drawing canvas is ready. `colorScheme` drives the app's follow-system theme
-// (dark-mode scenes); `query` appends a query string (e.g. the AI access token);
-// `prepare(page)` runs before navigation so route mocks catch boot-time requests.
-export async function openAppPage(
-  browser,
-  base,
-  device,
-  { colorScheme = 'light', query = '', prepare } = {}
-) {
+// (dark-mode scenes); `prepare(page)` runs before navigation so route mocks
+// catch boot-time requests.
+export async function openAppPage(browser, base, device, { colorScheme = 'light', prepare } = {}) {
   const ctx = await browser.newContext({
     viewport: { width: device.width, height: device.height },
     deviceScaleFactor: device.deviceScaleFactor,
@@ -85,7 +80,7 @@ export async function openAppPage(
   });
   const page = await ctx.newPage();
   await prepare?.(page);
-  await page.goto(base + query, { waitUntil: 'networkidle' });
+  await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForSelector(DRAWING_CANVAS_SELECTOR);
   await sleep(APP_STARTUP_SETTLE_DELAY_MS);
   return { ctx, page };
