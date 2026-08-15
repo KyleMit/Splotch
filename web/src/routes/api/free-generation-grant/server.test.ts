@@ -18,9 +18,9 @@ vi.mock('$lib/server/rateLimit', () => ({ rateLimit }));
 
 import { GET } from './+server';
 
-function getStatus() {
+function getStatus(installationId: string = 'a'.repeat(64)) {
   const request = new Request('http://localhost/api/free-generation-grant', {
-    headers: { 'X-Installation-Id': 'a'.repeat(64) },
+    headers: { 'X-Installation-Id': installationId },
   });
   return GET({ request, getClientAddress: () => '198.51.100.1' } as unknown as Parameters<
     typeof GET
@@ -35,6 +35,27 @@ beforeEach(() => {
 });
 
 describe('GET /api/free-generation-grant', () => {
+  // The endpoint is an unauthenticated per-installation balance oracle, so the
+  // throttle and the id validation are its only gates. Both were green under
+  // deletion until the issue-1066 kill-check pinned them here.
+  it('throttles a limited IP before validating anything', async () => {
+    rateLimit.mockReturnValue({ limited: true, retryAfter: 30 });
+
+    const response = await getStatus();
+
+    expect(response.status).toBe(429);
+    expect(getDailyStatus).not.toHaveBeenCalled();
+    expect(getGrantStatus).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed installation id without reading any grant state', async () => {
+    const response = await getStatus('not-an-installation-id');
+
+    expect(response.status).toBe(400);
+    expect(getDailyStatus).not.toHaveBeenCalled();
+    expect(getGrantStatus).not.toHaveBeenCalled();
+  });
+
   it('reports unavailable without a configured project key', async () => {
     envState.OPENAI_API_KEY = undefined;
 
