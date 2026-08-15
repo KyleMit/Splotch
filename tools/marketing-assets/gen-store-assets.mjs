@@ -156,16 +156,19 @@ async function sceneBooks(browser, base, capture) {
   return shot;
 }
 
+// Rejects when the cover thumbs never finish decoding (or none render at
+// all), failing the scene and the run — a swallowed failure here would
+// overwrite 02-books.png with a half-loaded grid.
+const DIALOG_IMAGES_TIMEOUT_MS = 10_000;
 const waitForDialogImages = (page) =>
-  page
-    .waitForFunction(
-      () =>
-        [...document.querySelectorAll('#coloring-book-dialog img')].every(
-          (img) => img.complete && img.naturalWidth > 0
-        ),
-      { timeout: 10_000 }
-    )
-    .catch(() => {});
+  page.waitForFunction(
+    () => {
+      const covers = [...document.querySelectorAll('#coloring-book-dialog img')];
+      return covers.length > 0 && covers.every((img) => img.complete && img.naturalWidth > 0);
+    },
+    undefined,
+    { timeout: DIALOG_IMAGES_TIMEOUT_MS }
+  );
 
 async function sceneMagic(browser, base, capture, orientation) {
   const { ctx, page } = await openAppPage(browser, base, capture, { prepare: mockFreeGrant });
