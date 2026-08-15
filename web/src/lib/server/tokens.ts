@@ -96,6 +96,15 @@ async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead> {
 // `degraded` is an instance whose Blobs read failed on this request, where the
 // durable list still exists and holds values this one does not, so writing here
 // would report a success the blob never saw.
+// Whether this process is a deployed Netlify function rather than a local dev
+// server. Netlify sets NETLIFY on every build and function runtime;
+// NETLIFY_BLOBS_CONTEXT is the one a Blobs-capable function also gets, and is
+// absent in precisely the legacy-runtime case this distinction exists for — so
+// either being present is enough to mean "not local".
+function isDeployedFunction(): boolean {
+  return Boolean(env.NETLIFY || env.NETLIFY_BLOBS_CONTEXT);
+}
+
 function memoryRead(source: MemorySource): StoreRead {
   if (memoryTokens === null) memoryTokens = seedFromEnv();
   return { source, store: null, list: memoryTokens };
@@ -140,7 +149,14 @@ async function readStore(): Promise<StoreRead> {
       return memoryRead('degraded');
     }
   }
-  return memoryRead('memory');
+  // No store at all. Locally that is the absent-by-design case and the memory
+  // list is the product. On a deployed function it is an outage wearing the same
+  // shape: ADR-0025 records a production configuration where getStore() throws on
+  // every call for the lifetime of the instance — a legacy V1 function never
+  // receives NETLIFY_BLOBS_CONTEXT, so MissingBlobsEnvironmentError is permanent,
+  // and the app shipped in exactly that state once. Banking a write there reports
+  // a revocation every other instance still ignores.
+  return memoryRead(isDeployedFunction() ? 'degraded' : 'memory');
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two

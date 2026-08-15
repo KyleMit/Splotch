@@ -121,9 +121,28 @@ async function freshTokensWithEmptyBlobs(seed: string) {
   return import('./tokens');
 }
 
+// getStore() throws for the lifetime of the instance — the same shape as
+// `freshTokens` — but on a deployed function, where a Blobs runtime is expected
+// and its absence is an outage rather than the local absent-by-design case.
+async function freshTokensOnDeployedFunction(
+  seed: string,
+  signal: 'NETLIFY' | 'NETLIFY_BLOBS_CONTEXT'
+) {
+  vi.resetModules();
+  envState.ALLOWED_TOKENS_LIST = seed;
+  envState[signal] = '1';
+  blobsState.stores = null;
+  return import('./tokens');
+}
+
 beforeEach(() => {
   // Silence the expected "Blobs unavailable" warning from openStore.
   vi.spyOn(console, 'warn').mockImplementation(() => {});
+  // envState is shared across tests, so the deploy signal is cleared here rather
+  // than per-helper: a leak would silently move every later test onto the
+  // deployed branch, where mutations refuse.
+  delete envState.NETLIFY;
+  delete envState.NETLIFY_BLOBS_CONTEXT;
 });
 
 describe('getTokensStatus / seeding', () => {
@@ -408,5 +427,53 @@ describe('usage cleanup on remove', () => {
     await usage.setJSON('missing', { count: 2 });
     expect(await removeToken('missing')).toEqual({ ok: true, tokens: ['a'] });
     expect(usage.blobs.has('missing')).toBe(true);
+  });
+});
+
+// ADR-0025 records a production configuration where getStore() throws on every
+// call — a legacy V1 function never receives NETLIFY_BLOBS_CONTEXT, so the error
+// is permanent rather than transient — and the app shipped in that state once.
+// Locally the identical condition is the product, which is why the two are told
+// apart by where the code is running rather than by what getStore did.
+describe('unconfigured Blobs on a deployed function', () => {
+  it('refuses an add instead of banking it in a list only this instance can see', async () => {
+    const tokens = await freshTokensOnDeployedFunction('legacy', 'NETLIFY');
+    expect(await tokens.addToken('mine')).toEqual({
+      ok: false,
+      error: tokens.TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    expect((await tokens.getTokensStatus()).tokens).toEqual(['legacy']);
+  });
+
+  it('refuses a revocation, which is the direction that fails open', async () => {
+    const tokens = await freshTokensOnDeployedFunction('legacy,revoked', 'NETLIFY');
+    expect(await tokens.removeToken('revoked')).toEqual({
+      ok: false,
+      error: tokens.TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    });
+    // The admin must not be told a token is gone while every other instance —
+    // and this one after a cold start — still honours it.
+    expect(await tokens.isAllowedToken('revoked')).toBe(true);
+  });
+
+  it('takes NETLIFY_BLOBS_CONTEXT as the signal too', async () => {
+    const tokens = await freshTokensOnDeployedFunction('legacy', 'NETLIFY_BLOBS_CONTEXT');
+    expect((await tokens.addToken('mine')).ok).toBe(false);
+  });
+
+  it('still serves reads, and still reports itself as not persistent', async () => {
+    const tokens = await freshTokensOnDeployedFunction('legacy', 'NETLIFY');
+    expect(await tokens.getTokensStatus()).toEqual({ tokens: ['legacy'], persistent: false });
+    expect(await tokens.isAllowedToken('legacy')).toBe(true);
+  });
+});
+
+describe('unconfigured Blobs locally', () => {
+  it('still banks a write, because the memory list is the product there', async () => {
+    const tokens = await freshTokens('legacy');
+    expect((await tokens.addToken('mine')).ok).toBe(true);
+    expect(await tokens.isAllowedToken('mine')).toBe(true);
   });
 });
