@@ -424,16 +424,17 @@ const CONTRAST = `(fg, bg) => {
 // (StepLedger). One mix strength has to hold for four crayons on two grounds,
 // so both themes are measured rather than assumed from the light one.
 for (const colorScheme of ['light', 'dark'] as const) {
-  // Each numeral and its step's callout label are the same ink on the same
-  // wash, so one measurement covers both. The numeral is set below the
-  // large-text threshold, so it owes the full 4.5:1 rather than 3:1.
+  // Each numeral — and, on the steps that keep a callout, its label — is the
+  // step's ink on the step's wash, so the four numerals cover every hue and the
+  // callouts re-measure theirs where a card actually paints. The numeral is set
+  // below the large-text threshold, so it owes the full 4.5:1 rather than 3:1.
   test(`the step inks clear 4.5:1 on the wash they sit on in ${colorScheme} mode`, async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme });
     await page.goto('/beta');
     // Step 4's callout is the one composed after hydration, so waiting for it is
-    // what makes all eight measurable.
+    // what makes every pair measurable.
     await expect(shownPanel(page).locator('.step-4 .card')).toBeVisible();
     const ratios = await page.evaluate(`(() => {
       const contrast = ${CONTRAST};
@@ -449,7 +450,8 @@ for (const colorScheme of ['light', 'dark'] as const) {
           }))
       );
     })()`);
-    expect(ratios).toHaveLength(8);
+    // Four numerals plus the two callouts the Android panel keeps (steps 3 & 4).
+    expect(ratios).toHaveLength(6);
     for (const { where, ratio } of ratios as { where: string; ratio: number }[]) {
       expect(ratio, `${where} contrast`).toBeGreaterThanOrEqual(4.5);
     }
