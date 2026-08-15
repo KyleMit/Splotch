@@ -148,6 +148,11 @@ npx @capacitor/assets generate --ios
    clobbers it.
 4. Accept the agreements in App Store Connect (<https://appstoreconnect.apple.com> → Business) —
    uploads fail with a cryptic error until the Paid/Free Apps agreement is accepted.
+5. Declare **EU Digital Services Act trader status** (Business → Agreements → Compliance → *Digital
+   Services Act* → **Complete Compliance Requirements**). Requires the Account Holder or an Admin.
+   Until it is answered, no new app or update can be submitted for the 27 EU territories, and
+   already-published apps get removed there. See §4 "EU Digital Services Act" below for which answer
+   Splotch gives and why.
 
 > Signing is **automatic** (Xcode-managed certificates + profiles) — there is no iOS equivalent of
 > `keystore.properties` to back up; Apple holds the distribution certificate and can revoke/reissue
@@ -167,6 +172,9 @@ npx @capacitor/assets generate --ios
 
 * [ ] Listing fields + screenshots: copy/paste from `store-assets/STORE-LISTING-IOS.md`, upload
       `store-assets/screenshots/iphone69/` and `ipad13/`.
+* [ ] **Digital Services Act trader status, per app**: App Information → *App Store Regulations and
+      Permits* → **Digital Services Act** → Edit. Inherits the account-level answer; confirm it
+      rather than assume it. See "EU Digital Services Act" below.
 * [ ] **App Privacy** nutrition label (declarations written out in `STORE-LISTING-IOS.md`); privacy
       policy URL `https://splotch.art/privacy`.
 * [ ] **Age rating** questionnaire: enter the exact answers in `store-assets/STORE-LISTING-IOS.md`,
@@ -176,6 +184,39 @@ npx @capacitor/assets generate --ios
       on hardware.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
       notes*, explain Settings and the parent-enabled, bring-your-own-key AI feature up front.
+
+### EU Digital Services Act (trader status)
+
+Articles 30–31 of the [DSA](https://eur-lex.europa.eu/eli/reg/2022/2065/oj) make the App Store
+verify and publish trader contact details. Apple implements this as a blocking declaration:
+unanswered means an app cannot be submitted to, and is removed from, the 27 EU storefronts. Apple's
+[trader requirements page](https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-trader-requirements/)
+is the authoritative procedure.
+
+A **trader** acts "for purposes relating to their trade, business, craft or profession" — Apple's
+markers are revenue (paid app, in-app purchases, ads), commercial promotion to consumers, VAT
+registration, or a legal business status. A **non-trader** is a hobbyist distributing without
+commercialization intent.
+
+Splotch is free, ships no in-app purchases and no advertising, and is enrolled under an individual
+(non-DUNS) developer account; the AI feature is bring-your-own-key, so the parent's payment goes to
+the model provider and none of it flows here (see `compliance.md`, guideline 3.1.1). On Apple's
+markers that is a non-trader, and **"This is not a trader account"** is the answer this project
+gives. EU users then see Apple's notice that consumer-protection rights against a trader do not
+apply — the accepted cost of the declaration.
+
+Two consequences to weigh before changing the answer:
+
+* **The declaration is legal, not cosmetic.** A false one is enforceable under EU law, and the
+  status is the account holder's to certify — not a detail to be inferred from this file.
+* **Trader status publishes contact details.** An individual trader's address (or P.O. box), phone,
+  and email appear on the EU App Store product page, and both address and phone must clear Apple's
+  verification (2FA plus a document proving name and address). For an individual with no business
+  address that means a home address in public.
+
+**Re-declare as a trader** if Splotch ever takes revenue directly — a price, in-app purchases,
+advertising, or reselling the AI capability instead of accepting a parent's own key. Any of those
+crosses Apple's first marker on its own.
 
 ### Kids Category (kids compliance)
 
