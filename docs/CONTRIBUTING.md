@@ -57,13 +57,45 @@ ADR-0019.
 
 None are required for local development. The app works fully offline without any API keys.
 
-| Variable                    | Where set     | Purpose                                                                       |
-| --------------------------- | ------------- | ----------------------------------------------------------------------------- |
-| `CAPACITOR=true`            | build scripts | Switches to `adapter-static`, disables PWA plugin, sets `__NATIVE_API_BASE__` |
-| `PUBLIC_ENABLE_DEV_HARNESS` | `.env.local`  | Unlocks the `/dev/*` test routes in the browser                               |
-| `AI_ACCESS_TOKENS`          | Netlify env   | Comma-separated list of valid AI invite tokens (server-only)                  |
-| `ADMIN_PASSWORD`            | Netlify env   | Password for the `/admin` token console (server-only)                         |
-| `OPENAI_API_KEY`            | Netlify env   | OpenAI API key for the hosted image generation endpoint (server-only)         |
+**Where a variable goes is not a free choice** — it follows from who reads it, and the two groups
+below load at different times. Getting this wrong fails silently: the variable is simply undefined
+and the feature behaves as if you never set it.
+
+### Server variables — Netlify env in production, `web/.env` locally
+
+Read through `$env/dynamic/private` at request time, so `web/.env` works for all of them.
+`web/.env.example` is the copy-to-`web/.env` template, with the one-time PAT setup steps.
+
+| Variable                        | Read by                     | Purpose, and what breaks when unset                                                                                                  |
+| ------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `ALLOWED_TOKENS_LIST`           | `server/tokens.ts`          | Comma-separated managed access tokens. A **one-time seed** into Blobs on first read, not the live list — `/admin` owns it after that |
+| `ADMIN_ACCESS_TOKEN`            | `server/admin.ts`           | The `/admin` console secret, and the HMAC key for its derived session token                                                          |
+| `OPENAI_API_KEY`                | `server/config.ts`          | The credential `/api/generate-image` bills hosted generation to. Unset ⇒ `/api/free-generation-grant` also 503s                      |
+| `GITHUB_ISSUE_TOKEN`            | `server/config.ts`          | Fine-grained PAT that files feedback as issues. Unset ⇒ `/api/report`, `/api/report-image`, and the `/feedback` form action all 503  |
+| `GITHUB_ISSUE_REPO`             | `server/config.ts`          | Overrides the feedback repo (default `KyleMit/splotch-feedback`)                                                                     |
+| `REPORT_TOKEN_SECRET`           | `server/reportToken.ts`     | Signs the report token bound to a generation. Unset ⇒ free-tier picture reports **and every refusal report** 503                     |
+| `GENERATE_DEADLINE_MS_OVERRIDE` | `server/generationStart.ts` | Raises the synchronous generation deadline. The manual red-team suite is the only caller; production never sets it                   |
+
+### Build and tooling variables — the shell only
+
+These are read from `process.env` while the config module is evaluated, which happens **before Vite
+loads any `.env` file**. An entry in `web/.env` or `web/.env.local` does nothing — set them inline
+on the command (`PUBLIC_ENABLE_DEV_HARNESS=true npm run dev`) or export them.
+
+| Variable                    | Read by                              | Purpose                                                                                                                          |
+| --------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `CAPACITOR`                 | `svelte.config.js`, `vite.config.ts` | `true` switches to `adapter-static`, disables the PWA plugin, sets `__NATIVE_API_BASE__`                                         |
+| `PUBLIC_ENABLE_DEV_HARNESS` | `vite.config.ts`                     | Compiles the `/dev/*` routes in, via the `__DEV_HARNESS__` literal                                                               |
+| `PERF_MARKS`                | `vite.config.ts`                     | Compiles the engine's `performance.mark` instrumentation in, for `npm run perf:web`                                              |
+| `TUNNEL_HOST`               | `vite.config.ts`                     | Adds the tunnel hostname to `server.allowedHosts` for cloud preview                                                              |
+| `GEMINI_API_KEY`            | `tools/asset-gen/`, `model-eval`     | **Not read by the app.** These read `process.env` directly with no `.env` loading, so a `web/.env` entry needs `node --env-file` |
+
+`REDTEAM_FIXTURE_KEY` is a third case: `tools/redteam/lib/fixture-crypto.mjs` calls
+`process.loadEnvFile('.env')`, so it comes from a **repo-root** `.env` — not `web/.env`, not the
+shell.
+
+`web/playwright.shared.ts` declares the full private set the served app reads, with the
+outbound-write credentials neutralised; it is the list to check against when adding a row here.
 
 To test the AI flow locally, run `npm run dev:netlify` instead of `npm run dev` — this starts the
 Netlify Dev server so the `/api/*` serverless functions are available. This requires the Netlify
@@ -73,8 +105,9 @@ CLI, which is installed globally (it is not a project dependency):
 npm install -g netlify-cli
 ```
 
-In production, AI access is granted per user: append one of the `AI_ACCESS_TOKENS` values to the app
-URL as the `ai_access_token` query param — `https://splotch.art/?ai_access_token=YOUR_TOKEN`.
+In production, AI access is granted per user: append one of the `ALLOWED_TOKENS_LIST` values to the
+app URL as the `ai_access_token` query param (`AI_ACCESS_TOKEN_PARAM` in
+`web/src/lib/inviteLink.ts`) — `https://splotch.art/?ai_access_token=YOUR_TOKEN`.
 
 ## The dual-build
 
@@ -143,7 +176,8 @@ See the [testing guide](TESTING.md) for the full test strategy, including the na
 
 ## Dev routes
 
-Set `PUBLIC_ENABLE_DEV_HARNESS=true` in `.env.local` to unlock:
+Run with `PUBLIC_ENABLE_DEV_HARNESS=true` in the environment (see above — a `.env` entry will not
+work) to unlock:
 
 | Route         | Purpose                                                         |
 | ------------- | --------------------------------------------------------------- |

@@ -52,7 +52,15 @@ carve-out):
   root tree.
 * **Paths go through `lib/asset-paths.mjs`.** Use its exported constants (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode
-  `../../..` walks or import from the repo-root `tools/lib/`.
+  `../../..` walks or import from the repo-root `tools/lib/`. **`crayon-reference/` is exempt from
+  both halves** — its executables resolve their own paths and import the shared `tools/` libraries
+  directly. The rule exists so the shipping pipeline stays self-contained and this folder remains
+  extractable to a nested install or a separate repo (`docs/architecture.md`); `crayon-reference/`
+  is not part of that pipeline — it produces brush reference art published as a `/scrapbook` page —
+  so nothing it imports can block that extraction, and re-implementing the shared scrapbook chrome
+  here would fork the site's look. **The test for a new sibling is whether it is part of the
+  shipping pipeline, not where its output lands** — `coloring/` writes review scratch to
+  `SAMPLES_DIR` and is bound; `legacy/` reads `COLORING_DIR` and is not live pipeline.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
   `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
   are their fills-only punch (`coloring/punch-fill-outlines.mjs`, root:

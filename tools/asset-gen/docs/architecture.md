@@ -62,7 +62,13 @@ Structure:
 
 * `tools/asset-gen/lib/asset-paths.mjs` centralizes repo-root + tree resolution (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`), so scripts don't hardcode
-  `../../..` walks or import from `tools/lib/`.
+  `../../..` walks or import from `tools/lib/`. That self-containment is what keeps the escalation
+  path below open — a folder that reaches into repo-root automation cannot be promoted to a nested
+  install or a separate repo without dragging it along. **`crayon-reference/` is licensed out of
+  both halves**: it resolves its own paths and imports the shared `tools/` libraries directly,
+  including the `/scrapbook` chrome its published page shares with every other scrapbook generator.
+  It is not part of the shipping pipeline, so it is not part of what would be extracted. Membership
+  in that pipeline — not the directory a script writes to — is the test for a new sibling.
 * Coloring entry points live in `coloring/`, style-cover generation and its source drawing in
   `style-covers/`, crayon reference capture and comparison tools in `crayon-reference/`, and the two
   capability-wide conversion/manifest entry points at the folder root. Shared support modules stay

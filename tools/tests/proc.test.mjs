@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { pathToFileURL } from 'node:url';
 import { capture, hasCommand, isMain } from '../lib/proc.mjs';
 
 const argumentsToPreserve = [
@@ -13,7 +14,11 @@ const argumentsToPreserve = [
   '$(printf substituted); printf not-run | cat',
 ];
 const argumentPrinter = 'process.stdout.write(JSON.stringify(process.argv.slice(1)))';
-const procUrl = new URL('../lib/proc.mjs', import.meta.url).href;
+// pathToFileURL rather than `new URL('../lib/proc.mjs', import.meta.url)`: knip
+// reads that form as a module reference and registers the target as an entry
+// with export analysis skipped, which silently erases proc.mjs's whole export
+// surface from `lint:dead`. Built from a path, it is just a string to knip.
+const procUrl = pathToFileURL(join(import.meta.dirname, '..', 'lib', 'proc.mjs')).href;
 const missingCommand = 'splotch-command-that-does-not-exist';
 
 describe('command helpers', () => {

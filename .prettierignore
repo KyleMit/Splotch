@@ -2,6 +2,11 @@
 **/build/
 **/.netlify/
 **/node_modules/
+# Worktree-isolated agent checkouts. A nested copy under .claude/worktrees/agent-*/ does not
+# match the path-anchored rules below (web/src/tokens.css, the ideas-review.html dashboard),
+# so `prettier --check .` fails on files that are correctly ignored at their real location.
+# Stated here rather than left to Prettier's .gitignore fallback, which is a CLI default.
+.claude/worktrees/
 # Committed scrapbook run outputs (ADR-0059) are generated/promoted output, not
 # hand-authored source — the index.html and any published HTML/CSS/JS reports
 # must not be reformatted. scrapbook/README.md is dprint-owned via *.md below.

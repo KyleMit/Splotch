@@ -230,6 +230,13 @@ ios/local.xcconfig
 # scrapbook-page dry runs; promote a keeper into scrapbook/ with scrapbook:publish.
 .scrapbook-scratch/
 
+# Checkouts created by worktree-isolated agents (Agent tool `isolation: 'worktree'`).
+# They are full copies of the tree, so every file ignored only at its real path reappears at
+# a nested path no ignore pattern matches — see .prettierignore, dprint.json, and
+# eslint.config.js, which exclude the same directory for that reason.
+# ignore-surfaces.test.mjs fails when one of the four drops it.
+.claude/worktrees/
+
 # Working state of the scripted audit burndown (npm run audit:burndown, the
 # burn-down-audits skill): per-call Claude JSON / Codex JSONL envelopes, run
 # log, completed list, schemas, STOP sentinel. Durable state is docs/AUDIT.md + git.

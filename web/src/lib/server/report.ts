@@ -108,10 +108,6 @@ export async function submitReport({
   wantsDevice,
   hp,
 }: ReportInput): Promise<ReportResult> {
-  // Honeypot: a hidden field no human fills. If it's populated, quietly accept
-  // without creating an issue — a bot gets no signal and no issue lands.
-  if (typeof hp === 'string' && hp.trim()) return { ok: true };
-
   const reportKind: ReportKind | null =
     kind === 'feature' ? 'feature' : kind === 'bug' ? 'bug' : null;
   if (!reportKind) {
@@ -136,6 +132,26 @@ export async function submitReport({
       error: 'Reporting is not available right now. Please try again later.',
     };
   }
+
+  // Honeypot: a hidden field no human fills. Quietly accept without creating an
+  // issue, answering exactly as a real submission would.
+  //
+  // That is a claim about the response, not about every channel: this path
+  // returns with no I/O while a real one awaits GitHub, so latency still
+  // separates them. Padding it out is a bigger change than the trap is worth.
+  //
+  // Placed after every rejection, not before them, and that ordering is the whole
+  // guarantee. Short-circuiting first made each rejection an oracle: a bad `kind`
+  // answered 200 {ok:true} with the field filled and 400 without, so one invalid
+  // payload per candidate name identified the trap in a single request each,
+  // defeating any amount of markup obfuscation. Reaching here means the
+  // submission would have succeeded, so the caught bot gets exactly what a real
+  // submitter gets on every path. server.test.ts holds the two against each
+  // other rather than against a literal — for this door. /feedback's form action
+  // reads the same ok/not-ok result and builds its redirect from no part of it,
+  // but nothing tests that, so it is a property of the current code rather than
+  // a guaranteed one.
+  if (typeof hp === 'string' && hp.trim()) return { ok: true };
 
   try {
     await createIssue({

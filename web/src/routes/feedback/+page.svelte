@@ -3,6 +3,7 @@
   import type { SubmitFunction } from '@sveltejs/kit';
   import StatusMessage from '$lib/components/design/StatusMessage.svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
+  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReportFields from '$lib/components/report/ReportFields.svelte';
   import type { ReportKind } from '$lib/report';
   import { supportEmail } from '$lib/supportEmail';
@@ -136,6 +137,8 @@
       {@render nextSteps()}
     </div>
   {/if}
+
+  <ScrollCue />
 </PageShell>
 
 <style>

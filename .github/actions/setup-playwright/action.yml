@@ -28,14 +28,43 @@ runs:
         # (playwright.config.ts omits it when the binary is absent).
         key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
 
+    # Both steps below are bounded, because a composite action's steps cannot take
+    # `timeout-minutes` — only job steps can. A degraded runner starves them of bandwidth,
+    # and unbounded that reads as a hung test: the job's own timeout cancels every
+    # remaining step, so nothing downstream can report which one was slow. This rescues no
+    # run — the recovery unit is the runner, and nothing inside a job can change runners —
+    # it only makes the diagnosis cheap.
+    #
+    # SIGTERM alone would not end these. npm's run-script installs a deliberate no-op
+    # SIGTERM handler, and playwright runs apt under `sudo`, which defaults to `use_pty`
+    # and so leaves apt in a session outside the group being signalled. --kill-after
+    # escalates to SIGKILL, which neither can decline.
     - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: npx playwright install --with-deps ${{ inputs.browsers }}
+      # This branch installs the same apt packages as the one below and then downloads a
+      # browser, so it needs more room — but not so much that expiry lands past the job's
+      # own timeout, which would leave the bound unreachable.
+      env:
+        SETUP_TIMEOUT_S: '420'
+        SETUP_KILL_GRACE_S: '30'
+      run: |
+        timeout --kill-after="$SETUP_KILL_GRACE_S" "$SETUP_TIMEOUT_S" \
+          npx playwright install --with-deps ${{ inputs.browsers }} \
+          || "$GITHUB_ACTION_PATH/report-setup-timeout.sh" $? "$SETUP_TIMEOUT_S" 'browser install'
 
     # The browser binaries cache, but the apt packages don't — install-deps
     # is still required on a cache hit.
     - name: Install Playwright system deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
       shell: bash
-      run: npx playwright install-deps ${{ inputs.browsers }}
+      # One bound serves both callers, so it has to clear the slower of the two — WebKit
+      # pulls far more packages than Chromium — with room for ordinary variance, while
+      # still tripping long before the job timeout can cancel the step instead.
+      env:
+        SETUP_TIMEOUT_S: '180'
+        SETUP_KILL_GRACE_S: '30'
+      run: |
+        timeout --kill-after="$SETUP_KILL_GRACE_S" "$SETUP_TIMEOUT_S" \
+          npx playwright install-deps ${{ inputs.browsers }} \
+          || "$GITHUB_ACTION_PATH/report-setup-timeout.sh" $? "$SETUP_TIMEOUT_S" 'system deps'

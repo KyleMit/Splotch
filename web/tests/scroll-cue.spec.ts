@@ -240,3 +240,118 @@ test.describe('the two-column settings shell', () => {
     await expect(modal.locator('.settings-nav .scroll-cue')).toHaveCount(0);
   });
 });
+
+// The two standalone document-scrolled pages the /beta page set the pattern for.
+// Both crop rather than fade at the sizes below, which is what the refreshed
+// page-inventory critique caught: the changelog's release notes and the feedback
+// form each run past the fold with no sign they continue.
+//
+// Transcribed rather than imported: this is a TypeScript spec and the inventory
+// is an untyped .mjs, so a direct import costs the file its type checking.
+// tools/tests/scroll-cue-viewports.test.mjs reads both sides and fails when a
+// device-list refresh leaves these pinned to sizes the inventory stopped
+// capturing. The constants above predate that guard and still stand alone.
+const IPAD_MINI_PORTRAIT = { width: 744, height: 1133 }; // ipad-mini-7
+const IPAD_PRO_13_PORTRAIT = { width: 1032, height: 1376 }; // ipad-pro-13-m4
+const SMALL_IPHONE_LANDSCAPE = { width: 812, height: 375 }; // iphone-13-mini-landscape
+const LARGE_IPHONE_LANDSCAPE = { width: 956, height: 440 }; // iphone-16-pro-max-landscape
+
+async function documentOverflows(page: Page) {
+  return page.evaluate(() => {
+    const doc = document.documentElement;
+    return doc.scrollHeight > doc.clientHeight;
+  });
+}
+
+// Same contract as the sign-up page's, asserted against whichever route and
+// viewport the caller names: present while there is more below, gone at the
+// foot, re-armed on the way back up, and fading to the viewport edge rather
+// than to the sheet inside it.
+function documentCueContract(label: string, path: string, heading: string) {
+  test(`cues ${label} while it runs past the fold`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+
+    // Guards the assertions below from passing on a viewport that happens to
+    // hold the whole page — then they would be measuring nothing.
+    await expect.poll(() => documentOverflows(page)).toBe(true);
+
+    const cue = page.locator('.scroll-cue');
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+
+    await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight }));
+    await expect.poll(() => cueOpacity(cue)).toBe(0);
+
+    await page.evaluate(() => window.scrollTo({ top: 0 }));
+    await expect.poll(() => cueOpacity(cue)).toBe(1);
+  });
+
+  test(`fades ${label} to the foot of the viewport`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+
+    // Same guard as above, and load-bearing for the same reason: /feedback fits
+    // whole at both iPad portraits, so pointing this contract there without it
+    // would fail as a geometry mismatch rather than say the viewport was wrong.
+    await expect.poll(() => documentOverflows(page)).toBe(true);
+
+    await expect
+      .poll(() =>
+        page
+          .locator('.scroll-cue')
+          .evaluate((cue) => window.innerHeight - cue.getBoundingClientRect().bottom)
+      )
+      .toBe(0);
+  });
+}
+
+test.describe('the changelog on an iPad mini portrait', () => {
+  test.use({ viewport: IPAD_MINI_PORTRAIT });
+  documentCueContract('the release notes', '/changelog', 'Changelog');
+});
+
+test.describe('the changelog on a 13-inch iPad portrait', () => {
+  test.use({ viewport: IPAD_PRO_13_PORTRAIT });
+  documentCueContract('the release notes', '/changelog', 'Changelog');
+});
+
+test.describe('the feedback form on a small iPhone landscape', () => {
+  test.use({ viewport: SMALL_IPHONE_LANDSCAPE });
+  documentCueContract('the form', '/feedback', 'Send us feedback');
+
+  // The cue must not become a curtain over the control the page exists for:
+  // it is 72px of ramp that only reaches full strength in its bottom fifth, and
+  // the submit button has to stay both visible and clickable under it.
+  test('leaves the submit button reachable under the fade', async ({ page }) => {
+    await page.goto('/feedback');
+    const submit = page.locator('button.submit');
+
+    // scrollIntoViewIfNeeded stops the moment the button is on screen, which is
+    // clear of the fade. Landing its foot on the viewport's puts it under the
+    // deepest part of the ramp instead.
+    await submit.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      window.scrollTo(0, box.bottom + window.scrollY - window.innerHeight);
+    });
+    await expect.poll(() => cueOpacity(page.locator('.scroll-cue'))).toBe(1);
+    await expect(submit).toBeEnabled();
+
+    // toBeVisible passes under an opaque, pointer-grabbing cue; only a hit test
+    // pins `pointer-events: none`.
+    await expect
+      .poll(() =>
+        submit.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          return (
+            document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2) === node
+          );
+        })
+      )
+      .toBe(true);
+  });
+});
+
+test.describe('the feedback form on a large iPhone landscape', () => {
+  test.use({ viewport: LARGE_IPHONE_LANDSCAPE });
+  documentCueContract('the form', '/feedback', 'Send us feedback');
+});

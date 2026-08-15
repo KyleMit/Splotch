@@ -104,6 +104,44 @@ describe('POST /api/report', () => {
     expect(createIssue).not.toHaveBeenCalled();
   });
 
+  // The honeypot's whole value is that a caught bot cannot tell it was caught.
+  // That holds only while the two success paths are byte-identical on the wire,
+  // which no single-path assertion can see: adding an issue url or number to the
+  // real success would leave every test above green and hand a bot a one-request
+  // oracle for which field the trap is. So the two are compared to each other.
+  it('answers a honeypot submission exactly as it answers a real one', async () => {
+    const caught = await post({
+      kind: 'bug',
+      message: 'The crayon draws green',
+      [REPORT_HONEYPOT_FIELD]: 'a bot filled this',
+    });
+    const real = await post({ kind: 'bug', message: 'The crayon draws green' });
+
+    expect(createIssue).toHaveBeenCalledOnce();
+    expect(caught.status).toBe(real.status);
+    expect(await caught.text()).toBe(await real.text());
+    // The whole header set, not just content-type: a Retry-After, a Set-Cookie,
+    // or a cache directive on one path and not the other is the same oracle in a
+    // different field.
+    expect([...caught.headers]).toEqual([...real.headers]);
+  });
+
+  // The oracle the honeypot's value depends on is not only in the success shape:
+  // short-circuiting before validation answered a caught bot 200 while a real
+  // submitter with the same bad payload got 400, which names the trap field in
+  // one request. Every rejection path is therefore held against its honeypot twin.
+  it.each([
+    ['an unusable kind', { kind: 'nonsense', message: 'The crayon draws green' }],
+    ['an empty message', { kind: 'bug', message: '   ' }],
+  ])('answers %s the same whether or not the honeypot is filled', async (_label, payload) => {
+    const caught = await post({ ...payload, [REPORT_HONEYPOT_FIELD]: 'a bot filled this' });
+    const real = await post(payload);
+
+    expect(caught.status).toBe(real.status);
+    expect(await caught.text()).toBe(await real.text());
+    expect(createIssue).not.toHaveBeenCalled();
+  });
+
   it('charges the bucket for a rejected submission', async () => {
     const response = await post({ kind: 'bug', message: '   ' });
 

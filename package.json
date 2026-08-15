@@ -212,7 +212,7 @@
     "lint": "ESLint over the whole repo minus the ignores in eslint.config.js (flat config; enforces runes-only, no legacy stores)",
     "lint:fix": "ESLint with autofix",
     "lint:tokens": "Token-style ratchet for component <style> blocks (ADR-0071): fails if any file's raw hex-color or raw font-size count drifts from its allowlisted baseline in tools/tokens/lint-token-styles.mjs, or a raw 2+-digit z-index bypasses the --z-* tokens",
-    "lint:dead": "Dead-code gate (knip): fails on unused files, exports, and exported types across web/src, netlify, tools, and tools/asset-gen — remove the symbol or tag a deliberate seam with /** @public */",
+    "lint:dead": "Dead-code gate (knip): fails on unused files, exports, exported types, and duplicate exports across web/ (src, tests, root configs), netlify, and the tools capabilities enumerated in knip.json — remove the symbol or tag a deliberate seam with /** @public */",
     "format": "Format the whole repo: Prettier for source and config files, dprint for markdown",
     "format:check": "Check Prettier + dprint formatting without writing — what CI runs",
     "format:md": "Format all markdown docs with dprint (asterisk bullets/emphasis, wrap at 100, ADR-0057)",

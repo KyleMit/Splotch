@@ -16,6 +16,8 @@
     "**/.svelte-kit",
     "**/.netlify",
     "**/.gradle",
+    // Worktree-isolated agent checkouts duplicate every Markdown file in the repo.
+    ".claude/worktrees/**",
     // Keep committed Markdown outside generated web and native build output in scope.
     "**/web/build/",
     "android/**/build",

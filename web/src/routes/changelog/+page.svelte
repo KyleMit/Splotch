@@ -1,5 +1,6 @@
 <script lang="ts">
   import PageShell from '$lib/components/page/PageShell.svelte';
+  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReleaseHistory from '$lib/components/page/ReleaseHistory.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
@@ -104,6 +105,17 @@
         <ReleaseHistory />
       </div>
     </div>
+
+    <!-- The cue retires at the end of the *scroll*, which here is past the end of
+         the reading: `.release:last-of-type` takes a `--spy-reserve` min-height so
+         the scroll spy can mark the oldest release active, and its notes rarely
+         fill that. So the last few hundred pixels are reserved emptiness the cue
+         still reports as more-below. Accepted rather than worked around: the ramp
+         paints --surface over blank --surface, so it is invisible across the band
+         itself, and the only artifact is the closing lines dimming as they pass
+         under it. Anchoring the sentinel to the notes instead would need ScrollCue
+         to take a target, which is a wider seam than this buys. -->
+    <ScrollCue />
   </PageShell>
 </div>
 
