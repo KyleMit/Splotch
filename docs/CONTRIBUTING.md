@@ -21,6 +21,12 @@ on merge.
   it on PATH at the exact version `package.json`'s `packageManager` field pins, and corepack is
   bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every
   `npm run …` in these docs is correct as written.
+  ```bash
+  corepack enable pnpm
+  ```
+  **Re-run that after every `nvm install`.** Corepack writes its shim into the *active* Node
+  version's `bin/`, so a Node upgrade lands you in a shell where `pnpm: command not found` — the
+  package manager is fine, the new Node just has no shim yet.
 * **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via
   `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
 * For native Android/iOS work, see the full toolchain setup in the [mobile guide](MOBILE/native.md).

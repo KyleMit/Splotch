@@ -58,6 +58,8 @@
       "Bash(pnpm test*)",
       "Bash(pnpm install)",
       "Bash(pnpm install --frozen-lockfile)",
+      "Bash(corepack enable pnpm)",
+      "Bash(corepack install)",
       "Bash(npx *)",
       "Bash(node tools/**)",
 
