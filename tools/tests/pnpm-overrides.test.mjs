@@ -24,7 +24,9 @@ function pnpmOverrides() {
     if (line.trim() === '' || line.trimStart().startsWith('#')) continue;
     // Dedented back to column 0 — the overrides block has ended.
     if (!line.startsWith('  ')) break;
-    const [, key, value] = line.match(/^ {2}"?([^":]+)"?:\s*(\S+)$/) ?? [];
+    // Either quote style: Prettier owns this file's formatting and normalizes a
+    // quoted key to single quotes, which is what broke the first draft of this parser.
+    const [, key, value] = line.match(/^ {2}['"]?([^'":]+)['"]?:\s*(\S+)$/) ?? [];
     if (key) entries.push([key, value]);
   }
   return Object.fromEntries(entries);
