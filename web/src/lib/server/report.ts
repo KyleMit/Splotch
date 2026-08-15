@@ -110,6 +110,14 @@ export async function submitReport({
 }: ReportInput): Promise<ReportResult> {
   // Honeypot: a hidden field no human fills. If it's populated, quietly accept
   // without creating an issue — a bot gets no signal and no issue lands.
+  //
+  // "No signal" is a property of the *wire*, and it survives only while this
+  // success carries nothing a real one doesn't: give ReportResult's ok variant a
+  // field and both front doors gain a one-request oracle for which field the trap
+  // is, defeating any amount of markup obfuscation. server.test.ts holds the two
+  // responses against each other rather than against a literal, so that change
+  // fails a test instead of shipping. /feedback is closed by construction — its
+  // redirect is built after the ok check, from no part of the result.
   if (typeof hp === 'string' && hp.trim()) return { ok: true };
 
   const reportKind: ReportKind | null =

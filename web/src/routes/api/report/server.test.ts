@@ -104,6 +104,26 @@ describe('POST /api/report', () => {
     expect(createIssue).not.toHaveBeenCalled();
   });
 
+  // The honeypot's whole value is that a caught bot cannot tell it was caught.
+  // That holds only while the two success paths are byte-identical on the wire,
+  // which no single-path assertion can see: adding an issue url or number to the
+  // real success would leave every test above green and hand a bot a one-request
+  // oracle for which field the trap is. So the two are compared to each other.
+  it('answers a honeypot submission exactly as it answers a real one', async () => {
+    const caught = await post({
+      kind: 'bug',
+      message: 'The crayon draws green',
+      [REPORT_HONEYPOT_FIELD]: 'a bot filled this',
+    });
+    vi.mocked(rateLimit).mockClear();
+    const real = await post({ kind: 'bug', message: 'The crayon draws green' });
+
+    expect(createIssue).toHaveBeenCalledOnce();
+    expect(caught.status).toBe(real.status);
+    expect(await caught.text()).toBe(await real.text());
+    expect(caught.headers.get('content-type')).toBe(real.headers.get('content-type'));
+  });
+
   it('charges the bucket for a rejected submission', async () => {
     const response = await post({ kind: 'bug', message: '   ' });
 
