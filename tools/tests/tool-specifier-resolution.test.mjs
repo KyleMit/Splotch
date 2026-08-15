@@ -21,8 +21,13 @@ const repoRoot = join(import.meta.dirname, '..', '..');
 const SEPARATELY_CONFIGURED = /^tools\/asset-gen\//;
 
 // Synthetic diff fixtures: opaque strings fed to the audit-burndown diff parser,
-// deliberately naming files that do not exist.
-const FIXTURE_SPECIFIERS = new Set(['./folderSaveSupport', './foo', './lazy', './x', './y']);
+// deliberately naming files that do not exist. The second row is this file's
+// own positive-control table below, which the repo scan otherwise reads as
+// broken imports.
+const FIXTURE_SPECIFIERS = new Set([
+  ...['./folderSaveSupport', './foo', './lazy', './x', './y'],
+  ...['./x.mjs', '../lib/y.mjs', './z.mjs', './dyn.mjs', '../mocked.mjs', './asset.bin'],
+]);
 
 const toolFiles = execFileSync('git', ['ls-files', 'tools'], { cwd: repoRoot, encoding: 'utf8' })
   .trim()
@@ -59,6 +64,27 @@ function resolvedSpecifiers(file) {
       target: normalize(join(dirname(file), spec.split('?')[0])),
     }));
 }
+
+// Positive control for the extraction itself: the guards below scan whatever
+// the tree happens to contain, so a form no tracked file currently uses can
+// drop out of RELATIVE_SPECIFIER without a failure — which is exactly how the
+// bare side-effect import went unguarded until the issue-1066 kill-check.
+describe('RELATIVE_SPECIFIER extracts every specifier-carrying form', () => {
+  it.each([
+    ['a bare side-effect import', `import './x.mjs';`, './x.mjs'],
+    ['a from import', `import { a } from '../lib/y.mjs';`, '../lib/y.mjs'],
+    ['a re-export', `export { b } from './z.mjs';`, './z.mjs'],
+    ['a dynamic import', `const m = await import('./dyn.mjs');`, './dyn.mjs'],
+    ['a vi.mock path', `vi.mock('../mocked.mjs', () => ({}));`, '../mocked.mjs'],
+    ['a new URL path', `new URL('./asset.bin', import.meta.url)`, './asset.bin'],
+  ])('%s', (_label, source, specifier) => {
+    expect([...source.matchAll(RELATIVE_SPECIFIER)].map((match) => match[2])).toEqual([specifier]);
+  });
+
+  it('ignores package specifiers, which resolve through node_modules', () => {
+    expect([...`import 'vitest';`.matchAll(RELATIVE_SPECIFIER)]).toEqual([]);
+  });
+});
 
 describe('relative specifiers under tools/', () => {
   it.each(toolFiles)('%s resolves every relative specifier', (file) => {
