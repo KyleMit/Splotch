@@ -28,14 +28,28 @@ runs:
         # (playwright.config.ts omits it when the binary is absent).
         key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
 
+    # Both steps below are bounded by coreutils `timeout` because a composite action's
+    # steps cannot take `timeout-minutes` — only job steps can. A degraded runner starves
+    # these of bandwidth, and unbounded that reads as a hung test: the job's own
+    # timeout-minutes cancels every remaining step, so nothing downstream can report which
+    # one was slow. Bounded, the step fails by name and exits 124. This does not rescue a
+    # bad run — the recovery unit is the runner, and nothing inside a job can change
+    # runners — it only makes the diagnosis cheap.
     - name: Install Playwright browsers
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
-      run: npx playwright install --with-deps ${{ inputs.browsers }}
+      # Legitimately downloads a browser on this branch, so the bound is generous.
+      env:
+        BROWSER_INSTALL_TIMEOUT_S: '600'
+      run: timeout "$BROWSER_INSTALL_TIMEOUT_S" npx playwright install --with-deps ${{ inputs.browsers }}
 
     # The browser binaries cache, but the apt packages don't — install-deps
     # is still required on a cache hit.
     - name: Install Playwright system deps
       if: steps.playwright-cache.outputs.cache-hit == 'true'
       shell: bash
-      run: npx playwright install-deps ${{ inputs.browsers }}
+      # Pure network against the apt mirrors, ~25s on a healthy runner; the observed
+      # degraded run took 12m27s of a 15-minute job budget.
+      env:
+        SYSTEM_DEPS_TIMEOUT_S: '120'
+      run: timeout "$SYSTEM_DEPS_TIMEOUT_S" npx playwright install-deps ${{ inputs.browsers }}

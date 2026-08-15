@@ -18,6 +18,10 @@ runs:
         path: ~/Library/Caches/ms-playwright
         key: playwright-${{ runner.os }}-webkit-${{ steps.playwright-version.outputs.version }}
 
+    # Deliberately unbounded, unlike the Ubuntu action's network steps: macOS ships no
+    # coreutils `timeout` and the runner image adds none, so the bound would have to be
+    # conditional on a binary that isn't there — which reads as protection while providing
+    # none. This action also has no apt step, which is where the degradation was observed.
     - name: Install Playwright browser
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
