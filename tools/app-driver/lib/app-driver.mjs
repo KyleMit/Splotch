@@ -240,11 +240,7 @@ export async function waitForColoringOverlay(page, { timeout } = {}) {
   await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR, { timeout });
 }
 
-export async function openColorPicker(page) {
-  await page.locator(COLOR_SWATCH_SELECTOR('custom')).click();
-}
-
-export async function openSettingsModal(page) {
+async function openSettingsModal(page) {
   await page.locator(SETTINGS_BUTTON_SELECTOR).click();
 }
 
