@@ -134,7 +134,11 @@ export async function submitReport({
   }
 
   // Honeypot: a hidden field no human fills. Quietly accept without creating an
-  // issue — a bot gets no signal and no issue lands.
+  // issue, answering exactly as a real submission would.
+  //
+  // That is a claim about the response, not about every channel: this path
+  // returns with no I/O while a real one awaits GitHub, so latency still
+  // separates them. Padding it out is a bigger change than the trap is worth.
   //
   // Placed after every rejection, not before them, and that ordering is the whole
   // guarantee. Short-circuiting first made each rejection an oracle: a bad `kind`
@@ -143,7 +147,10 @@ export async function submitReport({
   // defeating any amount of markup obfuscation. Reaching here means the
   // submission would have succeeded, so the caught bot gets exactly what a real
   // submitter gets on every path. server.test.ts holds the two against each
-  // other rather than against a literal.
+  // other rather than against a literal — for this door. /feedback's form action
+  // reads the same ok/not-ok result and builds its redirect from no part of it,
+  // but nothing tests that, so it is a property of the current code rather than
+  // a guaranteed one.
   if (typeof hp === 'string' && hp.trim()) return { ok: true };
 
   try {

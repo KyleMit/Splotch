@@ -115,13 +115,15 @@ describe('POST /api/report', () => {
       message: 'The crayon draws green',
       [REPORT_HONEYPOT_FIELD]: 'a bot filled this',
     });
-    vi.mocked(rateLimit).mockClear();
     const real = await post({ kind: 'bug', message: 'The crayon draws green' });
 
     expect(createIssue).toHaveBeenCalledOnce();
     expect(caught.status).toBe(real.status);
     expect(await caught.text()).toBe(await real.text());
-    expect(caught.headers.get('content-type')).toBe(real.headers.get('content-type'));
+    // The whole header set, not just content-type: a Retry-After, a Set-Cookie,
+    // or a cache directive on one path and not the other is the same oracle in a
+    // different field.
+    expect([...caught.headers]).toEqual([...real.headers]);
   });
 
   // The oracle the honeypot's value depends on is not only in the success shape:
