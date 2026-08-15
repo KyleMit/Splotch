@@ -1,5 +1,6 @@
 <script lang="ts">
   import PageShell from '$lib/components/page/PageShell.svelte';
+  import ScrollCue from '$lib/components/design/ScrollCue.svelte';
   import ReleaseHistory from '$lib/components/page/ReleaseHistory.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import SidebarToc, { type SidebarTocItem } from '$lib/components/nav/SidebarToc.svelte';
@@ -104,6 +105,8 @@
         <ReleaseHistory />
       </div>
     </div>
+
+    <ScrollCue />
   </PageShell>
 </div>
 
