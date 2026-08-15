@@ -13,7 +13,7 @@
 scrapbook/
 android/
 ios/
-package-lock.json
+pnpm-lock.yaml
 web/src/lib/components/icon-names.d.ts
 web/src/lib/components/page/ReleaseHistory.svelte
 web/src/lib/components/settings/CurrentReleaseNotes.svelte

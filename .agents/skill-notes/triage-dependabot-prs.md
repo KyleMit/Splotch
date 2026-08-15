@@ -20,7 +20,7 @@ each marked below.
 
 The obvious objection is that the repo already has a dependency-upgrade skill. They are inverses:
 
-* `dependency-update-audit` — *you* choose what to upgrade, from `npm outdated`. One package per
+* `dependency-update-audit` — *you* choose what to upgrade, from `pnpm outdated`. One package per
   commit, driven by migration guides. Proactive.
 * `triage-dependabot-prs` — the PRs already exist and each is a merge/hold/close decision. The work
   is verification and **sequencing**, not authoring. Reactive.
@@ -36,7 +36,7 @@ showed was missing half its entries. The `upload-pages-artifact` finding only be
 diffing `action.yml` at both tags and seeing `--exclude=.[^/]*`. Treating release notes as a lead
 rather than evidence is the single highest-value rule here.
 
-**`npm audit` before/after.** This was nearly skipped as bureaucratic and turned out to reclassify
+**`pnpm audit` before/after.** This was nearly skipped as bureaucratic and turned out to reclassify
 SvelteKit from routine bump to security fix (two moderate advisories, `<=2.69.0`). It changed the
 merge order. The count-goes-up-while-posture-improves wrinkle is included because it genuinely looks
 like a regression at a glance: 21 → 23, because kit's moderate resolved and the masked transitive
@@ -102,8 +102,8 @@ Three vectors were tested rather than reasoned about, and two came back clean:
 That last point is why the merge-authorization rule now carries a security rationale: it was written
 for blast radius, and it turns out to be the control that makes planted text face a second reader.
 
-**An advisory can name a package it isn't about** *(2026-07-30)*. `npm audit` reported a moderate on
-`@capacitor/cli` while \#666 bumped `@capacitor/cli`, which invites the inference that the bump
+**An advisory can name a package it isn't about** *(2026-07-30)*. `pnpm audit` reported a moderate
+on `@capacitor/cli` while \#666 bumped `@capacitor/cli`, which invites the inference that the bump
 clears it. The advisory was against a vendored 5.7.8 copy nested under `@capacitor/assets`, range
 topping out at `8.0.2-nightly`; the top-level 8.4.1 was already outside it. Totals were 22 before
 and 22 after.
@@ -111,7 +111,7 @@ and 22 after.
 ## Deliberately not included
 
 * **A fixed merge order by ecosystem.** Tried and rejected — the right order depends on which
-  branches actually conflict this week and what `npm audit` flags. The skill teaches deriving the
+  branches actually conflict this week and what `pnpm audit` flags. The skill teaches deriving the
   order instead of prescribing one.
 * **`gh` CLI recipes.** Cloud sessions have no `gh`; the GitHub MCP tools are the interface. The
   local-git steps (`merge-tree`, the simulation loop) work in both environments, which is why the
@@ -125,12 +125,12 @@ and 22 after.
   the same session). That workflow posts a per-PR APPROVE/FLAG verdict, so some of step 2 may be
   redundant once its verdicts are trusted in practice. If those verdicts prove reliable, step 2
   could shrink to "verify the FLAGs and spot-check the APPROVEs" — but note it cannot install,
-  cannot run tests, and usually posts before CI finishes, so the `npm audit` diff and the local
-  `npm ci` verification have no automated equivalent today. **Still unvalidated after 2026-07-30,
-  for a new reason:** there was no verdict to weigh on any of the five PRs, because every run failed
-  in `setupGitHubToken` — it requested an OIDC token in a Dependabot context that has none, despite
-  the workflow passing `github_token`. Step 2 ran entirely unassisted. The workflow has therefore
-  still never completed against a real batch. Practical consequence for the skill: treat a *missing*
+  cannot run tests, and usually posts before CI finishes, so the `pnpm audit` diff and the local
+  install verification have no automated equivalent today. **Still unvalidated after 2026-07-30, for
+  a new reason:** there was no verdict to weigh on any of the five PRs, because every run failed in
+  `setupGitHubToken` — it requested an OIDC token in a Dependabot context that has none, despite the
+  workflow passing `github_token`. Step 2 ran entirely unassisted. The workflow has therefore still
+  never completed against a real batch. Practical consequence for the skill: treat a *missing*
   advisory comment as a broken workflow worth checking, not as a PR too new to have been reviewed.
 * **Batch size.** The flow was exercised on nine PRs, then five. Note the two interact: the default
   `open-pull-requests-limit` of 5 caps a batch at five unless the config raises it, so nine is

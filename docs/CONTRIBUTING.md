@@ -17,7 +17,10 @@ on merge.
   ```bash
   nvm use 22
   ```
-* **npm** (bundled with Node)
+* **pnpm** — the package manager (ADR-0117). Don't install it directly; `corepack enable pnpm` puts
+  it on PATH at the exact version `package.json`'s `packageManager` field pins, and corepack is
+  bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every
+  `npm run …` in these docs is correct as written.
 * **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via
   `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
 * For native Android/iOS work, see the full toolchain setup in the [mobile guide](MOBILE/native.md).
@@ -26,7 +29,8 @@ on merge.
 ## Local setup
 
 ```bash
-npm install
+corepack enable pnpm   # once per machine
+pnpm install
 npm run dev       # http://localhost:5173
 ```
 

@@ -13,7 +13,7 @@ lives in `web/` but its dependencies are declared at the root (see `CLAUDE.md`).
 from the repo root.
 
 **Wrong skill if Dependabot already opened the PRs.** This one picks the packages itself from
-`npm outdated` and drives each bump. To clear a queue of open Dependabot PRs — verify each, merge
+`pnpm outdated` and drives each bump. To clear a queue of open Dependabot PRs — verify each, merge
 the safe ones in a conflict-aware order, close the rest behind a tracking issue — use
 [`triage-dependabot-prs`](../triage-dependabot-prs/SKILL.md) instead.
 
@@ -30,7 +30,7 @@ where no user is present to answer questions.
 
 ## Phase 1 — Survey (no changes yet)
 
-1. **List what's behind.** Run `npm outdated` (it exits non-zero when anything is outdated — that's
+1. **List what's behind.** Run `pnpm outdated` (it exits non-zero when anything is outdated — that's
    expected, not a failure). Capture, for each package, the **current**, **wanted**, and **latest**
    versions, and whether it's a `prod` or `dev` dependency.
    * **GitHub Actions pins count too.** Run `npm run check:github-actions` to inventory every
@@ -79,28 +79,28 @@ through the approved list **sequentially**. For each package:
    / upgrade guide for the target version (the project's outbound HTTPS goes through the agent proxy
    — see the environment notes). For a major jump, read every intermediate major's breaking-changes
    list, not just the latest. Summarize the breaking changes that could plausibly touch this repo.
-7. **Bump the version.** Update the range in `package.json` and install
-   (`npm install <pkg>@<version>`).
+7. **Bump the version.** Update the range in `package.json` and install (`pnpm add <pkg>@<version>`,
+   `-D` for a devDependency).
 8. **Audit every usage.** Grep the whole codebase (`web/src/`, `tools/`, config files, `android/` &
    `ios/` only where they consume the JS package) for imports and API calls of the package. Confirm
    each call site is still valid against the new API; apply the codemod / manual edits the migration
-   guide calls for. Don't assume a clean `npm install` means the code is correct.
+   guide calls for. Don’t assume a clean install means the code is correct.
 9. **Verify.** Run `npm run check` (svelte-check / types) and the agreed test tier for this package.
    Type errors and test failures are part of the migration — fix them here, not in a later commit.
    If the upgrade can't be made green within reason, **revert that package** (restore
-   `package.json` + `package-lock.json`, reinstall), note why, and move on — don't leave the tree
+   `package.json` + `pnpm-lock.yaml`, reinstall), note why, and move on — don't leave the tree
    broken.
-10. **Commit just this upgrade.** Stage `package.json`, `package-lock.json`, and the source edits
-    this upgrade required — nothing from other packages. Review the staged diff
-    (`git diff --cached`) to confirm it's scoped to this one package before committing. Use a plain
-    imperative subject matching the repo's style, e.g. `Upgrade vitest to 4.x` or
-    `Bump @capacitor/* to 8.4`. Mention the notable breaking change handled in the body if it's
-    non-obvious. Then move to the next package.
+10. **Commit just this upgrade.** Stage `package.json`, `pnpm-lock.yaml`, and the source edits this
+    upgrade required — nothing from other packages. Review the staged diff (`git diff --cached`) to
+    confirm it's scoped to this one package before committing. Use a plain imperative subject
+    matching the repo's style, e.g. `Upgrade vitest to 4.x` or `Bump @capacitor/* to 8.4`. Mention
+    the notable breaking change handled in the body if it's non-obvious. Then move to the next
+    package.
 
 Keep each commit self-contained and green so any single upgrade can be reverted or bisected on its
 own.
 
-**GitHub Actions pins** follow the same one-change-per-commit discipline, minus the `npm install`:
+**GitHub Actions pins** follow the same one-change-per-commit discipline, minus the install step:
 edit the `@vN` (or SHA) ref in each `.github/workflows/*.yml` that `npm run check:github-actions`
 flagged — bring an inconsistent action onto a single version, and bump behind-latest pins to the
 current major. Check the action's release notes for breaking input/behaviour changes (a major bump

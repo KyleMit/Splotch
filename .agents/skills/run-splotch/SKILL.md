@@ -17,7 +17,7 @@ screenshot. Playwright is already a devDependency; the same Chromium the E2E sui
 Deps + the Playwright Chromium binary (one-time):
 
 ```bash
-npm install
+pnpm install
 npm run test:e2e:install
 ```
 

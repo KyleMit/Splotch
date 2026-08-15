@@ -26,7 +26,7 @@ overrides:
   # every command, and the `catalog:` protocol it recommends instead would take the
   # range out of package.json, which is where Dependabot reads it. Kept honest by
   # tools/tests/pnpm-overrides.test.mjs, which fails when the two ranges diverge.
-  "@capacitor/assets>sharp": ^0.35.2
+  '@capacitor/assets>sharp': ^0.35.2
   # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
   # prebuild-install and the Capacitor asset toolchain.
   tar: ^7.5.19
@@ -40,7 +40,7 @@ overrides:
 allowBuilds:
   # `prepare` runs only for git/path installs, and the script it names is not even in
   # the published tarball; `preinstall` is an `echo`.
-  "@google/genai": false
+  '@google/genai': false
   # Vite's bundler. The binary is the @esbuild/<platform> optional dependency; the
   # postinstall only re-resolves it. `npm run build` is what proves it.
   esbuild: false

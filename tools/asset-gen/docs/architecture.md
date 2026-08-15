@@ -76,7 +76,7 @@ Structure:
   records in `docs/`.
 * A **dependency-free** `package.json` (`@splotch/asset-gen`, `private`) whose `scripts` block gives
   local aliases (`npm run coloring-fills` from inside the folder) for fast iteration — with no
-  `dependencies`, so it never implies a second install and root `npm install` ignores it (not a
+  `dependencies`, so it never implies a second install and the root install ignores it (not a
   workspace).
 * The root npm scripts stay the discoverable entry points (ADR-0019), using behavior-led `check:*`,
   `gen:*`, and `update:*` namespaces; they just point at `tools/asset-gen/…`.

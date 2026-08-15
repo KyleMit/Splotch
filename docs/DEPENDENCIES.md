@@ -6,9 +6,9 @@
 > it was checked. This file records analysis only — upgrades are applied by
 > `dependency-update-audit`, and replacements are tracked as GitHub issues.
 
-**Last refresh:** 2026-07-17 at `e2812b3` · 18 prod + 30 dev direct · 1167 total installed
-(package-lock entries) · plus dev-lifecycle deps outside `package.json` (GitHub Actions,
-runtime-fetched CLIs, system toolchains — see the final section)
+**Last refresh:** 2026-07-17 at `e2812b3` · 18 prod + 30 dev direct · 1167 total installed (lockfile
+entries) · plus dev-lifecycle deps outside `package.json` (GitHub Actions, runtime-fetched CLIs,
+system toolchains — see the final section)
 
 ## Verdict summary
 
@@ -364,12 +364,12 @@ Non-`keep` rows first.
   latest 3.0.5 on 2024-03-29 (no release in ~2.3 years) · last push 2026-01-22 · 84 open issues
 * **Maintenance:** dormant — repo not archived and occasionally touched, but no published release
   since early 2024 while issues accumulate
-* **Concerns:** **entangled** — `package.json` `overrides` pins its transitive `sharp` to the root
-  `$sharp` (proxy-blocked libvips download in cloud sessions). It also bundles an ancient
-  `@capacitor/cli@5.7.8` and `@trapezedev/project@7.1.4`, which drag in the **high-severity** vuln
-  chain `npm audit` reports (`tar@6`, `minimatch@3/8`, `uuid@7`, `replace`, `xcode`) with **no
-  upstream fix**. Exposure is low: dev-only, run locally by a trusted operator, not in the shipped
-  app or CI runtime.
+* **Concerns:** **entangled** — `pnpm-workspace.yaml`'s `overrides` pins its transitive `sharp` to
+  the root `sharp` range (proxy-blocked libvips download in cloud sessions). It also bundles an
+  ancient `@capacitor/cli@5.7.8` and `@trapezedev/project@7.1.4`, which drag in the
+  **high-severity** vuln chain `npm audit` reports (`tar@6`, `minimatch@3/8`, `uuid@7`, `replace`,
+  `xcode`) with **no upstream fix**. Exposure is low: dev-only, run locally by a trusted operator,
+  not in the shipped app or CI runtime.
 * **Alternatives:** hand-authoring the icon/splash set (they change rarely), or
   `@trapezedev/configure` (same org, same staleness). No clearly-better maintained successor exists.
 * **Verdict:** monitor — keep for now (no viable replacement, low real risk), but watch for archival
@@ -714,16 +714,17 @@ Non-`keep` rows first.
 ### sharp
 
 * **Version:** `^0.35.2` declared · 0.35.2 locked (latest 0.35.3) · dev
-* **Used for:** Image processing in the asset-gen pipeline, and the `$sharp` override target that
-  pins `@capacitor/assets`' transitive sharp (proxy-blocked libvips download in cloud sessions).
+* **Used for:** Image processing in the asset-gen pipeline, and the override target that pins
+  `@capacitor/assets`' transitive sharp (proxy-blocked libvips download in cloud sessions).
 * **Source:** npm · [github.com/lovell/sharp](https://github.com/lovell/sharp) · published by Lovell
   Fuller (lovell)
 * **License:** Apache-2.0
 * **Health** (checked 2026-07-17): [32.5k stars](https://github.com/lovell/sharp) · latest 0.35.3 on
   2026-07-01 · last push 2026-07-16 · 110 open issues
 * **Maintenance:** active — long-standing, well-funded, frequent releases
-* **Concerns:** **entangled** — the `overrides` `$sharp` pin (above) means bumping sharp also moves
-  `@capacitor/assets`' copy; keep them coherent. Has an install script (prebuilt libvips binary).
+* **Concerns:** **entangled** — the `overrides` pin (above) means bumping sharp also moves
+  `@capacitor/assets`' copy; `tools/tests/pnpm-overrides.test.mjs` fails if the two ranges diverge.
+  Has an install script (prebuilt libvips binary).
 * **Alternatives:** none needed
 * **Verdict:** keep — core image processing and the override anchor; healthy
 
@@ -850,7 +851,10 @@ Non-`keep` rows first.
 The lockfile installs **1179 package entries** total (including the root); ~50 are direct, the rest
 transitive. Aggregate view (not per-package):
 
-### `npm audit` summary (checked 2026-07-17)
+### Audit summary (checked 2026-07-17)
+
+> Produced by `npm audit` before the pnpm migration (ADR-0117); re-run it as `pnpm audit`, which
+> reports the same advisories keyed by dependency path.
 
 19 advisories: **4 low, 9 moderate, 6 high, 0 critical**. Mapped transitive → direct parent:
 
@@ -885,10 +889,10 @@ are well-known, org- or foundation-backed packages; none are anomalous.
 
 ### Repo-entangled transitives
 
-* **`sharp`** — pinned via `package.json` `overrides` (`@capacitor/assets` → `sharp: "$sharp"`) to
-  the root direct `sharp`, because `@capacitor/assets`' own sharp tries a proxy-blocked libvips
-  download in cloud sessions. Covered in the `sharp` and `@capacitor/assets` entries; keep the two
-  coherent on any bump.
+* **`sharp`** — pinned via `pnpm-workspace.yaml` `overrides` (`@capacitor/assets>sharp`) to the root
+  direct `sharp` range, because `@capacitor/assets`' own sharp tries a proxy-blocked libvips
+  download in cloud sessions. Covered in the `sharp` and `@capacitor/assets` entries;
+  `tools/tests/pnpm-overrides.test.mjs` keeps the two coherent on any bump.
 
 ## Development lifecycle dependencies (outside `package.json`)
 
@@ -897,7 +901,7 @@ Actions** (pinned by tag, resolved from the Actions marketplace, not the lockfil
 scripts fetch **CLIs at runtime** (`npx …`, or a globally-installed tool), and the native builds
 need **system toolchains** that no npm range governs. These carry the same provenance/health/pinning
 questions as npm deps, so they're inventoried here — but versions come from workflow/script pins,
-not `package-lock.json`.
+not `pnpm-lock.yaml`.
 
 ### GitHub Actions (CI — `.github/workflows/`)
 

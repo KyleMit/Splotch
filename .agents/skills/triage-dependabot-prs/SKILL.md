@@ -102,7 +102,7 @@ abstraction: a CSRF change matters only against `web/svelte.config.js`'s `csrf.t
 whether anything sets `NODE_ENV`; a `paths.relative` fix matters only if `kit.paths` is configured;
 a removed export matters only if it's imported.
 
-### Run `npm audit` before and after
+### Run `pnpm audit` before and after
 
 This is the step most likely to *change a verdict*, and it is easy to skip. It needs two
 measurements — the tree as it is now, and the tree with the whole batch applied.
@@ -112,14 +112,14 @@ combined tree, and merging is exactly where the lockfile conflicts of step 3 bit
 sidesteps them because it never touches a lockfile hunk.
 
 ```sh
-npm ci && npm audit --json > /tmp/audit-before.json
+pnpm install --frozen-lockfile && pnpm audit --json > /tmp/audit-before.json
 
 # every npm bump in the batch, in one command — action-pin PRs have nothing to measure
 npm pkg set 'dependencies.<pkg>=^<new>' 'devDependencies.<pkg>=^<new>'
-npm install
-npm audit --json > /tmp/audit-after.json
+pnpm install
+pnpm audit --json > /tmp/audit-after.json
 
-git checkout -- package.json package-lock.json && npm ci   # restore
+git checkout -- package.json pnpm-lock.yaml && pnpm install --frozen-lockfile   # restore
 ```
 
 Diff the two by package and severity — `metadata.vulnerabilities` for the totals,
@@ -136,7 +136,7 @@ entries on each consumer. Compare per-package severities, not totals, and say so
 rising number with an improving posture looks like a regression to anyone reading quickly.
 
 **An advisory named for the package you're bumping may not be about the copy you're bumping.** Match
-its vulnerable range against the *installed path*, not the package name: `npm audit` can report a
+its vulnerable range against the *installed path*, not the package name: `pnpm audit` can report a
 moderate on `@capacitor/cli` that belongs to a vendored 5.7.8 copy nested under `@capacitor/assets`,
 whose range tops out far below the top-level version already installed. The bump reads as clearing
 the advisory and clears nothing.
@@ -153,9 +153,10 @@ the advisory and clears nothing.
   one you want to see.
 * **Action pins** — Dependabot rewrites the SHA and its `# vX.Y.Z` comment together. A pin whose SHA
   and comment disagree is a red flag.
-* **Peer-dependency caps fail at `npm ci`, not at type-check.** Read the actual install error. Check
-  *every* consumer's peer range, not just the one that failed loudest — a sibling PR that looks like
-  it unblocks the upgrade may not (svelte-check widening to `^5 || ^6` still excludes 7).
+* **Peer-dependency caps fail at `pnpm install --frozen-lockfile`, not at type-check.** Read the
+  actual install error. Check *every* consumer's peer range, not just the one that failed loudest —
+  a sibling PR that looks like it unblocks the upgrade may not (svelte-check widening to `^5 || ^6`
+  still excludes 7).
 
 ## 3. Sequence the merges
 
@@ -167,9 +168,8 @@ git merge-tree --write-tree origin/main origin/<branch>   # CONFLICT lines = wil
 ```
 
 **Pairwise-clean does not mean sequence-clean.** Every branch can be clean against today's `main`
-and still collide once a sibling lands — adjacent lines in `package.json` and the
-`package-lock.json` root block are a few characters apart. Simulate the whole order on a scratch
-branch:
+and still collide once a sibling lands — adjacent lines in `package.json` and the `pnpm-lock.yaml`
+root block are a few characters apart. Simulate the whole order on a scratch branch:
 
 ```sh
 git checkout -B sim-merge origin/main
@@ -185,7 +185,7 @@ the stop-hook git check.
 
 Then order the real merges:
 
-1. **Security fixes first** — whatever `npm audit` flagged.
+1. **Security fixes first** — whatever `pnpm audit` flagged.
 2. **Group by conflict domain** — the ones touching no shared file (action pins vs. `package.json`)
    are independent and can go in any order.
 3. **Leave the known conflicter last**, so it needs exactly one rebase instead of one per sibling.
@@ -251,7 +251,7 @@ which drops this step in the seam. Owe it forward past the gate.
 
 ```sh
 git fetch origin main && git checkout -B verify-merged-main origin/main
-npm ci          # proves package.json ↔ package-lock.json agree post-merge
+pnpm install --frozen-lockfile   # proves package.json ↔ pnpm-lock.yaml agree post-merge
 npm run check
 ```
 
@@ -266,7 +266,8 @@ Then confirm CI on `main`. Two traps when reading it:
   report a run as "still running" without re-checking, since it may have already been cancelled.
 * **Local E2E failures are often environmental.** This container has no GPU, so canvas specs time
   out waiting for `#engineCanvas`. Before attributing any failure to a bump, re-run the same specs
-  on unmodified `main` after a clean `npm ci`. Identical failures = environmental, not a regression.
+  on unmodified `main` after a clean `pnpm install --frozen-lockfile`. Identical failures =
+  environmental, not a regression.
 
 ## 6. Report
 
