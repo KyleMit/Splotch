@@ -3,9 +3,8 @@ import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { capture, hasCommand, isMain } from '../lib/proc.mjs';
-import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { capture, hasCommand, isMain } from '../lib/proc.mjs';
 
 const argumentsToPreserve = [
   '$HOME',
