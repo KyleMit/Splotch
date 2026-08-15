@@ -65,16 +65,25 @@ export async function ensureDevServer(port, timeout = 90_000) {
 }
 
 // Open the app in a fresh browser context sized to `device`; resolves once the
-// drawing canvas is ready.
-export async function openAppPage(browser, base, device) {
+// drawing canvas is ready. `colorScheme` drives the app's follow-system theme
+// (dark-mode scenes); `query` appends a query string (e.g. the AI access token);
+// `prepare(page)` runs before navigation so route mocks catch boot-time requests.
+export async function openAppPage(
+  browser,
+  base,
+  device,
+  { colorScheme = 'light', query = '', prepare } = {}
+) {
   const ctx = await browser.newContext({
     viewport: { width: device.width, height: device.height },
     deviceScaleFactor: device.deviceScaleFactor,
     hasTouch: true,
     isMobile: false,
+    colorScheme,
   });
   const page = await ctx.newPage();
-  await page.goto(base, { waitUntil: 'networkidle' });
+  await prepare?.(page);
+  await page.goto(base + query, { waitUntil: 'networkidle' });
   await page.waitForSelector(DRAWING_CANVAS_SELECTOR);
   await sleep(APP_STARTUP_SETTLE_DELAY_MS);
   return { ctx, page };
@@ -225,8 +234,8 @@ export async function pickPage(page, pageName) {
 
 // The overlay <img> only gets .overlay-ready once the page art has decoded, so
 // it's the signal that a picked coloring page is actually painted.
-export async function waitForColoringOverlay(page) {
-  await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR);
+export async function waitForColoringOverlay(page, { timeout } = {}) {
+  await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR, { timeout });
 }
 
 export async function openColorPicker(page) {
