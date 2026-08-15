@@ -13,6 +13,21 @@ const INSTALLATION_ID = 'a'.repeat(64);
 const OTHER_INSTALLATION_ID = 'b'.repeat(64);
 const FREE_BINDING = { kind: 'free', credential: INSTALLATION_ID } as const;
 const OTHER_FREE_BINDING = { kind: 'free', credential: OTHER_INSTALLATION_ID } as const;
+const MANAGED_BINDING = { kind: 'managed', credential: 'daycare-club' } as const;
+
+// free+picture mints the legacy `expiresAt.signature` format; every other
+// binding/context pair mints the context-bearing `v2.` format. The two are
+// verified by separate code paths, so each adversarial case below runs against
+// both — a 2026-08-15 kill-check found the v2 path's signature and expiry
+// checks could be deleted outright while a legacy-only suite stayed green.
+const TOKEN_FORMATS = [
+  { format: 'legacy free-picture', binding: FREE_BINDING, otherBinding: OTHER_FREE_BINDING },
+  {
+    format: 'v2 context-bearing',
+    binding: MANAGED_BINDING,
+    otherBinding: { kind: 'managed', credential: 'other-club' } as const,
+  },
+] as const;
 
 beforeEach(() => {
   envState.REPORT_TOKEN_SECRET = 'unit-test-report-secret';
@@ -48,17 +63,49 @@ describe('report tokens', () => {
     });
   });
 
-  it('binds the token to the installation it was minted for', () => {
-    const token = issueReportToken(FREE_BINDING);
+  it.each(TOKEN_FORMATS)(
+    'binds a $format token to the credential it was minted for',
+    ({ binding, otherBinding }) => {
+      const token = issueReportToken(binding);
 
-    expect(verifyReportToken(token, OTHER_FREE_BINDING)).toEqual({ status: 'invalid' });
+      expect(verifyReportToken(token, otherBinding)).toEqual({ status: 'invalid' });
+    }
+  );
+
+  it.each(TOKEN_FORMATS)(
+    'rejects a $format token signed with a different secret',
+    ({ binding }) => {
+      const token = issueReportToken(binding);
+      envState.REPORT_TOKEN_SECRET = 'rotated-secret';
+
+      expect(verifyReportToken(token, binding)).toEqual({ status: 'invalid' });
+    }
+  );
+
+  // The v2 context is the server-authenticated provider reason — the whole
+  // point of signing it is that a client cannot author it. Swapping the context
+  // segment while keeping the signature must fail, not deliver attacker words.
+  it('rejects a v2 token whose context segment was rewritten after signing', () => {
+    const token = issueReportToken(MANAGED_BINDING, {
+      kind: 'false-positive-refusal',
+      refusalReason: 'Request blocked for IMAGE_SAFETY',
+    });
+    const [prefix, expiresAt, , signature] = token!.split('.');
+    const forgedContext = Buffer.from(
+      JSON.stringify({ kind: 'false-positive-refusal', refusalReason: 'attacker-authored' })
+    ).toString('base64url');
+
+    expect(
+      verifyReportToken([prefix, expiresAt, forgedContext, signature].join('.'), MANAGED_BINDING)
+    ).toEqual({ status: 'invalid' });
   });
 
-  it('rejects a token signed with a different secret', () => {
-    const token = issueReportToken(FREE_BINDING);
-    envState.REPORT_TOKEN_SECRET = 'rotated-secret';
-
-    expect(verifyReportToken(token, FREE_BINDING)).toEqual({ status: 'invalid' });
+  it('rejects a v2 token with a missing or extra segment', () => {
+    const token = issueReportToken(MANAGED_BINDING)!;
+    expect(verifyReportToken(token.slice(0, token.lastIndexOf('.')), MANAGED_BINDING)).toEqual({
+      status: 'invalid',
+    });
+    expect(verifyReportToken(`${token}.extra`, MANAGED_BINDING)).toEqual({ status: 'invalid' });
   });
 
   it.each([
@@ -80,14 +127,14 @@ describe('report tokens', () => {
     });
   });
 
-  it('expires a token once its lifetime elapses', () => {
+  it.each(TOKEN_FORMATS)('expires a $format token once its lifetime elapses', ({ binding }) => {
     vi.useFakeTimers();
     try {
-      const token = issueReportToken(FREE_BINDING);
-      expect(verifyReportToken(token, FREE_BINDING).status).toBe('valid');
+      const token = issueReportToken(binding);
+      expect(verifyReportToken(token, binding).status).toBe('valid');
 
       vi.advanceTimersByTime(3 * 60 * 60 * 1000);
-      expect(verifyReportToken(token, FREE_BINDING)).toEqual({ status: 'expired' });
+      expect(verifyReportToken(token, binding)).toEqual({ status: 'expired' });
     } finally {
       vi.useRealTimers();
     }
