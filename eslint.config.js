@@ -25,11 +25,13 @@ export default tseslint.config(
       '**/build/',
       '**/.netlify/',
       '**/node_modules/',
-      // Playwright's own output. Gitignored but not previously ignored here, so
-      // `npm run lint` failed for anyone who had run the E2E suite locally —
-      // invisible on CI, where lint and e2e are separate jobs.
+      // Locally-generated trees that are gitignored but must be named here too: flat config
+      // never consults .gitignore, so `npm run lint` fails for anyone who has run the E2E
+      // suite or a worktree-isolated agent — invisible on CI, which starts from a fresh
+      // checkout and runs lint in its own job.
       '**/playwright-report/',
       '**/test-results/',
+      '.claude/worktrees/',
       'android/',
       'ios/',
       'scrapbook/',
