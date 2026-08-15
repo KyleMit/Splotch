@@ -124,6 +124,22 @@ describe('POST /api/report', () => {
     expect(caught.headers.get('content-type')).toBe(real.headers.get('content-type'));
   });
 
+  // The oracle the honeypot's value depends on is not only in the success shape:
+  // short-circuiting before validation answered a caught bot 200 while a real
+  // submitter with the same bad payload got 400, which names the trap field in
+  // one request. Every rejection path is therefore held against its honeypot twin.
+  it.each([
+    ['an unusable kind', { kind: 'nonsense', message: 'The crayon draws green' }],
+    ['an empty message', { kind: 'bug', message: '   ' }],
+  ])('answers %s the same whether or not the honeypot is filled', async (_label, payload) => {
+    const caught = await post({ ...payload, [REPORT_HONEYPOT_FIELD]: 'a bot filled this' });
+    const real = await post(payload);
+
+    expect(caught.status).toBe(real.status);
+    expect(await caught.text()).toBe(await real.text());
+    expect(createIssue).not.toHaveBeenCalled();
+  });
+
   it('charges the bucket for a rejected submission', async () => {
     const response = await post({ kind: 'bug', message: '   ' });
 

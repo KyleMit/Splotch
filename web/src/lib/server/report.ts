@@ -108,18 +108,6 @@ export async function submitReport({
   wantsDevice,
   hp,
 }: ReportInput): Promise<ReportResult> {
-  // Honeypot: a hidden field no human fills. If it's populated, quietly accept
-  // without creating an issue — a bot gets no signal and no issue lands.
-  //
-  // "No signal" is a property of the *wire*, and it survives only while this
-  // success carries nothing a real one doesn't: give ReportResult's ok variant a
-  // field and both front doors gain a one-request oracle for which field the trap
-  // is, defeating any amount of markup obfuscation. server.test.ts holds the two
-  // responses against each other rather than against a literal, so that change
-  // fails a test instead of shipping. /feedback is closed by construction — its
-  // redirect is built after the ok check, from no part of the result.
-  if (typeof hp === 'string' && hp.trim()) return { ok: true };
-
   const reportKind: ReportKind | null =
     kind === 'feature' ? 'feature' : kind === 'bug' ? 'bug' : null;
   if (!reportKind) {
@@ -144,6 +132,19 @@ export async function submitReport({
       error: 'Reporting is not available right now. Please try again later.',
     };
   }
+
+  // Honeypot: a hidden field no human fills. Quietly accept without creating an
+  // issue — a bot gets no signal and no issue lands.
+  //
+  // Placed after every rejection, not before them, and that ordering is the whole
+  // guarantee. Short-circuiting first made each rejection an oracle: a bad `kind`
+  // answered 200 {ok:true} with the field filled and 400 without, so one invalid
+  // payload per candidate name identified the trap in a single request each,
+  // defeating any amount of markup obfuscation. Reaching here means the
+  // submission would have succeeded, so the caught bot gets exactly what a real
+  // submitter gets on every path. server.test.ts holds the two against each
+  // other rather than against a literal.
+  if (typeof hp === 'string' && hp.trim()) return { ok: true };
 
   try {
     await createIssue({
