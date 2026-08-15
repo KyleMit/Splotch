@@ -62,7 +62,13 @@ Structure:
 
 * `tools/asset-gen/lib/asset-paths.mjs` centralizes repo-root + tree resolution (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`), so scripts don't hardcode
-  `../../..` walks or import from `tools/lib/`.
+  `../../..` walks or import from `tools/lib/`. The rule buys insulation for the **shipping**
+  pipeline — the generators that write committed art into `web/static/` keep running when repo
+  automation is reorganized. `crayon-reference/` is licensed out of it: it publishes a `/scrapbook`
+  page rather than shipped art, so it imports `tools/lib/proc.mjs`, `tools/lib/playwright.mjs`, and
+  `tools/scrapbook/lib/scrapbook-chrome.mjs` directly (the last so the page keeps the shared
+  scrapbook chrome instead of a forked copy). A new sibling inherits whichever half its output puts
+  it in.
 * Coloring entry points live in `coloring/`, style-cover generation and its source drawing in
   `style-covers/`, crayon reference capture and comparison tools in `crayon-reference/`, and the two
   capability-wide conversion/manifest entry points at the folder root. Shared support modules stay

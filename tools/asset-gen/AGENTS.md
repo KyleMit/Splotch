@@ -52,7 +52,15 @@ carve-out):
   root tree.
 * **Paths go through `lib/asset-paths.mjs`.** Use its exported constants (`REPO_ROOT`,
   `COLORING_DIR`, `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) — don't hardcode
-  `../../..` walks or import from the repo-root `tools/lib/`.
+  `../../..` walks or import from the repo-root `tools/lib/`. **`crayon-reference/` is exempt and
+  imports both** (`tools/lib/proc.mjs`, `tools/lib/playwright.mjs`,
+  `tools/scrapbook/lib/scrapbook-chrome.mjs`). The rule protects the *shipping* pipeline: those
+  generators produce committed art under `web/static/`, so they must keep running when repo
+  automation churns. `crayon-reference/` is not in that pipeline — its own README says so — it is a
+  scratch generator whose output is a `/scrapbook` page, and re-implementing the shared scrapbook
+  chrome inside asset-gen would fork the site's look. So the exemption follows the output, not the
+  directory: a new sibling that writes into `web/static/` inherits the rule, one that publishes to
+  `/scrapbook` inherits the exemption. See `docs/architecture.md`.
 * **Raw fills are the source of truth; shipped fills are derived.** The lined colored fills live in
   `fill-src/` (committed, never shipped); the shipped `web/static/coloring/**/*.{light,night}.webp`
   are their fills-only punch (`coloring/punch-fill-outlines.mjs`, root:
