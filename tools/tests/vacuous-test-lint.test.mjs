@@ -63,6 +63,11 @@ describe('the Vitest block reports a test that cannot fail', () => {
     expect(await vitestRules(body)).toContain('vitest/valid-expect');
   });
 
+  it('flags an assertion left inside a floating promise chain', async () => {
+    const body = `it('drops the chain', async () => { Promise.resolve(1).then((value) => expect(value).toBe(1)); });`;
+    expect(await vitestRules(body)).toContain('vitest/valid-expect-in-promise');
+  });
+
   it('flags an assertion reachable only if something threw', async () => {
     const body = [
       `it('rejects bad input', () => {`,
@@ -98,6 +103,11 @@ describe('the Playwright block reports a test that cannot fail', () => {
   it('flags a web-first assertion whose promise is dropped', async () => {
     const body = `test('drops the wait', async ({ page }) => { expect(page.locator('h1')).toBeVisible(); });`;
     expect(await playwrightRules(body)).toContain('playwright/missing-playwright-await');
+  });
+
+  it('flags an assertion left inside a floating promise chain', async () => {
+    const body = `test('drops the chain', async () => { Promise.resolve(1).then((value) => expect(value).toBe(1)); });`;
+    expect(await playwrightRules(body)).toContain('playwright/valid-expect-in-promise');
   });
 
   it('flags an assertion reachable only if something threw', async () => {
