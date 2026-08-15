@@ -231,10 +231,10 @@ ios/local.xcconfig
 .scrapbook-scratch/
 
 # Checkouts created by worktree-isolated agents (Agent tool `isolation: 'worktree'`).
-# They are full copies of the tree, so leaving them untracked makes every ignored-by-path
-# file (web/src/tokens.css, tools/asset-gen/ideas-exploration/ideas-review.html, …) reappear
-# at a nested path no ignore pattern matches — see .prettierignore and dprint.json, which
-# exclude the same directory for that reason.
+# They are full copies of the tree, so every file ignored only at its real path reappears at
+# a nested path no ignore pattern matches — see .prettierignore, dprint.json, and
+# eslint.config.js, which exclude the same directory for that reason.
+# ignore-surfaces.test.mjs fails when one of the four drops it.
 .claude/worktrees/
 
 # Working state of the scripted audit burndown (npm run audit:burndown, the

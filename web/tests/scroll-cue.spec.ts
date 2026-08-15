@@ -243,12 +243,18 @@ test.describe('the two-column settings shell', () => {
 
 // The two standalone document-scrolled pages the /beta page set the pattern for.
 // Both crop rather than fade at the sizes below, which is what the refreshed
-// page-inventory critique caught: the changelog's release notes and the
-// feedback form each run past the fold with no sign they continue.
-const IPAD_MINI_PORTRAIT = { width: 744, height: 1133 };
-const IPAD_PRO_13_PORTRAIT = { width: 1032, height: 1376 };
-const SMALL_IPHONE_LANDSCAPE = { width: 812, height: 375 };
-const LARGE_IPHONE_LANDSCAPE = { width: 956, height: 440 };
+// page-inventory critique caught: the changelog's release notes and the feedback
+// form each run past the fold with no sign they continue.
+//
+// Transcribed rather than imported: this is a TypeScript spec and the inventory
+// is an untyped .mjs, so a direct import costs the file its type checking.
+// tools/tests/scroll-cue-viewports.test.mjs reads both sides and fails when a
+// device-list refresh leaves these pinned to sizes the inventory stopped
+// capturing. The constants above predate that guard and still stand alone.
+const IPAD_MINI_PORTRAIT = { width: 744, height: 1133 }; // ipad-mini-7
+const IPAD_PRO_13_PORTRAIT = { width: 1032, height: 1376 }; // ipad-pro-13-m4
+const SMALL_IPHONE_LANDSCAPE = { width: 812, height: 375 }; // iphone-13-mini-landscape
+const LARGE_IPHONE_LANDSCAPE = { width: 956, height: 440 }; // iphone-16-pro-max-landscape
 
 async function documentOverflows(page: Page) {
   return page.evaluate(() => {
@@ -261,7 +267,7 @@ async function documentOverflows(page: Page) {
 // viewport the caller names: present while there is more below, gone at the
 // foot, re-armed on the way back up, and fading to the viewport edge rather
 // than to the sheet inside it.
-function documentCueContract(label: string, path: string, heading: RegExp | string) {
+function documentCueContract(label: string, path: string, heading: string) {
   test(`cues ${label} while it runs past the fold`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
@@ -283,6 +289,11 @@ function documentCueContract(label: string, path: string, heading: RegExp | stri
   test(`fades ${label} to the foot of the viewport`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: heading, level: 1 })).toBeVisible();
+
+    // Same guard as above, and load-bearing for the same reason: /feedback fits
+    // whole at both iPad portraits, so pointing this contract there without it
+    // would fail as a geometry mismatch rather than say the viewport was wrong.
+    await expect.poll(() => documentOverflows(page)).toBe(true);
 
     await expect
       .poll(() =>
@@ -314,9 +325,29 @@ test.describe('the feedback form on a small iPhone landscape', () => {
   test('leaves the submit button reachable under the fade', async ({ page }) => {
     await page.goto('/feedback');
     const submit = page.locator('button.submit');
-    await submit.scrollIntoViewIfNeeded();
-    await expect(submit).toBeVisible();
+
+    // scrollIntoViewIfNeeded stops the moment the button is on screen, which is
+    // clear of the fade. Landing its foot on the viewport's puts it under the
+    // deepest part of the ramp instead.
+    await submit.evaluate((node) => {
+      const box = node.getBoundingClientRect();
+      window.scrollTo(0, box.bottom + window.scrollY - window.innerHeight);
+    });
+    await expect.poll(() => cueOpacity(page.locator('.scroll-cue'))).toBe(1);
     await expect(submit).toBeEnabled();
+
+    // toBeVisible passes under an opaque, pointer-grabbing cue; only a hit test
+    // pins `pointer-events: none`.
+    await expect
+      .poll(() =>
+        submit.evaluate((node) => {
+          const box = node.getBoundingClientRect();
+          return (
+            document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2) === node
+          );
+        })
+      )
+      .toBe(true);
   });
 });
 

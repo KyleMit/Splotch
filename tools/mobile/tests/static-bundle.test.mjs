@@ -168,8 +168,11 @@ describe('web-only boot markers', () => {
   });
 
   it('is documented beside the web-only service boundary', () => {
+    // Read by path, not `new URL(..., import.meta.url)`: knip reads that form as
+    // a module reference and skips export analysis on the target, which would
+    // erase webOnlyServices.ts's exports from `lint:dead`.
     const source = readFileSync(
-      new URL('../../../web/src/lib/boot/webOnlyServices.ts', import.meta.url),
+      join(import.meta.dirname, '..', '..', '..', 'web/src/lib/boot/webOnlyServices.ts'),
       'utf8'
     );
     for (const { marker, sourcePath } of WEB_ONLY_MODULE_MARKERS) {
