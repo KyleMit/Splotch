@@ -29,8 +29,11 @@ const toolFiles = execFileSync('git', ['ls-files', 'tools'], { cwd: repoRoot, en
   .split('\n')
   .filter((path) => path.endsWith('.mjs') && !SEPARATELY_CONFIGURED.test(path));
 
+// `import\s*` last so the dynamic-import alternative gets first claim on its
+// paren; what it adds is the bare side-effect form (`import './x.mjs'`), which
+// has no `from` and slipped every check here until the 2026-08-15 kill-check.
 const RELATIVE_SPECIFIER =
-  /(?:from\s*|import\s*\(\s*|vi\.(?:mock|doMock|unmock)\(\s*|new URL\(\s*)(['"])(\.\.?\/[^'"]*)\1/g;
+  /(?:from\s*|import\s*\(\s*|vi\.(?:mock|doMock|unmock)\(\s*|new URL\(\s*|import\s*)(['"])(\.\.?\/[^'"]*)\1/g;
 
 /**
  * Source with whole-line comments removed. Prose quoting a specifier — including
