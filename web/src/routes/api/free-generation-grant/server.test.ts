@@ -41,7 +41,9 @@ describe('GET /api/free-generation-grant', () => {
   it('throttles a limited IP before validating anything', async () => {
     rateLimit.mockReturnValue({ limited: true, retryAfter: 30 });
 
-    const response = await getStatus();
+    // A malformed id is what makes the ordering observable: were the id check
+    // hoisted above the throttle, this would answer 400 instead of 429.
+    const response = await getStatus('not-an-installation-id');
 
     expect(response.status).toBe(429);
     expect(getDailyStatus).not.toHaveBeenCalled();
