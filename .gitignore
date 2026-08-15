@@ -177,6 +177,13 @@ build/
 # Netlify CLI's Deno edge-bundler lockfile — no edge functions in this project, regenerable
 deno.lock
 
+# pnpm owns this repo's dependency tree (ADR-0119). `npm run <script>` still works
+# against it, but an `npm install` here writes a second lockfile that resolves the
+# tree independently of pnpm-lock.yaml and then drifts from it silently. Ignoring
+# it means the mistake stays local instead of becoming everyone's; the pair of it
+# and pnpm-lock.yaml is what tools/tests/package-manager.test.mjs pins.
+package-lock.json
+
 # android studio
 android/.idea
 

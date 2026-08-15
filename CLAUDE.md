@@ -167,10 +167,20 @@ Codex-managed worktrees share host ports and machine capacity.
   ADR-0062): env vars are set inline (`VAR=value cmd`, no `cross-env`), and platform-specific tools
   (the Gradle wrapper, the file-manager opener) are invoked via Node helpers in `tools/` rather than
   inline shell.
+* **pnpm installs; npm runs** (ADR-0119). `npm run <script>` is correct everywhere and stays the
+  documented way to invoke the script graph (ADR-0019) — pre/post hooks and all. But **never run
+  `npm install` or `npm ci` here**: both succeed, both produce a working flat `node_modules`, and
+  both write a `package-lock.json` that resolves the tree independently of `pnpm-lock.yaml` and then
+  drifts from it with nothing to announce the divergence. Use `pnpm install` (or
+  `pnpm install --frozen-lockfile` to reproduce the committed tree exactly), and `pnpm add <pkg>` to
+  add one. `package-lock.json` is gitignored and `tools/tests/package-manager.test.mjs` fails if any
+  CI, hook, or bootstrap file starts installing with npm again. pnpm itself comes from
+  `corepack enable pnpm` — re-run that after every `nvm install`, since the shim is written into the
+  active Node's `bin/`.
 * **The `dependencies`/`devDependencies` split is inverted** (ADR-0070): `dependencies` = what the
   Netlify web build needs (runtime imports + vite/SvelteKit/adapter/`marked`); `devDependencies` =
   local/CI-only tooling (Playwright, dprint, sharp, the Capacitor CLIs, …). Netlify installs with
-  `--omit=dev`, so a build-needed package filed under `devDependencies` breaks the deploy (CI stays
+  `--prod`, so a build-needed package filed under `devDependencies` breaks the deploy (CI stays
   green — it installs everything). When adding a dependency, ask "does the Netlify web build import
   or execute this?"
 * **Formatting is split: Prettier owns code, dprint owns Markdown** (`*.md` is in `.prettierignore`;
