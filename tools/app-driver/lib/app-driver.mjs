@@ -26,6 +26,8 @@ const BRUSH_OPTION_SELECTORS = {
 };
 
 const APP_STARTUP_SETTLE_DELAY_MS = 400;
+const SETTINGS_SHELL_SETTLE_MS = 500; // modal fly-in before the nav is tappable
+const SETTINGS_SECTION_SETTLE_MS = 900; // phone drill-in / wide pane scroll
 const DRAWER_TRANSITION_DELAY_MS = 350;
 const POST_COLOR_CHANGE_DELAY_MS = 220;
 const STROKE_MENU_TRANSITION_DELAY_MS = 150;
@@ -65,15 +67,19 @@ export async function ensureDevServer(port, timeout = 90_000) {
 }
 
 // Open the app in a fresh browser context sized to `device`; resolves once the
-// drawing canvas is ready.
-export async function openAppPage(browser, base, device) {
+// drawing canvas is ready. `colorScheme` drives the app's follow-system theme
+// (dark-mode scenes); `prepare(page)` runs before navigation so route mocks
+// catch boot-time requests.
+export async function openAppPage(browser, base, device, { colorScheme = 'light', prepare } = {}) {
   const ctx = await browser.newContext({
     viewport: { width: device.width, height: device.height },
     deviceScaleFactor: device.deviceScaleFactor,
     hasTouch: true,
     isMobile: false,
+    colorScheme,
   });
   const page = await ctx.newPage();
+  await prepare?.(page);
   await page.goto(base, { waitUntil: 'networkidle' });
   await page.waitForSelector(DRAWING_CANVAS_SELECTOR);
   await sleep(APP_STARTUP_SETTLE_DELAY_MS);
@@ -225,14 +231,21 @@ export async function pickPage(page, pageName) {
 
 // The overlay <img> only gets .overlay-ready once the page art has decoded, so
 // it's the signal that a picked coloring page is actually painted.
-export async function waitForColoringOverlay(page) {
-  await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR);
+export async function waitForColoringOverlay(page, { timeout } = {}) {
+  await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR, { timeout });
 }
 
-export async function openColorPicker(page) {
-  await page.locator(COLOR_SWATCH_SELECTOR('custom')).click();
-}
-
-export async function openSettingsModal(page) {
+async function openSettingsModal(page) {
   await page.locator(SETTINGS_BUTTON_SELECTOR).click();
+}
+
+// Navigate Settings to a section by its nav label. Works in both shells: the
+// phone hub drills into the section, the wide sidebar scrolls its pane there.
+// getByRole matches the accessible name by substring, so hub rows that append
+// a status line still match their label.
+export async function openSettingsSection(page, label) {
+  await openSettingsModal(page);
+  await sleep(SETTINGS_SHELL_SETTLE_MS);
+  await page.getByRole('button', { name: label }).first().click();
+  await sleep(SETTINGS_SECTION_SETTLE_MS);
 }

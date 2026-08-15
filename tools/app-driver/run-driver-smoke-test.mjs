@@ -28,6 +28,7 @@ import {
   hasInk,
   tiledRendererIsActive,
   openColoringBook,
+  openSettingsSection,
   pickBook,
   pickPage,
   waitForColoringOverlay,
@@ -153,6 +154,12 @@ async function run(browser, base) {
     await page.locator('#coloringOverlay').isVisible()
   );
 
+  await openSettingsSection(page, 'Parent Center');
+  check(
+    'openSettingsSection lands the wide shell on Parent Center',
+    await page.getByRole('heading', { name: 'Parent Center' }).first().isVisible()
+  );
+
   await ctx.close();
 
   for (const target of STORE_TARGETS) {
@@ -163,6 +170,15 @@ async function run(browser, base) {
       target.device
     );
     await verifySceneColors(targetPage, target);
+    // The phone hub is the other Settings shell — drill-in navigation instead
+    // of the wide sidebar scroll.
+    if (target.label === 'Google Play phone') {
+      await openSettingsSection(targetPage, 'Parent Center');
+      check(
+        'openSettingsSection drills the phone hub into Parent Center',
+        await targetPage.getByRole('heading', { name: 'Parent Center' }).first().isVisible()
+      );
+    }
     await targetContext.close();
   }
 }
