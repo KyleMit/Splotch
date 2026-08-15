@@ -26,17 +26,23 @@ command replaces the committed PNG only after the live-app replay succeeds.
 
 ## Store assets
 
-`gen-store-assets.mjs` captures the named phone and tablet scenes at the exact Google Play and App
-Store pixel sizes and writes them under `store-assets/`. Existing scene selectors, filenames,
-dimensions, and output layout remain stable during the tools migration. See `store-assets/README.md`
-for the review and publishing runbook.
+`gen-store-assets.mjs` drives the app scenes (hero drawing, book grid, magic reveal, Parent Center)
+per store target and composes each capture into its captioned marketing frame at the exact Google
+Play and App Store pixel sizes under `store-assets/`. The frame design system — per-target geometry,
+page copy, crayon-doodle marks, and the composed page-4 AI showcase — lives in
+`lib/store-frames.mjs`. `--target` / `--page` substring filters narrow a run for iteration. See
+`store-assets/README.md` for what each page shows and the publishing runbook.
 
 ## Prerequisites and failure behavior
 
 Both commands need installed project dependencies, Playwright Chromium, and port 4173 free or
-already serving Splotch. They start or reuse the dev server through the shared app driver. A server,
-browser, selector, scene, source-art, or output-write failure exits nonzero; inspect the named scene
-and run `npm run test:driver:smoke` before retrying a full capture.
+already serving Splotch. `gen-promotional-image.mjs` starts or reuses a dev server;
+`gen-store-assets.mjs` needs a **production preview** (the coloring-pack manifest and the
+dev-harness seam its scenes depend on), so with the port free it runs
+`PUBLIC_ENABLE_DEV_HARNESS=true npm run build` and serves the result with `vite preview` — a server
+already on 4173 is trusted and reused. A server, browser, selector, scene, source-art, or
+output-write failure exits nonzero; inspect the named scene and run `npm run test:driver:smoke`
+before retrying a full capture.
 
 ## Maintenance
 

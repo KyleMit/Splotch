@@ -26,6 +26,8 @@ const BRUSH_OPTION_SELECTORS = {
 };
 
 const APP_STARTUP_SETTLE_DELAY_MS = 400;
+const SETTINGS_SHELL_SETTLE_MS = 500; // modal fly-in before the nav is tappable
+const SETTINGS_SECTION_SETTLE_MS = 900; // phone drill-in / wide pane scroll
 const DRAWER_TRANSITION_DELAY_MS = 350;
 const POST_COLOR_CHANGE_DELAY_MS = 220;
 const STROKE_MENU_TRANSITION_DELAY_MS = 150;
@@ -244,4 +246,15 @@ export async function openColorPicker(page) {
 
 export async function openSettingsModal(page) {
   await page.locator(SETTINGS_BUTTON_SELECTOR).click();
+}
+
+// Navigate Settings to a section by its nav label. Works in both shells: the
+// phone hub drills into the section, the wide sidebar scrolls its pane there.
+// getByRole matches the accessible name by substring, so hub rows that append
+// a status line still match their label.
+export async function openSettingsSection(page, label) {
+  await openSettingsModal(page);
+  await sleep(SETTINGS_SHELL_SETTLE_MS);
+  await page.getByRole('button', { name: label }).first().click();
+  await sleep(SETTINGS_SECTION_SETTLE_MS);
 }

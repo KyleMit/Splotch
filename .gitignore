@@ -234,4 +234,3 @@ ios/local.xcconfig
 # burn-down-audits skill): per-call Claude JSON / Codex JSONL envelopes, run
 # log, completed list, schemas, STOP sentinel. Durable state is docs/AUDIT.md + git.
 .audit-work/
-tools/marketing-assets/mockups/
