@@ -9,7 +9,16 @@ import {
   readBodyWithinLimit,
   readJsonBody,
   throttled,
+  type JsonBodyResult,
 } from './http';
+
+// Narrows the result so an assertion about the parsed body reads unconditionally. Branching on
+// `result.ok` instead would let that assertion be skipped rather than fail.
+function expectParsedBody(
+  result: JsonBodyResult
+): asserts result is Extract<JsonBodyResult, { ok: true }> {
+  expect(result.ok, 'the body did not parse').toBe(true);
+}
 
 function jsonRequest(body: string) {
   return new Request('http://localhost/api/test', {
@@ -44,8 +53,9 @@ describe('readJsonBody', () => {
   it('returns a valid array body without treating it as an object', async () => {
     const result = await readJsonBody(jsonRequest('["sunny-meadow"]'));
 
-    expect(result).toEqual({ ok: true, body: ['sunny-meadow'] });
-    if (result.ok) expect(asRecord(result.body)).toBeNull();
+    expectParsedBody(result);
+    expect(result.body).toEqual(['sunny-meadow']);
+    expect(asRecord(result.body)).toBeNull();
   });
 
   it('returns a canonical 400 response for a malformed body', async () => {

@@ -134,6 +134,9 @@ describe('awaitGeneration', () => {
             pollSignal.addEventListener('abort', () => reject(pollSignal.reason), { once: true });
           }),
       });
+      // Attach the expectation before the timers advance: the rejection is otherwise
+      // unhandled for a tick and reported as an error even though it is asserted.
+      // eslint-disable-next-line vitest/valid-expect -- awaited below as `settled`; the rule only sees the statement it is declared in
       const settled = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
 
       await vi.advanceTimersByTimeAsync(1);
@@ -154,6 +157,7 @@ describe('awaitGeneration', () => {
       });
       // Attach the expectation before aborting: the rejection is otherwise
       // unhandled for a tick and reported as an error even though it is asserted.
+      // eslint-disable-next-line vitest/valid-expect -- awaited below as `settled`; the rule only sees the statement it is declared in
       const settled = expect(promise).rejects.toMatchObject({ name: 'AbortError' });
       controller.abort();
       await vi.runAllTimersAsync();
