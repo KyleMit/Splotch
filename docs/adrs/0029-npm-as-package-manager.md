@@ -1,8 +1,11 @@
 # ADR-0029: npm as the Package Manager
 
-**Status:** Active — the npm decision stands; note that the root `postinstall: patch-package` and
-the Windows dev path referenced below were removed with Windows dev support
-([ADR-0062](0062-drop-windows-dev-support.md)), so the repo now defines **no** lifecycle scripts.
+**Status:** Superseded by [ADR-0119](0119-pnpm-as-package-manager.md) — the repo moved to pnpm in
+2026-08. The Capacitor objection below was correct and is why ADR-0119 sets `nodeLinker: hoisted`;
+what did not hold up is the claim that hoisting "gives back much of the speed/disk advantage" —
+measured, it gives back neither. This record is kept for history. Note also that the root
+`postinstall: patch-package` and the Windows dev path referenced below were removed with Windows dev
+support ([ADR-0062](0062-drop-windows-dev-support.md)).\
 **Date:** 2026-06
 
 ## Context

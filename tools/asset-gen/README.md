@@ -20,7 +20,7 @@ GitHub issues (label `area:asset-gen`), not in this folder.
 
 This is a self-contained project, **not** an npm workspace and **not** separately installed. Its
 dependencies (`sharp`, `@google/genai`) live in the **repo-root** `package.json`, and the root
-`node_modules` is kept flat for `cap sync` (ADR-0117). Node resolves those binaries by walking up
+`node_modules` is kept flat for `cap sync` (ADR-0119). Node resolves those binaries by walking up
 from here into the root `node_modules`, so there is nothing to install in this folder — **do not run
 an install here.**
 

@@ -17,7 +17,7 @@ on merge.
   ```bash
   nvm use 22
   ```
-* **pnpm** — the package manager (ADR-0117). Don't install it directly; `corepack enable pnpm` puts
+* **pnpm** — the package manager (ADR-0119). Don't install it directly; `corepack enable pnpm` puts
   it on PATH at the exact version `package.json`'s `packageManager` field pins, and corepack is
   bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every
   `npm run …` in these docs is correct as written.

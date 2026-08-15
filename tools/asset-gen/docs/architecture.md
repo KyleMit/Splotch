@@ -28,15 +28,15 @@ Three placements were considered:
   `state/books.ts`) — which would have to be published as a package or copied (drift risk on
   prompts/safety/catalog, the exact failure ADR-0047 engineered around). Heavy overhead for a
   solo-maintained project.
-* **npm workspace.** The obvious "monorepo module" mechanism, but it **fights ADR-0029's
+* **npm workspace.** The obvious "monorepo module" mechanism, but it **fights ADR-0119's
   load-bearing invariant**: `cap sync` reads plugin code out of a **flat** `node_modules`. npm
   workspaces add a symlinked package entry (`node_modules/@splotch/asset-gen`) and, on any
   dependency version divergence, nest deps under the member's own `node_modules` — the precise
   non-flat layout Capacitor is documented to break on. Gratuitous risk on the native path for zero
-  benefit a plain folder doesn't already provide. (ADR-0029 also records that Splotch deliberately
+  benefit a plain folder doesn't already provide. (ADR-0119 also records that Splotch deliberately
   runs with **no workspaces**.)
 * **Plain in-repo folder, dependencies staying in the root `package.json`.** Leaves `node_modules`
-  byte-for-byte unchanged — so ADR-0029, `cap sync`, and the flat-tree invariant are entirely
+  byte-for-byte unchanged — so ADR-0119, `cap sync`, and the flat-tree invariant are entirely
   untouched — while giving the pipeline its own directory, runbook, path helper, and scoped
   guidance.
 
@@ -90,7 +90,7 @@ source of truth for styles/prompts/safety/ catalog. That set is the entire sanct
 
 * \+ Full isolation of the pipeline **code + runbook**, with a dedicated path helper and scoped
   `CLAUDE.md` — the iterate-in-a-small-footprint goal.
-* \+ **`node_modules` is unchanged**, so ADR-0029's flat-tree invariant and `cap sync` keep working
+* \+ **`node_modules` is unchanged**, so ADR-0119's flat-tree invariant and `cap sync` keep working
   with zero new configuration. The app build path never touches the folder.
 * \+ Makes explicit what was already true: the app **consumes committed assets**; the pipeline is a
   producer that writes into `web/static/`.

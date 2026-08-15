@@ -1,7 +1,7 @@
 # pnpm settings. From pnpm 11 this file — not a `pnpm` field in package.json — is
 # where pnpm reads its own configuration, so it exists here even though Splotch is a
 # single package with no workspace members (no `packages:` key, deliberately).
-# ADR-0117 records the npm -> pnpm migration and the reasoning behind each setting.
+# ADR-0119 records the npm -> pnpm migration and the reasoning behind each setting.
 
 # Flat node_modules, the same layout npm produces. `cap sync` resolves every plugin to
 # its REAL path and writes that path into two committed files —
@@ -11,7 +11,7 @@
 # every Capacitor bump and a stale copy points the Gradle/SPM build at a directory that
 # no longer exists. Hoisted keeps them byte-identical to the npm era.
 # This does NOT give back the migration's wins: install time and per-worktree disk
-# measured identical under both linkers (ADR-0117), because the hoisted tree is still
+# measured identical under both linkers (ADR-0119), because the hoisted tree is still
 # cloned out of the shared content-addressable store. What it gives up is pnpm's strict
 # dependency isolation, so an undeclared transitive import stays resolvable here.
 nodeLinker: hoisted

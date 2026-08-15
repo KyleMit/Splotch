@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 // package.json declares, so the asset CLI uses sharp's prebuilt @img/* binaries
 // instead of its own sharp@0.32.6, whose install script downloads libvips from
 // GitHub releases and 403s behind the cloud sessions' egress proxy. The two ranges
-// are written out twice on purpose (ADR-0117): pnpm's `$sharp` back-reference is
+// are written out twice on purpose (ADR-0119): pnpm's `$sharp` back-reference is
 // deprecated in pnpm 11 and warns on every command, and the `catalog:` protocol it
 // points at would move the range out of package.json, where Dependabot reads it.
 // Duplicated agreement needs a drift guard rather than a "keep in sync" comment —

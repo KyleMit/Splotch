@@ -1,6 +1,9 @@
 # ADR-0070: Netlify Build-Minute Reduction — Inverted Dependency Split + Build Ignore Rule
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active (install flags amended by [ADR-0119](0119-pnpm-as-package-manager.md) — the split
+and its rationale are unchanged, but the manager is pnpm, so the flag is `PNPM_FLAGS =
+"--prod"`)\
+**Date:** 2026-07
 
 ## Context
 
@@ -44,10 +47,10 @@ app, not a published package — nothing consumes the split, so it is free to re
   `@capacitor/android`, `@capacitor/ios`), which only `cap`/Gradle/Xcode workflows use. The
   Capacitor packages the app code imports (`@capacitor/core` + plugins) stay in `dependencies`.
 
-Netlify installs with `NPM_FLAGS = "--omit=dev --no-audit --no-fund"` (`netlify.toml`
-`[build.environment]`), halving the install: 577 packages / 253 MB vs 1,159 / 512 MB — and halving
-the build cache that gets restored/saved each deploy. GitHub Actions (`test.yml`) and local dev run
-a plain `npm ci` and get everything, unchanged.
+Netlify installs with `PNPM_FLAGS = "--prod"` (`netlify.toml` `[build.environment]`), halving the
+install: 577 packages / 253 MB vs 1,159 / 512 MB — and halving the build cache that gets
+restored/saved each deploy. GitHub Actions (`test.yml`) and local dev run a plain full install and
+get everything, unchanged.
 
 **The invariant:** when adding a dependency, ask "does the Netlify web build import or execute
 this?" Yes → `dependencies`; no → `devDependencies`. A mislabel in the needed-at-build direction
@@ -71,8 +74,8 @@ version to move when the app actually changes.)
 
 * \+ Roughly 20% of production deploys (measured 13/67 over 30 days) skip entirely, at zero risk.
 * \+ Each remaining build installs and caches half as much (253 MB vs 512 MB, 577 vs 1,159
-  packages); verified end-to-end: `npm ci --omit=dev` + the full Netlify build command succeed.
-* \+ Local dev, GitHub Actions CI, and native builds are untouched — plain `npm ci` still installs
+  packages); verified end-to-end: a prod-only install + the full Netlify build command succeed.
+* \+ Local dev, GitHub Actions CI, and native builds are untouched — a plain install still installs
   both groups.
 * − `dependencies` no longer means "runtime imports" — `vite` in `dependencies` looks wrong to
   anyone carrying the npm-library convention. The split is documented here and in

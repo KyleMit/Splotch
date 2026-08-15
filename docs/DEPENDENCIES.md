@@ -853,7 +853,7 @@ transitive. Aggregate view (not per-package):
 
 ### Audit summary (checked 2026-07-17)
 
-> Produced by `npm audit` before the pnpm migration (ADR-0117); re-run it as `pnpm audit`, which
+> Produced by `npm audit` before the pnpm migration (ADR-0119); re-run it as `pnpm audit`, which
 > reports the same advisories keyed by dependency path.
 
 19 advisories: **4 low, 9 moderate, 6 high, 0 critical**. Mapped transitive → direct parent:
