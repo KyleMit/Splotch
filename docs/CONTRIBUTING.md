@@ -57,13 +57,26 @@ ADR-0019.
 
 None are required for local development. The app works fully offline without any API keys.
 
-| Variable                    | Where set     | Purpose                                                                       |
-| --------------------------- | ------------- | ----------------------------------------------------------------------------- |
-| `CAPACITOR=true`            | build scripts | Switches to `adapter-static`, disables PWA plugin, sets `__NATIVE_API_BASE__` |
-| `PUBLIC_ENABLE_DEV_HARNESS` | `.env.local`  | Unlocks the `/dev/*` test routes in the browser                               |
-| `AI_ACCESS_TOKENS`          | Netlify env   | Comma-separated list of valid AI invite tokens (server-only)                  |
-| `ADMIN_PASSWORD`            | Netlify env   | Password for the `/admin` token console (server-only)                         |
-| `OPENAI_API_KEY`            | Netlify env   | OpenAI API key for the hosted image generation endpoint (server-only)         |
+| Variable                        | Where set                | Purpose                                                                               |
+| ------------------------------- | ------------------------ | ------------------------------------------------------------------------------------- |
+| `CAPACITOR=true`                | build scripts            | Switches to `adapter-static`, disables PWA plugin, sets `__NATIVE_API_BASE__`         |
+| `PUBLIC_ENABLE_DEV_HARNESS`     | `web/.env.local`         | Unlocks the `/dev/*` test routes in the browser                                       |
+| `ALLOWED_TOKENS_LIST`           | Netlify env / `web/.env` | Comma-separated managed access tokens accepted by `/api/generate-image` (server-only) |
+| `ADMIN_ACCESS_TOKEN`            | Netlify env / `web/.env` | The `/admin` console secret, and the HMAC key for its derived session (server-only)   |
+| `OPENAI_API_KEY`                | Netlify env / `web/.env` | The server credential `/api/generate-image` bills hosted generation to (server-only)  |
+| `GITHUB_ISSUE_TOKEN`            | Netlify env / `web/.env` | Fine-grained PAT that files in-app feedback as issues; unset ⇒ `/api/report` 503s     |
+| `GITHUB_ISSUE_REPO`             | Netlify env / `web/.env` | Overrides the feedback repo (default `KyleMit/splotch-feedback`)                      |
+| `REPORT_TOKEN_SECRET`           | Netlify env / `web/.env` | Signs the free tier's picture-report token; unset ⇒ only the free report path 503s    |
+| `GENERATE_DEADLINE_MS_OVERRIDE` | local only               | Raises the synchronous generation deadline for the manual red-team suite              |
+| `GEMINI_API_KEY`                | local only (`web/.env`)  | **Not read by the app** — the asset-generation pipeline and `model-eval` only         |
+| `REDTEAM_FIXTURE_KEY`           | local only (`web/.env`)  | Passphrase for the encrypted red-team fixtures                                        |
+
+`web/.env.example` is the copy-to-`web/.env` template, with the one-time PAT setup steps and the
+rationale for each secret. The names above are owned by their readers —
+`web/src/lib/server/config.ts` (`OPENAI_API_KEY`, `GITHUB_ISSUE_*`, `REPORT_TOKEN_SECRET`),
+`tokens.ts` (`ALLOWED_TOKENS_LIST`), and `admin.ts` (`ADMIN_ACCESS_TOKEN`) — so a rename has one
+place to start from. `web/playwright.shared.ts` declares the full private set the served app reads,
+with the outbound-write credentials neutralised.
 
 To test the AI flow locally, run `npm run dev:netlify` instead of `npm run dev` — this starts the
 Netlify Dev server so the `/api/*` serverless functions are available. This requires the Netlify
@@ -73,8 +86,9 @@ CLI, which is installed globally (it is not a project dependency):
 npm install -g netlify-cli
 ```
 
-In production, AI access is granted per user: append one of the `AI_ACCESS_TOKENS` values to the app
-URL as the `ai_access_token` query param — `https://splotch.art/?ai_access_token=YOUR_TOKEN`.
+In production, AI access is granted per user: append one of the `ALLOWED_TOKENS_LIST` values to the
+app URL as the `ai_access_token` query param (`AI_ACCESS_TOKEN_PARAM` in
+`web/src/lib/inviteLink.ts`) — `https://splotch.art/?ai_access_token=YOUR_TOKEN`.
 
 ## The dual-build
 
