@@ -14,8 +14,8 @@ import { gotoApp, openHubSection, openSettingsModal } from './helpers';
 // inventory — the block crosses the width where two chips fit across the gap
 // between them, so running both keeps that crossover honest from either side.
 const PHONE_VIEWPORTS = [
-  { device: 'iPhone 13 mini', width: 375, height: 812, toolSkin: 'rows' },
-  { device: 'iPhone 16 Pro Max', width: 440, height: 956, toolSkin: 'chips' },
+  { device: 'iPhone 13 mini', width: 375, height: 812, toolSkin: 'rows', toolColumns: 1 },
+  { device: 'iPhone 16 Pro Max', width: 440, height: 956, toolSkin: 'chips', toolColumns: 2 },
 ] as const;
 
 async function openHub(page: Page, width: number, height: number) {
@@ -60,7 +60,7 @@ function wrappedText(page: Page, selector: string): Promise<string[]> {
   );
 }
 
-for (const { device, width, height, toolSkin } of PHONE_VIEWPORTS) {
+for (const { device, width, height, toolSkin, toolColumns } of PHONE_VIEWPORTS) {
   test(`hub summaries read in full (${device})`, async ({ page }) => {
     await openHub(page, width, height);
 
@@ -101,18 +101,16 @@ for (const { device, width, height, toolSkin } of PHONE_VIEWPORTS) {
     expect(await wrappedText(page, labelSelector)).toEqual([]);
 
     // Which is what the chips' width floor buys: the labels only fit beside
-    // their 26px icons while each chip gets enough of the row.
-    if (usingChips) {
-      const columns = await page
-        .locator('.control-chips')
-        .first()
-        .evaluate(
-          (grid) =>
-            new Set([...grid.children].map((chip) => Math.round(chip.getBoundingClientRect().x)))
-              .size
-        );
-      expect(columns).toBe(2);
-    }
+    // their 26px icons while each chip gets enough of the row. Counted for both
+    // skins off the case's own expectation, so the narrow phone's single column
+    // is a stated fact rather than the half this check skipped.
+    const columns = await page
+      .locator(optionSelector)
+      .evaluateAll(
+        (options) =>
+          new Set(options.map((option) => Math.round(option.getBoundingClientRect().x))).size
+      );
+    expect(columns).toBe(toolColumns);
 
     // Reflowed, not shrunk: the options stay full tap targets under either skin.
     const shortestOption = await page

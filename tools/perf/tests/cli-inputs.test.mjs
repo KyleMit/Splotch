@@ -208,6 +208,9 @@ describe('performance CLI input failures', () => {
     const context = { pages: vi.fn(() => [{ url: () => 'about:blank' }]) };
     const browser = { contexts: vi.fn(() => [context]) };
     const page = getWebviewPage(browser);
+    // Attach the expectation before the timers advance: the rejection is otherwise
+    // unhandled for a tick and reported as an error even though it is asserted.
+    // eslint-disable-next-line vitest/valid-expect -- awaited below as `rejection`; the rule only sees the statement it is declared in
     const rejection = expect(page).rejects.toThrow(
       'No navigated WebView page was exposed over CDP'
     );

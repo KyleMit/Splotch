@@ -95,13 +95,12 @@ for (const { device, viewport, pageLabel } of [
     // hiding the label, which is the half of the breakpoint this case exists
     // to hold. Shown then means shown whole — never an ellipsized one.
     const label = page.locator('.header-label');
-    if (pageLabel === 'shown') {
-      await expect(label).toBeVisible();
-      const clipped = await label.evaluate((el) => el.scrollWidth > el.clientWidth);
-      expect(clipped).toBe(false);
-    } else {
-      await expect(label).toBeHidden();
-    }
+    await expect(label).toBeVisible({ visible: pageLabel === 'shown' });
+    // Shown then means shown whole — never an ellipsized one. The hidden case is
+    // `display: none` rather than unmounted, so both widths read zero there and
+    // the same check carries (trivially) instead of needing a branch around it.
+    const clipped = await label.evaluate((el) => el.scrollWidth > el.clientWidth);
+    expect(clipped).toBe(false);
   });
 }
 

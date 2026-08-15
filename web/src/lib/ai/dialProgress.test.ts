@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { createDialProgress } from './dialProgress';
 
 const ESTIMATE = 10000;
+// Frames to pump the done-ramp before calling it stuck — well past the ~20 the ease needs.
+const DONE_RAMP_FRAME_BUDGET = 200;
 
 describe('createDialProgress', () => {
   it('advances progress monotonically while filling, before markDone', () => {
@@ -39,22 +41,24 @@ describe('createDialProgress', () => {
     dial.tick(5000); // seed some fill so the done-ramp starts mid-way
     dial.markDone();
 
-    let prev = -1;
-    let revealedFrame = -1;
     // The done-ramp ignores `now`; a fixed timestamp exercises the pure ease.
-    for (let i = 0; i < 200; i++) {
-      const { progress, waiting, revealed } = dial.tick(5000);
-      expect(waiting).toBe(false);
-      expect(progress).toBeGreaterThanOrEqual(prev);
-      if (revealed) {
-        expect(progress).toBe(1);
-        revealedFrame = i;
-        break;
-      }
-      expect(progress).toBeLessThan(1);
-      prev = progress;
+    const frames = [];
+    while (frames.length < DONE_RAMP_FRAME_BUDGET && !frames.at(-1)?.revealed) {
+      frames.push(dial.tick(5000));
     }
-    expect(revealedFrame).toBeGreaterThanOrEqual(0);
+
+    expect(
+      frames.at(-1)?.revealed,
+      `the ramp never revealed within ${DONE_RAMP_FRAME_BUDGET} frames`
+    ).toBe(true);
+    expect(frames.at(-1)?.progress, 'the revealing frame is full').toBe(1);
+    expect(frames.some((frame) => frame.waiting)).toBe(false);
+    expect(frames.slice(0, -1).every((frame) => frame.progress < 1)).toBe(true);
+    for (const [index, frame] of frames.entries()) {
+      expect(frame.progress, `frame ${index} moved backwards`).toBeGreaterThanOrEqual(
+        frames[index - 1]?.progress ?? -1
+      );
+    }
   });
 
   it('does not reveal on the first frames after markDone from zero fill', () => {

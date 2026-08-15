@@ -274,7 +274,7 @@ it.each([
   expect(output).toContain(scenario.summary);
   expect(output.includes('gen:coloring-outlines:normalize')).toBe(scenario.normalize);
   expect(output.includes('gen:coloring-outlines:fresh')).toBe(scenario.fresh);
-  if (scenario.fresh) expect(output).toContain('--scene "<description>"');
+  expect(output.includes('--scene "<description>"')).toBe(scenario.fresh);
 });
 
 it('golden diff reports a corrupt outline, retains successful pages, and exits non-zero', async () => {

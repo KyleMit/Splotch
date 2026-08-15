@@ -55,6 +55,21 @@ paths:
   mirrored copy keeps passing for the wrong reason). Prove the derivation: temporarily change the
   source and confirm the test tracks it. If the source executes at import time, move the constant to
   a side-effect-free module.
+* **A test that cannot fail is a lint error**, not something a reviewer has to notice:
+  `npm run
+  lint` scopes `@vitest/eslint-plugin` and `eslint-plugin-playwright` onto the two test
+  globs and rejects a body with no assertion, a committed `.only`, an unconditional skip, an
+  `expect` that never reaches a matcher, a dropped retrying assertion (`expect.poll`, a web-first
+  assertion), and an assertion reachable only through a branch. That last one shapes how a
+  parametrized case is written: state the expectation as a value the table carries
+  (`await expect(label).toBeVisible({ visible: expected === 'shown' })`,
+  `expect(output.includes(hint)).toBe(scenario.wantsHint)`), narrow a union through an
+  `asserts`-signature `expect*` helper rather than an `if` on the discriminant, or split a case that
+  asserts something genuinely different into its own parametrized block — and pair that split with a
+  test that the lists still partition the input, so an empty block fails instead of passing. Helpers
+  named `expect*` count as assertions; conditional skips stay allowed. Adding a rule means extending
+  its positive control, `tools/tests/vacuous-test-lint.test.mjs`. Details: `docs/TESTING.md`, "A
+  test that cannot fail is a lint error."
 * A page-driving helper needed by a second spec moves to the shared helpers module at that moment —
   never copied between specs. Exception: the self-contained white-box pixel specs stay
   self-contained (a past consolidation there created a real defect for a measured 8-line saving).

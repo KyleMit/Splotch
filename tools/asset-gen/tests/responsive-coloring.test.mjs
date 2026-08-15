@@ -44,6 +44,12 @@ function srcsetWidths() {
   return widths;
 }
 
+// A fill is painted into the canvas rather than laid out from a srcset, so it carries no width
+// descriptor at all. Deriving the expected descriptor from the encoding keeps that a checked
+// fact for every asset — a fill that started shipping a descriptor now fails.
+const expectedDescriptor = (asset, intrinsicWidth) =>
+  asset.encoding === 'fill' ? undefined : intrinsicWidth;
+
 describe('responsive coloring catalog', () => {
   it(
     'regenerates every derivative exactly and keeps srcset descriptors intrinsic',
@@ -57,10 +63,12 @@ describe('responsive coloring catalog', () => {
       for (const asset of assets) {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
-        if (asset.encoding !== 'fill') {
-          expect(widths.get(asset.source), asset.source).toBe(sourceMetadata.width);
-          expect(widths.get(asset.target), asset.target).toBe(targetMetadata.width);
-        }
+        expect(widths.get(asset.source), asset.source).toBe(
+          expectedDescriptor(asset, sourceMetadata.width)
+        );
+        expect(widths.get(asset.target), asset.target).toBe(
+          expectedDescriptor(asset, targetMetadata.width)
+        );
         expect(targetMetadata.width, asset.target).toBe(asset.widthPx);
         expect(Math.max(targetMetadata.width ?? 0, targetMetadata.height ?? 0), asset.target).toBe(
           asset.maxEdgePx
@@ -76,26 +84,37 @@ describe('responsive coloring catalog', () => {
 
         const regenerated = await renderResponsiveColoringAsset(sourcePath, asset);
         expect(regenerated.equals(await readFile(targetPath)), asset.target).toBe(true);
-
-        if (asset.encoding === 'overlay') {
-          const expected = await sharp(sourcePath)
-            .resize(asset.maxEdgePx, asset.maxEdgePx, {
-              fit: 'inside',
-              kernel: 'lanczos3',
-              withoutEnlargement: true,
-            })
-            .ensureAlpha()
-            .raw()
-            .toBuffer();
-          const actual = await sharp(targetPath).ensureAlpha().raw().toBuffer();
-          expect(maxOverlayAlphaError(expected, actual), asset.target).toBeLessThanOrEqual(
-            OVERLAY_MAX_CHANNEL_ERROR
-          );
-        }
       }
       expect((sourceBytes - targetBytes) / sourceBytes).toBeGreaterThanOrEqual(
         RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION
       );
+    },
+    RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
+  );
+
+  it(
+    'keeps every overlay within alpha tolerance of a direct resize',
+    async () => {
+      const overlays = BOOKS.flatMap(responsiveColoringAssets).filter(
+        (asset) => asset.encoding === 'overlay'
+      );
+
+      expect(overlays.length, 'the catalog exposes no overlay to check').toBeGreaterThan(0);
+      for (const asset of overlays) {
+        const expected = await sharp(join(WEB_STATIC, asset.source))
+          .resize(asset.maxEdgePx, asset.maxEdgePx, {
+            fit: 'inside',
+            kernel: 'lanczos3',
+            withoutEnlargement: true,
+          })
+          .ensureAlpha()
+          .raw()
+          .toBuffer();
+        const actual = await sharp(join(WEB_STATIC, asset.target)).ensureAlpha().raw().toBuffer();
+        expect(maxOverlayAlphaError(expected, actual), asset.target).toBeLessThanOrEqual(
+          OVERLAY_MAX_CHANNEL_ERROR
+        );
+      }
     },
     RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
   );

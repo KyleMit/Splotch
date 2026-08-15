@@ -1,13 +1,21 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { readAiImageResponse } from './aiImageResponse';
+import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
+
+// Narrows the union so an assertion about the decoded image reads unconditionally. Branching on
+// `result.kind` instead would let that assertion be skipped rather than fail.
+function expectImage(
+  result: AiImageResponse
+): asserts result is Extract<AiImageResponse, { kind: 'image' }> {
+  expect(result.kind).toBe('image');
+}
 
 describe('readAiImageResponse', () => {
   it('reads a successful image response', async () => {
     const result = await readAiImageResponse(new Response('image-bytes', { status: 200 }));
 
-    expect(result.kind).toBe('image');
-    if (result.kind === 'image') expect(await result.blob.text()).toBe('image-bytes');
+    expectImage(result);
+    expect(await result.blob.text()).toBe('image-bytes');
   });
 
   it('classifies a safety refusal', async () => {

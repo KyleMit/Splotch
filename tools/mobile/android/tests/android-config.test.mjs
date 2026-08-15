@@ -64,6 +64,16 @@ const GRADLE_MIN_SDK = Number(
 const ANDROID_RELEASE_BY_MIN_SDK = { 24: '7.0' };
 const GRADLE_MIN_RELEASE = ANDROID_RELEASE_BY_MIN_SDK[GRADLE_MIN_SDK];
 
+// What each named group in a support-floor claim must read, so a claim is
+// checked by the groups its own pattern captured rather than by a branch per
+// group name — a pattern that names a group this map doesn't cover fails
+// instead of being skipped.
+const SUPPORT_FLOOR_BY_GROUP = {
+  api: String(GRADLE_MIN_SDK),
+  release: GRADLE_MIN_RELEASE,
+  releaseMajor: GRADLE_MIN_RELEASE?.split('.')[0],
+};
+
 // Context-anchored claims of the published Android support floor. Named groups
 // carry what each claim states: `api` (the API level), `release` (the full
 // release, "7.0"), `releaseMajor` (the release's major only, "7"). Prose
@@ -110,10 +120,10 @@ describe('Android support floor single source', () => {
     it(`${file} ${claim} matches minSdkVersion`, () => {
       const groups = read(file).match(pattern)?.groups;
       expect(groups, `expected ${file} to contain a match for ${pattern}`).toBeDefined();
-      if (groups.api) expect(Number(groups.api)).toBe(GRADLE_MIN_SDK);
-      if (groups.release) expect(groups.release).toBe(GRADLE_MIN_RELEASE);
-      if (groups.releaseMajor) {
-        expect(groups.releaseMajor).toBe(GRADLE_MIN_RELEASE.split('.')[0]);
+      const stated = Object.entries(groups);
+      expect(stated.length, `${pattern} names no group to check`).toBeGreaterThan(0);
+      for (const [group, value] of stated) {
+        expect(value, `${file} ${claim} states ${group}`).toBe(SUPPORT_FLOOR_BY_GROUP[group]);
       }
     });
   }

@@ -31,6 +31,46 @@ deploys rather than on every push.
 `test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
 they need an emulator/simulator and the native toolchains.
 
+## A test that cannot fail is a lint error
+
+A test that has only ever passed carries no evidence it is connected to anything, and a green suite
+looks identical whether the coverage is real or vacuous. `npm run lint` catches that whole class on
+every file, in the `quality` job, at no runtime cost. `eslint.config.js` scopes
+`@vitest/eslint-plugin` onto `**/*.test.{ts,mjs}` and `eslint-plugin-playwright` onto
+`web/tests/**/*.spec.ts`, and turns on the same six guards under each plugin's spelling: a test body
+with no assertion, a committed `.only` (which silently skips the rest of its file), an unconditional
+skip, an `expect` that never reaches a matcher, a retrying assertion whose promise is dropped
+(`expect.poll`, a web-first assertion), and an assertion reachable only through a branch.
+
+That last one is the only rule that constrains how a test is written. **A parametrized case states
+its expectation as a value rather than branching around the assertion:**
+
+```ts
+// Not this — the assertion is skipped for half the table, and the skip is silent.
+if (expected === 'shown') expect(label).toBeVisible();
+
+// This — the case's own value drives the matcher, so every row asserts.
+await expect(label).toBeVisible({ visible: expected === 'shown' });
+expect(output.includes(hint)).toBe(scenario.wantsHint);
+```
+
+The other two shapes that replace a branch: narrow a union through an `asserts`-signature `expect*`
+helper (`expectParsedBody` in `web/src/lib/server/http.test.ts`) rather than an `if` on the
+discriminant, and split a case that asserts something genuinely different into its own parametrized
+block (`web/src/lib/components/Icon.svelte.test.ts`) — pairing the split with a test that the two
+lists still partition the input, so an exception naming something that no longer exists fails rather
+than quietly emptying a block.
+
+Helpers named `expect*` count as assertions, so a test that delegates is not read as assertion-free.
+Conditional skips (`test.skip(!!process.env.DEV_SERVER, '…')`) stay allowed — that is the supported
+way to gate a spec on the environment.
+
+The rules themselves have the same failure mode as the tests they police: one scoped to a glob
+nothing matches reports nothing, which is indistinguishable from a clean repo.
+`tools/tests/vacuous-test-lint.test.mjs` is the positive control — it seeds each defect and asserts
+the rule fires, and pins what each deliberate relaxation lets through. Extend it when you add a
+rule.
+
 ## Server-contract smoke tests — `test:api:smoke`, `test:blobs:smoke`
 
 Two Node smoke tests guard the server contract:

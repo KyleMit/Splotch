@@ -314,11 +314,13 @@ test.describe('AI result modal', () => {
 
       // Still bounded below by the strip's room, which carries the bottom inset:
       // honoring the top must not come out of the home indicator's clearance.
+      // The revealed card hangs a report row below the art and the loading card
+      // has nothing there, so the state picks which edges must clear the bound —
+      // never whether the bound is checked.
       const bottomBound = NOTCHED_PHONE_VIEWPORT.height - insets.bottom;
-      expect(card.y + card.height).toBeLessThanOrEqual(bottomBound + 1);
-      if (state === 'revealed') {
-        const { report } = await resultBoxes(page);
-        expect(report.y + report.height).toBeLessThanOrEqual(bottomBound + 1);
+      const bounded = state === 'revealed' ? [card, (await resultBoxes(page)).report] : [card];
+      for (const box of bounded) {
+        expect(box.y + box.height).toBeLessThanOrEqual(bottomBound + 1);
       }
     });
   }

@@ -71,12 +71,14 @@ describe('the admin login doors (real rateLimit)', () => {
 
     // Alternate doors across the whole allowance; each wrong guess is answered
     // 403 and costs one hit.
+    const wrongGuess = [
+      async () => ({ status: (await jsonDoor(address, JSON.stringify({ key: 'wrong' }))).status }),
+      async () => await formDoor(address, 'wrong'),
+    ];
     for (let i = 0; i < 10; i++) {
-      if (i % 2 === 0) {
-        expect((await jsonDoor(address, JSON.stringify({ key: 'wrong' }))).status).toBe(403);
-      } else {
-        expect(await formDoor(address, 'wrong')).toMatchObject({ status: 403 });
-      }
+      expect(await wrongGuess[i % wrongGuess.length](), `attempt ${i}`).toMatchObject({
+        status: 403,
+      });
     }
 
     // The eleventh is throttled at either door — including with the correct

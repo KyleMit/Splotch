@@ -143,6 +143,9 @@ describe('runWithCanvasContextRecovery', () => {
     const operation = vi.fn(() => new Promise<string>(() => undefined));
 
     const encoded = runWithCanvasContextRecovery(createSurface, operation);
+    // Attach the expectation before the loss is dispatched: the rejection is otherwise
+    // unhandled for a tick and reported as an error even though it is asserted.
+    // eslint-disable-next-line vitest/valid-expect -- awaited below as `rejection`; the rule only sees the statement it is declared in
     const rejection = expect(encoded).rejects.toMatchObject({
       code: CANVAS_CONTEXT_RECOVERY_ERROR_CODE,
     });

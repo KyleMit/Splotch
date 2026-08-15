@@ -1,6 +1,8 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import svelte from 'eslint-plugin-svelte';
+import vitest from '@vitest/eslint-plugin';
+import playwright from 'eslint-plugin-playwright';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 
@@ -11,6 +13,63 @@ const PLAYWRIGHT_IMPORT_RESTRICTION = {
 const RATE_LIMIT_MESSAGE =
   'Build rate-limit bucket keys via src/lib/server/rateLimitKeys.ts (ADR-0014 shared-bucket contract).';
 const RATE_LIMIT_ARGUMENT_TYPES = ['Literal', 'TemplateLiteral', 'BinaryExpression'];
+
+// A test that cannot fail is worse than no test: it advertises coverage it does not have, and
+// nothing downstream reports it — a green suite looks identical either way. These are the shapes
+// a reviewer has to spot by eye, so they are lint instead. The two tiers get the same guard
+// under each plugin's spelling; every entry below has a counterpart on the other side.
+//
+//   expect-expect              a test body with no assertion
+//   no-focused-test(s)         a committed .only, which silently skips the rest of the file
+//   no-disabled/skipped-test   a skip that was meant to be temporary (conditional skips are the
+//                              supported way to gate a spec on the environment, so those stay)
+//   no-conditional-expect      an assertion reachable only if something threw, or otherwise
+//                              behind a branch that may never run. A parametrized case states
+//                              its expectation as a value the table carries
+//                              (`expect(shown).toBe(case.labelShown)`), narrows a union through
+//                              an `asserts`-signature expect* helper, or splits into its own
+//                              parametrized block — never a branch wrapped around the assertion
+//   valid-expect               an expect that never reaches a matcher, so it asserts nothing
+//   require-awaited-expect-poll / missing-playwright-await
+//                              a retrying assertion whose promise is dropped — it passes before
+//                              it has resolved, which is the failure mode expect.poll invites
+//
+// expect-expect reads a test that delegates to a helper as assertion-free, so the helpers have
+// to be named. Both blocks key off the repo's naming convention — expectKept, expectCliFailure,
+// expectNoSeriousViolations, and Vitest's own expectTypeOf — rather than an enumerated list that
+// silently stops covering the next helper someone writes. The two plugins spell that differently:
+// Vitest's assertFunctionNames matches globs, Playwright's matches exact strings and takes regex
+// sources under a separate assertFunctionPatterns.
+const ASSERTION_HELPER_PREFIX = 'expect';
+// Vitest's expect takes an optional second argument describing what the assertion holds. The
+// rule waves a literal one through on its own but not a computed one, and computed is what a
+// parametrized assertion needs to name the case that failed —
+// `expect(paths.has(asset.target), asset.target)`. Playwright's expect takes only the value
+// under test, so its block keeps the default cap.
+const VITEST_EXPECT_MAX_ARGS = 2;
+const VACUOUS_TEST_RULES = {
+  vitest: {
+    'vitest/expect-expect': ['error', { assertFunctionNames: [`${ASSERTION_HELPER_PREFIX}*`] }],
+    'vitest/no-focused-tests': 'error',
+    'vitest/no-disabled-tests': 'error',
+    'vitest/no-conditional-expect': 'error',
+    'vitest/valid-expect': ['error', { maxArgs: VITEST_EXPECT_MAX_ARGS }],
+    'vitest/valid-expect-in-promise': 'error',
+    'vitest/require-awaited-expect-poll': 'error',
+  },
+  playwright: {
+    'playwright/expect-expect': [
+      'error',
+      { assertFunctionPatterns: [`^${ASSERTION_HELPER_PREFIX}`] },
+    ],
+    'playwright/no-focused-test': 'error',
+    'playwright/no-skipped-test': ['error', { allowConditional: true }],
+    'playwright/no-conditional-expect': 'error',
+    'playwright/valid-expect': 'error',
+    'playwright/valid-expect-in-promise': 'error',
+    'playwright/missing-playwright-await': 'error',
+  },
+};
 
 // Flat config lives at the repo root (where package.json / node_modules are), but the app
 // source is under web/. Type checking is owned by `npm run check` (svelte-check); ESLint runs
@@ -32,6 +91,7 @@ export default tseslint.config(
       '**/playwright-report/',
       '**/test-results/',
       '.claude/worktrees/',
+      'screenshots/',
       'android/',
       'ios/',
       'scrapbook/',
@@ -194,6 +254,7 @@ export default tseslint.config(
     // This block's no-restricted-syntax deliberately replaces the web/src rateLimit-key rule:
     // unit tests construct ad-hoc literal bucket keys on purpose.
     files: ['**/*.test.ts', '**/*.test.mjs'],
+    plugins: { vitest },
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -206,7 +267,15 @@ export default tseslint.config(
           message: 'Vitest files use it()/describe() — test() is the Playwright vocabulary.',
         },
       ],
+      ...VACUOUS_TEST_RULES.vitest,
     },
+  },
+  {
+    // Playwright specs. Same vacuous-test guard as the Vitest block above, spelled in this
+    // plugin's rule names; the two vocabularies never mix, so the globs stay disjoint.
+    files: ['web/tests/**/*.spec.ts'],
+    plugins: { playwright },
+    rules: VACUOUS_TEST_RULES.playwright,
   },
   {
     // The ONE type-aware exception to the fast non-type-aware design above: floating promises
