@@ -103,8 +103,7 @@
 <PageShell title="Join the Splotch beta" wordmark="Splotch beta">
   {#snippet lede()}
     Joining is free and takes three quick steps — plus an optional fourth if you'd like to send
-    feedback. Thank you for helping: trying Splotch on a real phone or tablet finds problems we
-    can't catch on our own.
+    feedback. Thank you for helping!
   {/snippet}
 
   <div class="beta-platform-picker">

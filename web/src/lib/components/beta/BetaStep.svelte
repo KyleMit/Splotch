@@ -17,9 +17,9 @@
     actionHref: string;
     actionLabel: string;
     fine: string;
-    cardLabel: string;
+    cardLabel?: string;
     body: Snippet;
-    cardBody: Snippet;
+    cardBody?: Snippet;
     external?: boolean;
     optional?: boolean;
     showCard?: boolean;
@@ -56,7 +56,7 @@
     >
     <p class="fine">{fine}</p>
   </div>
-  {#if showCard}
+  {#if showCard && cardLabel && cardBody}
     <div class="card">
       <p class="card-label">{cardLabel}</p>
       <p class="card-body">{@render cardBody()}</p>

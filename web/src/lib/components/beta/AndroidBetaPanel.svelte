@@ -34,16 +34,11 @@
     title="Join the testers group"
     actionHref={TESTERS_GROUP_URL}
     actionLabel="Join the testers group"
-    fine="Google may ask you to sign in first. There's nobody to wait on after that."
-    cardLabel="Double check your account"
+    fine="Use the same Google account that's signed in to the Play Store on your phone or tablet."
   >
     {#snippet body()}
-      Google Play decides who can see the beta by checking a Google Group, so this has to happen
-      first. Click <strong>Join group</strong> at the top.
-    {/snippet}
-    {#snippet cardBody()}
-      Use the <strong>same Google account</strong> that's signed in to the Play Store on your phone or
-      tablet. Using a different account is a common reason the beta never shows up.
+      Press <strong>Join group</strong> at the top — Google Play checks this group to decide who can see
+      the beta, so it comes first.
     {/snippet}
   </BetaStep>
 
@@ -53,17 +48,9 @@
     actionHref={BETA_OPT_IN_URL}
     actionLabel="Become a tester"
     fine="Sign in with the same account you used in step 1."
-    cardLabel="If a link doesn't work yet"
   >
     {#snippet body()}
-      Open the tester page and press <strong>Become a tester</strong>. This enrolls you; it doesn't
-      install anything yet. Once you're in, the same page should automatically show you a link to
-      “Download it on Google Play”, taking you to step 3.
-    {/snippet}
-    {#snippet cardBody()}
-      None of this is instant, and Google Play doesn't always recognize a new group membership
-      straight away. Check that both pages are signed in to the same Google account, then make a cup
-      of tea and try again a little later before assuming something is broken.
+      Press <strong>Become a tester</strong> — this enrolls you; it doesn't install anything yet.
     {/snippet}
   </BetaStep>
 
@@ -76,16 +63,13 @@
     cardLabel="Please stay for 14 days"
   >
     {#snippet body()}
-      The store listing stays hidden until step 2 is done — before that it just says “item not
-      found”. Now it installs like any other app, and updates arrive automatically as new beta
-      builds go out.
+      The listing unlocks once step 2 is done. Install it like any other app — beta updates arrive
+      automatically from here.
     {/snippet}
     {#snippet cardBody()}
-      Once you're in, <strong>stay opted in for at least 14 days in a row</strong>, even if you've
-      seen everything you wanted to in the first ten minutes. Google requires a stretch of
-      continuously enrolled testers before Splotch can apply for a public listing, so leaving early
-      — or opting out and back in — sets that clock back for everyone. You don't have to keep
-      drawing; just stay enrolled.
+      Google requires a stretch of continuously enrolled testers before Splotch can apply for a
+      public listing, so please <strong>stay opted in for at least 14 days in a row</strong>. You
+      don't have to keep drawing — just stay enrolled.
     {/snippet}
   </BetaStep>
 
@@ -104,14 +88,12 @@
   >
     {#snippet body()}
       Found a bug, or thought of something Splotch should do? The form lives at
-      <a href="/feedback">{FEEDBACK_URL}</a> — open it on whichever device is handy, or pass it on
-      to whoever is doing the testing. Odd crashes, confusing buttons, and “my toddler did
+      <a href="/feedback">{FEEDBACK_URL}</a> — odd crashes, confusing buttons, and “my toddler did
       <em>what</em>?” stories are all genuinely useful.
     {/snippet}
     {#snippet cardBody()}
-      Reach out to me at <a href="mailto:{support}">{support}</a> if you need anything at all… something
-      is broken, something is confusing, an idea, or just to say your kid liked it. Good and bad are both
-      worth hearing.
+      Anything at all — broken, confusing, an idea, or just to say your kid liked it — reach me at
+      <a href="mailto:{support}">{support}</a>. Good and bad are both worth hearing.
     {/snippet}
   </BetaStep>
 </BetaStepLedger>
@@ -148,6 +130,14 @@
     <p>
       The two are signed in to different accounts. In the Play Store app, tap your profile picture
       in the top-right to see which account is active.
+    </p>
+  </div>
+  <div class="row">
+    <h4>You just joined and the links haven't caught up</h4>
+    <p>
+      None of this is instant — Google Play doesn't always recognize a new group membership straight
+      away. Check that both pages are signed in to the same Google account, then make a cup of tea
+      and try again a little later before assuming something is broken.
     </p>
   </div>
   <div class="row">

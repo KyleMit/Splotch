@@ -21,7 +21,7 @@
 
     /* Each rail segment bridges its step to the next numeral, so the gap and
        numeral geometry are named together rather than tuned independently. */
-    --step-gap: 52px;
+    --step-gap: 64px;
     --num-size: 32px;
     --num-gutter: 52px;
     --rail-width: 2px;
@@ -37,7 +37,7 @@
 
   @media (max-width: 540px) {
     .steps {
-      --step-gap: 38px;
+      --step-gap: 48px;
       --num-size: 26px;
     }
   }
