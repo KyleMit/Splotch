@@ -42,16 +42,19 @@ describe('rateLimit', () => {
     vi.useFakeTimers();
     vi.setSystemTime(0);
     const key = 'honors-retry-after';
-    for (let i = 0; i < 3; i++) rateLimit(key, { limit: 3, windowMs: 10_000 });
+    expect(rateLimit(key, { limit: 1, windowMs: 10_000 }).limited).toBe(false);
 
-    // Rejected attempts must not extend the window.
+    // Rejected attempts must not extend the window. The budget of one is what
+    // makes a violation observable: were the rejection recorded as a hit, the
+    // key would still be limited after retryAfter — a wider budget absorbs the
+    // stray hit and passes either way (found by the issue-1066 kill-check).
     vi.advanceTimersByTime(2000);
-    const rejected = rateLimit(key, { limit: 3, windowMs: 10_000 });
+    const rejected = rateLimit(key, { limit: 1, windowMs: 10_000 });
     expect(rejected.limited).toBe(true);
     expect(rejected.retryAfter).toBe(8);
 
     vi.advanceTimersByTime(rejected.retryAfter * 1000);
-    expect(rateLimit(key, { limit: 3, windowMs: 10_000 }).limited).toBe(false);
+    expect(rateLimit(key, { limit: 1, windowMs: 10_000 }).limited).toBe(false);
   });
 
   it('tracks each key independently', () => {
