@@ -25,8 +25,9 @@ here into the root `node_modules`, so there is nothing to install in this folder
 `npm install` here.**
 
 Path/tree resolution is centralized in `lib/asset-paths.mjs` (`REPO_ROOT`, `COLORING_DIR`,
-`STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the scripts never hardcode
-`../../..` walks or reach back into the repo-root `tools/lib/`.
+`STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the shipping pipeline's scripts
+never hardcode `../../..` walks or reach back into the repo-root `tools/lib/`. `crayon-reference/`
+is exempt from both — see `CLAUDE.md` for the exemption and the test it turns on.
 
 ### Raw fills vs shipped fills
 

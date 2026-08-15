@@ -13,8 +13,13 @@ import { describe, expect, it } from 'vitest';
 // is the drift guard those enumerations require instead of a prose instruction.
 const repoRoot = join(import.meta.dirname, '..', '..');
 
-// Packages that keep their own knip entry/project globs and their own test
-// suites, so they are correctly absent from the enumerations below.
+// Capabilities correctly absent from the enumerations below, for two different
+// reasons. asset-gen and vectorize carry their own explicit knip entry/project
+// globs and their own test suites. store-drawings has neither: it is outside
+// knip's analysis entirely, because its shipped surface is
+// generated/store-drawings.mjs — a generated catalog that exports every drawing
+// whether or not each has a caller, so covering it would red `lint:dead` on
+// output no human wrote.
 const SEPARATELY_CONFIGURED = new Set(['asset-gen', 'store-drawings', 'vectorize']);
 
 // Tracked files, not a directory listing: tools/node_modules (asset-gen's
