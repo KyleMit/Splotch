@@ -18,26 +18,26 @@ Every specifically implemented guideline, and whether each store requires it. "R
 store's own rule; "Defensive" means Splotch implements it although that store does not demand it for
 this app's shape.
 
-| What Splotch implements                                                       | iOS (App Store)                       | Android (Google Play)                     | Decided in                                             |
-| ----------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | ------------------------------------------------------ |
-| Parental gate on every external link                                          | Required — 1.3 Kids Category          | Not required (shipped anyway)             | ADR-0094; issue 844                                    |
-| Parental gate on data-out actions (AI generate, image report, feedback)       | Required — 1.3, 5.1.4                 | Required — Families "adult action"        | ADR-0094, ADR-0104                                     |
-| No third-party ads or analytics SDKs at all                                   | Required — 1.3                        | Required — Families self-certified SDKs   | Never shipped; `/privacy` commits to it                |
-| Privacy policy in listing metadata and reachable in-app                       | Required — 5.1.1, 5.1.4(b)            | Required — Families                       | `/privacy` route, bundled into both native builds      |
-| COPPA / GDPR-K posture (no accounts, no child name/email/location)            | Required — 5.1.4(a)                   | Required — Families                       | Whole-app design; `/privacy` "Children's privacy"      |
-| No device identifiers to third parties (no AAID, IDFA, fingerprinting)        | Required — 1.3                        | Required — Families identifier list       | ADR-0105 pseudonym design                              |
-| In-app reporting of AI-generated content                                      | Defensive — 1.2 targets shared UGC    | Required — AI-Generated Content policy    | ADR-0104; issue 848                                    |
-| No IAP, no purchase steering; BYOK worded as configuration                    | Required — 3.1.1 (non-US storefronts) | Required — Payments policy                | Issue 849; commit c2ee6446 (see Provenance)            |
-| No hidden or privileged surfaces (admin console web-only, unlinked)           | Required — 2.3.1                      | Required — Deceptive Behavior             | ADR-0101                                               |
-| No other-platform references inside the iOS binary                            | Required — 2.3.10                     | N/A                                       | ADR-0112; `web/nativeExcludedRoutes.ts` + bundle guard |
-| iOS privacy manifest (`PrivacyInfo.xcprivacy`)                                | Required — ITMS-91053 upload gate     | N/A                                       | `ios/App/App/PrivacyInfo.xcprivacy`                    |
-| Data-disclosure agreement across manifest, labels, forms, and `/privacy`      | Required — nutrition label            | Required — Data safety form               | Consistency chain (below); issue 846                   |
-| AI provider whose terms permit child-directed use                             | Required — 5.1.4 (COPPA conduct)      | Required — Families APIs/SDKs + User Data | ADR-0113, ADR-0114; issue 845                          |
-| Reviewer access to the gated AI feature (working access code + steps)         | Required — 2.1                        | Required — Play Console "App access"      | Issue 851 submission checklist                         |
-| App complete and useful without any credential (free allowance, core drawing) | Required — 2.1, 4.2                   | Required — Broken-functionality policies  | ADR-0105; issue 599                                    |
-| Kids metadata, age declarations, content rating from real answers             | Required — 2.3.8, Kids Category       | Required — Target audience + IARC         | `store-assets/STORE-LISTING-*.md`                      |
-| Permission hygiene; no location for a child-directed app                      | Required — 5.1.1 purpose strings      | Required — Families location rule         | Minimal manifests; `android.md` checklist              |
-| No trademarked third-party content in bundles or metadata                     | Required — 5.2.1                      | Required — Intellectual Property policy   | Issue 851 (coloring-book list removal)                 |
+| What Splotch implements                                                       | iOS (App Store)                       | Android (Google Play)                     | Decided in                                                                        |
+| ----------------------------------------------------------------------------- | ------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------- |
+| Parental gate on every external link                                          | Required — 1.3 Kids Category          | Not required (shipped anyway)             | ADR-0094; issue 844                                                               |
+| Parental gate on data-out actions (AI generate, image report, feedback)       | Required — 1.3, 5.1.4                 | Required — Families "adult action"        | ADR-0094, ADR-0104                                                                |
+| No third-party ads or analytics SDKs at all                                   | Required — 1.3                        | Required — Families self-certified SDKs   | Never shipped; `/privacy` commits to it                                           |
+| Privacy policy in listing metadata and reachable in-app                       | Required — 5.1.1, 5.1.4(b)            | Required — Families                       | `/privacy` route, bundled into both native builds and link-checked by `build:cap` |
+| COPPA / GDPR-K posture (no accounts, no child name/email/location)            | Required — 5.1.4(a)                   | Required — Families                       | Whole-app design; `/privacy` "Children's privacy"                                 |
+| No device identifiers to third parties (no AAID, IDFA, fingerprinting)        | Required — 1.3                        | Required — Families identifier list       | ADR-0105 pseudonym design                                                         |
+| In-app reporting of AI-generated content                                      | Defensive — 1.2 targets shared UGC    | Required — AI-Generated Content policy    | ADR-0104; issue 848                                                               |
+| No IAP, no purchase steering; BYOK worded as configuration                    | Required — 3.1.1 (non-US storefronts) | Required — Payments policy                | Issue 849; commit c2ee6446 (see Provenance)                                       |
+| No hidden or privileged surfaces (admin console web-only, unlinked)           | Required — 2.3.1                      | Required — Deceptive Behavior             | ADR-0101                                                                          |
+| No other-platform references inside the iOS binary                            | Required — 2.3.10                     | N/A                                       | ADR-0112; `web/nativeExcludedRoutes.ts` + bundle guard                            |
+| iOS privacy manifest (`PrivacyInfo.xcprivacy`)                                | Required — ITMS-91053 upload gate     | N/A                                       | `ios/App/App/PrivacyInfo.xcprivacy`                                               |
+| Data-disclosure agreement across manifest, labels, forms, and `/privacy`      | Required — nutrition label            | Required — Data safety form               | Consistency chain (below); issue 846                                              |
+| AI provider whose terms permit child-directed use                             | Required — 5.1.4 (COPPA conduct)      | Required — Families APIs/SDKs + User Data | ADR-0113, ADR-0114; issue 845                                                     |
+| Reviewer access to the gated AI feature (working access code + steps)         | Required — 2.1                        | Required — Play Console "App access"      | Issue 851 submission checklist                                                    |
+| App complete and useful without any credential (free allowance, core drawing) | Required — 2.1, 4.2                   | Required — Broken-functionality policies  | ADR-0105; issue 599                                                               |
+| Kids metadata, age declarations, content rating from real answers             | Required — 2.3.8, Kids Category       | Required — Target audience + IARC         | `store-assets/STORE-LISTING-*.md`                                                 |
+| Permission hygiene; no location for a child-directed app                      | Required — 5.1.1 purpose strings      | Required — Families location rule         | Minimal manifests; `android.md` checklist                                         |
+| No trademarked third-party content in bundles or metadata                     | Required — 5.2.1                      | Required — Intellectual Property policy   | Issue 851 (coloring-book list removal)                                            |
 
 ## Apple — App Review Guidelines
 
@@ -167,10 +167,15 @@ button) was fixed to keep that story true.
 > secure user consent for the collection, even if such data is considered to be anonymous."
 
 **Impact / decisions.** `/privacy` is live at splotch.art/privacy, bundled into both native builds,
-and linked from the listing. Consent is structured as adult action: the AI feature is off until a
-parent supplies a credential behind the gate, the feedback device snapshot is opt-in and
-off-by-default, and image reports require an explicit gated confirmation that names the evidence
-being sent (ADR-0104).
+and linked from the listing. "Easily accessible" is the half a bundled file does not satisfy on its
+own, so `build:cap` enforces both: `requiredNativePageProblems` in
+`tools/mobile/check-static-bundle.mjs` fails the build if `privacy.html` is missing from the static
+export, and `requiredNativePageLinkProblems` fails it if nothing in the shipped bundle links to
+`/privacy` — the in-app path is Settings → About → Privacy Policy. ADR-0120 records why that is a
+build-time assertion rather than a step in the native smoke. Consent is structured as adult action:
+the AI feature is off until a parent supplies a credential behind the gate, the feedback device
+snapshot is opt-in and off-by-default, and image reports require an explicit gated confirmation that
+names the evidence being sent (ADR-0104).
 
 ### 5.1.4 Kids
 

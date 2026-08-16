@@ -403,9 +403,16 @@ boots. The smoke test fills that gap: it installs the app on a real Android emul
 simulator, launches it, and asserts that the UI renders — proving the Capacitor WebView started
 **and** loaded the production web bundle (not a white screen or a crash).
 
-The assertion is a single, meaningful signal: the **"Settings"** button (the always-present help
-button, `web/src/lib/components/SettingsModal.svelte`) must become visible. Seeing its accessibility
-label means real UI painted, not just that the process launched.
+The assertion is a single, meaningful signal: the **"Settings"** button (the always-present corner
+button, `web/src/lib/components/SettingsButton.svelte`) must become visible. Seeing its
+accessibility label means real UI painted, not just that the process launched.
+
+That the flow stops there is a decision, not an omission — **ADR-0120**. Steps that navigated the UI
+broke on a UI change within three releases every time they were added, and because these workflows
+are tag-only, each break surfaced as a red release gate instead of a failing PR. Coverage of what
+the UI *does* belongs in Playwright, which runs on every push and can select elements properly. Do
+not grow this flow; `tools/tests/native-smoke-flow.test.mjs` fails on `npm test` if it selects a
+string the app no longer renders, or selects by pattern instead of by exact label.
 
 ### The flow
 
@@ -419,10 +426,13 @@ appId: art.splotch.app
 - extendedWaitUntil:
     visible: 'Settings'
     timeout: 30000
-- takeScreenshot: smoke-launch
+- takeScreenshot: .maestro/screenshots/smoke-launch
 ```
 
-`takeScreenshot` writes `smoke-launch.png` to the working directory (repo root); it's git-ignored.
+`takeScreenshot` writes `smoke-launch.png` under `.maestro/screenshots/`; it's git-ignored. On CI
+the whole Maestro report — flow log plus the screenshot taken at a failing step — is uploaded as a
+build artifact, and a failure on a **tag** push files or comments on a GitHub issue, since nobody is
+watching a tag-triggered run at the moment it goes red.
 
 ### npm scripts
 

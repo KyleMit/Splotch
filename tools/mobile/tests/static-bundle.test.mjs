@@ -10,6 +10,7 @@ import {
   nativeBundleProblems,
   nativePrivacyFeedbackProblems,
   REQUIRED_NATIVE_PAGES,
+  requiredNativePageLinkProblems,
   requiredNativePageProblems,
   WEB_ONLY_MODULE_MARKERS,
   webOnlyMarkerSourceProblems,
@@ -113,6 +114,45 @@ describe('required native pages', () => {
       expect(requiredNativePageProblems(root)).toEqual([
         `Required native page is missing: ${REQUIRED_NATIVE_PAGES[0]}`,
       ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // A shipped page nothing links to is unreachable, which for the privacy
+  // policy is the store requirement itself rather than a nicety. The route
+  // manifest names every route whether or not anything links there, so the
+  // distinguishing detail is the `href="…"` prefix — the case below that keeps
+  // only the bare path is the vacuous pass this guard has to reject.
+  it('requires each shipped page to be linked from the bundle', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-links-'));
+    const routes = REQUIRED_NATIVE_PAGES.map((page) => page.replace(/\.html$/, ''));
+    try {
+      for (const page of REQUIRED_NATIVE_PAGES) writeFileSync(join(root, page), page);
+      writeFileSync(join(root, 'app.js'), routes.map((route) => `<a href="/${route}">`).join(''));
+      expect(requiredNativePageLinkProblems(root)).toEqual([]);
+
+      writeFileSync(join(root, 'app.js'), routes.map((route) => `"/${route}"`).join(','));
+      expect(requiredNativePageLinkProblems(root)).toEqual(
+        REQUIRED_NATIVE_PAGES.map(
+          (page, index) =>
+            `Native bundle ships ${page} but nothing in it links to the page (href="/${routes[index]}")`
+        )
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  // The link has to come from the client bundle. A prerendered page carrying
+  // its own path would otherwise satisfy the guard on its own behalf.
+  it('does not accept a page linking to itself in HTML', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-selflink-'));
+    try {
+      for (const page of REQUIRED_NATIVE_PAGES) {
+        writeFileSync(join(root, page), `<a href="/${page.replace(/\.html$/, '')}">`);
+      }
+      expect(requiredNativePageLinkProblems(root)).toHaveLength(REQUIRED_NATIVE_PAGES.length);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

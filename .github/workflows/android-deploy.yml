@@ -26,6 +26,9 @@ jobs:
     # boots. Ubuntu KVM + x86_64 is cheaper, faster, and battle-tested.
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: read
+      issues: write
     steps:
       # Capacitor 8 needs a JDK 21 toolchain (the bundled JBR 17 / java 17 fails
       # AGP's JdkImageTransform). See the android-build-toolchain notes.
@@ -55,6 +58,7 @@ jobs:
       - uses: ./.github/actions/install-maestro
 
       - name: Run smoke test on emulator
+        id: smoke
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
           # Keep in sync with ANDROID_API_LEVEL in tools/mobile/android/lib/android-toolchain.mjs
@@ -76,7 +80,62 @@ jobs:
             npm run test:android:device
 
       - name: Upload Maestro report
+        id: report
         if: ${{ !cancelled() }}
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-report
+
+      # A tag-only gate nobody is watching is not a gate: this one was red on
+      # every release tag from v1.3.0 through v1.5.0, and all three shipped
+      # anyway because a tag push is the one CI event no one is looking at. One
+      # open issue collects every red tag until it is closed. Manual runs are
+      # excluded — whoever dispatched one is already reading the result.
+      #
+      # `failure()` deliberately covers the whole job, not just the smoke step:
+      # a tag that fails at checkout, the APK build, or the toolchain is just as
+      # unwatched, and narrowing this to the smoke would reopen the hole for
+      # every other way the gate can go red. The body is what stays honest about
+      # which happened — it claims a boot regression only when the smoke itself
+      # failed, and offers the artifact only when the upload produced one.
+      - name: File the failure
+        if: ${{ failure() && github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          REPORT_OUTCOME: ${{ steps.report.outcome }}
+          PLATFORM: Android
+          ARTIFACT: maestro-report
+        run: |
+          title="${PLATFORM} native deploy gate failed"
+          if [[ "$SMOKE_OUTCOME" == "failure" ]]; then
+            cause="The launch smoke itself failed, so the shipped artifact did not boot and paint. The
+          flow asserts only that (ADR-0120), which makes this a real regression in the build, the
+          Capacitor config, the static export, or the WebView start — not flow drift."
+          else
+            cause="The smoke step did not fail (outcome: ${SMOKE_OUTCOME:-never reached}); the job went red
+          somewhere else — checkout, toolchain, the build, or the report upload. Read the run before
+          treating this as a product regression."
+          fi
+          if [[ "$REPORT_OUTCOME" == "success" ]]; then
+            evidence="* Evidence: the ${ARTIFACT} artifact on that run holds the flow log and any
+            screenshot taken at the failing step."
+          else
+            evidence="* No ${ARTIFACT} artifact was produced (upload outcome: ${REPORT_OUTCOME:-never reached})."
+          fi
+          body="$(cat <<EOF
+          The ${PLATFORM} native deploy gate failed for ${GITHUB_REF_NAME}.
+
+          * Run: ${RUN_URL}
+          ${evidence}
+
+          ${cause}
+          EOF
+          )"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label type:bug --label area:native --body "$body"
+          fi

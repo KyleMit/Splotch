@@ -1,6 +1,6 @@
 # ADR-0008: Three-Tier Testing Strategy (Vitest + Playwright + Maestro)
 
-**Status:** Active\
+**Status:** Active (amended by [0120](0120-native-smoke-is-a-boot-check-not-a-ui-flow.md))\
 **Date:** 2025–2026
 
 > **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the repo-automation tier now lives in
@@ -41,7 +41,9 @@ intermittent 504s (see ADR-0009).
 
 The Maestro flow (`.maestro/smoke.yaml`) asserts on the accessibility text "Settings" — presence of
 that label means the Svelte app rendered successfully in the WebView, not just that the native
-process is alive.
+process is alive. That single assertion is the flow's whole job, and
+[ADR-0120](0120-native-smoke-is-a-boot-check-not-a-ui-flow.md) records why steps that navigate the
+UI do not belong in this tier.
 
 ## Consequences
 
