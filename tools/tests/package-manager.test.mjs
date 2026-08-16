@@ -23,6 +23,7 @@ const INSTALL_SURFACE = [
   '.codex/cloud/setup.sh',
   '.codex/cloud/maintenance.sh',
   '.codex/environments/environment.toml',
+  'tools/bootstrap-codex-worktree.mjs',
   ...readdirSync(join(repoRoot, '.github', 'workflows')).map((f) => `.github/workflows/${f}`),
   ...readdirSync(join(repoRoot, '.github', 'actions')).map(
     (d) => `.github/actions/${d}/action.yml`

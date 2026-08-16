@@ -67,7 +67,8 @@ fixed; what is given up is the guarantee against the *next* one.
 * `packageManager` in `package.json` pins the exact version. `corepack enable pnpm` provisions it
   locally, `corepack install` in the cloud setup scripts, `pnpm/action-setup` in CI — all three read
   that one field, so no environment can drift onto a different pnpm.
-* `pnpm install --frozen-lockfile` in CI and cloud bootstrap; `pnpm install` locally.
+* `pnpm install --frozen-lockfile` in CI and automated session/worktree bootstraps; `pnpm install`
+  for manual local development.
 * Netlify: `PNPM_FLAGS = "--prod"`, replacing `NPM_FLAGS = "--omit=dev …"`. The
   [ADR-0070](0070-netlify-build-minute-reduction.md) inverted `dependencies`/`devDependencies` split
   is unchanged and still halves the deploy install.

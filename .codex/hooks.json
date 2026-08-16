@@ -1,0 +1,17 @@
+{
+  "description": "Prepare new Codex worktrees before the first model turn.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^startup$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/tools/bootstrap-codex-worktree.mjs\"",
+            "statusMessage": "Preparing the Splotch worktree"
+          }
+        ]
+      }
+    ]
+  }
+}
