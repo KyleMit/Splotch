@@ -17,6 +17,7 @@
   import { buttonCenter } from '$lib/state/modal.svelte';
   import { settings, setSound } from '$lib/state/settings.svelte';
   import { resolvedTheme, setResolvedTheme } from '$lib/state/appearance.svelte';
+  import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
 
   // Seeds from the live viewport at construction time (before first paint) so
   // a flag that's already true on open renders its shell on the first frame —
@@ -85,6 +86,7 @@
     wasOpen = open;
     if (!open) return;
     if (requestedSection) {
+      markSectionSeen(requestedSection);
       view = requestedSection;
       ui.requestedSettingsSection = null;
       return;
@@ -94,10 +96,18 @@
 
   function openSection(id: SectionId, trigger: HTMLElement) {
     if (id !== 'parentCenter') {
+      markSectionSeen(id);
       view = id;
       return;
     }
-    requireParentalGate('parentCenter', () => (view = id), buttonCenter(trigger));
+    requireParentalGate(
+      'parentCenter',
+      () => {
+        markSectionSeen(id);
+        view = id;
+      },
+      buttonCenter(trigger)
+    );
   }
 
   function backToHub() {
@@ -191,6 +201,7 @@
           <ul class="hub-list">
             {#each SECTIONS as section, index (section.id)}
               {@const toggle = HUB_TOGGLES[section.id]}
+              {@const unseen = hasSectionActivity(section.id)}
               <li class:group-break={index === groupBreakIndex}>
                 <div class="hub-tile">
                   <button
@@ -200,11 +211,13 @@
                   >
                     <span class="hub-icon">
                       <SectionIcon icon={section.icon} class="hub-icon-svg" />
+                      <span class="section-activity-dot" class:unseen></span>
                     </span>
                     <span class="hub-text">
                       <span class="hub-title">{section.label}</span>
                       <span class="hub-subtitle">{sectionSubtitle(section.id)}</span>
                     </span>
+                    {#if unseen}<span class="visually-hidden">new</span>{/if}
                   </button>
                   {#if toggle}
                     <span class="hub-action">
@@ -442,9 +455,41 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     width: 44px;
     height: 44px;
     flex-shrink: 0;
+  }
+
+  .section-activity-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 0 2px var(--surface-2);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-glide);
+  }
+
+  .section-activity-dot.unseen {
+    opacity: 1;
+    transition-duration: 0s;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   :global(.hub-icon-svg) {

@@ -151,6 +151,15 @@ export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'alwa
   }
 }
 
+export async function seedCompletedSettingsActivitySessions(page: Page, count: number) {
+  await page.addInitScript(
+    ({ key, count }) => {
+      if (localStorage.getItem(key) === null) localStorage.setItem(key, String(count));
+    },
+    { key: STORAGE_KEYS.settingsActivitySessionCount, count }
+  );
+}
+
 const DRAWING_READY_TIMEOUT_MS = 10_000;
 const DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS = 1500;
 

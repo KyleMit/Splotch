@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { SECTIONS } from './sections';
+import { APP_VERSION } from '$lib/appVersion';
+import { SECTIONS, sectionContentStamp } from './sections';
 
 describe('SECTIONS', () => {
   // `as const satisfies` derives SectionId from this list and rejects an id
@@ -12,5 +13,9 @@ describe('SECTIONS', () => {
     expect(new Set(ids).size, `duplicate section id in SECTIONS: ${ids.join(', ')}`).toBe(
       ids.length
     );
+  });
+
+  it("uses the app version as What's New's content stamp", () => {
+    expect(sectionContentStamp('whatsnew')).toBe(APP_VERSION);
   });
 });

@@ -1,6 +1,7 @@
 import { hydrateApiKey } from '$lib/state/aiKey';
 import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { settings } from '$lib/state/settings.svelte';
+import { recordSettingsActivitySession } from '$lib/state/settingsSessions.svelte';
 import { hydrateDurableStorage } from '$lib/storage';
 import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
 import { persistedStateStatus } from './persistedStateStatus.svelte';
@@ -21,6 +22,7 @@ export async function hydratePersistedState(): Promise<void> {
   // but this guarantees the apply even when the restored value equals the
   // current one.
   const restored = await hydrateDurableStorage();
+  recordSettingsActivitySession();
   if (restored) {
     void applyDeviceOrientationPreference(
       settings.lockRotationEnabled,

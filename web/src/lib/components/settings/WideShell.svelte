@@ -10,6 +10,7 @@
   import { registerElement } from '$lib/actions/elementRegistry';
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
+  import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
 
   interface Props {
     /** Where the pane parks on each open — the deep-linked section, else the first. */
@@ -79,11 +80,14 @@
 
   // The table of contents is the shared guide-rail sidebar; only the icon and
   // the label differ per section, so the list is the whole configuration.
-  const navItems: SidebarTocItem<SectionId>[] = SECTIONS.map((section) => ({
-    id: section.id,
-    label: section.label,
-    icon: section.icon,
-  }));
+  const navItems = $derived<SidebarTocItem<SectionId>[]>(
+    SECTIONS.map((section) => ({
+      id: section.id,
+      label: section.label,
+      icon: section.icon,
+      unseen: hasSectionActivity(section.id),
+    }))
+  );
 
   // Plain refs, deliberately untracked: the reopen reset reads the nav inside a
   // frame callback and the scrollspy reads the sections off events, so nothing
@@ -97,6 +101,11 @@
   const sectionHeadingId = (id: SectionId) => `settingsSection-${id}`;
 
   const sectionIndex = (id: SectionId) => SECTIONS.findIndex((section) => section.id === id);
+
+  function markDisplayedSectionSeen(id: SectionId) {
+    if (id === 'parentCenter' && !parentCenterRevealed) return;
+    markSectionSeen(id);
+  }
 
   // Paired with `use:registerElement` in place of `bind:this={table[id]}`, which
   // warns once per list item because these tables are deliberately not `$state`
@@ -209,6 +218,11 @@
   // Deliberately untracked: only the handlers below read it, nothing renders it.
   let pendingJump: SectionId | null = null;
 
+  // A smooth jump crosses section reading lines the parent did not choose to
+  // visit. Deliberately untracked: event handlers only use this target to keep
+  // those transient elections from persisting as seen.
+  let smoothJumpTarget: SectionId | null = null;
+
   // Arithmetic on each scroller's own scrollTop, never `scrollIntoView`: that
   // method scrolls *every* scrollable ancestor, and the card, the split and the
   // dialog are all clipped boxes. Dividing the rect delta by the scroller's
@@ -218,6 +232,7 @@
     const el = sectionEls[id];
     const pane = paneEl;
     if (!el || !pane) return;
+    if (behavior === 'smooth') smoothJumpTarget = id;
     const offset =
       (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) / visualScale(pane);
     pane.scrollTo({ top: pane.scrollTop + offset - SECTION_JUMP_INSET_PX, behavior });
@@ -254,6 +269,7 @@
     // unlocked — asking again for the section the solve was spent on would make
     // the solve worthless. Every other landing re-locks.
     parentCenterUnlocked = landing === 'parentCenter';
+    markDisplayedSectionSeen(landing);
     spiedSection = landing;
     // A section's offset depends only on what stacks above it, so mounting the
     // run up to the landing section is what makes the landing scroll below land
@@ -299,11 +315,14 @@
     const spy = () => {
       frame = 0;
       const next = spiedSectionAt(pane);
+      const smoothJump = smoothJumpTarget;
+      if (next === smoothJump) smoothJumpTarget = null;
       // Not just a dedupe: the reveal below fires on an election change only, so
       // a parent who scrolls the column by hand keeps the position they chose
       // until the reading position moves to another section. Revealing on every
       // tick would yank the column back out from under them mid-gesture.
       if (next === spiedSection) return;
+      if (!smoothJump) markDisplayedSectionSeen(next);
       spiedSection = next;
       revealNavRow(next, jumpBehavior());
     };
@@ -323,7 +342,10 @@
     growth.observe(content);
     // Any hand on the pane ends the jump: from here the scroll position is the
     // parent's, and re-aiming it would take the pane back out from under them.
-    const releaseJump = () => (pendingJump = null);
+    const releaseJump = () => {
+      pendingJump = null;
+      smoothJumpTarget = null;
+    };
     pane.addEventListener('pointerdown', releaseJump);
     pane.addEventListener('wheel', releaseJump, { passive: true });
     pane.addEventListener('keydown', releaseJump);
@@ -342,6 +364,7 @@
       'parentCenter',
       () => {
         parentCenterUnlocked = true;
+        markSectionSeen('parentCenter');
         then?.();
       },
       buttonCenter(trigger)
@@ -359,6 +382,7 @@
     // scrolling instead of the fill.
     const hold = !fullyMounted;
     if (id !== 'parentCenter' || parentCenterRevealed) {
+      markSectionSeen(id);
       if (hold) pendingJump = id;
       scrollToSection(id, behavior);
       return;

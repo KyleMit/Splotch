@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { adminConsole, signInToAdmin } from './admin-helpers';
-import { gotoApp, openSettingsModal } from './helpers';
+import { gotoApp, openSettingsModal, seedCompletedSettingsActivitySessions } from './helpers';
 import { openParentalGate } from './flows-harness';
 import { openAiResult } from './ai-harness';
 
@@ -120,6 +120,7 @@ test('/admin logged in has no serious accessibility violations', async ({ page }
 });
 
 test('Settings has no serious accessibility violations', async ({ page }) => {
+  await seedCompletedSettingsActivitySessions(page, 5);
   await gotoApp(page);
   await openSettingsModal(page);
 

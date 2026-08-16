@@ -34,6 +34,8 @@ export const STORAGE_KEYS = {
   parentalGateExternalLinksMode: 'splotch-parental-gate-external-links-mode',
   parentalGateFeedbackMode: 'splotch-parental-gate-feedback-mode',
   parentalGateParentCenterMode: 'splotch-parental-gate-parent-center-mode',
+  parentSectionsSeen: 'splotch-parent-sections-seen',
+  settingsActivitySessionCount: 'splotch-settings-activity-session-count',
   legacyGateRememberMode: 'splotch-gate-remember-mode',
   legacyGateUnlockedForever: 'splotch-gate-unlocked',
 } as const;
