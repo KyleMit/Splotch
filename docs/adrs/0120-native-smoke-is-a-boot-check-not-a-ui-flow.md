@@ -32,6 +32,16 @@ merely gains a sibling inside the same element silently stops matching — the "
 carries a "Version 1.5.0" subtitle, and that alone is enough. A local reproduction on an iPhone 17
 Pro simulator confirmed the scroll reached the row and Maestro still would not match it.
 
+**And on iOS the rows cannot be tapped at all, whatever they are called.** Dumping the hierarchy
+with Settings open shows WebKit reporting frames for the hub rows in an unscrolled coordinate space:
+each row comes back roughly 408pt tall, overlapping its neighbours, extending past the 402pt screen
+width. "Tool Drawer" reports a centre of y≈185pt while it sits at y≈272pt, so Maestro taps the row
+above it — observed, not inferred: the tap left the hub scrolled to the top having drilled into
+nothing. Naming the row exactly (an `aria-label` carrying just the section label) fixes the *name*
+and leaves the *frame* just as wrong, so it does not rescue the tap. This is the same wall commit
+695a6762 hit in June, when tapping the About tab "never fires its click" in the WKWebView. Any
+future attempt to drive this UI on iOS starts from here.
+
 Alternatives considered:
 
 1. **Repair the navigation and keep going.** Rejected: it is the fourth repair of the same class,
@@ -44,7 +54,10 @@ Alternatives considered:
    `.ipa` boot at all. Its launch assertion never drifted — it caught nothing here because there was
    nothing to catch, not because it was weak — and losing it means a white screen on launch reaches
    store users.
-4. **Trim the flow to the launch check and treat that as its whole job.** **Chosen.**
+4. **Keep one navigation: follow the About section's Privacy Policy link, so the store-required page
+   is proven reachable on a device.** Rejected on evidence, not preference — the tap above cannot be
+   landed on iOS. The property it was reaching for is real, and moves to the build instead (below).
+5. **Trim the flow to the launch check and treat that as its whole job.** **Chosen.**
 
 ## Decision
 
@@ -67,6 +80,14 @@ The native smoke launches the installed app, waits for the UI to paint, and stop
   already reading the result) a failing job opens a platform-specific issue via `gh`, or comments on
   the open one, so a red gate announces itself instead of waiting to be noticed. This is the same
   check-then-create shape `test.yml`'s post-merge WebKit gate uses, for the same reason.
+* **Route reachability is asserted at build time instead**, in
+  `tools/mobile/check-static-bundle.mjs` (`postbuild:cap`). `requiredNativePageProblems` already
+  required `privacy.html` and `changelog.html` to survive `NATIVE_EXCLUDED_ROUTES` into the static
+  export; `requiredNativePageLinkProblems` adds the half that was missing — a page that ships but
+  that nothing links to is unreachable, and for the privacy policy reachability *is* the store
+  requirement. It matches on the `href="…"` prefix in the client bundle's `.js` chunks, because the
+  route manifest lists every route as a bare path whether or not anything links there, and a
+  prerendered page contains its own path.
 
 The invariant to keep: a failure here now means a genuine boot regression in the shipped artifact.
 Adding a navigation step gives that signal back its old ambiguity, where red meant "the app is
@@ -84,10 +105,10 @@ broken" or "the UI moved" and only a human could tell which.
 * − Real native-only UI regressions past the first paint are now uncovered on device. A tap that
   works in Chromium and dies in a WKWebView — the class ADR-0016's admin step was originally written
   against — will not be caught before release.
-* − The static export's route coverage loses its only on-device check: nothing now proves an in-app
-  link reaches a route that survived `NATIVE_EXCLUDED_ROUTES` (`web/nativeExcludedRoutes.ts`). The
-  build-time guard `tools/mobile/check-static-bundle.mjs` asserts the inverse property — that
-  excluded copy is absent — so an over-exclusion would ship silently.
+* \+ Route reachability moved to the build, where it is checked on every native build instead of
+  once per release tag, and where it can be stated as a property rather than driven as a gesture.
+* − Route reachability is now proven structurally rather than by rendering: the build asserts the
+  page ships and that the bundle links to it, not that a WebView paints it when tapped.
 * − The guard test knows one vocabulary, `aria-label` literals. A future step selecting rendered
   copy would need it extended, and the guard cannot tell that apart from a selector that is simply
   wrong.

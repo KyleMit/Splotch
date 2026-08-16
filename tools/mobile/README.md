@@ -7,11 +7,11 @@ used by both platform runners. Platform-specific build and lifecycle entry point
 
 ## Entry points
 
-| Entry point               | Public hook     | Purpose                                                       |
-| ------------------------- | --------------- | ------------------------------------------------------------- |
-| `check-app-ids.mjs`       | `precheck`      | Verify app identifiers and display names across native owners |
-| `strip-static-assets.mjs` | `build:cap`     | Remove web-only assets from the static Capacitor export       |
-| `check-static-bundle.mjs` | `postbuild:cap` | Reject web-only routes, services, or assets in that export    |
+| Entry point               | Public hook     | Purpose                                                                                                                  |
+| ------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `check-app-ids.mjs`       | `precheck`      | Verify app identifiers and display names across native owners                                                            |
+| `strip-static-assets.mjs` | `build:cap`     | Remove web-only assets from the static Capacitor export                                                                  |
+| `check-static-bundle.mjs` | `postbuild:cap` | Reject web-only routes, services, or assets in that export, and require the store-mandated pages to ship *and* be linked |
 
 The build entry points read `capacitor.config.json`, native project configuration, active mobile
 documentation, and `web/build/`. Pruning changes only the freshly generated `web/build/` output; it

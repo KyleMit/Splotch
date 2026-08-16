@@ -165,6 +165,34 @@ export function requiredNativePageProblems(dir) {
   );
 }
 
+/**
+ * The other half of {@link requiredNativePageProblems}: a page that ships but
+ * that nothing links to is unreachable in the app, and the store requirement is
+ * that a parent can *get to* the privacy policy — not that a file exists.
+ *
+ * Matching on the `href="…"` prefix is what separates a real link from noise:
+ * the route manifest (`entry/app.*.js`) names every route as a bare `"/privacy"`
+ * whether or not anything links there, so a bare-path search would pass
+ * vacuously forever. Only `.js` is scanned because both links live in the
+ * client bundle's component chunks (Settings' About and What's New sections),
+ * and a prerendered page contains its own path in ways that would self-match.
+ *
+ * This is a *presence* assertion, so it cannot rot quietly: if Svelte ever stops
+ * emitting the attribute as a literal, the build fails rather than passing.
+ */
+export function requiredNativePageLinkProblems(dir) {
+  if (!existsSync(dir)) return [];
+  const scripts = bundleFiles(dir)
+    .filter((path) => path.endsWith('.js'))
+    .map((path) => readFileSync(path, 'utf8'));
+  return REQUIRED_NATIVE_PAGES.flatMap((page) => {
+    const href = `href="/${page.replace(/\.html$/, '')}"`;
+    return scripts.some((source) => source.includes(href))
+      ? []
+      : [`Native bundle ships ${page} but nothing in it links to the page (${href})`];
+  });
+}
+
 export function nativePrivacyFeedbackProblems(dir) {
   const privacyPath = join(dir, 'privacy.html');
   if (!existsSync(privacyPath)) return [];
@@ -185,6 +213,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
     ...webOnlyMarkerSourceProblems(),
     ...nativeBundleProblems(dir, sentinels),
     ...requiredNativePageProblems(dir),
+    ...requiredNativePageLinkProblems(dir),
     ...nativePrivacyFeedbackProblems(dir),
   ];
   if (problems.length) throw new Error(problems.join('\n'));
@@ -193,7 +222,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
       `no admin-console copy (${sentinels.length} sentinel(s)); ` +
       `no web-only support email; ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
-      `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present; ` +
+      `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
       `privacy links to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled`
   );
