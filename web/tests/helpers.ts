@@ -154,11 +154,11 @@ export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'alwa
 const DRAWING_READY_TIMEOUT_MS = 10_000;
 const DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS = 1500;
 
-export function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
+function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
   return page.evaluate(() => window.__drawingDebug?.getUndoDebug() ?? null);
 }
 
-export async function waitForDrawableRenderedCanvas(page: Page) {
+async function waitForDrawableRenderedCanvas(page: Page) {
   await expect
     .poll(
       async () => {
@@ -175,26 +175,25 @@ export async function waitForDrawableRenderedCanvas(page: Page) {
     .toBe(true);
 }
 
-export async function waitForCommittedDrawingHistory(
+async function waitForCommittedDrawingHistory(
   page: Page,
-  snapshots: number,
+  strokeRevision: number,
   timeoutMs: number
 ) {
-  let committed: HistoryDebug | null = null;
   await expect
     .poll(
       async () => {
         const history = await readDrawingHistory(page);
-        if (history?.snapshots === snapshots && history.pendingCommands === 0) committed = history;
         return history
-          ? { snapshots: history.snapshots, pendingCommands: history.pendingCommands }
+          ? {
+              strokeRevision: history.strokeRevision,
+              pendingCommands: history.pendingCommands,
+            }
           : null;
       },
       { timeout: timeoutMs }
     )
-    .toEqual({ snapshots, pendingCommands: 0 });
-  if (!committed) throw new Error('drawing history did not reach the committed state');
-  return committed;
+    .toEqual({ strokeRevision, pendingCommands: 0 });
 }
 
 /** Navigate to the drawing app and wait for its hydrated engine and rendered
@@ -446,17 +445,24 @@ export async function drawCommittedStroke(page: Page, points: { x: number; y: nu
   if (baseline.pendingCommands !== 0) {
     throw new Error('cannot start a committed stroke while another drawing command is pending');
   }
-  const targetSnapshots = baseline.snapshots + 1;
+  if (baseline.strokeRevision === undefined) {
+    throw new Error('drawing stroke revision is unavailable');
+  }
+  const targetStrokeRevision = baseline.strokeRevision + 1;
 
   // A failed short commit wait retries the input only when history still proves
   // the previous attempt produced neither a pending nor a committed command.
   await expect(async () => {
     const history = await readDrawingHistory(page);
     if (!history) throw new Error('drawing history became unavailable');
-    if (history.snapshots === baseline.snapshots && history.pendingCommands === 0) {
+    if (history.strokeRevision === baseline.strokeRevision && history.pendingCommands === 0) {
       await draw(page, points);
     }
-    await waitForCommittedDrawingHistory(page, targetSnapshots, DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS);
+    await waitForCommittedDrawingHistory(
+      page,
+      targetStrokeRevision,
+      DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS
+    );
   }).toPass({ timeout: DRAWING_READY_TIMEOUT_MS });
 }
 

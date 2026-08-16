@@ -122,12 +122,29 @@ test('tiled history folds its old prefix and retains twenty undo steps', async (
   const strokeCount = MAX_UNDO_DEPTH + foldedPrefix;
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('drawing canvas has no bounds');
-  for (let index = 0; index < strokeCount; index++) {
+  const pointsForStroke = (index: number) => {
     const y = 80 + index * 20;
-    await draw(page, [
+    return [
       { x: 20, y },
       { x: box.width - 20, y },
-    ]);
+    ];
+  };
+  for (let index = 0; index < MAX_UNDO_DEPTH; index++) {
+    await draw(page, pointsForStroke(index));
+  }
+
+  const revisionAtDepthCap = await page.evaluate(
+    () => window.__drawingDebug?.getUndoDebug().strokeRevision
+  );
+  if (revisionAtDepthCap === undefined) throw new Error('drawing stroke revision is unavailable');
+  await drawCommittedStroke(page, pointsForStroke(MAX_UNDO_DEPTH));
+  expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug())).toMatchObject({
+    strokeRevision: revisionAtDepthCap + 1,
+    snapshots: MAX_UNDO_DEPTH,
+  });
+
+  for (let index = MAX_UNDO_DEPTH + 1; index < strokeCount; index++) {
+    await draw(page, pointsForStroke(index));
   }
 
   expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots)).toBe(

@@ -21,6 +21,7 @@ const BYTES_PER_PIXEL = 4;
 export function createDrawingWorkCounters() {
   let activeCommand: CommandWork | null = null;
   let lastCommand: CommandWork | null = null;
+  let strokeRevision = 0;
 
   return {
     begin() {
@@ -38,10 +39,15 @@ export function createDrawingWorkCounters() {
     commit() {
       lastCommand = activeCommand ? { ...activeCommand } : null;
       activeCommand = null;
+      strokeRevision++;
     },
     reset() {
       activeCommand = null;
       lastCommand = null;
+      strokeRevision = 0;
+    },
+    strokeRevision() {
+      return strokeRevision;
     },
     debug(liveTiles: LiveTile[], backingMigrationPending: boolean): DrawingWorkDebug {
       let realizedNormalBackings = 0;

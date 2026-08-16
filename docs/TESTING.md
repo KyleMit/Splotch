@@ -267,12 +267,11 @@ specs that can't race in the first place:
 * **Use the drawing app's durable ready state.** `gotoApp()` does not return merely because the
   prerendered `#drawingCanvas` is visible: it waits for the hydrated drawing debug seam and a
   non-zero rendered composite. Specs intentionally covering first paint or hydration navigate with
-  `page.goto()` so the shared postcondition stays strong. Reuse `waitForDrawableRenderedCanvas`,
-  `readDrawingHistory`, and `waitForCommittedDrawingHistory` when a flow needs those narrower
-  lifecycle signals. Use `drawCommittedStroke` when setup requires one durable command: it retries
-  input only while history proves that the previous attempt produced neither a pending nor a
-  committed command, so a slow commit cannot become a duplicate stroke. Keep the visual or
-  product-specific assertion in the spec.
+  `page.goto()` so the shared postcondition stays strong. Use `drawCommittedStroke` when setup
+  requires one durable command: it retries input only while the renderer's monotonic stroke revision
+  proves that the previous attempt produced neither a pending nor a committed stroke, so a slow
+  commit cannot become a duplicate stroke. Keep the visual or product-specific assertion in the
+  spec.
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
