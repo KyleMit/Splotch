@@ -37,17 +37,17 @@ but that is repository policy rather than a replacement for semantic validation.
 
 ## Decision
 
-`.github/workflows/adr-numbering.yml` is a standalone, unconditional workflow on pull requests,
+`.github/workflows/adr-integrity.yml` is a standalone, unconditional workflow on pull requests,
 merge groups, and manual dispatches. It has no path filter, so its job always reports and is safe to
-make required. It sparse-checks out `docs/adrs/` and `scripts/`, fetches the current base branch,
-and invokes `scripts/check-adr-numbering.mjs` directly with the runner's installed Node. There is no
-dependency install or `setup-node`; consequently the checker and its library may use only APIs
-available in the runner image's default Node rather than assuming the contributor version from
-`package.json`.
+make required. It sparse-checks out `docs/adrs/`, `tools/adrs/`, and `tools/lib/`, fetches the
+current base branch, and invokes `tools/adrs/check-adr-integrity.mjs` directly with the runner's
+installed Node. There is no dependency install or `setup-pnpm`; consequently the checker and its
+library may use only APIs available in the runner image's default Node rather than assuming the
+contributor version from `package.json`.
 
 The checker validates the resulting tree unconditionally, including manual audits of branches that
-did not change an ADR. Pure logic in `scripts/lib/adr-numbering.mjs`, covered by
-`scripts/tests/adr-numbering.test.mjs`, reports a filename starting with four digits but not
+did not change an ADR. Pure logic in `tools/adrs/lib/adr-integrity.mjs`, covered by
+`tools/adrs/tests/adr-integrity.test.mjs`, reports a filename starting with four digits but not
 matching lower-kebab-case as a warning and omits it from the remaining checks rather than failing.
 The checker then enforces these invariants:
 
@@ -84,4 +84,4 @@ emit plain diagnostics locally and dependency-free GitHub workflow annotations i
 * − Repository ruleset configuration remains external to the codebase. Without a required,
   up-to-date check or merge queue, a previously green branch can still merge after another branch
   spends the same number.
-* − Omitting `setup-node` constrains the checker to the Actions runner's default Node API surface.
+* − Omitting `setup-pnpm` constrains the checker to the Actions runner's default Node API surface.

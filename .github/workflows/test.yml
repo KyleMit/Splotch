@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-pnpm
 
       - name: Build without profiling seams
         run: env -u PERF_MARKS -u PUBLIC_ENABLE_DEV_HARNESS npm run build
@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-pnpm
 
       # Fast-fail the cheapest, most-common failure first: a formatting-only
       # red PR should not wait through svelte-check + eslint to surface.
@@ -131,7 +131,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-pnpm
 
       - name: Run unit tests
         run: npm run test:unit
@@ -170,7 +170,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-pnpm
 
       # Chromium alone: WebKit is deliberately absent, so playwright.config.ts
       # drops the webkit project and this runs Chromium only. The webkit-smoke
@@ -227,7 +227,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-pnpm
 
       - uses: ./.github/actions/setup-playwright
         with:

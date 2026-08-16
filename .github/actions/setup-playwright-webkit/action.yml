@@ -4,7 +4,7 @@ description: Install dependencies and cache the Playwright WebKit browser on mac
 runs:
   using: composite
   steps:
-    - uses: ./.github/actions/setup-node
+    - uses: ./.github/actions/setup-pnpm
 
     - name: Resolve Playwright version
       id: playwright-version

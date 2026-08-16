@@ -46,7 +46,7 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/setup-node
+      - uses: ./.github/actions/setup-pnpm
 
       # Build the *debug* APK: it's auto-signed with the debug key (installable
       # with no production secrets) and `cap:sync` still bakes the production web

@@ -47,7 +47,7 @@ describe('WebKit performance CI', () => {
   });
 
   it('installs and caches WebKit once through the macOS-specific composite action', () => {
-    expect(setupAction).toContain('uses: ./.github/actions/setup-node');
+    expect(setupAction).toContain('uses: ./.github/actions/setup-pnpm');
     expect(setupAction).toContain('path: ~/Library/Caches/ms-playwright');
     // Matched without the `run:` prefix: the install is wrapped in a perl alarm
     // so a starved runner fails by name instead of resolving to a job-level

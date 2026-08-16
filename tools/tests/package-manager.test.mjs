@@ -44,7 +44,7 @@ function commandLines(file) {
 describe('package manager', () => {
   const pkg = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8'));
 
-  // pnpm/action-setup in CI and `corepack install` in the cloud bootstrap both
+  // pnpm/setup in CI and `corepack install` in the cloud bootstrap both
   // read this one field, so an exact version here is what stops three
   // environments from resolving three different pnpm majors.
   it('pins an exact pnpm version in packageManager', () => {
