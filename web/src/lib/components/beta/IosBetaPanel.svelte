@@ -28,11 +28,10 @@
     title="Install TestFlight"
     actionHref={TESTFLIGHT_APP_URL}
     actionLabel="Get TestFlight from Apple"
-    fine="Already have TestFlight? Skip straight to step 2."
   >
     {#snippet body()}
       TestFlight is Apple's app for trying prerelease apps. Install it from the App Store on the
-      iPhone or iPad you'll draw on — that keeps the next two steps on the same device.
+      iPhone or iPad you'll draw on — or skip straight to step 2 if you already have it.
     {/snippet}
   </BetaStep>
 
@@ -41,11 +40,10 @@
     title="Accept the invitation"
     actionHref={TESTFLIGHT_INVITE_URL}
     actionLabel="Open the Splotch invitation"
-    fine="The invitation opens in TestFlight once the app is installed."
   >
     {#snippet body()}
-      Open Splotch's public invitation and follow Apple's prompt to start testing. TestFlight may
-      ask you to sign in with your Apple Account first.
+      Open Splotch's public invitation — it opens in TestFlight — and follow Apple's prompt to start
+      testing. You may be asked to sign in with your Apple Account first.
     {/snippet}
   </BetaStep>
 
@@ -54,7 +52,6 @@
     title="Install Splotch"
     actionHref={TESTFLIGHT_INVITE_URL}
     actionLabel="Open Splotch in TestFlight"
-    fine={`Requires iOS or iPadOS ${MIN_IOS_RELEASE} or newer.`}
   >
     {#snippet body()}
       Splotch now appears inside TestFlight. Tap <strong>Install</strong>, then open it like any
@@ -69,7 +66,6 @@
     title="Tell us what you think"
     actionHref="/feedback"
     actionLabel="Send feedback"
-    fine="No account, nothing to install; your note goes to our private support tracker."
     cardLabel="Or just email me"
     external={false}
     optional
