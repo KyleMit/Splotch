@@ -6,13 +6,7 @@
   import BetaStep from './BetaStep.svelte';
   import BetaStepLedger from './BetaStepLedger.svelte';
   import BetaTroubleshooting from './BetaTroubleshooting.svelte';
-  import {
-    BETA_OPT_IN_URL,
-    MIN_ANDROID_API_LEVEL,
-    MIN_ANDROID_RELEASE,
-    PLAY_STORE_LISTING_URL,
-    TESTERS_GROUP_URL,
-  } from './androidBeta';
+  import { BETA_OPT_IN_URL, PLAY_STORE_LISTING_URL, TESTERS_GROUP_URL } from './androidBeta';
 
   // Step 4 prints the canonical absolute feedback address because testers may
   // read this page on one device and send feedback from another. Its href stays
@@ -34,11 +28,11 @@
     title="Join the testers group"
     actionHref={TESTERS_GROUP_URL}
     actionLabel="Join the testers group"
-    fine="Use the same Google account that's signed in to the Play Store on your phone or tablet."
   >
     {#snippet body()}
-      Press <strong>Join group</strong> at the top — Google Play checks this group to decide who can see
-      the beta, so it comes first.
+      Press <strong>Join group</strong> at the top — Google Play checks this group to decide who can
+      see the beta. Use the <strong>same Google account</strong> that's signed in to the Play Store on
+      your phone or tablet.
     {/snippet}
   </BetaStep>
 
@@ -47,10 +41,10 @@
     title="Opt in on Google Play"
     actionHref={BETA_OPT_IN_URL}
     actionLabel="Become a tester"
-    fine="Sign in with the same account you used in step 1."
   >
     {#snippet body()}
-      Press <strong>Become a tester</strong> — this enrolls you; it doesn't install anything yet.
+      Press <strong>Become a tester</strong>, signed in with the same account you used in step 1.
+      This enrolls you; it doesn't install anything yet.
     {/snippet}
   </BetaStep>
 
@@ -59,7 +53,6 @@
     title="Install Splotch"
     actionHref={PLAY_STORE_LISTING_URL}
     actionLabel="Open Splotch on Google Play"
-    fine={`Open this one on the Android device you want to draw on. Needs Android ${MIN_ANDROID_RELEASE} (API ${MIN_ANDROID_API_LEVEL}) or newer.`}
     cardLabel="Please stay for 14 days"
   >
     {#snippet body()}
@@ -80,7 +73,6 @@
     title="Tell us what you think"
     actionHref="/feedback"
     actionLabel="Send feedback"
-    fine="No account, nothing to install; your note goes to our private support tracker."
     cardLabel="Or just email me"
     external={false}
     optional

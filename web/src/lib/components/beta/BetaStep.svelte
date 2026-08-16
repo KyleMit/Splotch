@@ -16,7 +16,6 @@
     title: string;
     actionHref: string;
     actionLabel: string;
-    fine: string;
     cardLabel?: string;
     body: Snippet;
     cardBody?: Snippet;
@@ -30,7 +29,6 @@
     title,
     actionHref,
     actionLabel,
-    fine,
     cardLabel,
     body,
     cardBody,
@@ -54,7 +52,6 @@
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}>{actionLabel}</a
     >
-    <p class="fine">{fine}</p>
   </div>
   {#if showCard && cardLabel && cardBody}
     <div class="card">
@@ -143,10 +140,6 @@
   }
 
   .action {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 20px;
     margin-top: 18px;
   }
 
@@ -166,15 +159,6 @@
 
   .btn:active {
     transform: scale(0.97);
-  }
-
-  .fine {
-    margin: 0;
-    max-width: 34ch;
-    font-size: var(--font-size-sm);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-    color: var(--page-muted);
   }
 
   .card {
@@ -245,18 +229,10 @@
       font-size: var(--font-size-lg);
     }
 
-    .action {
-      gap: 12px;
-    }
-
     .btn {
-      flex: 1 0 100%;
+      display: block;
       min-height: 48px;
       text-align: center;
-    }
-
-    .fine {
-      max-width: none;
     }
   }
 </style>
