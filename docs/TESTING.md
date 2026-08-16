@@ -110,6 +110,15 @@ biggest fixed cost). Keep the happy-dom default for any test whose module (or it
 `localStorage`, `document`, or `window` — running those in `node` would silently switch the code
 onto its non-browser fallback paths.
 
+Vitest aborts a timed-out test's context signal, but it cannot cancel the callback's underlying
+async continuation. A unit test that polls through real timers and can later touch shared or global
+mocks accepts `{ signal }` and calls `signal.throwIfAborted()` after every `await` before
+continuing. Without that guard, teardown can install the next test's globals while the timed-out
+callback keeps running, producing secondary mock-count failures in a test that did nothing wrong.
+Prefer fake timers when they represent the behavior faithfully. If a cold dynamic import alone
+exceeds the default timeout on a contended shared host, scope a named larger timeout to that one
+test — never raise the whole file's timeout with `vi.setConfig`.
+
 ## Asset-pipeline unit tests — Vitest
 
 ```bash

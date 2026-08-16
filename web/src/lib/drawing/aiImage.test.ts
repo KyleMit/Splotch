@@ -18,6 +18,14 @@ vi.mock('./screenshot', () => ({
 }));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
 
+const CONTENDED_HOST_TEST_TIMEOUT_MS = 20_000;
+
+// Vitest aborts only the test wrapper on timeout. Every timeout-sensitive test
+// checks the context signal after each await so its continuation cannot
+// run against globals installed by the next test.
+
+// Response bodies are single-use. Tests that make multiple requests call this
+// from the fetch implementation so each invocation receives a fresh body.
 function okResponse(blob: Blob): Response {
   return new Response(blob, { status: 200 });
 }
@@ -41,50 +49,61 @@ afterEach(() => {
 });
 
 describe('generateAiImage request ownership', () => {
-  it('starts the request timeout after canvas export and transcoding finish', async () => {
-    vi.useFakeTimers();
-    const canvasExport = Promise.withResolvers<Blob | null>();
-    const webpEncoding = Promise.withResolvers<Blob | null>();
-    const request = Promise.withResolvers<Response>();
-    mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
-    // The capability gate must report a WebP encoder or the deferred toBlob
-    // stub below is skipped and never awaited.
-    vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/webp,probe');
-    vi.stubGlobal(
-      'createImageBitmap',
-      vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
-    );
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: vi.fn(),
-    } as unknown as CanvasRenderingContext2D);
-    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
-      void webpEncoding.promise.then(callback);
-    });
-    vi.stubGlobal('fetch', vi.fn().mockReturnValue(request.promise));
+  it(
+    'starts the request timeout after canvas export and transcoding finish',
+    async ({ signal }) => {
+      vi.useFakeTimers();
+      const canvasExport = Promise.withResolvers<Blob | null>();
+      const webpEncoding = Promise.withResolvers<Blob | null>();
+      const request = Promise.withResolvers<Response>();
+      mocks.exportCanvasBlob.mockReturnValueOnce(canvasExport.promise);
+      // The capability gate must report a WebP encoder or the deferred toBlob
+      // stub below is skipped and never awaited.
+      vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/webp,probe');
+      vi.stubGlobal(
+        'createImageBitmap',
+        vi.fn(async () => ({ width: 8, height: 8, close: vi.fn() }))
+      );
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
+        drawImage: vi.fn(),
+      } as unknown as CanvasRenderingContext2D);
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => {
+        void webpEncoding.promise.then(callback);
+      });
+      vi.stubGlobal('fetch', vi.fn().mockReturnValue(request.promise));
 
-    const { generateAiImage } = await import('./aiImage');
+      const { generateAiImage } = await import('./aiImage');
+      signal.throwIfAborted();
 
-    const generation = generateAiImage();
-    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
-    expect(fetch).not.toHaveBeenCalled();
+      const generation = generateAiImage();
+      await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
+      signal.throwIfAborted();
+      expect(fetch).not.toHaveBeenCalled();
 
-    canvasExport.resolve(new Blob(['P'.repeat(200)], { type: 'image/png' }));
-    await vi.advanceTimersByTimeAsync(0);
-    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
-    expect(fetch).not.toHaveBeenCalled();
+      canvasExport.resolve(new Blob(['P'.repeat(200)], { type: 'image/png' }));
+      await vi.advanceTimersByTimeAsync(0);
+      signal.throwIfAborted();
+      await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS + 1);
+      signal.throwIfAborted();
+      expect(fetch).not.toHaveBeenCalled();
 
-    webpEncoding.resolve(new Blob(['webp'], { type: 'image/webp' }));
-    await vi.advanceTimersByTimeAsync(0);
-    expect(fetch).toHaveBeenCalledOnce();
-    const requestSignal = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal;
-    expect(requestSignal?.aborted).toBe(false);
+      webpEncoding.resolve(new Blob(['webp'], { type: 'image/webp' }));
+      await vi.advanceTimersByTimeAsync(0);
+      signal.throwIfAborted();
+      expect(fetch).toHaveBeenCalledOnce();
+      const requestSignal = (vi.mocked(fetch).mock.calls[0][1] as RequestInit).signal;
+      expect(requestSignal?.aborted).toBe(false);
 
-    await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS);
-    expect(requestSignal?.aborted).toBe(true);
+      await vi.advanceTimersByTimeAsync(CLIENT_REQUEST_TIMEOUT_MS);
+      signal.throwIfAborted();
+      expect(requestSignal?.aborted).toBe(true);
 
-    request.resolve(okResponse(new Blob(['result'])));
-    await generation;
-  });
+      request.resolve(okResponse(new Blob(['result'])));
+      await generation;
+      signal.throwIfAborted();
+    },
+    CONTENDED_HOST_TEST_TIMEOUT_MS
+  );
 
   it('turns a rejected canvas export into an error instead of leaving the spinner stuck', async () => {
     const exportError = new Error('export failed');
@@ -113,7 +132,9 @@ describe('generateAiImage request ownership', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValueOnce(requestB.promise));
 
     const { generateAiImage } = await import('./aiImage');
+    signal.throwIfAborted();
     const { aiResult, closeAiResult } = await import('$lib/state/aiGeneration.svelte');
+    signal.throwIfAborted();
 
     const runA = generateAiImage();
     closeAiResult();
@@ -124,11 +145,13 @@ describe('generateAiImage request ownership', () => {
 
     exportA.resolve(new Blob(['drawing-a']));
     await runA;
+    signal.throwIfAborted();
     expect(fetch).toHaveBeenCalledOnce();
     expect(aiResult.generating).toBe(true);
 
     requestB.resolve(okResponse(new Blob(['result-b'])));
     await runB;
+    signal.throwIfAborted();
     expect(aiResult.resultUrl).toBe('blob:test-2');
   });
 
@@ -145,7 +168,9 @@ describe('generateAiImage request ownership', () => {
     );
 
     const { generateAiImage } = await import('./aiImage');
+    signal.throwIfAborted();
     const { closeAiResult } = await import('$lib/state/aiGeneration.svelte');
+    signal.throwIfAborted();
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
@@ -157,10 +182,12 @@ describe('generateAiImage request ownership', () => {
 
     requestA.resolve(okResponse(new Blob(['result-a'])));
     await runA;
+    signal.throwIfAborted();
     expect(mocks.saveImageBlob).not.toHaveBeenCalled();
 
     requestB.resolve(okResponse(new Blob(['result-b'])));
     await runB;
+    signal.throwIfAborted();
     expect(mocks.saveImageBlob).toHaveBeenCalledTimes(2);
   });
 });
@@ -358,8 +385,8 @@ describe('generateAiImage upload format', () => {
   // The raw-body contract (ADR-0064) sends the image bytes as the request body,
   // so the uploaded blob is the body itself and its MIME type is the request's
   // Content-Type header — assert the two agree.
-  function uploadedImage(): Blob {
-    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+  function uploadedImage(callIndex = 0): Blob {
+    const init = vi.mocked(fetch).mock.calls[callIndex][1] as RequestInit;
     const body = init.body as Blob;
     const contentType = (init.headers as Record<string, string>)['Content-Type'];
     expect(contentType).toBe(body.type);
@@ -418,6 +445,7 @@ describe('generateAiImage upload format', () => {
     await generateAiImage();
 
     expect(uploadedImage().type).toBe('image/webp');
+    expect(uploadedImage(1).type).toBe('image/webp');
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(1);
     expect(aiResult.error).toBeNull();
   });
