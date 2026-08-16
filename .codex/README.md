@@ -17,8 +17,11 @@ fetching, checkout, installation, or verification fails. Its `^startup$` matcher
 rerun after resume, clear, or compaction events.
 
 Project hooks require a one-time trust review. When Codex reports that the hook needs review, open
-`/hooks`, inspect the repository's `.codex/hooks.json` entry, and trust it. Codex asks for another
-review only when the hook definition changes.
+`/hooks` on the laptop running Codex, inspect the repository's `.codex/hooks.json` entry, and trust
+it. Android Remote cannot complete this laptop-side review while creating a worktree. If a remote
+session starts before the hook is trusted, trust it on the laptop and then start a new session; the
+skipped startup hook does not rerun in the existing session. Codex asks for another review only when
+the hook definition changes.
 
 ## Desktop local environment
 
