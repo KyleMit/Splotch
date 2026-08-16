@@ -235,6 +235,25 @@ export async function waitForColoringOverlay(page, { timeout } = {}) {
   await page.waitForSelector(COLORING_OVERLAY_READY_SELECTOR, { timeout });
 }
 
+// Where the coloring page art actually renders, in page coordinates: the
+// overlay <img> fills the paper and contain-fits its art, so the art rect must
+// be recovered from the element box and the image's natural size. Pointer
+// paths aimed at page features scale into this rect.
+export async function coloringOverlayArtRect(page) {
+  return page.locator(COLORING_OVERLAY_READY_SELECTOR).evaluate((img) => {
+    const box = img.getBoundingClientRect();
+    const scale = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
+    const width = img.naturalWidth * scale;
+    const height = img.naturalHeight * scale;
+    return {
+      x: box.x + (box.width - width) / 2,
+      y: box.y + (box.height - height) / 2,
+      width,
+      height,
+    };
+  });
+}
+
 async function openSettingsModal(page) {
   await page.locator(SETTINGS_BUTTON_SELECTOR).click();
 }

@@ -25,9 +25,10 @@ import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { drawDinosaurWide, drawIslandTall } from '../store-drawings/generated/store-drawings.mjs';
+import { magicScribbleScene } from '../store-drawings/lib/magic-scribbles.mjs';
 import {
   canvasBox,
-  dismissMenu,
+  coloringOverlayArtRect,
   drawStroke,
   expandDrawer,
   openAppPage,
@@ -41,6 +42,7 @@ import {
   waitForColoringOverlay,
 } from '../app-driver/lib/app-driver.mjs';
 import { STORE_PAGES, frameGeometry, loadFrameAssets, storePageHtml } from './lib/store-frames.mjs';
+import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-override.mjs';
 
 const OUT = join(ROOT, 'store-assets');
 const PORT = 4173;
@@ -97,29 +99,58 @@ const mockFreeGrant = (page) =>
     })
   );
 
-// Page 05 shows the Parent Center policy matrix. Web builds default every
-// check to 'never' (gates are a store-build requirement), which would read as
-// guardrails-off — seed the four feature policies to the armed states the
-// design calls for. parentCenter itself stays unset so opening the section
-// never faces the math gate; its row sits at the modal fold.
-const seedGuardrailPolicies = (page) =>
+// The portrait v2 handoff enlarges the on-screen action buttons for store
+// legibility. This is the app's own Button Size setting (an integer percent of
+// the size-class step, 100 = default), seeded before the capture instead of
+// raster-scaling buttons afterward.
+const HERO_BUTTON_SCALE_PERCENT = 122;
+const seedButtonScale = (page) =>
+  page.addInitScript(({ key, value }) => localStorage.setItem(key, String(value)), {
+    key: STORAGE_KEYS.actionButtonScale,
+    value: HERO_BUTTON_SCALE_PERCENT,
+  });
+
+// Page 05 shows the Tool Drawer section in dark mode: Advanced Controls on
+// (so the per-tool toggles and the Button Size slider render) with the Stroke
+// width tool turned off — a parent mid-curation, "parents set the guardrails"
+// readable at a glance. The button scale matches the hero capture so the
+// slider shows the same value page 01's buttons render at.
+const seedToolDrawerSettings = (page) =>
   page.addInitScript(
-    ({ keys }) => {
-      localStorage.setItem(keys.parentalGateAiImageMode, 'always');
-      localStorage.setItem(keys.parentalGateImageReportMode, 'always');
-      localStorage.setItem(keys.parentalGateExternalLinksMode, 'always');
-      localStorage.setItem(keys.parentalGateFeedbackMode, 'session');
+    ({ keys, buttonScale }) => {
+      localStorage.setItem(keys.advancedControls, 'true');
+      localStorage.setItem(keys.strokeWidthControl, 'false');
+      localStorage.setItem(keys.actionButtonScale, String(buttonScale));
     },
-    { keys: STORAGE_KEYS }
+    { keys: STORAGE_KEYS, buttonScale: HERO_BUTTON_SCALE_PERCENT }
   );
 
 // ── Scenes ──────────────────────────────────────────────────────────────────
 
+// The portrait hero pinches the island drawing in toward the bottom-right
+// (the handoff's capture rework): scaled to 0.92 with the left and top edges
+// inset so the art clears the enlarged action-button column while keeping its
+// right margin.
+const HERO_TALL_DRAW_INSET = { left: 0.08, top: 0.04, scale: 0.92 };
+const insetHeroBox = (box) => ({
+  x: box.x + box.width * HERO_TALL_DRAW_INSET.left,
+  y: box.y + box.height * HERO_TALL_DRAW_INSET.top,
+  width: box.width * HERO_TALL_DRAW_INSET.scale,
+  height: box.height * HERO_TALL_DRAW_INSET.scale,
+});
+
 async function sceneHero(browser, base, capture, orientation) {
-  const { ctx, page } = await openAppPage(browser, base, capture, { prepare: mockFreeGrant });
+  const { ctx, page } = await openAppPage(browser, base, capture, {
+    prepare: async (page) => {
+      await mockFreeGrant(page);
+      await seedButtonScale(page);
+    },
+  });
   await expandDrawer(page);
   const box = await canvasBox(page);
-  await (orientation === 'portrait' ? drawIslandTall(page, box) : drawDinosaurWide(page, box));
+  await (orientation === 'portrait'
+    ? drawIslandTall(page, insetHeroBox(box))
+    : drawDinosaurWide(page, box));
   await pickColor(page, C.green); // the spec's resting selection: green ring, pen brush
   await sleep(SCREENSHOT_SETTLE_MS);
   const shot = await page.screenshot();
@@ -131,6 +162,9 @@ async function sceneHero(browser, base, capture, orientation) {
 // late and it landed on a single book (issue #936) — reopen until the grid.
 async function sceneBooks(browser, base, capture) {
   const { ctx, page } = await openAppPage(browser, base, capture, { prepare: mockFreeGrant });
+  if (capture.height / capture.width >= BOOKS_TWO_COL_MIN_ASPECT) {
+    await page.addStyleTag({ content: BOOKS_TWO_COL_CSS });
+  }
   await expandDrawer(page);
   let onGrid = false;
   for (let attempt = 0; attempt < BOOK_GRID_RETRY_LIMIT; attempt++) {
@@ -191,34 +225,34 @@ async function sceneMagic(browser, base, capture, orientation) {
   await pickColor(page, C.purple); // the spec's ringed swatch while magic is active
   await pickBrush(page, 'magic');
   const box = await canvasBox(page);
-  await magicReveal(page, box, orientation);
-  await dismissMenu(page);
+  await magicScribbles(page, box, orientation);
+  // No dismissMenu here: the brush and size menus close themselves on pick,
+  // and a canvas click with magic armed would reveal a dot in the paper corner.
   await sleep(SCREENSHOT_SETTLE_MS);
   const shot = await page.screenshot();
   await ctx.close();
   return shot;
 }
 
-// ~85% reveal: full-width zigzag sweeps down the page, leaving the margins and
-// a few outline patches white so the mid-reveal story stays visible. Portrait
-// insets the left edge: the tool drawer floats over the canvas's lower left,
-// and a sweep that begins on one of its buttons never reaches the paper.
-const REVEAL_LEFT_FRACTION = { landscape: 0.07, portrait: 0.18 };
-async function magicReveal(page, box, orientation) {
-  const W = box.width;
-  const H = box.height;
-  const x0 = REVEAL_LEFT_FRACTION[orientation];
-  const BAND_TOP_FRACTION = 0.12;
-  const BAND_STEP_FRACTION = 0.16;
-  const BAND_COUNT = 5;
-  for (let i = 0; i < BAND_COUNT; i++) {
-    const y = H * (BAND_TOP_FRACTION + i * BAND_STEP_FRACTION);
-    await drawStroke(page, box, [
-      { x: W * x0, y },
-      { x: W * 0.93, y: y + H * 0.03 },
-      { x: W * (x0 + 0.03), y: y + H * 0.09 },
-      { x: W * 0.9, y: y + H * 0.12 },
-    ]);
+// ~85% reveal as natural child scribbles (magic-scribbles.mjs): row fills and
+// spirals aimed at the cat page's features, leaving margins and a few outline
+// patches white so the mid-reveal story stays visible. The seeded design-space
+// paths scale into the live art rect, so they land on the same features at
+// every capture size.
+async function magicScribbles(page, box, orientation) {
+  const artRect = await coloringOverlayArtRect(page);
+  const { designWidth, designHeight, strokes } = magicScribbleScene(orientation);
+  const scaleX = artRect.width / designWidth;
+  const scaleY = artRect.height / designHeight;
+  for (const stroke of strokes) {
+    await drawStroke(
+      page,
+      box,
+      stroke.map((p) => ({
+        x: artRect.x - box.x + p.x * scaleX,
+        y: artRect.y - box.y + p.y * scaleY,
+      }))
+    );
   }
 }
 
@@ -227,10 +261,10 @@ async function sceneParents(browser, base, capture) {
     colorScheme: 'dark',
     prepare: async (page) => {
       await mockFreeGrant(page);
-      await seedGuardrailPolicies(page);
+      await seedToolDrawerSettings(page);
     },
   });
-  await openSettingsSection(page, 'Parent Center');
+  await openSettingsSection(page, 'Tool Drawer');
   await sleep(SCREENSHOT_SETTLE_MS);
   const shot = await page.screenshot();
   await ctx.close();
