@@ -10,10 +10,11 @@ first model turn. When the detached worktree starts from the local `main` commit
 3. Verifies `HEAD`, provisions the pinned pnpm version, and installs the frozen dependency tree.
 4. Runs `npm run info` to verify the dependency installation.
 
-The hook does nothing in the primary checkout or in a detached worktree based on a feature branch.
-It stops the turn with an actionable warning instead of overwriting an attached or dirty linked
-worktree, or when fetching, checkout, installation, or verification fails. Its `^startup$` matcher
-means it does not rerun after resume, clear, or compaction events.
+The hook does nothing in the primary checkout or an attached linked worktree. In a detached
+feature-based worktree it leaves `HEAD` untouched but still installs and verifies dependencies. It
+stops the turn with an actionable warning instead of overwriting a dirty linked worktree, or when
+fetching, checkout, installation, or verification fails. Its `^startup$` matcher means it does not
+rerun after resume, clear, or compaction events.
 
 Project hooks require a one-time trust review. When Codex reports that the hook needs review, open
 `/hooks`, inspect the repository's `.codex/hooks.json` entry, and trust it. Codex asks for another

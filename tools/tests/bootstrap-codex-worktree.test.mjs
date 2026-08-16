@@ -135,9 +135,29 @@ describe('Codex worktree bootstrap hook', () => {
     expect(runner.calls.slice(3).every(({ cwd }) => cwd === WORKTREE_ROOT)).toBe(true);
   });
 
-  it('leaves a feature-based detached worktree untouched', () => {
+  it('retries provisioning after checkout has already moved HEAD beyond local main', () => {
     const script = defaultScript();
     script.set(commandKey('git', ['rev-parse', 'HEAD']), [success(FETCHED_HEAD)]);
+    const runner = createRunner(script);
+
+    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(commandNames(runner.calls)).toEqual([
+      'git rev-parse --path-format=absolute --git-dir',
+      'git rev-parse --path-format=absolute --git-common-dir',
+      'git rev-parse --show-toplevel',
+      'git rev-parse --abbrev-ref HEAD',
+      'git rev-parse HEAD',
+      'git rev-parse refs/heads/main',
+      'corepack enable pnpm',
+      'corepack install',
+      'pnpm install --frozen-lockfile --prefer-offline',
+      'npm run info',
+    ]);
+  });
+
+  it('stands down when the local main ref does not exist', () => {
+    const script = defaultScript();
+    script.set(commandKey('git', ['rev-parse', 'refs/heads/main']), [failure('unknown revision')]);
     const runner = createRunner(script);
 
     expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
@@ -165,16 +185,18 @@ describe('Codex worktree bootstrap hook', () => {
     expect(commandNames(runner.calls)).not.toContain('git fetch --no-tags origin main');
   });
 
-  it('stops before fetching when the linked worktree is not detached', () => {
+  it('leaves an attached linked worktree untouched', () => {
     const script = defaultScript();
     script.set(commandKey('git', ['rev-parse', '--abbrev-ref', 'HEAD']), [success('main')]);
     const runner = createRunner(script);
 
-    const result = bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
-
-    expect(result).toMatchObject({ continue: false });
-    expect(result.stopReason).toContain('HEAD is attached to main');
-    expect(commandNames(runner.calls)).not.toContain('git fetch --no-tags origin main');
+    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(commandNames(runner.calls)).toEqual([
+      'git rev-parse --path-format=absolute --git-dir',
+      'git rev-parse --path-format=absolute --git-common-dir',
+      'git rev-parse --show-toplevel',
+      'git rev-parse --abbrev-ref HEAD',
+    ]);
   });
 
   it.each([
@@ -187,6 +209,11 @@ describe('Codex worktree bootstrap hook', () => {
       name: 'checkout',
       command: ['git', 'checkout', '--detach', 'FETCH_HEAD'],
       message: 'Could not detach the worktree',
+    },
+    {
+      name: 'pnpm provisioning',
+      command: ['corepack', 'install'],
+      message: 'Could not provision the pinned pnpm version',
     },
     {
       name: 'dependency install',
@@ -210,6 +237,20 @@ describe('Codex worktree bootstrap hook', () => {
       stopReason: expect.stringContaining(message),
       systemMessage: expect.stringContaining('simulated failure'),
     });
+  });
+
+  it('continues when Corepack cannot enable its pnpm shim', () => {
+    const script = defaultScript();
+    script.set(commandKey('corepack', ['enable', 'pnpm']), [failure('read-only Node bin')]);
+    const runner = createRunner(script);
+
+    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(commandNames(runner.calls).slice(-4)).toEqual([
+      'corepack enable pnpm',
+      'corepack install',
+      'pnpm install --frozen-lockfile --prefer-offline',
+      'npm run info',
+    ]);
   });
 
   it('stops before installing when checkout verification does not match FETCH_HEAD', () => {

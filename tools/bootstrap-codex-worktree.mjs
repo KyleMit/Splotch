@@ -29,6 +29,90 @@ function stopTurn(reason) {
   return { continue: false, stopReason: message, systemMessage: message };
 }
 
+function readLocalMain(runCommand, repoRoot) {
+  const result = runCommand('git', ['rev-parse', MAIN_REF], repoRoot);
+  if (result.status !== 0) return null;
+  return result.stdout?.trim() ?? '';
+}
+
+function updateStaleMainWorktree(runCommand, repoRoot) {
+  const trackedChanges = requireCommand(
+    runCommand,
+    'git',
+    ['status', '--porcelain', '--untracked-files=no'],
+    repoRoot,
+    'Could not inspect tracked worktree changes'
+  );
+  if (trackedChanges) {
+    throw new Error(
+      'tracked changes are present. Preserve or discard them explicitly before restarting Codex.'
+    );
+  }
+
+  requireCommand(
+    runCommand,
+    'git',
+    ['fetch', '--no-tags', 'origin', 'main'],
+    repoRoot,
+    'Could not fetch origin/main; check network and remote access, then restart the session'
+  );
+  const fetchedHead = requireCommand(
+    runCommand,
+    'git',
+    ['rev-parse', 'FETCH_HEAD'],
+    repoRoot,
+    'Could not read the fetched main commit'
+  );
+  requireCommand(
+    runCommand,
+    'git',
+    ['checkout', '--detach', 'FETCH_HEAD'],
+    repoRoot,
+    'Could not detach the worktree at fetched origin/main'
+  );
+  const checkedOutHead = requireCommand(
+    runCommand,
+    'git',
+    ['rev-parse', 'HEAD'],
+    repoRoot,
+    'Could not verify the checked-out commit'
+  );
+  if (checkedOutHead !== fetchedHead) {
+    throw new Error(
+      `checkout verification failed: HEAD is ${checkedOutHead}, expected ${fetchedHead}.`
+    );
+  }
+}
+
+function tryEnablePnpmShim(runCommand, repoRoot) {
+  runCommand('corepack', ['enable', 'pnpm'], repoRoot);
+}
+
+function provisionDependencies(runCommand, repoRoot) {
+  tryEnablePnpmShim(runCommand, repoRoot);
+  requireCommand(
+    runCommand,
+    'corepack',
+    ['install'],
+    repoRoot,
+    'Could not provision the pinned pnpm version'
+  );
+  requireCommand(
+    runCommand,
+    'pnpm',
+    ['install', '--frozen-lockfile', '--prefer-offline'],
+    repoRoot,
+    'Could not install project dependencies; check the pnpm output, then restart the session'
+  );
+  requireCommand(
+    runCommand,
+    'npm',
+    ['run', 'info'],
+    repoRoot,
+    'Dependency verification failed because npm run info did not succeed'
+  );
+}
+
 export function bootstrapCodexWorktree({ cwd = process.cwd(), runCommand = runProcess } = {}) {
   try {
     const gitDir = requireCommand(
@@ -62,11 +146,7 @@ export function bootstrapCodexWorktree({ cwd = process.cwd(), runCommand = runPr
       repoRoot,
       'Could not inspect HEAD'
     );
-    if (branch !== 'HEAD') {
-      return stopTurn(
-        `HEAD is attached to ${branch}. Start Codex from a detached worktree and retry.`
-      );
-    }
+    if (branch !== 'HEAD') return null;
 
     const initialHead = requireCommand(
       runCommand,
@@ -75,91 +155,11 @@ export function bootstrapCodexWorktree({ cwd = process.cwd(), runCommand = runPr
       repoRoot,
       'Could not read the initial worktree commit'
     );
-    const localMain = requireCommand(
-      runCommand,
-      'git',
-      ['rev-parse', MAIN_REF],
-      repoRoot,
-      'Could not read the local main commit'
-    );
+    const localMain = readLocalMain(runCommand, repoRoot);
+    if (localMain === null) return null;
 
-    if (initialHead !== localMain) return null;
-
-    const trackedChanges = requireCommand(
-      runCommand,
-      'git',
-      ['status', '--porcelain', '--untracked-files=no'],
-      repoRoot,
-      'Could not inspect tracked worktree changes'
-    );
-    if (trackedChanges) {
-      return stopTurn(
-        'tracked changes are present. Preserve or discard them explicitly before restarting Codex.'
-      );
-    }
-
-    requireCommand(
-      runCommand,
-      'git',
-      ['fetch', '--no-tags', 'origin', 'main'],
-      repoRoot,
-      'Could not fetch origin/main; check network and remote access, then restart the session'
-    );
-    const fetchedHead = requireCommand(
-      runCommand,
-      'git',
-      ['rev-parse', 'FETCH_HEAD'],
-      repoRoot,
-      'Could not read the fetched main commit'
-    );
-    requireCommand(
-      runCommand,
-      'git',
-      ['checkout', '--detach', 'FETCH_HEAD'],
-      repoRoot,
-      'Could not detach the worktree at fetched origin/main'
-    );
-    const checkedOutHead = requireCommand(
-      runCommand,
-      'git',
-      ['rev-parse', 'HEAD'],
-      repoRoot,
-      'Could not verify the checked-out commit'
-    );
-    if (checkedOutHead !== fetchedHead) {
-      return stopTurn(
-        `checkout verification failed: HEAD is ${checkedOutHead}, expected ${fetchedHead}.`
-      );
-    }
-
-    requireCommand(
-      runCommand,
-      'corepack',
-      ['enable', 'pnpm'],
-      repoRoot,
-      'Could not enable pnpm through Corepack'
-    );
-    requireCommand(
-      runCommand,
-      'corepack',
-      ['install'],
-      repoRoot,
-      'Could not provision the pinned pnpm version'
-    );
-    requireCommand(
-      runCommand,
-      'pnpm',
-      ['install', '--frozen-lockfile', '--prefer-offline'],
-      repoRoot,
-      'Could not install project dependencies; check the pnpm output, then restart the session'
-    );
-    requireCommand(
-      runCommand,
-      'npm',
-      ['run', 'info'],
-      repoRoot,
-      'Dependency verification failed because npm run info did not succeed'
-    );
+    if (initialHead === localMain) updateStaleMainWorktree(runCommand, repoRoot);
+    provisionDependencies(runCommand, repoRoot);
 
     return null;
   } catch (error) {
