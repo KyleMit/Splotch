@@ -218,6 +218,11 @@
   // Deliberately untracked: only the handlers below read it, nothing renders it.
   let pendingJump: SectionId | null = null;
 
+  // A smooth jump crosses section reading lines the parent did not choose to
+  // visit. Deliberately untracked: event handlers only use this target to keep
+  // those transient elections from persisting as seen.
+  let smoothJumpTarget: SectionId | null = null;
+
   // Arithmetic on each scroller's own scrollTop, never `scrollIntoView`: that
   // method scrolls *every* scrollable ancestor, and the card, the split and the
   // dialog are all clipped boxes. Dividing the rect delta by the scroller's
@@ -227,6 +232,7 @@
     const el = sectionEls[id];
     const pane = paneEl;
     if (!el || !pane) return;
+    if (behavior === 'smooth') smoothJumpTarget = id;
     const offset =
       (el.getBoundingClientRect().top - pane.getBoundingClientRect().top) / visualScale(pane);
     pane.scrollTo({ top: pane.scrollTop + offset - SECTION_JUMP_INSET_PX, behavior });
@@ -309,12 +315,14 @@
     const spy = () => {
       frame = 0;
       const next = spiedSectionAt(pane);
+      const smoothJump = smoothJumpTarget;
+      if (next === smoothJump) smoothJumpTarget = null;
       // Not just a dedupe: the reveal below fires on an election change only, so
       // a parent who scrolls the column by hand keeps the position they chose
       // until the reading position moves to another section. Revealing on every
       // tick would yank the column back out from under them mid-gesture.
       if (next === spiedSection) return;
-      markDisplayedSectionSeen(next);
+      if (!smoothJump) markDisplayedSectionSeen(next);
       spiedSection = next;
       revealNavRow(next, jumpBehavior());
     };
@@ -334,7 +342,10 @@
     growth.observe(content);
     // Any hand on the pane ends the jump: from here the scroll position is the
     // parent's, and re-aiming it would take the pane back out from under them.
-    const releaseJump = () => (pendingJump = null);
+    const releaseJump = () => {
+      pendingJump = null;
+      smoothJumpTarget = null;
+    };
     pane.addEventListener('pointerdown', releaseJump);
     pane.addEventListener('wheel', releaseJump, { passive: true });
     pane.addEventListener('keydown', releaseJump);
