@@ -5,6 +5,7 @@
 export const MAX_UNDO_DEPTH = 20;
 
 export interface HistoryDebug {
+  strokeRevision?: number;
   snapshots: number;
   liveRasters: number;
   rasterBytes: number;

@@ -88,9 +88,8 @@ test.describe('AI result modal', () => {
   test('uploads the live canvas as a non-empty image POST', async ({ page }) => {
     const endpoint = await openAiResult(page);
 
-    await expect.poll(() => endpoint.requests.length).toBe(1);
-    const request = endpoint.requests[0];
-    if (!request) throw new Error('Generate-image request was not recorded');
+    const request = await endpoint.waitForFirstRequest();
+    expect(endpoint.requests).toHaveLength(1);
     expect(request.method).toBe('POST');
     expect(request.contentType).toMatch(/^image\/(webp|png)$/);
     expect(request.bytes).toBeGreaterThan(0);

@@ -6,17 +6,17 @@ curated datasets and deterministic scrapbook presentation.
 
 ## Entry points
 
-| Entry point             | Public command                      | Purpose                                     |
-| ----------------------- | ----------------------------------- | ------------------------------------------- |
-| `run-worker-sweep.mjs`  | Direct Node / Worker Sweep workflow | Measure repeated suites at one worker count |
-| `gen-tuning-report.mjs` | `npm run gen:e2e-tuning-report`     | Regenerate the E2E tuning scrapbook page    |
+| Entry point             | Public command                  | Purpose                                     |
+| ----------------------- | ------------------------------- | ------------------------------------------- |
+| `run-worker-sweep.mjs`  | `npm run test:e2e:sweep`        | Measure repeated suites at one worker count |
+| `gen-tuning-report.mjs` | `npm run gen:e2e-tuning-report` | Regenerate the E2E tuning scrapbook page    |
 
 ## Worker sweep
 
 Run a local measurement with explicit inputs:
 
 ```sh
-node tools/e2e-tuning/run-worker-sweep.mjs --workers=4 --reps=12 --out=/tmp/sweep
+npm run test:e2e:sweep -- --workers=4 --reps=12 --out=/tmp/sweep
 ```
 
 If `--out` is omitted, reports go to the unignored repository-root `sweep-runs/` directory; remove

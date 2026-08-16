@@ -16,33 +16,13 @@ import {
 } from '../src/lib/drawing/tiledRenderer';
 import { MAX_UNDO_DEPTH } from '../src/lib/drawing/undoHistory';
 import { openDrawer, pickBrush } from './flows-harness';
-import { draw, firstOpaquePixel, gotoApp, renderedCanvasHandle } from './helpers';
-
-const FIRST_STROKE_COMMIT_TIMEOUT_MS = 10_000;
-
-async function drawFirstCommittedStroke(
-  page: Page,
-  points: { x: number; y: number }[]
-): Promise<void> {
-  await expect
-    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
-      timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS,
-    })
-    .toBe(true);
-  await draw(page, points);
-  await expect
-    .poll(
-      async () => {
-        const current = await page.evaluate(() => window.__drawingDebug?.getUndoDebug());
-        return {
-          snapshots: current?.snapshots ?? 0,
-          pendingCommands: current?.pendingCommands ?? 0,
-        };
-      },
-      { timeout: FIRST_STROKE_COMMIT_TIMEOUT_MS }
-    )
-    .toEqual({ snapshots: 1, pendingCommands: 0 });
-}
+import {
+  draw,
+  drawCommittedStroke,
+  firstOpaquePixel,
+  gotoApp,
+  renderedCanvasHandle,
+} from './helpers';
 
 async function alphaAt(page: Page, xFraction: number, yFraction: number) {
   const rendered = await renderedCanvasHandle(page);
@@ -142,12 +122,29 @@ test('tiled history folds its old prefix and retains twenty undo steps', async (
   const strokeCount = MAX_UNDO_DEPTH + foldedPrefix;
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('drawing canvas has no bounds');
-  for (let index = 0; index < strokeCount; index++) {
+  const pointsForStroke = (index: number) => {
     const y = 80 + index * 20;
-    await draw(page, [
+    return [
       { x: 20, y },
       { x: box.width - 20, y },
-    ]);
+    ];
+  };
+  for (let index = 0; index < MAX_UNDO_DEPTH; index++) {
+    await draw(page, pointsForStroke(index));
+  }
+
+  const revisionAtDepthCap = await page.evaluate(
+    () => window.__drawingDebug?.getUndoDebug().strokeRevision
+  );
+  if (revisionAtDepthCap === undefined) throw new Error('drawing stroke revision is unavailable');
+  await drawCommittedStroke(page, pointsForStroke(MAX_UNDO_DEPTH));
+  expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug())).toMatchObject({
+    strokeRevision: revisionAtDepthCap + 1,
+    snapshots: MAX_UNDO_DEPTH,
+  });
+
+  for (let index = MAX_UNDO_DEPTH + 1; index < strokeCount; index++) {
+    await draw(page, pointsForStroke(index));
   }
 
   expect(await page.evaluate(() => window.__drawingDebug?.getUndoDebug().snapshots)).toBe(
@@ -278,7 +275,7 @@ test('pathological strokes shorten undo depth before exceeding the patch budget'
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('drawing canvas has no bounds');
 
-  await drawFirstCommittedStroke(page, [
+  await drawCommittedStroke(page, [
     { x: box.width * 0.1, y: box.height * 0.1 },
     { x: box.width * 0.12, y: box.height * 0.1 },
   ]);

@@ -1,12 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import {
-  draw,
-  firstOpaquePixel,
-  gotoApp,
-  openSettingsModal,
-  PICKER_GREEN,
-  renderedCanvasHandle,
-} from './helpers';
+import { draw, firstOpaquePixel, gotoApp, openSettingsModal, PICKER_GREEN } from './helpers';
 import { WEBKIT_ONLY_TAG } from './tags';
 
 // WebKit critical-path smoke. The WEBKIT_ONLY_TAG on the describe below is what
@@ -63,15 +56,6 @@ function palettePanelGeometry(page: Page): Promise<PalettePanelGeometry> {
   });
 }
 
-async function renderedCanvasHasArea(page: Page) {
-  const canvas = await renderedCanvasHandle(page);
-  try {
-    return await canvas.evaluate((element) => element.width > 0 && element.height > 0);
-  } finally {
-    await canvas.dispose();
-  }
-}
-
 test.describe('WebKit critical-path smoke', { tag: WEBKIT_ONLY_TAG }, () => {
   test('the app boots: canvas, palette, and Settings Button render', async ({ page }) => {
     await gotoApp(page);
@@ -113,7 +97,6 @@ test.describe('WebKit critical-path smoke', { tag: WEBKIT_ONLY_TAG }, () => {
 
   test('a pointer stroke puts ink on the canvas', async ({ page }) => {
     await gotoApp(page);
-    await expect.poll(() => renderedCanvasHasArea(page)).toBe(true);
     expect(await firstOpaquePixel(page)).toBeNull();
     await draw(page, [
       { x: 120, y: 120 },

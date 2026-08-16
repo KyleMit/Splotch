@@ -84,14 +84,15 @@ paths:
 * **Flake-resistance (worker count is derived from the machine — capacity is `cores / 2`; local sits
   there, CI goes to twice it, ADR-0078 — so specs share the CPU):** never assert on a single
   interaction against a lazily-wired control — wrap open-then-assert in `expect(...).toPass()` or
-  reuse a retrying helper (`openSettingsModal`/`openDrawer`/`openStrokeMenu`); retry the *open*
-  rather than the wait when the open itself picks a view (the coloring picker chooses book grid vs.
-  single book from an installed set that resolves after load and never re-picks, so a longer wait
-  can't reach the grid — `openColoringBookGrid` reopens until one lands on it, issue #936); use
-  `expect.poll` / web-first assertions instead of a fixed `waitForTimeout` to wait for something to
-  happen (a fixed sleep is fine only to idle *past* a known threshold or to prove a state does *not*
-  change); poll async canvas/relayout state through a retrying assertion with a window sized for a
-  starved worker (`expect(await count()).toBe(n)` races the repaint — use
+  reuse a retrying helper (`openSettingsModal`/`openDrawer`/`openStrokeMenu`), and give `retryOpen`
+  a hydration-only or otherwise durable outcome that cannot appear before hydration and reset
+  afterward; retry the *open* rather than the wait when the open itself picks a view (the coloring
+  picker chooses book grid vs. single book from an installed set that resolves after load and never
+  re-picks, so a longer wait can't reach the grid — `openColoringBookGrid` reopens until one lands
+  on it, issue #936); use `expect.poll` / web-first assertions instead of a fixed `waitForTimeout`
+  to wait for something to happen (a fixed sleep is fine only to idle *past* a known threshold or to
+  prove a state does *not* change); poll async canvas/relayout state through a retrying assertion
+  with a window sized for a starved worker (`expect(await count()).toBe(n)` races the repaint — use
   `await expect.poll(() => count())`); wait on the *engine's* state rather than the button that
   requests it (`pickBrush` polls `window.__committedBrushMode`, ADR-0080); let a fly-in dialog
   **land** before reading a coordinate off it and dispatching synthetic events there — a real
@@ -105,6 +106,9 @@ paths:
   `launchGuard` arms a dead zone for any tap that repaints something under the finger, modal or not
   (a book cover swapping in that book's page grid, say); drive strokes through `draw`/`dragStroke`,
   which pace their samples inside the engine's dropped-pointer threshold — a hand-rolled run of
-  far-apart `mouse.move`s gets read as a lifted finger and paints a stub of the stroke; and verify a
-  fix with `--repeat-each=10`, never in isolation. Full checklist with examples: the `testing`
-  skill, "Writing flake-resistant specs."
+  far-apart `mouse.move`s gets read as a lifted finger and paints a stub of the stroke; make a
+  mocked endpoint control resolve only after its awaited `route.fulfill()` completes; pace
+  compositor-dependent synthetic gesture phases with rendered frames, not a fixed sleep; do not
+  invent generic `waitForStable`, route-controller, or `nextFrame` abstractions without multiple
+  real callers; and verify a fix with `--repeat-each=10`, never in isolation. Full checklist with
+  examples: the `testing` skill, "Writing flake-resistant specs."

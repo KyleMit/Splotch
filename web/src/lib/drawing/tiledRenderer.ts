@@ -482,6 +482,7 @@ export function tiledHistoryDebug(): HistoryDebug {
     0
   );
   return {
+    strokeRevision: workCounters?.strokeRevision(),
     snapshots: undoableCommands,
     liveRasters: undoSnapshots.filter((snapshots) => snapshots && snapshots.size > 0).length,
     rasterBytes,
