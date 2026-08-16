@@ -41,6 +41,9 @@ const RAINBOW_SATURATION_MIN_PCT = 70;
 const RAINBOW_SATURATION_SPAN_PCT = 25;
 const RAINBOW_LIGHTNESS_MIN_PCT = 55;
 const RAINBOW_LIGHTNESS_SPAN_PCT = 15;
+// Give the line art first use of the connection, then recover independently if
+// its decode never settles and therefore never releases the deferred fill.
+const DEFERRED_FILL_FALLBACK_MS = 15_000;
 
 // Sample a hair inside the picture's border, not on it, so a coloring page's edge
 // outline doesn't smear across the extended margin.
@@ -95,6 +98,7 @@ let fillUrl: string | null = null;
 // sheet state; every other load is superseded, whatever URL it was for.
 let pendingLoad: HTMLImageElement | null = null;
 let pendingFillRaster: HTMLImageElement | null = null;
+let deferredFillTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
 // gradient is the one currently revealed, held until the canvas is cleared.
@@ -531,28 +535,16 @@ export function setMagicPatternRegion(
   patternCache.delete(target);
 }
 
-// True whenever the sheet cannot currently paint magic ink — i.e. sheetPatternFor
-// would return null. That is any time there is no rasterized sheet: an in-flight
-// fill decode, or a rasterizeSheet that early-returned on an unmounted/zero-size
-// canvas or an absent source (a decode-only signal would miss that second case).
-// sheetReady is set true only after sheetCanvas exists, so !sheetReady is exactly
-// the pattern-null condition. Folding or
-// keyframing a magic op in this state would bake it to nothing, so the undo history
-// defers until the sheet is ready again.
-export function isMagicSheetUnready(): boolean {
-  return !sheetReady;
-}
-
 // Load the fill image, guarding against a page change that happened while it
 // decoded. On success stash it, then re-rasterize and repaint so already-recorded
 // magic ops pick up the colours.
 //
 // A failed load detaches the page entirely (as if it had been removed) and takes
-// over the gradient source, so the brush keeps painting and the undo fold's
-// isMagicSheetUnready gate reopens instead of deferring for the rest of the session
-// — a page session holds no gradient of its own, so merely clearing fillUrl would
-// leave rasterizeSheet with no source at all. Clearing fillUrl also re-arms
-// setColorSheet's same-url guard, making a re-applied page a real retry.
+// over the gradient source, so the brush keeps painting instead of staying unready
+// for the rest of the session — a page session holds no gradient of its own, so
+// merely clearing fillUrl would leave rasterizeSheet with no source at all.
+// Clearing fillUrl also re-arms setColorSheet's same-url guard, making a re-applied
+// page a real retry.
 //
 // Both handlers key on the image instance, not on the URL: a theme switch can cycle
 // the sheet A → B → A, and a URL comparison would let the first A load's late error
@@ -581,11 +573,18 @@ function loadSheetImage(url: string) {
   img.src = url;
 }
 
+function cancelDeferredFill() {
+  if (deferredFillTimer === null) return;
+  clearTimeout(deferredFillTimer);
+  deferredFillTimer = null;
+}
+
 // Point the magic brush at a coloring page's colored fill (or null to detach and
 // fall back to the gradient source). The shipped fill is fills-only, so it's drawn
 // straight into the sheet; it decodes async, and magic ops recorded before it's
 // ready reveal nothing until the load handler repaints.
 export function setColorSheet(colorUrl: string | null) {
+  cancelDeferredFill();
   if (colorUrl === fillUrl && (colorUrl === null || fillImage || pendingLoad)) return;
   // Whatever is still decoding is for the outgoing source — disown it.
   pendingLoad = null;
@@ -602,16 +601,20 @@ export function setColorSheet(colorUrl: string | null) {
   loadSheetImage(colorUrl);
 }
 
-// Reserve an incoming page without starting its fill transfer. The overlay line
-// art owns network priority, but new strokes must stop sampling the outgoing page
-// as soon as the child selects its replacement. Recorded ops keep their captured
-// snapshot and are recoded after setColorSheet starts and finishes this load.
+// Reserve an incoming page without immediately starting its fill transfer. The
+// overlay line art owns network priority, but new strokes must stop sampling the
+// outgoing page as soon as the child selects its replacement. DrawingCanvas pays
+// the reservation with setColorSheet after the overlay settles; the fallback keeps
+// the brush self-healing if that decode never settles. Recorded ops retain their
+// captured snapshot until the replacement sheet recodes them.
 export function deferColorSheet(colorUrl: string) {
+  cancelDeferredFill();
   pendingLoad = null;
   pendingFillRaster = null;
   fillUrl = colorUrl;
   fillImage = null;
   invalidateSheet();
+  deferredFillTimer = setTimeout(() => setColorSheet(colorUrl), DEFERRED_FILL_FALLBACK_MS);
 }
 
 // Pick a random rainbow from the pool and hold it, unless one is already held (so

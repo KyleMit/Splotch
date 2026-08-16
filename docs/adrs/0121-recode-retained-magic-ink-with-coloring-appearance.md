@@ -43,9 +43,12 @@ The active coloring appearance owns the colors of every visible magic stroke:
 * A theme change recodes the same operations but does not add an undo command. Theme remains a
   setting rather than a drawing action, so the renderer rebuilds ordinary undo patches against the
   new themed colors.
-* `DrawingCanvas.svelte` keeps the outgoing sheet while the incoming page/theme overlay decodes. The
-  line art and recoded strokes therefore switch only after the replacement appearance is ready,
-  instead of temporarily recoding to the blank-canvas rainbow.
+* Recorded magic ops keep their captured snapshot while the incoming page/theme overlay decodes, so
+  settled ink never flashes the blank-page rainbow mid-transition. The live sheet is reserved for
+  the incoming page as soon as the child selects it, so a stroke drawn during the decode window
+  reveals nothing until the replacement sheet lands and recodes it, rather than sampling the page
+  the child just replaced. A bounded fallback starts the fill independently if the overlay decode
+  never settles.
 
 The replay baseline and page-recode command exist only after magic ink exists. Page changes on a
 pen/crayon-only drawing keep the prior behavior and do not consume undo depth.
@@ -64,6 +67,9 @@ pen/crayon-only drawing keep the prior behavior and do not consume undo depth.
 * − Recoloring replays the retained magic tail and the undoable command window. The former ADR-0087
   rule deliberately avoided that work, so the theme and coloring-page action gates require renewed
   physical-iPad measurement before treating their previous timing figures as current.
+* − A magic stroke created while replacement page art decodes is retained but invisible until its
+  fill sheet is ready. The bounded fallback keeps a hung overlay request from disabling the brush
+  for the rest of the session, at the cost of eventually starting the fill transfer independently.
 * − Undo restoration owns a narrow callback from drawing history back to coloring-page state. New
   non-drawing appearance changes must not reuse that hook unless the product explicitly defines them
   as drawing undo units.
