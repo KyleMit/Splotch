@@ -1,14 +1,5 @@
 ## Commands
 
-### Codex worktree bootstrap
-
-Before the first repository command in every Codex session, check whether the developer context
-contains `Splotch worktree bootstrap completed successfully.` If it does not, run
-`node tools/bootstrap-codex-worktree.mjs` first. If that command prints JSON with
-`"continue":false`, stop the turn and report its message. This instruction is the first-session
-fallback for project command hooks that Codex has not yet trusted; when the trusted synchronous hook
-runs, its completion context prevents the duplicate bootstrap.
-
 | Command                       | Purpose                                                                               |
 | ----------------------------- | ------------------------------------------------------------------------------------- |
 | `npm run info`                | List **every** npm script with its description — run this before guessing at a script |

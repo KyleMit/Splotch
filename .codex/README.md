@@ -2,32 +2,26 @@
 
 ## Automatic startup bootstrap
 
-The repository prepares a new linked Codex worktree before its first project command. When the
-detached worktree starts from the local `main` commit, the bootstrap:
+The repository's synchronous `SessionStart` hook prepares a new linked Codex worktree before its
+first model turn. When the detached worktree starts from the local `main` commit, the hook:
 
 1. Confirms the checkout has no tracked changes.
 2. Fetches `origin/main` without tags and detaches at the fetched commit.
 3. Verifies `HEAD`, provisions the pinned pnpm version, and installs the frozen dependency tree.
 4. Runs `npm run info` to verify the dependency installation.
 
-The bootstrap does nothing in the primary checkout or an attached linked worktree. In a detached
+The hook does nothing in the primary checkout or an attached linked worktree. In a detached
 feature-based worktree it leaves `HEAD` untouched but still installs and verifies dependencies. It
 stops the turn with an actionable warning instead of overwriting a dirty linked worktree, or when
-fetching, checkout, installation, or verification fails.
+fetching, checkout, installation, or verification fails. Its `^startup$` matcher means it does not
+rerun after resume, clear, or compaction events.
 
-The synchronous `SessionStart` hook performs this work before the first model turn once its exact
-definition is trusted. A successful hook adds a completion signal to the model context. When Codex
-skips a new or changed command hook pending trust review, the generated repository instructions see
-that the signal is absent and require the first agent action to run the same dependency-free helper
-before any project command. This fallback covers sessions created from Android Remote, where hook
-review is not part of worktree creation. The hook's `^startup$` matcher means it does not rerun
-after resume, clear, or compaction events.
-
-Project command hooks require a one-time trust review. On the laptop running Codex, open `/hooks`,
-inspect the repository's `.codex/hooks.json` entry, and trust it. Codex asks for another review only
-when the hook definition changes. Until then, the instruction fallback keeps project commands from
-running against an unprepared worktree, but the bootstrap necessarily begins during the first model
-turn instead of before it.
+Project hooks require a one-time trust review. When Codex reports that the hook needs review, open
+`/hooks` on the laptop running Codex, inspect the repository's `.codex/hooks.json` entry, and trust
+it. Android Remote cannot complete this laptop-side review while creating a worktree. If a remote
+session starts before the hook is trusted, trust it on the laptop and then start a new session; the
+skipped startup hook does not rerun in the existing session. Codex asks for another review only when
+the hook definition changes.
 
 ## Desktop local environment
 

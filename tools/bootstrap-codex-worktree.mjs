@@ -4,7 +4,6 @@ import { isMain } from './lib/proc.mjs';
 
 const FAILURE_DETAIL_CHAR_LIMIT = 800;
 const MAIN_REF = 'refs/heads/main';
-const BOOTSTRAP_COMPLETE_CONTEXT = 'Splotch worktree bootstrap completed successfully.';
 
 function runProcess(command, args, cwd) {
   return spawnSync(command, args, { cwd, encoding: 'utf8' });
@@ -28,15 +27,6 @@ function requireCommand(runCommand, command, args, cwd, failureMessage) {
 function stopTurn(reason) {
   const message = `Splotch worktree bootstrap stopped: ${reason}`;
   return { continue: false, stopReason: message, systemMessage: message };
-}
-
-function completeBootstrap() {
-  return {
-    hookSpecificOutput: {
-      hookEventName: 'SessionStart',
-      additionalContext: BOOTSTRAP_COMPLETE_CONTEXT,
-    },
-  };
 }
 
 function readLocalMain(runCommand, repoRoot) {
@@ -171,7 +161,7 @@ export function bootstrapCodexWorktree({ cwd = process.cwd(), runCommand = runPr
     if (initialHead === localMain) updateStaleMainWorktree(runCommand, repoRoot);
     provisionDependencies(runCommand, repoRoot);
 
-    return completeBootstrap();
+    return null;
   } catch (error) {
     return stopTurn(error instanceof Error ? error.message : String(error));
   }
