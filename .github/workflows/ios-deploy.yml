@@ -24,6 +24,9 @@ jobs:
     # macOS runners ship full Xcode and pre-installed iPhone simulators.
     runs-on: macos-latest
     timeout-minutes: 40
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -43,3 +46,33 @@ jobs:
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-ios-report
+
+      # Same reasoning as android-deploy.yml's filing step: a tag-only gate has
+      # no audience at the moment it runs, so it has to raise its own hand. The
+      # title is platform-specific because a red iOS gate and a green Android
+      # one are different facts about the release.
+      - name: File the failure
+        if: ${{ failure() && github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='iOS native launch smoke failed'
+          body="$(cat <<EOF
+          The iOS launch smoke failed for ${GITHUB_REF_NAME}.
+
+          * Run: ${RUN_URL}
+          * Evidence: the maestro-ios-report artifact on that run holds the flow log and the
+            screenshot taken at the failing step.
+
+          The flow asserts only that the installed app launches and paints its UI (ADR-0120),
+          so a failure here is a real boot regression in the shipped artifact — the build,
+          the Capacitor config, the static export, or the WebView start — not flow drift.
+          EOF
+          )"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label type:bug --label area:native --body "$body"
+          fi

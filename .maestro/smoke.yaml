@@ -1,16 +1,21 @@
-# Deployment smoke test (Maestro), shared by Android and iOS. Proves the
-# shipped app actually boots: the Capacitor WebView starts AND the production
-# web bundle renders — not a white screen or a crash. "Settings" is the
-# accessibility label of the always-present help button
-# (src/lib/components/SettingsModal.svelte), so seeing it means real UI painted,
-# not just that the process launched.
+# Deployment smoke test (Maestro), shared by Android and iOS. It answers exactly
+# one question the web E2E suite structurally cannot: does the *shipped* app
+# boot? Installing the built artifact on a device and launching it exercises the
+# Capacitor WebView start plus the production static export — a crash, a bad
+# native config, or a white screen fails here and nowhere else.
 #
-# It also opens the admin console from the About section. That guards a native-only
-# regression the web/Playwright suite can't see: the admin link must resolve to
-# the static /admin/native page, never the server-only /admin route (which has
-# no file in the static bundle, so a full navigation white-screens in the
-# WebView). The choice is build-time (__CAPACITOR__) precisely so it can't drift
-# back to a runtime check that fails before window.Capacitor is injected.
+# "Settings" is the accessibility label of the always-present corner button
+# (web/src/lib/components/SettingsButton.svelte). Waiting on it proves real UI
+# painted rather than that the process merely started, and it is the whole
+# assertion on purpose (ADR-0120): this flow deliberately does not navigate the
+# UI. Every step past the launch check that this flow has ever carried broke on
+# a UI change within three releases, and because these workflows are tag-only,
+# each break surfaced as a red release gate rather than a failing PR. Coverage
+# of what the UI *does* belongs in Playwright, which runs on every push and can
+# select elements properly; what stays here is what only a device can answer.
+#
+# tools/tests/native-smoke-flow.test.mjs fails on `npm test` if this flow ever
+# selects a string the app no longer renders.
 #
 # Self-contained runs (boot device, build, install, test, tear down):
 #   npm run test:android    # headless Android emulator
@@ -25,52 +30,3 @@ appId: art.splotch.app
     visible: 'Settings'
     timeout: 30000
 - takeScreenshot: .maestro/screenshots/smoke-launch
-
-# Open Settings → About, reveal the hidden admin link (5 taps on the
-# version, which sits in the footer below the fold — scroll to it first), follow
-# it, and confirm the admin console actually painted. The "Manage AI access
-# codes" subtitle renders offline (it's above the login form), so this needs no
-# network — only that /admin/native loaded and rendered instead of a blank.
-- tapOn: 'Settings'
-# Settings opens directly — it is deliberately not parentally gated (ADR-0094);
-# the Grown-Ups Only challenge sits on individual operations (the AI flow,
-# external links) instead.
-# Settings is a flat section list (SettingsModal.svelte): a hub row on a
-# phone-width WebView, a sidebar item on a tablet. Tapping "About" opens that
-# section either way — no horizontal tab swipe anymore — and the tagline proves
-# we landed on it.
-- tapOn: 'About'
-- assertVisible: 'A joyful.*'
-- takeScreenshot: .maestro/screenshots/smoke-about
-
-# The version-unlock button lives in the About footer, below the fold inside the
-# section's own vertical scroller. Pan it up with plain vertical swipes; a small
-# fixed count reaches the short footer and is a no-op once scrolled to the
-# bottom; assertVisible then fails fast with a clear error if it didn't.
-- repeat:
-    times: 6
-    commands:
-      - swipe:
-          start: 50%, 75%
-          end: 50%, 35%
-          duration: 600
-- assertVisible: 'Version.*'
-- repeat:
-    times: 5
-    commands:
-      - tapOn:
-          text: 'Version.*'
-# Revealing the link adds a line to the footer; a couple more vertical swipes
-# guarantee the Admin link is on-screen before tapping it.
-- repeat:
-    times: 2
-    commands:
-      - swipe:
-          start: 50%, 75%
-          end: 50%, 35%
-          duration: 600
-- tapOn: 'Admin'
-- extendedWaitUntil:
-    visible: 'Manage AI access codes'
-    timeout: 15000
-- takeScreenshot: .maestro/screenshots/smoke-admin

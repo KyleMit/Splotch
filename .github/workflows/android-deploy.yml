@@ -26,6 +26,9 @@ jobs:
     # boots. Ubuntu KVM + x86_64 is cheaper, faster, and battle-tested.
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: read
+      issues: write
     steps:
       # Capacitor 8 needs a JDK 21 toolchain (the bundled JBR 17 / java 17 fails
       # AGP's JdkImageTransform). See the android-build-toolchain notes.
@@ -80,3 +83,34 @@ jobs:
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-report
+
+      # A tag-only gate nobody is watching is not a gate: this one was red on
+      # every release tag from v1.3.0 through v1.5.0, and all three shipped
+      # anyway because a tag push is the one CI event no one is looking at. One
+      # open issue collects every red tag until it is closed. Manual runs are
+      # excluded — whoever dispatched one is already reading the result.
+      - name: File the failure
+        if: ${{ failure() && github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title='Android native launch smoke failed'
+          body="$(cat <<EOF
+          The Android launch smoke failed for ${GITHUB_REF_NAME}.
+
+          * Run: ${RUN_URL}
+          * Evidence: the maestro-report artifact on that run holds the flow log and the
+            screenshot taken at the failing step.
+
+          The flow asserts only that the installed app launches and paints its UI (ADR-0120),
+          so a failure here is a real boot regression in the shipped artifact — the build,
+          the Capacitor config, the static export, or the WebView start — not flow drift.
+          EOF
+          )"
+          existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"
+          if [[ -n "$existing" ]]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --label type:bug --label area:native --body "$body"
+          fi
