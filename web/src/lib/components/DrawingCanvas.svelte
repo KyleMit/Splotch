@@ -246,7 +246,6 @@
       return;
     }
     if (displayed !== url) {
-      setColorSheet(null);
       return;
     }
     const theme = resolvedTheme();

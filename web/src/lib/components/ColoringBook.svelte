@@ -2,12 +2,7 @@
   import Icon from './Icon.svelte';
   import ActivePageChip from './ActivePageChip.svelte';
   import { coloringBookModal } from '$lib/state/ui.svelte';
-  import {
-    coloringBookState,
-    setOverlayPage,
-    setOverlayOrientation,
-    clearOverlay,
-  } from '$lib/state/coloringBook.svelte';
+  import { coloringBookState, setOverlayOrientation } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
   import {
     COLORING_IMAGE_SIZES,
@@ -35,6 +30,10 @@
     type ResponsiveImageRequest,
   } from '$lib/imagePrefetch';
   import { scheduleIdle } from '$lib/idle';
+  import {
+    applyColoringPageWithMagicUndo,
+    clearColoringPageWithMagicUndo,
+  } from '$lib/drawing/coloringAppearance';
 
   const platform = isNative() ? 'mobile' : 'web';
   const books = $derived(availableColoringBooks(platform));
@@ -114,12 +113,12 @@
     // Cancelling live thumbnail requests removes their source attributes, so the keyed page grid
     // remounts them on every dialog open instead of relying on a book-picker branch transition.
     for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
-    setOverlayPage(page, orientation);
+    applyColoringPageWithMagicUndo(page, orientation, resolvedTheme());
     coloringBookModal.hide();
   }
 
   function clearAndClose() {
-    clearOverlay();
+    clearColoringPageWithMagicUndo();
     coloringBookModal.hide();
   }
 

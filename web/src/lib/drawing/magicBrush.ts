@@ -113,6 +113,7 @@ export interface MagicSheetSnapshot {
   canvas: MagicSheetCanvas;
   originX: number;
   originY: number;
+  sourceUrl: string | null;
 }
 let sheetSnapshot: MagicSheetSnapshot | null = null;
 // The sheet's origin in paper coordinates (non-zero only when a rotation lock makes
@@ -182,7 +183,12 @@ function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
       sheetOriginY = bounds.y;
       sheetReady = true;
       sheetGeometryStale = false;
-      sheetSnapshot = { canvas: sheetCanvas, originX: sheetOriginX, originY: sheetOriginY };
+      sheetSnapshot = {
+        canvas: sheetCanvas,
+        originX: sheetOriginX,
+        originY: sheetOriginY,
+        sourceUrl: imageUrl,
+      };
       host?.repaint();
     })
     .catch(() => {
@@ -451,7 +457,12 @@ function rasterizeSheet() {
   }
   sheetReady = true;
   sheetGeometryStale = false;
-  sheetSnapshot = { canvas: sheetCanvas, originX: sheetOriginX, originY: sheetOriginY };
+  sheetSnapshot = {
+    canvas: sheetCanvas,
+    originX: sheetOriginX,
+    originY: sheetOriginY,
+    sourceUrl: source.kind === 'fill' ? fillUrl : null,
+  };
 }
 
 // Preserve captured sheets for history, but defer allocating replacement full-screen

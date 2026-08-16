@@ -67,6 +67,14 @@ export type StrokeOp =
 
 export type PathOp = Extract<StrokeOp, { kind: 'path' }>;
 export type DotOp = Extract<StrokeOp, { kind: 'dot' }>;
+export type MagicStrokeOp = (PathOp | DotOp) & { magic: true };
+
+export interface MagicRecodeUndo {
+  targetSourceKey: string | null;
+  previousSheets: Map<MagicStrokeOp, MagicSheetSnapshot | undefined>;
+  restoreAppearance: () => void;
+  applied: boolean;
+}
 
 // One stroke-group (all fingers down together) = one undo unit. `wasEmpty` is
 // the canvas-empty state before the group drew, so undo can restore the flag
@@ -74,6 +82,7 @@ export type DotOp = Extract<StrokeOp, { kind: 'dot' }>;
 export interface StrokeGroupCommand {
   ops: StrokeOp[];
   wasEmpty: boolean;
+  magicRecode?: MagicRecodeUndo;
 }
 
 // Clear everything a target could be showing in device space, independent of

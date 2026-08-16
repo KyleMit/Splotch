@@ -26,6 +26,7 @@
 
 import { dev } from '$app/environment';
 import type { Orientation } from '$lib/platform';
+import { pageCompositionKey } from '$lib/state/books';
 import { DEFAULT_STROKE_COLOR } from '$lib/state/colors.svelte';
 import type { BrushType } from '$lib/state/tool.svelte';
 import {
@@ -57,7 +58,8 @@ import {
   resizeMagicSheet,
   ensureMagicSheet,
   clearMagicGradient,
-  setColorSheet,
+  captureMagicSheet,
+  setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
 import { flushCrayonBuffer } from './crayonPassBuffer';
@@ -87,11 +89,13 @@ import {
   adoptTiledRenderer,
   applyTiledView,
   beginTiledCommand,
+  beginTiledMagicRecode,
   clearTiledRenderer,
   commitTiledCommand,
   detachTiledRenderer,
-  hasUnresolvedTiledMagicOps,
+  hasRetainedTiledMagicOps,
   recordTiledOp,
+  recodeTiledMagicOps,
   repaintTiledRenderer,
   renderTiledOp,
   renderTiledSnapshot,
@@ -105,8 +109,6 @@ import {
   undoTiledCommand,
 } from './tiledRenderer';
 import type { DrawingWorkDebug } from './drawingWorkDebug';
-
-export { setColorSheet };
 
 // --- Canvas, tool, and callback state -------------------------------------
 
@@ -967,11 +969,24 @@ export function undo(): Promise<void> {
   const state = undoTiledCommand(renderScale);
   setCanvasEmptyState(state.empty);
   setCanUndo(state.canUndo);
+  state.restoreAppearance?.();
   if (PERF_MARKS) {
     performance.mark('engine.undo:end');
     performance.measure('engine.undo', 'engine.undo:start', 'engine.undo:end');
   }
   return Promise.resolve();
+}
+
+export function setColorSheet(colorUrl: string | null) {
+  setMagicColorSheet(colorUrl);
+  if (!colorUrl && hasRetainedTiledMagicOps()) ensureMagicSheet();
+}
+
+export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppearance: () => void) {
+  const targetSourceKey = targetUrl ? pageCompositionKey(targetUrl) : null;
+  const prepared = beginTiledMagicRecode(targetSourceKey, restoreAppearance);
+  if (prepared) setCanUndo(true);
+  return prepared;
 }
 
 export function clearCanvas() {
@@ -1086,13 +1101,19 @@ function paperIsSized(): boolean {
 
 function wireMagicBrushHost(): void {
   // The magic brush's color sheet lives in paper coordinates (like every op) and
-  // repaints recorded magic ops once an async fill finishes decoding (ADR-0043).
+  // recodes recorded magic ops once an async fill finishes decoding
+  // (ADR-0043/0121).
   initMagicBrush({
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
     repaint: () => {
       if (!ctx) return;
-      if (hasUnresolvedTiledMagicOps()) repaintTiledRenderer();
+      const snapshot = captureMagicSheet();
+      if (!snapshot) return;
+      recodeTiledMagicOps(
+        snapshot,
+        snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null
+      );
     },
   });
 }
