@@ -1,8 +1,9 @@
 import { resetCrayonStateForClear, setCrayonBufferForTarget } from './crayonPassBuffer';
 import { setMagicPatternRegion } from './magicBrush';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
+import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
-import { geometryIntersectsTile, type TileBounds } from './tiledGeometry';
+import { geometryIntersectsTile, tilesIntersect, type TileBounds } from './tiledGeometry';
 
 export interface LiveTile extends TileBounds {
   canvas: HTMLCanvasElement;
@@ -28,6 +29,29 @@ export interface TiledCanvasSnapshot {
 
 export function liveTileSurfaces(tile: LiveTile) {
   return [tile.canvas, tile.crayonBottom, tile.crayonTop] as const;
+}
+
+export function applyLiveTileView(tiles: readonly LiveTile[], paperView: PaperView) {
+  const [a, b, c, d, e, f] = viewMatrix(paperView);
+  for (const tile of tiles) {
+    tile.ctx.setTransform(a, b, c, d, e - tile.x, f - tile.y);
+    const topLeft = viewToPaper(paperView, tile.x, tile.y);
+    const topRight = viewToPaper(paperView, tile.x + tile.width, tile.y);
+    const bottomLeft = viewToPaper(paperView, tile.x, tile.y + tile.height);
+    const bottomRight = viewToPaper(paperView, tile.x + tile.width, tile.y + tile.height);
+    tile.paperLeft = Math.min(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x);
+    tile.paperTop = Math.min(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y);
+    tile.paperRight = Math.max(topLeft.x, topRight.x, bottomLeft.x, bottomRight.x);
+    tile.paperBottom = Math.max(topLeft.y, topRight.y, bottomLeft.y, bottomRight.y);
+    const patternX = Math.floor(tile.paperLeft);
+    const patternY = Math.floor(tile.paperTop);
+    setMagicPatternRegion(tile.ctx, {
+      x: patternX,
+      y: patternY,
+      width: Math.ceil(tile.paperRight) - patternX,
+      height: Math.ceil(tile.paperBottom) - patternY,
+    });
+  }
 }
 
 type TileWithContext = Pick<LiveTile, 'ctx'>;
@@ -183,6 +207,22 @@ export function createHistoryBaseTiles(width: number, height: number): HistoryBa
     }
   }
   return tiles;
+}
+
+export function cloneHistoryBaseTiles(
+  source: readonly HistoryBaseTile[],
+  width: number,
+  height: number
+) {
+  const copy = createHistoryBaseTiles(width, height);
+  for (const target of copy) {
+    for (const sourceTile of source) {
+      if (!sourceTile.painted || !tilesIntersect(sourceTile, target)) continue;
+      target.ctx.drawImage(sourceTile.canvas, sourceTile.x, sourceTile.y);
+      target.painted = true;
+    }
+  }
+  return copy;
 }
 
 export function renderHistoryBaseOp(tiles: HistoryBaseTile[], op: StrokeOp) {

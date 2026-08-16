@@ -3,6 +3,8 @@
 **Status:** Active — amends [ADR-0085](0085-tiled-live-canvas-for-ipad-webkit.md) and
 [ADR-0086](0086-tiled-dirty-region-snapshots-for-frame-bounded-undo.md). **Date:** 2026-07 The
 alpha-native follow-up is implemented by [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md).
+[ADR-0121](0121-recode-retained-magic-ink-with-coloring-appearance.md) later reverses this record's
+immutable settled-magic rule so page and theme changes deliberately recode existing magic ink.
 
 ## Context
 
@@ -75,10 +77,11 @@ First, `magicBrush.ts` extends a contain-fitted fill by sampling the original `H
 sample the completed full-size sheet as a `drawImage` source; destination self-copy triggers
 WebKit's expensive surface flush even when each sampled strip is one pixel wide.
 
-Second, a decoded magic sheet repaints the tiled renderer only while recorded or active magic
-operations still lack an immutable `magicSheet` snapshot. Settled operations already contain the
-pixels they revealed and must not replay merely because the current theme's source finished
-decoding. `hasUnresolvedTiledMagicOps` owns this gate.
+Second, the retained implementation at this decision's date repainted the tiled renderer only while
+recorded or active magic operations lacked an immutable `magicSheet` snapshot. Settled operations
+did not replay merely because the current theme's source finished decoding.
+[ADR-0121](0121-recode-retained-magic-ink-with-coloring-appearance.md) replaces this constraint: a
+new coloring appearance deliberately rebinds and replays retained magic operations.
 
 Third, an empty tile is absent from the compositor:
 
@@ -146,8 +149,10 @@ and measure dark-to-light separately from setup:
    the pooled frame P95.
 
 Measure three states: empty paper, several pen/crayon tiles occupied, and a settled magic stroke.
-Afterward, run ADR-0085's trusted strokes and ADR-0086's undo action. A theme win that repaints,
-flattens, hides, or recolors existing strokes is invalid.
+Afterward, run ADR-0085's trusted strokes and ADR-0086's undo action. Under this decision's original
+contract, a theme win that repainted, flattened, hid, or recolored existing strokes was invalid.
+ADR-0121 requires recoloring, so its retained replay and page-undo behavior must pass alongside the
+same frame gates.
 
 ### Magic Repaint Isolation
 
@@ -157,9 +162,10 @@ mutation is dominant. Do not ship the no-op without checking unresolved magic op
 can start a magic stroke before the fill decodes, and that history requires one repaint when the
 sheet becomes available.
 
-To verify the production gate, create a magic operation while the source is unavailable and assert
-that decode repaints it once. Then switch theme after the operation owns `magicSheet`; that decode
-must not repaint history or recolor the old stroke.
+The original production gate asserted that an unresolved operation repainted once, while a theme
+switch after settlement did not repaint or recolor it. ADR-0121 supersedes the second half: both
+unresolved and settled operations adopt the published appearance, and the settled case must also
+preserve page-change undo.
 
 ### Letterbox Edge Extension
 

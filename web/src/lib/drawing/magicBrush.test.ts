@@ -44,31 +44,6 @@ describe('rainbow gradient generation', () => {
   });
 });
 
-describe('magic sheet readiness gate', () => {
-  // The readiness flags are module-scope singleton state with no reset seam, so the
-  // module is re-imported after vi.resetModules() rather than inheriting whatever
-  // fill/gradient/sheet state an earlier test left behind.
-  beforeEach(() => {
-    vi.resetModules();
-  });
-
-  it('stays unready whenever the sheet cannot paint, not only while decoding', async () => {
-    const { setColorSheet, isMagicSheetUnready } = await import('./magicBrush');
-
-    // Requesting a page starts an async decode; the sheet is not ready to paint.
-    setColorSheet('/coloring/test.light.webp');
-    expect(isMagicSheetUnready()).toBe(true);
-
-    // Detaching the page settles the decode (fillDecodePending clears), but with no
-    // gradient source and no host the sheet re-rasterizes to nothing and stays
-    // unready — sheetReady is false while nothing is decoding. This is exactly the
-    // state a fillDecodePending-only signal missed: a magic op folded now would
-    // render nothing, so the gate must stay closed and the fold defer.
-    setColorSheet(null);
-    expect(isMagicSheetUnready()).toBe(true);
-  });
-});
-
 describe('magic sheet fill-load failure', () => {
   // happy-dom neither loads images nor has a real 2D context, so the fill decode is
   // driven by hand through a stubbed Image and the sheet rasterizes into a fake
@@ -106,6 +81,7 @@ describe('magic sheet fill-load failure', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     HTMLCanvasElement.prototype.getContext = REAL_GET_CONTEXT;
   });
@@ -126,21 +102,20 @@ describe('magic sheet fill-load failure', () => {
     return requested[requested.length - 1];
   }
 
-  it('reopens the readiness gate with no further user action', async () => {
+  it('recovers from a failed fill with no further user action', async () => {
     const magic = await mountedMagicBrush();
 
     magic.setColorSheet(PAGE_URL);
-    expect(magic.isMagicSheetUnready()).toBe(true);
+    expect(magic.captureMagicSheet()).toBeNull();
 
     lastRequest().onerror!();
 
     // A page session holds no gradient, so the error handler has to take one over
-    // itself — the gate the pending-decode case above leaves closed forever clears
-    // without the child toggling brushes or clearing the canvas.
-    expect(magic.isMagicSheetUnready()).toBe(false);
+    // itself without the child toggling brushes or clearing the canvas.
+    expect(magic.captureMagicSheet()).not.toBeNull();
   });
 
-  it('reopens the readiness gate when a rainbow was already held before the page', async () => {
+  it('recovers with a rainbow that was already held before the page', async () => {
     const magic = await mountedMagicBrush();
 
     magic.ensureMagicSheet();
@@ -150,7 +125,7 @@ describe('magic sheet fill-load failure', () => {
 
     // The held rainbow is kept, but the sheet still carries the (never-drawn) fill
     // source, so recovery has to re-rasterize rather than assume a gradient handoff.
-    expect(magic.isMagicSheetUnready()).toBe(false);
+    expect(magic.captureMagicSheet()).not.toBeNull();
   });
 
   it('keeps a captured sheet immutable when the active source changes', async () => {
@@ -203,6 +178,40 @@ describe('magic sheet fill-load failure', () => {
     expect(lastRequest().src).toBe(PAGE_URL);
   });
 
+  it('defers an incoming fill without exposing the outgoing page to new strokes', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    lastRequest().naturalWidth = 200;
+    lastRequest().naturalHeight = 100;
+    lastRequest().onload!();
+    const outgoing = magic.captureMagicSheet();
+
+    magic.deferColorSheet(OTHER_PAGE_URL);
+    magic.ensureMagicSheet();
+
+    expect(outgoing).not.toBeNull();
+    expect(magic.captureMagicSheet()).toBeNull();
+    expect(requested).toHaveLength(1);
+
+    magic.setColorSheet(OTHER_PAGE_URL);
+    expect(requested).toHaveLength(2);
+    expect(lastRequest().src).toBe(OTHER_PAGE_URL);
+  });
+
+  it('starts a deferred fill when the overlay decode never settles', async () => {
+    vi.useFakeTimers();
+    const magic = await mountedMagicBrush();
+
+    magic.deferColorSheet(PAGE_URL);
+    expect(requested).toHaveLength(0);
+
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(requested).toHaveLength(1);
+    expect(lastRequest().src).toBe(PAGE_URL);
+  });
+
   it('ignores a superseded error so it cannot clobber a newer page', async () => {
     const magic = await mountedMagicBrush();
 
@@ -214,11 +223,11 @@ describe('magic sheet fill-load failure', () => {
     current.naturalWidth = 200;
     current.naturalHeight = 100;
     current.onload!();
-    expect(magic.isMagicSheetUnready()).toBe(false);
+    expect(magic.captureMagicSheet()).not.toBeNull();
 
     superseded.onerror!();
 
-    expect(magic.isMagicSheetUnready()).toBe(false);
+    expect(magic.captureMagicSheet()).not.toBeNull();
     // The newer page is still attached, so re-applying it stays a no-op.
     magic.setColorSheet(OTHER_PAGE_URL);
     expect(requested).toHaveLength(2);
@@ -241,11 +250,11 @@ describe('magic sheet fill-load failure', () => {
     current.naturalWidth = 200;
     current.naturalHeight = 100;
     current.onload!();
-    expect(magic.isMagicSheetUnready()).toBe(false);
+    expect(magic.captureMagicSheet()).not.toBeNull();
 
     // The page is still attached — had the stale error detached it, this would
-    // start a fourth load instead of no-oping (and the gate above would have been
-    // cleared by a fallback rainbow rather than by the page's own fill).
+    // start a fourth load instead of no-oping (and the captured sheet above would
+    // have come from a fallback rainbow rather than the page's own fill).
     magic.setColorSheet(PAGE_URL);
     expect(requested).toHaveLength(3);
   });
