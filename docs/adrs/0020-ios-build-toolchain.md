@@ -33,6 +33,14 @@ Apple's recommended default for a single-developer project.
   which `cap sync` regenerates — that file is generated, never hand-edited. The macOS prerequisite
   list is therefore just full Xcode (no Ruby, no `pod`); `cap sync ios` works even on a machine with
   only Command Line Tools, since the SPM update is plain file generation.
+* **Commit the generated SPM manifest and resolution.** `Package.swift` remains tracked so the
+  committed Xcode project can be opened and resolved directly after installing dependencies;
+  `App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` remains tracked so that
+  direct build resolves the same remote revisions. Ignoring either would make the checked-in Xcode
+  project incomplete or leave its remote dependency graph to float. `cap sync` refreshes the
+  manifest, while Xcode package resolution during an iOS build refreshes `Package.resolved`.
+  `tools/tests/ios-spm-lock.test.mjs` requires both files to stay tracked and requires their
+  Capacitor runtime version to match the exact `@capacitor/ios` version in `pnpm-lock.yaml`.
 * **`ios:*` npm scripts wrap `xcodebuild` directly** (per ADR-0019 naming): `ios:build` (simulator
   debug `.app`), `ios:archive` → `ios:ipa` (Release archive + App Store export per
   `ios/App/ExportOptions.plist`, both with `-allowProvisioningUpdates` so automatic signing works
@@ -57,7 +65,11 @@ Apple's recommended default for a single-developer project.
   `Podfile.lock`/Ruby-version drift class of failures.
 * **+** Headless `.ipa` production (`npm run ios:ipa`) with no Fastlane, and a self-contained smoke
   test (`npm run test:ios`) that needs no signing at all.
+* **+** A fresh checkout has a complete, deterministic Xcode package graph even before the first
+  Capacitor sync or Xcode resolution.
 * **+** No signing secrets to store or lose, unlike the Android keystore.
+* **-** Capacitor and Xcode generated files create review churn on dependency updates; the drift
+  guard makes that churn explicit instead of allowing a stale runtime pin to ship silently.
 * **-** SPM is the less-traveled Capacitor path; a future plugin without a `Package.swift` would
   force either a patch or a migration to CocoaPods.
 * **-** Automatic signing means releases can only be built by someone signed into Xcode with the
