@@ -36,7 +36,12 @@ const END_JITTER = 16;
 const QUADS_PER_PASS = 4;
 const QUAD_SAMPLES = 6;
 const SPIRAL_SAMPLES_PER_TURN = 16;
-const SPIRAL_INNER_RADIUS_FRACTION = 0.3;
+// The handoff's mock started spirals at 0.3·rMax and fattened them with a 2px
+// blur before compositing; the real magic brush has no blur, so a spiral that
+// starts that far out leaves a visible white hole at its center. Starting
+// closer in (with the extra turns in the placements) closes the coverage at
+// the app's size-5 brush width.
+const SPIRAL_INNER_RADIUS_FRACTION = 0.18;
 const SPIRAL_WOBBLE_FRACTION = 0.07;
 const SPIRAL_WOBBLE_CYCLES_PER_TURN = 2.7;
 const SPIRAL_Y_SQUASH = 0.8;
@@ -132,11 +137,11 @@ const PORTRAIT_SCRIBBLES = {
   strokes: (rng) => [
     rows(rng, 200, 640, 108.5, 4, 58), // sky, left of the butterfly
     rows(rng, 670, 945, 133.5, 4, 56), // sky, right of the head
-    loops(rng, 694, 248.5, 96, 3.2), // butterfly
-    loops(rng, 258, 228.5, 66, 2.6), // upper-left cloud
-    loops(rng, 893, 423.5, 56, 2.6), // right cloud
-    loops(rng, 455, 613.5, 180, 3.2), // cat head
-    loops(rng, 480, 983.5, 145, 2.6), // chest
+    loops(rng, 694, 248.5, 96, 3.6), // butterfly
+    loops(rng, 258, 228.5, 66, 3), // upper-left cloud
+    loops(rng, 893, 423.5, 56, 3), // right cloud
+    loops(rng, 455, 613.5, 180, 4), // cat head
+    loops(rng, 480, 983.5, 145, 3.2), // chest
     rows(rng, 310, 650, 1133.5, 3, 66), // lower body / front paws
     rows(rng, 770, 1050, 853.5, 5, 56, -0.35), // hay bale, tilted with its face
     rows(rng, 625, 835, 1301.5, 2, 54), // tail
@@ -152,12 +157,12 @@ const LANDSCAPE_SCRIBBLES = {
     rows(rng, 64, 620, 60, 3, 58), // sky over the hay bale
     rows(rng, 660, 1030, 70, 2, 56), // sky between the clouds
     rows(rng, 1060, 1500, 80, 3, 56), // sky right, clear of the trash button
-    loops(rng, 1283, 335, 96, 3.2), // butterfly
-    loops(rng, 255, 165, 80, 2.6), // left cloud
-    loops(rng, 703, 140, 52, 2.2), // middle cloud
-    loops(rng, 1405, 152, 62, 2.6), // right cloud
-    loops(rng, 910, 450, 170, 3.2), // cat head
-    loops(rng, 800, 750, 130, 2.6), // chest / body
+    loops(rng, 1283, 335, 96, 3.6), // butterfly
+    loops(rng, 255, 165, 80, 3), // left cloud
+    loops(rng, 703, 140, 52, 2.6), // middle cloud
+    loops(rng, 1405, 152, 62, 3), // right cloud
+    loops(rng, 910, 450, 170, 4), // cat head
+    loops(rng, 800, 750, 130, 3.2), // chest / body
     rows(rng, 560, 990, 830, 2, 62), // legs and belly
     rows(rng, 455, 600, 330, 3, 56, -1.2), // upright tail
     rows(rng, 60, 440, 530, 4, 60, -0.1), // hay bale

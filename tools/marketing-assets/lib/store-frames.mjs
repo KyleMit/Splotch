@@ -89,6 +89,7 @@ const CHIP_SPEC = {
 // Landscape spec (1920×1080 base): copy column x=96 w=470, frame x=600 y=57
 // 1360×966 bleeding off the right edge, app UI at ~1.5× native scale.
 const L_BASE_W = 1920;
+const L_BASE_H = 1080;
 const L_COPY_X = 96;
 const L_COPY_W = 470;
 const L_FRAME_X = 600;
@@ -218,7 +219,9 @@ const MARKS = {
       30,
       `<path stroke="${c}" stroke-width="6" d="M4 24 L14 7 L24 24 L34 7 L44 24 L54 7"/>`
     ),
-  rainbow: (c) =>
+  // The rainbow ignores the slot color: its three arcs are always red, yellow,
+  // and blue.
+  rainbow: (_c) =>
     stroked(
       96,
       58,
@@ -478,10 +481,10 @@ const SHOWCASE_SPEC = {
     wand: { x: 1210, y: 430, w: 115 },
     polaroid: { x: 1370, y: 235, w: 530 },
     stones: [
-      { x: 1090, y: 660, d: 24, color: 'Purple' },
-      { x: 1140, y: 622, d: 20, color: 'Blue' },
-      { x: 1186, y: 582, d: 26, color: 'Green' },
-      { x: 1224, y: 540, d: 20, color: 'Yellow' },
+      { x: 1085, y: 655, d: 24, color: 'Purple' },
+      { x: 1125, y: 600, d: 20, color: 'Blue' },
+      { x: 1160, y: 548, d: 26, color: 'Green' },
+      { x: 1192, y: 500, d: 20, color: 'Yellow' },
     ],
     sparkles: [
       { x: 1338, y: 400, w: 34, color: 'Orange' },
@@ -521,8 +524,13 @@ function showcaseHtml(geo, assets, target) {
   const spec = SHOWCASE_SPEC[geo.orientation];
   const v =
     geo.orientation === 'portrait' ? Math.min(1, target.height / k / P_SHOWCASE_DESIGN_H) : 1;
+  // Landscape is authored at 16:9; on the taller 4:3 iPad the width-scaled
+  // composition would sit top-heavy, so it re-centers in the extra height —
+  // the same reasoning as the landscape marks' height-scaled Y.
+  const yOffset =
+    geo.orientation === 'landscape' ? Math.round((target.height - L_BASE_H * k) / 2) : 0;
   const sx = (x) => Math.round(k * (x * v + (P_BASE_W / 2) * (1 - v)));
-  const sy = (y) => Math.round(y * v * k);
+  const sy = (y) => Math.round(y * v * k) + yOffset;
   const sw = (w) => Math.round(w * v * k);
   const stones = spec.stones
     .map(
@@ -600,11 +608,12 @@ export function storePageHtml(target, geo, page, assets, shotBuffer) {
     h1 {
       font-size: ${px(type.headline)}; font-weight: 700; line-height: ${type.headlineLineHeight};
       letter-spacing: ${(type.letterSpacing * k).toFixed(2)}px; color: ${dark ? INK_ON_DARK : INK};
-      ${isPortrait ? 'text-wrap: balance;' : ''}
+      text-wrap: balance;
     }
     .sub {
       margin-top: ${px(type.subMarginTop)}; font-size: ${px(type.sub)}; font-weight: 600;
       line-height: ${type.subLineHeight}; color: ${dark ? INK_MUTED_ON_DARK : INK_MUTED};
+      text-wrap: balance;
     }
     .chips { margin-top: ${px(30)}; display: flex; flex-wrap: wrap; justify-content: center; gap: ${px(CHIP_SPEC.gap)}; }
     .chip {

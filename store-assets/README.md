@@ -29,23 +29,24 @@ asset catalog.
 
 ## The screenshot design
 
-Each screenshot is a **captioned marketing frame** (2026-08 design refresh): a real app capture in a
-rounded card over a soft gradient, with a headline + subtext copy block, hand-drawn crayon doodle
-marks in the whitespace, and (page 1 only) the logo row and benefit chips. Landscape puts the copy
-in a left column with the app frame bleeding off the right edge; portrait stacks the copy block on
-top with the frame below, fully visible. Page 4 is a composed doodle→masterpiece showcase; page 5 is
-the one dark-mode frame. The design system — geometry, copy, marks, colors — lives in
-`tools/marketing-assets/lib/store-frames.mjs`.
+Each screenshot is a **captioned marketing frame** (2026-08 design refresh, portrait reflowed to the
+portrait v2 handoff): a real app capture in a rounded card over a soft gradient, with a headline +
+subtext copy block, hand-drawn crayon doodle marks in the whitespace, and (page 1 only) the logo row
+and benefit chips. Landscape puts the copy in a left column with the app frame bleeding off the
+right edge; portrait centers the copy in a zone above the frame, fully visible below. Page 4 is a
+composed doodle→masterpiece showcase joined by a stepping-stone connector (palette dots in, growing
+sparkles out); page 5 is the one dark-mode frame. The design system — geometry, copy, marks, colors
+— lives in `tools/marketing-assets/lib/store-frames.mjs`.
 
 ## What each screenshot shows
 
-| #  | File             | Story                                                                                                                                                       |
-| -- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01 | `01-draw.png`    | Hero: a child's drawing mid-session (island on phones, party-hat dinosaur on tablets), full UI, logo + chips (Ages 2+ · Works offline · Free & open source) |
-| 02 | `02-books.png`   | The Coloring Books picker showing all 8 real cover thumbs                                                                                                   |
-| 03 | `03-magic.png`   | A Farm cat page ~85% revealed by magic-brush swipes, magic brush active in the toolbar                                                                      |
-| 04 | `04-ai.png`      | Doodle → AI masterpiece showcase: a real drawing, the real generation it produced, the wand-stars icon                                                      |
-| 05 | `05-parents.png` | Dark mode: Settings open on Parent Center's grown-up-check policy matrix                                                                                    |
+| #  | File             | Story                                                                                                                                                                       |
+| -- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01 | `01-draw.png`    | Hero: a child's drawing mid-session (island on phones, party-hat dinosaur on tablets), full UI with enlarged action buttons, logo + chips (Ages 2+ · offline · open source) |
+| 02 | `02-books.png`   | The Coloring Books picker showing all 8 real cover thumbs (two tall columns on portrait, the app's own tall-portrait grid)                                                  |
+| 03 | `03-magic.png`   | A Farm cat page ~85% revealed by natural child scribbles in magic mode, magic brush active in the toolbar                                                                   |
+| 04 | `04-ai.png`      | Doodle → AI masterpiece showcase: a real drawing, the real generation it produced, the wand-stars icon                                                                      |
+| 05 | `05-parents.png` | Dark mode: Settings open on the Tool Drawer section — advanced controls on, one tool hidden, the button-size slider live                                                    |
 
 The AI showcase uses a real input/output pair from the model bake-off
 (`scrapbook/model-eval/prompt-adherence/assets/`), so the "AI-generated picture" shown is an actual
@@ -93,9 +94,9 @@ Iterate on a subset with `--target` / `--page` substring filters, e.g.
   by Play, which applies its own shape mask. iOS icons must not have alpha; `@capacitor/assets`
   flattens them when generating the asset catalog. If you prefer a colored backdrop behind the "S",
   regenerate the source and re-run.
-* **Screenshot claims must match the build.** Page 1's chips (Ages 2+, offline, open source) and
-  page 5's armed guardrail radios are marketing claims — page 5 seeds the policy states a store
-  build ships with, since the web build defaults every check to off.
+* **Screenshot claims must match the build.** Page 1's chips (Ages 2+, offline, open source) are
+  marketing claims, and page 5's Tool Drawer capture seeds a parent mid-curation (advanced controls
+  on, the Stroke width tool hidden, button size raised to match page 1's enlarged buttons).
 * **Description must match the privacy declarations.** The full description mentions the optional AI
   upload; make sure that lines up with the Play Data safety form and the App Store privacy nutrition
   label (see the `mobile` skill).

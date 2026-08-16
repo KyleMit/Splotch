@@ -26,12 +26,13 @@ command replaces the committed PNG only after the live-app replay succeeds.
 
 ## Store assets
 
-`gen-store-assets.mjs` drives the app scenes (hero drawing, book grid, magic reveal, Parent Center)
-per store target and composes each capture into its captioned marketing frame at the exact Google
-Play and App Store pixel sizes under `store-assets/`. The frame design system — per-target geometry,
-page copy, crayon-doodle marks, and the composed page-4 AI showcase — lives in
-`lib/store-frames.mjs`. `--target` / `--page` substring filters narrow a run for iteration. See
-`store-assets/README.md` for what each page shows and the publishing runbook.
+`gen-store-assets.mjs` drives the app scenes (hero drawing, book grid, magic scribble reveal, Tool
+Drawer) per store target and composes each capture into its captioned marketing frame at the exact
+Google Play and App Store pixel sizes under `store-assets/`. The frame design system — per-target
+geometry, per-orientation type scale, page copy, crayon-doodle marks, and the composed page-4 AI
+showcase — lives in `lib/store-frames.mjs`; the magic scene's seeded scribble paths live in
+`tools/store-drawings/lib/magic-scribbles.mjs`. `--target` / `--page` substring filters narrow a run
+for iteration. See `store-assets/README.md` for what each page shows and the publishing runbook.
 
 ## Prerequisites and failure behavior
 

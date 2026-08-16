@@ -29,7 +29,6 @@ import { magicScribbleScene } from '../store-drawings/lib/magic-scribbles.mjs';
 import {
   canvasBox,
   coloringOverlayArtRect,
-  dismissMenu,
   drawStroke,
   expandDrawer,
   openAppPage,
@@ -255,7 +254,8 @@ async function sceneMagic(browser, base, capture, orientation) {
   await pickBrush(page, 'magic');
   const box = await canvasBox(page);
   await magicScribbles(page, box, orientation);
-  await dismissMenu(page);
+  // No dismissMenu here: the brush and size menus close themselves on pick,
+  // and a canvas click with magic armed would reveal a dot in the paper corner.
   await sleep(SCREENSHOT_SETTLE_MS);
   const shot = await page.screenshot();
   await ctx.close();
