@@ -191,8 +191,9 @@ export const STORE_PAGES = [
   {
     id: '05-parents',
     // Explicit break; "Nothing to buy" was dropped because BYOK is technically
-    // a purchase.
-    title: 'No Accounts.<br>No Ads. No Tracking.',
+    // a purchase. Sentence case per the design voice, not the handoff's
+    // capitalized nouns.
+    title: 'No accounts.<br>No ads. No tracking.',
     sub: 'Parents set the guardrails. Kids just draw.',
     dark: true,
   },
