@@ -1,0 +1,25 @@
+name: Set up pnpm and Node
+description: Set up the repository's pnpm and Node versions and optional dependencies
+
+inputs:
+  cache:
+    description: Enable the pnpm store cache
+    required: false
+    default: 'true'
+  install:
+    description: Install dependencies
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+      with:
+        # The engines floor major from package.json engines.node — CI must exercise
+        # the oldest supported line, the one the Netlify deploy and floor-version dev
+        # machines run, not a newer major that would hide floor-only breakage.
+        # tools/tests/workflow-hygiene.test.mjs guards this agreement.
+        runtime: node@22
+        cache: ${{ inputs.cache }}
+        install: ${{ inputs.install }}

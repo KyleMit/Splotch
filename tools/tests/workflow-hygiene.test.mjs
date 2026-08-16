@@ -27,6 +27,7 @@ const actions = readdirSync(actionsDir).map((name) => ({
   name: `actions/${name}`,
   lines: readFileSync(join(actionsDir, name, 'action.yml'), 'utf8').split('\n'),
 }));
+const setupPnpmAction = actions.find(({ name }) => name === 'actions/setup-pnpm');
 const installMaestroAction = actions.find(({ name }) => name === 'actions/install-maestro');
 const installMaestroRunIndex = installMaestroAction.lines.findIndex(
   (line) => line === '      run: |'
@@ -206,12 +207,18 @@ describe('workflow hygiene', () => {
     });
 
     it('CI installs the engines floor major', () => {
-      const setupNode = actions.find(({ name }) => name === 'actions/setup-node');
-      const nodeVersion = setupNode.lines
-        .find((line) => /^\s+node-version:/.test(line))
-        .split(':', 2)[1]
-        .trim();
-      expect(nodeVersion).toBe(floorMajor);
+      const runtimeMajor = setupPnpmAction.lines
+        .find((line) => /^\s+runtime:\s*node@/.test(line))
+        ?.match(/node@(\d+)$/)?.[1];
+      expect(runtimeMajor).toBe(floorMajor);
+    });
+
+    it('keeps Node setup active when blobs-smoke skips dependencies', () => {
+      const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
+
+      expect(setupPnpmAction.lines.some((line) => /^\s+if:/.test(line))).toBe(false);
+      expect(blobsSmoke.lines).toContain('      - uses: ./.github/actions/setup-pnpm');
+      expect(blobsSmoke.lines).toContain("          install: 'false'");
     });
 
     it('the Netlify build pins the engines floor major', () => {

@@ -19,7 +19,7 @@ contracts during capability moves; `npm run lint:dead` distinguishes live shared
 exports through its importers.
 
 `proc.mjs` is also imported by `tools/adrs/check-adr-integrity.mjs`, whose standalone GitHub
-workflow deliberately uses the runner image's default Node without `setup-node`. Keep that shared
+workflow deliberately uses the runner image's default Node without `setup-pnpm`. Keep that shared
 module compatible with the runner's Node floor rather than assuming the contributor `engines` floor.
 
 Failures are surfaced to callers rather than converted into process exits unless process ownership

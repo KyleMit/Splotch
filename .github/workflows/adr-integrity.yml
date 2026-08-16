@@ -11,14 +11,14 @@
 # advises against path filtering a required workflow. The check itself is
 # unconditional, so the job always runs and always reports.
 #
-# No setup-node step: tools/adrs/check-adr-integrity.mjs imports only node: builtins,
+# No setup-pnpm step: tools/adrs/check-adr-integrity.mjs imports only node: builtins,
 # its own siblings, and tools/lib/proc.mjs; the runner ships Node, so installing dependencies
-# would cost ~15s to change nothing (setup-node measured at 14-20s in the Quality
+# would cost ~15s to change nothing (setup-pnpm measured at 14-20s in the Quality
 # job, against well under a second for the check itself). node is invoked directly
 # rather than through npm run for the same reason. The constraint that buys: this
 # script and its lib may use only APIs present in the runner image's default Node,
 # which is not the >=22.13 that package.json asks of contributors — anything
-# newer means adding setup-node back and paying for it.
+# newer means adding setup-pnpm back and paying for it.
 name: ADR Integrity
 
 on:
