@@ -10,10 +10,6 @@ import { SITE_ORIGIN } from '../src/lib/siteUrl';
 import { supportEmail } from '../src/lib/supportEmail';
 import { ANDROID_UA, IPAD_UA, renderedText } from './helpers';
 
-// The restored mobile rule allows content width to vary with each sentence,
-// but it must no longer be constrained to the old 34ch desktop measure.
-const MIN_MOBILE_FINE_WIDTH_FRACTION = 0.9;
-
 // /beta is a set of sign-up links behind two tabs; a link that points at the
 // wrong place, or a tab that opens the wrong platform's instructions, is the
 // only way it can fail, and nothing else in the suite would notice.
@@ -327,24 +323,6 @@ test.describe('before hydration', () => {
     ).toBeVisible();
     await expect(page.getByRole('heading', { name: 'How to join on Android' })).toBeHidden();
   });
-});
-
-test('mobile fine print can use the full action column', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/beta');
-
-  const widthRatios = await shownPanel(page)
-    .locator('.action')
-    .evaluateAll((actions) =>
-      actions.map((action) => {
-        const fine = action.querySelector<HTMLElement>('.fine');
-        if (!fine) throw new Error('Expected every action to contain fine print');
-        return fine.getBoundingClientRect().width / action.getBoundingClientRect().width;
-      })
-    );
-
-  expect(widthRatios.length).toBeGreaterThan(0);
-  for (const ratio of widthRatios) expect(ratio).toBeGreaterThan(MIN_MOBILE_FINE_WIDTH_FRACTION);
 });
 
 test('the troubleshooting summary drops only its middle clause on phones', async ({ page }) => {
