@@ -1,6 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { gotoApp, openHubSection, openSettingsModal } from './helpers';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import {
+  gotoApp,
+  openHubSection,
+  openSettingsModal,
+  seedCompletedSettingsActivitySessions,
+} from './helpers';
 
 // The phone Settings shell: a hub of section rows that drills into one section
 // at a time, with an inline switch on the two rows worth flipping without
@@ -27,6 +33,54 @@ test('Settings hub drills into a section and back (phone layout)', async ({ page
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.hub-list')).toBeVisible();
   await expect(page.locator('#advancedControlsToggle')).toHaveCount(0);
+});
+
+test('the sixth session reveals dots only for sections not read during the quiet period', async ({
+  page,
+}) => {
+  await seedCompletedSettingsActivitySessions(page, 4);
+  await openPhoneHub(page);
+
+  const aiRow = page.locator('.hub-row[data-section="ai"]');
+  const activityDot = aiRow.locator('.section-activity-dot');
+  await expect(activityDot).not.toHaveClass(/unseen/);
+  await expect(activityDot).toHaveCSS('opacity', '0');
+  await expect(aiRow).not.toHaveAccessibleName(/new/);
+  await expect
+    .poll(() =>
+      page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.settingsActivitySessionCount)
+    )
+    .toBe('5');
+
+  await aiRow.click();
+  await expect(page.getByRole('heading', { name: 'AI Art' })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate((key) => {
+        const stored: unknown = JSON.parse(localStorage.getItem(key) ?? '{}');
+        return (
+          typeof stored === 'object' &&
+          stored !== null &&
+          'ai' in stored &&
+          typeof stored.ai === 'string'
+        );
+      }, STORAGE_KEYS.parentSectionsSeen)
+    )
+    .toBe(true);
+
+  await page.reload();
+  await openSettingsModal(page);
+  await expect(page.locator('.hub-list')).toBeVisible();
+  const seenAiDot = page.locator('.hub-row[data-section="ai"] .section-activity-dot');
+  const unreadControlsRow = page.locator('.hub-row[data-section="controls"]');
+  await expect(seenAiDot).not.toHaveClass(/unseen/);
+  await expect(unreadControlsRow.locator('.section-activity-dot')).toHaveClass(/unseen/);
+  await expect(unreadControlsRow).toHaveAccessibleName(/Tool Drawer.*new/);
+  await expect
+    .poll(() =>
+      page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.settingsActivitySessionCount)
+    )
+    .toBe('6');
 });
 
 async function openPhoneHub(page: Page) {

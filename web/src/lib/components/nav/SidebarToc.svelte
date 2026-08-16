@@ -8,6 +8,8 @@
     meta?: string;
     /** Leading spot icon — the Settings section rows. */
     icon?: IconName;
+    /** Whether this item's content is new to the parent. Defined only by Settings rows. */
+    unseen?: boolean;
     /** Uppercase heading the run of items sharing it opens with — /design's parts. */
     group?: string;
     /** Renders the row as an anchor; a row without one is a button that calls `onSelect`. */
@@ -71,6 +73,7 @@
             <a
               class="toc-row"
               class:active={current}
+              class:tracks-activity={item.unseen !== undefined}
               href={item.href}
               data-section={item.id}
               aria-current={current ? 'location' : undefined}
@@ -82,6 +85,7 @@
               type="button"
               class="toc-row"
               class:active={current}
+              class:tracks-activity={item.unseen !== undefined}
               data-section={item.id}
               aria-current={current ? 'location' : undefined}
               onclick={(event) => onSelect?.(item.id, event.currentTarget)}
@@ -97,7 +101,12 @@
 
 {#snippet rowBody(item: SidebarTocItem)}
   {#if item.icon}
-    <SectionIcon icon={item.icon} class="toc-icon" />
+    <span class="toc-icon-wrap">
+      <SectionIcon icon={item.icon} class="toc-icon" />
+      {#if item.unseen !== undefined}
+        <span class="section-activity-dot" class:unseen={item.unseen}></span>
+      {/if}
+    </span>
   {/if}
   <span class="toc-text">
     <span>{item.label}</span>
@@ -105,6 +114,7 @@
       <span class="toc-meta">{item.meta}</span>
     {/if}
   </span>
+  {#if item.unseen}<span class="visually-hidden">new</span>{/if}
 {/snippet}
 
 <style>
@@ -189,6 +199,38 @@
     color: var(--brand-text);
   }
 
+  .toc-row.tracks-activity.active {
+    transition:
+      background var(--duration-fast) ease var(--duration-base),
+      color var(--duration-fast) ease var(--duration-base);
+  }
+
+  .toc-icon-wrap {
+    position: relative;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .section-activity-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--brand);
+    box-shadow: 0 0 0 2px var(--surface);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-base) var(--ease-glide);
+  }
+
+  .section-activity-dot.unseen {
+    opacity: 1;
+    transition-duration: 0s;
+  }
+
   .toc-text {
     display: flex;
     flex-direction: column;
@@ -205,5 +247,17 @@
     width: 34px;
     height: 34px;
     flex-shrink: 0;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>

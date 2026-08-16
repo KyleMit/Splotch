@@ -47,6 +47,7 @@ import { STORAGE_KEYS, hydrateDurableStorage } from './storage';
 import { strokeState } from './state/strokeWidth.svelte';
 import { toolState } from './state/tool.svelte';
 import { settings } from './state/settings.svelte';
+import { settingsActivityDotsEnabled } from './state/settingsSessions.svelte';
 
 beforeEach(() => {
   localStorage.clear();
@@ -61,6 +62,7 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
     expect(strokeState.penSize).toBe(3);
     expect(toolState.brush).toBe('pen');
     expect(settings.soundVolume).toBe(50);
+    expect(settingsActivityDotsEnabled()).toBe(false);
 
     ctrl.native = true;
 
@@ -69,6 +71,7 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
     prefsStore.set(STORAGE_KEYS.strokeWidthSize, '5');
     prefsStore.set(STORAGE_KEYS.brushType, 'crayon');
     prefsStore.set(STORAGE_KEYS.soundVolume, '80');
+    prefsStore.set(STORAGE_KEYS.settingsActivitySessionCount, '6');
 
     const restored = await hydrateDurableStorage();
     expect(restored).toBe(true);
@@ -83,5 +86,6 @@ describe('hydrateDurableStorage restores real persisted stores (issue #521)', ()
     expect(strokeState.penSize).toBe(5);
     expect(toolState.brush).toBe('crayon');
     expect(settings.soundVolume).toBe(80);
+    expect(settingsActivityDotsEnabled()).toBe(true);
   });
 });

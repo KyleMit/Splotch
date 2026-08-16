@@ -15,17 +15,28 @@ import { hiddenDrawingToolCount } from './drawingTools';
 // how often a parent goes configuring, then the reference sections. Saving sits
 // below the feature sections because it is set once and left alone.
 export const SECTIONS = [
-  { id: 'appearance', label: 'Appearance', icon: 'appearance' },
-  { id: 'sound', label: 'Sound', icon: 'sound' },
-  { id: 'controls', label: 'Tool Drawer', icon: 'controls' },
-  { id: 'coloring', label: 'Coloring', icon: 'shapes' },
-  { id: 'ai', label: 'AI Art', icon: 'wand-stars' },
-  { id: 'saving', label: 'Saving', icon: 'save-picture' },
-  { id: 'parentCenter', label: 'Parent Center', icon: 'parent-center' },
-  { id: 'setup', label: 'Install', icon: 'setup' },
-  { id: 'feedback', label: 'Feedback', icon: 'feedback' },
-  { id: 'whatsnew', label: "What's New", title: 'Updates', icon: 'whats-new' },
-  { id: 'about', label: 'About', icon: 'splotchy' },
+  { id: 'appearance', label: 'Appearance', icon: 'appearance', contentStamp: '1' },
+  { id: 'sound', label: 'Sound', icon: 'sound', contentStamp: '1' },
+  { id: 'controls', label: 'Tool Drawer', icon: 'controls', contentStamp: '1' },
+  { id: 'coloring', label: 'Coloring', icon: 'shapes', contentStamp: '1' },
+  { id: 'ai', label: 'AI Art', icon: 'wand-stars', contentStamp: '1' },
+  { id: 'saving', label: 'Saving', icon: 'save-picture', contentStamp: '1' },
+  {
+    id: 'parentCenter',
+    label: 'Parent Center',
+    icon: 'parent-center',
+    contentStamp: '1',
+  },
+  { id: 'setup', label: 'Install', icon: 'setup', contentStamp: '1' },
+  { id: 'feedback', label: 'Feedback', icon: 'feedback', contentStamp: '1' },
+  {
+    id: 'whatsnew',
+    label: "What's New",
+    title: 'Updates',
+    icon: 'whats-new',
+    contentStamp: APP_VERSION,
+  },
+  { id: 'about', label: 'About', icon: 'splotchy', contentStamp: '1' },
 ] as const satisfies readonly {
   id: string;
   label: string;
@@ -34,6 +45,7 @@ export const SECTIONS = [
   // menu, but "Updates" avoids stacking on the "✨ New" headings inside.
   title?: string;
   icon: IconName;
+  contentStamp: string;
 }[];
 
 export type SectionId = (typeof SECTIONS)[number]['id'];
@@ -45,6 +57,14 @@ const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s] as const)
   SectionId,
   SectionMeta
 >;
+
+export function isSectionId(id: string): id is SectionId {
+  return Object.hasOwn(SECTION_BY_ID, id);
+}
+
+export function sectionContentStamp(id: SectionId): string {
+  return SECTION_BY_ID[id].contentStamp;
+}
 
 /** The heading a section carries once it is on screen, in either shell. */
 export function sectionHeading(id: SectionId): string {

@@ -10,6 +10,7 @@
   import { registerElement } from '$lib/actions/elementRegistry';
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
   import { buttonCenter } from '$lib/state/modal.svelte';
+  import { hasSectionActivity, markSectionSeen } from '$lib/state/sectionsSeen.svelte';
 
   interface Props {
     /** Where the pane parks on each open — the deep-linked section, else the first. */
@@ -79,11 +80,14 @@
 
   // The table of contents is the shared guide-rail sidebar; only the icon and
   // the label differ per section, so the list is the whole configuration.
-  const navItems: SidebarTocItem<SectionId>[] = SECTIONS.map((section) => ({
-    id: section.id,
-    label: section.label,
-    icon: section.icon,
-  }));
+  const navItems = $derived<SidebarTocItem<SectionId>[]>(
+    SECTIONS.map((section) => ({
+      id: section.id,
+      label: section.label,
+      icon: section.icon,
+      unseen: hasSectionActivity(section.id),
+    }))
+  );
 
   // Plain refs, deliberately untracked: the reopen reset reads the nav inside a
   // frame callback and the scrollspy reads the sections off events, so nothing
@@ -97,6 +101,11 @@
   const sectionHeadingId = (id: SectionId) => `settingsSection-${id}`;
 
   const sectionIndex = (id: SectionId) => SECTIONS.findIndex((section) => section.id === id);
+
+  function markDisplayedSectionSeen(id: SectionId) {
+    if (id === 'parentCenter' && !parentCenterRevealed) return;
+    markSectionSeen(id);
+  }
 
   // Paired with `use:registerElement` in place of `bind:this={table[id]}`, which
   // warns once per list item because these tables are deliberately not `$state`
@@ -254,6 +263,7 @@
     // unlocked — asking again for the section the solve was spent on would make
     // the solve worthless. Every other landing re-locks.
     parentCenterUnlocked = landing === 'parentCenter';
+    markDisplayedSectionSeen(landing);
     spiedSection = landing;
     // A section's offset depends only on what stacks above it, so mounting the
     // run up to the landing section is what makes the landing scroll below land
@@ -304,6 +314,7 @@
       // until the reading position moves to another section. Revealing on every
       // tick would yank the column back out from under them mid-gesture.
       if (next === spiedSection) return;
+      markDisplayedSectionSeen(next);
       spiedSection = next;
       revealNavRow(next, jumpBehavior());
     };
@@ -342,6 +353,7 @@
       'parentCenter',
       () => {
         parentCenterUnlocked = true;
+        markSectionSeen('parentCenter');
         then?.();
       },
       buttonCenter(trigger)
@@ -359,6 +371,7 @@
     // scrolling instead of the fill.
     const hold = !fullyMounted;
     if (id !== 'parentCenter' || parentCenterRevealed) {
+      markSectionSeen(id);
       if (hold) pendingJump = id;
       scrollToSection(id, behavior);
       return;

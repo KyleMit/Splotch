@@ -5,6 +5,7 @@ import {
   gotoApp,
   headingOffsetFromPaneTop,
   openSettingsModal,
+  seedCompletedSettingsActivitySessions,
   SECTION_LANDED_MAX_PX,
 } from './helpers';
 
@@ -26,6 +27,29 @@ async function parkHeadingBelowPaneTop(page: Page, section: string, offsetPx: nu
     { section, offsetPx }
   );
 }
+
+test('the default section is seen on open and a selected section clears before highlighting', async ({
+  page,
+}) => {
+  await seedCompletedSettingsActivitySessions(page, 5);
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  const nav = page.locator('.settings-nav');
+  const appearance = nav.locator('.toc-row[data-section="appearance"]');
+  const ai = nav.locator('.toc-row[data-section="ai"]');
+  await expect(appearance.locator('.section-activity-dot')).not.toHaveClass(/unseen/);
+  await expect(appearance).not.toHaveAccessibleName(/new/);
+  await expect(ai.locator('.section-activity-dot')).toHaveClass(/unseen/);
+  await expect(ai).toHaveAccessibleName(/AI Art.*new/);
+
+  await ai.click();
+
+  await expect(ai.locator('.section-activity-dot')).not.toHaveClass(/unseen/);
+  await expect(ai.locator('.section-activity-dot')).toHaveCSS('opacity', '0');
+  await expect(ai).toHaveClass(/active/);
+  expect(await ai.evaluate((row) => getComputedStyle(row).transitionDelay)).toContain('0.2s');
+});
 
 test('a jump scrolls the pane and never the card itself', async ({ page }) => {
   // `scrollIntoView` moves every scrollable ancestor, and both the card and the
