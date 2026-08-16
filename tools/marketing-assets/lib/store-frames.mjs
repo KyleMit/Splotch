@@ -1,12 +1,16 @@
-// The store-screenshot frame design system (2026-08 refresh): page copy, the
-// shared layout geometry, the crayon-doodle corner marks, and the HTML each
-// final store image is rendered from. Captured app screenshots are placed
-// pixel-for-pixel inside the frame; page 04 is a composed doodle→masterpiece
-// showcase with no app capture.
+// The store-screenshot frame design system: page copy, the shared layout
+// geometry, the crayon-doodle marks, and the HTML each final store image is
+// rendered from. Captured app screenshots are placed pixel-for-pixel inside
+// the frame; page 04 is a composed doodle→masterpiece showcase with no app
+// capture.
 //
 // The geometry is authored at the Google Play sizes (landscape 1920×1080,
 // portrait 1080×1920) and scaled linearly by width for the App Store sizes, so
-// one spec produces every store slot.
+// one spec produces every store slot. Landscape (the 2026-08 refresh) puts the
+// copy in a left column with the frame bleeding off the right edge. Portrait
+// (the 2026-08 portrait v2 handoff) centers the copy in a zone above a fully
+// visible frame; the handoff specified output pixels at the App Store 6.9"
+// slot (1290×2796), stored here divided by that slot's k = 1290/1080.
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -19,16 +23,68 @@ const INK = '#453d63';
 const INK_MUTED = '#6b6284';
 const INK_ON_DARK = '#eceaf2';
 const INK_MUTED_ON_DARK = '#cfccdb';
-const LIGHT_BG = 'linear-gradient(120deg, #fbfaff 0%, #f3edfc 55%, #ece3f9 100%)';
-const DARK_BG = 'linear-gradient(120deg, #201d2e 0%, #191624 55%, #151221 100%)';
-const FRAME_SHADOW = '0 30px 80px rgba(60,40,110,.28)';
-const FRAME_RADIUS_PX = 24;
+const LIGHT_BG = 'linear-gradient(165deg, #fbfaff 0%, #f4eefc 48%, #ebe1f8 100%)';
+const DARK_BG = 'linear-gradient(165deg, #221e31 0%, #191624 55%, #141120 100%)';
 const POLAROID_PAPER = '#fdfcf7';
 const POLAROID_CAPTION_COLOR = '#7c50bb';
 const CRESCENT_LAVENDER = '#b9a8e8';
 
-const HEADLINE_PX = 78;
-const SUB_PX = 33;
+// The dark parent-trust page swaps the purple-tinted frame shadow for a plain
+// black one — a purple glow reads as a smudge on the dark gradient.
+const FRAME_SHADOW_SPEC = {
+  landscape: {
+    light: { y: 30, blur: 80, color: 'rgba(60,40,110,.28)' },
+    dark: { y: 33, blur: 88, color: 'rgba(0,0,0,.55)' },
+  },
+  portrait: {
+    light: { y: 33.5, blur: 75.4, color: 'rgba(60,40,110,.30)' },
+    dark: { y: 36.8, blur: 80.4, color: 'rgba(0,0,0,.55)' },
+  },
+};
+const FRAME_RADIUS = { landscape: 24, portrait: 28.5 };
+
+// Typography differs by orientation: the centered portrait copy zone carries
+// larger type than the landscape column. Base-space px, multiplied by each
+// orientation's k.
+const TYPE_SPEC = {
+  landscape: {
+    headline: 78,
+    headlineLineHeight: 1.06,
+    letterSpacing: -1,
+    sub: 33,
+    subLineHeight: 1.38,
+    subMarginTop: 22,
+    logoIcon: 64,
+    logoRadius: 15,
+    logoText: 44,
+    logoGap: 16,
+    logoMarginBottom: 26,
+  },
+  portrait: {
+    headline: 80.4,
+    headlineLineHeight: 1.08,
+    letterSpacing: -1.26,
+    sub: 38.5,
+    subLineHeight: 1.35,
+    subMarginTop: 21.8,
+    logoIcon: 77,
+    logoRadius: 18.4,
+    logoText: 48.6,
+    logoGap: 18,
+    logoMarginBottom: 26,
+  },
+};
+
+const CHIP_SPEC = {
+  font: 27.6,
+  padY: 13.4,
+  padX: 25.1,
+  dot: 13.4,
+  gap: 13.4,
+  labelGap: 10,
+  shadowY: 6.7,
+  shadowBlur: 20.1,
+};
 
 // Landscape spec (1920×1080 base): copy column x=96 w=470, frame x=600 y=57
 // 1360×966 bleeding off the right edge, app UI at ~1.5× native scale.
@@ -40,14 +96,16 @@ const L_FRAME_W = 1360;
 const L_FRAME_Y = 57;
 const L_APP_SCALE = 1.5;
 
-// Portrait reflow (1080×1920 base, per the handoff's capture notes): copy block
-// top-left, frame below with side margins, fully visible (the portrait app
-// keeps its toolbar at the bottom edge, so the frame must not bleed).
+// Portrait reflow (1080×1920 base, per the portrait v2 handoff): copy centered
+// both axes in a zone spanning the full width above the frame, frame fully
+// visible below (the portrait app keeps its toolbar at the bottom edge, so
+// the frame must not bleed).
 const P_BASE_W = 1080;
-const P_MARGIN = 84;
-const P_COPY_TOP = 96;
-const P_FRAME_Y = 560;
-const P_BOTTOM_MARGIN = 85;
+const P_COPY_SIDE = 75;
+const P_COPY_H = 536;
+const P_FRAME_MARGIN = 71;
+const P_FRAME_Y = 536;
+const P_BOTTOM_MARGIN = 63;
 // Fixed capture width, NOT a fixed app scale: it must stay under the app's
 // 600px tablet-class floor (TABLET_MIN_SIDE_PX) or the portrait app defaults
 // to forced-landscape paper. 576 keeps every portrait target phone-class at
@@ -77,7 +135,7 @@ export function frameGeometry(target) {
     };
   }
   const k = W / P_BASE_W;
-  const margin = Math.round(P_MARGIN * k);
+  const margin = Math.round(P_FRAME_MARGIN * k);
   const frame = {
     x: margin,
     y: Math.round(P_FRAME_Y * k),
@@ -87,11 +145,12 @@ export function frameGeometry(target) {
   const deviceScaleFactor = frame.width / P_CAPTURE_CSS_W;
   const cssH = Math.round(frame.height / deviceScaleFactor);
   frame.height = Math.round(cssH * deviceScaleFactor);
+  const copySide = Math.round(P_COPY_SIDE * k);
   return {
     k,
     orientation,
     frame,
-    copy: { x: margin, top: Math.round(P_COPY_TOP * k), width: W - 2 * margin },
+    copy: { x: copySide, top: 0, width: W - 2 * copySide, height: Math.round(P_COPY_H * k) },
     capture: { width: P_CAPTURE_CSS_W, height: cssH, deviceScaleFactor },
   };
 }
@@ -123,12 +182,16 @@ export const STORE_PAGES = [
   {
     id: '04-ai',
     title: 'Turn a doodle into a masterpiece',
-    sub: 'Optional AI art — a grown-up always holds the key',
+    // The old "a grown-up always holds the key" only made sense if you already
+    // knew the AI flow is BYOK; this reads without that context.
+    sub: 'Optional AI art — it stays off until a parent unlocks it',
     showcase: true,
   },
   {
     id: '05-parents',
-    title: 'No ads. No tracking. Nothing to buy.',
+    // Explicit break; "Nothing to buy" was dropped because BYOK is technically
+    // a purchase.
+    title: 'No Accounts.<br>No Ads. No Tracking.',
     sub: 'Parents set the guardrails. Kids just draw.',
     dark: true,
   },
@@ -217,15 +280,26 @@ const MARKS = {
     ),
 };
 
-const mark = (kind, color, x, y, { scale = 1, rot = 0 } = {}) => ({
+// `fromBottom` anchors a mark to the page's bottom edge (y is the offset up
+// from it) — used by the portrait AI page, whose lower marks sit beside the
+// polaroid regardless of how tall the slot is.
+const mark = (kind, color, x, y, { scale = 1, rot = 0, fromBottom = false } = {}) => ({
   kind,
   color,
   x,
   y,
   scale,
   rot,
+  fromBottom,
 });
-const dotMark = (color, x, y, d) => ({ kind: 'dot', color, x, y, d });
+const dotMark = (color, x, y, d, { fromBottom = false } = {}) => ({
+  kind: 'dot',
+  color,
+  x,
+  y,
+  d,
+  fromBottom,
+});
 
 // Base widths each mark kind renders at (before per-mark scale), so positions
 // stay stable while a doodle is retuned.
@@ -244,10 +318,9 @@ const MARK_BASE_W = {
   swirl: 44,
 };
 
-// Per-page mark sets in base coordinates. Landscape slots live in the left
-// whitespace and the strip left of the frame; portrait re-slots the same set
-// around the copy block (top corners, right edge, the gap above the frame).
-const PAGE_MARKS = {
+// Landscape mark sets in base coordinates: the left whitespace and the strip
+// left of the frame.
+const LANDSCAPE_PAGE_MARKS = {
   '01-draw': [
     mark('loop', paletteHex('Orange'), 52, 58, { rot: -6 }),
     mark('zigzag', paletteHex('Purple'), 476, 52, { scale: 0.9 }),
@@ -285,27 +358,50 @@ const PAGE_MARKS = {
   ],
 };
 
-// Portrait re-slots, in the same order as each landscape set: the strip above
-// the copy block (left), top-right, the right edge beside the headline's short
-// second line, the gap above the frame (left), and a small counterweight dot
-// on the right of that gap. Slot A stays small and above y≈60 so it clears the
-// logo row / headline that start at y=96.
-const PORTRAIT_MARK_SLOTS = [
-  { x: 78, y: 18, scale: 0.72 },
-  { x: 886, y: 48 },
-  { x: 1008, y: 212 },
-  { x: 70, y: 498, scale: 0.85 },
-  { x: 1004, y: 500 },
-];
+// Portrait mark sets in base coordinates, re-slotted around the centered copy:
+// top corners, the right edge beside the headline, and the gap above the
+// frame. Page 01's positions come from the portrait v2 handoff; the other
+// pages were measured from its reference renders.
+const PORTRAIT_PAGE_MARKS = {
+  '01-draw': [
+    mark('loop', paletteHex('Orange'), 74, 62, { scale: 1.26, rot: -6 }),
+    mark('zigzag', paletteHex('Purple'), 898, 74, { scale: 1.36 }),
+    dotMark(paletteHex('Yellow'), 124, 211, 18),
+    mark('rainbow', paletteHex('Red'), 908, 224, { scale: 1.13 }),
+    dotMark(paletteHex('Green'), 923, 402, 20),
+  ],
+  '02-books': [
+    mark('daisy', paletteHex('Pink'), 47, 67, { scale: 1.23 }),
+    mark('starOutline', paletteHex('Yellow'), 918, 64, { scale: 1.42, rot: 8 }),
+    dotMark(paletteHex('Green'), 951, 184, 18),
+    mark('heartOutline', paletteHex('Pink'), 104, 442, { scale: 1.22, rot: -8 }),
+    dotMark(paletteHex('Blue'), 931, 439, 15),
+  ],
+  '03-magic': [
+    mark('dashedSwoosh', paletteHex('Purple'), 70, 50, { rot: -4 }),
+    mark('sparkle', paletteHex('Yellow'), 941, 54, { scale: 1.2 }),
+    mark('sparkle', paletteHex('Pink'), 991, 147, { scale: 0.7 }),
+    mark('sparkle', paletteHex('Blue'), 64, 449, { scale: 0.85 }),
+    dotMark(paletteHex('Orange'), 931, 439, 15),
+  ],
+  '04-ai': [
+    mark('shootingStar', paletteHex('Yellow'), 64, 67, { scale: 1.22, rot: -8 }),
+    mark('swirl', paletteHex('Pink'), 954, 70, { scale: 1.14 }),
+    dotMark(paletteHex('Blue'), 968, 188, 15),
+    mark('wave', paletteHex('Purple'), 159, 189, { fromBottom: true }),
+    dotMark(paletteHex('Green'), 918, 228, 13, { fromBottom: true }),
+  ],
+  '05-parents': [
+    mark('crescent', CRESCENT_LAVENDER, 84, 50, { scale: 1.22, rot: -14 }),
+    mark('starOutline', paletteHex('Yellow'), 934, 64, { scale: 0.97, rot: 8 }),
+    mark('sparkle', paletteHex('Blue'), 976, 181, { scale: 0.75 }),
+    mark('wave', paletteHex('Blue'), 131, 466, { scale: 0.92 }),
+    dotMark(paletteHex('Red'), 921, 466, 13),
+  ],
+};
 
-function marksFor(page, orientation) {
-  const set = PAGE_MARKS[page.id];
-  if (orientation === 'landscape') return set;
-  return set.map((m, i) => {
-    const slot = PORTRAIT_MARK_SLOTS[i];
-    return { ...m, x: slot.x, y: slot.y, scale: (m.scale ?? 1) * (slot.scale ?? 1) };
-  });
-}
+const marksFor = (page, orientation) =>
+  (orientation === 'landscape' ? LANDSCAPE_PAGE_MARKS : PORTRAIT_PAGE_MARKS)[page.id];
 
 // Landscape mark Y scales with frame HEIGHT, not width: the copy column is
 // vertically centered, so on the taller 4:3 iPad a width-scaled bottom mark
@@ -316,7 +412,8 @@ function marksHtml(page, orientation, k, target) {
   return marksFor(page, orientation)
     .map((m) => {
       const x = Math.round(m.x * k);
-      const y = Math.round(m.y * yScale);
+      const yFromTop = Math.round(m.y * yScale);
+      const y = m.fromBottom ? target.height - yFromTop : yFromTop;
       if (m.kind === 'dot') {
         const d = Math.round(m.d * k);
         return `<span class="mark" style="left:${x}px;top:${y}px;width:${d}px;height:${d}px;border-radius:50%;background:${m.color}"></span>`;
@@ -372,51 +469,114 @@ function copyBlockHtml(page, assets) {
 
 // Page 04's doodle→masterpiece showcase: a real child-style drawing and the
 // real generation it produced (scrapbook/model-eval), joined by the app's own
-// wand-stars icon.
-function showcaseHtml(geo, assets) {
+// wand-stars icon with a stepping-stone connector — palette-color stones trail
+// from the doodle into the wand, growing sparkles burst out toward the
+// polaroid. The wand is never rotated: its AI badge must read flat.
+const SHOWCASE_SPEC = {
+  landscape: {
+    doodle: { x: 620, y: 290, w: 530 },
+    wand: { x: 1210, y: 430, w: 115 },
+    polaroid: { x: 1370, y: 235, w: 530 },
+    stones: [
+      { x: 1090, y: 660, d: 24, color: 'Purple' },
+      { x: 1140, y: 622, d: 20, color: 'Blue' },
+      { x: 1186, y: 582, d: 26, color: 'Green' },
+      { x: 1224, y: 540, d: 20, color: 'Yellow' },
+    ],
+    sparkles: [
+      { x: 1338, y: 400, w: 34, color: 'Orange' },
+      { x: 1356, y: 352, w: 40, color: 'Pink' },
+      { x: 1344, y: 302, w: 36, color: 'Blue' },
+      { x: 1316, y: 252, w: 46, color: 'Yellow' },
+    ],
+  },
+  portrait: {
+    doodle: { x: 88, y: 603, w: 737 },
+    wand: { x: 687, y: 1236, w: 199 },
+    polaroid: { x: 251, y: 1515, w: 754 },
+    stones: [
+      { x: 487, y: 1113, d: 40, color: 'Purple' },
+      { x: 579, y: 1140, d: 33, color: 'Blue' },
+      { x: 662, y: 1174, d: 43, color: 'Green' },
+      { x: 720, y: 1218, d: 33, color: 'Yellow' },
+    ],
+    sparkles: [
+      { x: 764, y: 1347, w: 61, color: 'Orange' },
+      { x: 720, y: 1400, w: 74, color: 'Pink' },
+      { x: 672, y: 1451, w: 64, color: 'Blue' },
+      { x: 607, y: 1474, w: 83, color: 'Yellow' },
+    ],
+  },
+};
+
+// The portrait showcase is authored against the App Store 6.9" slot's height
+// (2796 output px / k = 2341 base px). The Play phone slot is proportionally
+// shorter (1920), so the whole composition scales down uniformly around the
+// page's horizontal center — extra whitespace instead of overflow, with the
+// connector arc's geometry intact.
+const P_SHOWCASE_DESIGN_H = 2341;
+
+function showcaseHtml(geo, assets, target) {
   const k = geo.k;
-  const s = (v) => Math.round(v * k);
-  const layout =
-    geo.orientation === 'landscape'
-      ? {
-          doodle: { x: 640, y: 310, w: 550 },
-          wand: { x: 1225, y: 420, w: 115 },
-          polaroid: { x: 1345, y: 235, w: 545 },
-        }
-      : {
-          doodle: { x: 140, y: 575, w: 620 },
-          wand: { x: 495, y: 1130, w: 120 },
-          polaroid: { x: 280, y: 1315, w: 630 },
-        };
-  const sparkY = { x: layout.wand.x - 34, y: layout.wand.y - 26, w: 30 };
-  const sparkP = {
-    x: layout.wand.x + layout.wand.w + 6,
-    y: layout.wand.y + layout.wand.w - 24,
-    w: 22,
-  };
+  const spec = SHOWCASE_SPEC[geo.orientation];
+  const v =
+    geo.orientation === 'portrait' ? Math.min(1, target.height / k / P_SHOWCASE_DESIGN_H) : 1;
+  const sx = (x) => Math.round(k * (x * v + (P_BASE_W / 2) * (1 - v)));
+  const sy = (y) => Math.round(y * v * k);
+  const sw = (w) => Math.round(w * v * k);
+  const stones = spec.stones
+    .map(
+      (s) =>
+        `<span class="mark" style="left:${sx(s.x)}px;top:${sy(s.y)}px;width:${sw(s.d)}px;height:${sw(s.d)}px;border-radius:50%;background:${paletteHex(s.color)}"></span>`
+    )
+    .join('\n');
+  const sparkles = spec.sparkles
+    .map(
+      (s) =>
+        `<span class="mark" style="left:${sx(s.x)}px;top:${sy(s.y)}px;width:${sw(s.w)}px">${MARKS.sparkle(paletteHex(s.color))}</span>`
+    )
+    .join('\n');
   return `
-  <img class="showcase-doodle" style="left:${s(layout.doodle.x)}px;top:${s(layout.doodle.y)}px;width:${s(layout.doodle.w)}px"
+  <img class="showcase-doodle" style="left:${sx(spec.doodle.x)}px;top:${sy(spec.doodle.y)}px;width:${sw(spec.doodle.w)}px"
     src="data:image/jpeg;base64,${assets.aiBeforeB64}">
-  <div class="showcase-wand" style="left:${s(layout.wand.x)}px;top:${s(layout.wand.y)}px;width:${s(layout.wand.w)}px">${assets.wandSvg}</div>
-  <span class="mark" style="left:${s(sparkY.x)}px;top:${s(sparkY.y)}px;width:${s(sparkY.w)}px">${MARKS.sparkle(paletteHex('Yellow'))}</span>
-  <span class="mark" style="left:${s(sparkP.x)}px;top:${s(sparkP.y)}px;width:${s(sparkP.w)}px">${MARKS.sparkle(paletteHex('Pink'))}</span>
-  <div class="polaroid" style="left:${s(layout.polaroid.x)}px;top:${s(layout.polaroid.y)}px;width:${s(layout.polaroid.w)}px">
+  ${stones}
+  <div class="showcase-wand" style="left:${sx(spec.wand.x)}px;top:${sy(spec.wand.y)}px;width:${sw(spec.wand.w)}px">${assets.wandSvg}</div>
+  ${sparkles}
+  <div class="polaroid" style="left:${sx(spec.polaroid.x)}px;top:${sy(spec.polaroid.y)}px;width:${sw(spec.polaroid.w)}px">
     <img src="data:image/jpeg;base64,${assets.aiAfterB64}">
     <div class="polaroid-caption">AI-generated picture</div>
   </div>`;
 }
 
+// The doodle card and polaroid carry their own portrait dimensions from the
+// handoff (28 / 14 output px radii, 22px paper padding, 34px caption).
+const SHOWCASE_CARD_SPEC = {
+  landscape: { doodleRadius: 24, polaroidRadius: 10, pad: 16, caption: 27, captionPad: [14, 16] },
+  portrait: {
+    doodleRadius: 23.4,
+    polaroidRadius: 11.7,
+    pad: 18.4,
+    caption: 28.5,
+    captionPad: [16, 18],
+  },
+};
+
 export function storePageHtml(target, geo, page, assets, shotBuffer) {
   const k = geo.k;
   const px = (v) => `${Math.round(v * k)}px`;
   const dark = Boolean(page.dark);
+  const isPortrait = geo.orientation === 'portrait';
+  const type = TYPE_SPEC[geo.orientation];
+  const card = SHOWCASE_CARD_SPEC[geo.orientation];
+  const shadowSpec = FRAME_SHADOW_SPEC[geo.orientation][dark ? 'dark' : 'light'];
+  const frameShadow = `0 ${px(shadowSpec.y)} ${px(shadowSpec.blur)} ${shadowSpec.color}`;
   const frameImg = shotBuffer
     ? `<img class="frame" src="data:image/png;base64,${shotBuffer.toString('base64')}">`
-    : showcaseHtml(geo, assets);
-  const copyLayout =
-    geo.orientation === 'landscape'
-      ? `.copy { left: ${geo.copy.x}px; top: 0; bottom: 0; width: ${geo.copy.width}px; justify-content: center; }`
-      : `.copy { left: ${geo.copy.x}px; top: ${geo.copy.top}px; width: ${geo.copy.width}px; }`;
+    : showcaseHtml(geo, assets, target);
+  const copyLayout = isPortrait
+    ? `.copy { left: ${geo.copy.x}px; top: ${geo.copy.top}px; width: ${geo.copy.width}px; height: ${geo.copy.height}px;
+        align-items: center; justify-content: center; text-align: center; }`
+    : `.copy { left: ${geo.copy.x}px; top: 0; bottom: 0; width: ${geo.copy.width}px; justify-content: center; }`;
   return `<!doctype html><html><head><meta charset="utf-8"><style>
     @font-face {
       font-family: 'Quicksand';
@@ -434,47 +594,48 @@ export function storePageHtml(target, geo, page, assets, shotBuffer) {
     .mark svg { display: block; width: 100%; height: auto; }
     .copy { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; }
     ${copyLayout}
-    .logo { display: flex; align-items: center; gap: ${px(16)}; margin-bottom: ${px(26)}; }
-    .logo img { width: ${px(64)}; height: ${px(64)}; border-radius: ${px(15)}; }
-    .logo span { font-size: ${px(44)}; font-weight: 700; color: ${INK}; letter-spacing: -0.5px; }
+    .logo { display: flex; align-items: center; gap: ${px(type.logoGap)}; margin-bottom: ${px(type.logoMarginBottom)}; }
+    .logo img { width: ${px(type.logoIcon)}; height: ${px(type.logoIcon)}; border-radius: ${px(type.logoRadius)}; }
+    .logo span { font-size: ${px(type.logoText)}; font-weight: 700; color: ${INK}; letter-spacing: -0.5px; }
     h1 {
-      font-size: ${px(HEADLINE_PX)}; font-weight: 700; line-height: 1.06;
-      letter-spacing: ${(-1 * k).toFixed(2)}px; color: ${dark ? INK_ON_DARK : INK};
+      font-size: ${px(type.headline)}; font-weight: 700; line-height: ${type.headlineLineHeight};
+      letter-spacing: ${(type.letterSpacing * k).toFixed(2)}px; color: ${dark ? INK_ON_DARK : INK};
+      ${isPortrait ? 'text-wrap: balance;' : ''}
     }
     .sub {
-      margin-top: ${px(22)}; font-size: ${px(SUB_PX)}; font-weight: 600;
-      line-height: 1.38; color: ${dark ? INK_MUTED_ON_DARK : INK_MUTED};
+      margin-top: ${px(type.subMarginTop)}; font-size: ${px(type.sub)}; font-weight: 600;
+      line-height: ${type.subLineHeight}; color: ${dark ? INK_MUTED_ON_DARK : INK_MUTED};
     }
-    .chips { margin-top: ${px(30)}; display: flex; flex-wrap: wrap; gap: ${px(12)}; }
+    .chips { margin-top: ${px(30)}; display: flex; flex-wrap: wrap; justify-content: center; gap: ${px(CHIP_SPEC.gap)}; }
     .chip {
-      display: inline-flex; align-items: center; gap: ${px(10)};
-      background: #fff; border-radius: 999px; padding: ${px(10)} ${px(20)};
-      font-size: ${px(27)}; font-weight: 600; color: ${INK};
-      box-shadow: 0 ${px(6)} ${px(18)} rgba(60,40,110,.10);
+      display: inline-flex; align-items: center; gap: ${px(CHIP_SPEC.labelGap)};
+      background: #fff; border-radius: 999px; padding: ${px(CHIP_SPEC.padY)} ${px(CHIP_SPEC.padX)};
+      font-size: ${px(CHIP_SPEC.font)}; font-weight: 600; color: ${INK};
+      box-shadow: 0 ${px(CHIP_SPEC.shadowY)} ${px(CHIP_SPEC.shadowBlur)} rgba(60,40,110,.10);
     }
-    .chip i { width: ${px(12)}; height: ${px(12)}; border-radius: 50%; }
+    .chip i { width: ${px(CHIP_SPEC.dot)}; height: ${px(CHIP_SPEC.dot)}; border-radius: 50%; }
     .frame {
       position: absolute; z-index: 3;
       left: ${geo.frame.x}px; top: ${geo.frame.y}px;
       width: ${geo.frame.width}px; height: ${geo.frame.height}px;
-      border-radius: ${px(FRAME_RADIUS_PX)};
-      box-shadow: ${FRAME_SHADOW};
+      border-radius: ${px(FRAME_RADIUS[geo.orientation])};
+      box-shadow: ${frameShadow};
     }
     .showcase-doodle {
       position: absolute; z-index: 3; transform: rotate(-2deg);
-      border-radius: ${px(FRAME_RADIUS_PX)}; box-shadow: ${FRAME_SHADOW};
+      border-radius: ${px(card.doodleRadius)}; box-shadow: ${frameShadow};
     }
-    .showcase-wand { position: absolute; z-index: 4; transform: rotate(-10deg); }
+    .showcase-wand { position: absolute; z-index: 4; }
     .showcase-wand svg { display: block; width: 100%; height: auto; }
     .polaroid {
       position: absolute; z-index: 3; transform: rotate(3deg);
-      background: ${POLAROID_PAPER}; padding: ${px(16)} ${px(16)} 0;
-      border-radius: ${px(10)}; box-shadow: ${FRAME_SHADOW};
+      background: ${POLAROID_PAPER}; padding: ${px(card.pad)} ${px(card.pad)} 0;
+      border-radius: ${px(card.polaroidRadius)}; box-shadow: ${frameShadow};
     }
     .polaroid img { display: block; width: 100%; border-radius: ${px(4)}; }
     .polaroid-caption {
-      text-align: center; font-size: ${px(27)}; font-weight: 600;
-      color: ${POLAROID_CAPTION_COLOR}; padding: ${px(14)} 0 ${px(16)};
+      text-align: center; font-size: ${px(card.caption)}; font-weight: 600;
+      color: ${POLAROID_CAPTION_COLOR}; padding: ${px(card.captionPad[0])} 0 ${px(card.captionPad[1])};
     }
   </style></head>
   <body>

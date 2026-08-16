@@ -27,6 +27,7 @@ import {
   drawStroke,
   hasInk,
   tiledRendererIsActive,
+  coloringOverlayArtRect,
   openColoringBook,
   openSettingsSection,
   pickBook,
@@ -152,6 +153,18 @@ async function run(browser, base) {
   check(
     'openColoringBook + pickBook + pickPage apply a Cat page overlay',
     await page.locator('#coloringOverlay').isVisible()
+  );
+
+  const artRect = await coloringOverlayArtRect(page);
+  const overlayBox = await page.locator('#coloringOverlay').boundingBox();
+  check(
+    'coloringOverlayArtRect recovers a contained art rect inside the overlay',
+    artRect.width > 0 &&
+      artRect.height > 0 &&
+      artRect.x >= overlayBox.x - 1 &&
+      artRect.y >= overlayBox.y - 1 &&
+      artRect.x + artRect.width <= overlayBox.x + overlayBox.width + 1 &&
+      artRect.y + artRect.height <= overlayBox.y + overlayBox.height + 1
   );
 
   await openSettingsSection(page, 'Parent Center');
