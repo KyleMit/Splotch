@@ -42,6 +42,21 @@ async function freshModule() {
   return import('./install.svelte');
 }
 
+async function openAndroidSession() {
+  setUA(ANDROID_UA);
+  const session = await freshModule();
+  session.initInstallPrompt();
+  return session;
+}
+
+async function qualifyingInstallSession() {
+  const session = await openAndroidSession();
+  const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
+  canvasState.strokeCount = SETTLED_IN_STROKES;
+  session.recordInstallRepromptSession();
+  return session;
+}
+
 const ANDROID_UA =
   'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Mobile Safari/537.36';
 const IOS_SAFARI_UA =
@@ -265,6 +280,39 @@ describe('install completion', () => {
     expect(install.mode).toBe('none');
     expect(localStorage.getItem(STORAGE_KEYS.installCompleted)).toBe('true');
   });
+
+  it('ends and clears an in-progress re-prompt cycle', async () => {
+    const first = await openAndroidSession();
+    first.dismissInstall();
+    await qualifyingInstallSession();
+    const active = await qualifyingInstallSession();
+
+    active.markInstalled();
+    active.recordInstallRepromptSession();
+
+    expect(active.install.installed).toBe(true);
+    expect(active.installPromptStage()).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.installDismissed)).toBeNull();
+  });
+
+  it('starts a fresh prompt cycle when a live event proves the app was uninstalled', async () => {
+    setUA(ANDROID_UA);
+    localStorage.setItem(STORAGE_KEYS.installCompleted, 'true');
+    localStorage.setItem(STORAGE_KEYS.installDismissed, 'true');
+    localStorage.setItem(STORAGE_KEYS.installRepromptSessionCount, '10');
+    localStorage.setItem(STORAGE_KEYS.installRepromptsUsed, '2');
+    const session = await freshModule();
+    session.initInstallPrompt();
+
+    session.captureInstallPrompt(makePromptEvent('accepted') as BeforeInstallPromptEvent);
+
+    expect(session.install.installed).toBe(false);
+    expect(session.installPromptStage()).toBe('initial');
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBeNull();
+  });
 });
 
 describe('dismissInstall', () => {
@@ -279,6 +327,106 @@ describe('dismissInstall', () => {
     const next = await freshModule();
     next.initInstallPrompt();
     expect(next.install.dismissed).toBe(true);
+  });
+
+  it('does not count the session where the initial prompt was dismissed', async () => {
+    const session = await openAndroidSession();
+    const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
+    canvasState.strokeCount = SETTLED_IN_STROKES;
+
+    session.dismissInstall();
+    session.recordInstallRepromptSession();
+
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
+  });
+});
+
+describe('bounded install re-prompts', () => {
+  it('re-prompts after five and ten qualifying sessions, then stays permanently quiet', async () => {
+    const initial = await openAndroidSession();
+    initial.dismissInstall();
+
+    let session = await qualifyingInstallSession();
+    for (let count = 2; count <= 4; count += 1) session = await qualifyingInstallSession();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('4');
+    expect(session.installPromptStage()).toBeNull();
+
+    session = await qualifyingInstallSession();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('5');
+    expect(session.installPromptStage()).toBe('returning');
+    session.dismissInstall();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBe('1');
+
+    for (let count = 6; count <= 9; count += 1) session = await qualifyingInstallSession();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('9');
+    expect(session.installPromptStage()).toBeNull();
+
+    session = await qualifyingInstallSession();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('10');
+    expect(session.installPromptStage()).toBe('final');
+    session.dismissInstall();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBe('2');
+
+    session = await qualifyingInstallSession();
+    expect(session.installPromptStage()).toBeNull();
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('10');
+  });
+
+  it('counts a qualifying session at most once per page load', async () => {
+    const initial = await openAndroidSession();
+    initial.dismissInstall();
+    const session = await qualifyingInstallSession();
+
+    session.recordInstallRepromptSession();
+    session.recordInstallRepromptSession();
+
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('1');
+  });
+
+  it('does not count a page load without enough drawing', async () => {
+    const initial = await openAndroidSession();
+    initial.dismissInstall();
+    const session = await openAndroidSession();
+
+    session.recordInstallRepromptSession();
+
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
+  });
+
+  it('does not count before the initial banner has been dismissed', async () => {
+    const session = await openAndroidSession();
+    const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
+    canvasState.strokeCount = SETTLED_IN_STROKES;
+
+    session.recordInstallRepromptSession();
+
+    expect(session.installPromptStage()).toBe('initial');
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
+  });
+
+  it('does not count while install is unavailable', async () => {
+    localStorage.setItem(STORAGE_KEYS.installDismissed, 'true');
+    const session = await freshModule();
+    session.initInstallPrompt();
+    const { canvasState, SETTLED_IN_STROKES } = await import('./canvas.svelte');
+    canvasState.strokeCount = SETTLED_IN_STROKES;
+
+    session.recordInstallRepromptSession();
+
+    expect(session.install.mode).toBe('none');
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBeNull();
+  });
+
+  it('keeps an unconsumed re-prompt at the same milestone across relaunches', async () => {
+    const initial = await openAndroidSession();
+    initial.dismissInstall();
+    for (let count = 1; count <= 5; count += 1) await qualifyingInstallSession();
+
+    const relaunched = await qualifyingInstallSession();
+
+    expect(relaunched.installPromptStage()).toBe('returning');
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptSessionCount)).toBe('5');
+    expect(localStorage.getItem(STORAGE_KEYS.installRepromptsUsed)).toBeNull();
   });
 });
 

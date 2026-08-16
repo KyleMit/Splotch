@@ -7,12 +7,12 @@ import {
   markSectionSeen,
   reloadSectionsSeen,
 } from './sectionsSeen.svelte';
-import { reloadSettingsActivitySession } from './settingsSessions.svelte';
+import { reloadSessionCounters } from './sessionCounters.svelte';
 
 beforeEach(() => {
   localStorage.clear();
   reloadSectionsSeen();
-  reloadSettingsActivitySession();
+  reloadSessionCounters();
 });
 
 describe('section seen stamps', () => {
@@ -34,7 +34,7 @@ describe('section seen stamps', () => {
 
     markSectionSeen('appearance');
     localStorage.setItem(STORAGE_KEYS.settingsActivitySessionCount, '6');
-    reloadSettingsActivitySession();
+    reloadSessionCounters();
 
     expect(isSectionUnseen('appearance')).toBe(false);
     expect(hasSectionActivity('appearance')).toBe(false);

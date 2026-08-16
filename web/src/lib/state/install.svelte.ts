@@ -1,7 +1,22 @@
 import { browser } from '$app/environment';
 import { isAndroidBrowser, isIosDevice, isNative, isStandalone } from '$lib/platform';
-import { STORAGE_KEYS, readBool, writeBool } from '$lib/storage';
-import { canvasState } from './canvas.svelte';
+import {
+  STORAGE_KEYS,
+  onDurableRestore,
+  readBool,
+  readInt,
+  removeKey,
+  writeBool,
+  writeInt,
+} from '$lib/storage';
+import { canvasState, SETTLED_IN_STROKES } from './canvas.svelte';
+import {
+  clearSessionCount,
+  excludeCurrentSession,
+  INSTALL_REPROMPT_SESSION_MILESTONES,
+  recordSession,
+  sessionCount,
+} from './sessionCounters.svelte';
 
 // "Add to Home Screen" / PWA install, surfaced as a friendly parent-facing prompt.
 //
@@ -29,11 +44,12 @@ export type InstallDeviceOs = 'ios' | 'android' | 'desktop';
 // The result of promptInstall(): the user's choice, or 'unavailable' when there
 // was no live prompt to show.
 export type InstallPromptOutcome = 'accepted' | 'dismissed' | 'unavailable';
+export type InstallPromptStage = 'initial' | 'returning' | 'final';
 
 export const install = $state({
   mode: 'none' as InstallMode,
-  // Parent tapped "not now" — suppress the floating banner (the Install section
-  // in Settings stays available regardless).
+  // Parent tapped "not now" — suppress the floating banner until its bounded
+  // re-prompt schedule is due. The Install section in Settings stays available.
   dismissed: false,
   installed: false,
 });
@@ -41,8 +57,11 @@ export const install = $state({
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
 let installAutoClearArmedAt: number | null = null;
-
 const STROKES_BEFORE_AUTO_CLEAR = 5;
+const MAX_INSTALL_REPROMPTS = INSTALL_REPROMPT_SESSION_MILESTONES.length;
+const VALID_REPROMPTS_USED = Array.from({ length: MAX_INSTALL_REPROMPTS + 1 }, (_, index) => index);
+
+let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED));
 
 function isIosSafari() {
   if (!isIosDevice()) return false;
@@ -84,10 +103,50 @@ function fallBackToManualHint() {
   if (install.mode === 'oneTap') install.mode = manualMode();
 }
 
+function resetInstallRepromptCycle() {
+  install.dismissed = false;
+  repromptsUsed = 0;
+  installAutoClearArmedAt = null;
+  removeKey(STORAGE_KEYS.installDismissed);
+  removeKey(STORAGE_KEYS.installRepromptsUsed);
+  clearSessionCount('installReprompt');
+}
+
+function reloadInstallRepromptState() {
+  repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
+}
+
+onDurableRestore(reloadInstallRepromptState);
+
+export function installPromptStage(): InstallPromptStage | null {
+  if (install.installed) return null;
+  if (!install.dismissed) return 'initial';
+  if (repromptsUsed >= MAX_INSTALL_REPROMPTS) return null;
+
+  const milestone = INSTALL_REPROMPT_SESSION_MILESTONES[repromptsUsed];
+  if (sessionCount('installReprompt') < milestone) return null;
+  return repromptsUsed === 0 ? 'returning' : 'final';
+}
+
+export function recordInstallRepromptSession() {
+  if (
+    canvasState.strokeCount < SETTLED_IN_STROKES ||
+    !install.dismissed ||
+    install.installed ||
+    install.mode === 'none' ||
+    repromptsUsed >= MAX_INSTALL_REPROMPTS ||
+    installPromptStage() !== null
+  ) {
+    return;
+  }
+  recordSession('installReprompt');
+}
+
 // Exported so the native-configured unit suite can drive the production event
 // callbacks without compiling their web-only listener registrations back in.
 export function markInstalled() {
   deferredPrompt = null;
+  resetInstallRepromptCycle();
   install.installed = true;
   install.mode = 'none';
   writeBool(STORAGE_KEYS.installCompleted, true);
@@ -101,6 +160,7 @@ export function captureInstallPrompt(e: BeforeInstallPromptEvent) {
   // it outranks a stale persisted flag (installed once, later uninstalled —
   // localStorage survives a PWA uninstall).
   if (install.installed || readBool(STORAGE_KEYS.installCompleted, false)) {
+    resetInstallRepromptCycle();
     install.installed = false;
     writeBool(STORAGE_KEYS.installCompleted, false);
   }
@@ -118,21 +178,21 @@ if (browser && !__IS_CAPACITOR__) {
   window.addEventListener('appinstalled', markInstalled);
 }
 
-// Web-only; no-op inside the native shell. Seeds mode/dismissed/installed from
-// persisted state and the manual-hint heuristic.
+// Web-only; no-op inside the native shell. Seeds mode and the persisted install
+// lifecycle from storage plus the manual-hint heuristic.
 export function initInstallPrompt() {
   if (!browser || initialized || (__IS_CAPACITOR__ && isNative())) return;
   initialized = true;
 
   install.dismissed = readBool(STORAGE_KEYS.installDismissed, false);
+  reloadInstallRepromptState();
 
   // A live prompt captured before init already proved the app is installable
   // (and not installed) — the listener above has set mode/installed.
   if (deferredPrompt) return;
 
   if (readBool(STORAGE_KEYS.installCompleted, false) || isStandalone()) {
-    install.installed = true;
-    install.mode = 'none';
+    markInstalled();
     return;
   }
 
@@ -165,7 +225,7 @@ export async function promptInstall(): Promise<InstallPromptOutcome> {
     markInstalled();
   } else {
     // Declined: the one-shot prompt is spent. Drop to the manual menu hint and
-    // stop nagging with the banner on this device.
+    // route through the same bounded re-prompt cycle as every other dismissal.
     fallBackToManualHint();
     dismissInstall();
   }
@@ -173,7 +233,14 @@ export async function promptInstall(): Promise<InstallPromptOutcome> {
 }
 
 export function dismissInstall() {
+  const stage = installPromptStage();
+  excludeCurrentSession('installReprompt');
+  if (stage === 'returning' || stage === 'final') {
+    repromptsUsed += 1;
+    writeInt(STORAGE_KEYS.installRepromptsUsed, repromptsUsed);
+  }
   install.dismissed = true;
+  installAutoClearArmedAt = null;
   writeBool(STORAGE_KEYS.installDismissed, true);
 }
 

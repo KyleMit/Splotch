@@ -1,6 +1,6 @@
 # ADR-0039: Friendly PWA Install Prompt — Capture `beforeinstallprompt`, Fall Back to Guided Hints
 
-**Status:** Active **Date:** 2026-06
+**Status:** Active **Date:** 2026-06 **Amended:** 2026-08-16
 
 ## Context
 
@@ -46,9 +46,9 @@ the UA. It computes a `mode`:
 
 `promptInstall()` replays the stashed event from a user gesture and returns the outcome. A
 `beforeinstallprompt` event can only be `prompt()`ed once, so on `accepted` we mark installed (and
-persist it), and on `dismissed` we drop back to the manual hint and stop surfacing the floating
-banner on this device. A stale or already-spent prompt returns `'unavailable'` (never throws —
-callers' busy flags must not strand) and likewise drops to the manual hint.
+persist it), and on `dismissed` we drop back to the manual hint and begin the same bounded re-prompt
+cycle as the banner's other dismissal paths. A stale or already-spent prompt returns `'unavailable'`
+(never throws — callers' busy flags must not strand) and likewise drops to the manual hint.
 
 Two surfaces consume the state:
 
@@ -64,11 +64,20 @@ Two surfaces consume the state:
    Instead it stacks **above** those controls (`z-index` over their 900/901), and the takeover is
    kept short: five strokes after it appears — proof the child kept drawing and no parent is
    engaging (the countdown pauses while the how-to is expanded or the native dialog is up) — it
-   auto-dismisses. The auto-clear persists the same `dismissed` flag as the × button, briefly swaps
-   the pill to a parting message ("these steps are always in Settings"), then animates the pill into
-   the Settings Button so the message lands spatially too. Lifting the banner above the corner
-   controls instead was rejected: with the actions panel expanded the required lift would push the
-   banner toward mid-canvas.
+   auto-dismisses. The auto-clear routes through the same dismissal as the × button and a declined
+   native dialog, briefly swaps the pill to a parting message ("these steps are always in
+   Settings"), then animates the pill into the Settings Button so the message lands spatially too.
+   Lifting the banner above the corner controls instead was rejected: with the actions panel
+   expanded the required lift would push the banner toward mid-canvas.
+
+   A dismissal starts a bounded re-prompt cycle. A fresh page load qualifies after the child reaches
+   the same three-committed-stroke settled-in threshold; refocusing an existing tab does not create
+   another session, and a page load without real drawing does not count. The banner returns after
+   five qualifying sessions and once more after ten. A due re-prompt holds at its milestone until it
+   is dismissed, so relaunching without acting on it does not spend the attempt or advance toward
+   the next one. The first return says "Welcome back"; the final return says "One last reminder" and
+   promises that Splotch will not ask again. Dismissing that final return makes the banner
+   permanently quiet, while the Settings guide remains available.
 2. **Settings → Setup tab** — the existing step list, upgraded to show the one-tap button above the
    per-OS manual steps when available (the prompt is browser-wide — Android *or* desktop Chromium —
    so it belongs to no single OS section). Section ordering and the installed checkmark come from
@@ -77,10 +86,18 @@ Two surfaces consume the state:
    it.
 
 Persistence uses the existing dual-layer storage (`splotch-install-dismissed`,
-`splotch-install-completed`). An `appinstalled` listener marks the app installed no matter which
-path the browser used. The persisted installed flag is not trusted forever: `beforeinstallprompt`
-only fires when the app is *not* installed, so a later event clears a stale flag (installed once,
-then uninstalled — localStorage survives a PWA uninstall) and re-offers one-tap.
+`splotch-install-completed`) plus the purpose-named `splotch-install-reprompt-session-count` and
+`splotch-install-reprompts-used` keys. The once-per-document, saturating counter mechanism is shared
+with Settings activity through `sessionCounters.svelte.ts`; `install.svelte.ts` remains the sole
+owner of which sessions qualify and when a re-prompt is due. The initial dismissal session is
+excluded because the schedule starts with the next fresh open, and counting pauses whenever a
+re-prompt is already due.
+
+An `appinstalled` listener marks the app installed no matter which path the browser used and clears
+the re-prompt cycle. The persisted installed flag is not trusted forever: `beforeinstallprompt` only
+fires when the app is *not* installed, so a later event clears a stale flag (installed once, then
+uninstalled — localStorage survives a PWA uninstall), resets the spent cycle, and re-offers one-tap
+as a fresh proof-of-value cycle.
 
 ## Consequences
 
@@ -92,10 +109,12 @@ Share-sheet hint — and we never promise one-tap where it can't exist (includin
 browsers).
 
 **+** Kid-safe: restrained, parent-worded, gated behind real drawing engagement, dismissible, and
-never re-nags once installed or declined.
+bounded to two return prompts over the device's lifetime unless a later uninstall resets the cycle.
 
-**+** One source of truth (`install.svelte.ts`); the banner and the Setup tab are thin consumers.
-Fully unit-tested (mode detection, install/decline/replay, `appinstalled`, persistence).
+**+** One source of install-policy truth (`install.svelte.ts`); the banner and the Setup tab are
+thin consumers, while the generic once-per-document counter is reused instead of duplicated. Fully
+unit-tested (mode detection, install/decline/replay, bounded re-prompts, `appinstalled`,
+persistence).
 
 **−** `beforeinstallprompt` is Chromium-only and fires only when the PWA criteria are met, so the
 one-tap path never appears in `vite dev` (no service worker) or on Firefox — those correctly fall

@@ -1,5 +1,5 @@
 import { pwaUpdates } from '$lib/pwa/updates';
-import { initInstallPrompt } from '$lib/state/install.svelte';
+import { initInstallPrompt, recordInstallRepromptSession } from '$lib/state/install.svelte';
 
 // The service worker only exists in the web build; the native apps bundle their
 // shell on-device, so there's nothing to update-check there. The install prompt
@@ -16,4 +16,9 @@ export function initWebOnlyServices(): () => void {
   const teardownPWAUpdates = pwaUpdates.initPWAUpdates();
   initInstallPrompt();
   return () => teardownPWAUpdates?.();
+}
+
+export function recordWebInstallRepromptSession() {
+  if (__IS_CAPACITOR__) return;
+  recordInstallRepromptSession();
 }
