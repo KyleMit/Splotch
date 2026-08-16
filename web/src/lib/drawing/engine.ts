@@ -59,6 +59,7 @@ import {
   ensureMagicSheet,
   clearMagicGradient,
   captureMagicSheet,
+  deferColorSheet,
   setColorSheet as setMagicColorSheet,
 } from './magicBrush';
 import { type StrokeOp } from './strokeOps';
@@ -988,6 +989,7 @@ export function setColorSheet(colorUrl: string | null) {
 export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppearance: () => void) {
   const targetSourceKey = targetUrl ? pageCompositionKey(targetUrl) : null;
   const prepared = beginTiledMagicRecode(targetSourceKey, restoreAppearance);
+  if (targetUrl) deferColorSheet(targetUrl);
   if (prepared) setCanUndo(true);
   return prepared;
 }

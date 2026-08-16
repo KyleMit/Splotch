@@ -203,6 +203,27 @@ describe('magic sheet fill-load failure', () => {
     expect(lastRequest().src).toBe(PAGE_URL);
   });
 
+  it('defers an incoming fill without exposing the outgoing page to new strokes', async () => {
+    const magic = await mountedMagicBrush();
+
+    magic.setColorSheet(PAGE_URL);
+    lastRequest().naturalWidth = 200;
+    lastRequest().naturalHeight = 100;
+    lastRequest().onload!();
+    const outgoing = magic.captureMagicSheet();
+
+    magic.deferColorSheet(OTHER_PAGE_URL);
+    magic.ensureMagicSheet();
+
+    expect(outgoing).not.toBeNull();
+    expect(magic.captureMagicSheet()).toBeNull();
+    expect(requested).toHaveLength(1);
+
+    magic.setColorSheet(OTHER_PAGE_URL);
+    expect(requested).toHaveLength(2);
+    expect(lastRequest().src).toBe(OTHER_PAGE_URL);
+  });
+
   it('ignores a superseded error so it cannot clobber a newer page', async () => {
     const magic = await mountedMagicBrush();
 

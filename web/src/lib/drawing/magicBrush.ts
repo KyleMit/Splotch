@@ -586,7 +586,7 @@ function loadSheetImage(url: string) {
 // straight into the sheet; it decodes async, and magic ops recorded before it's
 // ready reveal nothing until the load handler repaints.
 export function setColorSheet(colorUrl: string | null) {
-  if (colorUrl === fillUrl) return;
+  if (colorUrl === fillUrl && (colorUrl === null || fillImage || pendingLoad)) return;
   // Whatever is still decoding is for the outgoing source — disown it.
   pendingLoad = null;
   pendingFillRaster = null;
@@ -600,6 +600,18 @@ export function setColorSheet(colorUrl: string | null) {
   }
   invalidateSheet();
   loadSheetImage(colorUrl);
+}
+
+// Reserve an incoming page without starting its fill transfer. The overlay line
+// art owns network priority, but new strokes must stop sampling the outgoing page
+// as soon as the child selects its replacement. Recorded ops keep their captured
+// snapshot and are recoded after setColorSheet starts and finishes this load.
+export function deferColorSheet(colorUrl: string) {
+  pendingLoad = null;
+  pendingFillRaster = null;
+  fillUrl = colorUrl;
+  fillImage = null;
+  invalidateSheet();
 }
 
 // Pick a random rainbow from the pool and hold it, unless one is already held (so
