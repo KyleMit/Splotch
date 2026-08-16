@@ -56,19 +56,24 @@ get everything, unchanged.
 this?" Yes → `dependencies`; no → `devDependencies`. A mislabel in the needed-at-build direction
 fails the deploy loudly (missing module); the other direction just installs something extra.
 
-**2. Build ignore rule.** `[build] ignore` skips the deploy when the push touched none of the paths
-the build consumes:
+**2. Build ignore rule.** `[build] ignore` runs a `git diff --quiet` between the last built commit
+and this one over the paths the build consumes, and skips the deploy when none of them changed.
 
-```
-git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts releases package.json package-lock.json netlify.toml
-```
+**The pathspec itself lives in `netlify.toml` and is deliberately not copied here.** It has already
+drifted twice — [ADR-0108](0108-unified-tools-tree.md) moved the build scripts from `scripts/` to
+enumerated `tools/` paths, and [ADR-0119](0119-pnpm-as-package-manager.md) replaced the lockfile and
+added `pnpm-workspace.yaml` — and a stale copy in a decision record is worse than no copy, because
+the failure mode is a *skipped* deploy that looks like a successful one. `netlify.toml` is the
+source of truth and `tools/tests/enumerated-build-paths.test.mjs` is what keeps it honest: it fails
+when a `tools/` path the production build actually runs is missing from the filter, and pins the
+`:(glob)` pathspec semantics that decide how broadly `tools/*.mjs` matches.
 
-The watched set is exactly what the build reads: the app (`web/`), the build + prebuild scripts
-(`scripts/`), `gen:releases` input (`releases/`), the toolchain (`package.json` + lockfile), and the
-deploy config itself. A skipped push leaves the previous deploy live — correct, since nothing
-user-facing changed. (The auto-derived `version.json` patch number then lags `main` by the skipped
-commits until the next real build; that's fine — the PWA stuck-client recovery only needs the
-version to move when the app actually changes.)
+What the watched set *means* is the stable part: everything the build reads — the app, the custom
+functions, the build and prebuild tools it actually runs, the `gen:releases` input, the toolchain
+manifests and lockfile, and the deploy config itself. A skipped push leaves the previous deploy live
+— correct, since nothing user-facing changed. (The auto-derived `version.json` patch number then
+lags `main` by the skipped commits until the next real build; that's fine — the PWA stuck-client
+recovery only needs the version to move when the app actually changes.)
 
 ## Consequences
 
