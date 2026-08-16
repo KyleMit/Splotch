@@ -42,6 +42,7 @@ import {
   waitForColoringOverlay,
 } from '../app-driver/lib/app-driver.mjs';
 import { STORE_PAGES, frameGeometry, loadFrameAssets, storePageHtml } from './lib/store-frames.mjs';
+import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-override.mjs';
 
 const OUT = join(ROOT, 'store-assets');
 const PORT = 4173;
@@ -156,35 +157,6 @@ async function sceneHero(browser, base, capture, orientation) {
   await ctx.close();
   return shot;
 }
-
-// The app's own tall-portrait rule (ColoringBook.svelte's max-aspect-ratio
-// block) renders the two-column cover grid the portrait v2 design shows, but
-// it is gated on min-width 741px, which the 576px capture viewport can never
-// reach — so its custom properties are re-stated here as a capture-only
-// override, plus a modal width that hugs the narrower grid. Applied only when
-// the capture is tall enough to seat all four rows; the 16:9 Play phone slot
-// keeps the app's native 3/3/2 grid.
-const BOOKS_TWO_COL_MIN_ASPECT = 1.6;
-const BOOKS_TWO_COL_CSS = `
-  .coloring-book-modal {
-    width: calc(var(--book-grid-max-width) + 2 * var(--space-7)) !important;
-  }
-  .coloring-book-modal,
-  .coloring-books-grid,
-  .coloring-books-grid.book-grid-has-orphan {
-    --book-cols: 2 !important;
-    --book-grid-rows-in-view: 4 !important;
-    --book-grid-chrome: calc(
-      2 * var(--space-7) + var(--modal-close-size) + var(--space-5) +
-        (var(--book-grid-rows-in-view) - 1) * var(--space-3) + var(--space-4)
-    ) !important;
-    --book-grid-max-width: calc(
-      (var(--coloring-book-modal-max-height) - var(--book-grid-chrome)) /
-        var(--book-grid-rows-in-view) * var(--book-cols) +
-        (var(--book-cols) - 1) * var(--space-3)
-    ) !important;
-  }
-`;
 
 // The picker opens on the 8-book cover grid unless the installed set resolved
 // late and it landed on a single book (issue #936) — reopen until the grid.
