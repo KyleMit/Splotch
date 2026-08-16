@@ -1,12 +1,11 @@
 import type { ResolvedTheme } from '$lib/theme';
+import { clearOverlay, coloringBookState, setOverlayPage } from '$lib/state/coloringBook.svelte';
 import {
-  clearOverlay,
-  coloringBookState,
-  colorSheetUrl,
-  nightSheetUrl,
-  setOverlayPage,
-} from '$lib/state/coloringBook.svelte';
-import type { BookOrientation, ColoringPage } from '$lib/state/books';
+  pageColorImage,
+  pageNightImage,
+  type BookOrientation,
+  type ColoringPage,
+} from '$lib/state/books';
 import { prepareMagicSheetRecode } from './engine';
 
 export function applyColoringPageWithMagicUndo(
@@ -17,9 +16,9 @@ export function applyColoringPageWithMagicUndo(
   const previousPage = coloringBookState.overlayPage;
   const previousOrientation = coloringBookState.orientation;
   setOverlayPage(page, orientation);
-  if (previousPage === page && previousOrientation === orientation) return;
-  const targetUrl = theme === 'dark' ? nightSheetUrl() : null;
-  prepareMagicSheetRecode(targetUrl ?? colorSheetUrl(), () => {
+  if (previousPage?.id === page.id && previousOrientation === orientation) return;
+  const targetUrl = theme === 'dark' ? pageNightImage(page, orientation) : null;
+  prepareMagicSheetRecode(targetUrl ?? pageColorImage(page, orientation), () => {
     if (previousPage) setOverlayPage(previousPage, previousOrientation);
     else clearOverlay();
   });

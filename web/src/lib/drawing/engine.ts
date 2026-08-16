@@ -979,7 +979,10 @@ export function undo(): Promise<void> {
 
 export function setColorSheet(colorUrl: string | null) {
   setMagicColorSheet(colorUrl);
-  if (!colorUrl && hasRetainedTiledMagicOps()) ensureMagicSheet();
+  if (!colorUrl && hasRetainedTiledMagicOps()) {
+    ensureMagicSheet();
+    recodeMagicOpsToCurrentSheet();
+  }
 }
 
 export function prepareMagicSheetRecode(targetUrl: string | null, restoreAppearance: () => void) {
@@ -1099,6 +1102,13 @@ function paperIsSized(): boolean {
   return paper.pxW > 0 && paper.pxH > 0;
 }
 
+function recodeMagicOpsToCurrentSheet() {
+  if (!ctx) return;
+  const snapshot = captureMagicSheet();
+  if (!snapshot) return;
+  recodeTiledMagicOps(snapshot, snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null);
+}
+
 function wireMagicBrushHost(): void {
   // The magic brush's color sheet lives in paper coordinates (like every op) and
   // recodes recorded magic ops once an async fill finishes decoding
@@ -1106,15 +1116,7 @@ function wireMagicBrushHost(): void {
   initMagicBrush({
     paperSize: () => (paperIsSized() ? { width: paper.pxW, height: paper.pxH } : null),
     sheetBounds: () => (paperIsSized() ? sheetBoundsPaper() : null),
-    repaint: () => {
-      if (!ctx) return;
-      const snapshot = captureMagicSheet();
-      if (!snapshot) return;
-      recodeTiledMagicOps(
-        snapshot,
-        snapshot.sourceUrl ? pageCompositionKey(snapshot.sourceUrl) : null
-      );
-    },
+    repaint: recodeMagicOpsToCurrentSheet,
   });
 }
 

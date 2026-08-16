@@ -3,7 +3,7 @@ import { setMagicPatternRegion } from './magicBrush';
 import { LIVE_TILE_COLUMNS, LIVE_TILE_COUNT, LIVE_TILE_ROWS } from './liveTiles';
 import { viewMatrix, viewToPaper, type PaperView } from './paperView';
 import { clearAllOf, renderOp, type StrokeOp } from './strokeOps';
-import { geometryIntersectsTile, type TileBounds } from './tiledGeometry';
+import { geometryIntersectsTile, tilesIntersect, type TileBounds } from './tiledGeometry';
 
 export interface LiveTile extends TileBounds {
   canvas: HTMLCanvasElement;
@@ -215,11 +215,12 @@ export function cloneHistoryBaseTiles(
   height: number
 ) {
   const copy = createHistoryBaseTiles(width, height);
-  for (const [index, sourceTile] of source.entries()) {
-    const target = copy[index];
-    if (!target || !sourceTile.painted) continue;
-    target.ctx.drawImage(sourceTile.canvas, sourceTile.x, sourceTile.y);
-    target.painted = true;
+  for (const target of copy) {
+    for (const sourceTile of source) {
+      if (!sourceTile.painted || !tilesIntersect(sourceTile, target)) continue;
+      target.ctx.drawImage(sourceTile.canvas, sourceTile.x, sourceTile.y);
+      target.painted = true;
+    }
   }
   return copy;
 }

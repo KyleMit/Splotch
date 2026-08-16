@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { LIVE_TILE_COUNT } from './liveTiles';
 import { IDENTITY_PAPER_VIEW } from './paperView';
 import type { StrokeOp } from './strokeOps';
+import { cloneHistoryBaseTiles, createHistoryBaseTiles } from './tiledSurfaces';
 import {
   adoptTiledRenderer,
   applyTiledView,
@@ -51,6 +52,16 @@ function magicDot(
 }
 
 describe('tiled magic recoding', () => {
+  it('migrates a folded baseline across tile geometry changes', () => {
+    const source = createHistoryBaseTiles(400, 400);
+    source[1].painted = true;
+
+    const grown = cloneHistoryBaseTiles(source, 800, 800);
+
+    expect(grown[0].ctx.drawImage).toHaveBeenCalledWith(source[1].canvas, 100, 0);
+    expect(grown[1].ctx.drawImage).not.toHaveBeenCalled();
+  });
+
   it('restores the previous sheet with the page undo', () => {
     adoptRenderer();
     const firstSheet = sheet('/coloring/farm/cat-wide.light.webp');

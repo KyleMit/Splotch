@@ -10,7 +10,6 @@ import {
   captureTiledCanvasSnapshot,
   clearTiledRenderer,
   commitTiledCommand,
-  hasUnresolvedTiledMagicOps,
   recordTiledOp,
   repaintTiledRenderer,
   renderTiledOp,
@@ -130,21 +129,6 @@ describe('idle tiled canvas visibility', () => {
         0
       )
     ).toBe(clearCallsBeforeBlankUndo);
-
-    const magic: StrokeOp = { ...dot, magic: true };
-    beginTiledCommand(true);
-    recordTiledOp(magic);
-    expect(hasUnresolvedTiledMagicOps()).toBe(true);
-
-    magic.magicSheet = {
-      canvas: document.createElement('canvas'),
-      originX: 0,
-      originY: 0,
-      sourceUrl: '/coloring/test.light.webp',
-    };
-    expect(hasUnresolvedTiledMagicOps()).toBe(false);
-    commitTiledCommand();
-    undoTiledCommand(1);
   });
 
   it('counts seam overdraw and lazily realized crayon backings', () => {

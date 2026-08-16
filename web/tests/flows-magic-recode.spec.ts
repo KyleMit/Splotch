@@ -81,6 +81,31 @@ test('changing the coloring page recodes magic ink and undo restores the page an
     .toEqual(catDigest);
 });
 
+test('removing the coloring page recodes magic ink and undo restores the page and ink', async ({
+  page,
+}) => {
+  await prepareMagicDrawing(page);
+  const catDigest = await opaqueCanvasDigest(page);
+
+  await openColoringDialog(page);
+  const dialog = page.locator('#coloring-book-dialog');
+  await dialog.locator('.active-page-chip').click();
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('#coloringOverlay')).toBeHidden();
+  await expect
+    .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
+    .not.toEqual(catDigest);
+
+  await page.locator('#undoButton').click();
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute(
+    'src',
+    /\/cat-(?:wide|tall)\.overlay\.webp$/
+  );
+  await expect
+    .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
+    .toEqual(catDigest);
+});
+
 test('changing theme recodes existing magic ink to the themed fill', async ({ page }) => {
   await prepareMagicDrawing(page);
   const lightDigest = await opaqueCanvasDigest(page);

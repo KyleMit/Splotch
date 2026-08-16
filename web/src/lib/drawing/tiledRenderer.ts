@@ -19,7 +19,6 @@ import {
   clearTileBacking,
   clipTilesToPaper,
   cloneHistoryBaseTiles,
-  createHistoryBaseTiles,
   createLiveTiles,
   applyLiveTileView,
   deferHiddenTileClear,
@@ -172,17 +171,9 @@ function ensureHistoryBase() {
     return;
   }
   const previous = historyBase;
-  historyBase = createHistoryBaseTiles(paper.width, paper.height);
+  historyBase = cloneHistoryBaseTiles(previous, paper.width, paper.height);
   historyBaseWidth = paper.width;
   historyBaseHeight = paper.height;
-  for (const target of historyBase) {
-    for (const source of previous) {
-      if (source.painted && tilesIntersect(source, target)) {
-        target.ctx.drawImage(source.canvas, source.x, source.y);
-        target.painted = true;
-      }
-    }
-  }
 }
 
 const magicRecode = createTiledMagicRecode<HistoryBaseTile>({
@@ -496,14 +487,6 @@ export function scanTiledRendererIsEmpty(renderScale: number) {
   return liveTiles.every(
     (tile) => tile.canvas.hidden || scanCanvasIsEmpty(tile.canvas, renderScale)
   );
-}
-
-export function hasUnresolvedTiledMagicOps() {
-  const unresolved = (command: StrokeGroupCommand) =>
-    command.ops.some(
-      (op) => (op.kind === 'dot' || op.kind === 'path') && op.magic && !op.magicSheet
-    );
-  return history.some(unresolved) || (activeCommand ? unresolved(activeCommand) : false);
 }
 
 export function tiledHistoryDebug() {
