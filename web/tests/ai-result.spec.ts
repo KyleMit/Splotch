@@ -88,7 +88,7 @@ test.describe('AI result modal', () => {
   test('uploads the live canvas as a non-empty image POST', async ({ page }) => {
     const endpoint = await openAiResult(page);
 
-    const request = await endpoint.firstRequest;
+    const request = await endpoint.waitForFirstRequest();
     expect(endpoint.requests).toHaveLength(1);
     expect(request.method).toBe('POST');
     expect(request.contentType).toMatch(/^image\/(webp|png)$/);

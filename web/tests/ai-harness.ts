@@ -35,6 +35,8 @@ interface AiMockDelivery {
   delivered: () => void;
 }
 
+const AI_REQUEST_OBSERVATION_TIMEOUT_MS = 10_000;
+
 async function mockAiEndpoint(page: Page) {
   const queued: AiMockDelivery[] = [];
   const waiters: ((delivery: AiMockDelivery) => void)[] = [];
@@ -43,6 +45,17 @@ async function mockAiEndpoint(page: Page) {
   const firstRequest = new Promise<AiUploadRequest>((resolve) => {
     observeFirstRequest = resolve;
   });
+  const waitForFirstRequest = () =>
+    new Promise<AiUploadRequest>((resolve, reject) => {
+      const timeoutId = setTimeout(
+        () => reject(new Error('generate-image was never requested')),
+        AI_REQUEST_OBSERVATION_TIMEOUT_MS
+      );
+      void firstRequest.then((request) => {
+        clearTimeout(timeoutId);
+        resolve(request);
+      });
+    });
   const respond = (response: AiMockResponse) =>
     new Promise<void>((delivered) => {
       const delivery = { response, delivered };
@@ -73,7 +86,7 @@ async function mockAiEndpoint(page: Page) {
   });
 
   return {
-    firstRequest,
+    waitForFirstRequest,
     requests,
     // The picture is picked at delivery rather than at mock time because a spec
     // sets its viewport after the harness is wired, and several specs measure
