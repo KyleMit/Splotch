@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
-import { draw, gotoApp } from './helpers';
+import { drawCommittedStroke, gotoApp } from './helpers';
 
 // Shared harness for the AI generation flow, used by ai-result.spec.ts (the
 // result modal's presentation) and ai-report.spec.ts (the report flow). The
@@ -10,8 +10,6 @@ import { draw, gotoApp } from './helpers';
 //
 // It deliberately does not extend Playwright's `test`: it overrides no fixture,
 // so specs take `test` from '@playwright/test' as they do with flows-harness.
-
-const PREVIEW_COMMIT_TIMEOUT_MS = 10_000;
 
 interface AiMockResponse {
   status: number;
@@ -41,6 +39,10 @@ async function mockAiEndpoint(page: Page) {
   const queued: AiMockDelivery[] = [];
   const waiters: ((delivery: AiMockDelivery) => void)[] = [];
   const requests: AiUploadRequest[] = [];
+  let observeFirstRequest!: (request: AiUploadRequest) => void;
+  const firstRequest = new Promise<AiUploadRequest>((resolve) => {
+    observeFirstRequest = resolve;
+  });
   const respond = (response: AiMockResponse) =>
     new Promise<void>((delivered) => {
       const delivery = { response, delivered };
@@ -51,11 +53,13 @@ async function mockAiEndpoint(page: Page) {
 
   await page.route('**/api/generate-image*', async (route) => {
     const request = route.request();
-    requests.push({
+    const upload = {
       method: request.method(),
       contentType: request.headers()['content-type'],
       bytes: request.postDataBuffer()?.byteLength ?? 0,
-    });
+    };
+    requests.push(upload);
+    observeFirstRequest(upload);
     const delivery =
       queued.shift() ??
       (await new Promise<AiMockDelivery>((resolve) => {
@@ -69,6 +73,7 @@ async function mockAiEndpoint(page: Page) {
   });
 
   return {
+    firstRequest,
     requests,
     // The picture is picked at delivery rather than at mock time because a spec
     // sets its viewport after the harness is wired, and several specs measure
@@ -100,25 +105,13 @@ export async function invokeAiGeneration(page: Page) {
 }
 
 async function drawPreview(page: Page) {
-  const history = () => page.evaluate(() => window.__drawingDebug?.getUndoDebug());
-  const committed = async () => {
-    const state = await history();
-    return Boolean(state && state.snapshots > 0 && state.pendingCommands === 0);
-  };
-
-  await expect
-    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
-      timeout: PREVIEW_COMMIT_TIMEOUT_MS,
-    })
-    .toBe(true);
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('Drawing canvas has no bounds');
-  await draw(page, [
+  await drawCommittedStroke(page, [
     { x: box.width * 0.24, y: box.height * 0.45 },
     { x: box.width * 0.5, y: box.height * 0.62 },
     { x: box.width * 0.76, y: box.height * 0.4 },
   ]);
-  await expect.poll(committed, { timeout: PREVIEW_COMMIT_TIMEOUT_MS }).toBe(true);
 }
 
 // `freeTier: true` leaves the access token unset, which is what selects the

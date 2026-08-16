@@ -184,6 +184,41 @@ with `vite preview` (set `DEV_SERVER=1` for fast iteration against `vite dev`). 
 These run on real Chromium but **cannot catch native or WebView boot failures** — that's what the
 Android smoke test is for.
 
+### Flake-hunting protocol
+
+Start discovery at the repository's supported CI contention level: one worker per logical CPU
+available to the process (ADR-0078), with retries disabled. Read that count with
+`node -p "require('node:os').availableParallelism()"`, then run at least three independent full
+suites through the sweep driver:
+
+```bash
+npm run test:e2e:sweep -- --workers=<printed count> --reps=3 --out=/tmp/splotch-e2e-discovery
+```
+
+The driver builds once, unsets the CI variables that enable retries, and lets Playwright start a
+fresh preview server for every repetition. That fresh server is part of the protocol: the suite
+fills server-side rate-limit windows, so a shell loop against one long-lived server manufactures
+failures that the next real run would never inherit.
+
+Use this sequence for a suspected flake:
+
+1. Reproduce the failure on the pre-fix code at the supported CI worker count. Record the failing
+   product state, not only the assertion text.
+2. Decide whether the timing window is reachable by a real user. Contention can amplify either a
+   test-harness race or a product bug; a failure under stress alone does not classify it. Fix the
+   product when a user can reach the bad state. Otherwise make the spec wait for the durable outcome
+   its next operation actually needs.
+3. Keep the pre-fix reproduction as evidence, then run a focused diagnostic amplifier with retries
+   disabled, for example
+   `npm run test:e2e -- <spec> -g "<title>" --workers=<higher count> --retries=0 --repeat-each=10`.
+   Higher-than-supported worker counts are diagnostic amplification only, never a new default.
+4. Verify the outcome-based fix with that focused amplifier, then run at least three clean
+   full-suite repetitions through `test:e2e:sweep` at the supported CI worker count. Use the sweep
+   for any stateful or full-suite repetition so every repetition gets fresh server state.
+
+A clean streak is validation, not proof of a zero flake rate. Report the sample size and contention
+level so a later recurrence can update the evidence instead of contradicting an absolute claim.
+
 ### Writing flake-resistant specs
 
 The full suite runs parallel workers, derived from the machine rather than hardcoded: a worker costs
@@ -198,12 +233,16 @@ specs that can't race in the first place:
 * **Never assert on a single interaction against a lazily-wired control.** Overlays that idle-mount
   (Settings, ADR-0049) can drop the first click before their handler is attached, so a bare
   `.click()` + `expect(modal).toBeVisible()` flakes. `tests/helpers.ts` exports a shared
-  `retryOpen(ready,
-  open, opts?)` primitive for this — it retries `open()` until the `ready`
-  sentinel shows, skipping the click when it's already open. `openSettingsModal` (also
-  `tests/helpers.ts`) and `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate`
-  (`tests/flows-harness.ts`) are all one-liners over it. Reach for it (or wrap open-then-assert in
-  `expect(...).toPass()`) rather than repeating a bare click.
+  `retryOpen(ready, open, opts?)` primitive for this — it retries `open()` until `ready` shows,
+  skipping the click when it is already open. The ready locator must be durable: prerendered or
+  native behavior must not be able to satisfy it before hydration and then reset it. Either wait on
+  a hydration-only sentinel before interacting (the Beta page's on-mount-only support link and
+  `openHydratedContents`' computed panel cap are examples), or retry the complete action plus its
+  durable product outcome as one transaction. `openSettingsModal` (also `tests/helpers.ts`) and
+  `openDrawer`/`openBrushMenu`/`openColoringDialog`/`openParentalGate` (`tests/flows-harness.ts`)
+  are all one-liners over `retryOpen`. Reach for one of those contracts (or wrap the complete
+  open-and-outcome transaction in `expect(...).toPass()`) rather than repeating a bare click or
+  treating transient visibility as readiness.
 * **A view an overlay picks *at open time* can't be waited into — reopen it.** Retrying an assertion
   only works while the thing asserted on is still coming; when the open itself chose a different
   view, no timeout reaches it. `ColoringBook` picks between its book grid and a single book's pages
@@ -225,6 +264,15 @@ specs that can't race in the first place:
   must **not** change within a window (e.g. the "SW never registers" check in
   `pwa-registration.spec.ts`). A slower worker only lengthens the real wait in both cases, so they
   can't false-red. Comment the reason when you keep one.
+* **Use the drawing app's durable ready state.** `gotoApp()` does not return merely because the
+  prerendered `#drawingCanvas` is visible: it waits for the hydrated drawing debug seam and a
+  non-zero rendered composite. Specs intentionally covering first paint or hydration navigate with
+  `page.goto()` so the shared postcondition stays strong. Reuse `waitForDrawableRenderedCanvas`,
+  `readDrawingHistory`, and `waitForCommittedDrawingHistory` when a flow needs those narrower
+  lifecycle signals. Use `drawCommittedStroke` when setup requires one durable command: it retries
+  input only while history proves that the previous attempt produced neither a pending nor a
+  committed command, so a slow commit cannot become a duplicate stroke. Keep the visual or
+  product-specific assertion in the spec.
 * **Poll async render/canvas state; size the window for a *starved* worker.** Canvas reveals and
   debounced relayouts settle asynchronously and lag hard under contention. The magic brush samples a
   sheet that rasterizes async, holding a stroke's ops out of the paper until a fold-in repaint
@@ -237,6 +285,18 @@ specs that can't race in the first place:
 * **A sequence that must land inside a timing window must retry as a whole.** A triple-tap that has
   to fall inside dragToClear's 1000ms multi-click window (`clear-tutorial.spec.ts`) can straddle it
   under load — wrap the entire burst in `toPass()`, don't just add a longer wait between taps.
+* **A mocked endpoint control resolves after delivery, not after queuing.** If a helper exposes
+  `succeed()` or `fail()`, resolve that control only after the intercepted handler's awaited
+  `route.fulfill()` completes. Queuing a response does not prove the page has received it, so an
+  assertion started from that signal races the network operation it means to observe. Keep the
+  delivery handshake beside the mock that owns it; do not create a generic route-controller
+  abstraction without a second honest caller.
+* **Pace synthetic gesture phases on rendered frames.** Touch start, dependent moves, and touch end
+  can be delivered to the compositor as one coalescible burst under load even when arbitrary
+  wall-clock sleeps separate them in the test process. Advance a phase with `requestAnimationFrame`
+  in the page when the next phase depends on compositor observation. Keep that pacing local until a
+  second real caller earns a narrowly named helper; do not introduce a generic `nextFrame` or
+  `waitForStable` abstraction.
 * **A control's UI state commits a tick before the imperative engine adopts it, so wait on the
   engine.** The tool buttons update `aria-pressed` reactively, but the engine enters that mode
   through a Svelte `$effect` (`setMagicMode` in `DrawingCanvas`), so `aria-pressed=true` does not

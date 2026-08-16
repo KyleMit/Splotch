@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   COLOR_CHANGE_DEBOUNCE_SETTLE_MS,
   draw,
+  drawCommittedStroke,
   firstOpaquePixel,
   gotoApp,
   isBlueDominant,
@@ -94,20 +95,6 @@ async function waitForStableCanvasInkStats(
     .toBe(true);
   if (!settled) throw new Error('canvas ink never settled');
   return settled;
-}
-
-async function waitForCommittedSnapshots(page: Page, snapshots: number) {
-  await expect
-    .poll(
-      async () => {
-        const history = await page.evaluate(() => window.__drawingDebug?.getUndoDebug());
-        return history
-          ? { snapshots: history.snapshots, pendingCommands: history.pendingCommands }
-          : null;
-      },
-      { timeout: STROKE_SETTLE_TIMEOUT_MS }
-    )
-    .toEqual({ snapshots, pendingCommands: 0 });
 }
 
 test('selecting a palette color activates it and paints in that color', async ({ page }) => {
@@ -209,19 +196,11 @@ test('the crayon brush lays textured strokes that build up in the full app', asy
 test('the default pen lays solid ink with no crayon buildup', async ({ page }) => {
   await gotoApp(page);
   await expect(swatch(page, TEST_PALETTE.purple)).toHaveClass(/active/);
-  await expect
-    .poll(() => page.evaluate(() => Boolean(window.__drawingDebug)), {
-      timeout: STROKE_SETTLE_TIMEOUT_MS,
-    })
-    .toBe(true);
-
   const line = Array.from({ length: 15 }, (_, index) => ({ x: 240 + index * 20, y: 320 }));
   const region = { x: 220, y: 280, width: 320, height: 80 };
-  await draw(page, line);
-  await waitForCommittedSnapshots(page, 1);
+  await drawCommittedStroke(page, line);
   const first = await waitForStableCanvasInkStats(page, region);
-  await draw(page, line);
-  await waitForCommittedSnapshots(page, 2);
+  await drawCommittedStroke(page, line);
   const second = await waitForStableCanvasInkStats(page, region);
 
   expect(first.count).toBeGreaterThan(200);

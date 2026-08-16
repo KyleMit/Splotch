@@ -6,6 +6,7 @@ import { COLOR_CHANGE_DEBOUNCE_MS, POINTER_RESUME_JUMP_RATIO } from '../src/lib/
 import { paletteHex } from '../src/lib/palette';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import type { HistoryDebug } from '../src/lib/drawing/undoHistory';
 
 // Shared E2E helpers used across specs. Keep this module WebKit-portable — no
 // CDP sessions or dev-harness routes — because webkit-smoke.spec.ts imports it
@@ -150,8 +151,54 @@ export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'alwa
   }
 }
 
-/** Navigate to the app and wait for hydration: the canvas mounts on the client,
- *  so once it's visible the app has hydrated. */
+const DRAWING_READY_TIMEOUT_MS = 10_000;
+const DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS = 1500;
+
+export function readDrawingHistory(page: Page): Promise<HistoryDebug | null> {
+  return page.evaluate(() => window.__drawingDebug?.getUndoDebug() ?? null);
+}
+
+export async function waitForDrawableRenderedCanvas(page: Page) {
+  await expect
+    .poll(
+      async () => {
+        if (!(await readDrawingHistory(page))) return false;
+        const canvas = await renderedCanvasHandle(page);
+        try {
+          return await canvas.evaluate((element) => element.width > 0 && element.height > 0);
+        } finally {
+          await canvas.dispose();
+        }
+      },
+      { timeout: DRAWING_READY_TIMEOUT_MS }
+    )
+    .toBe(true);
+}
+
+export async function waitForCommittedDrawingHistory(
+  page: Page,
+  snapshots: number,
+  timeoutMs: number
+) {
+  let committed: HistoryDebug | null = null;
+  await expect
+    .poll(
+      async () => {
+        const history = await readDrawingHistory(page);
+        if (history?.snapshots === snapshots && history.pendingCommands === 0) committed = history;
+        return history
+          ? { snapshots: history.snapshots, pendingCommands: history.pendingCommands }
+          : null;
+      },
+      { timeout: timeoutMs }
+    )
+    .toEqual({ snapshots, pendingCommands: 0 });
+  if (!committed) throw new Error('drawing history did not reach the committed state');
+  return committed;
+}
+
+/** Navigate to the drawing app and wait for its hydrated engine and rendered
+ *  composite to become drawable. Early-boot specs navigate directly. */
 export async function gotoApp(
   page: Page,
   path = '/',
@@ -160,6 +207,7 @@ export async function gotoApp(
   await seedParentalGatePolicies(page, gates);
   await page.goto(path);
   await expect(page.locator('#drawingCanvas')).toBeVisible();
+  await waitForDrawableRenderedCanvas(page);
 }
 
 // Open an overlay/flyout/dialog robustly and leave it open. Several of these
@@ -167,8 +215,10 @@ export async function gotoApp(
 // click can land before the handler is wired and be dropped; a flyout toggle
 // must also not be re-clicked when it's already open (that would toggle it
 // shut). Retry the whole open until `ready` — the control's presence sentinel —
-// is visible, skipping the click whenever it already is. `open` owns the click
-// (and its own per-click timeout); `settle` is the per-attempt wait for `ready`.
+// is visible, skipping the click whenever it already is. `ready` must be a
+// durable product state: a transient prerendered/native state can satisfy this
+// loop and then disappear during hydration. `open` owns the click (and its own
+// per-click timeout); `settle` is the per-attempt wait for `ready`.
 export async function retryOpen(
   ready: Locator,
   open: () => Promise<void>,
@@ -388,6 +438,26 @@ export async function dragStroke(
 export async function draw(page: Page, points: { x: number; y: number }[]) {
   const box = await page.locator('#drawingCanvas').boundingBox();
   await dragStroke(page, box, points);
+}
+
+export async function drawCommittedStroke(page: Page, points: { x: number; y: number }[]) {
+  const baseline = await readDrawingHistory(page);
+  if (!baseline) throw new Error('drawing history is unavailable');
+  if (baseline.pendingCommands !== 0) {
+    throw new Error('cannot start a committed stroke while another drawing command is pending');
+  }
+  const targetSnapshots = baseline.snapshots + 1;
+
+  // A failed short commit wait retries the input only when history still proves
+  // the previous attempt produced neither a pending nor a committed command.
+  await expect(async () => {
+    const history = await readDrawingHistory(page);
+    if (!history) throw new Error('drawing history became unavailable');
+    if (history.snapshots === baseline.snapshots && history.pendingCommands === 0) {
+      await draw(page, points);
+    }
+    await waitForCommittedDrawingHistory(page, targetSnapshots, DRAWING_COMMIT_ATTEMPT_TIMEOUT_MS);
+  }).toPass({ timeout: DRAWING_READY_TIMEOUT_MS });
 }
 
 export function renderedCanvasHandle(page: Page): Promise<JSHandle<HTMLCanvasElement>> {

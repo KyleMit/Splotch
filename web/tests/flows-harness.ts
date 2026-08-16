@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test';
 
 import {
-  draw,
+  drawCommittedStroke,
   gotoApp,
   openSettingsModal,
   renderedCanvasHandle,
@@ -92,26 +92,22 @@ export async function opaqueCanvasPixelCount(page: Page) {
   }
 }
 
-const AI_BUTTON_ENABLE_ATTEMPT_TIMEOUT_MS = 1500;
 const AI_BUTTON_ENABLE_TIMEOUT_MS = 10_000;
 
 export async function enableAiButtonWithStroke(page: Page) {
   const button = page.locator('#aiImageButton');
-  await expect(async () => {
-    if (await button.isEnabled().catch(() => false)) return;
-    await draw(page, [
-      { x: 120, y: 120 },
-      { x: 260, y: 200 },
-    ]);
-    await expect(button).toBeEnabled({ timeout: AI_BUTTON_ENABLE_ATTEMPT_TIMEOUT_MS });
-  }).toPass({ timeout: AI_BUTTON_ENABLE_TIMEOUT_MS });
+  if (await button.isEnabled().catch(() => false)) return;
+  await drawCommittedStroke(page, [
+    { x: 120, y: 120 },
+    { x: 260, y: 200 },
+  ]);
+  await expect(button).toBeEnabled({ timeout: AI_BUTTON_ENABLE_TIMEOUT_MS });
 }
 
 // Open the Grown-Ups Only gate from the AI button — its Parent Center-managed
 // operation boundary (ADR-0094: Settings entry itself is ungated). Requires a
-// gotoApp with `gates: 'always'`. The setup stroke is outcome-driven because
-// gotoApp can return on the prerendered canvas before its pre-hydration engine
-// is ready; the collapsed drawer is opened after that setup commits.
+// gotoApp with `gates: 'always'`. The collapsed drawer is opened after the
+// setup stroke has durably committed and enabled the product action.
 export async function openParentalGate(page: Page) {
   await enableAiButtonWithStroke(page);
   await openDrawer(page);
