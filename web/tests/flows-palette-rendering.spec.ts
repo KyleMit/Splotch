@@ -173,10 +173,10 @@ test('the crayon brush lays textured strokes that build up in the full app', asy
 
   const line = Array.from({ length: 15 }, (_, index) => ({ x: 240 + index * 20, y: 320 }));
   const region = { x: 220, y: 280, width: 320, height: 80 };
-  await draw(page, line);
-  const first = await canvasInkStats(page, region);
-  await draw(page, line);
-  const second = await canvasInkStats(page, region);
+  await drawCommittedStroke(page, line);
+  const first = await waitForStableCanvasInkStats(page, region);
+  await drawCommittedStroke(page, line);
+  const second = await waitForStableCanvasInkStats(page, region);
 
   expect(first.count).toBeGreaterThan(200);
   expect(first.r).toBeGreaterThan(first.g);
