@@ -47,7 +47,11 @@ import { STORAGE_KEYS, hydrateDurableStorage } from './storage';
 import { strokeState } from './state/strokeWidth.svelte';
 import { toolState } from './state/tool.svelte';
 import { settings } from './state/settings.svelte';
-import { settingsActivityDotsEnabled } from './state/settingsSessions.svelte';
+import { sessionCount, SETTINGS_ACTIVITY_DOTS_START_SESSION } from './state/sessionCounters.svelte';
+
+function settingsActivityDotsEnabled() {
+  return sessionCount('settingsActivity') >= SETTINGS_ACTIVITY_DOTS_START_SESSION;
+}
 
 beforeEach(() => {
   localStorage.clear();

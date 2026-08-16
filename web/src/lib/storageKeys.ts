@@ -27,6 +27,8 @@ export const STORAGE_KEYS = {
   eraserWidthSize: 'splotch-eraser-width-size',
   installDismissed: 'splotch-install-dismissed',
   installCompleted: 'splotch-install-completed',
+  installRepromptSessionCount: 'splotch-install-reprompt-session-count',
+  installRepromptsUsed: 'splotch-install-reprompts-used',
   legacyAiUserApiKey: 'splotch-ai-user-api-key',
   saveFolderChosen: 'splotch-save-folder-chosen',
   parentalGateAiImageMode: 'splotch-parental-gate-ai-image-mode',

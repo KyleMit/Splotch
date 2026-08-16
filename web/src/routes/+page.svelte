@@ -22,7 +22,7 @@
   import { installWakeLock } from '$lib/boot/wakeLock';
   import { installContextMenuGuard } from '$lib/boot/contextMenuGuard';
   import { hydratePersistedState } from '$lib/boot/persistedState';
-  import { initWebOnlyServices } from '$lib/boot/webOnlyServices';
+  import { initWebOnlyServices, recordWebInstallRepromptSession } from '$lib/boot/webOnlyServices';
   import { installDevHarnessSeam } from '$lib/boot/devHarnessSeam';
   import { installUndoShortcut } from '$lib/boot/undoShortcut';
   import { installColoringPackDownloads } from '$lib/boot/coloringPacks';
@@ -59,6 +59,12 @@
     if (__IS_CAPACITOR__) return;
     if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
     pwaUpdates.registerDeferredServiceWorker();
+  });
+
+  $effect(() => {
+    if (__IS_CAPACITOR__) return;
+    if (canvasState.strokeCount < SETTLED_IN_STROKES) return;
+    recordWebInstallRepromptSession();
   });
 
   // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).

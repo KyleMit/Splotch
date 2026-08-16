@@ -4,7 +4,7 @@ import {
   type SectionId,
 } from '$lib/components/settings/sections';
 import { onDurableRestore, readString, STORAGE_KEYS, writeString } from '$lib/storage';
-import { settingsActivityDotsEnabled } from './settingsSessions.svelte';
+import { sessionCount, SETTINGS_ACTIVITY_DOTS_START_SESSION } from './sessionCounters.svelte';
 
 type SeenStamps = Partial<Record<SectionId, string>>;
 
@@ -33,7 +33,9 @@ export function isSectionUnseen(id: SectionId): boolean {
 }
 
 export function hasSectionActivity(id: SectionId): boolean {
-  return settingsActivityDotsEnabled() && isSectionUnseen(id);
+  return (
+    sessionCount('settingsActivity') >= SETTINGS_ACTIVITY_DOTS_START_SESSION && isSectionUnseen(id)
+  );
 }
 
 export function markSectionSeen(id: SectionId) {

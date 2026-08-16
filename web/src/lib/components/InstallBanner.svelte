@@ -11,6 +11,7 @@
     dismissInstall,
     armInstallAutoClear,
     autoDismissInstallIfDue,
+    installPromptStage,
   } from '$lib/state/install.svelte';
   import { SETTINGS_BUTTON_ID } from '$lib/state/ui.svelte';
   import { aiResult } from '$lib/state/aiGeneration.svelte';
@@ -28,6 +29,21 @@
   const PARTING_FADE_MS = 200;
   const HINT_FADE_MS = 160;
 
+  const INSTALL_PROMPT_COPY = {
+    initial: {
+      heading: 'Add Splotch to your home screen',
+      detail: 'Opens full-screen, just like a real app',
+    },
+    returning: {
+      heading: 'Welcome back! Add Splotch to your home screen',
+      detail: 'Opens full-screen, just like a real app',
+    },
+    final: {
+      heading: 'One last reminder — install Splotch',
+      detail: "We won't ask again — it's always in the Parent Center",
+    },
+  } as const;
+
   // iOS / Android manual flows have no one-tap API, so the button expands an
   // inline how-to instead of firing a dialog.
   let showHint = $state(false);
@@ -42,11 +58,13 @@
   // and never competes with the very first finger-on-screen moment. It also
   // stands down while a generation waits in the corner: both live in the same
   // place, and of the two only the chip is the way back to a picture already
-  // paid for (ADR-0116). An install prompt is re-offerable — it returns next
-  // session, and Settings carries the same action.
+  // paid for (ADR-0116). An install prompt is re-offerable after sustained use,
+  // and Settings carries the same action.
+  const promptStage = $derived(installPromptStage());
+  const promptCopy = $derived(INSTALL_PROMPT_COPY[promptStage ?? 'initial']);
   const visible = $derived(
     !install.installed &&
-      !install.dismissed &&
+      promptStage !== null &&
       install.mode !== 'none' &&
       !aiResult.minimized &&
       canvasState.strokeCount >= SETTLED_IN_STROKES
@@ -130,8 +148,8 @@
           <SplotchyIcon class="install-mascot-icon" />
         </span>
         <div class="install-copy">
-          <strong>Add Splotch to your home screen</strong>
-          <span class="install-sub">Opens full-screen, just like a real app</span>
+          <strong>{promptCopy.heading}</strong>
+          <span class="install-sub">{promptCopy.detail}</span>
         </div>
         <button class="install-cta" onclick={onPrimary} disabled={busy} type="button">
           {#if install.mode === 'oneTap'}

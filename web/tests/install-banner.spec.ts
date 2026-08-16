@@ -72,3 +72,45 @@ test('the install banner parts after five additional strokes', async ({ page }) 
     .toBe('true');
   await expect(banner).toBeHidden({ timeout: PARTING_EXIT_TIMEOUT_MS });
 });
+
+test('the fifth qualifying session re-shows the banner with return-aware copy', async ({
+  page,
+}) => {
+  await page.addInitScript(
+    ({ dismissedKey, sessionsKey }) => {
+      localStorage.setItem(dismissedKey, 'true');
+      localStorage.setItem(sessionsKey, '4');
+    },
+    {
+      dismissedKey: STORAGE_KEYS.installDismissed,
+      sessionsKey: STORAGE_KEYS.installRepromptSessionCount,
+    }
+  );
+  await gotoApp(page);
+  const banner = page.locator('.install-banner');
+
+  for (let stroke = 0; stroke < 3; stroke += 1) {
+    const y = 120 + stroke * 40;
+    await draw(page, [
+      { x: 100, y },
+      { x: 280, y: y + 20 },
+    ]);
+  }
+
+  await expect(banner).toContainText('Welcome back! Add Splotch to your home screen', {
+    timeout: BANNER_MOUNT_TIMEOUT_MS,
+  });
+  await expect
+    .poll(() =>
+      page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installRepromptSessionCount)
+    )
+    .toBe('5');
+
+  await banner.getByRole('button', { name: 'Not now' }).click();
+  await expect
+    .poll(() =>
+      page.evaluate((key) => localStorage.getItem(key), STORAGE_KEYS.installRepromptsUsed)
+    )
+    .toBe('1');
+  await expect(banner).toBeHidden();
+});
