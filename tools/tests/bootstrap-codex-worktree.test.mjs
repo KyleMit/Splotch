@@ -10,6 +10,7 @@ const SESSION_CWD = '/worktree/web/src';
 const WORKTREE_ROOT = '/worktree';
 const INITIAL_HEAD = '1111111111111111111111111111111111111111';
 const FETCHED_HEAD = '2222222222222222222222222222222222222222';
+const rootInstructions = readFileSync(join(repoRoot, 'AGENTS.md'), 'utf8');
 
 const commandKey = (command, args) => JSON.stringify([command, ...args]);
 const success = (stdout = '') => ({ status: 0, stdout, stderr: '' });
@@ -109,7 +110,15 @@ describe('Codex worktree bootstrap hook', () => {
   it('updates a stale main worktree before installing and verifying dependencies', () => {
     const runner = createRunner();
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    const result = bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand });
+
+    expect(result).toEqual({
+      hookSpecificOutput: {
+        hookEventName: 'SessionStart',
+        additionalContext: 'Splotch worktree bootstrap completed successfully.',
+      },
+    });
+    expect(rootInstructions).toContain(result.hookSpecificOutput.additionalContext);
     expect(commandNames(runner.calls)).toEqual([
       'git rev-parse --path-format=absolute --git-dir',
       'git rev-parse --path-format=absolute --git-common-dir',
@@ -140,7 +149,9 @@ describe('Codex worktree bootstrap hook', () => {
     script.set(commandKey('git', ['rev-parse', 'HEAD']), [success(FETCHED_HEAD)]);
     const runner = createRunner(script);
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(
+      bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })
+    ).toMatchObject({ hookSpecificOutput: { hookEventName: 'SessionStart' } });
     expect(commandNames(runner.calls)).toEqual([
       'git rev-parse --path-format=absolute --git-dir',
       'git rev-parse --path-format=absolute --git-common-dir',
@@ -244,7 +255,9 @@ describe('Codex worktree bootstrap hook', () => {
     script.set(commandKey('corepack', ['enable', 'pnpm']), [failure('read-only Node bin')]);
     const runner = createRunner(script);
 
-    expect(bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })).toBeNull();
+    expect(
+      bootstrapCodexWorktree({ cwd: SESSION_CWD, runCommand: runner.runCommand })
+    ).toMatchObject({ hookSpecificOutput: { hookEventName: 'SessionStart' } });
     expect(commandNames(runner.calls).slice(-4)).toEqual([
       'corepack enable pnpm',
       'corepack install',
