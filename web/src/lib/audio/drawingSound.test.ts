@@ -3,13 +3,6 @@ import { stubAudioContext } from './drawingSoundTestHarness';
 
 let stopDrawSound: (() => void) | undefined;
 
-// These tests drive real setTimeout/vi.waitFor polling against decode/fetch
-// mocks rather than fake timers, so a contended host can blow past Vitest's
-// default 5s test timeout mid-poll and leave a stray async chain to bleed
-// into the next test.
-const SLOW_HOST_TEST_TIMEOUT_MS = 20_000;
-vi.setConfig({ testTimeout: SLOW_HOST_TEST_TIMEOUT_MS });
-
 describe('playDrawSound', () => {
   afterEach(() => {
     stopDrawSound?.();
@@ -150,7 +143,9 @@ describe('playDrawSound', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('retries a failed preload once per gesture instead of once per pointer event', async () => {
+  it('retries a failed preload once per gesture instead of once per pointer event', async ({
+    signal,
+  }) => {
     const { setSound } = await import('$lib/state/settings.svelte');
     const drawingSound = await import('./drawingSound');
     stopDrawSound = drawingSound.stopDrawSound;
@@ -172,13 +167,16 @@ describe('playDrawSound', () => {
     setSound(true);
     drawingSound.preloadFirstDrawSound();
     await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledOnce());
+    signal.throwIfAborted();
 
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
     await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledTimes(4));
+    signal.throwIfAborted();
 
     for (let i = 0; i < 60; i++) {
       drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: false });
       await new Promise((resolve) => setTimeout(resolve, 0));
+      signal.throwIfAborted();
     }
 
     expect(fetchMock).toHaveBeenCalledTimes(4);
@@ -294,7 +292,7 @@ describe('playDrawSound', () => {
     expect(decodeAudioData).toHaveBeenCalledOnce();
   });
 
-  it('retries every failed variant at the next stroke start', async () => {
+  it('retries every failed variant at the next stroke start', async ({ signal }) => {
     const { setSound } = await import('$lib/state/settings.svelte');
     const drawingSound = await import('./drawingSound');
     stopDrawSound = drawingSound.stopDrawSound;
@@ -334,8 +332,11 @@ describe('playDrawSound', () => {
     setSound(true);
     drawingSound.preloadDrawSounds();
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    signal.throwIfAborted();
     await vi.waitFor(() => expect(decodeAudioData).toHaveBeenCalledOnce());
+    signal.throwIfAborted();
     await new Promise((resolve) => setTimeout(resolve, 0));
+    signal.throwIfAborted();
 
     drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
 

@@ -18,13 +18,6 @@ vi.mock('./screenshot', () => ({
 }));
 vi.mock('$lib/state/settings.svelte', () => ({ settings: mocks.settings }));
 
-// Several of these tests drive real setTimeout/vi.waitFor polling against
-// fetch/export mocks rather than fake timers, so a contended host can blow
-// past Vitest's default 5s test timeout mid-poll and leave a stray async
-// chain to bleed into the next test.
-const SLOW_HOST_TEST_TIMEOUT_MS = 20_000;
-vi.setConfig({ testTimeout: SLOW_HOST_TEST_TIMEOUT_MS });
-
 function okResponse(blob: Blob): Response {
   return new Response(blob, { status: 200 });
 }
@@ -108,7 +101,9 @@ describe('generateAiImage request ownership', () => {
     expect(console.error).toHaveBeenCalledWith(exportError);
   });
 
-  it('drops a closed run whose canvas export finishes after its replacement starts', async () => {
+  it('drops a closed run whose canvas export finishes after its replacement starts', async ({
+    signal,
+  }) => {
     const exportA = Promise.withResolvers<Blob | null>();
     const exportB = Promise.withResolvers<Blob | null>();
     const requestB = Promise.withResolvers<Response>();
@@ -125,6 +120,7 @@ describe('generateAiImage request ownership', () => {
     const runB = generateAiImage();
     exportB.resolve(new Blob(['drawing-b']));
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledOnce());
+    signal.throwIfAborted();
 
     exportA.resolve(new Blob(['drawing-a']));
     await runA;
@@ -136,7 +132,7 @@ describe('generateAiImage request ownership', () => {
     expect(aiResult.resultUrl).toBe('blob:test-2');
   });
 
-  it('never auto-saves a stale run after close and restart', async () => {
+  it('never auto-saves a stale run after close and restart', async ({ signal }) => {
     mocks.settings.autoSaveAiEnabled = true;
     const requestA = Promise.withResolvers<Response>();
     const requestB = Promise.withResolvers<Response>();
@@ -153,9 +149,11 @@ describe('generateAiImage request ownership', () => {
 
     const runA = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    signal.throwIfAborted();
     closeAiResult();
     const runB = generateAiImage();
     await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    signal.throwIfAborted();
 
     requestA.resolve(okResponse(new Blob(['result-a'])));
     await runA;
@@ -409,14 +407,19 @@ describe('generateAiImage upload format', () => {
   it('probes WebP encode support once across generations', async () => {
     mocks.exportCanvasBlob.mockResolvedValue(new Blob(['P'.repeat(200)], { type: 'image/png' }));
     stubWebpEncoder();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(okResponse(new Blob(['result']))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(okResponse(new Blob(['result']))))
+    );
 
     const { generateAiImage } = await import('./aiImage');
+    const { aiResult } = await import('$lib/state/aiGeneration.svelte');
     await generateAiImage();
     await generateAiImage();
 
     expect(uploadedImage().type).toBe('image/webp');
     expect(HTMLCanvasElement.prototype.toDataURL).toHaveBeenCalledTimes(1);
+    expect(aiResult.error).toBeNull();
   });
 
   it('uses the installation pseudonym instead of a credential for a free generation', async () => {
