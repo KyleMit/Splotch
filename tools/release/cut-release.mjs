@@ -47,6 +47,26 @@ const isReleasePath = (path) =>
     allowed.endsWith('/') ? path.startsWith(allowed) : path === allowed
   );
 
+// The bump that moves package.json's version, as an argv the tests drive a real
+// pnpm with — the flags are only meaningful as behavior, and a release cut is a
+// bad place to discover one is wrong.
+//
+// --no-git-checks is load-bearing, not defensive. Unlike npm, pnpm refuses to bump
+// a dirty working tree (ERR_PNPM_UNCLEAN_WORKING_TREE), and it checks that even
+// under --no-git-tag-version — the flag that would suggest it is not going to
+// touch git at all. bumpVersions() has already written android/ and ios/ by the
+// time it calls this, so the tree is always dirty here and the release would abort
+// before package.json moved. assertOnlyReleasePaths() is what actually guards the
+// tree; this call makes no commit and no tag, and pnpm-lock.yaml holds no version
+// to resync.
+export const pnpmVersionArgs = (version) => [
+  'version',
+  version,
+  '--no-git-tag-version',
+  '--allow-same-version',
+  '--no-git-checks',
+];
+
 export const findStrayReleasePaths = (status) =>
   status
     .split(/\r?\n/)
@@ -128,9 +148,7 @@ function bumpVersions(version, versionCode) {
   } else {
     console.log('(no ios/ project yet — skipping iOS version bump)');
   }
-  // pnpm, not npm: `npm version` syncs the lockfile it expects to find, which
-  // would author a competing package-lock.json alongside pnpm-lock.yaml.
-  run('pnpm', ['version', version, '--no-git-tag-version', '--allow-same-version']);
+  run('pnpm', pnpmVersionArgs(version));
 }
 
 function generateArtifacts() {
