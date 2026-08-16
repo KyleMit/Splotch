@@ -39,35 +39,54 @@ jobs:
       # the Debug app for the simulator, installs it, runs .maestro/smoke.yaml —
       # the same flow the Android smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
+        id: smoke
         run: npm run test:ios
 
       - name: Upload Maestro report
+        id: report
         if: ${{ !cancelled() }}
         uses: ./.github/actions/upload-maestro-report
         with:
           name: maestro-ios-report
 
-      # Same reasoning as android-deploy.yml's filing step: a tag-only gate has
-      # no audience at the moment it runs, so it has to raise its own hand. The
-      # title is platform-specific because a red iOS gate and a green Android
-      # one are different facts about the release.
+      # Same reasoning as android-deploy.yml's filing step, down to why
+      # `failure()` stays job-wide while the body distinguishes a failed smoke
+      # from a job that went red around it. The title is platform-specific
+      # because a red iOS gate and a green Android one are different facts about
+      # the release.
       - name: File the failure
         if: ${{ failure() && github.event_name == 'push' }}
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
+          REPORT_OUTCOME: ${{ steps.report.outcome }}
+          PLATFORM: iOS
+          ARTIFACT: maestro-ios-report
         run: |
-          title='iOS native launch smoke failed'
+          title="${PLATFORM} native deploy gate failed"
+          if [[ "$SMOKE_OUTCOME" == "failure" ]]; then
+            cause="The launch smoke itself failed, so the shipped artifact did not boot and paint. The
+          flow asserts only that (ADR-0120), which makes this a real regression in the build, the
+          Capacitor config, the static export, or the WebView start — not flow drift."
+          else
+            cause="The smoke step did not fail (outcome: ${SMOKE_OUTCOME:-never reached}); the job went red
+          somewhere else — checkout, toolchain, the build, or the report upload. Read the run before
+          treating this as a product regression."
+          fi
+          if [[ "$REPORT_OUTCOME" == "success" ]]; then
+            evidence="* Evidence: the ${ARTIFACT} artifact on that run holds the flow log and any
+            screenshot taken at the failing step."
+          else
+            evidence="* No ${ARTIFACT} artifact was produced (upload outcome: ${REPORT_OUTCOME:-never reached})."
+          fi
           body="$(cat <<EOF
-          The iOS launch smoke failed for ${GITHUB_REF_NAME}.
+          The ${PLATFORM} native deploy gate failed for ${GITHUB_REF_NAME}.
 
           * Run: ${RUN_URL}
-          * Evidence: the maestro-ios-report artifact on that run holds the flow log and the
-            screenshot taken at the failing step.
+          ${evidence}
 
-          The flow asserts only that the installed app launches and paints its UI (ADR-0120),
-          so a failure here is a real boot regression in the shipped artifact — the build,
-          the Capacitor config, the static export, or the WebView start — not flow drift.
+          ${cause}
           EOF
           )"
           existing="$(gh issue list --state open --search "$title in:title" --json number --jq '.[0].number // empty')"

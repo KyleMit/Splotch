@@ -79,7 +79,11 @@ The native smoke launches the installed app, waits for the UI to paint, and stop
 * Both deploy workflows file the failure. On a **tag** push (not a manual dispatch, where someone is
   already reading the result) a failing job opens a platform-specific issue via `gh`, or comments on
   the open one, so a red gate announces itself instead of waiting to be noticed. This is the same
-  check-then-create shape `test.yml`'s post-merge WebKit gate uses, for the same reason.
+  check-then-create shape `test.yml`'s post-merge WebKit gate uses, for the same reason. The
+  condition stays **job-wide** rather than keyed to the smoke step, because a tag that dies at
+  checkout or in the APK build is exactly as unwatched; what the report must not do is *assert* a
+  cause it did not observe, so the body claims a boot regression only when the smoke step's own
+  outcome is `failure`, and offers the Maestro artifact only when its upload produced one.
 * **Route reachability is asserted at build time instead**, in
   `tools/mobile/check-static-bundle.mjs` (`postbuild:cap`). `requiredNativePageProblems` already
   required `privacy.html` and `changelog.html` to survive `NATIVE_EXCLUDED_ROUTES` into the static
