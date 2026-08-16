@@ -8,6 +8,33 @@ const packageSwiftPath = 'ios/App/CapApp-SPM/Package.swift';
 const packageResolvedPath =
   'ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved';
 
+// Capacitor owns both tracked SPM files, so manual fixes are overwritten. The CLI derives the
+// manifest's runtime pin and plugin graph from installed packages; Xcode then derives the remote
+// resolution. Regenerate the manifest with `npm run cap:sync` and refresh the resolution with
+// `npm run ios:build`.
+// ios-spm-lock.test.mjs is the durable enforcement point because the generated files cannot carry
+// repository instructions beyond Capacitor's own warning banner.
+const generatePackageSwiftScript = `
+process.argv.push('--json'); // Keep CLI diagnostics on stderr and stdout reserved for the manifest.
+const { loadConfig } = require('./node_modules/@capacitor/cli/dist/config.js');
+const { logger } = require('./node_modules/@capacitor/cli/dist/log.js');
+const { getPlugins, getPluginType } = require('./node_modules/@capacitor/cli/dist/plugin.js');
+const { getIOSPlugins } = require('./node_modules/@capacitor/cli/dist/ios/common.js');
+const {
+  checkPluginsForPackageSwift,
+  generatePackageText,
+} = require('./node_modules/@capacitor/cli/dist/util/spm.js');
+
+(async () => {
+  logger.info = () => {}; // Keep successful discovery silent; warnings still explain exclusions.
+  const config = await loadConfig();
+  const plugins = await getIOSPlugins(await getPlugins(config, 'ios'));
+  const spmPlugins = await checkPluginsForPackageSwift(config, plugins);
+  const cordovaPlugins = plugins.filter((plugin) => getPluginType(plugin, 'ios') === 1);
+  process.stdout.write(await generatePackageText(config, [...spmPlugins, ...cordovaPlugins]));
+})();
+`;
+
 function lockedImporterVersion(packageName) {
   const lines = readFileSync(join(repoRoot, 'pnpm-lock.yaml'), 'utf8').split('\n');
   const start = lines.indexOf(`      '${packageName}':`);
@@ -21,6 +48,13 @@ function lockedImporterVersion(packageName) {
   return version;
 }
 
+function generatedPackageSwift() {
+  return execFileSync(process.execPath, ['--eval', generatePackageSwiftScript], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  });
+}
+
 describe('committed iOS Swift package lock', () => {
   const capacitorVersion = lockedImporterVersion('@capacitor/ios');
 
@@ -31,7 +65,12 @@ describe('committed iOS Swift package lock', () => {
     })
       .trim()
       .split('\n');
-    expect(tracked).toEqual([packageResolvedPath, packageSwiftPath]);
+    expect([...tracked].sort()).toEqual([packageResolvedPath, packageSwiftPath].sort());
+  });
+
+  it("matches the manifest generated from Capacitor's installed iOS plugin graph", () => {
+    const packageSwift = readFileSync(join(repoRoot, packageSwiftPath), 'utf8');
+    expect(packageSwift).toBe(generatedPackageSwift());
   });
 
   it('pins Package.swift to the locked @capacitor/ios version', () => {
