@@ -43,7 +43,7 @@ sparkles out); page 5 is the one dark-mode frame. The design system — geometry
 | #  | File             | Story                                                                                                                                                                       |
 | -- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 01 | `01-draw.png`    | Hero: a child's drawing mid-session (island on phones, party-hat dinosaur on tablets), full UI with enlarged action buttons, logo + chips (Ages 2+ · offline · open source) |
-| 02 | `02-books.png`   | The Coloring Books picker showing all 8 real cover thumbs (two tall columns on portrait, the app's own tall-portrait grid)                                                  |
+| 02 | `02-books.png`   | The Coloring Books picker showing all 8 real cover thumbs — two tall columns on the tall iPhone slot, the native 3/3/2 grid on the 16:9 Play phone                          |
 | 03 | `03-magic.png`   | A Farm cat page ~85% revealed by natural child scribbles in magic mode, magic brush active in the toolbar                                                                   |
 | 04 | `04-ai.png`      | Doodle → AI masterpiece showcase: a real drawing, the real generation it produced, the wand-stars icon                                                                      |
 | 05 | `05-parents.png` | Dark mode: Settings open on the Tool Drawer section — advanced controls on, one tool hidden, the button-size slider live                                                    |
@@ -80,6 +80,17 @@ pixel sizes, and renders the Play feature graphic from `icon-512.png`.
 
 Iterate on a subset with `--target` / `--page` substring filters, e.g.
 `node --experimental-strip-types tools/marketing-assets/gen-store-assets.mjs --target tablet10 --page 03`.
+
+One capture knowingly diverges from what the capture viewport would natively show, in order to
+*match* what real hardware shows: portrait captures run at 576 CSS px (for the ~1.6× marketing
+scale), where the books grid renders three columns — but every real phone is narrower than the app's
+520px two-column breakpoint (an iPhone 6.9" is 430 CSS pt, a typical Play phone ~411), so shipping
+devices render **two** columns. The tall iPhone capture injects a capture-only override re-stating
+the app's own tall-portrait two-column rule (unreachable at 576px because of its 741px width gate)
+to restore that real-device column count;
+`tools/marketing-assets/tests/books-grid-override.test.mjs` fails if the override ever drifts from
+the component's rule. The 16:9 Play phone slot lacks the height for four cover rows and keeps the
+capture-native 3/3/2 grid.
 
 `icon-512.png` is `assets/icon.png` (the 1024² source) resized to 512².
 
