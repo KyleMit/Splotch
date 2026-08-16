@@ -40,7 +40,7 @@
     },
     final: {
       heading: 'One last reminder — install Splotch',
-      detail: "We won't ask again — it's always in the Parent Center",
+      detail: "We won't ask again — it's always in Settings",
     },
   } as const;
 

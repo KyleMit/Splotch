@@ -114,3 +114,33 @@ test('the fifth qualifying session re-shows the banner with return-aware copy', 
     .toBe('1');
   await expect(banner).toBeHidden();
 });
+
+test('the final re-prompt points parents back to Settings', async ({ page }) => {
+  await page.addInitScript(
+    ({ dismissedKey, sessionsKey, repromptsUsedKey }) => {
+      localStorage.setItem(dismissedKey, 'true');
+      localStorage.setItem(sessionsKey, '10');
+      localStorage.setItem(repromptsUsedKey, '1');
+    },
+    {
+      dismissedKey: STORAGE_KEYS.installDismissed,
+      sessionsKey: STORAGE_KEYS.installRepromptSessionCount,
+      repromptsUsedKey: STORAGE_KEYS.installRepromptsUsed,
+    }
+  );
+  await gotoApp(page);
+  const banner = page.locator('.install-banner');
+
+  for (let stroke = 0; stroke < 3; stroke += 1) {
+    const y = 120 + stroke * 40;
+    await draw(page, [
+      { x: 100, y },
+      { x: 280, y: y + 20 },
+    ]);
+  }
+
+  await expect(banner).toContainText('One last reminder — install Splotch', {
+    timeout: BANNER_MOUNT_TIMEOUT_MS,
+  });
+  await expect(banner).toContainText("We won't ask again — it's always in Settings");
+});

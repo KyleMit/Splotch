@@ -57,10 +57,11 @@ export const install = $state({
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let initialized = false;
 let installAutoClearArmedAt: number | null = null;
-let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, [0, 1, 2]));
-
 const STROKES_BEFORE_AUTO_CLEAR = 5;
 const MAX_INSTALL_REPROMPTS = INSTALL_REPROMPT_SESSION_MILESTONES.length;
+const VALID_REPROMPTS_USED = Array.from({ length: MAX_INSTALL_REPROMPTS + 1 }, (_, index) => index);
+
+let repromptsUsed = $state(readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED));
 
 function isIosSafari() {
   if (!isIosDevice()) return false;
@@ -112,7 +113,7 @@ function resetInstallRepromptCycle() {
 }
 
 function reloadInstallRepromptState() {
-  repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, [0, 1, 2]);
+  repromptsUsed = readInt(STORAGE_KEYS.installRepromptsUsed, 0, VALID_REPROMPTS_USED);
 }
 
 onDurableRestore(reloadInstallRepromptState);
