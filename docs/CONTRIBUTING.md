@@ -17,7 +17,23 @@ on merge.
   ```bash
   nvm use 22
   ```
-* **npm** (bundled with Node)
+* **pnpm** — the package manager (ADR-0119). Don't install it directly; `corepack enable pnpm` puts
+  it on PATH at the exact version `package.json`'s `packageManager` field pins, and corepack is
+  bundled with Node. `npm run <script>` still works against a pnpm-installed tree, so every
+  `npm run …` in these docs is correct as written.
+  ```bash
+  corepack enable pnpm
+  ```
+  **Re-run that after every `nvm install`.** Corepack writes its shim into the *active* Node
+  version's `bin/`, so a Node upgrade lands you in a shell where `pnpm: command not found` — the
+  package manager is fine, the new Node just has no shim yet.
+
+  **Never `npm install` or `npm ci` in this repo.** Neither errors — both give you a working flat
+  `node_modules` — but both write a `package-lock.json` that resolves the tree independently of
+  `pnpm-lock.yaml` and then drifts from it silently. Use `pnpm install`, or `pnpm add <pkg>` to add
+  one. `package-lock.json` is gitignored so the mistake can't spread, and
+  `tools/tests/package-manager.test.mjs` fails if any CI, hook, or bootstrap file starts installing
+  with npm again.
 * **Netlify CLI** (optional) — only needed to run the `/api/*` serverless functions locally via
   `npm run dev:netlify`. Install globally with `npm install -g netlify-cli`.
 * For native Android/iOS work, see the full toolchain setup in the [mobile guide](MOBILE/native.md).
@@ -26,7 +42,8 @@ on merge.
 ## Local setup
 
 ```bash
-npm install
+corepack enable pnpm   # once per machine
+pnpm install
 npm run dev       # http://localhost:5173
 ```
 

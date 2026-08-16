@@ -55,7 +55,7 @@ Two kinds of file are never hand-resolved — resolve their source and regenerat
 
 | Conflicted file                                                | Resolve instead                                               |
 | -------------------------------------------------------------- | ------------------------------------------------------------- |
-| `package-lock.json`                                            | resolve `package.json`, then re-run `npm install`             |
+| `pnpm-lock.yaml`                                               | resolve `package.json`, then re-run `pnpm install`            |
 | `CLAUDE.md`, `AGENTS.md`, `.claude/skills/`, `.agents/skills/` | resolve the `.ruler/` sources, then run `npm run ruler:apply` |
 
 A hand-merged lockfile or a hand-merged concatenation of generated instructions produces a file the

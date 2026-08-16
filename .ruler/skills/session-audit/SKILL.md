@@ -143,10 +143,10 @@ Learned from prior runs:
   tree).
 * **Friction can predate your first tool call — audit the state the session *started* in.** A
   SessionStart hook that dies under `set -e` leaves no failed command in *your* record; the only
-  tells are initial-state anomalies (empty `node_modules` despite a hook that promises
-  `npm install`, missing `.svelte-kit` types) plus a doc asserting the opposite ("installs work as
-  usual"). When your own first attempt at the same action reproduces the hook's failure, that's the
-  recurrence evidence — file it against the hook/doc, and note that silent-at-start failures outrank
+  tells are initial-state anomalies (empty `node_modules` despite a hook that promises an install,
+  missing `.svelte-kit` types) plus a doc asserting the opposite ("installs work as usual"). When
+  your own first attempt at the same action reproduces the hook's failure, that's the recurrence
+  evidence — file it against the hook/doc, and note that silent-at-start failures outrank
   equally-costly visible ones because the next session won't even know why its first `npm run`
   broke.
 * **A forced manual serialization is a tell against the skill that assumed concurrency it never

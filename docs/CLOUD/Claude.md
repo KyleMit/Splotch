@@ -8,7 +8,7 @@ the network constraints that shape what's possible.
 
 A cloud session runs in an ephemeral, Anthropic-managed container: the repo is cloned fresh on start
 and the container is reclaimed after inactivity, so commit and push anything worth keeping.
-`npm install` + `npm run dev` work as usual — with one install-script caveat covered under "Getting
+`pnpm install` + `npm run dev` work as usual — with one install-script caveat covered under "Getting
 dependencies ready" below.
 
 The constraint that matters here is **networking**:
@@ -181,31 +181,27 @@ Deploys take a minute or two after each push, so poll rather than checking once.
 ### Automatic: the SessionStart hook
 
 `.claude/hooks/session-start.sh` (registered in `.claude/settings.json`) runs at the start of every
-cloud session: `npm install` (with a fallback, below) + `svelte-kit sync` in `web/`, guarded by
-`CLAUDE_CODE_REMOTE` so it's a no-op on local machines. Once it's on the default branch, every cloud
-session starts with deps installed — `npm run check` and the unit tests (`npm run test:unit`) work
-out of the box.
+cloud session: `pnpm install` + `svelte-kit sync` in `web/`, guarded by `CLAUDE_CODE_REMOTE` so it's
+a no-op on local machines. Once it's on the default branch, every cloud session starts with deps
+installed — `npm run check` and the unit tests (`npm run test:unit`) work out of the box.
 
-**Install-script note: lifecycle scripts can't download from arbitrary hosts.** `npm install`
-reaches `registry.npmjs.org` fine, but a dependency postinstall that fetches a binary from anywhere
-else gets `403 Forbidden` from the session's egress proxy. `@capacitor/assets` used to hit exactly
-this — it pins sharp 0.32, whose postinstall downloads libvips from GitHub releases — which killed
-the hook's install silently and left sessions with an **empty `node_modules`**. Two layers now
-prevent that: the `overrides` entry in `package.json` lifts the nested sharp to the root `sharp`
-(0.33+ ships its binaries as `@img/*` npm packages, no download step), and if any future dep
-reintroduces the pattern the hook falls back to `npm install --ignore-scripts` — which reproduces
-the full working tree, since the repo itself defines no lifecycle scripts — printing a loud line
-into context instead of dying silently. That command is the manual recovery if `node_modules` ever
-turns up empty or half-installed.
+**Install-script note: lifecycle scripts can't download from arbitrary hosts.** The install reaches
+`registry.npmjs.org` fine, but a dependency postinstall that fetches a binary from anywhere else
+gets `403 Forbidden` from the session's egress proxy. `@capacitor/assets` used to hit exactly this —
+it pins sharp 0.32, whose postinstall downloads libvips from GitHub releases — which killed the
+hook's install silently and left sessions with an **empty `node_modules`**. Two layers now prevent
+it, and neither is a fallback: `pnpm-workspace.yaml`'s `overrides` lifts the nested sharp to the
+root `sharp` (0.33+ ships its binaries as `@img/*` npm packages, no download step), and pnpm runs no
+dependency install script at all unless `allowBuilds` names it — nothing is named, so there is no
+host for a postinstall to reach. A dep that reintroduces the pattern surfaces as a failed install
+naming the package, not as a silent empty tree.
 
-**npm-version note:** `package-lock.json` is authored by npm 11 (local dev), but the container image
-ships npm 10, and the two majors rewrite lockfile metadata in incompatible dialects (they disagree
-on optional-peer entries, so no lockfile shape satisfies both — `--no-save` doesn't prevent the
-rewrite either). The pin runs through `npx -y npm@11` because letting npm 10 self-update in place
-can die halfway with `MODULE_NOT_FOUND` on its own half-overwritten files. Two layers keep sessions
-clean: the setup script pins `npm@11` globally so the churn never happens, and the hook discards any
-lockfile diff its install produces (only when the lockfile was clean beforehand, so real in-session
-lockfile edits survive a resume).
+**package-manager note:** pnpm's version is pinned by `package.json`'s `packageManager` field, and
+the setup script's `corepack install` provisions exactly that version, so the container and local
+dev cannot disagree about who authored the lockfile. (This replaced a global `npm@11` pin that
+existed because npm 10 and npm 11 rewrite `package-lock.json` metadata in incompatible dialects.)
+The hook still discards any lockfile diff its install produces — only when the lockfile was clean
+beforehand, so real in-session lockfile edits survive a resume.
 
 ### Recommended setup script (environment config)
 

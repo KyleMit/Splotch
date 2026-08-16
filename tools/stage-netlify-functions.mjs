@@ -1,5 +1,5 @@
 // Production-deploy staging for the web/ layout (ADR-0024). The Netlify site builds from the
-// repo ROOT (that is where package.json + the lockfile live, so `npm ci` works), but the
+// repo ROOT (that is where package.json + the lockfile live, so the install works), but the
 // SvelteKit build runs with cwd=web/, so adapter-netlify writes its output under web/.
 //
 // The static assets are published straight from web/build (root netlify.toml `publish`), so they
@@ -10,7 +10,7 @@
 // every dynamic request to it at runtime.
 //
 // This is the irreducible cost of keeping one package.json at the root (Capacitor needs it there)
-// while the app lives in web/. The alternative — Netlify base = web — would make `npm ci` run in
+// while the app lives in web/. The alternative — Netlify base = web — would run the install in
 // web/, which has no package.json. See ADR-0024.
 //
 // Runs as the tail of the Netlify build command (root netlify.toml). On Netlify CI the root

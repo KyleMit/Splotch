@@ -1,6 +1,9 @@
 # ADR-0070: Netlify Build-Minute Reduction — Inverted Dependency Split + Build Ignore Rule
 
-**Status:** Active **Date:** 2026-07
+**Status:** Active (install flags amended by [ADR-0119](0119-pnpm-as-package-manager.md) — the split
+and its rationale are unchanged, but the manager is pnpm, so the flag is `PNPM_FLAGS =
+"--prod"`)\
+**Date:** 2026-07
 
 ## Context
 
@@ -44,35 +47,40 @@ app, not a published package — nothing consumes the split, so it is free to re
   `@capacitor/android`, `@capacitor/ios`), which only `cap`/Gradle/Xcode workflows use. The
   Capacitor packages the app code imports (`@capacitor/core` + plugins) stay in `dependencies`.
 
-Netlify installs with `NPM_FLAGS = "--omit=dev --no-audit --no-fund"` (`netlify.toml`
-`[build.environment]`), halving the install: 577 packages / 253 MB vs 1,159 / 512 MB — and halving
-the build cache that gets restored/saved each deploy. GitHub Actions (`test.yml`) and local dev run
-a plain `npm ci` and get everything, unchanged.
+Netlify installs with `PNPM_FLAGS = "--prod"` (`netlify.toml` `[build.environment]`), halving the
+install: 577 packages / 253 MB vs 1,159 / 512 MB — and halving the build cache that gets
+restored/saved each deploy. GitHub Actions (`test.yml`) and local dev run a plain full install and
+get everything, unchanged.
 
 **The invariant:** when adding a dependency, ask "does the Netlify web build import or execute
 this?" Yes → `dependencies`; no → `devDependencies`. A mislabel in the needed-at-build direction
 fails the deploy loudly (missing module); the other direction just installs something extra.
 
-**2. Build ignore rule.** `[build] ignore` skips the deploy when the push touched none of the paths
-the build consumes:
+**2. Build ignore rule.** `[build] ignore` runs a `git diff --quiet` between the last built commit
+and this one over the paths the build consumes, and skips the deploy when none of them changed.
 
-```
-git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web scripts releases package.json package-lock.json netlify.toml
-```
+**The pathspec itself lives in `netlify.toml` and is deliberately not copied here.** It has already
+drifted twice — [ADR-0108](0108-unified-tools-tree.md) moved the build scripts from `scripts/` to
+enumerated `tools/` paths, and [ADR-0119](0119-pnpm-as-package-manager.md) replaced the lockfile and
+added `pnpm-workspace.yaml` — and a stale copy in a decision record is worse than no copy, because
+the failure mode is a *skipped* deploy that looks like a successful one. `netlify.toml` is the
+source of truth and `tools/tests/enumerated-build-paths.test.mjs` is what keeps it honest: it fails
+when a `tools/` path the production build actually runs is missing from the filter, and pins the
+`:(glob)` pathspec semantics that decide how broadly `tools/*.mjs` matches.
 
-The watched set is exactly what the build reads: the app (`web/`), the build + prebuild scripts
-(`scripts/`), `gen:releases` input (`releases/`), the toolchain (`package.json` + lockfile), and the
-deploy config itself. A skipped push leaves the previous deploy live — correct, since nothing
-user-facing changed. (The auto-derived `version.json` patch number then lags `main` by the skipped
-commits until the next real build; that's fine — the PWA stuck-client recovery only needs the
-version to move when the app actually changes.)
+What the watched set *means* is the stable part: everything the build reads — the app, the custom
+functions, the build and prebuild tools it actually runs, the `gen:releases` input, the toolchain
+manifests and lockfile, and the deploy config itself. A skipped push leaves the previous deploy live
+— correct, since nothing user-facing changed. (The auto-derived `version.json` patch number then
+lags `main` by the skipped commits until the next real build; that's fine — the PWA stuck-client
+recovery only needs the version to move when the app actually changes.)
 
 ## Consequences
 
 * \+ Roughly 20% of production deploys (measured 13/67 over 30 days) skip entirely, at zero risk.
 * \+ Each remaining build installs and caches half as much (253 MB vs 512 MB, 577 vs 1,159
-  packages); verified end-to-end: `npm ci --omit=dev` + the full Netlify build command succeed.
-* \+ Local dev, GitHub Actions CI, and native builds are untouched — plain `npm ci` still installs
+  packages); verified end-to-end: a prod-only install + the full Netlify build command succeed.
+* \+ Local dev, GitHub Actions CI, and native builds are untouched — a plain install still installs
   both groups.
 * − `dependencies` no longer means "runtime imports" — `vite` in `dependencies` looks wrong to
   anyone carrying the npm-library convention. The split is documented here and in

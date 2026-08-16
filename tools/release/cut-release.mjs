@@ -28,9 +28,11 @@ import { ROOT, fail, run, capture, isMain, parseOrFail } from '../lib/proc.mjs';
 import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { setAndroidVersion, setIosVersion } from './lib/native-version.mjs';
 
+// No lockfile entry: pnpm-lock.yaml records dependency resolutions, not the root
+// package's own version, so a version bump leaves it untouched and a dirty
+// lockfile during a release is a stray change worth aborting on.
 const RELEASE_PATHS = [
   'package.json',
-  'package-lock.json',
   'web/src/lib/releases.json',
   'web/src/lib/components/settings/CurrentReleaseNotes.svelte',
   'web/src/lib/components/page/ReleaseHistory.svelte',
@@ -44,6 +46,26 @@ const isReleasePath = (path) =>
   RELEASE_PATHS.some((allowed) =>
     allowed.endsWith('/') ? path.startsWith(allowed) : path === allowed
   );
+
+// The bump that moves package.json's version, as an argv the tests drive a real
+// pnpm with — the flags are only meaningful as behavior, and a release cut is a
+// bad place to discover one is wrong.
+//
+// --no-git-checks is load-bearing, not defensive. Unlike npm, pnpm refuses to bump
+// a dirty working tree (ERR_PNPM_UNCLEAN_WORKING_TREE), and it checks that even
+// under --no-git-tag-version — the flag that would suggest it is not going to
+// touch git at all. bumpVersions() has already written android/ and ios/ by the
+// time it calls this, so the tree is always dirty here and the release would abort
+// before package.json moved. assertOnlyReleasePaths() is what actually guards the
+// tree; this call makes no commit and no tag, and pnpm-lock.yaml holds no version
+// to resync.
+export const pnpmVersionArgs = (version) => [
+  'version',
+  version,
+  '--no-git-tag-version',
+  '--allow-same-version',
+  '--no-git-checks',
+];
 
 export const findStrayReleasePaths = (status) =>
   status
@@ -126,7 +148,7 @@ function bumpVersions(version, versionCode) {
   } else {
     console.log('(no ios/ project yet — skipping iOS version bump)');
   }
-  run('npm', ['version', version, '--no-git-tag-version', '--allow-same-version']);
+  run('pnpm', pnpmVersionArgs(version));
 }
 
 function generateArtifacts() {

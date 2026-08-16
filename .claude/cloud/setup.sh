@@ -26,12 +26,12 @@ warn() {
   } >&2
 }
 
-# Pin npm to the major that authors package-lock.json — a mismatched npm rewrites
-# lockfile metadata in its own dialect and dirties the tree every session; full
-# rationale in docs/CLOUD/Claude.md ("npm-version note"). Via npx so the installer
-# isn't the npm being replaced (an in-place self-update can die halfway).
-npx -y npm@11 install -g npm@11 \
-  || warn "npm 11 pin skipped — sessions may see package-lock.json churn (the SessionStart hook discards it)"
+# Put pnpm on PATH at the exact version package.json's packageManager pins, and
+# download it now so it lands in the environment snapshot instead of costing every
+# session its first-run fetch. `corepack install` with no argument reads that field,
+# so the version lives in one place (docs/CLOUD/Claude.md, "package manager note").
+corepack enable pnpm && corepack install \
+  || warn "pnpm setup skipped — the SessionStart hook's install will fail until corepack can provision pnpm"
 
 # Chromium-only Playwright browser for the E2E tier. Derive the version from the repo's
 # @playwright/test (package.json) so the installed Chromium revision matches what

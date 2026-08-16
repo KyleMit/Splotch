@@ -35,28 +35,27 @@ libraries. Maintenance reconciles dependencies after a checkout, ensures the req
 revision exists in the cache, and refreshes SvelteKit's generated types. It intentionally omits the
 system-library installation because the cached container already has it.
 
-Both scripts pin npm to `npm@11` (latest 11.x) before `npm ci`. The Codex image ships npm 11.4.2, an
-older 11.x patch that disagrees with the npm that authors `package-lock.json` (local dev runs
-11.13+, Claude Cloud 11.18) over transitive **optional-peer** entries: 11.4.2 materializes and
-*requires* a nested `node_modules/svelte-check/node_modules/picomatch` entry that newer npm omits,
-so a lockfile generated locally makes Codex's `npm ci` fail with
-`Missing: picomatch@… from lock file`. Pinning npm up to a matching major/patch removes the
-disagreement, so the lockfile a local `npm install` produces installs cleanly on Codex — no
-per-entry lockfile patching required. This mirrors the pin in
-[`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Without the pin, the same drift regresses
-every time the lockfile is regenerated under the newer npm.
+Both scripts run `corepack enable pnpm && corepack install` before installing. `corepack install`
+with no argument reads `package.json`'s `packageManager` field, so the container gets the exact pnpm
+version local dev and CI use, from the one place that records it. This mirrors
+[`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh).
 
-Keep `npm ci` in maintenance even when a branch is based on `main`: a cached container may retain
-dependencies from another branch, and `npm ci` removes that drift before installing exactly the
-checked-out lockfile.
+That step replaced a global `npm@11` pin, which existed because the image's npm 11.4.2 and the npm
+that authored `package-lock.json` disagreed over transitive **optional-peer** entries and made
+`npm ci` fail with `Missing: picomatch@… from lock file`. The class of bug is gone rather than
+re-pinned: with `packageManager`, there is no second version of the manager to drift.
+
+Keep `--frozen-lockfile` in maintenance even when a branch is based on `main`: a cached container
+may retain dependencies from another branch, and a frozen install reproduces exactly the checked-out
+lockfile instead of resolving around the drift.
 
 Both scripts are best-effort: they run without `set -e`, so a failed step prints a loud
 `CODEX SETUP WARNING` / `CODEX MAINTENANCE WARNING` banner (plus an end-of-run summary) and the
 script continues to exit 0 rather than aborting the whole environment build. This keeps a single bad
-step — most often a `package-lock.json`/npm-version disagreement — from leaving the container
+step — most often `pnpm-lock.yaml` disagreeing with `package.json` — from leaving the container
 unusable, while still surfacing the failure in the log for the chat session to act on. Watch the
-setup/maintenance log for those banners; an `npm ci` banner usually means the lockfile needs an
-`npm install` and a commit.
+setup/maintenance log for those banners; an install banner usually means the lockfile needs a local
+`pnpm install` and a commit.
 
 ## Initial acceptance check
 
@@ -80,8 +79,8 @@ environment unless a task demonstrates a need for them.
 Codex Cloud and Claude Code Cloud are separate environments with separate setup mechanisms. For
 Claude's proxy, preview, branching, and tunnel workflow, see [Claude Code Cloud](Claude.md). Its
 setup source remains [`.claude/cloud/setup.sh`](../../.claude/cloud/setup.sh). Both environments now
-share the `npm@11` pin for the lockfile-dialect reason described above; do not copy Claude's Chisel
-installation or preview tunnelling into Codex, which does not need them.
+share the corepack step described above; do not copy Claude's Chisel installation or preview
+tunnelling into Codex, which does not need them.
 
 ## Related files
 

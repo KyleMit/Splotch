@@ -14,9 +14,9 @@ exactly one measured area or one explicit exclusion class:
   listing text, and authoritative `.ruler/**` sources — including nested `.ruler` instruction
   sources.
 * **Binary media / archives:** PNG, WebP, JPG/JPEG, MP3, ICO, and JAR.
-* **Generated or bulky data:** `package-lock.json`, asset-gen and scrapbook measurement JSON,
-  generated report/proof-sheet HTML, generated ranking/audit text, patch/encrypted/hash payloads,
-  and the scrapbook publishing marker.
+* **Generated or bulky data:** `pnpm-lock.yaml`, asset-gen and scrapbook measurement JSON, generated
+  report/proof-sheet HTML, generated ranking/audit text, patch/encrypted/hash payloads, and the
+  scrapbook publishing marker.
 * **Agent dedup:** generated `CLAUDE.md` / `AGENTS.md`, `.claude/skills/**`,
   `.claude/skill-notes/**`, and `.agents/**`. This also leaves the direct-maintained
   `burn-down-audits` provider packages out of the LOC total, preserving the provider-tree exclusion.

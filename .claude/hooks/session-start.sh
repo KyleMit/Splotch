@@ -9,29 +9,42 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
-# Node deps. `npm install` (not `npm ci`) so the result carries into the
-# environment cache and stays correct when package.json changes between rebuilds.
-#
-# .claude/cloud/setup.sh pins npm@11 to match package-lock.json's authoring major.
-# If the pin is ever missing, a different npm rewrites lockfile metadata in its own
-# dialect (docs/CLOUD/Claude.md, "npm-version note") — discard that churn, but
-# never touch a lockfile that already had edits.
-lock_was_clean=false
-if git diff --quiet -- package-lock.json 2>/dev/null; then lock_was_clean=true; fi
-
-# A dependency lifecycle script that fetches from outside the npm registry (old
-# sharp's libvips download from GitHub releases was one — see the sharp entry in
-# package.json `overrides`) 403s through the session's egress proxy, and under
-# `set -e` that used to kill this hook silently, leaving the session with no
-# deps at all. Fall back to skipping lifecycle scripts — the repo itself defines
-# none, so an --ignore-scripts install still reproduces the working tree.
-if ! npm install; then
-  echo "session-start.sh: npm install failed — retrying with --ignore-scripts (docs/CLOUD/Claude.md 'Getting dependencies ready')"
-  npm install --ignore-scripts
+# Put pnpm on PATH if the environment snapshot predates .claude/cloud/setup.sh
+# provisioning it — otherwise every session in that snapshot opens with no
+# dependencies and no way to install them. Corepack ships with Node and reads the
+# version from package.json's packageManager, so this needs no pin of its own and
+# is a no-op once pnpm is already there. `corepack enable` writes a shim next to
+# the node binary and can fail on a read-only install; `corepack pnpm` always
+# works, so fall back to invoking pnpm through corepack rather than giving up.
+if ! command -v pnpm >/dev/null 2>&1; then
+  corepack enable pnpm >/dev/null 2>&1 || true
+fi
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm_cmd=(pnpm)
+else
+  pnpm_cmd=(corepack pnpm)
 fi
 
-if [ "$lock_was_clean" = true ] && ! git diff --quiet -- package-lock.json; then
-  git checkout -- package-lock.json
+# Node deps. A plain `pnpm install` (not --frozen-lockfile) so the result carries
+# into the environment cache and stays correct when package.json changes between
+# rebuilds — which also means an install that resolves anything new rewrites the
+# lockfile. A session should not open on lockfile churn it did not author, so
+# discard that, but never touch a lockfile that already had edits.
+lock_was_clean=false
+if git diff --quiet -- pnpm-lock.yaml 2>/dev/null; then lock_was_clean=true; fi
+
+# Not fatal under `set -e`: a dead install must not kill the hook silently and
+# leave the session with no deps at all. There is no --ignore-scripts retry any
+# more — pnpm runs no dependency install script unless pnpm-workspace.yaml's
+# allowBuilds names it, and none are named, so the old failure this retried
+# around (old sharp fetching libvips from GitHub releases, which 403s through the
+# session's egress proxy) can no longer happen.
+if ! "${pnpm_cmd[@]}" install; then
+  echo "session-start.sh: pnpm install failed — this session has no dependencies (docs/CLOUD/Claude.md 'Getting dependencies ready')" >&2
+fi
+
+if [ "$lock_was_clean" = true ] && ! git diff --quiet -- pnpm-lock.yaml; then
+  git checkout -- pnpm-lock.yaml
 fi
 
 # Generate web/.svelte-kit types so `npm run check` and `npm run dev` work

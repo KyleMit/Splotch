@@ -19,10 +19,10 @@ GitHub issues (label `area:asset-gen`), not in this folder.
 ## Where it sits in the repo
 
 This is a self-contained project, **not** an npm workspace and **not** separately installed. Its
-dependencies (`sharp`, `@google/genai`) live in the **repo-root** `package.json` so the root
-`node_modules` stays flat for `cap sync` (ADR-0029). Node resolves those binaries by walking up from
-here into the root `node_modules`, so there is nothing to install in this folder — **do not run
-`npm install` here.**
+dependencies (`sharp`, `@google/genai`) live in the **repo-root** `package.json`, and the root
+`node_modules` is kept flat for `cap sync` (ADR-0119). Node resolves those binaries by walking up
+from here into the root `node_modules`, so there is nothing to install in this folder — **do not run
+an install here.**
 
 Path/tree resolution is centralized in `lib/asset-paths.mjs` (`REPO_ROOT`, `COLORING_DIR`,
 `STYLES_DIR`, `FILL_SRC_DIR`, `SAMPLES_DIR`, `SAMPLES_DARK_DIR`) so the shipping pipeline's scripts

@@ -1,0 +1,52 @@
+# pnpm settings. From pnpm 11 this file — not a `pnpm` field in package.json — is
+# where pnpm reads its own configuration, so it exists here even though Splotch is a
+# single package with no workspace members (no `packages:` key, deliberately).
+# ADR-0119 records the npm -> pnpm migration and the reasoning behind each setting.
+
+# Flat node_modules, the same layout npm produces. `cap sync` resolves every plugin to
+# its REAL path and writes that path into two committed files —
+# android/capacitor.settings.gradle and ios/App/CapApp-SPM/Package.swift. Under pnpm's
+# default symlinked layout the real path is the content-addressed
+# node_modules/.pnpm/<name>@<version>_<peer-hash>/... directory, so both files churn on
+# every Capacitor bump and a stale copy points the Gradle/SPM build at a directory that
+# no longer exists. Hoisted keeps them byte-identical to the npm era.
+# This does NOT give back the migration's wins: install time and per-worktree disk
+# measured identical under both linkers (ADR-0119), because the hoisted tree is still
+# cloned out of the shared content-addressable store. What it gives up is pnpm's strict
+# dependency isolation, so an undeclared transitive import stays resolvable here.
+nodeLinker: hoisted
+
+# Both entries moved verbatim from package.json's npm `overrides` block.
+overrides:
+  # @capacitor/assets pins sharp@0.32.6, whose install script downloads a libvips binary
+  # from GitHub releases — flaky behind proxies and 403 through the cloud sessions'
+  # egress proxy. Point it at the sharp package.json already declares, which ships
+  # prebuilt @img/* binaries and needs no build step. The range is duplicated rather
+  # than shared: pnpm's `$sharp` back-reference is deprecated in pnpm 11 and warns on
+  # every command, and the `catalog:` protocol it recommends instead would take the
+  # range out of package.json, which is where Dependabot reads it. Kept honest by
+  # tools/tests/pnpm-overrides.test.mjs, which fails when the two ranges diverge.
+  '@capacitor/assets>sharp': ^0.35.2
+  # Clears the critical `pnpm audit` advisories against tar 6.x, reached through
+  # prebuild-install and the Capacitor asset toolchain.
+  tar: ^7.5.19
+
+# pnpm refuses to run a dependency's install scripts until that dependency is named
+# here, and fails the install rather than silently skipping one — so this list is the
+# reviewed record of which third-party code may execute at install time. Nothing needs
+# to: each entry below either ships prebuilt platform binaries through
+# optionalDependencies or has a script that is inert for a registry install. Splotch
+# itself defines no lifecycle scripts (ADR-0062 removed the last one).
+allowBuilds:
+  # `prepare` runs only for git/path installs, and the script it names is not even in
+  # the published tarball; `preinstall` is an `echo`.
+  '@google/genai': false
+  # Vite's bundler. The binary is the @esbuild/<platform> optional dependency; the
+  # postinstall only re-resolves it. `npm run build` is what proves it.
+  esbuild: false
+  # Same shape — the binary is the @dprint/<platform> optional dependency, and
+  # `npm run format:md:check` is what proves it.
+  dprint: false
+  # Codegen for the protobufjs CLI, which nothing here invokes; the library that
+  # @google/genai imports works without it.
+  protobufjs: false

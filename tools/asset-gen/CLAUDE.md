@@ -45,7 +45,7 @@ carve-out):
 ## Key rules when working in this folder
 
 * **Not a workspace, not separately installed.** Deps (`sharp`, `@google/genai`) live in the
-  repo-root `package.json` so the root `node_modules` stays flat for `cap sync` (ADR-0029). Never
+  repo-root `package.json` so the root `node_modules` stays flat for `cap sync` (ADR-0119). Never
   add a `dependencies` block here or `npm install` in this folder — binaries resolve upward from the
   root tree.
 * **Paths go through `lib/asset-paths.mjs`.** Use its exported constants (`REPO_ROOT`,

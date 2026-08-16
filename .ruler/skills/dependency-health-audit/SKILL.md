@@ -19,8 +19,8 @@ hand-off to `dependency-update-audit`, not work for this run.
 
 There is **one root `package.json`** for the whole repo (web + Capacitor native); run all npm
 tooling from the repo root. **Direct** dependencies are the entries in its `dependencies` /
-`devDependencies`; everything else in `package-lock.json` is **transitive**. Direct deps get the
-full per-package treatment below; transitives get the lighter aggregate pass — a human review of ~50
+`devDependencies`; everything else in `pnpm-lock.yaml` is **transitive**. Direct deps get the full
+per-package treatment below; transitives get the lighter aggregate pass — a human review of ~50
 direct packages is tractable and high-value, one of ~1100 transitives is neither.
 
 If an argument names a package, refresh only that entry — but a scoped run still feeds report-level
@@ -32,11 +32,13 @@ end. Skip every other entry.
 ## Phase 1 — Inventory (local facts, no network)
 
 1. **Enumerate.** Read `package.json` for the direct prod/dev split and declared ranges. Take the
-   **locked** version of each package from `package-lock.json` — it's always present and needs no
-   install, whereas `npm ls --depth=0` errors with `ELSPROBLEMS` on a fresh checkout where
-   `node_modules` isn't installed (and this skill installs nothing). Use `npm ls --depth=0` only as
-   optional confirmation *when* `node_modules` exists. Count the lockfile's `packages` entries for
-   the total installed footprint (`node -e` over `package-lock.json`).
+   **locked** version of each package from `pnpm-lock.yaml`'s `importers:` block, which pairs every
+   direct dependency's declared `specifier:` with its resolved `version:` — always present and needs
+   no install, whereas `pnpm list --depth=0` needs a `node_modules` a fresh checkout doesn't have
+   (and this skill installs nothing). Use `pnpm list --depth=0` only as optional confirmation *when*
+   `node_modules` exists. For the total installed footprint, count the lockfile's `packages:`
+   entries — the lockfile is YAML, so this is a text scan, not `node -e`:
+   `awk '/^packages:/{f=1;next} /^[a-z]/{f=0} f && /^  [^ ]/{n++} END{print n}' pnpm-lock.yaml`.
 2. **Attribute usage.** For each direct dep, establish *why and where* Splotch uses it: grep
    `web/src/`, `web/*.config.*`, `tools/`, `tools/`, and the npm scripts for imports and
    invocations. A package with no findable usage is itself a finding (candidate for removal — but
@@ -108,7 +110,7 @@ the latest by a major (or sits several minors behind for months), note it in `Co
 the verdict and is explicitly handed to `dependency-update-audit`. Do not silently write
 `Concerns: none` on a package that is a full major behind, and do not apply the bump here.
 
-For security/ecosystem concerns, check `npm audit --json` (map advisories to the package),
+For security/ecosystem concerns, check `pnpm audit --json` (map advisories to the package),
 `deprecated` flags, install scripts, and anything notable about the publisher (org-backed vs.
 individual, provenance/attestations if published with them).
 
@@ -123,15 +125,17 @@ autonomous run, list the proposed issues in the report/summary instead of filing
 Do **not** write per-package entries for transitives. Instead report, in one section:
 
 * Total installed package count (from the lockfile) vs. direct count.
-* `npm audit` summary: advisory counts by severity, and for each advisory the transitive → direct
+* `pnpm audit` summary: advisory counts by severity, and for each advisory the transitive → direct
   parent chain (`npm ls <pkg>`) so the fix owner is obvious. **The table must reconcile with the
   summary:** the per-row severities have to sum back to the stated by-severity counts. When you
   collapse a group into one row (e.g. five `@opentelemetry/*` advisories sharing a parent), put the
   count in that row (`… (moderate ×5)`) so the totals still add up and no advisory silently drops
   out of the chain-mapping.
 * Deprecated packages surfaced by install warnings or spot `npm view` checks.
-* Packages with install scripts (scan `package-lock.json` for `hasInstallScript`) — the
-  supply-chain-relevant subset worth naming.
+* Packages with install scripts — the supply-chain-relevant subset worth naming. Read
+  `pnpm-workspace.yaml`'s `allowBuilds`: pnpm refuses to run any dependency's install script until
+  it is listed there and fails the install rather than skipping one silently, so that list is the
+  complete set of candidates plus the verdict each was given.
 * Any transitive already entangled with the repo (today: the `sharp` override above).
 
 Promote a transitive to a full direct-style entry only when it's individually load-bearing or
@@ -143,8 +147,8 @@ parent fix released).
 `package.json` isn't the whole dependency surface. The dev/CI lifecycle also relies on things no npm
 range governs, and they carry the same provenance/health/pinning questions. Inventory them in their
 own report section (`## Development lifecycle dependencies (outside package.json)`). Their versions
-come from **workflow/script pins, not `package-lock.json`** — refresh them by re-reading the files,
-not `npm view`. Three kinds:
+come from **workflow/script pins, not `pnpm-lock.yaml`** — refresh them by re-reading the files, not
+`npm view`. Three kinds:
 
 * **GitHub Actions** — every `uses:` in `.github/workflows/*.yml`
   (`grep -rhoE "uses: [^ ]+@[^ ]+"`). Note the pin (tag/SHA), publisher (first-party `actions/*` vs.
@@ -157,7 +161,7 @@ not `npm view`. Three kinds:
   (e.g. `netlify-cli`, guarded by a `tools/check-*.mjs`). Grep `package.json` scripts and
   `tools/*.mjs` for `npx`, and bare tool names (`netlify`, `cap`, `maestro`, `adb`, `emulator`,
   `xcodebuild`, `gradle`). Confirm a tool is genuinely absent from the lockfile before listing it
-  here (`node -e` over `package-lock.json`).
+  here (`grep` it in `pnpm-lock.yaml`).
 * **System toolchains** — the language/SDK layer native builds and tests need: Node (`setup-node`
   `node-version`), JDK (`setup-java` `distribution`/`java-version`), the Gradle wrapper, the Android
   SDK/emulator/adb (`android-emulator-runner` `api-level`), and Xcode/`xcodebuild` (usually the
@@ -204,7 +208,7 @@ GitHub Actions, runtime-fetched CLIs, system toolchains). Per-package entry form
 ```markdown
 ### package-name
 
-* **Version:** `^1.2.3` declared · 1.2.5 locked (per `package-lock.json`) · prod
+* **Version:** `^1.2.3` declared · 1.2.5 locked (per `pnpm-lock.yaml`) · prod
 * **Used for:** what it does for Splotch, and where (`web/src/…`, config, npm scripts)
 * **Source:** npm · [github.com/owner/repo](https://github.com/owner/repo) · published by Org/person
 * **License:** MIT

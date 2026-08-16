@@ -276,9 +276,9 @@ export function scannedFiles(root = ROOT) {
     capture('git', ['ls-files', '-z'], { cwd: root })
       .split('\0')
       .filter((file) => SCANNED_EXTENSIONS.some((ext) => file.endsWith(ext)))
-      // Product source spells routes and directories, never skills, and
-      // package-lock.json is generated registry data.
-      .filter((file) => !file.startsWith('web/') && file !== 'package-lock.json')
+      // Product source spells routes and directories, never skills. The lockfile
+      // needs no exemption of its own: pnpm-lock.yaml is not a scanned extension.
+      .filter((file) => !file.startsWith('web/'))
       .filter((file) => !SELF_REFERENTIAL_PATHS.includes(file))
   );
 }

@@ -46,7 +46,7 @@ jobs:
           cache: 'false'
           install: 'false'
 
-      # No npm ci: the smoke script and its tools/lib imports use only node
+      # No install: the smoke script and its tools/lib imports use only node
       # builtins, so installing the full dependency tree here would be waste.
       - name: Round-trip a token through Blobs on the live deploy
         env:

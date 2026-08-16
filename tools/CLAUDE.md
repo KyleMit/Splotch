@@ -31,7 +31,7 @@ Node task and a full pipeline with its own docs, fixtures, and CLIs (ADR-0108). 
 * Do not absorb path-owned code just because it is a script: `.ruler/skills/**`, `.claude/**`,
   `.agents/**`, `.github/scripts/**`, framework configs, Fastlane, and native build wrappers stay
   where their owning system looks for them.
-* No npm workspaces and no per-tool `package.json` (ADR-0029). `tools/asset-gen/package.json` stays
+* No npm workspaces and no per-tool `package.json` (ADR-0119). `tools/asset-gen/package.json` stays
   the documented dependency-free local-alias exception.
 * Tests follow the same shape: a flat tool's test goes in `tools/tests/`, a capability's tests in
   `tools/<capability>/tests/`. `tools/vitest.config.mjs` discovers both (`npm run test:tools`);

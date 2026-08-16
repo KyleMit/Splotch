@@ -36,15 +36,14 @@ node -e '
 
 export PLAYWRIGHT_BROWSERS_PATH="${PLAYWRIGHT_BROWSERS_PATH:-/opt/pw-browsers}"
 
-# Pin npm@11 (latest 11.x) to match the npm that authors package-lock.json — the
-# image's older 11.x otherwise fails `npm ci` on optional-peer lockfile entries;
-# full rationale in docs/CLOUD/Codex.md. Via npx so the installer isn't the npm
-# being replaced (an in-place self-update can die halfway).
-npx -y npm@11 install -g npm@11 \
-  || warn "npm 11 pin skipped — npm ci may fail on a package-lock.json/npm-version optional-peer mismatch."
+# Put pnpm on PATH at the exact version package.json's packageManager pins.
+# `corepack install` with no argument reads that field, so the version lives in one
+# place; full rationale in docs/CLOUD/Codex.md.
+corepack enable pnpm && corepack install \
+  || warn "pnpm setup skipped — the install below will fail until corepack can provision pnpm."
 
-npm ci --prefer-offline --no-audit --fund=false \
-  || warn "npm ci failed — dependencies are incomplete. Usually a package-lock.json/npm-version mismatch; run 'npm install' locally and commit the refreshed lockfile."
+pnpm install --frozen-lockfile --prefer-offline \
+  || warn "pnpm install failed — dependencies are incomplete. Usually pnpm-lock.yaml disagreeing with package.json; run 'pnpm install' locally and commit the refreshed lockfile."
 node tools/run-web-tool.mjs playwright install --with-deps chromium \
   || warn "Playwright Chromium install failed — the E2E test tier will not run."
 node tools/run-web-tool.mjs svelte-kit sync \

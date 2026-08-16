@@ -34,7 +34,8 @@ and the same codebase ships as native Android and iOS apps.
 ## Quick start
 
 ```bash
-npm install
+corepack enable pnpm   # once per machine; pnpm's version comes from package.json
+pnpm install
 npm run dev     # → http://localhost:5173
 ```
 

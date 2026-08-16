@@ -1,5 +1,5 @@
 # Production deploy config — the Netlify site builds from the repo ROOT (base directory = root,
-# the default), because package.json + the lockfile live here so `npm ci` works. The SvelteKit
+# the default), because package.json + the lockfile live here so the install works. The SvelteKit
 # app lives in web/ (ADR-0024): `npm run build` runs the build with cwd=web/, so adapter-netlify
 # writes its output under web/; tools/stage-netlify-functions.mjs then copies web/.netlify ->
 # .netlify so Netlify finds the SSR function at the root; static assets publish from web/build.
@@ -22,7 +22,9 @@
   # tools/release) — enumerated rather than all of tools/, so an asset-gen,
   # store-drawings, perf, or vectorize change does not trigger a rebuild the old
   # scripts/ filter never triggered — gen:releases input (releases/), the
-  # toolchain (package.json + lockfile), and this config.
+  # toolchain (package.json + the two pnpm files), and this config.
+  # pnpm-workspace.yaml is watched alongside the lockfile because it carries the
+  # dependency overrides, so editing it changes what the build installs.
   #
   # ':(glob)' on the flat entry points is load-bearing: in a plain Git pathspec
   # '*' crosses directory separators, so 'tools/*.mjs' would match every .mjs
@@ -31,7 +33,7 @@
   # both the semantics and the enumeration.
   # A skipped push leaves the previous deploy live, which is correct when
   # nothing user-facing changed (ADR-0070).
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/release releases package.json package-lock.json netlify.toml"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- web netlify ':(glob)tools/*.mjs' tools/lib tools/icons tools/release releases package.json pnpm-lock.yaml pnpm-workspace.yaml netlify.toml"
   # Static assets are published straight from web/build (no copy needed). Only the SSR function
   # is relocated: Netlify always looks for it at <base>/.netlify/functions-internal (base = root),
   # but adapter-netlify writes it under web/.netlify, so stage-netlify-functions.mjs copies that one tree up.
@@ -40,9 +42,11 @@
 [build.environment]
   # dependencies == what this Netlify build needs; devDependencies == local/CI-only
   # tooling (Playwright, dprint, sharp, eslint, the Capacitor CLIs, ...). The
-  # inverted split + --omit=dev halves the install (ADR-0070). GitHub Actions and
-  # local dev run a plain `npm ci` and are unaffected.
-  NPM_FLAGS = "--omit=dev --no-audit --no-fund"
+  # inverted split + --prod halves the install (ADR-0070). GitHub Actions and local
+  # dev run a plain `pnpm install` and are unaffected. --prod is pnpm's --omit=dev;
+  # npm's --no-audit/--no-fund have no pnpm equivalent because pnpm does neither on
+  # install, and --frozen-lockfile is already implied by Netlify's CI=true.
+  PNPM_FLAGS = "--prod"
   # The engines floor major from package.json engines.node, pinned so a Netlify
   # platform-default bump can't move the deploy off the major CI tests.
   # tools/tests/workflow-hygiene.test.mjs guards this agreement.

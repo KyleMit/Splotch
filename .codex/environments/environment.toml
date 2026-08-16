@@ -5,4 +5,5 @@ name = "Splotch"
 [setup]
 script = '''
 cd "$CODEX_WORKTREE_PATH"
-npm ci --prefer-offline'''
+corepack enable pnpm && corepack install
+pnpm install --frozen-lockfile --prefer-offline'''
