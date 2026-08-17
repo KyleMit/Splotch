@@ -26,6 +26,11 @@ import type { Plugin } from 'vite';
 //  * `feedback` — the standalone form depends on a server action and exposes a
 //    conditional email fallback. Native links open the hosted form behind the
 //    external-link gate instead.
+//  * `dev` — the dev harnesses (`/dev`, `/dev/engine`, `/dev/store-frames`).
+//    The runtime gate (`requireDevHarness`) 404s them, but their chunks —
+//    including the store-frames marketing copy and the engine debug surface —
+//    would otherwise ride along in every .ipa and .aab for a string scan to
+//    find.
 //
 // This replaces each excluded route's client module source at build time, so
 // the strings never make it into the bundle in the first place.
@@ -37,6 +42,7 @@ export const NATIVE_EXCLUDED_ROUTES = [
   'ios-beta',
   'admin',
   'feedback',
+  'dev',
 ] as const;
 
 // Only the client-facing route modules are replaced. `+page.server.ts` and
