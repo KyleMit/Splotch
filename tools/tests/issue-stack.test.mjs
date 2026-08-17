@@ -95,7 +95,7 @@ describe('Codex policy installation', () => {
 });
 
 describe('skill contracts', () => {
-  it('makes red CI a repair loop and preserves interactive review defaults', () => {
+  it('reviews every PR before final CI and preserves interactive review defaults', () => {
     const stackSkill = readFileSync(
       join(repositoryRoot, '.agents/skills/implement-issue-stack/SKILL.md'),
       'utf8'
@@ -109,14 +109,20 @@ describe('skill contracts', () => {
       'utf8'
     );
     expect(stackSkill).toContain('A failed check is blocking');
+    expect(stackSkill).toContain('Every product PR and gate-repair support PR receives');
+    expect(stackSkill).toContain('Do not wait for CI before');
+    expect(stackSkill.indexOf('### 6. Re-review until settled')).toBeLessThan(
+      stackSkill.indexOf('### 7. Drive final CI to green')
+    );
+    expect(stackSkill).toContain('Do not run CI between those renewed review rounds');
     expect(stackSkill).toContain('establish causality');
     expect(stackSkill).toContain('One passing rerun is diagnostic evidence only');
     expect(stackSkill).toContain('Keep the product PR open and on the success path');
     expect(stackSkill).toContain('immediately below the product PR in the GitHub stack');
-    expect(stackSkill).toMatch(/does not consume the product issue's CI\s+repair budget/);
+    expect(stackSkill).toMatch(/does not consume the product\s+issue's CI\s+repair\s+budget/);
     expect(stackSkill).toContain('Never quarantine a product issue for');
     expect(stackSkill).not.toContain('demonstrably inapplicable to this PR');
-    expect(stackSkill).toContain('Never pause merely because CI is red');
+    expect(stackSkill).toMatch(/Never\s+pause merely because CI is red/);
     expect(stackSkill).toContain('last_good_base');
     expect(stackSkill).toMatch(/`ready_for_review`\s+event/);
     expect(stackSkill).toContain('`gh stack unstack <recorded-stack-number>`');

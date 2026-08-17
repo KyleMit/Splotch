@@ -38,6 +38,21 @@ support PR when necessary rather than overloading the product PR or discarding g
 gate cannot be repaired safely, the queue is globally blocked because later green results from the
 same gate are not credible.
 
+## Review-first, final-CI decision
+
+The issue #227 run showed that waiting for CI before review and again after every review-feedback
+push serialized two independent gates and repeatedly charged the same head transition. CI does not
+need to establish review readiness: the standalone reviewer performs its own empirical checks, and
+all remote checks ultimately need to prove only the delivered head.
+
+Every product PR and gate-repair support PR still receives the standalone review. Review feedback
+and the bounded re-review cycle settle first, without waiting for or adjudicating automatic CI runs.
+The orchestrator then marks the reviewed PR ready and evaluates CI once on the exact final head,
+adopting an existing run only when its head OID matches. A product-code CI repair necessarily
+invalidates the prior head review, so that exceptional path returns through review before the final
+CI gate is evaluated again. This preserves both guarantees—reviewed final code and green final
+code—without placing CI waits between ordinary review cycles.
+
 Open validation questions:
 
 * Whether future `gh stack` versions preserve `link`'s numeric ambiguity and `--base` behavior.
