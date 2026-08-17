@@ -91,7 +91,7 @@ describe('saveScreenshot', () => {
     mocks.saveBlobToFolder.mockResolvedValue(true);
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
-    prepareScreenshot();
+    prepareScreenshot(() => null);
     const deferredPreview = mocks.exportCanvasBlob.mock.calls[0][0]?.preview;
     deferredPreview?.onReady(bitmap);
 
@@ -162,7 +162,7 @@ describe('saveScreenshot', () => {
     const { cancelScreenshotPreparation, prepareScreenshot, saveScreenshot } =
       await import('./screenshot');
 
-    prepareScreenshot();
+    prepareScreenshot(() => null);
     mocks.exportCanvasBlob.mock.calls[0][0]?.preview?.onReady(bitmap);
     cancelScreenshotPreparation();
     await saveScreenshot();
