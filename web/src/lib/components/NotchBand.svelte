@@ -62,7 +62,7 @@
 </script>
 
 <div
-  class="notch-band notch-band--{band.edge}"
+  class="notch-band notch-band--{band.show ? band.edge : 'top'}"
   aria-hidden="true"
   style:background-color={band.show ? band.color : 'transparent'}
 ></div>

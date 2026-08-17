@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { SafeAreaInsets } from '$lib/platform/safeArea';
 
 const mocks = vi.hoisted(() => ({
@@ -32,18 +32,28 @@ async function freshModule() {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers();
   mocks.portrait = false;
   mocks.insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  window.innerWidth = 1024;
+  window.innerHeight = 768;
   setMatchMedia();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('viewport tracking', () => {
   it('seeds orientation and safe-area insets at module load', async () => {
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
     const { layout } = await freshModule();
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(document.documentElement.dataset.orientation).toBe('portrait');
   });
 
   it('re-measures on resize', async () => {
@@ -62,6 +72,9 @@ describe('viewport tracking', () => {
     window.innerHeight = 1024;
     window.dispatchEvent(new Event('resize'));
 
+    expect(layout.orientation).toBe('landscape');
+    await vi.runAllTimersAsync();
+
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea.top).toBe(44);
     expect(layout.viewportWidth).toBe(768);
@@ -75,28 +88,40 @@ describe('viewport tracking', () => {
     // A hidden document fires no resize/orientationchange, so the rotation
     // reaches the app only via the visibilitychange on return.
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
     document.dispatchEvent(new Event('visibilitychange'));
 
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
-    expect(document.documentElement.dataset.orientation).toBe('portrait');
   });
 
   it('follows the cutout inset from the top to a side edge across a rotation', async () => {
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
-    const { layout } = await freshModule();
+    const { layout, publishPaletteMeasurement } = await freshModule();
 
     // Rotation: orientationchange fires, then the insets settle onto a side
     // edge and a resize follows — the same listener pair re-measures on both.
     mocks.portrait = false;
+    window.innerWidth = 1024;
+    window.innerHeight = 768;
     window.dispatchEvent(new Event('orientationchange'));
+    publishPaletteMeasurement(84, 768);
     mocks.insets = { top: 0, right: 44, bottom: 21, left: 0 };
     window.dispatchEvent(new Event('resize'));
 
+    expect(layout.orientation).toBe('portrait');
+    expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
+    await vi.runAllTimersAsync();
+
     expect(layout.orientation).toBe('landscape');
     expect(layout.safeArea).toEqual({ top: 0, right: 44, bottom: 21, left: 0 });
+    expect(layout.paletteMeasurement).toEqual({ width: 84, height: 768, orientation: 'landscape' });
   });
 
   it('tags palette measurements with the live CSS orientation', async () => {
@@ -111,6 +136,8 @@ describe('viewport tracking', () => {
     });
 
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     publishPaletteMeasurement(375, 76);
     expect(layout.paletteMeasurement.orientation).toBe('portrait');
 
