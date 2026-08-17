@@ -13,6 +13,8 @@ store-assets/
 ├── STORE-LISTING-IOS.md      # App Store: name / subtitle / keywords / privacy label
 ├── icon-512.png              # Play app icon  512×512   (Play limit: ≤1 MB)
 ├── feature-graphic.png       # Play feature graphic 1024×500 (Play limit: ≤15 MB)
+├── captures/                 # Committed app-capture intermediates, one per target × scene —
+│                             # what /dev/store-frames composes into the frames
 └── screenshots/
     ├── phone/     01–05  1080×1920 (9:16 portrait)    Google Play phone
     ├── tablet7/   01–05  1920×1080 (16:9 landscape)   Google Play 7" tablet
@@ -36,7 +38,8 @@ and benefit chips. Landscape puts the copy in a left column with the app frame b
 right edge; portrait centers the copy in a zone above the frame, fully visible below. Page 4 is a
 composed doodle→masterpiece showcase joined by a stepping-stone connector (palette dots in, growing
 sparkles out); page 5 is the one dark-mode frame. The design system — geometry, copy, marks, colors
-— lives in `tools/marketing-assets/lib/store-frames.mjs`.
+— lives in the app as the `/dev/store-frames` dev harness (`web/src/routes/dev/store-frames/lib/`),
+where every composition renders live and hot-reloads for design iteration.
 
 ## What each screenshot shows
 
@@ -75,11 +78,21 @@ The script (`tools/marketing-assets/gen-store-assets.mjs`) needs a **production 
 — the coloring-pack manifest behind the 8-book grid only exists in a build, and the capture driver
 waits on the dev-harness seam — so it builds with `PUBLIC_ENABLE_DEV_HARNESS=true` and serves it
 with `vite preview` (a server already on 4173 is reused as-is). It then drives the app in headless
-Chromium at each target's capture size, composes every capture into its frame at the exact store
-pixel sizes, and renders the Play feature graphic from `icon-512.png`.
+Chromium at each target's capture size, writes each app capture to `captures/` (committed), and
+screenshots the live `/dev/store-frames/render` route at the exact store pixel sizes — the frames
+and the Play feature graphic are real Svelte components, not composed rasters.
+
+Frame-only iteration (copy, layout, marks — nothing the app renders):
+
+```bash
+npm run gen:store-assets:frames
+```
+
+re-renders every final from the committed captures without driving the app, and the
+`/dev/store-frames` harness shows the same compositions hot-reloading under `npm run dev`.
 
 Iterate on a subset with `--target` / `--page` substring filters, e.g.
-`node --experimental-strip-types tools/marketing-assets/gen-store-assets.mjs --target tablet10 --page 03`.
+`npm run gen:store-assets -- --target tablet10 --page 03`.
 
 One capture knowingly diverges from what the capture viewport would natively show, in order to
 *match* what real hardware shows: portrait captures run at 576 CSS px (for the ~1.6× marketing
