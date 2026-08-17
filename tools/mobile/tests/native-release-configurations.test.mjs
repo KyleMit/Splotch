@@ -7,6 +7,7 @@ const read = (path) => readFileSync(join(repoRoot, path), 'utf8');
 const packageJson = JSON.parse(read('package.json'));
 const androidWorkflow = read('.github/workflows/android-deploy.yml');
 const iosWorkflow = read('.github/workflows/ios-deploy.yml');
+const iosSmokeRunner = read('tools/mobile/ios/run-simulator-smoke-test.mjs');
 
 describe('native release configuration gates', () => {
   it('builds and boots a test-signed optimized Android release APK', () => {
@@ -36,6 +37,8 @@ describe('native release configuration gates', () => {
     expect(releaseScript).not.toContain('local.xcconfig');
     expect(releaseScript).not.toContain('DEVELOPMENT_TEAM');
     expect(iosWorkflow).toContain('run: npm run ios:build:release');
-    expect(iosWorkflow).toContain('run: npm run test:ios');
+    expect(iosWorkflow).toContain('run: npm run test:ios -- --skip-sync');
+    expect(iosSmokeRunner).toContain("const SKIP_SYNC_FLAG = '--skip-sync';");
+    expect(iosSmokeRunner).toContain("if (!skipSync) await sh('npm run cap:sync');");
   });
 });

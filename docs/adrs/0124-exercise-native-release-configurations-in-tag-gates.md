@@ -42,8 +42,8 @@ Choose alternative 2 and keep the work in the existing tag-only native deploy wo
 * `ios:build:release` runs the production static web sync followed by an Xcode Release build for the
   generic iOS Simulator destination with `CODE_SIGNING_ALLOWED=NO`.
   `.github/workflows/ios-deploy.yml` compiles that app before running the existing Debug simulator
-  smoke. A development team, provisioning profile, and `ios/local.xcconfig` are neither read nor
-  required.
+  smoke with `--skip-sync`, so the two native builds consume one synchronized production web bundle.
+  A development team, provisioning profile, and `ios/local.xcconfig` are neither read nor required.
 * `tools/mobile/tests/native-release-configurations.test.mjs` guards the commands, Android
   optimization settings, disposable signing seam, Release APK install path, no-store-signing iOS
   settings, and workflow wiring on every ordinary CI run.
@@ -66,5 +66,7 @@ tier.
 * − Android CI proves the Release bits under a disposable certificate, not the availability or
   correctness of the real Play upload key.
 * − The iOS Release app is compiled but not installed; the Debug build remains the iOS boot signal.
-* − iOS performs a second native build and static sync on tag runs, increasing macOS runner time in
-  exchange for keeping compile and boot failures distinct.
+* − The iOS Release compile uses the simulator SDK, not the `iphoneos` SDK used by the store
+  artifact, so device-SDK-only Release failures remain ungated.
+* − iOS performs Release and Debug native builds after one static sync on tag runs, increasing macOS
+  runner time in exchange for keeping compile and boot failures distinct.

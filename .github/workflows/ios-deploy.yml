@@ -38,13 +38,13 @@ jobs:
 
       - uses: ./.github/actions/install-maestro
 
-      # test:ios (tools/mobile/ios/run-simulator-smoke-test.mjs) auto-discovers and boots an
-      # iPhone simulator, runs cap:sync (baking the production web bundle), builds
-      # the Debug app for the simulator, installs it, runs .maestro/smoke.yaml —
-      # the same flow the Android smoke runs — then shuts the simulator down.
+      # ios:build:release already ran cap:sync, so --skip-sync reuses that exact production web
+      # bundle. test:ios (tools/mobile/ios/run-simulator-smoke-test.mjs) auto-discovers and boots
+      # an iPhone simulator, builds the Debug app, installs it, runs .maestro/smoke.yaml — the
+      # same flow the Android smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
-        run: npm run test:ios
+        run: npm run test:ios -- --skip-sync
 
       - name: Upload Maestro report
         id: report

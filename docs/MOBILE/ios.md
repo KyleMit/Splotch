@@ -107,8 +107,9 @@ npx @capacitor/assets generate --ios
   flow, and tears down. No signing required. See the `testing` skill for Maestro installation and
   the full three-tier strategy.
 * **Release configuration**: the tagged deploy workflow runs `ios:build:release` before the Debug
-  boot smoke. This catches Release-only Swift/compiler and project-setting failures without store
-  signing; the separate smoke keeps the established simulator boot signal unchanged.
+  boot smoke. This catches Release-only Swift/compiler and project-setting failures under the
+  simulator SDK without store signing; device-SDK-only code and settings remain covered by the local
+  signed archive. The separate smoke keeps the established simulator boot signal unchanged.
 
 ## 4. Release checklist
 
