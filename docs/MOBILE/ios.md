@@ -82,15 +82,18 @@ macOS-only; each runs `cap:sync` first (the shared web build — see [native.md]
 ```bash
 npm run ios:run       # build, install, and launch on a simulator or device (cap CLI)
 npm run ios:build     # debug .app for the simulator -> ios/App/build/Build/Products/Debug-iphonesimulator/
+npm run ios:build:release # Release simulator .app without store signing -> ios/App/build/Build/Products/Release-iphonesimulator/
 npm run ios:live      # live reload against the dev server on port 5173 (pair with dev:cap)
 npm run ios:archive   # signed release archive -> ios/App/build/App.xcarchive
 npm run ios:ipa       # ios:archive + export the App Store .ipa -> ios/App/build/ipa/
 npm run ios:clean     # xcodebuild clean
 ```
 
-`ios:archive`/`ios:ipa` need a signing team configured (§4); `ios:build`, `ios:run` on a simulator,
-and `test:ios` need no signing at all. The `.ipa` export settings live in
-`ios/App/ExportOptions.plist` (App Store Connect method, automatic signing).
+`ios:archive`/`ios:ipa` need a signing team configured (§4); `ios:build`, `ios:build:release`,
+`ios:run` on a simulator, and `test:ios` need no signing at all. `ios:build:release` explicitly sets
+`CODE_SIGNING_ALLOWED=NO`, so CI compiles the optimized Release configuration without a team or
+provisioning profile. The `.ipa` export settings live in `ios/App/ExportOptions.plist` (App Store
+Connect method, automatic signing).
 
 Regenerate launcher icons / splash after changing artwork in `assets/`:
 
@@ -103,6 +106,9 @@ npx @capacitor/assets generate --ios
 * **Native smoke test**: `npm run test:ios` boots a simulator, builds + installs, runs the Maestro
   flow, and tears down. No signing required. See the `testing` skill for Maestro installation and
   the full three-tier strategy.
+* **Release configuration**: the tagged deploy workflow runs `ios:build:release` before the Debug
+  boot smoke. This catches Release-only Swift/compiler and project-setting failures without store
+  signing; the separate smoke keeps the established simulator boot signal unchanged.
 
 ## 4. Release checklist
 

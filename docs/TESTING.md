@@ -570,8 +570,8 @@ npm run test:android:device     # re-run as often as you like
 | Workflow                               | Trigger                                                          | What it runs                                                                                                                                                        |
 | -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                                                                                          |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                                                                                               |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Test-signed Android Release APK build + Maestro boot smoke                                                                                                          |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                       |
 | `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                                                     |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
@@ -638,11 +638,14 @@ gate.
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
 The Android job runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
-runners hit an HVF init failure), builds the **debug** APK (auto-signed, no secrets needed;
-`cap:sync` still bakes the production web bundle), installs it onto an emulator booted by
-`reactivecircus/android-emulator-runner`, and runs `npm run test:android:device`. The iOS job runs
-`npm run test:ios` on a macOS runner, which boots a simulator, builds the debug app, and runs the
-same Maestro flow. The Maestro report is uploaded as a build artifact.
+runners hit an HVF init failure), generates a disposable test key, builds the **Release** APK with
+R8 and resource shrinking, installs it onto an emulator booted by
+`reactivecircus/android-emulator-runner`, and runs `npm run test:android:device`. The Play upload
+key never enters CI. The iOS job first compiles a Release simulator app without store signing, with
+`CODE_SIGNING_ALLOWED=NO`, then runs `npm run test:ios` on a macOS runner, which boots a simulator,
+builds the Debug app, and runs the same Maestro flow. The Release compile catches configuration-only
+failures while the established Debug smoke remains the boot signal. The Maestro report is uploaded
+as a build artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
 > provides a booted emulator — the one-shot would try to boot a second one.

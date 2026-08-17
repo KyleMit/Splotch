@@ -1,8 +1,8 @@
 # iOS tooling
 
 This sub-capability owns the repository wrappers that run the iOS simulator smoke and reveal built
-App Store artifacts. The remaining Xcode build, run, archive, export, live-reload, and clean
-commands stay inline in `package.json`, as documented in
+App Store artifacts. The remaining Xcode Debug/Release simulator builds, run, archive, export,
+live-reload, and clean commands stay inline in `package.json`, as documented in
 [`docs/MOBILE/ios.md`](../../../docs/MOBILE/ios.md).
 
 ## Entry points

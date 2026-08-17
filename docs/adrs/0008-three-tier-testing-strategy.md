@@ -1,6 +1,7 @@
 # ADR-0008: Three-Tier Testing Strategy (Vitest + Playwright + Maestro)
 
-**Status:** Active (amended by [0120](0120-native-smoke-is-a-boot-check-not-a-ui-flow.md))\
+**Status:** Active (amended by [0120](0120-native-smoke-is-a-boot-check-not-a-ui-flow.md) and
+[0124](0124-exercise-native-release-configurations-in-tag-gates.md))\
 **Date:** 2025–2026
 
 > **Path note ([ADR-0108](0108-unified-tools-tree.md)):** the repo-automation tier now lives in
@@ -63,3 +64,9 @@ The three behavioral tiers remain unchanged, while their command and CI coverage
 tier now also includes `test:store-drawings`; `npm test` runs all four unit commands before E2E. CI
 runs the unit commands in a browser-free job, shards Chromium E2E, runs a separate WebKit
 critical-path smoke subset, and reserves Maestro native launch smoke for release tags.
+
+## Amendment (2026-08-17): release configurations in native tag gates
+
+ADR-0124 keeps the native behavior tier as a boot-only Maestro smoke while adding configuration
+coverage to its tag workflows: Android boots a disposable-key-signed Release APK, and iOS compiles a
+Release simulator app without store signing before its established Debug boot smoke.

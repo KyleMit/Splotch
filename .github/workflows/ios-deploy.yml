@@ -1,8 +1,9 @@
 # Runtime smoke test for the iOS *deployment* — the simulator/Xcode counterpart
-# of android-deploy.yml. Boots an iPhone simulator, builds + installs the debug
-# app, and asserts via Maestro that the UI renders (the Capacitor WebView booted
-# and loaded the production web bundle). Neither the web E2E suite (test.yml) nor
-# the Android smoke can catch an iOS-only WebView boot failure — this can.
+# of android-deploy.yml. Compiles a Release simulator app without store signing, then boots
+# an iPhone simulator, builds + installs the Debug app, and asserts via Maestro
+# that the UI renders (the Capacitor WebView booted and loaded the production web
+# bundle). Neither the web E2E suite (test.yml) nor the Android smoke can catch
+# Release-only compiler/configuration errors or an iOS-only WebView boot failure.
 #
 # Tag-only by design: macOS runners are the most expensive thing in CI, so this
 # runs only when a release tag is pushed (the moment an iOS crash would reach App
@@ -31,6 +32,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-pnpm
+
+      - name: Compile iOS Release app without store signing
+        run: npm run ios:build:release
 
       - uses: ./.github/actions/install-maestro
 

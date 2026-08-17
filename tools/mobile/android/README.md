@@ -6,19 +6,21 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 ## Entry points
 
-| Entry point                 | Public command(s)                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| `setup-emulator.mjs`        | `npm run android:setup`                                                               |
-| `run-emulator.mjs`          | `android:boot`, `android:emulator`, `android:live`                                    |
-| `run-gradle.mjs`            | `android:apk`, `android:run`, `android:run:device`, `android:bundle`, `android:clean` |
-| `run-smoke-test.mjs`        | `npm run test:android`                                                                |
-| `verify-release-bundle.mjs` | `npm run android:verify`                                                              |
-| `open-release-bundle.mjs`   | `npm run android:open`                                                                |
+| Entry point                 | Public command(s)                                                                                            |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `setup-emulator.mjs`        | `npm run android:setup`                                                                                      |
+| `run-emulator.mjs`          | `android:boot`, `android:emulator`, `android:live`                                                           |
+| `run-gradle.mjs`            | `android:apk`, `android:apk:release`, `android:run`, `android:run:device`, `android:bundle`, `android:clean` |
+| `run-smoke-test.mjs`        | `npm run test:android`                                                                                       |
+| `verify-release-bundle.mjs` | `npm run android:verify`                                                                                     |
+| `open-release-bundle.mjs`   | `npm run android:open`                                                                                       |
 
 `run-emulator.mjs` retains its `boot`, `emulator`, and `live` modes. `run-gradle.mjs` forwards the
-requested tasks to the committed wrapper from the `android/` project directory. Release commands
-write and inspect `android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals
-that containing directory without changing it.
+requested tasks to the committed wrapper from the `android/` project directory.
+`android:apk:release` writes `android/app/build/outputs/apk/release/app-release.apk`; the tagged CI
+gate test-signs and boots it. Bundle release commands write and inspect
+`android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals that containing
+directory without changing it.
 
 The toolchain requires Node 22+, a full JDK 21, and an Android SDK. Emulator setup additionally
 requires `sdkmanager`, `avdmanager`, `emulator`, and `adb`; the smoke test requires Maestro. Release

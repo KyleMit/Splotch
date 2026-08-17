@@ -1,8 +1,8 @@
-# Runtime smoke test for the Android *deployment*: build the app the way it
-# ships, boot a real emulator, install + launch it, and assert via Maestro that
-# the UI actually renders (the Capacitor WebView booted and loaded the production
-# web bundle). The web E2E suite (test.yml) can't catch native/WebView boot
-# failures — this can.
+# Runtime smoke test for the Android *deployment*: compile the Release
+# configuration, test-sign its APK with an ephemeral key, install + launch it,
+# and assert via Maestro that the UI actually renders (the Capacitor WebView
+# booted and loaded the production web bundle). The web E2E suite (test.yml)
+# can't catch R8/resource-shrinking or native/WebView boot failures — this can.
 #
 # Tag-only by design: an emulator job is the heaviest thing in CI, so it runs
 # only when a release tag is pushed (the moment a crash would reach users), plus
@@ -48,12 +48,30 @@ jobs:
 
       - uses: ./.github/actions/setup-pnpm
 
-      # Build the *debug* APK: it's auto-signed with the debug key (installable
-      # with no production secrets) and `cap:sync` still bakes the production web
-      # bundle, so the WebView boot path under test is the real one. (`adb install`
-      # takes an APK — never the .aab, which the original sample got wrong.)
-      - name: Build debug APK
-        run: npm run android:apk
+      # The known credentials protect no real identity: the key is generated on
+      # this runner only so Android can install the optimized Release APK. The
+      # Play upload key and its passwords remain local and never enter CI.
+      - name: Create ephemeral release signing key
+        run: |
+          keytool -genkeypair -noprompt \
+            -keystore "$RUNNER_TEMP/splotch-release-smoke.p12" \
+            -storetype PKCS12 \
+            -storepass android \
+            -keypass android \
+            -alias release-smoke \
+            -dname "CN=Splotch Release Smoke" \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000
+          {
+            echo "storeFile=$RUNNER_TEMP/splotch-release-smoke.p12"
+            echo 'storePassword=android'
+            echo 'keyAlias=release-smoke'
+            echo 'keyPassword=android'
+          } > android/keystore.properties
+
+      - name: Build test-signed release APK
+        run: npm run android:apk:release
 
       - uses: ./.github/actions/install-maestro
 
@@ -74,7 +92,7 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            adb install -r -t android/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r android/app/build/outputs/apk/release/app-release.apk
             # :device runs Maestro against the emulator this action already booted.
             # (Plain `test:android` boots + tears down its own emulator — for local use.)
             npm run test:android:device
