@@ -28,6 +28,14 @@ interface ScribbleTapStreamHandlers {
   cancel: (event: PointerEvent) => void;
 }
 
+interface ScribbleTapHandlers {
+  activate: () => void;
+  onPressStart?: () => void;
+  onPressCancel?: () => void;
+}
+
+type ScribbleTapHandler = (() => void) | ScribbleTapHandlers;
+
 function createScribbleTapDispatcher(ownerWindow: Window) {
   const handlersByPointerId = new Map<number, ScribbleTapStreamHandlers>();
   let subscriptionCount = 0;
@@ -124,8 +132,8 @@ export function scribbleGuard(node: HTMLElement) {
 // — those clicks have detail 0, no pointer press — while a real pointer's
 // trailing click (detail ≥ 1) is ignored, so the control never double-fires
 // where the guard is inert (finger, mouse, stylus outside iPadOS).
-export function scribbleTap(node: HTMLElement, activate: () => void) {
-  let current = activate;
+export function scribbleTap(node: HTMLElement, handler: ScribbleTapHandler) {
+  let current = handler;
   let press:
     | {
         pointerId: number;
@@ -140,11 +148,18 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
     | undefined;
   const ownerWindow = node.ownerDocument.defaultView;
 
+  const activate = () => (typeof current === 'function' ? current() : current.activate());
+
+  const cancelPreparation = () => {
+    if (typeof current !== 'function') current.onPressCancel?.();
+  };
+
   function finishPress(shouldActivate: boolean) {
     if (!press) return;
     stream?.release(press.pointerId);
     press = undefined;
-    if (shouldActivate) current();
+    if (shouldActivate) activate();
+    else cancelPreparation();
   }
 
   function eventHitsControl(e: PointerEvent): boolean {
@@ -210,6 +225,7 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
   }
 
   function down(e: PointerEvent) {
+    if (press) finishPress(false);
     press = {
       pointerId: e.pointerId,
       pointerType: e.pointerType,
@@ -221,10 +237,11 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
       dragged: false,
     };
     stream?.claim(e.pointerId);
+    if (typeof current !== 'function') current.onPressStart?.();
   }
 
   const click = (e: MouseEvent) => {
-    if (e.detail === 0) current();
+    if (e.detail === 0) activate();
   };
   // Direct pointer-id routing keeps the drawing hot path at one window handler.
   const stream = ownerWindow
@@ -233,11 +250,11 @@ export function scribbleTap(node: HTMLElement, activate: () => void) {
   node.addEventListener('pointerdown', down);
   node.addEventListener('click', click);
   return {
-    update(next: () => void) {
+    update(next: ScribbleTapHandler) {
       current = next;
     },
     destroy() {
-      press = undefined;
+      if (press) finishPress(false);
       stream?.destroy();
       node.removeEventListener('pointerdown', down);
       node.removeEventListener('click', click);

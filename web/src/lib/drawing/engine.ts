@@ -1252,6 +1252,11 @@ export function setSafeAreaInsets(insets: {
 // Capture strokes in upright paper space rather than the CSS-presented view.
 type StrokeSnapshots = { export: ExportSnapshot; preview: TiledExportSnapshot | null };
 
+export interface CanvasExportPreparation {
+  complete(options?: ExportOptions): Promise<Blob | null>;
+  cancel(): void;
+}
+
 function snapshotStrokes(snapshotScale: number, capturePreview: boolean): StrokeSnapshots {
   const width = Math.round((paper.pxW / renderScale) * snapshotScale);
   const height = Math.round((paper.pxH / renderScale) * snapshotScale);
@@ -1270,20 +1275,58 @@ function snapshotStrokes(snapshotScale: number, capturePreview: boolean): Stroke
   };
 }
 
+function closeTiledExportSnapshot(snapshot: TiledExportSnapshot | null) {
+  if (!snapshot) return;
+  for (const { bitmap } of snapshot.source.tiles) {
+    void bitmap.then(
+      (resolved) => resolved.close(),
+      () => undefined
+    );
+  }
+}
+
+function closeStrokeSnapshots(snapshots: StrokeSnapshots) {
+  if ('source' in snapshots.export) closeTiledExportSnapshot(snapshots.export);
+  closeTiledExportSnapshot(snapshots.preview);
+}
+
+export function prepareCanvasExport(capturePreview = true): CanvasExportPreparation | null {
+  if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
+  const overlaySource = getActiveOverlayExportSource();
+  const scale = currentExportScale();
+  // This snapshot must precede the compositor import: save-on-delete fire-and-forgets an export
+  // and clears the live engine synchronously. web/tests/engine-export.spec.ts pins the race.
+  const snapshots = snapshotStrokes(scale, capturePreview);
+  let available = true;
+  return {
+    async complete(options: ExportOptions = {}) {
+      if (!available) return null;
+      available = false;
+      let composeExportPng: (typeof import('./exportDrawing'))['composeExportPng'];
+      try {
+        ({ composeExportPng } = await import('./exportDrawing'));
+      } catch (error) {
+        closeStrokeSnapshots(snapshots);
+        throw error;
+      }
+      const exportOptions =
+        snapshots.preview && options.preview
+          ? { ...options, preview: { ...options.preview, source: snapshots.preview } }
+          : options;
+      if (exportOptions === options) closeTiledExportSnapshot(snapshots.preview);
+      return composeExportPng(snapshots.export, scale, overlaySource, exportOptions);
+    },
+    cancel() {
+      if (!available) return;
+      available = false;
+      closeStrokeSnapshots(snapshots);
+    },
+  };
+}
+
 // The compositor is save-time-only, so it loads on demand and stays out of the
 // startup bundle (issue #461). A dead connection can reject the import —
 // callers own surfacing that (their tap handlers catch).
 export async function exportCanvasBlob(options: ExportOptions = {}): Promise<Blob | null> {
-  if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
-  const overlaySource = getActiveOverlayExportSource();
-  const scale = currentExportScale();
-  // The snapshot MUST stay before the import await: save-on-delete fire-and-forgets
-  // this call and clears the live engine synchronously (the E2E spec pins the race).
-  const snapshots = snapshotStrokes(scale, !!options.preview);
-  const { composeExportPng } = await import('./exportDrawing');
-  const exportOptions =
-    snapshots.preview && options.preview
-      ? { ...options, preview: { ...options.preview, source: snapshots.preview } }
-      : options;
-  return composeExportPng(snapshots.export, scale, overlaySource, exportOptions);
+  return prepareCanvasExport(!!options.preview)?.complete(options) ?? null;
 }
