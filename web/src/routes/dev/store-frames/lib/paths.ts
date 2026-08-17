@@ -9,6 +9,10 @@ import type { StorePageId } from './pages.ts';
 
 export const STORE_FRAME_ASSET_BASE = '/dev/store-frames/assets';
 
+// Identity probe for the generator's server-reuse check: proves which checkout
+// a running server is serving before its renders overwrite committed finals.
+export const STORE_FRAME_IDENTITY_PATH = '/dev/store-frames/identity';
+
 export const captureAssetFile = (target: StoreTargetName, page: StorePageId) =>
   `captures/${target}/${page}.png`;
 

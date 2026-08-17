@@ -13,19 +13,21 @@
 //   npm run gen:store-assets            # both stages
 //   npm run gen:store-assets:frames     # stage 2 only, from committed captures
 //
-// Runs against a PRODUCTION build served by `vite preview` on 4173 — the
-// coloring-pack manifest (the 8-book grid) only exists in a build, and the
-// build must retain the dev-harness seam pickBrush waits on, so the script
-// builds with PUBLIC_ENABLE_DEV_HARNESS=true unless port 4173 already serves.
-// The preview server itself also gets PUBLIC_ENABLE_DEV_HARNESS=true so the
-// server-side gate opens the /dev/store-frames route.
+// Runs against a PRODUCTION build served by `vite preview` on --port (default
+// 4173) — the coloring-pack manifest (the 8-book grid) only exists in a build,
+// and the build must retain the dev-harness seam pickBrush waits on, so the
+// script builds with PUBLIC_ENABLE_DEV_HARNESS=true when the port is free. A
+// server already on the port is reused only after its identity route proves it
+// serves this checkout; any other responder fails the run. The preview server
+// itself also gets PUBLIC_ENABLE_DEV_HARNESS=true so the server-side gate
+// opens the /dev/store-frames route.
 //
 // Output lands in store-assets/ at the exact pixel sizes each store wants:
 //   Google Play  phone 1080x1920 (9:16)   tablet 1920x1080 (16:9)
 //   App Store    iPhone 6.9" 1290x2796    iPad 13" 2732x2048
 
 import { chromium } from '@playwright/test';
-import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
@@ -39,6 +41,7 @@ import { STORE_PAGES, pageHasCapture } from '../../web/src/routes/dev/store-fram
 import {
   FEATURE_GRAPHIC_PAGE_PARAM,
   renderPath,
+  STORE_FRAME_IDENTITY_PATH,
 } from '../../web/src/routes/dev/store-frames/lib/paths.ts';
 import { ROOT, isMain, sh, sleep } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
@@ -65,7 +68,7 @@ import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-ov
 
 const OUT = join(ROOT, 'store-assets');
 const CAPTURES = join(OUT, 'captures');
-const PORT = 4173;
+const DEFAULT_PORT = 4173;
 
 const C = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label.toLowerCase(), hex]));
 
@@ -286,12 +289,37 @@ const isUp = async (url) => {
   }
 };
 
-// Reuse a server already on the port (the caller is trusted to have built it
-// right), or build the instrumented production bundle and serve it.
+// Which checkout an already-running server is serving, via the harness's
+// identity route — null when the responder doesn't answer it (a stale build,
+// or not Splotch at all).
+async function servedRepoRoot(base) {
+  try {
+    const response = await fetch(new URL(STORE_FRAME_IDENTITY_PATH, base));
+    if (!response.ok) return null;
+    return (await response.json()).repoRoot ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Reuse a server already on the port only if its identity route proves it
+// serves THIS checkout — the frames now render from the server's components,
+// so an arbitrary root-200 responder (a stale server, a concurrent worktree's)
+// would silently write another branch's frame design into this checkout's
+// committed finals. Otherwise build the instrumented production bundle and
+// serve it.
 async function ensurePreviewServer(port) {
   const base = `http://localhost:${port}/`;
   if (await isUp(base)) {
-    console.log(`Reusing server at ${base}`);
+    const thisRoot = realpathSync(ROOT);
+    const served = await servedRepoRoot(base);
+    if (served !== thisRoot) {
+      throw new Error(
+        `Port ${port} is already serving ${served ?? 'something that is not this checkout (no store-frames identity route)'}, ` +
+          `not ${thisRoot}. Stop that server, or rerun with --port <unused port>.`
+      );
+    }
+    console.log(`Reusing this checkout's server at ${base}`);
     return { base, stop: () => {} };
   }
   console.log('Building production bundle (PUBLIC_ENABLE_DEV_HARNESS=true)…');
@@ -342,6 +370,7 @@ export async function generateStoreAssets({
   target: onlyTarget = '',
   page: onlyPage = '',
   framesOnly = false,
+  port = DEFAULT_PORT,
 } = {}) {
   const targets = STORE_TARGETS.filter((t) => !onlyTarget || t.name.includes(onlyTarget));
   const pages = STORE_PAGES.filter((p) => !onlyPage || p.id.includes(onlyPage));
@@ -361,7 +390,7 @@ export async function generateStoreAssets({
     }
   }
 
-  const { base, stop } = await ensurePreviewServer(PORT);
+  const { base, stop } = await ensurePreviewServer(port);
   try {
     const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
 
@@ -422,11 +451,13 @@ if (isMain(import.meta.url)) {
       target: { type: 'string' },
       page: { type: 'string' },
       'frames-only': { type: 'boolean' },
+      port: { type: 'string' },
     },
   });
   await generateStoreAssets({
     target: values.target ?? '',
     page: values.page ?? '',
     framesOnly: values['frames-only'] ?? false,
+    port: values.port ? Number(values.port) : DEFAULT_PORT,
   });
 }

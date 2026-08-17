@@ -77,10 +77,11 @@ npm run gen:store-assets
 The script (`tools/marketing-assets/gen-store-assets.mjs`) needs a **production build** on port 4173
 — the coloring-pack manifest behind the 8-book grid only exists in a build, and the capture driver
 waits on the dev-harness seam — so it builds with `PUBLIC_ENABLE_DEV_HARNESS=true` and serves it
-with `vite preview` (a server already on 4173 is reused as-is). It then drives the app in headless
-Chromium at each target's capture size, writes each app capture to `captures/` (committed), and
-screenshots the live `/dev/store-frames/render` route at the exact store pixel sizes — the frames
-and the Play feature graphic are real Svelte components, not composed rasters.
+with `vite preview` (a server already on 4173 is reused only after its `/dev/store-frames/identity`
+route proves it serves this checkout; pass `--port` for an unused port otherwise). It then drives
+the app in headless Chromium at each target's capture size, writes each app capture to `captures/`
+(committed), and screenshots the live `/dev/store-frames/render` route at the exact store pixel
+sizes — the frames and the Play feature graphic are real Svelte components, not composed rasters.
 
 Frame-only iteration (copy, layout, marks — nothing the app renders):
 

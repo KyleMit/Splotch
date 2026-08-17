@@ -225,7 +225,7 @@
        light gradient, and store art must render identically whatever theme
        the previewing browser is in. Baselined in lint-token-styles.mjs. */
     background: #fff;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: var(--chip-pad);
     font-size: var(--chip-font);
     font-weight: 600;
