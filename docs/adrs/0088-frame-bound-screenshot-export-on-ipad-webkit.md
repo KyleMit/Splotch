@@ -167,17 +167,25 @@ simulated 1× device scale; it remains unmeasured on physical scale-mismatch har
 
 ### Trusted-press preparation amendment (2026-08-17)
 
-Issue #978 moved the snapshot and lazy screenshot-module load from trusted `pointerup` to the
-matching `pointerdown`. Activation, visible feedback, persistence, and cooldown still begin only
-after the guarded tap completes; a drag, cancellation, or destroyed control closes any prepared tile
-bitmaps and never saves. This preserves the user's ability to cancel a press while using its contact
-interval to start immutable snapshot work.
+Issue #978 moved lazy screenshot-module loading from trusted `pointerup` to the matching
+`pointerdown`. Once that module resolves, it checks the active-save and cooldown gates before
+requesting an immutable snapshot during the press. Activation, visible feedback, persistence, and
+cooldown still begin only after the guarded tap completes; a drag, cancellation, or destroyed
+control closes any prepared tile bitmaps and never saves. This preserves the user's ability to
+cancel a press while using the remaining contact interval for snapshot work without making a
+suppressed press pay the capture cost.
 
 On the same physical iPad running iPadOS 26.5, one warmup plus five scored native-touch saves passed
 with first-frame P95 8 ms, ready P95 236 ms, post-action P95 17 ms, and a 29 ms maximum. The bounded
 preview became available about 85 ms earlier than the click-time baseline, matching the trusted
 press interval. The remaining save-ready duration is asynchronous worker encoding and persistence;
 ADR-0090 keeps readiness as an observed upper bound rather than a frame gate.
+
+If another pointer keeps drawing while the camera is pressed, the prepared image includes that
+stroke only through the snapshot point; later ink remains on the paper but not in that PNG. This is
+deliberate: preparation needs an immutable ordering boundary, and pressing the camera defines the
+captured moment. Waiting for every concurrent drawing pointer to lift would make one child's held
+finger block another child's completed save.
 
 ## Decision
 
@@ -186,11 +194,12 @@ renderer's already-settled pixels instead of replaying into a new full-page surf
 
 1. Before the compositor module's first `await`, `captureTiledCanvasSnapshot()` invokes
    `createImageBitmap()` on all 16 live tile canvases and records each tile's paper position. For a
-   trusted Screenshot Button press, that preparation starts at `pointerdown` and is consumed only
-   when the guarded tap activates; cancellation closes the requested bitmaps. Other export callers
-   prepare immediately when they request the blob. The promises may settle later, but invoking them
-   synchronously also preserves the save-on-delete race: clearing the live drawing immediately
-   afterward cannot blank the requested snapshots.
+   trusted Screenshot Button press, `pointerdown` loads the lazy screenshot module; once resolved,
+   that module rejects already-suppressed work before requesting this preparation. The preparation
+   is consumed only when the guarded tap activates, and cancellation closes the requested bitmaps.
+   Other export callers prepare immediately when they request the blob. The promises may settle
+   later, but invoking them synchronously also preserves the save-on-delete race: clearing the live
+   drawing immediately afterward cannot blank the requested snapshots.
 2. `exportDrawing.ts` resolves those tile snapshots plus optional paper-texture and coloring-overlay
    bitmaps. It passes them directly to the cached encoder worker; the main thread never owns a new
    full-page export surface.

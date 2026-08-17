@@ -35,7 +35,7 @@
     resolvedPortraitPaletteHeight,
     publishActionPanelState,
   } from '$lib/actionButtonLayout';
-  import { prepareCanvasExport, undo, type CanvasExportPreparation } from '$lib/drawing/engine';
+  import { prepareCanvasExport, undo } from '$lib/drawing/engine';
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
@@ -62,8 +62,6 @@
   let lastDrawerExpanded: boolean | undefined;
   // Intentionally untracked: this only memoizes the save-time chunk after the first screenshot press.
   let screenshotModulePromise: Promise<typeof import('$lib/drawing/screenshot')> | null = null;
-  // Intentionally untracked: ownership moves to screenshot.ts when the lazy chunk resolves.
-  let screenshotExportPreparation: CanvasExportPreparation | null = null;
   const refreshFreeGenerationGrant = createFreeGenerationGrantRefresher();
 
   // The two flyouts (Brush Menu, Stroke Width) share one open-state slot, so
@@ -300,30 +298,13 @@
 
   function prepareScreenshotPress() {
     if (canvasState.canvasEmpty) return;
-    const exportPreparation = prepareCanvasExport();
-    if (!exportPreparation) return;
-    screenshotExportPreparation?.cancel();
-    screenshotExportPreparation = exportPreparation;
     void loadScreenshotModule()
-      .then(({ prepareScreenshot }) => {
-        if (screenshotExportPreparation !== exportPreparation) {
-          exportPreparation.cancel();
-          return;
-        }
-        screenshotExportPreparation = null;
-        prepareScreenshot(exportPreparation);
-      })
-      .catch(() => {
-        if (screenshotExportPreparation === exportPreparation) {
-          screenshotExportPreparation = null;
-        }
-        exportPreparation.cancel();
-      });
+      .then(({ prepareScreenshot }) => prepareScreenshot(prepareCanvasExport))
+      .catch(() => undefined);
   }
 
   function cancelScreenshotPress() {
-    screenshotExportPreparation?.cancel();
-    screenshotExportPreparation = null;
+    if (!screenshotModulePromise) return;
     void loadScreenshotModule()
       .then(({ cancelScreenshotPreparation }) => cancelScreenshotPreparation())
       .catch(() => undefined);

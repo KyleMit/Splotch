@@ -150,12 +150,13 @@ function createPreparedScreenshot(
   };
 }
 
-export function prepareScreenshot(exportPreparation: CanvasExportPreparation | null = null) {
+export function prepareScreenshot(
+  prepareExport: (() => CanvasExportPreparation | null) | null = null
+) {
   if (activeScreenshotSave || performance.now() < nextScreenshotAllowedAt || preparedScreenshot) {
-    exportPreparation?.cancel();
     return;
   }
-  preparedScreenshot = createPreparedScreenshot(exportPreparation);
+  preparedScreenshot = createPreparedScreenshot(prepareExport?.() ?? null);
 }
 
 export function cancelScreenshotPreparation() {

@@ -115,12 +115,40 @@ describe('saveScreenshot', () => {
     mocks.saveBlobToFolder.mockResolvedValue(true);
     const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
 
-    prepareScreenshot({ complete, cancel });
+    prepareScreenshot(() => ({ complete, cancel }));
     await saveScreenshot();
 
     expect(complete).toHaveBeenCalledOnce();
     expect(mocks.exportCanvasBlob).not.toHaveBeenCalled();
     expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('does not capture a preparation while a save is in flight', async () => {
+    const exported = Promise.withResolvers<Blob | null>();
+    const prepareExport = vi.fn();
+    mocks.exportCanvasBlob.mockReturnValue(exported.promise);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    const save = saveScreenshot();
+    prepareScreenshot(prepareExport);
+
+    expect(prepareExport).not.toHaveBeenCalled();
+    exported.resolve(null);
+    await save;
+  });
+
+  it('does not capture a preparation during the post-save cooldown', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1_000);
+    const prepareExport = vi.fn();
+    mocks.exportCanvasBlob.mockResolvedValue(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    await saveScreenshot();
+    now.mockReturnValue(4_999);
+    prepareScreenshot(prepareExport);
+
+    expect(prepareExport).not.toHaveBeenCalled();
   });
 
   it('discards a cancelled press preview and exports again on activation', async () => {

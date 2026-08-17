@@ -1294,6 +1294,8 @@ export function prepareCanvasExport(capturePreview = true): CanvasExportPreparat
   if (!canvas || paper.pxW === 0 || paper.pxH === 0) return null;
   const overlaySource = getActiveOverlayExportSource();
   const scale = currentExportScale();
+  // This snapshot must precede the compositor import: save-on-delete fire-and-forgets an export
+  // and clears the live engine synchronously. web/tests/engine-export.spec.ts pins the race.
   const snapshots = snapshotStrokes(scale, capturePreview);
   let available = true;
   return {
@@ -1311,6 +1313,7 @@ export function prepareCanvasExport(capturePreview = true): CanvasExportPreparat
         snapshots.preview && options.preview
           ? { ...options, preview: { ...options.preview, source: snapshots.preview } }
           : options;
+      if (exportOptions === options) closeTiledExportSnapshot(snapshots.preview);
       return composeExportPng(snapshots.export, scale, overlaySource, exportOptions);
     },
     cancel() {
@@ -1325,7 +1328,5 @@ export function prepareCanvasExport(capturePreview = true): CanvasExportPreparat
 // startup bundle (issue #461). A dead connection can reject the import —
 // callers own surfacing that (their tap handlers catch).
 export async function exportCanvasBlob(options: ExportOptions = {}): Promise<Blob | null> {
-  // Preparation MUST stay before the first await: save-on-delete fire-and-forgets
-  // this call and clears the live engine synchronously (the E2E spec pins the race).
   return prepareCanvasExport(!!options.preview)?.complete(options) ?? null;
 }

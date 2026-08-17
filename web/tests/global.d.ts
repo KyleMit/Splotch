@@ -51,6 +51,9 @@ declare global {
         paperOrientation: Orientation;
       };
       inkBounds(): { minX: number; minY: number; maxX: number; maxY: number } | null;
+      prepareCanvasExport(
+        capturePreview?: boolean
+      ): import('../src/lib/drawing/engine').CanvasExportPreparation | null;
       exportCanvasBlob(
         options?: import('../src/lib/drawing/exportDrawing').ExportOptions
       ): Promise<Blob | null>;
