@@ -89,7 +89,7 @@
     max-width: 90vw;
     padding: var(--space-4, 16px);
     font-family: var(--font-family, sans-serif);
-    color: #b3261e;
-    background: #fff;
+    color: var(--danger-text);
+    background: var(--surface);
   }
 </style>

@@ -39,6 +39,9 @@
 </div>
 
 <style>
+  /* Marketing art on a fixed 1024×500 Play canvas: the gradient stops, tag/sub
+     inks, and display font sizes are the store design handoff's values, pinned
+     to one look regardless of theme — baselined in lint-token-styles.mjs. */
   .graphic {
     position: relative;
     overflow: hidden;

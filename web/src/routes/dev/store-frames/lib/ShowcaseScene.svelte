@@ -111,6 +111,9 @@
     height: auto;
   }
 
+  /* The polaroid is the app's own polaroid object, so its paper and caption
+     ink come straight from the canonical tokens (tokens.css, loaded by the
+     root layout) rather than frame-local values. */
   .polaroid {
     position: absolute;
     z-index: 3;
@@ -131,7 +134,7 @@
     text-align: center;
     font-size: var(--caption-size);
     font-weight: 600;
-    color: var(--polaroid-caption-color);
+    color: var(--polaroid-ink);
     padding: var(--caption-pad-top) 0 var(--caption-pad-bottom);
   }
 </style>

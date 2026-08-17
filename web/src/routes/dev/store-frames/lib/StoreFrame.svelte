@@ -13,8 +13,6 @@
     INK_MUTED_ON_DARK,
     INK_ON_DARK,
     LIGHT_BG,
-    POLAROID_CAPTION_COLOR,
-    POLAROID_PAPER,
     TYPE_SPEC,
   } from './frameStyle.ts';
   import { assetUrl, captureAssetFile } from './paths.ts';
@@ -42,8 +40,6 @@
       `--ink:${page.dark ? INK_ON_DARK : INK}`,
       `--ink-light-page:${INK}`,
       `--ink-muted:${page.dark ? INK_MUTED_ON_DARK : INK_MUTED}`,
-      `--polaroid-paper:${POLAROID_PAPER}`,
-      `--polaroid-caption-color:${POLAROID_CAPTION_COLOR}`,
       `--frame-shadow:0 ${px(shadow.y)} ${px(shadow.blur)} ${shadow.color}`,
       `--logo-gap:${px(type.logoGap)}`,
       `--logo-margin-bottom:${px(type.logoMarginBottom)}`,
@@ -225,6 +221,9 @@
     display: inline-flex;
     align-items: center;
     gap: var(--chip-label-gap);
+    /* Pinned white, not var(--surface): the chips sit on the frame's fixed
+       light gradient, and store art must render identically whatever theme
+       the previewing browser is in. Baselined in lint-token-styles.mjs. */
     background: #fff;
     border-radius: 999px;
     padding: var(--chip-pad);

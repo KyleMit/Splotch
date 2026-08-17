@@ -50,6 +50,15 @@ const BASELINE = new Map(
     // (wash, ink, border, code chip) stay pinned on both themes; the WHY
     // comment lives on .flash-warning.
     'lib/components/admin/AdminConsole.svelte': 4,
+    // Store marketing art (dev harness): the benefit chip stays white on the
+    // frame's fixed light gradient — store screenshots must render identically
+    // whatever theme the previewing browser is in, so theme tokens are the
+    // wrong tool; the WHY comment lives on .chip.
+    'routes/dev/store-frames/lib/StoreFrame.svelte': 1,
+    // The Play feature graphic's fixed 1024×500 composition: three gradient
+    // stops and the tag/sub inks from the store design handoff — marketing art
+    // pinned to one look, deliberately outside the app's theming.
+    'routes/dev/store-frames/lib/FeatureGraphic.svelte': 5,
     // The polaroid flight's photographic near-paper white behind the print
     // (the print itself is --polaroid-paper), like the AiResultStage picture it
     // lands in — plus the #000 white-stroke ink keyline shared by the action
@@ -95,6 +104,9 @@ const FONT_SIZE_BASELINE = new Map(
     // The reveal stage's 48px celebration emoji and the error state's 36px —
     // pictorial glyphs scaled as art, not type.
     'lib/components/AiImageResult.svelte': 2,
+    // The Play feature graphic's display type (128px wordmark, 38px tagline,
+    // 24px sub) — sized to a fixed 1024×500 store canvas, not the UI ramp.
+    'routes/dev/store-frames/lib/FeatureGraphic.svelte': 3,
   })
 );
 

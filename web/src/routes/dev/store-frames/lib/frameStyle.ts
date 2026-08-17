@@ -11,8 +11,6 @@ export const INK_ON_DARK = '#eceaf2';
 export const INK_MUTED_ON_DARK = '#cfccdb';
 export const LIGHT_BG = 'linear-gradient(165deg, #fbfaff 0%, #f4eefc 48%, #ebe1f8 100%)';
 export const DARK_BG = 'linear-gradient(165deg, #221e31 0%, #191624 55%, #141120 100%)';
-export const POLAROID_PAPER = '#fdfcf7';
-export const POLAROID_CAPTION_COLOR = '#7c50bb';
 
 interface ShadowSpec {
   y: number;
