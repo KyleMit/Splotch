@@ -10,4 +10,10 @@ export const DEV_HARNESSES: DevHarness[] = [
     name: 'Drawing engine',
     blurb: 'Bare canvas harness driven by the Playwright specs.',
   },
+  {
+    href: '/dev/store-frames',
+    name: 'Store frames',
+    blurb:
+      'The live store-screenshot compositions gen:store-assets renders — every marketing page per store slot, hot-reloading for design iteration.',
+  },
 ];

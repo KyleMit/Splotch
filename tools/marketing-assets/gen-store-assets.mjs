@@ -1,25 +1,48 @@
 // Generates the store assets for BOTH stores (Google Play + Apple App Store):
 // the five captioned marketing screenshots per device slot and the Play
-// feature graphic, by driving the real Splotch app in a headless browser and
-// composing each capture into its frame (lib/store-frames.mjs).
+// feature graphic. Two stages:
 //
-//   npm run gen:store-assets
+//   1. CAPTURE — drive the real Splotch app in a headless browser through the
+//      scenes below and write each app screenshot to store-assets/captures/
+//      (committed, so frame-only iteration and the /dev/store-frames harness
+//      work without re-driving the app).
+//   2. RENDER — screenshot the live /dev/store-frames/render route (the frame
+//      design system lives in web/src/routes/dev/store-frames/lib/) at each
+//      store slot's exact pixel size into store-assets/.
 //
-// Captures run against a PRODUCTION build served by `vite preview` on 4173 —
-// the coloring-pack manifest (the 8-book grid) only exists in a build, and the
-// build must retain the dev-harness seam pickBrush waits on, so the script
-// builds with PUBLIC_ENABLE_DEV_HARNESS=true unless port 4173 already serves.
+//   npm run gen:store-assets            # both stages
+//   npm run gen:store-assets:frames     # stage 2 only, from committed captures
+//
+// Runs against a PRODUCTION build served by `vite preview` on --port (default
+// 4173) — the coloring-pack manifest (the 8-book grid) only exists in a build,
+// and the build must retain the dev-harness seam pickBrush waits on, so the
+// script builds with PUBLIC_ENABLE_DEV_HARNESS=true when the port is free. A
+// server already on the port is reused only after its identity route proves it
+// serves this checkout; any other responder fails the run. The preview server
+// itself also gets PUBLIC_ENABLE_DEV_HARNESS=true so the server-side gate
+// opens the /dev/store-frames route.
 //
 // Output lands in store-assets/ at the exact pixel sizes each store wants:
 //   Google Play  phone 1080x1920 (9:16)   tablet 1920x1080 (16:9)
 //   App Store    iPhone 6.9" 1290x2796    iPad 13" 2732x2048
 
 import { chromium } from '@playwright/test';
-import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { PALETTE_COLORS } from '../../web/src/lib/palette.ts';
 import { STORAGE_KEYS } from '../../web/src/lib/storageKeys.ts';
+import {
+  STORE_TARGETS,
+  FEATURE_GRAPHIC,
+} from '../../web/src/routes/dev/store-frames/lib/targets.ts';
+import { frameGeometry } from '../../web/src/routes/dev/store-frames/lib/geometry.ts';
+import { STORE_PAGES, pageHasCapture } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
+import {
+  FEATURE_GRAPHIC_PAGE_PARAM,
+  renderPath,
+  STORE_FRAME_IDENTITY_PATH,
+} from '../../web/src/routes/dev/store-frames/lib/paths.ts';
 import { ROOT, isMain, sh, sleep } from '../lib/proc.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { spawnViteServer } from '../lib/vite-server.mjs';
@@ -41,38 +64,13 @@ import {
   setStrokeSize,
   waitForColoringOverlay,
 } from '../app-driver/lib/app-driver.mjs';
-import { STORE_PAGES, frameGeometry, loadFrameAssets, storePageHtml } from './lib/store-frames.mjs';
 import { BOOKS_TWO_COL_CSS, BOOKS_TWO_COL_MIN_ASPECT } from './lib/books-grid-override.mjs';
 
 const OUT = join(ROOT, 'store-assets');
-const PORT = 4173;
+const CAPTURES = join(OUT, 'captures');
+const DEFAULT_PORT = 4173;
 
 const C = Object.fromEntries(PALETTE_COLORS.map(({ hex, label }) => [label.toLowerCase(), hex]));
-
-const TARGETS = [
-  { name: 'phone', dir: 'screenshots/phone', width: 1080, height: 1920, orientation: 'portrait' },
-  {
-    name: 'tablet10',
-    dir: 'screenshots/tablet10',
-    width: 1920,
-    height: 1080,
-    orientation: 'landscape',
-  },
-  {
-    name: 'iphone69',
-    dir: 'screenshots/iphone69',
-    width: 1290,
-    height: 2796,
-    orientation: 'portrait',
-  },
-  {
-    name: 'ipad13',
-    dir: 'screenshots/ipad13',
-    width: 2732,
-    height: 2048,
-    orientation: 'landscape',
-  },
-];
 
 // Play allows the 7" tablet slot to reuse the 10" images (same 1920x1080 spec).
 const TABLET7_DIR = 'screenshots/tablet7';
@@ -84,6 +82,9 @@ const SCREENSHOT_SETTLE_MS = 500;
 const BOOK_GRID_RETRY_LIMIT = 5;
 const PAGE_PICK_RETRY_LIMIT = 4;
 const PAGE_PICK_CONFIRM_TIMEOUT_MS = 4000;
+// The render route reports data-render-state once fonts are loaded and every
+// image (served from disk by the harness's asset endpoint) has decoded.
+const RENDER_STATE_TIMEOUT_MS = 30_000;
 
 // ── Scene setup mocks ───────────────────────────────────────────────────────
 
@@ -192,7 +193,7 @@ async function sceneBooks(browser, base, capture) {
 
 // Rejects when the cover thumbs never finish decoding (or none render at
 // all), failing the scene and the run — a swallowed failure here would
-// overwrite 02-books.png with a half-loaded grid.
+// overwrite the 02-books capture with a half-loaded grid.
 const DIALOG_IMAGES_TIMEOUT_MS = 10_000;
 const waitForDialogImages = (page) =>
   page.waitForFunction(
@@ -288,18 +289,49 @@ const isUp = async (url) => {
   }
 };
 
-// Reuse a server already on the port (the caller is trusted to have built it
-// right), or build the instrumented production bundle and serve it.
+// Which checkout an already-running server is serving, via the harness's
+// identity route — null when the responder doesn't answer it (a stale build,
+// or not Splotch at all).
+async function servedRepoRoot(base) {
+  try {
+    const response = await fetch(new URL(STORE_FRAME_IDENTITY_PATH, base));
+    if (!response.ok) return null;
+    return (await response.json()).repoRoot ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Reuse a server already on the port only if its identity route proves it
+// serves THIS checkout — the frames now render from the server's components,
+// so an arbitrary root-200 responder (a stale server, a concurrent worktree's)
+// would silently write another branch's frame design into this checkout's
+// committed finals. Otherwise build the instrumented production bundle and
+// serve it.
 async function ensurePreviewServer(port) {
   const base = `http://localhost:${port}/`;
   if (await isUp(base)) {
-    console.log(`Reusing server at ${base}`);
+    const thisRoot = realpathSync(ROOT);
+    const served = await servedRepoRoot(base);
+    if (served !== thisRoot) {
+      throw new Error(
+        `Port ${port} is already serving ${served ?? 'something that is not this checkout (no store-frames identity route)'}, ` +
+          `not ${thisRoot}. Stop that server, or rerun with --port <unused port>.`
+      );
+    }
+    console.log(`Reusing this checkout's server at ${base}`);
     return { base, stop: () => {} };
   }
   console.log('Building production bundle (PUBLIC_ENABLE_DEV_HARNESS=true)…');
   await sh('PUBLIC_ENABLE_DEV_HARNESS=true npm run build');
   console.log('Starting preview server…');
-  const { stop } = spawnViteServer(port, { command: 'preview' });
+  const { stop } = spawnViteServer(port, {
+    command: 'preview',
+    // The client seam is baked in at build time; the server-side route gate
+    // (requireDevHarness) reads the env at request time, so the preview
+    // process needs it too or /dev/store-frames 404s.
+    env: { PUBLIC_ENABLE_DEV_HARNESS: 'true' },
+  });
   try {
     await waitForUrl(base, 60_000);
   } catch (err) {
@@ -309,82 +341,73 @@ async function ensurePreviewServer(port) {
   return { base, stop };
 }
 
-async function renderFrame(browser, html, width, height, outFile) {
+const captureFile = (target, page) => join(CAPTURES, target.name, `${page.id}.png`);
+
+// Screenshots the /dev/store-frames render surface at an exact pixel size,
+// waiting on its explicit ready/error signal rather than network idle.
+async function renderRoutePage(browser, base, path, width, height, outFile) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
   const page = await ctx.newPage();
-  await page.setContent(html, { waitUntil: 'networkidle' });
-  await sleep(250);
+  await page.goto(new URL(path, base).href);
+  const surface = page.locator('[data-render-state="ready"], [data-render-state="error"]');
+  await surface.waitFor({ timeout: RENDER_STATE_TIMEOUT_MS });
+  if ((await surface.getAttribute('data-render-state')) === 'error') {
+    const message = (await page.locator('.error').textContent())?.trim();
+    await ctx.close();
+    throw new Error(`Render route reported an error for ${path}: ${message}`);
+  }
   await page.screenshot({ path: outFile });
   await ctx.close();
-}
-
-function featureGraphicHtml(iconB64) {
-  return `<!doctype html><html><head><meta charset="utf-8">
-  <style>
-    @font-face { font-family:'QS'; src: local('Quicksand'); }
-    * { margin:0; box-sizing:border-box; }
-    html,body { width:1024px; height:500px; overflow:hidden; }
-    body {
-      display:flex; align-items:center; gap:54px; padding:0 86px;
-      font-family:'Quicksand','Segoe UI',sans-serif;
-      background: radial-gradient(circle at 20% 20%, #fff 0%, #fdf7ff 45%, #f3f0ff 100%);
-      position:relative;
-    }
-    .dots { position:absolute; inset:0; }
-    .dot { position:absolute; border-radius:50%; opacity:.85; }
-    .icon { width:300px; height:300px; flex:0 0 auto; filter: drop-shadow(0 14px 30px rgba(120,80,180,.25)); }
-    .copy { z-index:2; }
-    .name { font-size:128px; font-weight:700; letter-spacing:-2px;
-      background:linear-gradient(90deg,${C.red},${C.orange},${C.yellow},${C.green},${C.blue},${C.purple});
-      -webkit-background-clip:text; background-clip:text; color:transparent; line-height:1; }
-    .tag { font-size:38px; font-weight:600; color:#5a4a6b; margin-top:18px; }
-    .sub { font-size:24px; font-weight:500; color:#9385a3; margin-top:14px; }
-  </style></head>
-  <body>
-    <div class="dots">
-      <span class="dot" style="width:42px;height:42px;background:${C.yellow};top:48px;left:560px"></span>
-      <span class="dot" style="width:26px;height:26px;background:${C.green};top:120px;left:930px"></span>
-      <span class="dot" style="width:34px;height:34px;background:${C.blue};bottom:70px;left:520px"></span>
-      <span class="dot" style="width:20px;height:20px;background:${C.red};bottom:120px;left:880px"></span>
-      <span class="dot" style="width:30px;height:30px;background:${C.purple};top:60px;left:60px"></span>
-    </div>
-    <img class="icon" src="data:image/png;base64,${iconB64}">
-    <div class="copy">
-      <div class="name">Splotch</div>
-      <div class="tag">Doodle, color &amp; create</div>
-      <div class="sub">A calm, ad-free drawing app made for little hands</div>
-    </div>
-  </body></html>`;
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
 // `only` filters narrow a run for iteration: target/page substrings, e.g.
 // { target: 'tablet10', page: '03' }. A filtered run skips the tablet7 copy
-// and the feature graphic unless every target ran.
-export async function generateStoreAssets({ target: onlyTarget = '', page: onlyPage = '' } = {}) {
-  const assets = loadFrameAssets();
-  const targets = TARGETS.filter((t) => !onlyTarget || t.name.includes(onlyTarget));
+// and the feature graphic unless every target ran. `framesOnly` skips the
+// app-driving capture stage and renders from the committed captures.
+export async function generateStoreAssets({
+  target: onlyTarget = '',
+  page: onlyPage = '',
+  framesOnly = false,
+  port = DEFAULT_PORT,
+} = {}) {
+  const targets = STORE_TARGETS.filter((t) => !onlyTarget || t.name.includes(onlyTarget));
   const pages = STORE_PAGES.filter((p) => !onlyPage || p.id.includes(onlyPage));
   if (targets.length === 0 || pages.length === 0) {
     throw new Error(`No targets or pages match --target=${onlyTarget} --page=${onlyPage}`);
   }
-  const fullRun = targets.length === TARGETS.length && pages.length === STORE_PAGES.length;
+  const fullRun = targets.length === STORE_TARGETS.length && pages.length === STORE_PAGES.length;
 
-  const { base, stop } = await ensurePreviewServer(PORT);
+  if (framesOnly) {
+    const missing = targets
+      .flatMap((t) => pages.filter(pageHasCapture).map((p) => captureFile(t, p)))
+      .filter((file) => !existsSync(file));
+    if (missing.length > 0) {
+      throw new Error(
+        `--frames-only needs committed captures; missing:\n  ${missing.join('\n  ')}\nRun npm run gen:store-assets first.`
+      );
+    }
+  }
+
+  const { base, stop } = await ensurePreviewServer(port);
   try {
     const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
 
     for (const target of targets) {
       const geo = frameGeometry(target);
       mkdirSync(join(OUT, target.dir), { recursive: true });
+      mkdirSync(join(CAPTURES, target.name), { recursive: true });
       for (const page of pages) {
         const scene = SCENES[page.id];
-        const shot = scene ? await scene(browser, base, geo.capture, target.orientation) : null;
-        const html = storePageHtml(target, geo, page, assets, shot);
-        await renderFrame(
+        if (scene && !framesOnly) {
+          const shot = await scene(browser, base, geo.capture, target.orientation);
+          writeFileSync(captureFile(target, page), shot);
+        }
+        await renderRoutePage(
           browser,
-          html,
+          base,
+          renderPath(page.id, target.name),
           target.width,
           target.height,
           join(OUT, target.dir, `${page.id}.png`)
@@ -404,13 +427,12 @@ export async function generateStoreAssets({ target: onlyTarget = '', page: onlyP
       }
       console.log('tablet7 copied from tablet10');
 
-      // FEATURE GRAPHIC — 1024x500
-      const iconB64 = readFileSync(join(OUT, 'icon-512.png')).toString('base64');
-      await renderFrame(
+      await renderRoutePage(
         browser,
-        featureGraphicHtml(iconB64),
-        1024,
-        500,
+        base,
+        renderPath(FEATURE_GRAPHIC_PAGE_PARAM),
+        FEATURE_GRAPHIC.width,
+        FEATURE_GRAPHIC.height,
         join(OUT, 'feature-graphic.png')
       );
       console.log('feature-graphic done');
@@ -425,7 +447,17 @@ export async function generateStoreAssets({ target: onlyTarget = '', page: onlyP
 
 if (isMain(import.meta.url)) {
   const { values } = parseArgs({
-    options: { target: { type: 'string' }, page: { type: 'string' } },
+    options: {
+      target: { type: 'string' },
+      page: { type: 'string' },
+      'frames-only': { type: 'boolean' },
+      port: { type: 'string' },
+    },
   });
-  await generateStoreAssets({ target: values.target ?? '', page: values.page ?? '' });
+  await generateStoreAssets({
+    target: values.target ?? '',
+    page: values.page ?? '',
+    framesOnly: values['frames-only'] ?? false,
+    port: values.port ? Number(values.port) : DEFAULT_PORT,
+  });
 }
