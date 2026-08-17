@@ -39,6 +39,11 @@
   import { generateAiImage } from '$lib/drawing/aiImage';
   import { replayActionUnavailableFeedback } from '$lib/actionUnavailableFeedback';
   import { scribbleGuard, scribbleTap } from '$lib/actions/scribbleGuard';
+  import { storeCaptureMode } from '$lib/storeCapture';
+
+  // Intentionally untracked: the store-asset generator sets the flag before the
+  // app boots and nothing changes it afterward.
+  const storeCapture = storeCaptureMode();
 
   let brushWrapperEl: HTMLDivElement | undefined = $state();
   let strokeWrapperEl: HTMLDivElement | undefined = $state();
@@ -463,7 +468,7 @@
           name={aiResult.generating && !aiResult.minimized ? 'loading' : 'wand-stars'}
           class="action-icon"
         />
-        {#if !settings.aiUserApiKey && !settings.aiAccessToken && freeGenerations.available}
+        {#if !settings.aiUserApiKey && !settings.aiAccessToken && freeGenerations.available && !storeCapture}
           <span class="free-count" aria-hidden="true">{freeGenerations.remaining}</span>
         {/if}
       </button>

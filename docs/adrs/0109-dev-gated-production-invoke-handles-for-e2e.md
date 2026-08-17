@@ -1,7 +1,8 @@
 # ADR-0109: Dev-Gated Production Invoke Handles for E2E
 
 **Status:** Active **Date:** 2026-08 **Amends:** [0010](0010-compile-time-build-constants.md),
-[0080](0080-committed-brush-mode-seam-and-paced-strokes.md)
+[0080](0080-committed-brush-mode-seam-and-paced-strokes.md) **Amended by:**
+[0123](0123-capture-mode-flag-for-store-screenshots.md)
 
 ## Context
 

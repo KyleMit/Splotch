@@ -54,7 +54,11 @@ starts or reuses a dev server; `gen-store-assets.mjs` needs a **production previ
 coloring-pack manifest and the dev-harness seam its scenes depend on), so with the port free it runs
 `PUBLIC_ENABLE_DEV_HARNESS=true npm run build` and serves the result with `vite preview` (the
 preview process also gets `PUBLIC_ENABLE_DEV_HARNESS=true`, opening the server-side gate on
-`/dev/store-frames`). A server already on the port is reused only after the harness's
+`/dev/store-frames`). Both halves matter to capture mode (`web/src/lib/storeCapture.ts`,
+[ADR-0123](../../docs/adrs/0123-capture-mode-flag-for-store-screenshots.md)): its flag is a
+compile-time literal, so a preview served from a bundle built **without** it still renders every
+frame and still puts the wand button's free-generation count back into each capture — the one
+failure here that reports success. A server already on the port is reused only after the harness's
 `/dev/store-frames/identity` route confirms it serves this checkout's repo root — the frames render
 from the server's components, so a stale server or a concurrent worktree's would otherwise write
 another branch's frame design into this checkout's finals; any other responder fails the run with

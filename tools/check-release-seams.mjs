@@ -11,6 +11,7 @@ const RELEASE_SEAM_SOURCE_FILES = [
   ENGINE_SOURCE_PATH,
   'web/src/lib/drawing/undoHistory.ts',
   'web/src/lib/drawing/emptyScan.ts',
+  'web/src/lib/storeCapture.ts',
 ];
 const RELEASE_ONLY_DEBUG_PROPERTIES = [
   'backingMigrationPending',

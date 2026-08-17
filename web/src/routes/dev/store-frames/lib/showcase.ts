@@ -33,21 +33,26 @@ export interface ShowcaseSpec {
 }
 
 export const SHOWCASE_SPEC: Record<StoreOrientation, ShowcaseSpec> = {
+  // Landscape reads diagonally: doodle top-left, print bottom-right, one
+  // continuous path between them — stones leave the doodle's bottom edge, sink
+  // into a valley, rise through the wand, and the sparkles crest before
+  // settling into the print, the last one tucking under its left edge.
   landscape: {
-    doodle: { x: 620, y: 290, w: 530 },
-    wand: { x: 1210, y: 430, w: 115 },
-    polaroid: { x: 1370, y: 235, w: 530 },
+    doodle: { x: 620, y: 170, w: 470 },
+    wand: { x: 1045, y: 580, w: 100 },
+    polaroid: { x: 1394, y: 460, w: 470 },
     stones: [
-      { x: 1085, y: 655, d: 24, color: 'Purple' },
-      { x: 1125, y: 600, d: 20, color: 'Blue' },
-      { x: 1160, y: 548, d: 26, color: 'Green' },
-      { x: 1192, y: 500, d: 20, color: 'Yellow' },
+      { x: 740, y: 540, d: 14, color: 'Purple' },
+      { x: 784, y: 665, d: 16, color: 'Blue' },
+      { x: 850, y: 750, d: 18, color: 'Green' },
+      { x: 927, y: 785, d: 20, color: 'Yellow' },
+      { x: 998, y: 717, d: 22, color: 'Purple' },
     ],
     sparkles: [
-      { x: 1338, y: 400, w: 34, color: 'Orange' },
-      { x: 1356, y: 352, w: 40, color: 'Pink' },
-      { x: 1344, y: 302, w: 36, color: 'Blue' },
-      { x: 1316, y: 252, w: 46, color: 'Yellow' },
+      { x: 1175, y: 585, w: 26, color: 'Orange' },
+      { x: 1241, y: 570, w: 34, color: 'Pink' },
+      { x: 1310, y: 583, w: 41, color: 'Blue' },
+      { x: 1378, y: 603, w: 48, color: 'Yellow' },
     ],
   },
   portrait: {
