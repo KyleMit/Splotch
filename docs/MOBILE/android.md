@@ -80,7 +80,7 @@ Each runs `cap:sync` first (the shared web build — see [native.md](native.md))
 
 ```bash
 npm run android:apk     # debug APK  -> android/app/build/outputs/apk/debug/app-debug.apk
-npm run android:apk:release # release APK -> android/app/build/outputs/apk/release/app-release.apk
+npm run android:apk:release # release APK -> android/app/build/outputs/apk/release/ (unsigned without §4)
 npm run android:run     # build + install the debug app onto the connected device/emulator
 npm run android:bundle  # SIGNED release AAB (see §4 Signing for the prerequisite)
 npm run android:clean   # gradle clean (no cap:sync)

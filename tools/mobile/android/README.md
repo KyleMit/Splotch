@@ -17,8 +17,9 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 `run-emulator.mjs` retains its `boot`, `emulator`, and `live` modes. `run-gradle.mjs` forwards the
 requested tasks to the committed wrapper from the `android/` project directory.
-`android:apk:release` writes `android/app/build/outputs/apk/release/app-release.apk`; the tagged CI
-gate test-signs and boots it. Bundle release commands write and inspect
+`android:apk:release` writes `android/app/build/outputs/apk/release/` — `app-release.apk` when
+`keystore.properties` supplies a signing key, otherwise `app-release-unsigned.apk`; the tagged CI
+gate test-signs and boots the signed filename. Bundle release commands write and inspect
 `android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals that containing
 directory without changing it.
 
