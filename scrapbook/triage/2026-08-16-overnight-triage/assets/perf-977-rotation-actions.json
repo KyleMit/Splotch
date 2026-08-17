@@ -1,0 +1,331 @@
+{
+ "schema": "ipad-actions-summary/1",
+ "note": "Normalized from the harness actions.json (samples dropped); full raw capture in the local gitignored perf-profiles dir.",
+ "device": {
+  "name": "iPad",
+  "os": "26.5",
+  "id": "00008103-0006202E3CF1001E"
+ },
+ "appUrl": "http://192.168.40.53:4173/",
+ "transport": "browser",
+ "actions": [
+  "rotation"
+ ],
+ "repeats": 10,
+ "orientation": "LANDSCAPE",
+ "passed": false,
+ "summaries": [
+  {
+   "label": "clear drawing for blank rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 7,
+    "p95": 11,
+    "p99": 11,
+    "max": 11
+   },
+   "ready": {
+    "p50": 729,
+    "p95": 740,
+    "p99": 740,
+    "max": 740.0000000000009
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 17,
+    "p99": 21,
+    "max": 26,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 21,
+     "max": 26
+    }
+   },
+   "frameSamples": {
+    "scored": 794,
+    "raw": 988
+   },
+   "passed": true
+  },
+  {
+   "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 31,
+    "p95": 33,
+    "p99": 33,
+    "max": 33
+   },
+   "ready": {
+    "p50": 2749,
+    "p95": 2849,
+    "p99": 2849,
+    "max": 2848.999999999999
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 17,
+    "p99": 18,
+    "max": 21,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 17,
+     "max": 28
+    }
+   },
+   "frameSamples": {
+    "scored": 212,
+    "raw": 2066
+   },
+   "passed": true
+  },
+  {
+   "label": "undo clear after blank rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 5,
+    "p95": 5,
+    "p99": 5,
+    "max": 5
+   },
+   "ready": {
+    "p50": 230,
+    "p95": 324,
+    "p99": 324,
+    "max": 323.9999999999982
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 44,
+    "p99": 48,
+    "max": 51,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 44,
+     "max": 51
+    }
+   },
+   "frameSamples": {
+    "scored": 129,
+    "raw": 714
+   },
+   "passed": false
+  },
+  {
+   "label": "undo restored stroke after blank rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 6,
+    "p95": 7,
+    "p99": 7,
+    "max": 7
+   },
+   "ready": {
+    "p50": 231,
+    "p95": 330,
+    "p99": 330,
+    "max": 330
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 17,
+    "p99": 17,
+    "max": 17,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 17,
+     "max": 19
+    }
+   },
+   "frameSamples": {
+    "scored": 145,
+    "raw": 722
+   },
+   "passed": true
+  },
+  {
+   "label": "clear restored drawing after blank rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 6,
+    "p95": 9,
+    "p99": 9,
+    "max": 9
+   },
+   "ready": {
+    "p50": 722,
+    "p95": 728,
+    "p99": 728,
+    "max": 728
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 17,
+    "p99": 19,
+    "max": 21,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 19,
+     "max": 21
+    }
+   },
+   "frameSamples": {
+    "scored": 790,
+    "raw": 985
+   },
+   "passed": true
+  },
+  {
+   "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 21,
+    "p95": 21,
+    "p99": 21,
+    "max": 21
+   },
+   "ready": {
+    "p50": 2685,
+    "p95": 2734,
+    "p99": 2734,
+    "max": 2734
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 17,
+    "p99": 19,
+    "max": 19,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 17,
+     "max": 19
+    }
+   },
+   "frameSamples": {
+    "scored": 213,
+    "raw": 2040
+   },
+   "passed": true
+  },
+  {
+   "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 18,
+    "p95": 19,
+    "p99": 19,
+    "max": 19
+   },
+   "ready": {
+    "p50": 2720,
+    "p95": 2767,
+    "p99": 2767,
+    "max": 2767
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 24,
+    "p99": 25,
+    "max": 25,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 17,
+     "max": 25
+    }
+   },
+   "frameSamples": {
+    "scored": 72,
+    "raw": 2061
+   },
+   "passed": false
+  },
+  {
+   "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 16,
+    "p95": 17,
+    "p99": 17,
+    "max": 17
+   },
+   "ready": {
+    "p50": 2807,
+    "p95": 2822,
+    "p99": 2822,
+    "max": 2822
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 24,
+    "p99": 25,
+    "max": 25,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 17,
+     "max": 25
+    }
+   },
+   "frameSamples": {
+    "scored": 72,
+    "raw": 2075
+   },
+   "passed": false
+  }
+ ]
+}

@@ -1,0 +1,175 @@
+{
+ "schema": "ipad-actions-summary/1",
+ "note": "Normalized from the harness actions.json (samples dropped); full raw capture in the local gitignored perf-profiles dir.",
+ "device": {
+  "name": "iPad",
+  "os": "26.5",
+  "id": "00008103-0006202E3CF1001E"
+ },
+ "appUrl": "http://192.168.40.53:4173/",
+ "transport": "browser",
+ "actions": [
+  "theme"
+ ],
+ "repeats": 10,
+ "orientation": "LANDSCAPE",
+ "passed": false,
+ "summaries": [
+  {
+   "label": "open Settings",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 13,
+    "p95": 17,
+    "p99": 17,
+    "max": 17
+   },
+   "ready": {
+    "p50": 236,
+    "p95": 280,
+    "p99": 280,
+    "max": 280
+   },
+   "frames": {
+    "p50": 8,
+    "p95": 12,
+    "p99": 31,
+    "max": 47,
+    "raw": {
+     "p50": 8,
+     "p95": 9,
+     "p99": 15,
+     "max": 47
+    }
+   },
+   "frameSamples": {
+    "scored": 608,
+    "raw": 1435
+   },
+   "passed": false
+  },
+  {
+   "label": "switch dark theme to light",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 13,
+    "p95": 16,
+    "p99": 16,
+    "max": 16
+   },
+   "ready": {
+    "p50": 18,
+    "p95": 170,
+    "p99": 170,
+    "max": 169.9999999999991
+   },
+   "frames": {
+    "p50": 9,
+    "p95": 19,
+    "p99": 33,
+    "max": 35,
+    "raw": {
+     "p50": 8,
+     "p95": 12,
+     "p99": 20,
+     "max": 35
+    }
+   },
+   "frameSamples": {
+    "scored": 338,
+    "raw": 1221
+   },
+   "passed": false
+  },
+  {
+   "label": "switch light theme to dark",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 12,
+    "p95": 13,
+    "p99": 13,
+    "max": 13
+   },
+   "ready": {
+    "p50": 18,
+    "p95": 202,
+    "p99": 202,
+    "max": 202
+   },
+   "frames": {
+    "p50": 9,
+    "p95": 18,
+    "p99": 23,
+    "max": 29,
+    "raw": {
+     "p50": 8,
+     "p95": 12,
+     "p99": 18,
+     "max": 29
+    }
+   },
+   "frameSamples": {
+    "scored": 338,
+    "raw": 1334
+   },
+   "passed": true
+  },
+  {
+   "label": "close Settings",
+   "count": 9,
+   "totalCount": 10,
+   "activation": {
+    "captured": 10,
+    "valid": 10,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 9,
+    "p95": 13,
+    "p99": 13,
+    "max": 13
+   },
+   "ready": {
+    "p50": 14,
+    "p95": 31,
+    "p99": 31,
+    "max": 30.99999999999818
+   },
+   "frames": {
+    "p50": 8,
+    "p95": 18,
+    "p99": 19,
+    "max": 19,
+    "raw": {
+     "p50": 8,
+     "p95": 9,
+     "p99": 9,
+     "max": 19
+    }
+   },
+   "frameSamples": {
+    "scored": 42,
+    "raw": 1209
+   },
+   "passed": true
+  }
+ ]
+}

@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Overnight triage 2026-08-16 — Splotch scrapbook</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --r-sm:9px; --r-md:16px; --r-lg:18px;
+  --shell:1160px;
+  --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}}
+:root[data-theme=light]{
+  color-scheme: light;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+}
+:root[data-theme=dark]{
+  color-scheme: dark;
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+.shell{width:100%; max-width:var(--shell); margin:0 auto; padding:0 clamp(16px,4vw,44px)}
+
+/* ---- Masthead ------------------------------------------------------------ */
+.masthead{
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0, color-mix(in srgb,var(--accent-wash) 55%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--card-2), var(--paper));
+  border-bottom:1px solid var(--hair);
+}
+.masthead .shell{padding-top:clamp(16px,3vw,26px); padding-bottom:clamp(20px,3.5vw,34px)}
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:34px}
+.brand{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--ink); font-weight:700; letter-spacing:-.01em;
+}
+.brand:hover{text-decoration:none}
+.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px; transition:color .12s}
+.brand-name .brand-sub{color:var(--muted); font-weight:600}
+.brand-name .brand-sub::before{content:"/"; margin:0 5px; color:var(--faint); font-weight:400}
+.crayons{display:inline-flex; gap:4px; flex:0 0 auto}
+.crayons i{display:block; border-radius:99px}
+.crayons-lg i{width:22px; height:7px}
+.crayons-sm i{width:15px; height:5px}
+.brand .crayons-lg i{width:16px; height:6px}
+
+.crumbs{margin-left:auto; display:flex; align-items:center; gap:2px; font-size:13px; color:var(--muted); flex-wrap:wrap}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--accent-ink)}
+.crumbs .sep{color:var(--faint); margin:0 5px}
+.crumbs .here{color:var(--ink); font-weight:650}
+
+.masthead-body{margin-top:clamp(16px,3vw,26px); position:relative; z-index:1}
+.masthead h1{
+  font-size:clamp(1.85rem,4.4vw,2.7rem); line-height:1.03; margin:0;
+  letter-spacing:-.032em; text-wrap:balance; font-weight:800;
+}
+.tagline{color:var(--muted); max-width:58ch; margin:.55rem 0 0; font-size:clamp(1rem,1.4vw,1.08rem)}
+.masthead-deco{position:absolute; top:-8px; right:clamp(-20px,-1vw,0px); width:clamp(150px,20vw,240px); pointer-events:none; opacity:.14; filter:saturate(1.1); z-index:0}
+.masthead-deco svg{width:100%; height:auto; display:block}
+@media (prefers-color-scheme:dark){.masthead-deco{opacity:.2}}
+:root[data-theme=dark] .masthead-deco{opacity:.2}
+@media (max-width:640px){.masthead-deco{display:none}}
+.tagline b{color:var(--ink); font-weight:650}
+.tagline a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px}
+.masthead .stat-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+
+/* ---- Content ------------------------------------------------------------- */
+main{display:block}
+main .shell{padding-top:clamp(24px,4vw,40px); padding-bottom:clamp(48px,7vw,84px)}
+.section-head{display:flex; align-items:baseline; gap:10px; margin:clamp(30px,5vw,46px) 0 14px}
+.section-head:first-child{margin-top:0}
+.section-head h2{font-size:1.18rem; margin:0; letter-spacing:-.01em; font-weight:750}
+.section-head .desc{color:var(--muted); font-size:.9rem}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); font-weight:700}
+
+/* chips / pills */
+.chip{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  font-size:.76rem; font-weight:600; padding:4px 11px; border-radius:999px;
+  background:var(--card); border:1px solid var(--hair); color:var(--muted);
+}
+.chip b{color:var(--ink); font-weight:700}
+.chip.accent{background:var(--accent-wash); border-color:transparent; color:var(--accent-ink)}
+.chip .dot{width:7px; height:7px; border-radius:99px; background:var(--accent)}
+
+/* card grid — each card carries a single collection --hue (a crayon color) that
+   tints its top edge and icon plaque; the full rainbow is reserved for the
+   masthead brand + footer so the motif stays a signature, not wallpaper. */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); gap:clamp(14px,2vw,20px)}
+.card{
+  --hue:var(--accent); position:relative; display:flex; flex-direction:column;
+  background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm); overflow:hidden; transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.card:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--hue) 45%, var(--hair-strong))}
+.card > a.card-hit{position:absolute; inset:0; z-index:1}
+.card-top{height:5px; background:linear-gradient(90deg,var(--hue),color-mix(in srgb,var(--hue) 40%, transparent))}
+.card-body{padding:18px 18px 16px; display:flex; flex-direction:column; gap:9px; flex:1}
+.card-emoji{
+  width:46px; height:46px; border-radius:13px; display:grid; place-items:center;
+  background:color-mix(in srgb,var(--hue) 13%, var(--card-2));
+  border:1px solid color-mix(in srgb,var(--hue) 26%, var(--hair)); color:var(--hue);
+}
+.card-emoji svg{width:26px; height:26px; display:block}
+.card-emoji.is-emoji{font-size:24px}
+.card h3{margin:2px 0 0; font-size:1.14rem; letter-spacing:-.01em; font-weight:750}
+.card p{margin:0; color:var(--muted); font-size:.92rem; flex:1}
+.card-meta{margin-top:2px; font-size:.78rem; color:var(--faint)}
+.card-meta .kind{color:var(--muted); font-weight:650}
+.card-links{position:relative; z-index:2; display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:2px; font-size:.82rem}
+.card .go{position:relative; z-index:2; margin-top:4px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--accent-ink); font-size:.9rem}
+.card:hover .go .arrow{transform:translateX(3px)}
+.go .arrow{transition:transform .14s ease}
+
+/* footer */
+.site-foot{border-top:1px solid var(--hair); background:var(--card-2)}
+.site-foot .shell{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:22px; padding-bottom:26px; color:var(--muted); font-size:.85rem}
+.site-foot .crayons{opacity:.9}
+.site-foot p{margin:0}
+.site-foot a{color:var(--accent-ink); text-decoration:none}
+.site-foot a:hover{text-decoration:underline; text-underline-offset:2px}
+
+.empty{color:var(--muted); background:var(--card); border:1px dashed var(--hair-strong); border-radius:var(--r-md); padding:22px}
+code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42em; border-radius:5px; font-size:.88em}
+
+@media (max-width:560px){
+  .crumbs{width:100%; margin-left:0; margin-top:6px}
+  .card-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .card,.go .arrow{transition:none}
+}
+
+/* page */
+
+.section { margin: 2.2rem 0; }
+.section > h2 { border-bottom: 2px solid var(--hair-strong); padding-bottom: .3rem; }
+.group h3 { margin: 1.6rem 0 .6rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+.feature-card { background: var(--card); border: 1px solid var(--hair); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow-sm); }
+.feature-card header h4 { margin: .4rem 0 .5rem; font-size: 1.02rem; }
+.feature-card .tldr { margin: .2rem 0; }
+.feature-card .rationale { font-size: .88rem; color: var(--muted); }
+.feature-card .overlaps { font-size: .82rem; color: var(--faint); }
+.mock { width: 100%; border: 1px solid var(--hair); border-radius: 8px; margin-top: .5rem; background: #fff; }
+.chip { display: inline-block; font-size: .74rem; font-weight: 700; padding: .15rem .6rem; border-radius: 999px; background: var(--accent-wash); color: var(--accent-ink); }
+.chip-ok { background: #e5f5e9; color: #226b36; } .chip-warn { background: #fdeeda; color: #8a5a10; }
+.chip-muted { background: var(--paper-2); color: var(--muted); } .chip-sm { font-size: .7rem; }
+.b-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.b-table th, .b-table td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--hair); vertical-align: top; }
+.b-table .note { color: var(--muted); font-size: .82rem; max-width: 34rem; }
+.closed-list li { margin: .55rem 0; } .closed-list .ev { color: var(--muted); font-size: .84rem; }
+.confirm li { margin: .6rem 0; }
+.stat { display: inline-block; margin-right: 1.2rem; } .stat b { font-size: 1.3rem; }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">Scrapbook</a><span class="sep">/</span><span class="here" aria-current="page">Triage 2026-08-16</span></nav>
+    </div>
+    <div class="masthead-body">
+      <h1>Overnight backlog triage — 2026-08-16</h1>
+      <p class="tagline">Every open issue re-verified against the current code, bucketed, and applied. Closes, labels, milestones and comments all landed incrementally overnight.</p>
+      <div class="stat-row"><span class="stat"><b>138</b> issues triaged</span>
+    <span class="stat"><b>37</b> closed with evidence</span>
+    <span class="stat"><b>11</b> v1 picks</span>
+    <span class="stat"><b>32</b> v2</span>
+    <span class="stat"><b>32</b> easy wins</span>
+    <span class="stat"><b>22</b> decisions for you</span></div>
+    </div>
+  </div>
+</header>
+<main class="shell">
+<section class="section"><h2>1 · Feature ideas (your call on v1/v2/decline)</h2>
+<p>Milestones are pre-applied for v1/v2 recommendations — move the ones you disagree with. Declines are recommendations only; nothing was closed except evidence-backed already-shipped items.</p>
+<div class="group"><h3>Drawing tools &amp; play</h3><div class="cards"><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/162">#162</a> Add a stamps tool</h4></header>
+    <p class="tldr">A third way to make art besides drawing and erasing: tap the paper and a star, heart, or flower plops down with a bounce and a happy sound. It unlocks the very youngest kids, who can tap long before they can steer a stroke.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Highest toddler value in the batch and every needed subsystem (command ops, undo, Brush Menu, sound, icon pipeline) already exists — the flagship v1 candidate, and the first to slip to v2 if the launch cut needs to be leaner.</p>
+    <a href="assets/162.webp"><img class="mock" src="assets/162.webp" alt="mockup for issue 162" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/168">#168</a>, <a href="https://github.com/KyleMit/Splotch/issues/175">#175</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/168">#168</a> Tap-to-fill (paint bucket)</h4></header>
+    <p class="tldr">Tap inside a shape and it fills with color — the &#39;I colored the whole elephant!&#39; payoff without needing the fine motor control to stay inside the lines. Works on coloring pages and on shapes the child drew.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real value but technically the hardest tool in the batch, and the magic brush already delivers the perfectly-colored-page payoff — defer past launch.</p>
+    <a href="assets/168.webp"><img class="mock" src="assets/168.webp" alt="mockup for issue 168" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/162">#162</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/179">#179</a> Mirror and Kaleidoscope Drawing</h4></header>
+    <p class="tldr">A symmetry mode: draw on one side and the same stroke appears mirrored on the other (or repeated in kaleidoscope slices). One scribble becomes a butterfly — big wow for small effort from the child.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Delightful play mode with a clean op-level design, but it multiplies through crayon passes, magic sheets, and undo grouping — post-launch polish, keep needs-scoping.</p>
+    <a href="assets/179.webp"><img class="mock" src="assets/179.webp" alt="mockup for issue 179" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/188">#188</a> Paper Playground</h4></header>
+    <p class="tldr">Let kids pick the paper itself — warm cream, blue construction paper, chalkboard, graph paper — instead of the paper color being decided by light/dark mode. Drawing white chalk on a chalkboard is a different toy than a pen on paper.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Fun idea but paper color is load-bearing across theme tokens, night fills, exports, and the Notch Band — a cross-cutting build that needs the launch dust to settle; keep needs-scoping.</p>
+    <a href="assets/188.webp"><img class="mock" src="assets/188.webp" alt="mockup for issue 188" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/210">#210</a> Masterpiece Time-Lapse</h4></header>
+    <p class="tldr">Parents get a little movie of the drawing being made, stroke by stroke — watch the masterpiece happen, then maybe save it as a short animation. The app already records drawings as replayable commands, which is what makes this plausible.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Charming parent-facing keepsake with an unusually good technical fit, but zero launch urgency and a real memory/recording design problem — defer, keep needs-scoping.</p>
+    <a href="assets/210.webp"><img class="mock" src="assets/210.webp" alt="mockup for issue 210" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/170">#170</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/175">#175</a> Offline &quot;What Should I Draw?&quot; Spinner</h4></header>
+    <p class="tldr">A tap on a die button deals a friendly picture card — &#39;Draw... a red balloon!&#39; — to spark an idea, fully offline with no AI. Prompts come from art the app already ships, like the coloring-book thumbnails.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Cheap, philosophy-aligned (offline, no accounts, no AI), and the prompt-deck raw material already exists — but it serves 4-6-year-olds more than the core 2+ user and Actions Panel real estate is contested, so post-launch.</p>
+    <a href="assets/175.webp"><img class="mock" src="assets/175.webp" alt="mockup for issue 175" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/171">#171</a>, <a href="https://github.com/KyleMit/Splotch/issues/162">#162</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/171">#171</a> Sensory Color and Music Modes</h4></header>
+    <p class="tldr">Make the app talk and sing: hear the color&#39;s name when a swatch is picked (great for pre-readers), feel a tiny buzz on color change, or an optional mode where drawing plays gentle musical notes. All optional, parent-controlled.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Genuinely differentiating sensory layer with real pre-reader value, but it is three features in a trench coat (speech, haptics, generative music) and needs its scoping pass — post-launch.</p>
+    <a href="assets/171.webp"><img class="mock" src="assets/171.webp" alt="mockup for issue 171" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/189">#189</a>, <a href="https://github.com/KyleMit/Splotch/issues/175">#175</a></p>
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/189">#189</a> Sound effects on delete / clear</h4></header>
+    <p class="tldr">Clearing the page currently happens in silence — add a satisfying paper-swoosh when the drawing is cleared, following the parent&#39;s existing sound on/off and volume settings. Small polish that makes the most dramatic action in the app feel finished.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Tiny, launch-quality feel, every hook already exists — clean v1.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/171">#171</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/182">#182</a> Two-Child Duet Canvas</h4></header>
+    <p class="tldr">Two kids, one tablet: each side gets its own colors so siblings can draw together without fighting over the palette. Two kids can already draw at the same time today — they just share one selected color.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The multi-touch half already works; the remaining delta is a per-player palette/assignment UI, which is a real toddler-UX design problem with no launch urgency — defer, keep needs-scoping.</p>
+    <a href="assets/182.webp"><img class="mock" src="assets/182.webp" alt="mockup for issue 182" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/170">#170</a> In-app gallery (&quot;the fridge door&quot;)</h4></header>
+    <p class="tldr">A place inside the app to revisit saved masterpieces — big thumbnails, tap for full screen. Today finished art leaves the app (device photo album on iOS/Android, downloads/folder on web); kids have no way to look back at their own work inside Splotch.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> High pride-of-ownership value and a retention hook, but it needs a storage schema, LRU policy, a new child-facing surface, and its flagged ADR — a post-launch build.</p>
+    <a href="assets/170.webp"><img class="mock" src="assets/170.webp" alt="mockup for issue 170" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/210">#210</a></p>
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/253">#253</a> Brush type (blend mode with previous drawing)</h4></header>
+    <p class="tldr">An old one-line TODO asking for a brush that blends with what&#39;s already on the canvas. The crayon brush shipped exactly this: crossing colors mix like real pigment (blue over yellow reads green), and the magic brush is a second canvas-compositing brush.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The capability shipped as the crayon&#39;s subtractive color mixing (ADR-0065) — the terse TODO is delivered.</p>
+    
+    
+  </article></div></div>
+<div class="group"><h3>Colors &amp; palette</h3><div class="cards"><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/324">#324</a> [Feature] I want to be able to pin my favorite colors to the top</h4></header>
+    <p class="tldr">A parent or kid could mark a few colors as favorites so they always appear first in the color bar. Today the bar shows a fixed rainbow, and the one custom color a child mixes is forgotten when the app closes. This is the favorites half of the fuller idea already written up in issue 167.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real user-requested value, but it&#39;s a subset of #167 and not launch-critical — consolidate and defer together.</p>
+    <a href="assets/324.webp"><img class="mock" src="assets/324.webp" alt="mockup for issue 324" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/167">#167</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/167">#167</a> Recent and Favorite Custom Colors</h4></header>
+    <p class="tldr">When a child mixes a special color in the honeycomb picker, the app would remember it — a small row of recent colors plus parent-pinned favorites — so &#39;my dinosaur green&#39; survives closing the app. Today only one custom color is held, and it&#39;s lost on every restart.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Genuinely lovable (&#39;my blue&#39; is a real toddler pattern) but it needs scoping (persistence, trim interplay, parent-managed favorites UI) and nothing about launch depends on it.</p>
+    <a href="assets/167.webp"><img class="mock" src="assets/167.webp" alt="mockup for issue 167" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/324">#324</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/183">#183</a> Resizable color palette tied to button size</h4></header>
+    <p class="tldr">Parents already have a Button Size slider that grows or shrinks the drawing-screen buttons; this would make the color swatches follow the same slider. Today the slider resizes the action buttons only, while color swatches stay one fixed size everywhere and the bar instead shows fewer colors on small screens.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Half already exists (the global slider); the palette half fights the deliberately static CSS trim-ladder architecture, so it&#39;s a costly consistency win, not a launch need.</p>
+    <a href="assets/183.webp"><img class="mock" src="assets/183.webp" alt="mockup for issue 183" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/201">#201</a> Extra color rows for very tall / extra-tall landscape</h4></header>
+    <p class="tldr">On very tall screens the color bar shows all 15 colors and then just leaves empty space; this would fill that room with extra hues so a big desktop or tall tablet gets a richer crayon box. Real tablets already trim a color or two, so this only pays off on desktop-class heights.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The tier architecture extends naturally (a fourth tier past deluxe), but the beneficiary is tall desktop windows — a small slice of a toddler-tablet audience — so it&#39;s post-launch polish.</p>
+    <a href="assets/201.webp"><img class="mock" src="assets/201.webp" alt="mockup for issue 201" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/177">#177</a> Left-handed layout flip</h4></header>
+    <p class="tldr">A left-handed kid drawing in landscape covers the color bar with their own arm, because it sits on the left edge. A parent toggle would mirror the layout so colors sit on the right. Roughly one in ten kids is left-handed, and nothing like this exists in the app today.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real usability win for ~10% of the audience, cleanly scoped (one persisted toggle + a mirrored flex order), and it polishes the core drawing experience for launch.</p>
+    <a href="assets/177.webp"><img class="mock" src="assets/177.webp" alt="mockup for issue 177" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/195">#195</a> Dark-mode color defaults + dark painter&#39;s palette</h4></header>
+    <p class="tldr">In night mode the black crayon would be useless on dark paper, so this asked for it to become white and for the color bar to darken. Both shipped: the Black swatch shows and paints white in dark mode, and the palette bar and picker follow the dark theme.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Every &#39;done when&#39; criterion is implemented, unit-tested, and traceable to shipped commits; the leftover &#39;consider a dark-specific palette&#39; musing is mooted by the theme-stable swatch-identity design.</p>
+    
+    
+  </article></div></div>
+<div class="group"><h3>Input &amp; reliability</h3><div class="cards"><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/184">#184</a> Pressure-Sensitive Stylus Strokes</h4></header>
+    <p class="tldr">When drawing with an Apple Pencil or similar stylus, pressing harder would make the line thicker and pressing lightly would make it thinner, like a real marker. Today every stroke comes out at one fixed width no matter how hard the child presses.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Polish for the stylus-holding minority of a finger-first 2+ audience; needs physical iPad/Android validation and touches every brush (crayon pass tracker, eraser multiplier, magic), so it is bigger than it looks — post-launch.</p>
+    <a href="assets/184.webp"><img class="mock" src="assets/184.webp" alt="mockup for issue 184" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/253">#253</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/186">#186</a> Palm Rejection and Stylus-Only Mode</h4></header>
+    <p class="tldr">When a child rests a palm on the screen while drawing with a stylus, the palm can leave stray marks. This adds an optional &#39;pencil only&#39; setting so that while it is on, only the stylus draws and fingers/palms are ignored.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> iPadOS already hardware-palm-rejects while a Pencil is active, so the real-world severity on the flagship target is unproven; the opt-in toggle is small but not launch-material — verify the problem on physical hardware before building.</p>
+    <a href="assets/186.webp"><img class="mock" src="assets/186.webp" alt="mockup for issue 186" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/182">#182</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/163">#163</a> Redo the Last Undo</h4></header>
+    <p class="tldr">If a child taps Undo one too many times, the last scribble is gone for good. This adds a Redo button (and Cmd/Ctrl+Shift+Z) so an accidental Undo can be taken back and the vanished stroke reappears.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real value but not launch-material, and the issue&#39;s &#39;near-trivial&#39; premise is stale — the command-replay history it cites (ADR-0033 popCommand) was replaced by raster tile snapshots (ADR-0085/0086), so redo now needs new engine mechanism plus memory budgeting.</p>
+    <a href="assets/163.webp"><img class="mock" src="assets/163.webp" alt="mockup for issue 163" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/207">#207</a> Crash-Safe Drawing Recovery</h4></header>
+    <p class="tldr">If the app crashes, the tablet dies, or the browser refreshes, the drawing on screen is simply gone. This quietly saves the in-progress drawing after each stroke and brings it back automatically when the app reopens, so a toddler&#39;s masterpiece survives an interruption.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Today the one in-progress drawing is lost on any refresh, WebView eviction, or process kill — routine events on a backgrounded native app — so this materially improves perceived store-launch quality, and the building blocks (export pipeline, PNG worker, idb helper, idle scheduler) already exist.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/170">#170</a>, <a href="https://github.com/KyleMit/Splotch/issues/210">#210</a></p>
+  </article></div></div>
+<div class="group"><h3>Coloring book</h3><div class="cards"><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/563">#563</a> Add a &quot;Surprise Me&quot; coloring mode — hidden page revealed by the magic brush</h4></header>
+    <p class="tldr">A sparkly &quot;?&quot; tile deals a mystery coloring page that starts invisible — the paper looks blank, and the picture appears only where the child paints, like a scratch-off. When most of the page is uncovered, the full picture fades in with confetti and a chime. The &#39;ooh, what&#39;s under here… it&#39;s a T. REX!&#39; moment is a genuine wow for a toddler and a great store-demo beat.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Highest delight-per-effort in the batch: fully specced, design-comped, prototype-validated, needs zero new art, and it showcases the app&#39;s signature magic-brush mechanic for launch.</p>
+    <a href="assets/563-comp-1.webp"><img class="mock" src="assets/563-comp-1.webp" alt="mockup for issue 563" loading="lazy"/></a><a href="assets/563-comp-2.webp"><img class="mock" src="assets/563-comp-2.webp" alt="mockup for issue 563" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/194">#194</a>, <a href="https://github.com/KyleMit/Splotch/issues/196">#196</a></p>
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/194">#194</a> Surprise Me Coloring Page</h4></header>
+    <p class="tldr">A single tile that picks a random coloring page so a toddler doesn&#39;t have to choose a book and then a page. This exact idea was later absorbed into the richer issue 563, where the random pick is step 1 of the hidden scratch-off reveal.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Fold into 563, which explicitly supersedes it — same random-pick spec, plus the reveal experience; keep one issue, not two.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/563">#563</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/196">#196</a> Coloring Page Completion Celebration</h4></header>
+    <p class="tldr">When a kid has colored a good chunk of a page, the app throws a little celebration — confetti, a happy moment — without judging whether they stayed inside the lines. It rewards effort, once per page, as a delight signal rather than a score.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Lovely but not launch-critical, and it gets dramatically cheaper after 563 ships the same coverage-detection + confetti finale machinery.</p>
+    <a href="assets/196.webp"><img class="mock" src="assets/196.webp" alt="mockup for issue 196" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/563">#563</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/190">#190</a> Favorites book + scrollable, expandable selection</h4></header>
+    <p class="tldr">Let a kid (or parent) heart favorite coloring pages, collected into a &#39;Favorites&#39; book that appears first in the picker. Two-thirds of the original ask is already done: the picker grid scrolls with a scroll cue, and the catalog has grown to 8 books.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Only the favorites piece remains, and it&#39;s a nice-to-have with real UX questions (toddler-proof toggling, empty state) better settled after launch.</p>
+    <a href="assets/190.webp"><img class="mock" src="assets/190.webp" alt="mockup for issue 190" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/795">#795</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/192">#192</a> Coloring-book export / import / save-to-device + user bundles</h4></header>
+    <p class="tldr">Three ideas in one: save a finished colored page to your device (already works today), export/import whole coloring-book bundles, and let families load custom books — kept out of the iOS store build for licensing reasons. The bundle format and the store-flag plumbing are real post-launch design work.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The save-to-device part is shipped; the bundle format + user-upload part is a needs-adr build with store-compliance implications — exactly the kind of thing to do after the launch dust settles.</p>
+    <a href="assets/192.webp"><img class="mock" src="assets/192.webp" alt="mockup for issue 192" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/174">#174</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/174">#174</a> Photo → coloring page</h4></header>
+    <p class="tldr">A parent snaps a photo of the family dog or the kid&#39;s bike and the AI turns it into a line-art coloring page. Hugely personal and shareable — but it means sending family photos to an AI service inside a kids app, so the safety and privacy story has to be airtight before it ships.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Compelling personalization, but a big new safety/compliance surface (photos in a COPPA-safe app) with no launch upside — post-launch work behind the parent gate.</p>
+    <a href="assets/174.webp"><img class="mock" src="assets/174.webp" alt="mockup for issue 174" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/192">#192</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/795">#795</a> Expand the coloring-book catalog: queued pages for six shipped books, three new sections</h4></header>
+    <p class="tldr">A content work order: roughly 25 queued pages for six existing books (sheep, ankylosaurus, race car…) plus three brand-new sections (shape patterns, landscapes, trees &amp; leaves). The factory that makes these pages is built and proven — this is about running it, book by book.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Pure asset production on an established pipeline; valuable but unbounded and never &#39;done soon&#39;, so it shouldn&#39;t sit on the v1 build list — peel off individual books as capacity allows.</p>
+    <a href="assets/795.webp"><img class="mock" src="assets/795.webp" alt="mockup for issue 795" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/252">#252</a>, <a href="https://github.com/KyleMit/Splotch/issues/190">#190</a></p>
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/252">#252</a> Generate coloring book workflow</h4></header>
+    <p class="tldr">This asked for a repeatable way to make and assemble coloring-book pages. That workflow now exists end-to-end: a documented pipeline turns line art into every shipped variant (dark-mode chalk, colored fills, thumbnails, overlays), with automated quality gates and a review proof sheet, and the 8-book / 48-page catalog kids see today was produced by it.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The requested workflow is fully built, documented, and has already produced the entire shipped catalog.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/795">#795</a></p>
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/204">#204</a> Dark-mode coloring variants</h4></header>
+    <p class="tldr">Every coloring page now has a night-time version: white chalk-style lines on dark paper, plus night-colored fills the magic brush reveals in dark mode. The specific worry — big black areas turning into ugly white blobs — was solved by having an AI redraw each page as a chalk drawing that makes the right black-vs-white calls, checked by automated audits.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Night fills and chalk outlines cover all 48 pages in both orientations, and the large-black-region problem has a dedicated, gated solution.</p>
+    
+    
+  </article></div></div>
+<div class="group"><h3>AI art</h3><div class="cards"><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/300">#300</a> Add a &quot;Realistic&quot; AI style</h4></header>
+    <p class="tldr">Add a photo-realistic option to the AI style picker: a scribbled dog comes back as a real puppy photo, a drawn rocket as a movie-still rocket. It was auditioned and had the biggest wow factor of any style tested, but lost its head-to-head on consistency. Nothing in today&#39;s lineup covers a photographic look.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real wow-factor value, but the tuned prompt was iterated on Gemini and production has since swapped to OpenAI (ADR-0113) — it needs re-audition on the live provider, and the tile-count decision is entangled with issue 181&#39;s plan to hold the grid at 8.</p>
+    <a href="assets/300.webp"><img class="mock" src="assets/300.webp" alt="mockup for issue 300" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/181">#181</a>, <a href="https://github.com/KyleMit/Splotch/issues/169">#169</a></p>
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/169">#169</a> Custom AI style buttons with generated cover art</h4></header>
+    <p class="tldr">Every AI style button should show its own cover image generated by the real pipeline, so kids pick styles by picture rather than by word. This is fully shipped: all 8 styles have committed AI-generated covers, forked per light/dark theme, produced by a dedicated regeneration script.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Every &#39;done when&#39; clause is met in current code: per-style covers exist, are committed, are rendered by the picker, and a gen:style-covers pipeline regenerates them with the production prompt assembly.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/173">#173</a>, <a href="https://github.com/KyleMit/Splotch/issues/251">#251</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/173">#173</a> Parent-authored custom AI prompts</h4></header>
+    <p class="tldr">Let a parent write their own AI style in the Parent Center — name it, generate a cover for it, and switch it on so it appears in their child&#39;s style picker. Powerful for families, but it means the app starts sending parent-written text to the image model instead of only server-owned prompts.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real value but a genuinely large build that dismantles a deliberate safety invariant (the server owns every prompt — clients send only a closed style enum, and report evidence is reconstructed from it, ADR-0104), which is exactly the wrong risk to add while store review of a kids-category AI feature is pending.</p>
+    <a href="assets/173.webp"><img class="mock" src="assets/173.webp" alt="mockup for issue 173" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/169">#169</a>, <a href="https://github.com/KyleMit/Splotch/issues/556">#556</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/178">#178</a> Richer AI loading experience</h4></header>
+    <p class="tldr">Make the wait for an AI picture more fun: a loading sound, bigger pulses when it runs long, and progressively sillier animations the longer it takes. Since this was filed, the app rebuilt the wait around &#39;keep drawing while you wait&#39; — the modal minimizes to a polaroid in the corner and the child draws on — which removes most of the boredom this was solving.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The core problem (a long captive wait) was structurally solved by ADR-0116/0117 minimize-to-corner plus a provider-tuned 30s dial with an overrun pulse and confetti reveal; what&#39;s left (sound, escalating animation) is polish that can wait, and the issue&#39;s cited dev/ai-timer harness no longer exists.</p>
+    <a href="assets/178.webp"><img class="mock" src="assets/178.webp" alt="mockup for issue 178" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/180">#180</a> Immediate AI retry on failure</h4></header>
+    <p class="tldr">When an AI picture fails for a fixable reason (timeout, server hiccup), the child currently sees &#39;please try again&#39; — but there is no try-again button. They have to close the error, reopen the magic flow, and re-pick a style. One tap to re-fire the same request turns a dead end into a bump.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Small, fully-scoped gap in a flagship flow: the state machine already classifies failures as retryable (&#39;retry&#39; kind for timeouts/5xx/throttles) and the error card literally tells the child to try again without offering the button — high value per line of code before launch.</p>
+    <a href="assets/180.webp"><img class="mock" src="assets/180.webp" alt="mockup for issue 180" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/181">#181</a> Tiny Tweaks AI Mode</h4></header>
+    <p class="tldr">A new first tile in the style picker shows the child&#39;s own drawing in a mini polaroid — &#39;your picture, a tiny bit better.&#39; The AI returns a gently improved version that pins to the corner of a fresh sheet; the child holds it to peek at full size or drags it onto the paper as a faint tracing ghost, so they redraw it themselves instead of just receiving it.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Lovely, unusually well-specified two-part feature, but the pin/peek/trace half is a substantial gesture-and-canvas build (new overlay layer, drag thresholds, ghost compositing under ink) that shouldn&#39;t compete with launch — and none of it exists yet.</p>
+    <a href="assets/181.webp"><img class="mock" src="assets/181.webp" alt="mockup for issue 181" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/300">#300</a></p>
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/202">#202</a> Dark-mode-aware AI generation</h4></header>
+    <p class="tldr">When the app is in night mode the child draws in chalky colors on dark paper, and that dark drawing is what gets sent to the AI — but the AI&#39;s instructions never mention night, so results can come back as bright daytime pictures that don&#39;t match. The night-time prompt language already exists (it powers the dark style covers); it just isn&#39;t wired into live generations.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Nearly all the work already exists — dark scene prompt, dark style suffixes, dark-paper export, night model-eval fixtures — and the remaining wire-through (carry theme on the request, resolve the dark suffix set server-side) is small, scoped, and lifts flagship quality for every night-theme user before launch.</p>
+    <a href="assets/202.webp"><img class="mock" src="assets/202.webp" alt="mockup for issue 202" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-declined">
+    <header><span class="chip chip-warn">recommend: decline</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/251">#251</a> Add new cover photo and throw it through the ringer again</h4></header>
+    <p class="tldr">An old backlog note asking to swap in a new source drawing for the AI style covers and re-run it through the generation-and-review pipeline. Since it was written, the pipeline was rebuilt, given quality gates, and re-run for both light and dark themes with human review — there&#39;s no open quality complaint the refresh would answer.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The validation intent is already satisfied (full per-theme cover regeneration through review with automated quality gates), leaving only &#39;replace the source drawing for taste&#39; — content churn with no articulated problem, not worth an open issue.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/169">#169</a></p>
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/556">#556</a> Sell the AI Art feature in the Parent Center — show parents what enabling it does</h4></header>
+    <p class="tldr">A parent opening the AI Art settings today is greeted with API-key mechanics before they&#39;ve ever seen what the feature does. This adds a small picture story at the top — child&#39;s drawing, one magic tap, the storybook result — with three reassurance chips, demoting the key form below the pitch. The design was already prototyped, reviewed, and chosen (Version C).</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Design fully decided with a complete spec, directly improves conversion of the flagship differentiator at launch, and the work is one component&#39;s locked-state branch plus producing the real hero image pair.</p>
+    <a href="assets/556.webp"><img class="mock" src="assets/556.webp" alt="mockup for issue 556" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/849">#849</a>, <a href="https://github.com/KyleMit/Splotch/issues/173">#173</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/883">#883</a> Add an AI report triage queue to /admin</h4></header>
+    <p class="tldr">When a parent reports an AI picture, the evidence is stored for 30 days and a private support notification fires — but there&#39;s no screen to review reports. This adds a queue to the admin console showing each report&#39;s drawing, result, and deadline, with Dismiss (delete evidence now) and Red Team (flag for safety investigation) actions.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Right feature, wrong moment: the storage layer, retention policy, and notification path it builds on all shipped recently and report volume is near zero pre-launch, so the notification-plus-manual path holds while launch work lands; build it when real volume exists.</p>
+    <a href="assets/883.webp"><img class="mock" src="assets/883.webp" alt="mockup for issue 883" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/233">#233</a></p>
+  </article></div></div>
+<div class="group"><h3>Parent Center &amp; settings</h3><div class="cards"><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/203">#203</a> Global button-size control</h4></header>
+    <p class="tldr">Parents wanted a setting to make the app&#39;s buttons bigger for very small fingers or very big tablets. That control exists today: Settings → Tool Drawer has a Button Size slider, and while you drag it the settings card fades away so you watch the real buttons grow live behind it.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Shipped in PR 51 (2026-07-04, before this issue was even migrated from IDEAS.md); the palette half of &#39;app-wide&#39; is deliberately tracked separately in issue 183.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/183">#183</a>, <a href="https://github.com/KyleMit/Splotch/issues/201">#201</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/205">#205</a> &quot;Check for updates&quot; button + version display</h4></header>
+    <p class="tldr">Half of this shipped: Settings → About already shows the app version. The other half — a button a parent can press to check for a new version on demand — doesn&#39;t exist, but the app already checks for updates by itself every hour and every time it regains focus, and applies them whenever the canvas is blank.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Version display shipped; the manual button adds little on top of automatic hourly/focus checks, so it&#39;s a small post-launch nicety.</p>
+    <a href="assets/205.webp"><img class="mock" src="assets/205.webp" alt="mockup for issue 205" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/214">#214</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/206">#206</a> Native download links + /about marketing page</h4></header>
+    <p class="tldr">A public web page that pitches Splotch and links to the App Store / Play Store, plus a link to it from the app&#39;s About settings. The apps aren&#39;t in the stores yet, so the badges have nothing to point at — the issue itself says &#39;once the native apps ship&#39;.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> By its own terms this starts after store launch; the /beta page already proves out the pattern to copy.</p>
+    <a href="assets/206.webp"><img class="mock" src="assets/206.webp" alt="mockup for issue 206" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/244">#244</a>, <a href="https://github.com/KyleMit/Splotch/issues/851">#851</a></p>
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/208">#208</a> Parent Center Adult Gate</h4></header>
+    <p class="tldr">This asked for a grown-ups-only check so a toddler can&#39;t wander into parent settings and change things. That gate shipped: a &#39;Grown-Ups Only&#39; math challenge now protects sensitive actions, and parents can set per-feature policies — including requiring the challenge before Parent Center itself opens.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> ADR-0094 shipped the gate (PR 764) and PR 871 added the configurable per-feature policies including gating openParentCenter — this issue&#39;s exact ask.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/844">#844</a>, <a href="https://github.com/KyleMit/Splotch/issues/708">#708</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/209">#209</a> Gentle Drawing Session Timer</h4></header>
+    <p class="tldr">Parents could set a calm 5/10/15-minute limit on a drawing session: the final minute gently shifts the colors, then a friendly &#39;All done for now&#39; scene covers the canvas until a grown-up dismisses it. Nothing like this exists yet — and the app&#39;s keep-awake behavior means a session can otherwise run forever.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Real, philosophy-aligned parent value, but a multi-part build (time tracking, end scene, gate wiring, checkpoint save) that isn&#39;t store-required — post-launch.</p>
+    <a href="assets/209.webp"><img class="mock" src="assets/209.webp" alt="mockup for issue 209" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/207">#207</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/213">#213</a> Versioned Settings Schema and Safe Import/Export</h4></header>
+    <p class="tldr">Under the hood, every setting is its own saved key with ad-hoc upgrade handling; this proposes one versioned settings document with proper migrations, plus parent-facing backup/restore buttons that deliberately leave out secrets like AI keys. Invisible to kids, safety net for parents and future refactors.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Plumbing with long-term payoff but zero launch impact; the riskiest part (scattered magic-string keys) was already fixed by the central STORAGE_KEYS registry.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/214">#214</a>, <a href="https://github.com/KyleMit/Splotch/issues/192">#192</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/214">#214</a> Privacy-Safe Parent Diagnostics Bundle</h4></header>
+    <p class="tldr">A grown-ups-only diagnostics screen — app version, platform, online state, storage health, recent error codes — that a parent can copy and send when something goes wrong, with anything personal filtered out. The feedback form already sends an opt-in device snapshot, so a slice of this exists; the standalone view and error ring don&#39;t.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Support tooling that matters once real families hit real problems — after launch, not before.</p>
+    <a href="assets/214.webp"><img class="mock" src="assets/214.webp" alt="mockup for issue 214" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/213">#213</a>, <a href="https://github.com/KyleMit/Splotch/issues/205">#205</a>, <a href="https://github.com/KyleMit/Splotch/issues/233">#233</a></p>
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/198">#198</a> Fun kid-facing light/dark toggle</h4></header>
+    <p class="tldr">Kids can already flip Night Mode themselves: the very first row of Settings (which is deliberately not gated) is a switch whose thumb shows a sun or moon, it remembers the choice, and it still follows the device theme until someone picks. What hasn&#39;t been built is the whimsy — a day/night scene animation rather than a plain switch.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The functional toggle, persistence, and system-default behavior all shipped; only the delight layer remains, which is post-launch polish.</p>
+    <a href="assets/198.webp"><img class="mock" src="assets/198.webp" alt="mockup for issue 198" loading="lazy"/></a>
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/195">#195</a>, <a href="https://github.com/KyleMit/Splotch/issues/204">#204</a></p>
+  </article><article class="card feature-card bucket-obsolete">
+    <header><span class="chip chip-muted">closed · already shipped</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/197">#197</a> Stable Parent Center height</h4></header>
+    <p class="tldr">This reported the old tabbed Parent Center window bouncing in height when you switched tabs. That tabbed window no longer exists — the redesign replaced it with a settings hub you drill into on phones and, on tablets, a table of contents beside one continuously scrolling pane, so there&#39;s no tab switch left to bounce.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The components this names (ParentCenter.svelte, TabPager.svelte) were deleted by the ADR-0061 redesign one day after the issue was filed.</p>
+    
+    
+  </article></div></div>
+<div class="group"><h3>Launch &amp; layout</h3><div class="cards"><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/844">#844</a> Gate the remaining ungated data-out operations (feedback submit, key entry, AI toggles)</h4></header>
+    <p class="tldr">Kids-app store rules want anything that sends data off the device locked behind a grown-ups check. Most of this issue is now done — feedback submit and the privacy page&#39;s links got gated after the last scope update — leaving just two spots: the AI key entry box and the AI on/off switches. Small finish-line work with store-review stakes.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> priority:high store-launch item whose remaining scope has shrunk to two surfaces (AiKeyManager credential save, AiFeatureToggles) plus a compliance-ledger update — exactly the kind of risk-reduction the launch wants.</p>
+    
+    <p class="overlaps">Overlaps: <a href="https://github.com/KyleMit/Splotch/issues/708">#708</a>, <a href="https://github.com/KyleMit/Splotch/issues/849">#849</a>, <a href="https://github.com/KyleMit/Splotch/issues/851">#851</a>, <a href="https://github.com/KyleMit/Splotch/issues/208">#208</a></p>
+  </article><article class="card feature-card bucket-v1">
+    <header><span class="chip chip-ok">v1 · build now</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/199">#199</a> Warn when screenshot save is blocked</h4></header>
+    <p class="tldr">On a phone where the parent denied Photos permission, tapping save plays the happy camera-shutter effect and then quietly fails — the drawing never lands in the gallery and nobody is told. The web side is fine (it falls back to a download), but the native silent failure loses kids&#39; drawings and would generate bad store reviews.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> Verified still-real silent failure on the native path; small scope (surface the existing false return + a retry/settings pointer) with direct store-launch quality impact.</p>
+    <a href="assets/199.webp"><img class="mock" src="assets/199.webp" alt="mockup for issue 199" loading="lazy"/></a>
+    
+  </article><article class="card feature-card bucket-v2">
+    <header><span class="chip chip-accent">v2 · defer</span>
+      <h4><a href="https://github.com/KyleMit/Splotch/issues/193">#193</a> iPhone top/bottom layout efficiency + notch band</h4></header>
+    <p class="tldr">This wants no wasted space around the iPhone notch and home indicator, and the iPad landscape bottom row sitting flush. The notch-band half already exists and has since grown smarter — it even follows the camera cutout when the phone rotates — but whether dead space remains today needs someone to actually look at it on devices.</p>
+    <p class="rationale"><strong>Why this bucket:</strong> The named infrastructure (notch band, measured safe-area insets, inset-aware button budgets) all ships; what&#39;s left is an on-device verification pass that may close this outright, which isn&#39;t launch-gating work tonight.</p>
+    
+    
+  </article></div></div>
+</section>
+<section class="section"><h2>2 · Bugs, perf, chores — where everything landed</h2>
+<table class="b-table"><thead><tr><th>Issue</th><th>Title</th><th>Bucket</th><th>Note</th></tr></thead><tbody><tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/215">#215</a></td><td>First-Class AI Access Grants</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Not implemented. The allowlist is still a plaintext string[] in the site-wide &#39;access-tokens&#39; Blobs store (web/src/lib/server/tokens.ts), us</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/216">#216</a></td><td>One-Time Invite Redemption</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Not implemented. buildInvites (web/src/lib/server/admin.ts:89-94) still emits ?ai_access_token=&lt;raw code&gt; URLs; captureAiAccessTokenFromUrl </td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/220">#220</a></td><td>Expiring, Per-Device Admin Sessions</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Unchanged in substance: every login yields the same deterministic HMAC (sessionToken() in web/src/lib/server/admin.ts:27-31), the web cookie</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/222">#222</a></td><td>Pre-Tag Release Candidate Gate</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Half the premise has been mitigated, half remains. The script moved to tools/release/cut-release.mjs; npm run release now runs a prerelease </td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/224">#224</a></td><td>Append-Only Admin Audit Trail</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Still as filed: no audit store exists anywhere in web/src/lib/server, and revoking a token deletes its usage tally (removeToken -&gt; deleteUsa</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/233">#233</a></td><td>Privacy-Safe Operations Dashboard</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Partially covered since filing, core not built. /admin now shows storage health (the persistent banner) and a real free-tier ops view — the </td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/234">#234</a></td><td>Document icon source + move toward hand-drawn icons</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Both halves remain open, and they are different in kind. The icon source is documented nowhere: no mention of Material Symbols anywhere in d</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/236">#236</a></td><td>Visual Regression Matrix</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Still open; the broad matrix was never built, but the landscape moved. web/tests/palette-trim.spec.ts now carries the repo&#39;s only toHaveScre</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/239">#239</a></td><td>Scheduled AI Safety Drift Canary</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Premise intact: provider behavior can drift without a deploy, and the red-team suite is still manual. The machinery is in better shape than </td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/240">#240</a></td><td>Localization and RTL Readiness</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Nothing has changed since filing: no message catalog, no i18n dependency in package.json, app.html hardcodes lang=&quot;en&quot;, all copy is embedded</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/241">#241</a></td><td>Fastlane store-deploy automation</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Unimplemented. Only fastlane/metadata/ exists (Android changelogs + iOS release notes, generated by tools/release/gen-release-notes.mjs as p</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/242">#242</a></td><td>Deliberate AI Model Canary and Failover</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">The premise still holds but the framing is stale. Current state of web/src/lib/server/ai/: one provider (openAiProvider, ADR-0113) behind th</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/245">#245</a></td><td>Toolchain Manifest and `npm run doctor`</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">The Node-pinning half is done since filing: package.json engines was added in b0c4a17c (&gt;=20.12, 2026-07-22) and raised to &gt;=22.13 in 84878c</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/247">#247</a></td><td>Asset Provenance and Derived-Asset Freshness</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Partially materialized since filing. Byte stability: tools/asset-gen/gen-asset-manifest.mjs writes golden/asset-manifest.sha256 over shipped</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/248">#248</a></td><td>Versioned API Capabilities for Old Native Apps</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Confirmed absent: apiUrl() in web/src/lib/api.ts prepends the base URL and nothing else — no app-version/platform/API-version headers — and </td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/264">#264</a></td><td>Upscale / resolution audit vs device DPR</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">measured on both devices: iPad 1.67–1.82× upscale; remedy choice posted</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/564">#564</a></td><td>Unify the exported `$state` object naming across state modules</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">The naming split persists and has grown since filing: five suffixed primary exports (canvasState, toolState, strokeState, coloringBookState,</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/568">#568</a></td><td>Add a keyboard/AT activation path for clearing the canvas</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Fully intact at HEAD. dragToClear still wires only pointerdown/move/up/cancel + transitionend (dragToClear.ts:294-298); ClearButton has no o</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/570">#570</a></td><td>Rework the hand-maintained `COLOR_ICONS` allowlist (build-time generation vs split list)</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Still valid and grown: COLOR_ICONS is now 36 entries (21 machine-detectable spot icons + 15 size-*/eraser/magic self-tinting previews, up fr</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/673">#673</a></td><td>Decide the durable fix for the agent PR flow&#39;s template probe</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">The decision is still open, but the issue&#39;s premise is now wrong: the mitigation it describes as landed never reached main. All three cited </td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/828">#828</a></td><td>Brief flash of &quot;sporadic tiling&quot; mid-page while loading the PWA on Android Chrome</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">on-device verdict: atomic repaint, no tiling; fix choice posted</td></tr>
+<tr class="b-needs-decision"><td><a href="https://github.com/KyleMit/Splotch/issues/837">#837</a></td><td>Ratify or revert two judgement calls left in place by the audit burndowns</td>
+        <td><span class="chip chip-sm">Needs decision</span></td>
+        <td class="note">Both judgement calls are still in place and still unratified; nothing has drifted them away. (1) The MODEL pin at tools/asset-gen/legacy/ret</td></tr>
+<tr class="b-needs-human"><td><a href="https://github.com/KyleMit/Splotch/issues/690">#690</a></td><td>Apply to the BrowserStack open-source program for real-device Safari perf runs</td>
+        <td><span class="chip chip-sm">Needs human</span></td>
+        <td class="note">Still valid and now more relevant, but blocked on a human-only step: filing account applications on the project&#39;s behalf. No BrowserStack/La</td></tr>
+<tr class="b-needs-human"><td><a href="https://github.com/KyleMit/Splotch/issues/1077">#1077</a></td><td>Make the Codex Cloud UI invoke the committed setup scripts instead of holding a copy of them</td>
+        <td><span class="chip chip-sm">Needs human</span></td>
+        <td class="note">Verified current as filed (yesterday): .codex/cloud/setup.sh:2 and .codex/cloud/maintenance.sh:2 still say to paste/sync the script body int</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/217">#217</a></td><td>Protect Managed Codes Like BYOK Keys</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still exactly as filed. The managed code persists in plaintext dual-layer storage (&#39;splotch-ai-access-token&#39; via readString/writeString — lo</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/218">#218</a></td><td>Full Hosted Deploy Contract Check</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid with path drift. The referenced scripts/api-smoke.mjs is now tools/api-smoke/: run-local-contract.mjs (npm run test:api:smoke) b</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/227">#227</a></td><td>Exercise Native Release Configurations</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and now sharper. Both tag-triggered deploy smokes build Debug: android-deploy.yml runs npm run android:apk (debug APK) and ios-d</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/228">#228</a></td><td>Minimize and Expire Usage Records</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">All three claims verified current: usage blobs are keyed by the raw access code (usage.ts store key = token), retain lastPrompt (TokenUsage,</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/230">#230</a></td><td>Isolate Deploy Preview Data from Production</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still true and the blast radius has grown: all five Blobs stores are site-wide and shared with previews — access-tokens, ai-usage, free-gene</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/243">#243</a></td><td>Machine-Checkable Privacy and Permission Inventory</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid but substantially reshaped by drift since filing. The reviewed inventory now exists in prose: docs/MOBILE/compliance.md (2026-08</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/246">#246</a></td><td>Explicit Native Staging API Builds</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Core premise confirmed against current code: web/vite.config.ts:46 hardcodes NATIVE_API_BASE = isCapacitor ? &#39;https://splotch.art&#39; : &#39;&#39;, so </td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/249">#249</a></td><td>Scheduled Native Support-Floor Matrix</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Premise still true: the promised floor is Android API 24 (android/variables.gradle:2) and iOS 16.4 (IPHONEOS_DEPLOYMENT_TARGET in the Xcode </td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/259">#259</a></td><td>Local-warp registration check (the shimmer suspect)</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid, correctly priority:low, and unchanged since the 2026-07-17 re-check. At HEAD no local-warp audit exists: lib/align-to-source.mj</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/268">#268</a></td><td>Wire haloScore into the night generator gate</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and unchanged in substance; only the names moved. The halo scorer (lib/night-halo.mjs, scoreNightHalo) remains post-hoc only: th</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/269">#269</a></td><td>Add false-positive suppressions to judgeLightEyes</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid, re-confirmed empirically at HEAD. judgeLightEyes (lib/eye-fill.mjs:315) is still a bare some-lively check with no suppressions,</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/271">#271</a></td><td>Gate chalk whitening on solid-pen-eye pages (chalk-vs-pen ink diff)</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid; the class is still gate-blind and still shipping. I re-ran the offline eye audit at HEAD: objects/teddy-tall passes every gate </td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/471">#471</a></td><td>CSP stretch: retire &#39;unsafe-inline&#39; for script-src via nonces/hashes</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid, nothing has moved. script-src still carries &#39;unsafe-inline&#39; in both coordinated sources: web/src/lib/server/securityHeaders.ts:</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/483">#483</a></td><td>Add an Android API 24 (floor) Maestro smoke run on release tags</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Unchanged and still valid. android-deploy.yml still pins api-level 33 as its only emulator leg; no API 24 leg or experiment has run. docs/CO</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/484">#484</a></td><td>Try an iOS 16.4 (floor) simulator runtime for the release-tag Maestro smoke</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Unchanged and still valid. The iOS smoke script — now tools/mobile/ios/run-simulator-smoke-test.mjs (the issue&#39;s scripts/ios-simulator-smoke</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/530">#530</a></td><td>Document the cloud-session execution model in the `fix-audits` skill (serialize subagents; ruler-drift gotcha)</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid at its core: .ruler/skills/fix-audits/SKILL.md (read in full) contains no statement that the per-item serialization is mandatory</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/572">#572</a></td><td>Reconcile the median convention and dual luma definitions in asset-gen classifiers</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Fully unresolved at HEAD, but the safe-subset fix (the issue&#39;s own option 1, ranked first) survives the 2026-08-13 asset-gen reorganization </td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/597">#597</a></td><td>Give the z-index token ratchet an allowlist escape hatch when the first legitimate one-off appears</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">The trigger has not fired: the lint moved to tools/tokens/lint-token-styles.mjs (ADR-0108) and its z-index check is still deliberately zero-</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/602">#602</a></td><td>Adopt TypeScript 7 once typescript-eslint and svelte-check support it</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and still upstream-blocked, exactly as its 2026-08-09 refresh describes. Installed today: typescript 6.0.3, typescript-eslint 8.</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/617">#617</a></td><td>Ship a Content-Security-Policy in the native (Capacitor) build</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still fully open and still accurate in substance. The native static export ships no CSP: web/src/app.html has no http-equiv meta, web/svelte</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/688">#688</a></td><td>Capture perf on emulated hardware on release tags and keep a committed trend history</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid; partially overtaken and needing a body refresh. Already in place: the full seven-scenario WebKit undo suite runs on v* tags (th</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/798">#798</a></td><td>Token mutations still report false success when getStore() fails on a deployed function</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still present, and the path forward is now well-lit. web/src/lib/server/tokens.ts is unchanged since 2026-08-06: openStore() latches blobsUn</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/836">#836</a></td><td>Finish the build-review.mjs rename — two sites still emit &quot;IDEAS.md burn-down&quot;</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid. The file moved to tools/asset-gen/ideas-exploration/build-review.mjs (ADR-0108 consolidation) and the two stale strings are now</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/846">#846</a></td><td>Audit /privacy against current shipped data practices</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and correctly open — by design it is the last store-launch child, sequenced after the gate and provider decisions settle what th</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/855">#855</a></td><td>Balance the e2e shards — they are now the PR run&#39;s wall-clock floor</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and measurably worse. On two green pull-request runs from 2026-08-16 (31990017276, 31984251977) the three shards ran 185/202/148</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/955">#955</a></td><td>Use compact invite actions on phone landscapes</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid, untouched since filing. web/src/lib/components/admin/InviteLedger.svelte still switches layouts at @media (max-width: 800px) (l</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/976">#976</a></td><td>Keep physical-iPad Safari dark-to-light theme switching inside the frame gate</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Re-run tonight: dark→light p95 improved 23→19ms but a 35ms worst frame still breaches; open-Settings newly breached at 47ms max. Stays open; fresh baseline posted.</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/977">#977</a></td><td>Keep inked physical-iPad Safari rotations inside the frame gate</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Re-run tonight: 08-12 result reproduces — inked rotations 24ms p95 both directions, undo-clear spike 44ms. Stays open; fresh baseline posted.</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/978">#978</a></td><td>Bring physical-iPad Safari Screenshot save completion inside the action gate</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Re-check attempted twice; the harness failed in setup (trusted-stroke timeout) before measuring. 08-12 baseline stands; no export-path drift found in code. Stays open.</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/987">#987</a></td><td>Rename the release workflow skill to an explicit action name</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and precisely scoped. The skill remains name: release in .ruler/skills/release/SKILL.md (and its generated .claude/.agents copie</td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/1020">#1020</a></td><td>Run a UI harmonization pass to standardize the design language across all surfaces</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Still valid and not covered by existing tooling. The critique-page-inventory pipeline (npm run review:page-inventory) deliberately isolates </td></tr>
+<tr class="b-easy-win"><td><a href="https://github.com/KyleMit/Splotch/issues/1091">#1091</a></td><td>Evaluate an engine-level replay seam for store hero captures</td>
+        <td><span class="chip chip-sm">Easy win</span></td>
+        <td class="note">Fresh (filed yesterday off the merged PR 1090, which is main&#39;s HEAD merge commit) and fully consistent with current code — every anchor chec</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/164">#164</a></td><td>Multi-tap color-change reliability bug</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Filed from the IDEAS.md migration with no pinned repro (&#39;color changes sometimes don&#39;t register on tap&#39;). Since filing, two concrete tap-doe</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/219">#219</a></td><td>Durable Quotas and Spend Budgets</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Partially completed since filing, with the mechanism fully proven: PR 895 (62752cab0e864684fadeeb183e304fa724984992) added durable per-insta</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/223">#223</a></td><td>Mount / cold-start budget check</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The capture-and-compare this issue asks for happened after filing (2026-07-15): the 2026-07-14 and 2026-07-22 lighthouse-audit runs, logged </td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/225">#225</a></td><td>Verify Final Release Artifact Freshness and Contents</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The core ask is implemented. Commit 11127768 (2026-07-28, ADR-0077) split shipping into release → build → publish: cut-release.mjs deliberat</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/226">#226</a></td><td>Test the PWA as an Offline Product</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Two of the three named gaps are now covered end-to-end: web/tests/pwa-registration.spec.ts proves the stroke-gated registration, repeat-visi</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/229">#229</a></td><td>Build the Native Static Target on Every Pull Request</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Fully shipped in substance. The release-build-smoke job in .github/workflows/test.yml runs `npm run build:cap` on every pull request (added </td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/232">#232</a></td><td>Cross-Browser E2E Matrix</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The WebKit leg — the majority of the risk this issue named, given the existing WebKit-specific workarounds — shipped a week after filing: we</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/237">#237</a></td><td>Clear the audit backlog</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The work this issue described (vet docs/AUDIT.md with vet-audits, then fix findings with per-item commits and update the audit log) has been</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/238">#238</a></td><td>Bundle and Performance Budgets in CI</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Substantially shipped. Bundle side: the PWA precache has a hard 12 MB byte budget enforced on every build (tools/check-pwa-precache.mjs via </td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/244">#244</a></td><td>More store screenshots + fun store shots</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Done, and beyond the ask. Store screenshots were rebuilt twice over in the last week: first to a captioned marketing-frame design (PR 1067, </td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/494">#494</a></td><td>Re-measure deep-undo decode stalls on device; prefetch or raise K_LIVE if still visible</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The architecture this issue targets was removed wholesale. PR #682 (ADR-0085/ADR-0086, merged 2026-08-01) replaced the hot/cold blob snapsho</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/500">#500</a></td><td>Verify the drawing-page zoom lock still holds on native shells + iOS Safari after dropping the viewport meta (ADR-0076)</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">verified on-device across all three surfaces tonight; closed</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/566">#566</a></td><td>Centralize the asset-gen `MODEL`, `WEBP_QUALITY`, and timeout constants</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The lockstep hazard the issue centered on is fixed: commit 7d8ae125 extracted the six generateContent wrappers into tools/asset-gen/lib/gemi</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/567">#567</a></td><td>Share request/response contract types between API routes and client callers</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The decision this issue was blocked on (shared module vs per-endpoint exports) has been made by shipped code: per-endpoint contract types ex</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/648">#648</a></td><td>Run perf:undo:webkit in CI on a path filter — report-only, then calibrate the gate on the runner</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Implemented — via the issue&#39;s own anticipated fallback branch rather than its ubuntu/path-filter plan. PR #698 (commit 765f7541fb1c1c8f98344</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/663">#663</a></td><td>Coloring page goes black mid-stroke, then snaps back (line-art blend layer composites unblended)</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The layer this bug lived in no longer exists. One day after filing, commit 4f0474c7 (PR #682, ADR-0091) replaced the opaque line-art plate +</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/708">#708</a></td><td>Decide how to reduce parental-gate surface from target=&quot;_blank&quot; links in the native bundle</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Every open question was answered and the direction implemented. (1) The &#39;does Parent Center count as the gate&#39; question was superseded by AD</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/724">#724</a></td><td>Fix monster-wide light-eye detection after frame removal</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Fully fixed by PR #745 (merged 2026-08-03). The light/night raw fills were regenerated via Gemini against the cleaned outline (455385b344398</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/819">#819</a></td><td>Land the traced parent-center icon when the Parent Center section is built</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Fully landed. The Parent Center section exists (web/src/lib/components/settings/ParentCenterSection.svelte; sections.ts id &#39;parentCenter&#39; wi</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/834">#834</a></td><td>Re-stage the budget-capped extraction of the hand-rolled iOS-style segmented controls</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Done end to end. Commit 9e437d94 (PR 757, merged 2026-08-04) extracted the SegmentedPicker primitive into web/src/lib/components/design/ fro</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/835">#835</a></td><td>Exercise the three PR-552 code-motion fixes that CI cannot reach</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Two of three items are now exercised for real and green; the third has been exercised continuously and is red, which the issue&#39;s own done-wh</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/849">#849</a></td><td>Decide how BYOK survives store review, or drop it</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">The decision this issue asked for was made and shipped: keep BYOK, presented as configuration of the parent&#39;s own account, gated. The blocki</td></tr>
+<tr class="b-close-completed"><td><a href="https://github.com/KyleMit/Splotch/issues/929">#929</a></td><td>Refresh the page inventory and re-critique after the coloring scroll-cue fix</td>
+        <td><span class="chip chip-sm">Closed · completed</span></td>
+        <td class="note">Done in full by PR #952 (merged 2026-08-11). Commits 42846afa (regeneration + fresh critiques) and a6eec904 (reviewer context) regenerated t</td></tr>
+<tr class="b-close-not-planned"><td><a href="https://github.com/KyleMit/Splotch/issues/221">#221</a></td><td>Flood-fill / large-op frame budget audit</td>
+        <td><span class="chip chip-sm">Closed · not planned</span></td>
+        <td class="note">This is a conditional audit (&#39;if the tap-to-fill or brush-ring items land&#39;). The brush ring (issue 187) landed and closed 2026-07-17, its pe</td></tr>
+<tr class="b-close-not-planned"><td><a href="https://github.com/KyleMit/Splotch/issues/250">#250</a></td><td>Native Capability Journey Tests</td>
+        <td><span class="chip chip-sm">Closed · not planned</span></td>
+        <td class="note">Mooted by ADR-0120 (commit d0c96f3b, 2026-08-15), which decided the exact opposite after three consecutive releases shipped through a red ga</td></tr>
+<tr class="b-close-not-planned"><td><a href="https://github.com/KyleMit/Splotch/issues/278">#278</a></td><td>Revisit agentic issue pipeline (intake → fix → review)</td>
+        <td><span class="chip chip-sm">Closed · not planned</span></td>
+        <td class="note">Superseded: every stage of the pipeline&#39;s goal now has a working implementation in the local skill-based tooling, running on the maintainer&#39;</td></tr>
+<tr class="b-close-not-planned"><td><a href="https://github.com/KyleMit/Splotch/issues/620">#620</a></td><td>Re-encode the coloring corpus at ship-appropriate resolution and quality (−16 MB)</td>
+        <td><span class="chip chip-sm">Closed · not planned</span></td>
+        <td class="note">Mooted by ADR-0103&#39;s progressive coloring-book packs (4166e9fa86ee11701bac9dafca5d3cf3b815a38f, amended for screen-sized packs in edeacbd8e4</td></tr>
+<tr class="b-close-not-planned"><td><a href="https://github.com/KyleMit/Splotch/issues/833">#833</a></td><td>Re-stage the mislabelled &quot;Inconsistent script naming across idea dirs&quot; deferral</td>
+        <td><span class="chip chip-sm">Closed · not planned</span></td>
+        <td class="note">The premise was stale at filing. The deferral entry left docs/AUDIT-DEFERRED.md on 2026-07-27 in the 49-finding drain (05993a23), eleven day</td></tr>
+<tr class="b-close-not-planned"><td><a href="https://github.com/KyleMit/Splotch/issues/937">#937</a></td><td>WebKit commit gate failed on main</td>
+        <td><span class="chip chip-sm">Closed · not planned</span></td>
+        <td class="note">The auto-filed tracking issue for a single post-merge WebKit commit-gate failure on 2026-08-11 (run 31487441992). The diagnostics artifact s</td></tr></tbody></table>
+</section>
+<section class="section"><h2>3 · Closed overnight (37)</h2>
+<p>Each close carries its evidence in an issue comment; reopen anything that reads wrong.</p>
+<ol class="closed-list"><li><a href="https://github.com/KyleMit/Splotch/issues/164">#164</a> <strong>Multi-tap color-change reliability bug</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/791">#791</a> · commit fe579898ed78<br/><span class="ev">Filed from the IDEAS.md migration with no pinned repro (&#39;color changes sometimes don&#39;t register on tap&#39;). Since filing, two concrete tap-doesn&#39;t-register defects in exactly this surface were found, fixed, and regression-</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/169">#169</a> <strong>Custom AI style buttons with generated cover art</strong> — closed as <em>completed</em> · commit edc2bdc92adb<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/195">#195</a> <strong>Dark-mode color defaults + dark painter&#39;s palette</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/148">#148</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/92">#92</a> · commit 1ef862a5c094<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/197">#197</a> <strong>Stable Parent Center height</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/277">#277</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/719">#719</a> · commit 100c2c72229c<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/203">#203</a> <strong>Global button-size control</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/51">#51</a> · commit 621f87a12f71<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/204">#204</a> <strong>Dark-mode coloring variants</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/123">#123</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/100">#100</a> · commit d672a84e2c1c<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/208">#208</a> <strong>Parent Center Adult Gate</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/764">#764</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/871">#871</a> · commit 30235c40a9b3<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/219">#219</a> <strong>Durable Quotas and Spend Budgets</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/895">#895</a> · commit 62752cab0e86<br/><span class="ev">Partially completed since filing, with the mechanism fully proven: PR 895 (62752cab0e864684fadeeb183e304fa724984992) added durable per-installation free grants in Netlify Blobs with compare-and-set writes; be6829f1ae8fa8</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/221">#221</a> <strong>Flood-fill / large-op frame budget audit</strong> — closed as <em>not planned</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/685">#685</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/682">#682</a><br/><span class="ev">This is a conditional audit (&#39;if the tap-to-fill or brush-ring items land&#39;). The brush ring (issue 187) landed and closed 2026-07-17, its per-frame cost was addressed directly (PR #685 coalesced brush-ring moves to once </span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/223">#223</a> <strong>Mount / cold-start budget check</strong> — closed as <em>completed</em> · commit 2af6b92e2df3<br/><span class="ev">The capture-and-compare this issue asks for happened after filing (2026-07-15): the 2026-07-14 and 2026-07-22 lighthouse-audit runs, logged in docs/AUDIT-LOG.md, measured first- and repeat-visit page load and attributed </span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/225">#225</a> <strong>Verify Final Release Artifact Freshness and Contents</strong> — closed as <em>completed</em> · commit 11127768b3d3<br/><span class="ev">The core ask is implemented. Commit 11127768 (2026-07-28, ADR-0077) split shipping into release → build → publish: cut-release.mjs deliberately attaches nothing, and publish-release-artifacts.mjs (npm run release:publish</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/226">#226</a> <strong>Test the PWA as an Offline Product</strong> — closed as <em>completed</em> · commit 5c95c49eace2<br/><span class="ev">Two of the three named gaps are now covered end-to-end: web/tests/pwa-registration.spec.ts proves the stroke-gated registration, repeat-visit SW control from load, and — with CDP forcing the network offline and the brows</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/229">#229</a> <strong>Build the Native Static Target on Every Pull Request</strong> — closed as <em>completed</em> · commit 48c836579920<br/><span class="ev">Fully shipped in substance. The release-build-smoke job in .github/workflows/test.yml runs `npm run build:cap` on every pull request (added 2026-08-08 in 48c836579920594e29b04d2da206426928c24d2c), and the build&#39;s postbui</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/232">#232</a> <strong>Cross-Browser E2E Matrix</strong> — closed as <em>completed</em> · commit 2428d06b9654<br/><span class="ev">The WebKit leg — the majority of the risk this issue named, given the existing WebKit-specific workarounds — shipped a week after filing: web/tests/webkit-smoke.spec.ts (2428d06b96549a96f7df21c78811e78357b6ef56, 2026-07-</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/237">#237</a> <strong>Clear the audit backlog</strong> — closed as <em>completed</em> · commit efddc6b32f1b<br/><span class="ev">The work this issue described (vet docs/AUDIT.md with vet-audits, then fix findings with per-item commits and update the audit log) has been done repeatedly since filing. docs/AUDIT.md no longer exists: the backlog was v</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/238">#238</a> <strong>Bundle and Performance Budgets in CI</strong> — closed as <em>completed</em> · commit 2ce0afe7a822<br/><span class="ev">Substantially shipped. Bundle side: the PWA precache has a hard 12 MB byte budget enforced on every build (tools/check-pwa-precache.mjs via the postbuild hook, 2ce0afe7a822c3785d2a07cf471208acf73b3adf), and web/tests/sta</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/244">#244</a> <strong>More store screenshots + fun store shots</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/1067">#1067</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/1080">#1080</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/1090">#1090</a> · commit e42587a065b8<br/><span class="ev">Done, and beyond the ask. Store screenshots were rebuilt twice over in the last week: first to a captioned marketing-frame design (PR 1067, commit e42587a0, 2026-08-15; tuned and fully regenerated in fb5969e5), then rebu</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/250">#250</a> <strong>Native Capability Journey Tests</strong> — closed as <em>not planned</em> · commit d0c96f3b6d2f<br/><span class="ev">Mooted by ADR-0120 (commit d0c96f3b, 2026-08-15), which decided the exact opposite after three consecutive releases shipped through a red gate caused by UI-navigation steps in the Maestro flow: the native smoke is now a </span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/252">#252</a> <strong>Generate coloring book workflow</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/123">#123</a> · commit 4eb124bad912<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/253">#253</a> <strong>Brush type (blend mode with previous drawing)</strong> — closed as <em>completed</em> · commit 848a8d27b2a9<br/><span class="ev"></span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/278">#278</a> <strong>Revisit agentic issue pipeline (intake → fix → review)</strong> — closed as <em>not planned</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/274">#274</a><br/><span class="ev">Superseded: every stage of the pipeline&#39;s goal now has a working implementation in the local skill-based tooling, running on the maintainer&#39;s subscription — which is what the issue&#39;s goal statement asked for — rather tha</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/494">#494</a> <strong>Re-measure deep-undo decode stalls on device; prefetch or raise K_LIVE if still visible</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/682">#682</a> · commit 755029800301<br/><span class="ev">The architecture this issue targets was removed wholesale. PR #682 (ADR-0085/ADR-0086, merged 2026-08-01) replaced the hot/cold blob snapshot tier with tiled dirty-region snapshots: undo now restores retained in-memory c</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/500">#500</a> <strong>Verify the drawing-page zoom lock still holds on native shells + iOS Safari after dropping the viewport meta (ADR-0076)</strong> — closed as <em>completed</em> · <code>web/src/app.html:20</code><br/><span class="ev">Pure verification debt — nothing in the code has changed the picture since filing. app.html still ships no user-scalable/maximum-scale (deliberate, ADR-0076); the lock remains data-app-surface -&gt; touch-action: none plus </span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/566">#566</a> <strong>Centralize the asset-gen `MODEL`, `WEBP_QUALITY`, and timeout constants</strong> — closed as <em>completed</em> · commit 7d8ae12519cc<br/><span class="ev">The lockstep hazard the issue centered on is fixed: commit 7d8ae125 extracted the six generateContent wrappers into tools/asset-gen/lib/gemini.mjs, which now exports IMAGE_MODEL and IMAGE_TIMEOUT_MS as the single declara</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/567">#567</a> <strong>Share request/response contract types between API routes and client callers</strong> — closed as <em>completed</em> · commit c33337e2cf0d<br/><span class="ev">The decision this issue was blocked on (shared module vs per-endpoint exports) has been made by shipped code: per-endpoint contract types exported from +server.ts, bound with satisfies, imported type-only by clients. Com</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/620">#620</a> <strong>Re-encode the coloring corpus at ship-appropriate resolution and quality (−16 MB)</strong> — closed as <em>not planned</em> · commit 4166e9fa86ee<br/><span class="ev">Mooted by ADR-0103&#39;s progressive coloring-book packs (4166e9fa86ee11701bac9dafca5d3cf3b815a38f, amended for screen-sized packs in edeacbd8e4023868af9c4a67d45accae095e30b4). The motivating problem - 37.8 MB of coloring as</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/648">#648</a> <strong>Run perf:undo:webkit in CI on a path filter — report-only, then calibrate the gate on the runner</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/698">#698</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/941">#941</a> · commit 765f7541fb1c<br/><span class="ev">Implemented — via the issue&#39;s own anticipated fallback branch rather than its ubuntu/path-filter plan. PR #698 (commit 765f7541fb1c1c8f98344add515c32c57eec5fcf, merged 2026-08-01) put the WebKit commit gate in CI, docume</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/663">#663</a> <strong>Coloring page goes black mid-stroke, then snaps back (line-art blend layer composites unblended)</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/682">#682</a> · commit 4f0474c70430<br/><span class="ev">The layer this bug lived in no longer exists. One day after filing, commit 4f0474c7 (PR #682, ADR-0091) replaced the opaque line-art plate + mix-blend-mode: var(--lineart-blend) + nudgeBlendLayer machinery with generated</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/708">#708</a> <strong>Decide how to reduce parental-gate surface from target=&quot;_blank&quot; links in the native bundle</strong> — closed as <em>completed</em> · commit 64dec10b4a87<br/><span class="ev">Every open question was answered and the direction implemented. (1) The &#39;does Parent Center count as the gate&#39; question was superseded by ADR-0094: gates sit at operation boundaries, not on a screen (commit 64dec10b), wi</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/724">#724</a> <strong>Fix monster-wide light-eye detection after frame removal</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/745">#745</a> · commit 455385b34439<br/><span class="ev">Fully fixed by PR #745 (merged 2026-08-03). The light/night raw fills were regenerated via Gemini against the cleaned outline (455385b344398991799dac5e41c5eb9b4295a429) and the golden diff recorded the light-eye verdict </span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/819">#819</a> <strong>Land the traced parent-center icon when the Parent Center section is built</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/871">#871</a> · commit a24df481b237<br/><span class="ev">Fully landed. The Parent Center section exists (web/src/lib/components/settings/ParentCenterSection.svelte; sections.ts id &#39;parentCenter&#39; with icon: &#39;parent-center&#39;), and commit a24df481 (PR #871, 2026-08) landed web/src</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/833">#833</a> <strong>Re-stage the mislabelled &quot;Inconsistent script naming across idea dirs&quot; deferral</strong> — closed as <em>not planned</em> · commit 05993a23b472<br/><span class="ev">The premise was stale at filing. The deferral entry left docs/AUDIT-DEFERRED.md on 2026-07-27 in the 49-finding drain (05993a23), eleven days before this issue was filed, and that drain recorded an explicit DROP verdict </span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/834">#834</a> <strong>Re-stage the budget-capped extraction of the hand-rolled iOS-style segmented controls</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/757">#757</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/902">#902</a> · commit 9e437d941099<br/><span class="ev">Done end to end. Commit 9e437d94 (PR 757, merged 2026-08-04) extracted the SegmentedPicker primitive into web/src/lib/components/design/ from the four hand-rolled pickers, and commit 05b76785 (merged via PR 902, 2026-08-</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/835">#835</a> <strong>Exercise the three PR-552 code-motion fixes that CI cannot reach</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/1075">#1075</a>, PR <a href="https://github.com/KyleMit/Splotch/pull/1023">#1023</a> · commit b1f327620958<br/><span class="ev">Two of three items are now exercised for real and green; the third has been exercised continuously and is red, which the issue&#39;s own done-when resolves by filing a follow-up. (1) Maestro smoke runners (b1f327620958ff535d</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/849">#849</a> <strong>Decide how BYOK survives store review, or drop it</strong> — closed as <em>completed</em> · commit c2ee6446e3a2<br/><span class="ev">The decision this issue asked for was made and shipped: keep BYOK, presented as configuration of the parent&#39;s own account, gated. The blocking predecessor (845, provider-terms conflict) closed completed on 2026-08-14 via</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/929">#929</a> <strong>Refresh the page inventory and re-critique after the coloring scroll-cue fix</strong> — closed as <em>completed</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/952">#952</a> · commit 42846afa35cb<br/><span class="ev">Done in full by PR #952 (merged 2026-08-11). Commits 42846afa (regeneration + fresh critiques) and a6eec904 (reviewer context) regenerated the entire inventory from a build containing PR #928 — verified: the #928 merge c</span></li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/937">#937</a> <strong>WebKit commit gate failed on main</strong> — closed as <em>not planned</em> · PR <a href="https://github.com/KyleMit/Splotch/pull/933">#933</a> · commit 90839ff7faec<br/><span class="ev">The auto-filed tracking issue for a single post-merge WebKit commit-gate failure on 2026-08-11 (run 31487441992). The diagnostics artifact shows gate P95 26.0 ms against the 25 ms budget — a 1 ms overshoot on an engine t</span></li></ol>
+</section>
+<section class="section"><h2>4 · Confirm with me</h2>
+<ul class="confirm"><li><a href="https://github.com/KyleMit/Splotch/issues/253">#253</a> Closed at medium confidence: the one-line &quot;brush blend mode&quot; TODO was read as the crayon&#39;s shipped subtractive mixing (ADR-0065). If you meant a translucent watercolor brush, reopen as a fresh scoped issue.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/278">#278</a> Closed a deliberately-parked issue: the agentic-pipeline goals are all served by the current skill ecosystem, and the only unbuilt stage is the one its own security review argued against. Reopen if you want the parked record kept.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/620">#620</a> Closed as mooted by ADR-0103 packs; an advocate could still want the pack-transfer byte savings now — see the close comment for the residual kernel, sequenced behind the #264 remedy.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/223">#223</a> Closed on the post-filing Lighthouse runs satisfying the done-when; note the last mount capture predates the tiled renderer — a fresh lighthouse-audit run would be a reasonable new task.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/221">#221</a> Closed as superseded by ADR-0090 standing gates (conditional audit whose trigger half never landed); the ADR-0090 done-when carry-over was posted to #168.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/194">#194</a> Duplicate: #563 explicitly supersedes it and both sit in v1. Say the word and I close #194 as a duplicate pointing at #563.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/251">#251</a> Recommend declining: the &quot;new cover photo through the ringer&quot; note — the ringer exists and has been re-run per theme; what remains is a taste-driven source-drawing swap any future complaint would trigger via one npm script.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/690">#690</a> Kept as needs-human (BrowserStack application). But if your appetite for real-device automation died with #689, this could close not-planned instead — one-line call.</li>
+<li><a href="https://github.com/KyleMit/Splotch/issues/844">#844</a> Scope re-narrowed to two ungated surfaces (AI key save, AI toggles). Defensible alternative: record a deliberate no-gate decision in the compliance ledger instead of building them — your call, made explicitly.</li>
+<li>Style-grid lineup: #181 (Tiny Tweaks) wants Clay retired to hold 8 tiles; #300 (Realistic) wants a 9th tile. Both are v2 — but decide the lineup once when either lands.</li></ul>
+</section>
+<section class="section"><h2>5 · Device findings (physical iPad Pro 12.9 + Galaxy S21 FE)</h2>
+
+<ul>
+<li><strong>#164 multi-tap color reliability</strong> — 50-pattern OS-level touch battery on the physical iPad, run twice: every tap registered (30 rapid alternating, 10 double-tap bursts, 10 stroke-then-tap). Combined with the two post-filing fixes, closed.</li>
+<li><strong>#500 zoom lock</strong> — verified on all three surfaces (iOS Safari web, iOS native shell, Android native shell): pinch + double-tap never zoomed anything. Closed with the matrix.</li>
+<li><strong>#663 black-flash</strong> — 50 dark-mode coloring strokes with interleaved captures: zero black frames; and B10 found the blend-layer mechanism was deleted the day after filing (ADR-0091). Closed.</li>
+<li><strong>#828 tiling flash</strong> — 6 instrumented cold loads on the S21 over CDP screencast (SW bypassed, 4G throttle): the texture repaint is <em>atomic</em>, no tiling in 44 composited frames; the two-tone step (251→238) reproduces exactly. Escalated to the fix decision with tone-neutral grain recommended.</li>
+<li><strong>#264 asset resolution</strong> — iPad renders the coloring masters at 1.67–1.82× native px (soft-lines regime confirmed on the flagship); S21 is a fine 1.05–1.11×. Escalated to the remedy decision.</li>
+<li><strong>#976/977/978 iPad frame gates</strong> — all three re-run tonight on the physical iPad against current main (fresh instrumented build). <strong>#976 theme</strong>: dark→light improved (post-P95 23→19 ms, now inside the gate) but a 35 ms worst frame still breaches, and open-Settings newly breached at 47 ms — stays open. <strong>#977 rotation</strong>: the 08-12 failure reproduces cleanly (inked rotations 24 ms P95 both directions, undo-clear-after-blank-rotation spike at 44 ms) — stays open. <strong>#978 screenshot</strong>: the harness failed in setup twice (trusted-stroke timeout) before any measurement, so the 08-12 baseline (save-ready P95 251 ms, FAIL) stands unrefreshed — details on the issue. Fresh capture JSONs ship in this deck's assets.</li>
+</ul>
+</section>
+<section class="section"><h2>6 · Skipped / incomplete</h2>
+<ul><li>The 1:25–3:45am window: you asked me to pause; three verification agents (B8, B9, B11) and the first mockup wave were cut off by the session limit and resumed/relaunched after. Nothing was lost, but the perf re-runs started ~4:50am instead of ~2am.</li>
+<li>Issue #193 (iPhone layout/notch): no iPhone is attached; the safe-area readout ran on iPad + S21 only. The v2 note suggests a simulator pass when picked up.</li>
+<li>Native-shell zoom checks ran against the installed store builds (iOS 1.4.0), not a fresh dev build — right target for store-release confidence, but a future regression would need a re-check at release time.</li>
+<li>AI-image-generation mockup fallback was never needed — all mockups are HTML/CSS with the app tokens, plus the existing #563 design comps from its unmerged branch.</li>
+<li>Perf re-run for the screenshot gate (issue 978): the harness setup failed twice (trusted-stroke timeout) — likely device state after the heavy automation night; retry on a fresh day, and if it reproduces, that itself is a small harness bug.</li></ul>
+</section>
+</main>
+<footer class="site-foot">
+  <div class="shell">
+    <span class="crayons crayons-sm" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+    <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../../index.html">All collections</a></p>
+  </div>
+</footer>
+</body>
+</html>
