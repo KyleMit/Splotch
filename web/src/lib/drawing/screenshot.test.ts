@@ -76,7 +76,73 @@ describe('saveScreenshot', () => {
 
     await saveScreenshot();
 
-    expect(mocks.exportCanvasBlob).toHaveBeenCalledWith({ preview });
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledWith({
+      preview: { width: preview.width, onReady: expect.any(Function) },
+    });
+  });
+
+  it('starts export at press time and defers feedback until activation', async () => {
+    const exported = Promise.withResolvers<Blob | null>();
+    const onReady = vi.fn();
+    const preview = { width: 640, onReady };
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    mocks.createPolaroidPreviewRequest.mockReturnValue(preview);
+    mocks.exportCanvasBlob.mockReturnValue(exported.promise);
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot();
+    const deferredPreview = mocks.exportCanvasBlob.mock.calls[0][0]?.preview;
+    deferredPreview?.onReady(bitmap);
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).not.toHaveBeenCalled();
+    expect(onReady).not.toHaveBeenCalled();
+
+    const save = saveScreenshot();
+
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledOnce();
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    expect(onReady).toHaveBeenCalledWith(bitmap);
+    exported.resolve(new Blob(['drawing']));
+    await save;
+  });
+
+  it('completes a synchronously captured engine export instead of recapturing at activation', async () => {
+    const blob = new Blob(['drawing']);
+    const complete = vi.fn(async () => blob);
+    const cancel = vi.fn();
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { prepareScreenshot, saveScreenshot } = await import('./screenshot');
+
+    prepareScreenshot({ complete, cancel });
+    await saveScreenshot();
+
+    expect(complete).toHaveBeenCalledOnce();
+    expect(mocks.exportCanvasBlob).not.toHaveBeenCalled();
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('discards a cancelled press preview and exports again on activation', async () => {
+    const firstExport = Promise.withResolvers<Blob | null>();
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    mocks.createPolaroidPreviewRequest.mockReturnValue({ width: 640, onReady: vi.fn() });
+    mocks.exportCanvasBlob
+      .mockReturnValueOnce(firstExport.promise)
+      .mockResolvedValueOnce(new Blob(['drawing']));
+    mocks.saveBlobToFolder.mockResolvedValue(true);
+    const { cancelScreenshotPreparation, prepareScreenshot, saveScreenshot } =
+      await import('./screenshot');
+
+    prepareScreenshot();
+    mocks.exportCanvasBlob.mock.calls[0][0]?.preview?.onReady(bitmap);
+    cancelScreenshotPreparation();
+    await saveScreenshot();
+
+    expect(bitmap.close).toHaveBeenCalledOnce();
+    expect(mocks.exportCanvasBlob).toHaveBeenCalledTimes(2);
+    expect(mocks.playScreenshotFeedback).toHaveBeenCalledOnce();
+    firstExport.resolve(null);
   });
 
   it('coalesces overlapping saves and permits a later save after persistence settles', async () => {
