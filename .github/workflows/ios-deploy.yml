@@ -1,8 +1,9 @@
 # Runtime smoke test for the iOS *deployment* — the simulator/Xcode counterpart
-# of android-deploy.yml. Boots an iPhone simulator, builds + installs the debug
-# app, and asserts via Maestro that the UI renders (the Capacitor WebView booted
-# and loaded the production web bundle). Neither the web E2E suite (test.yml) nor
-# the Android smoke can catch an iOS-only WebView boot failure — this can.
+# of android-deploy.yml. Compiles a Release simulator app without store signing, then boots
+# an iPhone simulator, builds + installs the Debug app, and asserts via Maestro
+# that the UI renders (the Capacitor WebView booted and loaded the production web
+# bundle). Neither the web E2E suite (test.yml) nor the Android smoke can catch
+# Release-only compiler/configuration errors or an iOS-only WebView boot failure.
 #
 # Tag-only by design: macOS runners are the most expensive thing in CI, so this
 # runs only when a release tag is pushed (the moment an iOS crash would reach App
@@ -32,15 +33,18 @@ jobs:
 
       - uses: ./.github/actions/setup-pnpm
 
+      - name: Compile iOS Release app without store signing
+        run: npm run ios:build:release
+
       - uses: ./.github/actions/install-maestro
 
-      # test:ios (tools/mobile/ios/run-simulator-smoke-test.mjs) auto-discovers and boots an
-      # iPhone simulator, runs cap:sync (baking the production web bundle), builds
-      # the Debug app for the simulator, installs it, runs .maestro/smoke.yaml —
-      # the same flow the Android smoke runs — then shuts the simulator down.
+      # ios:build:release already ran cap:sync, so --skip-sync reuses that exact production web
+      # bundle. test:ios (tools/mobile/ios/run-simulator-smoke-test.mjs) auto-discovers and boots
+      # an iPhone simulator, builds the Debug app, installs it, runs .maestro/smoke.yaml — the
+      # same flow the Android smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
-        run: npm run test:ios
+        run: npm run test:ios -- --skip-sync
 
       - name: Upload Maestro report
         id: report

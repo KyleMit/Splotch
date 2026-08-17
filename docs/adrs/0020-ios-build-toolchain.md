@@ -1,6 +1,7 @@
 # ADR-0020: iOS Build Toolchain (Swift Package Manager, xcodebuild Scripts, Automatic Signing)
 
-**Status:** Active **Date:** 2026-06
+**Status:** Active (amended by [0124](0124-exercise-native-release-configurations-in-tag-gates.md))
+**Date:** 2026-06
 
 ## Context
 
@@ -42,11 +43,12 @@ Apple's recommended default for a single-developer project.
   `tools/tests/ios-spm-lock.test.mjs` requires both files to stay tracked and requires their
   Capacitor runtime version to match the exact `@capacitor/ios` version in `pnpm-lock.yaml`.
 * **`ios:*` npm scripts wrap `xcodebuild` directly** (per ADR-0019 naming): `ios:build` (simulator
-  debug `.app`), `ios:archive` → `ios:ipa` (Release archive + App Store export per
-  `ios/App/ExportOptions.plist`, both with `-allowProvisioningUpdates` so automatic signing works
-  headlessly), and `test:ios` (`scripts/ios-simulator-smoke.mjs`, the simulator twin of the Android
-  emulator smoke test, sharing `.maestro/smoke.yaml`). These scripts are macOS-only by nature and
-  say so in `scripts-info`; Android's corresponding scripts run on both macOS and Linux.
+  Debug `.app`), `ios:build:release` (simulator Release `.app` without store signing, ADR-0124),
+  `ios:archive` → `ios:ipa` (Release archive + App Store export per `ios/App/ExportOptions.plist`,
+  both with `-allowProvisioningUpdates` so automatic signing works headlessly), and `test:ios`
+  (`tools/mobile/ios/run-simulator-smoke-test.mjs`, the simulator twin of the Android emulator smoke
+  test, sharing `.maestro/smoke.yaml`). These scripts are macOS-only by nature and say so in
+  `scripts-info`; Android's corresponding scripts run on both macOS and Linux.
 * **Automatic signing, nothing committed.** `ExportOptions.plist` uses `signingStyle: automatic` +
   method `app-store-connect`; the developer's `DEVELOPMENT_TEAM` is deliberately kept out of the
   committed `project.pbxproj` (committing it churns for other contributors and bakes a personal ID

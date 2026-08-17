@@ -80,6 +80,7 @@ Each runs `cap:sync` first (the shared web build — see [native.md](native.md))
 
 ```bash
 npm run android:apk     # debug APK  -> android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:apk:release # release APK -> android/app/build/outputs/apk/release/ (unsigned without §4)
 npm run android:run     # build + install the debug app onto the connected device/emulator
 npm run android:bundle  # SIGNED release AAB (see §4 Signing for the prerequisite)
 npm run android:clean   # gradle clean (no cap:sync)
@@ -90,7 +91,9 @@ npm run android:clean   # gradle clean (no cap:sync)
 > 1. **Node ≥ 22** active (Capacitor 8 requires it).
 > 2. **`JAVA_HOME`** pointing at the **full JDK 21** — Gradle reads it (set it in your shell profile
 >    per §1; reopen a terminal that was open before you set it).
-> 3. For `android:bundle`, `android/keystore.properties` must exist (see §4).
+> 3. For a signed `android:apk:release` or `android:bundle`, `android/keystore.properties` must
+>    exist (see §4). Without it, Gradle still compiles the Release configuration but leaves the
+>    artifact unsigned.
 >
 > These scripts run the Gradle wrapper through `tools/mobile/android/run-gradle.mjs`, which resolves
 > the wrapper to an absolute path and runs it from `android/` (ADR-0017), so `npm run android:*`
@@ -165,6 +168,9 @@ gateway and those tools fail — the working path is a self-hosted chisel revers
 
 * **Native smoke test**: `npm run test:android` boots an emulator, builds + installs, and runs the
   Maestro flow. See the `testing` skill for Maestro installation and the full three-tier strategy.
+* **Release configuration**: the tagged deploy workflow creates a disposable test key, builds
+  `android:apk:release`, and boots that APK through the same Maestro flow. This exercises R8,
+  `proguard-android-optimize.txt`, and resource shrinking without putting the Play upload key in CI.
 
 ### Performance profiling with Chrome DevTools (remote debugging)
 
