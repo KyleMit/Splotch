@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { TABLET_MIN_SIDE_PX } from '../../../../lib/breakpoints.ts';
 import { frameGeometry } from './geometry.ts';
-import { storeTarget } from './targets.ts';
+import { STORE_TARGETS, storeTarget } from './targets.ts';
 
 // Pins frameGeometry's exact output for every store slot to the values the
 // committed 2026-08 store screenshot sets were rendered with (captured from
@@ -24,9 +25,9 @@ describe('frameGeometry', () => {
     expect(frameGeometry(storeTarget('tablet10'))).toEqual({
       k: 1,
       orientation: 'landscape',
-      frame: { x: 600, y: 57, width: 1360, height: 966 },
+      frame: { x: 600, y: 92, width: 1263, height: 897 },
       copy: { x: 96, width: 470 },
-      capture: { width: 907, height: 644, deviceScaleFactor: 1360 / 907 },
+      capture: { width: 907, height: 644, deviceScaleFactor: 1263 / 907 },
     });
   });
 
@@ -44,9 +45,27 @@ describe('frameGeometry', () => {
     expect(frameGeometry(storeTarget('ipad13'))).toEqual({
       k: 2732 / 1920,
       orientation: 'landscape',
-      frame: { x: 854, y: 81, width: 1935, height: 1886 },
+      frame: { x: 854, y: 131, width: 1797, height: 1787 },
       copy: { x: 137, width: 669 },
-      capture: { width: 907, height: 884, deviceScaleFactor: 1935 / 907 },
+      capture: { width: 907, height: 902, deviceScaleFactor: 1797 / 907 },
     });
+  });
+
+  // Every frame sits fully inside its slot: a frame wider than the space left
+  // of the right edge crops whatever the app draws in that corner (the trash
+  // button, sliced in half by the pre-2026-08-17 landscape frame).
+  it.each(STORE_TARGETS)('$name keeps the frame inside the slot', (target) => {
+    const { frame } = frameGeometry(target);
+    expect(frame.x + frame.width).toBeLessThanOrEqual(target.width);
+    expect(frame.y + frame.height).toBeLessThanOrEqual(target.height);
+  });
+
+  // The capture viewport decides which device class the app lays itself out for
+  // (actionButtonSizeClass), so it is a design input, not a rounding artifact:
+  // landscape captures the tablet layout, portrait the phone one.
+  it.each(STORE_TARGETS)('$name captures its intended device class', (target) => {
+    const { capture } = frameGeometry(target);
+    const shorterSide = Math.min(capture.width, capture.height);
+    expect(shorterSide >= TABLET_MIN_SIDE_PX).toBe(target.orientation === 'landscape');
   });
 });

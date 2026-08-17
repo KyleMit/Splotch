@@ -34,12 +34,15 @@ asset catalog.
 Each screenshot is a **captioned marketing frame** (2026-08 design refresh, portrait reflowed to the
 portrait v2 handoff): a real app capture in a rounded card over a soft gradient, with a headline +
 subtext copy block, hand-drawn crayon doodle marks in the whitespace, and (page 1 only) the logo row
-and benefit chips. Landscape puts the copy in a left column with the app frame bleeding off the
-right edge; portrait centers the copy in a zone above the frame, fully visible below. Page 4 is a
-composed doodle→masterpiece showcase joined by a stepping-stone connector (palette dots in, growing
-sparkles out); page 5 is the one dark-mode frame. The design system — geometry, copy, marks, colors
-— lives in the app as the `/dev/store-frames` dev harness (`web/src/routes/dev/store-frames/lib/`),
-where every composition renders live and hot-reloads for design iteration.
+and benefit chips. Landscape puts the copy in a left column with the app frame fully inside the
+slot; portrait centers the copy in a zone above the frame, fully visible below. Page 4 is a composed
+doodle→masterpiece showcase read diagonally — doodle top-left, print bottom-right — joined by a
+stepping-stone connector (palette dots in, growing sparkles out); page 5 is the one dark-mode frame.
+Captures are driven in capture mode (`web/src/lib/storeCapture.ts`), which drops the wand button's
+free-generation count so no per-install number lands in a marketing shot. The design system —
+geometry, copy, marks, colors — lives in the app as the `/dev/store-frames` dev harness
+(`web/src/routes/dev/store-frames/lib/`), where every composition renders live and hot-reloads for
+design iteration.
 
 ## What each screenshot shows
 
