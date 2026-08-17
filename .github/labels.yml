@@ -82,6 +82,20 @@
   color: '0e8a16'
   description: 'Nice to have, no rush'
 
+# --- triage: what the issue is waiting on (optional, at most one) ---
+- name: 'triage:needs-decision'
+  color: 'bf3989'
+  description: 'Blocked on a human decision — options and recommendation live in an issue comment'
+- name: 'triage:needs-human'
+  color: 'f66a0a'
+  description: 'Blocked on human-only integration — external accounts, credentials, consoles, purchases'
+- name: 'triage:needs-device'
+  color: '1f6feb'
+  description: 'Needs hands on a physical device to verify — exact steps live in an issue comment'
+- name: 'triage:easy-win'
+  color: '2da44e'
+  description: 'Fully automatable, no clear downside beyond implementation cost'
+
 # --- meta: workflow signals ---
 - name: 'in-progress'
   color: 'd93f0b'
