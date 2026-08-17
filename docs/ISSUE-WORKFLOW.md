@@ -73,6 +73,19 @@ or read the tracking issue that lists them as sub-issues (see "Tracking issues" 
 `priority:high` · `priority:medium` · `priority:low`. Unset means untriaged. Priority is a
 deliberate triage call, not a default — most of the migrated backlog is intentionally left unset.
 
+### `triage:` — what the issue is waiting on (optional, at most one)
+
+Applied by triage passes to record the actionability call, so filtered views answer "what can an
+agent just do?" vs "what is waiting on Kyle?". When several apply, the scarcest resource wins:
+`needs-decision` > `needs-human` > `needs-device` > `easy-win`.
+
+| Label                   | Meaning                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------ |
+| `triage:needs-decision` | Blocked on a human decision — options and a ranked recommendation live in an issue comment |
+| `triage:needs-human`    | Blocked on human-only integration — external accounts, credentials, consoles, purchases    |
+| `triage:needs-device`   | Needs hands on a physical device to verify — exact steps live in an issue comment          |
+| `triage:easy-win`       | Fully automatable, no clear downside beyond implementation cost                            |
+
 ### meta
 
 | Label              | Meaning                                                                                                                                  |
