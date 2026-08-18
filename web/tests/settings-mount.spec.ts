@@ -23,22 +23,46 @@ import {
 // `sections.ts` reaches the rune modules behind the hub subtitles, so a spec
 // can't load it, and every row is in the column from the first frame anyway.
 
-/** Section bodies in the pane on each frame, from the frame the pane appears. */
+/**
+ * Section bodies in the pane on each frame, from the frame the pane appears —
+ * plus which sections that first frame held, and the dialog's layout height
+ * (`clientHeight`, so the fly-in transform cannot skew the reading) per frame.
+ */
 function paneFillPerFrame(page: Page, frameLimit: number) {
   return page.evaluate(
     (frameLimit) =>
-      new Promise<{ rows: number; sections: number[] }>((resolve) => {
+      new Promise<{
+        rows: number;
+        sections: number[];
+        firstFrameSectionIds: string[];
+        dialogHeights: number[];
+        viewportHeight: number;
+      }>((resolve) => {
         const sections: number[] = [];
+        const dialogHeights: number[] = [];
+        let firstFrameSectionIds: string[] = [];
         const rows = () => document.querySelectorAll('.settings-nav .toc-row').length;
         const step = () => {
           const pane = document.querySelector('.settings-pane');
           if (!pane) {
             document.querySelector<HTMLElement>('#settingsButton')!.click();
           } else {
+            if (!sections.length) {
+              firstFrameSectionIds = [
+                ...pane.querySelectorAll<HTMLElement>('.settings-section'),
+              ].map((el) => el.dataset.section ?? '');
+            }
             sections.push(pane.querySelectorAll('.settings-section').length);
+            dialogHeights.push(document.querySelector('#settingsModal')!.clientHeight);
           }
           if (sections.at(-1) === rows() || sections.length >= frameLimit) {
-            resolve({ rows: rows(), sections });
+            resolve({
+              rows: rows(),
+              sections,
+              firstFrameSectionIds,
+              dialogHeights,
+              viewportHeight: window.innerHeight,
+            });
           } else {
             requestAnimationFrame(step);
           }
@@ -63,6 +87,44 @@ test('the pane fills a section at a time rather than all at once', async ({ page
   expect(sections.at(-1)).toBe(rows);
   // A watermark, never lowered — nothing that arrived is taken back out.
   expect(sections).toEqual([...sections].sort((a, b) => a - b));
+});
+
+test('the opening frame already holds the above-the-fold prefix', async ({ page }) => {
+  // Appearance and Sound are both above the fold on the wide shell's default
+  // landing, so a Sound body arriving with the fill reads as a pop-in in content
+  // the parent is already looking at. The staging assertions above are
+  // deliberately generic about counts, so they would stay green if the opening
+  // watermark slid back to one section — this pins the prefix by name. Asserted
+  // on the leading pair rather than the exact list: on a starved worker the
+  // first *sampled* frame can land after the fill has begun, which only ever
+  // appends sections past the prefix.
+  await gotoApp(page);
+
+  const { firstFrameSectionIds } = await paneFillPerFrame(page, SETTINGS_FILL_FRAME_BUDGET);
+
+  expect(firstFrameSectionIds.slice(0, 2)).toEqual(['appearance', 'sound']);
+});
+
+test('the wide card opens at its settled height and holds it through the fill', async ({
+  page,
+}) => {
+  // The settled pane always overflows the card's 85vh height cap, so the wide
+  // card claims that height up front (SettingsModal's --card-height-cap) —
+  // a content-driven height would ratchet taller as each section mounts, a
+  // layout jump chasing the staged fill. Every sampled frame must agree, and
+  // the shared value must be the cap itself rather than some other constant.
+  await gotoApp(page);
+
+  const { dialogHeights, viewportHeight } = await paneFillPerFrame(
+    page,
+    SETTINGS_FILL_FRAME_BUDGET
+  );
+
+  const CARD_HEIGHT_CAP_FRACTION = 0.85;
+  // Fractional-pixel rounding is the only slack: clientHeight is an integer.
+  const capPx = viewportHeight * CARD_HEIGHT_CAP_FRACTION;
+  expect(new Set(dialogHeights).size).toBe(1);
+  expect(Math.abs(dialogHeights[0]! - capPx)).toBeLessThanOrEqual(1);
 });
 
 // Frames to keep watching the pane after it has said it is ready. A nested pump
