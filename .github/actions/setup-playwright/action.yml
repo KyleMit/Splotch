@@ -48,11 +48,15 @@ runs:
     # Installing from the cached .deb set is what keeps the common path off the network:
     # `playwright install-deps` opens with an unconditional `apt-get update`, so even a
     # warm /var/cache/apt cannot make that command network-free — the cached files have
-    # to be handed straight to apt instead. --no-download makes apt fail fast rather
-    # than fetch if the set stopped being complete, and the --dry-run check is a local
-    # `apt-get install -s` that exits non-zero on any missing package. Every failure
-    # routes to the bounded network step below, so a stale cache costs seconds, not a
-    # run — which is why this step is unbounded and never red.
+    # to be handed straight to dpkg instead. apt-get cannot substitute here: under
+    # --no-download it classifies even a command-line local .deb as a fetch and refuses
+    # it ("E: Unable to fetch some archives"), so it can only confirm packages that are
+    # already installed, never install a missing one from the cache. dpkg -i installs
+    # the whole set in one offline transaction and exits non-zero if the set stopped
+    # being complete; the --dry-run check is a local `apt-get install -s` that exits
+    # non-zero on any missing package. Every failure routes to the bounded network step
+    # below, so a stale cache costs seconds, not a run — which is why this step is
+    # unbounded and never red.
     - name: Install system deps from cached packages
       id: offline-deps
       if: steps.apt-cache.outputs.cache-hit == 'true'
@@ -64,7 +68,7 @@ runs:
           shopt -s nullglob
           local debs=("$DEB_DIR"/*.deb)
           if ((${#debs[@]})); then
-            sudo apt-get install -y --no-install-recommends --no-download "${debs[@]}"
+            sudo dpkg -i "${debs[@]}"
           fi
           npx playwright install-deps --dry-run ${{ inputs.browsers }}
         }
@@ -91,11 +95,12 @@ runs:
       if: steps.apt-cache.outputs.cache-hit != 'true' || steps.offline-deps.outputs.complete != 'true'
       shell: bash
       # One bound serves every caller, so it has to clear the slower of the browser
-      # sets — WebKit pulls far more packages than Chromium — with room for ordinary
-      # variance, while still tripping long before the job timeout can cancel the step
-      # instead.
+      # sets — WebKit pulls far more packages than Chromium — and a degraded runner
+      # that is slow but still progressing (observed at ~245 kB/s, where the Chromium
+      # set's `apt-get update` plus 21 MB of fonts alone needs ~200s), while still
+      # tripping long before the job timeout can cancel the step instead.
       env:
-        SETUP_TIMEOUT_S: '180'
+        SETUP_TIMEOUT_S: '300'
         SETUP_KILL_GRACE_S: '30'
         DEB_DIR: ${{ steps.apt-layout.outputs.deb-dir }}
       # apt-get (unlike the `apt` porcelain) leaves what it downloads in
