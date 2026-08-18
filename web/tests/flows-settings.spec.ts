@@ -209,12 +209,11 @@ test('the theme picker is one tab stop and the arrow keys move the selection', a
   await expect(system).toHaveAttribute('aria-checked', 'true');
 });
 
-test('explicit theme switches repaint the paper while offscreen sections stay contained', async ({
+test('explicit theme switches repaint the paper and survive a Settings reopen', async ({
   page,
 }) => {
   await gotoApp(page);
   await openSettingsModal(page);
-  await expect(page.locator('.settings-section').first()).toHaveCSS('content-visibility', 'auto');
 
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

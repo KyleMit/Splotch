@@ -3,10 +3,12 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   gotoApp,
   headingOffsetFromPaneTop,
+  openSettingsModal,
   SECTION_LANDED_MAX_PX,
   SETTINGS_FILL_FRAME_BUDGET,
   settleSettingsPane,
 } from './helpers';
+import { WEBKIT_ONLY_TAG } from './tags';
 
 // The wide Settings shell stages its section bodies a frame at a time instead of
 // mounting all eleven in the tap that opens the dialog (issue #910). Everything
@@ -199,3 +201,65 @@ test('a jump to a section that has not arrived yet still reaches it', async ({ p
     .poll(() => headingOffsetFromPaneTop(page, jumpedTo))
     .toBeLessThan(SECTION_LANDED_MAX_PX);
 });
+
+test(
+  'WebKit keeps every settled section in the pane geometry and reaches the tail',
+  { tag: WEBKIT_ONLY_TAG },
+  async ({ page }) => {
+    await gotoApp(page);
+    await openSettingsModal(page);
+
+    const pane = page.locator('.settings-pane');
+    const geometry = await pane.evaluate(
+      (element, frames) =>
+        new Promise<{
+          heightAtReady: number;
+          heightAfterFrames: number;
+          collapsedSections: string[];
+          invalidFallbacks: string[];
+        }>((resolve) => {
+          const heightAtReady = element.scrollHeight;
+          let seen = 0;
+          const step = () => {
+            seen += 1;
+            if (seen < frames) {
+              requestAnimationFrame(step);
+              return;
+            }
+            const sections = [...element.querySelectorAll<HTMLElement>('.settings-section')];
+            resolve({
+              heightAtReady,
+              heightAfterFrames: element.scrollHeight,
+              collapsedSections: sections
+                .filter((section) => section.getBoundingClientRect().height === 0)
+                .map((section) => section.dataset.section!),
+              invalidFallbacks: sections
+                .filter(
+                  (section) =>
+                    !/^auto \d+(?:\.\d+)?px$/.test(section.style.containIntrinsicBlockSize)
+                )
+                .map((section) => section.dataset.section!),
+            });
+          };
+          requestAnimationFrame(step);
+        }),
+      POST_READY_FRAMES
+    );
+
+    expect(geometry.heightAfterFrames).toBe(geometry.heightAtReady);
+    expect(geometry.collapsedSections).toEqual([]);
+    expect(geometry.invalidFallbacks).toEqual([]);
+
+    const about = page.locator('.settings-nav .toc-row[data-section="about"]');
+    await about.click();
+    await expect(about).toHaveClass(/active/);
+    await expect(page.locator('.settings-section[data-section="about"]')).toBeInViewport();
+    await expect
+      .poll(() =>
+        pane.evaluate(
+          (element) => Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) < 2
+        )
+      )
+      .toBe(true);
+  }
+);

@@ -61,6 +61,24 @@
   let stagedContentSettled = $state(false);
   const fullyMounted = $derived(mountedCount >= SECTIONS.length && stagedContentSettled);
 
+  // An offscreen section can be skipped before `auto` remembers its size.
+  // Measure every rendered section under the same formatting context first and
+  // install that exact block size as the fallback, so enabling containment
+  // cannot move the scrollspy's offsets or the pane's end.
+  let containmentPrepared = $state(false);
+  $effect(() => {
+    if (!fullyMounted || containmentPrepared) return;
+    const frame = requestAnimationFrame(() => {
+      for (const section of SECTIONS) {
+        const element = sectionEls[section.id];
+        if (!element) return;
+        element.style.containIntrinsicBlockSize = `auto ${element.getBoundingClientRect().height}px`;
+      }
+      containmentPrepared = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+
   // How far past the pane's top edge the reading line sits. The highlight flips
   // as a heading approaches that line rather than after it has scrolled away.
   const SCROLLSPY_LINE_INSET_PX = 130;
@@ -411,7 +429,7 @@
   </div>
   <div
     class="settings-pane"
-    aria-busy={!fullyMounted}
+    aria-busy={!containmentPrepared}
     use:pinchTextZoom={textZoom}
     bind:this={paneEl}
   >
@@ -419,7 +437,8 @@
       {#each mountedSections as section (section.id)}
         <section
           class="settings-section"
-          class:render-contained={fullyMounted}
+          class:measure-contained={fullyMounted && !containmentPrepared}
+          class:render-contained={containmentPrepared}
           data-section={section.id}
           aria-labelledby={sectionHeadingId(section.id)}
           use:registerElement={registerIn(sectionEls, section.id)}
@@ -502,12 +521,14 @@
     margin-top: var(--section-gap);
   }
 
-  /* Wait until every section has a real measured height, then let the browser
-     skip offscreen subtree rendering while retaining those exact dimensions.
-     The pane's scrollspy and table-of-contents jumps both depend on them. */
+  /* Match content-visibility's formatting context while every subtree remains
+     rendered, then use the measured block size when offscreen work is skipped. */
+  .settings-section.measure-contained {
+    contain: layout paint style;
+  }
+
   .settings-section.render-contained {
     content-visibility: auto;
-    contain-intrinsic-size: auto none;
   }
 
   .settings-pane-title {
