@@ -18,7 +18,7 @@ interface ParsedColor extends Rgb {
 // Hex (#abc / #aabbcc), rgb()/rgba(), and the transparent keyword — the only
 // forms the design tokens use. Anything else (gradients) is the caller's job
 // to break into stops first.
-export function parseColor(color: string): ParsedColor | null {
+function parseColor(color: string): ParsedColor | null {
   const value = color.trim();
   if (value === 'transparent') return { r: 0, g: 0, b: 0, alpha: 0 };
   if (value.startsWith('#')) {
@@ -53,7 +53,7 @@ function relativeLuminance({ r, g, b }: Rgb): number {
   return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
 }
 
-export function contrastFromLuminance(a: number, b: number): number {
+function contrastFromLuminance(a: number, b: number): number {
   const [hi, lo] = a > b ? [a, b] : [b, a];
   return (hi + 0.05) / (lo + 0.05);
 }
@@ -63,7 +63,7 @@ export function contrastFromLuminance(a: number, b: number): number {
  * over the ground it actually sits on. Null when the color is a form
  * `parseColor` does not read.
  */
-export function effectiveLuminance(color: string, ground: string): number | null {
+function effectiveLuminance(color: string, ground: string): number | null {
   const parsed = parseColor(color);
   if (!parsed) return null;
   const groundRgb = parseColor(ground);
