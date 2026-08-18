@@ -23,7 +23,6 @@ const privacyInventory = JSON.parse(read('tools/mobile/privacy-permission-invent
 // .claude/.agents mirrors.
 const ENFORCED = [
   'package.json',
-  'docs/MOBILE/native.md',
   'docs/MOBILE/android.md',
   'docs/TESTING.md',
   'docs/COMPATIBILITY.md',
@@ -37,12 +36,25 @@ const EMULATOR_API_PATTERNS = [
   /\bAPI (\d+) system image\b/g,
   /api-level:\s*(\d+)/g,
   /current(?: Android)? API (\d+)/gi,
-  /\| Android current\s+\|.*?\| The `Maestro launch smoke test \(API (\d+)\)`/g,
   /\(API (\d+) \+ API \d+\)/g,
   /shipped app on Android API (\d+)/g,
 ];
 
 const androidWorkflow = read('.github/workflows/android-deploy.yml');
+const nativeGuide = read('docs/MOBILE/native.md');
+
+function androidSupportMatrixRows() {
+  const rowPattern =
+    /^\| Android (current|floor)\s+\| (?:Current )?Android API (\d+) on.*?\| The `Maestro launch smoke test \(API (\d+)\)`.*?`maestro-report-api-(\d+)`/gm;
+  return [...nativeGuide.matchAll(rowPattern)].map(
+    ([, coverage, targetApi, jobApi, artifactApi]) => ({
+      coverage,
+      targetApi: Number(targetApi),
+      jobApi: Number(jobApi),
+      artifactApi: Number(artifactApi),
+    })
+  );
+}
 
 function workflowStepScript(stepName) {
   const escapedName = stepName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -85,6 +97,23 @@ describe('Android emulator API levels', () => {
     expect(androidWorkflow).toContain('api-level: ${{ fromJSON(needs.build.outputs.levels) }}');
     expect(androidWorkflow).toContain('api-level: ${{ matrix.api-level }}');
     expect(androidWorkflow).not.toMatch(/api-level:\s*\d+/);
+  });
+
+  it('keeps every Android support-matrix identifier on its row API owner', () => {
+    expect(androidSupportMatrixRows()).toEqual([
+      {
+        coverage: 'current',
+        targetApi: CURRENT_ANDROID_API_LEVEL,
+        jobApi: CURRENT_ANDROID_API_LEVEL,
+        artifactApi: CURRENT_ANDROID_API_LEVEL,
+      },
+      {
+        coverage: 'floor',
+        targetApi: MIN_ANDROID_API_LEVEL,
+        jobApi: MIN_ANDROID_API_LEVEL,
+        artifactApi: MIN_ANDROID_API_LEVEL,
+      },
+    ]);
   });
 
   it('de-duplicates the matrix when the floor reaches the current API', () => {
@@ -210,11 +239,6 @@ const SUPPORT_FLOOR_CLAIMS = [
     'minimum supported OS statement',
     'docs/MOBILE/android.md',
     /Minimum supported OS: \*\*Android (?<release>\d+\.\d+) \/ API (?<api>\d+)\*\*/,
-  ],
-  [
-    'native support matrix floor row',
-    'docs/MOBILE/native.md',
-    /\| Android floor\s+\| Android API (?<api>\d+) on/,
   ],
 ];
 

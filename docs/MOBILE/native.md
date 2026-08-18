@@ -199,29 +199,6 @@ npx @capacitor/assets generate --android
 npx @capacitor/assets generate --ios
 ```
 
-### Native support matrix
-
-This is a release-time compatibility matrix, not a UI journey matrix. Every automated row reuses the
-one boot-and-paint assertion in `.maestro/smoke.yaml` (ADR-0120); phone/tablet layout and
-orientation behavior stay in the web test tiers. The automated rows run on `v*` tags and can be
-started from `workflow_dispatch`. There is no periodic `schedule` trigger: on-demand dispatch is the
-preflight and reproduction path, while the iOS floor row is completed manually for each release.
-
-Before publishing signed artifacts, confirm all four rows for that tag:
-
-| Coverage        | Target and check                                                                                                                                        | Result and diagnostic evidence                                                                                                                                                                                                                                                               | Evidence owner                                                                                         |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Android current | Current Android API 33 on a throwaway `google_apis` / `x86_64` emulator; install the test-signed optimized Release APK and wait for `Settings` to paint | The `Maestro launch smoke test (API 33)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-33` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
-| Android floor   | Android API 24 on the same emulator/image shape; install the same Release APK and run the same first-paint assertion                                    | The `Maestro launch smoke test (API 24)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-24` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
-| iOS current     | Newest installed iPhone simulator on `macos-latest`; compile Release without store signing, then install and boot the Debug app                         | The `Maestro launch smoke test (iOS simulator)` job status is the result. The log names the selected iPhone and UDID, and Xcode's destination identifies its runtime; `maestro-ios-report` contains the Maestro flow log and screenshot.                                                     | GitHub Actions owns the run, job log, and artifact.                                                    |
-| iOS floor       | iOS 16.4 on a named iPhone simulator or physical device; follow the [manual iOS 16.4 floor gate](ios.md#manual-ios-164-floor-gate)                      | The GitHub Release notes state the exact OS version, simulator/device, and pass result. No Maestro artifact is expected: hosted 16.4 runs can build and boot the simulator, but Maestro 2.4.0 fails before it can observe the app; `docs/COMPATIBILITY.md` owns that infeasibility evidence. | The release operator owns the Release-notes entry before `publish-artifacts` attaches signed binaries. |
-
-On a tag, either deploy workflow files or updates its platform-specific failure issue when an
-automated gate is red. A manual dispatch does not file an issue because its dispatcher already owns
-the run; use the named job log and report artifact directly. The Android matrix derives both API
-levels from code owners rather than YAML literals, and `docs/COMPATIBILITY.md` remains the canonical
-ledger for what each row proves and what it leaves uncovered.
-
 ## 3. Store listing assets & copywriting (both stores)
 
 Everything lives in **`store-assets/`** (see its README for sizes and regeneration notes) and is
@@ -290,7 +267,30 @@ The shared baseline both depend on:
 * [ ] (Android) `@capacitor/app` to handle the hardware back button — see
       **[android.md](android.md)**.
 
-## 6. Uploading builds to the stores
+## 6. Native support matrix
+
+This is a release-time compatibility matrix, not a UI journey matrix. Every automated row reuses the
+one boot-and-paint assertion in `.maestro/smoke.yaml` (ADR-0120); phone/tablet layout and
+orientation behavior stay in the web test tiers. The automated rows run on `v*` tags and can be
+started from `workflow_dispatch`. There is no periodic `schedule` trigger: on-demand dispatch is the
+preflight and reproduction path, while the iOS floor row is completed manually for each release.
+
+Before publishing signed artifacts, confirm all four rows for that tag:
+
+| Coverage        | Target and check                                                                                                                                        | Result and diagnostic evidence                                                                                                                                                                                                                                                               | Evidence owner                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Android current | Current Android API 33 on a throwaway `google_apis` / `x86_64` emulator; install the test-signed optimized Release APK and wait for `Settings` to paint | The `Maestro launch smoke test (API 33)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-33` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
+| Android floor   | Android API 24 on the same emulator/image shape; install the same Release APK and run the same first-paint assertion                                    | The `Maestro launch smoke test (API 24)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-24` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
+| iOS current     | Newest installed iPhone simulator on `macos-latest`; compile Release without store signing, then install and boot the Debug app                         | The `Maestro launch smoke test (iOS simulator)` job status is the result. The log names the selected iPhone and UDID, and Xcode's destination identifies its runtime; `maestro-ios-report` contains the Maestro flow log and screenshot.                                                     | GitHub Actions owns the run, job log, and artifact.                                                    |
+| iOS floor       | iOS 16.4 on a named iPhone simulator or physical device; follow the [manual iOS 16.4 floor gate](ios.md#manual-ios-164-floor-gate)                      | The GitHub Release notes state the exact OS version, simulator/device, and pass result. No Maestro artifact is expected: hosted 16.4 runs can build and boot the simulator, but Maestro 2.4.0 fails before it can observe the app; `docs/COMPATIBILITY.md` owns that infeasibility evidence. | The release operator owns the Release-notes entry before `publish-artifacts` attaches signed binaries. |
+
+When an automated gate is red on a tag, that platform's deploy workflow files or updates its
+platform-specific failure issue. A manual dispatch does not file an issue because its dispatcher
+already owns the run; use the named job log and report artifact directly. The Android matrix derives
+both API levels from code owners rather than YAML literals, and `docs/COMPATIBILITY.md` remains the
+canonical ledger for what each row proves and what it leaves uncovered.
+
+## 7. Uploading builds to the stores
 
 > **Both uploads are currently manual.** The npm pipeline ends at producing the signed binary;
 > getting it to the store is a hands-on step today.
