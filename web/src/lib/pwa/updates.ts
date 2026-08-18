@@ -212,6 +212,14 @@ export function createPWAUpdates() {
     updateReload = 'ready';
     const deployedVersion = await fetchDeployedVersion();
     if (updateReload !== 'ready') return;
+    // A deploy landing while the version fetch was in flight can replace the
+    // waiting worker; activating the captured one would apply a precache that
+    // no longer matches what /version.json reported. Release to 'none' so the
+    // next check re-decides on the current worker.
+    if (updateRegistration?.waiting !== sw) {
+      updateReload = 'none';
+      return;
+    }
     if (deployedVersion === __APP_VERSION__) activateWaitingSW(sw, 'silent');
   }
 
@@ -250,7 +258,13 @@ export function createPWAUpdates() {
         updateReload = 'none';
         return;
       }
-      if (!canvasState.canvasEmpty) {
+      // Being in reload mode means the apply started at the hidden edge, but
+      // controllerchange delivery is asynchronous: a backgrounded PWA can be
+      // suspended right after SKIP_WAITING and resumed before the new worker
+      // takes control, landing this callback in a visible session. Reloading
+      // then is the yank the hidden-edge apply exists to prevent — defer to
+      // 'owed' and drain at the next hidden moment instead.
+      if (!canvasState.canvasEmpty || document.visibilityState === 'visible') {
         deferReload();
         return;
       }
@@ -291,25 +305,34 @@ export function createPWAUpdates() {
 
       await registration.update();
 
-      if (registration.waiting) {
-        await decideWaitingActivation(registration.waiting);
+      // An installing worker outranks a waiting one: update() resolves as soon
+      // as the new worker starts installing, so with frequent deploys the
+      // registration can hold a stale waiting worker from an earlier deploy
+      // alongside the installing one. Deciding on the stale worker compares
+      // /version.json (the newest deploy) against the page and can silently
+      // activate the wrong precache — wait for the install to settle into
+      // `waiting` and decide on that worker instead.
+      const installing = registration.installing;
+      if (installing) {
+        if (!observedInstallingWorkers.has(installing)) {
+          observedInstallingWorkers.add(installing);
+          installing.addEventListener(
+            'statechange',
+            () => {
+              if (installing.state === 'installed' && registration.waiting) {
+                setTimeout(() => {
+                  if (registration.waiting) void decideWaitingActivation(registration.waiting);
+                }, WAITING_SETTLE_MS);
+              }
+            },
+            { once: true }
+          );
+        }
         return;
       }
 
-      const installing = registration.installing;
-      if (installing && !observedInstallingWorkers.has(installing)) {
-        observedInstallingWorkers.add(installing);
-        installing.addEventListener(
-          'statechange',
-          () => {
-            if (installing.state === 'installed' && registration.waiting) {
-              setTimeout(() => {
-                if (registration.waiting) void decideWaitingActivation(registration.waiting);
-              }, WAITING_SETTLE_MS);
-            }
-          },
-          { once: true }
-        );
+      if (registration.waiting) {
+        await decideWaitingActivation(registration.waiting);
       }
     } catch {
       // registration lookup or update failed (e.g. offline) — try again later

@@ -114,7 +114,13 @@ It:
   hourly — so the browser always has a fresh copy of `sw.js` to compare against. A check only
   *downloads* the new worker; applying it is a separate decision.
 * When a new SW reaches the `waiting` state, fetches `/version.json` and compares the deployed
-  version with the running page's `__APP_VERSION__`:
+  version with the running page's `__APP_VERSION__`. An installing worker is always observed before
+  a waiting one is classified: `registration.update()` resolves as soon as the new worker starts
+  installing, so with frequent deploys the registration can hold a stale waiting worker from an
+  earlier deploy alongside it — deciding on the stale worker would compare the newest deploy's
+  version against the page and silently activate the wrong precache. The decision runs only once the
+  install has settled into `waiting`, and is abandoned if the waiting worker is replaced while the
+  version fetch is in flight.
   * **Equal** — every online cold launch, since navigations are NetworkFirst and fresh HTML boots
     under the old SW while the new one installs. The waiting worker is activated **silently**
     (`{ type: 'SKIP_WAITING' }`, no reload, regardless of canvas state): same-version precache means
@@ -126,10 +132,13 @@ It:
     the `visibilitychange` → hidden handler, and only while the canvas is blank. The reload happens
     while the app is backgrounded (for an iPad PWA, "hidden" is what "closed" looks like), so a
     visible session — an open settings menu, a mid-tap — is never yanked, and the next resume boots
-    the new version with no visible refresh. `SKIP_WAITING` and the reload stay atomic: activating
-    without reloading a stale page would let lazy-loaded chunks miss under the new worker's
-    precache. If the app is never hidden with a blank canvas, the waiting SW activates on the next
-    full launch as before (it activates when the old SW loses all clients).
+    the new version with no visible refresh. Because `controllerchange` delivery is asynchronous — a
+    suspended PWA can resume before the new worker takes control — the callback re-checks
+    `document.visibilityState` and defers to the `owed` state instead of reloading a session that
+    turned visible again. `SKIP_WAITING` and the reload stay atomic: activating without reloading a
+    stale page would let lazy-loaded chunks miss under the new worker's precache. If the app is
+    never hidden with a blank canvas, the waiting SW activates on the next full launch as before (it
+    activates when the old SW loses all clients).
 * Also calls `checkVersionMismatch()`: fetches `/version.json` (not precached; always network) with
   `cache: 'no-store'`, compares its `version` field against `__APP_VERSION__` (a Vite compile-time
   constant). If they differ the running SW is serving stale HTML, so it redirects to

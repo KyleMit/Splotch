@@ -58,6 +58,14 @@ export function stubReloadableLocation() {
   });
 }
 
+export function setDocumentVisibility(state: DocumentVisibilityState) {
+  Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+}
+
+export function restoreDocumentVisibility() {
+  Reflect.deleteProperty(document, 'visibilityState');
+}
+
 export function registeredListener(addEventListener: ReturnType<typeof vi.fn>, type: string) {
   const call = addEventListener.mock.calls.find(([eventType]) => eventType === type);
   expect(call).toBeDefined();

@@ -9,6 +9,8 @@ import {
   NEWER_VERSION,
   makeRegistration,
   makeWorker,
+  restoreDocumentVisibility,
+  setDocumentVisibility,
   stubDeployedVersion,
   stubServiceWorker,
 } from './updatesTestHarness';
@@ -421,12 +423,12 @@ describe('initPWAUpdates', () => {
     await flushAsync();
     expect(worker.postMessage).not.toHaveBeenCalled(); // stale page: no visible activation
 
-    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    setDocumentVisibility('hidden');
     try {
       document.dispatchEvent(new Event('visibilitychange'));
       expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
     } finally {
-      Reflect.deleteProperty(document, 'visibilityState');
+      restoreDocumentVisibility();
     }
   });
 

@@ -12,6 +12,8 @@ import {
   makeRegistration,
   makeWorker,
   registeredListener,
+  restoreDocumentVisibility,
+  setDocumentVisibility,
   stubDeployedVersion,
   stubReloadableLocation,
   stubServiceWorker,
@@ -119,6 +121,45 @@ describe('checkForUpdates — silent activation when the page is already current
     }
   });
 
+  it('waits out an installing worker instead of deciding on a stale waiting one', async () => {
+    vi.useFakeTimers();
+    try {
+      const staleWaiting = makeWorker();
+      const installingWorker = makeWorker();
+      const reg = makeRegistration({
+        waiting: staleWaiting as unknown as ServiceWorker,
+        installing: installingWorker as unknown as ServiceWorker,
+      });
+      stubServiceWorker(reg);
+
+      // update() resolves as soon as the new worker starts installing, so a
+      // stale waiting worker from an earlier deploy can share the registration
+      // with it. Deciding now would compare /version.json (the new deploy)
+      // against the page and silently activate the stale precache.
+      await pwaUpdates.checkForUpdates();
+      expect(staleWaiting.postMessage).not.toHaveBeenCalled();
+      expect(globalThis.fetch).not.toHaveBeenCalled();
+
+      // The install settles: the browser discards the stale worker and the
+      // new one takes the waiting slot — only then does the decision run.
+      Object.defineProperty(reg, 'waiting', {
+        value: installingWorker,
+        configurable: true,
+      });
+      registeredListener(
+        installingWorker.addEventListener,
+        'statechange'
+      )(new Event('statechange'));
+      await vi.advanceTimersByTimeAsync(WAITING_SETTLE_MS);
+
+      expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+      expect(installingWorker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+      expect(staleWaiting.postMessage).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('resolves cleanly when there is no active registration', async () => {
     stubServiceWorker(undefined);
 
@@ -152,9 +193,17 @@ describe('checkForUpdates — silent activation when the page is already current
 describe('checkForUpdates — stale page defers the reload to the hidden edge', () => {
   beforeEach(() => {
     stubDeployedVersion(NEWER_VERSION);
+    // The apply path runs from the visibilitychange→hidden handler, so these
+    // tests model controllerchange arriving while the document is still hidden.
+    setDocumentVisibility('hidden');
+  });
+
+  afterEach(() => {
+    restoreDocumentVisibility();
   });
 
   it('never activates or reloads while the page is visible', async () => {
+    setDocumentVisibility('visible');
     const worker = makeWorker();
     const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
     stubServiceWorker(reg);
@@ -219,6 +268,30 @@ describe('checkForUpdates — stale page defers the reload to the hidden edge', 
     pwaUpdates.applyPendingUpdate();
 
     expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+  });
+
+  it('defers to owed when controllerchange arrives after the app is visible again', async () => {
+    const worker = makeWorker();
+    const reg = makeRegistration({ waiting: worker as unknown as ServiceWorker });
+    const container = stubServiceWorker(reg);
+
+    await pwaUpdates.checkForUpdates();
+    pwaUpdates.applyPendingUpdate();
+    expect(worker.postMessage).toHaveBeenCalledWith({ type: 'SKIP_WAITING' });
+
+    // The PWA was suspended right after SKIP_WAITING and resumed before the
+    // new worker took control — controllerchange lands in a visible session.
+    setDocumentVisibility('visible');
+    registeredListener(
+      container.addEventListener,
+      'controllerchange'
+    )(new Event('controllerchange'));
+
+    expect(window.location.reload).not.toHaveBeenCalled();
+
+    setDocumentVisibility('hidden');
+    pwaUpdates.applyPendingUpdate();
+    expect(window.location.reload).toHaveBeenCalledTimes(1);
   });
 
   it('defers reload when ink appears before controllerchange, draining at the next apply', async () => {
