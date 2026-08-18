@@ -32,8 +32,16 @@ import {
 } from '../../.agents/skills/run-claude/scripts/splotch-claude-stream.mjs';
 import {
   buildAuthorizationPrompt,
+  endReviewerSession,
+  isMissingReviewerSessionError,
   parseReviewerArgs,
+  planReviewerSession,
+  recordAdoptedReview,
+  recordCompletedReview,
+  readReviewerSession,
   REVIEWER_PATHS,
+  reviewerSessionArguments,
+  reviewerSessionRecordPath,
 } from '../../.agents/skills/run-claude/scripts/claude-review-publish.mjs';
 import { HEALTH_PATHS } from '../../.agents/skills/run-claude/scripts/claude-health.mjs';
 import {
@@ -492,8 +500,12 @@ describe('trusted Claude PR reviewer', () => {
     headRefOid: 'b'.repeat(40),
   };
 
-  it('accepts only one fixed positive PR parameter', () => {
-    expect(parseReviewerArgs(['--pr', '42'])).toBe(42);
+  it('accepts only a fixed positive PR and its bounded cleanup action', () => {
+    expect(parseReviewerArgs(['--pr', '42'])).toEqual({ prNumber: 42, endSession: false });
+    expect(parseReviewerArgs(['--pr', '42', '--end-session'])).toEqual({
+      prNumber: 42,
+      endSession: true,
+    });
     expect(() => parseReviewerArgs(['--pr', '0'])).toThrow('positive-integer');
     expect(() => parseReviewerArgs(['--pr', '42', '--model', 'sonnet'])).toThrow();
     expect(() => parseReviewerArgs(['42'])).toThrow();
@@ -508,6 +520,126 @@ describe('trusted Claude PR reviewer', () => {
     expect(prompt).toContain('does not authorize:\n- commits or pushes');
     expect(prompt).toContain('another repository or pull request');
     expect(prompt).toContain(marker);
+    const continuation = buildAuthorizationPrompt(
+      metadata,
+      '/private/tmp/review/checkout',
+      marker,
+      { continuation: true, previousHeadOid: 'c'.repeat(40) }
+    );
+    expect(continuation).toContain('CONTINUATION REVIEW');
+    expect(continuation).toContain('Do not restart a greenfield audit');
+    expect(continuation).toContain('not a non-empty findings list');
+  });
+
+  it('creates one reviewer conversation per PR, resumes it, and cleans it up', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-session-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const created = planReviewerSession(42, paths);
+      expect(created.mode).toBe('create');
+      expect(reviewerSessionArguments(created)).toEqual(['--session-id', created.id]);
+      const resumed = planReviewerSession(42, paths);
+      expect(resumed).toMatchObject({ mode: 'resume', id: created.id });
+      expect(reviewerSessionArguments(resumed)).toEqual(['--resume', created.id]);
+
+      const project = join(paths.claudeProjects, 'review-project');
+      mkdirSync(join(project, created.id), { recursive: true });
+      writeFileSync(join(project, `${created.id}.jsonl`), '{}');
+      endReviewerSession(42, paths);
+      expect(readReviewerSession(paths.sessionsDirectory, 42)).toBeNull();
+      expect(existsSync(join(project, `${created.id}.jsonl`))).toBe(false);
+      expect(existsSync(join(project, created.id))).toBe(false);
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('enforces the review budget and accounts for adopted reviews exactly once', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-budget-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const created = planReviewerSession(42, paths);
+      recordCompletedReview(created, metadata, paths);
+      recordAdoptedReview(metadata, paths);
+      expect(readReviewerSession(paths.sessionsDirectory, 42).completedRounds).toBe(1);
+
+      const secondMetadata = { ...metadata, headRefOid: 'c'.repeat(40) };
+      recordAdoptedReview(secondMetadata, paths);
+      const third = planReviewerSession(42, paths);
+      const thirdMetadata = { ...metadata, headRefOid: 'd'.repeat(40) };
+      recordCompletedReview(third, thirdMetadata, paths);
+
+      expect(readReviewerSession(paths.sessionsDirectory, 42)).toMatchObject({
+        completedRounds: 3,
+        lastHeadOid: thirdMetadata.headRefOid,
+      });
+      expect(() => planReviewerSession(42, paths)).toThrow('review round budget exhausted');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('recovers round state from an adopted marked review', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-adopted-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const created = planReviewerSession(42, paths);
+      recordAdoptedReview(metadata, paths);
+      expect(readReviewerSession(paths.sessionsDirectory, 42)).toMatchObject({
+        sessionId: created.id,
+        completedRounds: 1,
+        lastBaseOid: metadata.baseRefOid,
+        lastHeadOid: metadata.headRefOid,
+      });
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('removes corrupt records without following an invalid session id', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-corrupt-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const recordPath = reviewerSessionRecordPath(paths.sessionsDirectory, 42);
+      const victim = join(temporaryRoot, 'VICTIM');
+      mkdirSync(paths.sessionsDirectory, { recursive: true });
+      mkdirSync(join(paths.claudeProjects, 'review-project'), { recursive: true });
+      mkdirSync(victim);
+      writeFileSync(recordPath, '{"prNumber":42,"sessionId":"../../VICTIM"}');
+      endReviewerSession(42, paths);
+      expect(existsSync(victim)).toBe(true);
+      expect(existsSync(recordPath)).toBe(false);
+
+      writeFileSync(recordPath, '{oops');
+      expect(() => readReviewerSession(paths.sessionsDirectory, 42)).toThrow(recordPath);
+      endReviewerSession(42, paths);
+      expect(existsSync(recordPath)).toBe(false);
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('recognizes only Claude missing-session failures for the bounded self-heal', () => {
+    expect(
+      isMissingReviewerSessionError(
+        new Error('claude exited 1: No conversation found with session ID: missing')
+      )
+    ).toBe(true);
+    expect(isMissingReviewerSessionError(new Error('claude exited 1: another failure'))).toBe(
+      false
+    );
   });
 
   it('hardcodes Auto and safe mode and installs every trusted byte', () => {
@@ -522,7 +654,8 @@ describe('trusted Claude PR reviewer', () => {
       "'default'",
       "'--safe-mode'",
       "'--strict-mcp-config'",
-      "'--no-session-persistence'",
+      "'--session-id'",
+      "'--resume'",
       "'--output-format'",
       "'stream-json'",
       "'--verbose'",
@@ -535,6 +668,7 @@ describe('trusted Claude PR reviewer', () => {
     expect(wrapper).toContain("'--slurp'");
     expect(wrapper).toContain("matches[0].state !== 'COMMENTED'");
     expect(wrapper).toContain('adoptPublishedReview(metadata, paths)');
+    expect(wrapper).toContain('endReviewerSessionSafely(options.prNumber)');
     expect(wrapper).toContain('splotch-claude-review:base=${metadata.baseRefOid};head=');
     const expected = expectedRunClaudeFiles();
     const manifest = JSON.parse(expected.manifest.toString());
