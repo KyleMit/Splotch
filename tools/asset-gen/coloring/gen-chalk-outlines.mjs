@@ -170,6 +170,7 @@ function chalkSettings(v, source) {
     inventedMax: leverSettings['invented-max'],
     whiteFracMax: leverSettings['white-frac-max'],
     inkDiffMax: leverSettings['ink-diff-max'],
+    inkDiffMaxOverridden: v['ink-diff-max'] !== undefined,
     notes: leverSettings.notes,
     instruction,
     leverSettings,
@@ -277,13 +278,13 @@ for (const page of pages) {
     : null;
   const inkAnalysis = await prepareChalkInkDiff(penAnalysis);
   const approvedInk = existsSync(dest)
-    ? await scoreChalkInkDiff(await readFile(dest), inkAnalysis, { maxInkPx: cfg.inkDiffMax })
+    ? await scoreChalkInkDiff(await readFile(dest), inkAnalysis)
     : null;
   const score = async (candidate, shift, attempt) => {
     const fwd = await outlineMatch(keepReference, candidate);
     const newInk = await scoreChalkInkDiff(candidate, inkAnalysis, {
       baseline: approvedInk,
-      maxInkPx: cfg.inkDiffMax,
+      ...(cfg.inkDiffMaxOverridden ? { maxInkPx: cfg.inkDiffMax } : {}),
     });
     const eyes = lightEyes
       ? judgeChalkEyes(await scoreEyeFill(candidate, penAnalysis), lightEyes)

@@ -160,17 +160,19 @@ change):
    scale, every pen-bounded foreground region gets its own count of chalk ink beyond the pen's 2 px
    registration slack. Pen solid interiors are eroded into separate cores and count retained chalk
    ink too, so copying a solid pen pupil or nose is visible even though it is not "new" ink. A new
-   page may add at most 31 px per region/core by default (`--ink-diff-max` raises the reviewed
-   allowance). On regeneration, the shipped chalk supplies the regional baseline: each region may
-   keep its existing deliberate sclera, catchlight, or marking plus 10% or 8 px of crisping noise,
-   whichever is larger. This preserves intentional whites while rejecting a new face, solidified
-   pupil, or promoted patch in a previously clean region. Candidate keep/reject and fallback ranking
-   both use the verdict; the report's `ink added/solid px` pair exposes the worst two regions.
-   Golden scores freeze the absolute maxima and count of regions over the default, so a later asset
-   change cannot worsen the catalog silently. Calibration keeps the default just below the recovered
-   duck solid core (32 px) and the shipped caterpillar/teddy failures (35–41 px), while repaired
-   dog-wide and ship-tall top out at 28 px and 0 px. The baseline margin keeps repaired
-   flower-wide's 495 px deliberate sclera usable but rejects its recovered 571 px asymmetric take;
+   page may add at most 360 px per region/core by default, the lower p90 of the approved catalog's
+   worst per-page region. This admits about 90% of established chalk treatments; a deliberate larger
+   white needs a reviewed `--ink-diff-max`. On regeneration without that override, the shipped chalk
+   supplies the regional baseline: each region may keep its existing deliberate sclera, catchlight,
+   or marking plus 10% or 8 px of crisping noise, whichever is larger. Clean baseline regions
+   receive only the 8 px noise band. Supplying `--ink-diff-max` changes it into a hard ceiling and
+   can therefore reject a defect in the shipped baseline; it never widens a baseline region beyond
+   its ordinary growth margin. Candidate keep/reject and fallback ranking both use the verdict; the
+   report's `ink added/solid px` pair exposes the worst two regions. Golden scores freeze the
+   absolute maxima and count of regions over the default, with the same 10%/8 px proportional noise
+   model, so a later asset change cannot worsen the catalog silently. Use a strict page-specific
+   ceiling for repairs such as the shipped caterpillar failure (40 px), while the default baseline
+   preserves reviewed treatments such as flower-wide's 495 px sclera;
 5. **eye polarity** — pen eye cores the committed light raw paints DARK (pupils) must stay
    non-ink/fillable in the chalk; cores it paints BRIGHT (catchlights) should be chalk ink (warns
    only). Added after the first spider/caterpillar chalks whitened whole eyeballs — pupil included —

@@ -91,7 +91,7 @@ regression-locked by its own broken/good fixtures:
   pass/fail gate, so its test asserts a haloed fill ranks above a clean punch.
 * `scoreCompositeEyes` (`tests/composite-eye.test.mjs`) — `(comp, light, pen)`; the blank-orb class,
   on recovered real crops.
-* `scoreChalkInkDiff` (`tests/chalk-ink-diff.test.mjs`) — `(pen, chalk)`; chalk-only ink inside
+* `scoreChalkInkDiff` (`tests/chalk-ink-diff.test.mjs`) — `(chalk, pen)`; chalk-only ink inside
   pen-bounded foreground regions plus copied ink inside solid-pen cores. Its real-fixture regression
   keeps the shipped caterpillar whitening failure and the repaired ship page as the negative
   control.

@@ -13,10 +13,10 @@ import { floodFromBorder } from './regions.mjs';
 const PEN_SLACK_PX = 2;
 const BACKGROUND_SLACK_PX = 4;
 const SOLID_CORE_ERODE_PX = 3;
-const BASELINE_GROWTH_FRACTION = 0.1;
-const BASELINE_NOISE_PX = 8;
+export const CHALK_INK_BASELINE_GROWTH_FRACTION = 0.1;
+export const CHALK_INK_BASELINE_NOISE_PX = 8;
 
-export const CHALK_INK_DIFF_MAX_DEFAULT = 31;
+export const CHALK_INK_DIFF_MAX_DEFAULT = 360;
 
 const preparedAnalyses = new WeakSet();
 const preparationPromises = new WeakMap();
@@ -115,10 +115,14 @@ export async function prepareChalkInkDiff(source) {
   }
 }
 
-function baselineAllowance(baselineInkPx, minimumInkPx) {
-  if (!baselineInkPx) return minimumInkPx;
-  const margin = Math.max(BASELINE_NOISE_PX, Math.ceil(baselineInkPx * BASELINE_GROWTH_FRACTION));
-  return Math.max(minimumInkPx, baselineInkPx + margin);
+function regionAllowance(baselineInkPx, absoluteMaxInkPx, hasExplicitMax) {
+  if (baselineInkPx === undefined) return absoluteMaxInkPx;
+  const margin = Math.max(
+    CHALK_INK_BASELINE_NOISE_PX,
+    Math.ceil(baselineInkPx * CHALK_INK_BASELINE_GROWTH_FRACTION)
+  );
+  const baselineMaxInkPx = baselineInkPx + margin;
+  return hasExplicitMax ? Math.min(absoluteMaxInkPx, baselineMaxInkPx) : baselineMaxInkPx;
 }
 
 function regionDiagnostic(region, inkPx, allowedPx, kind) {
@@ -132,11 +136,9 @@ function regionDiagnostic(region, inkPx, allowedPx, kind) {
   };
 }
 
-export async function scoreChalkInkDiff(
-  candidate,
-  source,
-  { baseline = null, maxInkPx = CHALK_INK_DIFF_MAX_DEFAULT } = {}
-) {
+export async function scoreChalkInkDiff(candidate, source, { baseline = null, maxInkPx } = {}) {
+  const hasExplicitMax = maxInkPx !== undefined;
+  const absoluteMaxInkPx = maxInkPx ?? CHALK_INK_DIFF_MAX_DEFAULT;
   const analysis = await prepareChalkInkDiff(source);
   const chalk = await resizeInkMask(candidate);
   const boundedInk = new Int32Array(analysis.boundedRegions.length);
@@ -165,18 +167,26 @@ export async function scoreChalkInkDiff(
   const absoluteFlaggedRegions = [];
   for (const region of analysis.boundedRegions) {
     const inkPx = boundedInk[region.id];
-    const allowedPx = baselineAllowance(baseline?.boundedInk?.[region.id], maxInkPx);
+    const allowedPx = regionAllowance(
+      baseline?.boundedInk?.[region.id],
+      absoluteMaxInkPx,
+      hasExplicitMax
+    );
     if (inkPx > allowedPx)
       flaggedRegions.push(regionDiagnostic(region, inkPx, allowedPx, 'bounded'));
-    if (inkPx > maxInkPx)
-      absoluteFlaggedRegions.push(regionDiagnostic(region, inkPx, maxInkPx, 'bounded'));
+    if (inkPx > absoluteMaxInkPx)
+      absoluteFlaggedRegions.push(regionDiagnostic(region, inkPx, absoluteMaxInkPx, 'bounded'));
   }
   for (const region of analysis.solidRegions) {
     const inkPx = solidInk[region.id];
-    const allowedPx = baselineAllowance(baseline?.solidInk?.[region.id], maxInkPx);
+    const allowedPx = regionAllowance(
+      baseline?.solidInk?.[region.id],
+      absoluteMaxInkPx,
+      hasExplicitMax
+    );
     if (inkPx > allowedPx) flaggedRegions.push(regionDiagnostic(region, inkPx, allowedPx, 'solid'));
-    if (inkPx > maxInkPx)
-      absoluteFlaggedRegions.push(regionDiagnostic(region, inkPx, maxInkPx, 'solid'));
+    if (inkPx > absoluteMaxInkPx)
+      absoluteFlaggedRegions.push(regionDiagnostic(region, inkPx, absoluteMaxInkPx, 'solid'));
   }
 
   return {

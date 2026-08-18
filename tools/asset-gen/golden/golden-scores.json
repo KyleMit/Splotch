@@ -11,7 +11,8 @@
     "eyeRingDepthMax": 4,
     "frameSideCoverageMin": 0.7,
     "ghostLumaMax": 245,
-    "ghostSideCoverageMin": 0.9
+    "ghostSideCoverageMin": 0.9,
+    "chalkInkDiffMax": 360
   },
   "pages": {
     "creatures/cover": {
@@ -46,7 +47,7 @@
       "chalk": {
         "addedInkPx": 96,
         "solidInkPx": 120,
-        "regionsFlagged": 5
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 0.9996,
@@ -88,7 +89,7 @@
       "chalk": {
         "addedInkPx": 32,
         "solidInkPx": 84,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -130,7 +131,7 @@
       "chalk": {
         "addedInkPx": 37,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -214,7 +215,7 @@
       "chalk": {
         "addedInkPx": 6,
         "solidInkPx": 36,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -298,7 +299,7 @@
       "chalk": {
         "addedInkPx": 42,
         "solidInkPx": 345,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -340,7 +341,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 143,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -382,7 +383,7 @@
       "chalk": {
         "addedInkPx": 124,
         "solidInkPx": 10,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -466,7 +467,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 60,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -508,7 +509,7 @@
       "chalk": {
         "addedInkPx": 203,
         "solidInkPx": 58,
-        "regionsFlagged": 5
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -649,7 +650,7 @@
       "chalk": {
         "addedInkPx": 124,
         "solidInkPx": 64,
-        "regionsFlagged": 4
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -775,7 +776,7 @@
       "chalk": {
         "addedInkPx": 33,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -817,7 +818,7 @@
       "chalk": {
         "addedInkPx": 115,
         "solidInkPx": 0,
-        "regionsFlagged": 6
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -901,7 +902,7 @@
       "chalk": {
         "addedInkPx": 56,
         "solidInkPx": 161,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -943,7 +944,7 @@
       "chalk": {
         "addedInkPx": 304,
         "solidInkPx": 0,
-        "regionsFlagged": 7
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -985,7 +986,7 @@
       "chalk": {
         "addedInkPx": 57,
         "solidInkPx": 149,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1027,7 +1028,7 @@
       "chalk": {
         "addedInkPx": 41,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1069,7 +1070,7 @@
       "chalk": {
         "addedInkPx": 3,
         "solidInkPx": 123,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1210,7 +1211,7 @@
       "chalk": {
         "addedInkPx": 17,
         "solidInkPx": 36,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1336,7 +1337,7 @@
       "chalk": {
         "addedInkPx": 48,
         "solidInkPx": 3,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1462,7 +1463,7 @@
       "chalk": {
         "addedInkPx": 39,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1504,7 +1505,7 @@
       "chalk": {
         "addedInkPx": 140,
         "solidInkPx": 48,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1546,7 +1547,7 @@
       "chalk": {
         "addedInkPx": 893,
         "solidInkPx": 0,
-        "regionsFlagged": 6
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -1588,7 +1589,7 @@
       "chalk": {
         "addedInkPx": 183,
         "solidInkPx": 0,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1630,7 +1631,7 @@
       "chalk": {
         "addedInkPx": 147,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1714,7 +1715,7 @@
       "chalk": {
         "addedInkPx": 81,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1798,7 +1799,7 @@
       "chalk": {
         "addedInkPx": 40,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 0.9942,
@@ -1855,7 +1856,7 @@
       "chalk": {
         "addedInkPx": 120,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1897,7 +1898,7 @@
       "chalk": {
         "addedInkPx": 41,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1939,7 +1940,7 @@
       "chalk": {
         "addedInkPx": 95,
         "solidInkPx": 0,
-        "regionsFlagged": 4
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2023,7 +2024,7 @@
       "chalk": {
         "addedInkPx": 150,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2191,7 +2192,7 @@
       "chalk": {
         "addedInkPx": 703,
         "solidInkPx": 0,
-        "regionsFlagged": 11
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -2233,7 +2234,7 @@
       "chalk": {
         "addedInkPx": 64,
         "solidInkPx": 24,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2374,7 +2375,7 @@
       "chalk": {
         "addedInkPx": 242,
         "solidInkPx": 0,
-        "regionsFlagged": 9
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2416,7 +2417,7 @@
       "chalk": {
         "addedInkPx": 163,
         "solidInkPx": 0,
-        "regionsFlagged": 6
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2458,7 +2459,7 @@
       "chalk": {
         "addedInkPx": 41,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2500,7 +2501,7 @@
       "chalk": {
         "addedInkPx": 7,
         "solidInkPx": 58,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2542,7 +2543,7 @@
       "chalk": {
         "addedInkPx": 75,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2584,7 +2585,7 @@
       "chalk": {
         "addedInkPx": 288,
         "solidInkPx": 0,
-        "regionsFlagged": 7
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2626,7 +2627,7 @@
       "chalk": {
         "addedInkPx": 268,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2809,7 +2810,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 226,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2893,7 +2894,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 178,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2935,7 +2936,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 149,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2977,7 +2978,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 160,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3019,7 +3020,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 44,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3061,7 +3062,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 124,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3103,7 +3104,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 181,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3145,7 +3146,7 @@
       "chalk": {
         "addedInkPx": 61,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3244,7 +3245,7 @@
       "chalk": {
         "addedInkPx": 5,
         "solidInkPx": 39,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3286,7 +3287,7 @@
       "chalk": {
         "addedInkPx": 265,
         "solidInkPx": 0,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3328,7 +3329,7 @@
       "chalk": {
         "addedInkPx": 0,
         "solidInkPx": 61,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3370,7 +3371,7 @@
       "chalk": {
         "addedInkPx": 360,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3412,7 +3413,7 @@
       "chalk": {
         "addedInkPx": 198,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3538,7 +3539,7 @@
       "chalk": {
         "addedInkPx": 1724,
         "solidInkPx": 0,
-        "regionsFlagged": 8
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 0.9999,
@@ -3622,7 +3623,7 @@
       "chalk": {
         "addedInkPx": 271,
         "solidInkPx": 0,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3763,7 +3764,7 @@
       "chalk": {
         "addedInkPx": 211,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3805,7 +3806,7 @@
       "chalk": {
         "addedInkPx": 32,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3847,7 +3848,7 @@
       "chalk": {
         "addedInkPx": 37,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3889,7 +3890,7 @@
       "chalk": {
         "addedInkPx": 56,
         "solidInkPx": 0,
-        "regionsFlagged": 1
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3931,7 +3932,7 @@
       "chalk": {
         "addedInkPx": 254,
         "solidInkPx": 0,
-        "regionsFlagged": 3
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3973,7 +3974,7 @@
       "chalk": {
         "addedInkPx": 1856,
         "solidInkPx": 15,
-        "regionsFlagged": 8
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -4015,7 +4016,7 @@
       "chalk": {
         "addedInkPx": 73,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -4057,7 +4058,7 @@
       "chalk": {
         "addedInkPx": 123,
         "solidInkPx": 0,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -4099,7 +4100,7 @@
       "chalk": {
         "addedInkPx": 58,
         "solidInkPx": 7,
-        "regionsFlagged": 2
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,

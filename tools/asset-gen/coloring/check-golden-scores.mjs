@@ -42,6 +42,7 @@ import {
   GHOST_SIDE_COVERAGE_MIN,
 } from '../lib/outline-frame.mjs';
 import { GOLDEN_VERDICTS, diffGoldenPage, scoreGoldenPage } from '../lib/golden-catalog.mjs';
+import { CHALK_INK_DIFF_MAX_DEFAULT } from '../lib/chalk-ink-diff.mjs';
 import {
   DRIFT_THRESHOLD_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
@@ -118,6 +119,7 @@ async function scoreCatalog() {
         frameSideCoverageMin: FRAME_SIDE_COVERAGE_MIN,
         ghostLumaMax: GHOST_LUMA_MAX,
         ghostSideCoverageMin: GHOST_SIDE_COVERAGE_MIN,
+        chalkInkDiffMax: CHALK_INK_DIFF_MAX_DEFAULT,
       },
       pages,
     },

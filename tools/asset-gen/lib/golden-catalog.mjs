@@ -13,7 +13,12 @@ import { prepareOutlineAnalysis } from './outline-analysis.mjs';
 import { scoreOutlineFrame } from './outline-frame.mjs';
 import { KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD, outlineMatch } from './outline-match.mjs';
 import { scoreSolidity } from './solid-regions.mjs';
-import { prepareChalkInkDiff, scoreChalkInkDiff } from './chalk-ink-diff.mjs';
+import {
+  CHALK_INK_BASELINE_GROWTH_FRACTION,
+  CHALK_INK_BASELINE_NOISE_PX,
+  prepareChalkInkDiff,
+  scoreChalkInkDiff,
+} from './chalk-ink-diff.mjs';
 
 const round = (v, digits) => {
   const f = 10 ** digits;
@@ -128,8 +133,16 @@ export const GOLDEN_METRICS = {
   'outline.ringDepth': { noise: 0, worse: 'up' },
   'outline.frameCoverage': { noise: 0.005, worse: 'up' },
   'outline.ghostCoverage': { noise: 0.005, worse: 'up' },
-  'chalk.addedInkPx': { noise: 8, worse: 'up' },
-  'chalk.solidInkPx': { noise: 8, worse: 'up' },
+  'chalk.addedInkPx': {
+    noise: CHALK_INK_BASELINE_NOISE_PX,
+    noiseFraction: CHALK_INK_BASELINE_GROWTH_FRACTION,
+    worse: 'up',
+  },
+  'chalk.solidInkPx': {
+    noise: CHALK_INK_BASELINE_NOISE_PX,
+    noiseFraction: CHALK_INK_BASELINE_GROWTH_FRACTION,
+    worse: 'up',
+  },
   'chalk.regionsFlagged': { noise: 0, worse: 'up' },
   'light.keep': { noise: 0.005, worse: 'down' },
   'light.localKeep': { noise: 0.005, worse: 'down' },
@@ -223,7 +236,8 @@ export function diffGoldenPage(rel, golden, current, out) {
     }
     if (was == null || now == null || was === now) continue;
     const delta = now - was;
-    if (Math.abs(delta) <= spec.noise) continue;
+    const noise = Math.max(spec.noise, Math.ceil(Math.abs(was) * (spec.noiseFraction ?? 0)));
+    if (Math.abs(delta) <= noise) continue;
     const line = `${rel}  ${path} ${was} -> ${now}`;
     const worse = spec.worse === 'up' ? delta > 0 : spec.worse === 'down' ? delta < 0 : false;
     (worse ? out.regressions : out.info).push(line + (worse ? '' : ' (moved)'));

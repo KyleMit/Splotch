@@ -127,8 +127,9 @@ else (both offline, no key):
   rings/page frames, chalk regional ink diff, light keep/localKeep + eyes, night
   drift/bgLuma/lineWhite + eyes), written by `update:coloring-golden-scores`.
   `check:coloring-golden-scores` re-scores (~1 min) and exits non-zero on any verdict flip or
-  bad-direction movement — run it after any pipeline or asset change, and re-freeze to adopt
-  intended changes.
+  bad-direction movement beyond its calibrated noise band. Chalk region maxima use the generation
+  baseline's 10% or 8 px tolerance, whichever is larger. Run it after any pipeline or asset change,
+  and re-freeze to adopt intended changes.
 * **`golden/asset-manifest.sha256`** — one sha256 line per committed art asset (shipped coloring
   pages, style covers, `fill-src/` raws), written by `gen:assets:manifest` and verified in CI by
   `check:assets:manifest`. It turns binary churn into a reviewable text diff and guards the

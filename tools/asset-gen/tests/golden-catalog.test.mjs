@@ -58,6 +58,15 @@ describe('golden catalog chalk ink direction', () => {
     expect(out.regressions).toContain('fixture/page  chalk.addedInkPx 20 -> 40');
     expect(out.regressions).toContain('fixture/page  chalk.regionsFlagged 0 -> 1');
   });
+
+  it('scales the chalk ink noise band with the approved region', () => {
+    const withinNoise = diff({ chalk: { addedInkPx: 500 } }, { chalk: { addedInkPx: 550 } });
+    const beyondNoise = diff({ chalk: { addedInkPx: 500 } }, { chalk: { addedInkPx: 551 } });
+
+    expect(withinNoise.regressions).toEqual([]);
+    expect(withinNoise.info).toEqual([]);
+    expect(beyondNoise.regressions).toContain('fixture/page  chalk.addedInkPx 500 -> 551');
+  });
 });
 
 describe('golden catalog blank-orb verdict', () => {
