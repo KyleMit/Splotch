@@ -28,43 +28,102 @@ runs:
         # (playwright.config.ts omits it when the binary is absent).
         key: playwright-${{ runner.os }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
 
-    # Both steps below are bounded, because a composite action's steps cannot take
-    # `timeout-minutes` — only job steps can. A degraded runner starves them of bandwidth,
-    # and unbounded that reads as a hung test: the job's own timeout cancels every
-    # remaining step, so nothing downstream can report which one was slow. This rescues no
-    # run — the recovery unit is the runner, and nothing inside a job can change runners —
-    # it only makes the diagnosis cheap.
+    - name: Resolve apt package cache layout
+      id: apt-layout
+      shell: bash
+      # The runner image identity is part of the key because a cached .deb set is only
+      # complete against the package lists baked into that exact image build — a new
+      # image rotates the key and the bounded network step below rebuilds the set.
+      run: |
+        echo "deb-dir=$HOME/.cache/playwright-apt-debs" >> "$GITHUB_OUTPUT"
+        echo "image=${ImageOS:-unknown-os}-${ImageVersion:-unknown-version}" >> "$GITHUB_OUTPUT"
+
+    - name: Cache apt packages
+      id: apt-cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.apt-layout.outputs.deb-dir }}
+        key: playwright-apt-${{ steps.apt-layout.outputs.image }}-${{ inputs.browsers }}-${{ steps.playwright-version.outputs.version }}
+
+    # Installing from the cached .deb set is what keeps the common path off the network:
+    # `playwright install-deps` opens with an unconditional `apt-get update`, so even a
+    # warm /var/cache/apt cannot make that command network-free — the cached files have
+    # to be handed straight to apt instead. --no-download makes apt fail fast rather
+    # than fetch if the set stopped being complete, and the --dry-run check is a local
+    # `apt-get install -s` that exits non-zero on any missing package. Every failure
+    # routes to the bounded network step below, so a stale cache costs seconds, not a
+    # run — which is why this step is unbounded and never red.
+    - name: Install system deps from cached packages
+      id: offline-deps
+      if: steps.apt-cache.outputs.cache-hit == 'true'
+      shell: bash
+      env:
+        DEB_DIR: ${{ steps.apt-layout.outputs.deb-dir }}
+      run: |
+        install_from_cache() {
+          shopt -s nullglob
+          local debs=("$DEB_DIR"/*.deb)
+          if ((${#debs[@]})); then
+            sudo apt-get install -y --no-install-recommends --no-download "${debs[@]}"
+          fi
+          npx playwright install-deps --dry-run ${{ inputs.browsers }}
+        }
+        if install_from_cache; then
+          echo "complete=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning title=Playwright apt cache incomplete::Cached packages did not satisfy install-deps; falling back to the bounded network install."
+          echo "complete=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    # Both network steps below are bounded, because a composite action's steps cannot
+    # take `timeout-minutes` — only job steps can. A degraded runner starves them of
+    # bandwidth, and unbounded that reads as a hung test: the job's own timeout cancels
+    # every remaining step, so nothing downstream can report which one was slow. The
+    # bound rescues no run — the recovery unit is the runner, and nothing inside a job
+    # can change runners — it makes the diagnosis cheap and stamps the annotation that
+    # rerun-setup-timeouts.yml keys the automatic one-shot re-run on.
     #
     # SIGTERM alone would not end these. npm's run-script installs a deliberate no-op
     # SIGTERM handler, and playwright runs apt under `sudo`, which defaults to `use_pty`
     # and so leaves apt in a session outside the group being signalled. --kill-after
     # escalates to SIGKILL, which neither can decline.
-    - name: Install Playwright browsers
-      if: steps.playwright-cache.outputs.cache-hit != 'true'
-      shell: bash
-      # This branch installs the same apt packages as the one below and then downloads a
-      # browser, so it needs more room — but not so much that expiry lands past the job's
-      # own timeout, which would leave the bound unreachable.
-      env:
-        SETUP_TIMEOUT_S: '420'
-        SETUP_KILL_GRACE_S: '30'
-      run: |
-        timeout --kill-after="$SETUP_KILL_GRACE_S" "$SETUP_TIMEOUT_S" \
-          npx playwright install --with-deps ${{ inputs.browsers }} \
-          || "$GITHUB_ACTION_PATH/report-setup-timeout.sh" $? "$SETUP_TIMEOUT_S" 'browser install'
-
-    # The browser binaries cache, but the apt packages don't — install-deps
-    # is still required on a cache hit.
     - name: Install Playwright system deps
-      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      if: steps.apt-cache.outputs.cache-hit != 'true' || steps.offline-deps.outputs.complete != 'true'
       shell: bash
-      # One bound serves both callers, so it has to clear the slower of the two — WebKit
-      # pulls far more packages than Chromium — with room for ordinary variance, while
-      # still tripping long before the job timeout can cancel the step instead.
+      # One bound serves every caller, so it has to clear the slower of the browser
+      # sets — WebKit pulls far more packages than Chromium — with room for ordinary
+      # variance, while still tripping long before the job timeout can cancel the step
+      # instead.
       env:
         SETUP_TIMEOUT_S: '180'
         SETUP_KILL_GRACE_S: '30'
+        DEB_DIR: ${{ steps.apt-layout.outputs.deb-dir }}
+      # apt-get (unlike the `apt` porcelain) leaves what it downloads in
+      # /var/cache/apt/archives; copying those files aside after a successful install
+      # is what the offline step above consumes. The cache action's post step persists
+      # them only when this run's key missed and the job succeeds, so a timed-out
+      # install can never poison the cache.
       run: |
         timeout --kill-after="$SETUP_KILL_GRACE_S" "$SETUP_TIMEOUT_S" \
           npx playwright install-deps ${{ inputs.browsers }} \
           || "$GITHUB_ACTION_PATH/report-setup-timeout.sh" $? "$SETUP_TIMEOUT_S" 'system deps'
+        mkdir -p "$DEB_DIR"
+        shopt -s nullglob
+        debs=(/var/cache/apt/archives/*.deb)
+        if ((${#debs[@]})); then
+          cp -- "${debs[@]}" "$DEB_DIR"/
+        fi
+
+    - name: Install Playwright browsers
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      shell: bash
+      # Browser download only — the system packages are owned by the steps above — so
+      # the bound covers the larger WebKit archive with ordinary variance and still
+      # expires well before the job timeout.
+      env:
+        SETUP_TIMEOUT_S: '300'
+        SETUP_KILL_GRACE_S: '30'
+      run: |
+        timeout --kill-after="$SETUP_KILL_GRACE_S" "$SETUP_TIMEOUT_S" \
+          npx playwright install ${{ inputs.browsers }} \
+          || "$GITHUB_ACTION_PATH/report-setup-timeout.sh" $? "$SETUP_TIMEOUT_S" 'browser install'

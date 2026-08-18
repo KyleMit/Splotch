@@ -211,14 +211,15 @@ jobs:
           retention-days: 7
 
   # WebKit's apt dependencies are the expensive half of the Ubuntu browser
-  # install: `--with-deps webkit` adds the whole GStreamer/ffmpeg media stack
-  # (~110 packages / 60 MB) that Chromium doesn't need, and the browser binaries
-  # cache while the apt packages can't — so that cost lands on every run. Paying
-  # it in a job parallel to Tests, rather than inside it, keeps ~40s off the
-  # critical path for what is four tests. The alternative — hand-listing the
-  # subset of WebKit's libraries this app actually links against — was measured
-  # as the slower option and pins ~23 apt package names that churn across Ubuntu
-  # releases, which `playwright install-deps` tracks upstream for free.
+  # install: WebKit adds the whole GStreamer/ffmpeg media stack (~110 packages /
+  # 60 MB) that Chromium doesn't need, and installing it lands on every run —
+  # setup-playwright's apt package cache takes the network out of that install,
+  # not the install itself. Paying it in a job parallel to Tests, rather than
+  # inside it, keeps ~40s off the critical path for what is four tests. The
+  # alternative — hand-listing the subset of WebKit's libraries this app
+  # actually links against — was measured as the slower option and pins ~23 apt
+  # package names that churn across Ubuntu releases, which
+  # `playwright install-deps` tracks upstream for free.
   webkit-smoke:
     name: WebKit smoke
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}

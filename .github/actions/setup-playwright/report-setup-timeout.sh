@@ -17,8 +17,10 @@ label=$3
 
 if [ "$status" = "$TIMEOUT_EXIT_STATUS" ] || [ "$status" = "$KILLED_EXIT_STATUS" ]; then
   echo "::error title=Playwright ${label} timed out::Exceeded ${bound_seconds}s." \
-    'Network starvation on this runner, not a test failure — re-run the job to get a' \
-    'different machine. Nothing inside a job can change runners.'
+    'Network starvation on this runner, not a test failure — a different machine is the' \
+    'remedy, and nothing inside a job can change runners. rerun-setup-timeouts.yml re-runs' \
+    'the failed jobs once automatically; a check that stays red has spent that re-run, so' \
+    're-run the job by hand.'
 else
   echo "::error title=Playwright ${label} failed::Exit status ${status}."
 fi

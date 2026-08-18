@@ -1,0 +1,66 @@
+# The bounded Playwright setup steps (.github/actions/setup-playwright on Ubuntu,
+# .github/actions/setup-playwright-webkit on macOS) fail with a labelled annotation
+# when a network-starved runner drags them past their bound. The documented remedy is
+# a re-run — the recovery unit is the runner, and only a fresh job gets a fresh
+# machine — so this workflow performs that remedy automatically, exactly once.
+#
+# Two guards keep it honest: `run_attempt == 1` makes it one-shot, so a second starved
+# machine surfaces as an ordinary red check instead of a re-run loop; and the marker
+# must appear on *every* failed job, so a run that also carries a real test failure is
+# left for a human and no genuine failure earns a free retry.
+name: Auto-rerun setup timeouts
+
+on:
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
+
+permissions:
+  actions: write
+  checks: read
+
+jobs:
+  rerun:
+    name: Re-run network-starved setup once
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # An Actions job is a check run, so its ::error annotations are read back through
+      # the check-runs API under the job's own id.
+      - name: Re-run failed jobs when every failure is a setup timeout
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          # Must match every timeout title report-setup-timeout.sh and the
+          # setup-playwright-webkit annotation emit, and nothing else they emit —
+          # tools/tests/rerun-setup-timeouts.test.mjs fails on divergence.
+          SETUP_TIMEOUT_MARKER_PATTERN: '^Playwright .+ timed out$'
+        run: |
+          failed_jobs_output="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?filter=latest&per_page=100" \
+            --jq '.jobs[] | select(.conclusion == "failure") | .id')"
+          # No mapfile: tools/tests/rerun-setup-timeouts.test.mjs executes this script
+          # with the system bash, and macOS ships Bash 3.2.
+          failed_job_ids=()
+          while IFS= read -r job_id; do
+            [ -n "$job_id" ] && failed_job_ids+=("$job_id")
+          done <<< "$failed_jobs_output"
+
+          if ((${#failed_job_ids[@]} == 0)); then
+            echo 'No failed jobs to examine; nothing to re-run.'
+            exit 0
+          fi
+
+          for job_id in "${failed_job_ids[@]}"; do
+            titles="$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/check-runs/${job_id}/annotations?per_page=100" \
+              --jq '.[] | (.title // "")')"
+            if ! grep -Eq "$SETUP_TIMEOUT_MARKER_PATTERN" <<<"$titles"; then
+              echo "Job ${job_id} failed without the setup-timeout annotation; leaving the run for a human."
+              exit 0
+            fi
+          done
+
+          echo 'Every failed job hit a Playwright setup bound; re-running the failed jobs once for fresh machines.'
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/rerun-failed-jobs"
