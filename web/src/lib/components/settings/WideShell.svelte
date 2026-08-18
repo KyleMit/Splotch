@@ -310,9 +310,29 @@
   // offsets the parent left them at — which would reopen with the landing
   // section highlighted while the pane still shows wherever they stopped
   // reading. A deep-linked section scrolls into place instead of swapping in.
+  // Whether the overlay was open the last time the landing effect ran.
+  // Deliberately untracked (SettingsModal's own latch, for the same reason):
+  // only the open *transition* may drop the presentation watermark — a
+  // deep-link landing while already open must never blank the visible pane.
+  let landingWasOpen = false;
+
   $effect(() => {
-    if (!settingsModal.open) return;
+    if (!settingsModal.open) {
+      landingWasOpen = false;
+      return;
+    }
+    const opening = !landingWasOpen;
+    landingWasOpen = true;
     const landing = landingSection;
+    // A quick close-then-reopen can beat the after-close restaging — on the
+    // shipping iOS path (no requestIdleCallback) the cooperative fallback
+    // drains one section per ~quarter second, so a reopen half a second later
+    // still finds most sections presented, and showModal's flip would repaint
+    // them all at once (the physical-iPad open gate scored exactly that
+    // paint). Dropping the watermark here, in the same flush as the flip,
+    // guarantees the open frame paints nothing regardless of how far the
+    // restaging got; the frame callback below then presents the fold.
+    if (opening) presentedCount = 0;
     // Landing on Parent Center is only ever requested by a solved challenge (the
     // gate's own way into the policy editor), so that landing arrives already
     // unlocked — asking again for the section the solve was spent on would make

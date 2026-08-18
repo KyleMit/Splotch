@@ -126,7 +126,12 @@ function normalizeUndo(source, productCommit, sourceDirectory) {
 function normalizeActionCapture(spec, sourceDirectory) {
   const profile = readJson(sourcePath(spec.source, sourceDirectory));
   const labels = spec.labels ? new Set(spec.labels) : null;
-  const summaries = profile.samples ? summarizeActions(profile.samples) : profile.summaries;
+  // A capture is re-scored under its own recorded gate exceptions (ADR-0090
+  // amendment); one without the field — every capture predating it, and every
+  // non-iOS target — stays on the base gates.
+  const summaries = profile.samples
+    ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {})
+    : profile.summaries;
   const results = summaries
     .filter((summary) => !labels || labels.has(summary.label))
     .map((summary) => ({

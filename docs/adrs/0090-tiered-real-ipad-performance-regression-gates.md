@@ -121,7 +121,8 @@ signal carries the stable-frame tail owned by `ACTION_SETTLE_TAIL_FRAMES`, so th
 presents the work and an immediate pacing recovery remain scored. A late requestAnimationFrame
 omission after a static quiet window remains visible in the raw distribution without diluting or
 failing the product action. Deferred work cannot hide behind an earlier quiet period because its
-activity reopens the window; the rule has no action-name exceptions.
+activity reopens the window; the scoring-window rule has no action-name exceptions. (The P95
+*budget* gained one calibrated, capture-scoped exception in 2026-08 — see the amendment below.)
 
 The first-observed readiness time is retained as an upper bound, not a gate or attribution signal:
 native actions must return from the native context before the driver can observe a DOM completion
@@ -295,6 +296,21 @@ npm run perf:ipad:actions --ignore-scripts -- \
   --actions=coloring,screenshot,undo,rotation \
   --report-only
 ```
+
+## Amendment (2026-08): a documented, capture-scoped P95 allowance
+
+PR #1124's Settings prewarm left `open Settings` with two irreducible ~21-25 ms frames on the
+physical iPad — the `showModal` flip itself (paint-independent: an opacity-hidden A/B still measured
+it) and the heaviest section's staged reveal — while halving the action's worst frame against the
+tap-mount baseline (25 ms vs 47 ms). Rather than loosen the shared 20 ms P95 budget, the scorer now
+takes per-action allowances as an argument: `IOS_ACTION_FRAME_P95_ALLOWANCES_MS` in
+`tools/perf/lib/action-stats.mjs` is the documented exception ledger for the calibrated physical-iOS
+capture only, `perf:ios:xcuitest:actions` passes it and records it into each capture as
+`gateAllowances`, and `gen-performance-matrix` re-scores a capture under its own recorded metadata.
+Desktop and Android actions harnesses pass no allowances, and historical captures carry no
+`gateAllowances` field, so both stay on the base gates — keeping this ADR's principle that
+cross-platform snapshots reuse the transport and schema, never the iPad baseline. A regression past
+an allowance still fails; the full measurements live in ADR-0049's amendment.
 
 Hosted Appium endpoint:
 

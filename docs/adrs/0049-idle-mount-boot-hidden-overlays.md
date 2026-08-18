@@ -110,11 +110,12 @@ Measured end state (iPadOS 26.5, 120 Hz, warmup + 3 scored): idle 17 ms P95 / 26
 itself, paint-independent by the opacity A/B, and the heaviest section's reveal), so `open
 Settings`
 carries a **documented 26 ms P95 allowance** in `tools/perf/lib/action-stats.mjs`
-(`ACTION_FRAME_P95_ALLOWANCES_MS`) — an accepted exception, not a loosened gate: the same change
-halved the worst open frame against the tap-mount baseline (25 ms vs 47 ms) and removed its
-mid-animation 41-45 ms paint stalls, and a regression past the allowance still fails. On desktop the
-staged open eliminated the first-open long task outright (0 long tasks, shown in 18 ms vs 13 ms
-reopens, 4× throttle).
+(`IOS_ACTION_FRAME_P95_ALLOWANCES_MS`, scoped to the calibrated physical-iOS capture and recorded
+into each capture as `gateAllowances` — ADR-0090's amendment) — an accepted exception, not a
+loosened gate: the same change halved the worst open frame against the tap-mount baseline (25 ms vs
+47 ms) and removed its mid-animation 41-45 ms paint stalls, and a regression past the allowance
+still fails. On desktop the staged open eliminated the first-open long task outright (0 long tasks,
+shown in 18 ms vs 13 ms reopens, 4× throttle).
 
 Two readings shift with this: `npm run perf:web:settings` now measures what the tap actually is
 after this change — **first-show latency on an already-warm dialog, scored against a reopen in the

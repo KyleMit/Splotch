@@ -1,17 +1,21 @@
 import { percentile } from './real-screen-stats.mjs';
 
 export const ACTION_FRAME_P95_GATE_MS = 20;
-// Documented per-action exceptions to the P95 gate, each a measured, accepted
-// residual rather than a loosened default. 'open Settings' presents a
-// prewarmed pane (ADR-0049 amendment; PR #1124): its open carries exactly two
-// ~21-25 ms frames that no hidden state can prepay — the showModal flip
-// itself, and the heaviest section's staged reveal — while its worst frame
-// halved against the tap-mount baseline (25 ms vs the base's 47 ms) and the
-// mid-animation 41-45 ms paint stalls were eliminated. Measured on the
-// physical iPad (iPadOS 26.5, 120 Hz); the list is shared by every actions
-// harness so there is one exception ledger. A regression past an allowance
-// still fails.
-export const ACTION_FRAME_P95_ALLOWANCES_MS = {
+// Documented per-action exceptions to the P95 gate for the calibrated
+// physical-iOS capture ONLY (ADR-0090's amendment) — each a measured,
+// accepted residual rather than a loosened default, and never applied by
+// default: the scorer takes allowances as an argument, the iOS harness
+// passes this ledger and records it into its capture as `gateAllowances`,
+// and every other target (desktop, Android, and matrix re-summaries of
+// captures that carry no metadata) stays on the base gates. 'open Settings'
+// presents a prewarmed pane (ADR-0049 amendment; PR #1124): its open carries
+// exactly two ~21-25 ms frames that no hidden state can prepay — the
+// showModal flip itself, and the heaviest section's staged reveal — while
+// its worst frame halved against the tap-mount baseline (25 ms vs the base's
+// 47 ms) and the mid-animation 41-45 ms paint stalls were eliminated.
+// Measured on the physical iPad (iPadOS 26.5, 120 Hz). A regression past an
+// allowance still fails.
+export const IOS_ACTION_FRAME_P95_ALLOWANCES_MS = {
   'open Settings': 26,
 };
 // Two exact 60 Hz vsync intervals are 33.33 ms; the next interval is the visible 50 ms freeze.
@@ -96,7 +100,7 @@ export function scoredActionFrameGaps(action) {
   return scored;
 }
 
-export function summarizeActionGroup(actions, label) {
+export function summarizeActionGroup(actions, label, allowances = {}) {
   const hasWarmupMetadata = actions.some((action) => typeof action.warmup === 'boolean');
   const scoredActions = hasWarmupMetadata ? actions.filter((action) => !action.warmup) : actions;
   const frameGaps = scoredActions.flatMap(scoredActionFrameGaps);
@@ -119,7 +123,7 @@ export function summarizeActionGroup(actions, label) {
     scoredActions.length >= minimumSamples &&
     activation.passed &&
     firstFrame.p95 <= ACTION_FIRST_FRAME_GATE_MS &&
-    frames.p95 <= (ACTION_FRAME_P95_ALLOWANCES_MS[label] ?? ACTION_FRAME_P95_GATE_MS) &&
+    frames.p95 <= (allowances[label] ?? ACTION_FRAME_P95_GATE_MS) &&
     frames.max <= ACTION_FRAME_MAX_GATE_MS;
   return {
     count: scoredActions.length,
@@ -136,7 +140,7 @@ export function summarizeActionGroup(actions, label) {
   };
 }
 
-export function summarizeActions(actions, expectedLabels = []) {
+export function summarizeActions(actions, expectedLabels = [], allowances = {}) {
   const groups = new Map();
   for (const action of actions) {
     const entries = groups.get(action.label) ?? [];
@@ -148,7 +152,7 @@ export function summarizeActions(actions, expectedLabels = []) {
   }
   return [...groups.entries()].map(([label, entries]) => ({
     label,
-    ...summarizeActionGroup(entries, label),
+    ...summarizeActionGroup(entries, label, allowances),
   }));
 }
 

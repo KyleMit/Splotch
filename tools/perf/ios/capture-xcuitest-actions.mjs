@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
 import {
+  IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
   MIN_GATED_SAMPLES,
   WARMUP_REPEATS,
   actionFailures,
@@ -1497,7 +1498,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       );
     }
 
-    const summaries = summarizeActions(samples, expectedLabels);
+    const summaries = summarizeActions(samples, expectedLabels, IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
@@ -1521,6 +1522,10 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       orientation: originalOrientation,
       samples,
       summaries,
+      // The gate exceptions this capture was scored under (ADR-0090 amendment):
+      // re-summarizers read them from here, so a capture carries its own
+      // calibration and historical captures without the field stay on base gates.
+      gateAllowances: IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
       passed: failures.length === 0,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);

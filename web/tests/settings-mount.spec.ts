@@ -183,6 +183,55 @@ test('idle time prewarms the pane so a first open finds it whole', async ({ page
   await expect(page.locator('.settings-pane')).toHaveAttribute('aria-busy', 'false');
 });
 
+test('a quick reopen without requestIdleCallback opens paint-clean', async ({ page }) => {
+  // iOS has no requestIdleCallback, so the after-close restaging drains on the
+  // cooperative timer fallback — far slower than a parent's close-then-reopen.
+  // The opening transition therefore drops the presentation watermark itself,
+  // in the same flush as the flip, so showModal never paints leftover sections
+  // (the physical-iPad open gate scored exactly that paint). Asserted on the
+  // first frame the reopened dialog reports [open]: at most the above-the-fold
+  // prefix may be presented there.
+  await page.addInitScript(() => {
+    (window as { requestIdleCallback?: unknown }).requestIdleCallback = undefined;
+  });
+  await gotoApp(page);
+  await openSettingsModal(page);
+  // Let the reveal pump finish, so a stale watermark would be at its maximum.
+  await expect
+    .poll(async () => {
+      const rows = await page.locator('.settings-nav .toc-row').count();
+      const presented = await page.locator('.settings-pane .settings-section:not(.staged)').count();
+      return rows > 0 && presented === rows;
+    })
+    .toBe(true);
+
+  const QUICK_REOPEN_MS = 500;
+  const presentedAtReopen = await page.evaluate(
+    (quickReopenMs) =>
+      new Promise<number>((resolve) => {
+        document.querySelector<HTMLElement>('.settings-close')!.click();
+        setTimeout(() => {
+          document.querySelector<HTMLElement>('#settingsButton')!.click();
+          const step = () => {
+            const dialog = document.querySelector('#settingsModal');
+            if (!dialog?.hasAttribute('open')) {
+              requestAnimationFrame(step);
+              return;
+            }
+            resolve(
+              document.querySelectorAll('.settings-pane .settings-section:not(.staged)').length
+            );
+          };
+          requestAnimationFrame(step);
+        }, quickReopenMs);
+      }),
+    QUICK_REOPEN_MS
+  );
+  // The fold may already be presented by the landing frame callback; anything
+  // past it is a leftover the flip would have painted.
+  expect(presentedAtReopen).toBeLessThanOrEqual(2);
+});
+
 // Frames to keep watching the pane after it has said it is ready. A nested pump
 // costs a frame per step, so this covers several of them.
 const POST_READY_FRAMES = 15;

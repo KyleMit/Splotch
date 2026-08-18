@@ -1,15 +1,19 @@
 // First-show cost of the Settings dialog, scored against a reopen. The dialog
 // mounts closed, its pane prewarms at idle, and the closed card stays laid
-// out but hidden (ADR-0049's amendment), so a first tap paints the whole pane
-// at once with its style and layout already paid. What remains on the first
-// show — the open edge's own restyle and the subtree's first paint — is
-// unpayable from any hidden state, so the pair is the measurement: the
-// first-open-over-reopen gap is that residual, and the number to watch for
-// regressions. Measured on the production build with a `longtask`
-// PerformanceObserver, the wide table-of-contents shell against the phone
-// hub, which renders the same modal chrome and the same eleven rows with no
-// section bodies at all. The settle before the tap is what lets the idle
-// prewarm finish; a tap that beats idle (the cold path) is not scored here.
+// out but hidden (ADR-0049's amendment) — with presentation staged separately
+// from layout: the open flip itself paints nothing, the above-the-fold
+// sections paint one frame later, and the rest reveal one per frame after the
+// fly-in lands. "Shown" therefore means the first presented section inside an
+// [open] dialog — the moment a parent first sees content — not the pane
+// merely existing (the prewarmed pane satisfies weaker selectors before any
+// tap) and not the whole pane (whose remainder deliberately arrives over
+// frames). The first-open-over-reopen gap is the open edge's unpayable
+// residual, and the number to watch for regressions. Measured on the
+// production build with a `longtask` PerformanceObserver, the wide
+// table-of-contents shell against the phone hub, which renders the same modal
+// chrome and the same eleven rows with no section bodies at all. The settle
+// before the tap is what lets the idle prewarm finish; a tap that beats idle
+// (the cold path) is not scored here.
 //
 //   npm run perf:web:settings                       (both shells, 4x CPU throttle)
 //   node tools/perf/web/capture-settings-open.mjs --throttle=1 --repeats=5 --no-build
@@ -29,13 +33,15 @@ import { LONG_TASK_MS } from '../lib/performance-thresholds.mjs';
 
 // The two shells the section list renders into, at the viewport that selects
 // each (SettingsModal's 700px WIDE_QUERY). The hub is not a variant under test —
-// it is the baseline, unchanged by this work. Gated on `[open]`: the prewarmed
-// pane satisfies the bare selector before the tap, so only the open attribute
-// distinguishes "shown" from "warm and waiting".
+// it is the baseline, unchanged by this work. Each ready selector is the
+// shell's first *presented* content inside an [open] dialog: the wide pane's
+// first unstaged section (aria-busy went false at prewarm, long before any
+// tap, and staged sections are laid out but invisible — neither is "shown"),
+// and the hub's rows, which are never staged.
 const SHELLS = {
   wide: {
     device: DEVICES.desktop,
-    ready: '#settingsModal[open] .settings-pane[aria-busy="false"]',
+    ready: '#settingsModal[open] .settings-pane .settings-section:not(.staged)',
   },
   'phone-hub': { device: DEVICES.phone, ready: '#settingsModal[open] .hub-row' },
 };
