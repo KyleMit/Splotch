@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -5,22 +6,27 @@ import {
   MIN_ANDROID_RELEASE,
 } from '../../../../web/src/lib/components/beta/androidBeta.ts';
 import { themes } from '../../../../web/src/lib/design/tokens.ts';
-import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
+import { CURRENT_ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
+import {
+  androidEmulatorApiLevels,
+  uniqueAndroidEmulatorApiLevels,
+} from '../print-emulator-api-levels.mjs';
 
 const read = (p) => readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
+const privacyInventory = JSON.parse(read('tools/mobile/privacy-permission-inventory.json'));
 
 // Files allowed to carry the emulator API level / AVD name as literals — each
-// goes red the moment a literal disagrees with ANDROID_API_LEVEL. Deliberately
+// goes red the moment a literal disagrees with CURRENT_ANDROID_API_LEVEL. Deliberately
 // an allowlist, not a repo-wide grep: historical documents (docs/AUDIT*.md,
 // docs/audit-deferred/, /scrapbook) legitimately mention old values, and only
 // .ruler/ sources are enforced — ruler:check already gates the generated
 // .claude/.agents mirrors.
 const ENFORCED = [
   'package.json',
-  '.github/workflows/android-deploy.yml',
   'docs/MOBILE/android.md',
   'docs/TESTING.md',
   'docs/COMPATIBILITY.md',
+  'docs/DEPENDENCIES.md',
 ];
 
 // Context-anchored so unrelated API levels in the same files (the API 24
@@ -29,17 +35,126 @@ const EMULATOR_API_PATTERNS = [
   /Pixel_7_Pro_API_(\d+)/g,
   /\bAPI (\d+) system image\b/g,
   /api-level:\s*(\d+)/g,
+  /current(?: Android)? API (\d+)/gi,
+  /\(API (\d+) \+ API \d+\)/g,
   /shipped app on Android API (\d+)/g,
 ];
 
-describe('Android emulator API level single source', () => {
-  it('derives the AVD name from ANDROID_API_LEVEL', () => {
-    expect(AVD_NAME).toBe(`Pixel_7_Pro_API_${ANDROID_API_LEVEL}`);
+const androidWorkflow = read('.github/workflows/android-deploy.yml');
+const nativeGuide = read('docs/MOBILE/native.md');
+
+function androidSupportMatrixRows() {
+  const rowPattern =
+    /^\| Android (current|floor)\s+\| (?:Current )?Android API (\d+) on.*?\| The `Maestro launch smoke test \(API (\d+)\)`.*?`maestro-report-api-(\d+)`/gm;
+  return [...nativeGuide.matchAll(rowPattern)].map(
+    ([, coverage, targetApi, jobApi, artifactApi]) => ({
+      coverage,
+      targetApi: Number(targetApi),
+      jobApi: Number(jobApi),
+      artifactApi: Number(artifactApi),
+    })
+  );
+}
+
+function workflowStepScript(stepName) {
+  const escapedName = stepName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = androidWorkflow.match(
+    new RegExp(
+      `      - name: ${escapedName}\\n(?:        [^\\n]*\\n)*?        run: \\|\\n((?:          .*\\n)+)`
+    )
+  );
+  expect(match, `workflow step "${stepName}" has no multiline run script`).not.toBeNull();
+  return match[1]
+    .split('\n')
+    .map((line) => line.slice(10))
+    .join('\n');
+}
+
+function currentApiClaimOffsets(text) {
+  return new Set(
+    EMULATOR_API_PATTERNS.flatMap((pattern) =>
+      [...text.matchAll(pattern)]
+        .filter(([, level]) => Number(level) === CURRENT_ANDROID_API_LEVEL)
+        .map((match) => match.index + match[0].lastIndexOf(match[1]))
+    )
+  );
+}
+
+describe('Android emulator API levels', () => {
+  it('derives the local AVD name from the current API level', () => {
+    expect(AVD_NAME).toBe(`Pixel_7_Pro_API_${CURRENT_ANDROID_API_LEVEL}`);
   });
 
-  it('workflow api-level input matches', () => {
-    const yml = read('.github/workflows/android-deploy.yml');
-    expect(yml.match(/api-level:\s*(\d+)/)[1]).toBe(String(ANDROID_API_LEVEL));
+  it('derives the workflow matrix from the current and declared floor owners', () => {
+    expect(androidEmulatorApiLevels()).toEqual([
+      CURRENT_ANDROID_API_LEVEL,
+      MIN_ANDROID_API_LEVEL,
+    ]);
+
+    expect(androidWorkflow).toContain(
+      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs)'
+    );
+    expect(androidWorkflow).toContain('api-level: ${{ fromJSON(needs.build.outputs.levels) }}');
+    expect(androidWorkflow).toContain('api-level: ${{ matrix.api-level }}');
+    expect(androidWorkflow).not.toMatch(/api-level:\s*\d+/);
+  });
+
+  it('keeps every Android support-matrix identifier on its row API owner', () => {
+    expect(androidSupportMatrixRows()).toEqual([
+      {
+        coverage: 'current',
+        targetApi: CURRENT_ANDROID_API_LEVEL,
+        jobApi: CURRENT_ANDROID_API_LEVEL,
+        artifactApi: CURRENT_ANDROID_API_LEVEL,
+      },
+      {
+        coverage: 'floor',
+        targetApi: MIN_ANDROID_API_LEVEL,
+        jobApi: MIN_ANDROID_API_LEVEL,
+        artifactApi: MIN_ANDROID_API_LEVEL,
+      },
+    ]);
+  });
+
+  it('de-duplicates the matrix when the floor reaches the current API', () => {
+    expect(uniqueAndroidEmulatorApiLevels(33, 24)).toEqual([33, 24]);
+    expect(uniqueAndroidEmulatorApiLevels(33, 33)).toEqual([33]);
+  });
+
+  it('propagates a resolver process failure before writing the output', () => {
+    const resolverScript = workflowStepScript('Read emulator API levels').replace(
+      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs',
+      "node -e 'process.exit(17)'"
+    );
+    const result = spawnSync(
+      '/bin/bash',
+      ['--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', resolverScript],
+      {
+        env: { ...process.env, GITHUB_OUTPUT: '/dev/null' },
+      }
+    );
+
+    expect(result.status).toBe(17);
+  });
+
+  it('reports one tag failure after the build and aggregate smoke results settle', () => {
+    expect(androidWorkflow.match(/- name: File the failure/g)).toHaveLength(1);
+    expect(androidWorkflow).toContain('needs: [build, smoke]');
+    expect(androidWorkflow).toContain("github.event_name == 'push'");
+    expect(androidWorkflow).toContain("needs.build.result != 'success'");
+    expect(androidWorkflow).toContain("needs.smoke.result != 'success'");
+    expect(androidWorkflow.indexOf('  report-failure:')).toBeGreaterThan(
+      androidWorkflow.indexOf('  smoke:')
+    );
+  });
+
+  it('gives the checkout-free failure reporter explicit repository context', () => {
+    const reportJob = androidWorkflow.slice(androidWorkflow.indexOf('  report-failure:'));
+    expect(reportJob).not.toContain('actions/checkout@');
+    expect(reportJob).toContain('GH_REPO: ${{ github.repository }}');
+    expect(reportJob.indexOf('GH_REPO: ${{ github.repository }}')).toBeLessThan(
+      reportJob.indexOf('gh issue list')
+    );
   });
 
   for (const file of ENFORCED) {
@@ -49,7 +164,23 @@ describe('Android emulator API level single source', () => {
         [...text.matchAll(pattern)].map(([, level]) => Number(level))
       );
       expect(levels.length).toBeGreaterThan(0);
-      for (const level of levels) expect(level).toBe(ANDROID_API_LEVEL);
+      for (const level of levels) expect(level).toBe(CURRENT_ANDROID_API_LEVEL);
+    });
+
+    it(`${file} guards every current API literal`, () => {
+      const text = read(file);
+      const guardedOffsets = currentApiClaimOffsets(text);
+      const literals = [
+        ...text.matchAll(new RegExp(`API[ _](${CURRENT_ANDROID_API_LEVEL})\\b`, 'g')),
+      ];
+
+      expect(literals.length).toBeGreaterThan(0);
+      for (const literal of literals) {
+        expect(
+          guardedOffsets,
+          `${file} current API literal at offset ${literal.index} has no drift pattern`
+        ).toContain(literal.index + literal[0].lastIndexOf(literal[1]));
+      }
     });
   }
 });
@@ -95,9 +226,14 @@ const SUPPORT_FLOOR_CLAIMS = [
     /\|\s+Native Android min SDK\s+\|\s+`android\/variables\.gradle` → `minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
   ],
   [
-    'floor-validation emulator claim',
+    'floor-validation CI claim',
     'docs/COMPATIBILITY.md',
-    /The\s+stock\s+Android\s+API\s+(?<api>\d+)\s+emulator\s+image\s+ships\s+a\s+pre-floor\s+WebView\s+\(a\s+maintained\s+Android\s+(?<releaseMajor>\d+)\s+device/,
+    /the\s+Android\s+API\s+(?<api>\d+)\s+\*\*OS\s+floor\*\*\s+is\s+CI-validated/,
+  ],
+  [
+    'tagged smoke floor claim',
+    'docs/TESTING.md',
+    /the\s+declared\s+API\s+(?<api>\d+)\s+floor/,
   ],
   [
     'minimum supported OS statement',
@@ -130,6 +266,21 @@ describe('Android support floor single source', () => {
 });
 
 describe('Android manifest kids-compliance', () => {
+  it('matches the reviewed permission inventory', () => {
+    const manifest = read('android/app/src/main/AndroidManifest.xml');
+    const permissions = [...manifest.matchAll(/<uses-permission\b([^>]*?)\/?>/g)]
+      .map(([, attributes]) => ({
+        name: attributes.match(/android:name="([^"]+)"/)?.[1],
+        maxSdkVersion: Number(attributes.match(/android:maxSdkVersion="(\d+)"/)?.[1]) || null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const expected = privacyInventory.permissions.android
+      .map(({ name, maxSdkVersion = null }) => ({ name, maxSdkVersion }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    expect(permissions).toEqual(expected);
+  });
+
   it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
     const manifest = read('android/app/src/main/AndroidManifest.xml');
     expect(manifest).toContain('android:allowBackup="false"');

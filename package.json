@@ -265,7 +265,7 @@
     "test:unit:watch": "Vitest watch mode",
     "test:asset-gen": "Asset-gen pipeline tests (Vitest, Node env): image-analysis helpers against committed fixtures plus mocked generator CLI workflows — no Gemini/network",
     "test:store-drawings": "Store-drawing pipeline tests (Vitest, Node env, tools/store-drawings/tests/): SVG subset parsing, static instruction generation, scene fitting, and generated-module drift",
-    "test:tools": "Repo-automation script tests (Vitest, Node env, tools/tests/): audit-burndown state/runner seams, complete Ruler skill-fork replacement, the Android emulator API-level drift invariant (every literal must match ANDROID_API_LEVEL in tools/mobile/android/lib/android-toolchain.mjs), the throwaway-server env guard (both test servers must declare every private env var web/src reads instead of inheriting it from web/.env), and one live case that boots a real vite dev server to prove a released one outlives its caller",
+    "test:tools": "Repo-automation script tests (Vitest, Node env, tools/tests/): audit-burndown state/runner seams, complete Ruler skill-fork replacement, the Android emulator API-level drift invariants (local literals match CURRENT_ANDROID_API_LEVEL and the deploy matrix adds the declared floor), the throwaway-server env guard (both test servers must declare every private env var web/src reads instead of inheriting it from web/.env), and one live case that boots a real vite dev server to prove a released one outlives its caller",
     "test:e2e": "Playwright E2E tests, headless",
     "test:e2e:ui": "Playwright UI mode",
     "test:e2e:headed": "Playwright with browser visible, slowed down (SLOWMO=500)",

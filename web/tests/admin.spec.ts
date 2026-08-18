@@ -287,3 +287,8 @@ test('web /admin SSR response carries the site security headers', async ({ reque
     expect(headers[name.toLowerCase()]).toBe(value);
   }
 });
+
+test('web prerender keeps CSP delivery in the response header only', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('meta[http-equiv="content-security-policy"]')).toHaveCount(0);
+});
