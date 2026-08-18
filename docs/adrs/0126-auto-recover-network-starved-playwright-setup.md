@@ -1,6 +1,6 @@
 # ADR-0126: Auto-Recover From Network-Starved Playwright Setup
 
-**Status:** Active **Date:** 2026-08
+**Status:** Active (amended) **Date:** 2026-08
 
 ## Context
 
@@ -77,3 +77,29 @@ guard means a mixed run gets no automation, which is deliberate but leaves those
 − Annotations are read back moments after the run completes; if the check-runs API has not yet
 materialized them, the guard sees no marker and skips the re-run — the failure mode is falling back
 to today's manual behavior, never a spurious re-run.
+
+## Amendment (2026-08, PR 1127)
+
+Two of the decision's mechanisms are revised, one is retired, and one is added.
+
+**The offline install is `dpkg -i`, not `apt-get --no-download`.** The
+`apt-get install --no-download <debs>` path never installed anything: apt classifies even a
+command-line local `.deb` as a fetch and refuses it (`E: Unable to fetch some archives`), so the
+step only passed when every package was already present and every run silently fell through to the
+network install — the exposure the cache was built to remove. Reproduced deterministically on Ubuntu
+24.04. `sudo dpkg -i` installs the cached set in one offline transaction and exits non-zero when the
+set is incomplete; the `--dry-run` completeness gate and the network fallback are unchanged.
+
+**The bounds and the auto-rerun are retired.** With the cache-hit path genuinely offline (verified
+in CI: both network steps skip with `duration_ms=0`), the network install runs only when a cache key
+rotates, and the bound/annotation/re-run machinery (`report-setup-timeout.sh`,
+`rerun-setup-timeouts.yml`, its drift test, and the macOS `perl alarm`) guarded a path that had
+shrunk from every-run to rotation-day. The calling job's `timeout-minutes` is the remaining
+backstop; a starved runner on a cache-miss run surfaces as an ordinary red check to re-run by hand.
+
+**`warm-playwright-cache.yml` closes the rotation window for pull requests.** Cache entries saved by
+a PR run are scoped to that PR's merge ref — sibling PRs cannot restore them — so after a key
+rotation each open PR would pay the network install itself until a default-branch run saved the new
+entry. The workflow runs `setup-playwright` for each browser set on a daily schedule (runner-image
+rotations) and on dependency-changing pushes to main (Playwright bumps), so the shared
+default-branch caches exist before PR runs ask for them.

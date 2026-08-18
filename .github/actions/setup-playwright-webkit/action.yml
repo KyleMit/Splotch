@@ -18,26 +18,7 @@ runs:
         path: ~/Library/Caches/ms-playwright
         key: playwright-${{ runner.os }}-webkit-${{ steps.playwright-version.outputs.version }}
 
-    # Bounded for the same reason as the Ubuntu action's network steps — a composite
-    # action's steps take no `timeout-minutes`, so an unbounded one turns a starved runner
-    # into a job-level cancellation that names nothing. The mechanism differs because
-    # macOS ships no coreutils `timeout` and the runner image adds none; `perl` is present
-    # on stock macOS, so its `alarm` is the bound that needs no guard. The timer survives
-    # `exec`, so it lands on the install rather than on a wrapper.
     - name: Install Playwright browser
       if: steps.playwright-cache.outputs.cache-hit != 'true'
       shell: bash
-      env:
-        SETUP_TIMEOUT_S: '420'
-      run: |
-        perl -e 'alarm shift @ARGV; exec @ARGV' "$SETUP_TIMEOUT_S" npx playwright install webkit || {
-          status=$?
-          # SIGALRM terminates the process, which bash reports as 128 + 14.
-          if [ "$status" = 142 ]; then
-            echo "::error title=Playwright WebKit install timed out::Exceeded ${SETUP_TIMEOUT_S}s." \
-              'Network starvation on this runner, not a test failure — a different machine is' \
-              'the remedy. rerun-setup-timeouts.yml re-runs the failed jobs once automatically;' \
-              'a check that stays red has spent that re-run, so re-run the job by hand.'
-          fi
-          exit $status
-        }
+      run: npx playwright install webkit

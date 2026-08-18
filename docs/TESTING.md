@@ -405,10 +405,11 @@ also runs on **WebKit** as the `webkit` Playwright project:
   action: it *relies* on WebKit being absent so the project drops.
 * Both Ubuntu jobs get their browsers from `.github/actions/setup-playwright` (browser cache +
   `install-deps` behind an apt `.deb` cache, each keyed per browser set); macOS keeps its own
-  `setup-playwright-webkit`, which needs no apt step and caches elsewhere. When a network-starved
-  runner drags a setup step past its bound, the step fails with a labelled annotation and
-  `rerun-setup-timeouts.yml` re-runs the failed jobs once automatically — a red check that stays red
-  means that automatic re-run is spent.
+  `setup-playwright-webkit`, which needs no apt step and caches elsewhere. On a cache hit the whole
+  setup is offline (`dpkg -i` from the cached debs); the network path runs only when a key rotates,
+  and `warm-playwright-cache.yml` repopulates the default-branch caches daily and on dependency
+  merges so PR runs rarely take it. A setup step dragged out by a network-starved runner is bounded
+  only by the job's `timeout-minutes` — re-run it by hand for a fresh machine.
 * **Routing is by tag, not filename.** `WEBKIT_ONLY_TAG` (`tests/tags.ts`) sits on the spec's
   `test.describe`; the `webkit` project `grep`s for it and `chromium` `grepInvert`s it, from the one
   shared constant. The two projects are therefore exact complements — a test runs on exactly one

@@ -232,6 +232,39 @@ describe('workflow hygiene', () => {
     });
   });
 
+  // The Playwright cache keys embed the literal `browsers` input, so a browser
+  // set installed by test.yml but absent from the warming matrix silently
+  // misses the warmed default-branch entries while both workflows stay green.
+  // The two YAML values cannot share a constant; this is their drift guard.
+  describe('Playwright cache warming', () => {
+    it('warms exactly the browser sets the Tests workflow installs', () => {
+      const testsWorkflow = workflows.find(({ name }) => name === 'test.yml');
+      const callerBrowsers = [];
+      testsWorkflow.lines.forEach((line, index) => {
+        if (!/^\s*-\s+uses: \.\/\.github\/actions\/setup-playwright$/.test(line)) return;
+        const browsers = testsWorkflow.lines
+          .slice(index + 1, index + 4)
+          .map((withLine) => withLine.match(/^\s+browsers:\s*(\S.*?)\s*$/)?.[1])
+          .find((value) => value !== undefined);
+        expect(
+          browsers,
+          `setup-playwright caller near test.yml line ${index + 1} has no browsers input`
+        ).toBeDefined();
+        callerBrowsers.push(browsers);
+      });
+      expect(callerBrowsers.length).toBeGreaterThan(0);
+
+      const warmWorkflow = workflows.find(({ name }) => name === 'warm-playwright-cache.yml');
+      const matrix = warmWorkflow.lines
+        .find((line) => /^\s+browsers: \[/.test(line))
+        .match(/\[(.*)\]/)[1]
+        .split(',')
+        .map((entry) => entry.trim());
+
+      expect(new Set(matrix)).toEqual(new Set(callerBrowsers));
+    });
+  });
+
   for (const { name, lines } of [...workflows, ...actions]) {
     it(`${name} pins every external action to a 40-char SHA`, () => {
       for (const ref of usesRefs(lines)) {
