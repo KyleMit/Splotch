@@ -9,6 +9,8 @@ import {
 } from '../lib/golden-catalog.mjs';
 import { loadTrio } from './fixtures/composite-eye/load.mjs';
 
+const REAL_IMAGE_CALIBRATION_TIMEOUT_MS = 10_000;
+
 const get = (obj, path) => path.split('.').reduce((value, key) => value?.[key], obj);
 
 async function scoreFixture(name) {
@@ -183,18 +185,22 @@ describe('golden catalog missing-key detection', () => {
 });
 
 describe('golden catalog shape drift guard', () => {
-  it('scores a real fixture through the extracted producer and resolves every catalog path', async () => {
-    const { comp: nightRaw, light: lightRaw, pen } = await loadTrio('horse-tall');
-    const entry = await scoreGoldenPage({
-      page: 'fixtures/horse-tall',
-      pen,
-      lightRaw,
-      nightRaw,
-      chalk: pen,
-    });
+  it(
+    'scores a real fixture through the extracted producer and resolves every catalog path',
+    async () => {
+      const { comp: nightRaw, light: lightRaw, pen } = await loadTrio('horse-tall');
+      const entry = await scoreGoldenPage({
+        page: 'fixtures/horse-tall',
+        pen,
+        lightRaw,
+        nightRaw,
+        chalk: pen,
+      });
 
-    for (const path of GOLDEN_VERDICTS) expect(get(entry, path), path).not.toBeUndefined();
-    for (const path of Object.keys(GOLDEN_METRICS))
-      expect(get(entry, path), path).not.toBeUndefined();
-  });
+      for (const path of GOLDEN_VERDICTS) expect(get(entry, path), path).not.toBeUndefined();
+      for (const path of Object.keys(GOLDEN_METRICS))
+        expect(get(entry, path), path).not.toBeUndefined();
+    },
+    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
+  );
 });

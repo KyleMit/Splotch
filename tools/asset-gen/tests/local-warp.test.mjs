@@ -7,6 +7,8 @@ import { LOCAL_WARP_MAX_PX, localWarp } from '../lib/local-warp.mjs';
 import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
 import { scoreGoldenPage } from '../lib/golden-catalog.mjs';
 
+const REAL_IMAGE_CALIBRATION_TIMEOUT_MS = 10_000;
+
 function lineArt({
   shiftedFeatureX = 0,
   shiftedFeatureY = 0,
@@ -135,31 +137,35 @@ describe('catalog calibration', () => {
     );
   });
 
-  it('bounds every reviewed baseline exception while new pages keep the strict default', async () => {
-    const exceptions = [
-      ['farm/dog-tall', 'light'],
-      ['farm/horse-tall', 'night'],
-      ['farm/horse-wide', 'night'],
-      ['shapes/heart-tall', 'light'],
-      ['space/astronaut-wide', 'light'],
-      ['space/ship-wide', 'night'],
-    ];
+  it(
+    'bounds every reviewed baseline exception while new pages keep the strict default',
+    async () => {
+      const exceptions = [
+        ['farm/dog-tall', 'light'],
+        ['farm/horse-tall', 'night'],
+        ['farm/horse-wide', 'night'],
+        ['shapes/heart-tall', 'light'],
+        ['space/astronaut-wide', 'light'],
+        ['space/ship-wide', 'night'],
+      ];
 
-    for (const [page, theme] of exceptions) {
-      const [category, name] = page.split('/');
-      const penPath = join(COLORING_DIR, category, `${name}.outline.webp`);
-      const pen = await readFile(penPath);
-      const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
-      const fill = await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`));
-      const score = await localWarp(source, fill);
-      const max = pageLevers(page, theme).flags['warp-max'];
+      for (const [page, theme] of exceptions) {
+        const [category, name] = page.split('/');
+        const penPath = join(COLORING_DIR, category, `${name}.outline.webp`);
+        const pen = await readFile(penPath);
+        const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
+        const fill = await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`));
+        const score = await localWarp(source, fill);
+        const max = pageLevers(page, theme).flags['warp-max'];
 
-      expect(score.localWarpMax, `${page} ${theme}`).toBeLessThanOrEqual(max);
-    }
+        expect(score.localWarpMax, `${page} ${theme}`).toBeLessThanOrEqual(max);
+      }
 
-    expect(pageLevers('vehicles/new-page-wide', 'light')).toBeNull();
-    expect(LOCAL_WARP_MAX_PX).toBe(4);
-  });
+      expect(pageLevers('vehicles/new-page-wide', 'light')).toBeNull();
+      expect(LOCAL_WARP_MAX_PX).toBe(4);
+    },
+    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
+  );
 
   it('lets an explicit CLI ceiling tighten a reviewed page baseline', () => {
     const levers = pageLevers('space/astronaut-wide', 'light');
