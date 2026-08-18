@@ -199,14 +199,18 @@ non-polyfill choices:
 * **Engine family:** every push/PR runs the Chromium E2E suite plus a WebKit critical-path smoke
   (`web/tests/webkit-smoke.spec.ts` — boot, stroke, Settings, Color Picker). That covers the
   *engine*, not the floor *version* — CI runs current WebKit, not Safari 16.4.
-* **Floor versions:** not currently CI-validated; they're a manual/device concern. The stock Android
-  API 24 emulator image ships a pre-floor WebView (a maintained Android 7 device tops out at
-  WebView/Chrome 119 ≥ the 111 floor, but the emulator doesn't emulate "maintained"), and an iOS
-  16.4 simulator runtime needs an on-runner download experiment. Both are tracked as issues
-  [#483](https://github.com/KyleMit/Splotch/issues/483) and
+* **Floor versions:** the Android API 24 floor is CI-validated on every release tag. The workflow
+  derives that matrix leg from `MIN_ANDROID_API_LEVEL`; the first
+  [dispatch experiment](https://github.com/KyleMit/Splotch/actions/runs/32104162028) installed the
+  stock `google_apis` image and the optimized Release APK, then its
+  [API 24 job](https://github.com/KyleMit/Splotch/actions/runs/32104162028/job/95610330372)
+  completed Maestro's exact "Settings" visibility assertion and uploaded artifact
+  `maestro-report-api-24` (artifact ID `9312695009`). The iOS 16.4 floor remains a manual/device
+  concern because its simulator runtime needs an on-runner download experiment, tracked by
   [#484](https://github.com/KyleMit/Splotch/issues/484).
-* **Native boot:** the tag-only Maestro smoke boots the shipped app on Android API 33 and the newest
-  iOS simulator — current-device coverage, not floor coverage.
+* **Native boot:** the tag-only Maestro smoke boots the shipped app on current Android API 33, the
+  declared Android API 24 floor, and the newest iOS simulator. Android has current-and-floor boot
+  coverage; iOS currently has current-device coverage only.
 
 ## Maintaining this
 

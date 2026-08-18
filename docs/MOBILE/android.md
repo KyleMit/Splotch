@@ -169,8 +169,9 @@ gateway and those tools fail — the working path is a self-hosted chisel revers
 * **Native smoke test**: `npm run test:android` boots an emulator, builds + installs, and runs the
   Maestro flow. See the `testing` skill for Maestro installation and the full three-tier strategy.
 * **Release configuration**: the tagged deploy workflow creates a disposable test key, builds
-  `android:apk:release`, and boots that APK through the same Maestro flow. This exercises R8,
-  `proguard-android-optimize.txt`, and resource shrinking without putting the Play upload key in CI.
+  `android:apk:release`, and boots that APK through the same Maestro flow on the current API 33
+  emulator and the declared API 24 floor. This exercises R8, `proguard-android-optimize.txt`, and
+  resource shrinking without putting the Play upload key in CI.
 
 ### Performance profiling with Chrome DevTools (remote debugging)
 

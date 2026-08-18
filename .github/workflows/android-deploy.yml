@@ -23,8 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      current: ${{ steps.levels.outputs.current }}
-      all: ${{ steps.levels.outputs.all }}
+      levels: ${{ steps.levels.outputs.levels }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -35,8 +34,7 @@ jobs:
       - name: Read emulator API levels
         id: levels
         run: |
-          echo "current=$(node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs current)" >> "$GITHUB_OUTPUT"
-          echo "all=$(node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs all)" >> "$GITHUB_OUTPUT"
+          echo "levels=$(node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs)" >> "$GITHUB_OUTPUT"
 
   smoke:
     name: Maestro launch smoke test (API ${{ matrix.api-level }})
@@ -44,8 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # The floor is dispatch-only until its stock-WebView experiment is green.
-        api-level: ${{ fromJSON(github.event_name == 'workflow_dispatch' && needs.emulator-api-levels.outputs.all || needs.emulator-api-levels.outputs.current) }}
+        api-level: ${{ fromJSON(needs.emulator-api-levels.outputs.levels) }}
     # Ubuntu + KVM is the most reliable path for Android emulators in CI.
     # macOS ARM runners (macos-latest → macos-15-arm64) hit an HVF init failure
     # with emulator 36.x ("HVF error: HV_UNSUPPORTED"), so the emulator never

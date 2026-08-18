@@ -18,7 +18,7 @@ pre-merge blob-encoding guard retired.
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
 | Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only**                     |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
@@ -570,7 +570,7 @@ npm run test:android:device     # re-run as often as you like
 | Workflow                               | Trigger                                                          | What it runs                                                                                                                                                        |
 | -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Test-signed Android Release APK build + Maestro boot smoke                                                                                                          |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Test-signed Android Release APK build + Maestro boot smoke on current API 33 and the API 24 floor                                                                   |
 | `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                       |
 | `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                                                     |
 
@@ -639,13 +639,14 @@ The native smoke workflows are deliberately tag-only — an emulator/simulator j
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
 The Android job runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
 runners hit an HVF init failure), generates a disposable test key, builds the **Release** APK with
-R8 and resource shrinking, installs it onto an emulator booted by
-`reactivecircus/android-emulator-runner`, and runs `npm run test:android:device`. The Play upload
-key never enters CI. The iOS job first compiles a Release simulator app without store signing, with
-`CODE_SIGNING_ALLOWED=NO`, then runs `npm run test:ios` on a macOS runner, which boots a simulator,
-builds the Debug app, and runs the same Maestro flow. The Release compile catches configuration-only
-failures while the established Debug smoke remains the boot signal. The Maestro report is uploaded
-as a build artifact.
+R8 and resource shrinking, and boots that artifact on both the current API 33 emulator and the
+declared API 24 floor. The matrix reads those levels from their source modules rather than carrying
+a second floor literal in YAML. Each leg runs `npm run test:android:device` through
+`reactivecircus/android-emulator-runner`; the Play upload key never enters CI. The iOS job first
+compiles a Release simulator app without store signing, with `CODE_SIGNING_ALLOWED=NO`, then runs
+`npm run test:ios` on a macOS runner, which boots a simulator, builds the Debug app, and runs the
+same Maestro flow. The Release compile catches configuration-only failures while the established
+Debug smoke remains the boot signal. Each Maestro report is uploaded as a build artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
 > provides a booted emulator — the one-shot would try to boot a second one.

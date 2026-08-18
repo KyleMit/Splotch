@@ -30,6 +30,7 @@ const EMULATOR_API_PATTERNS = [
   /Pixel_7_Pro_API_(\d+)/g,
   /\bAPI (\d+) system image\b/g,
   /api-level:\s*(\d+)/g,
+  /current Android API (\d+)/g,
   /shipped app on Android API (\d+)/g,
 ];
 
@@ -39,21 +40,17 @@ describe('Android emulator API levels', () => {
   });
 
   it('derives the workflow matrix from the current and declared floor owners', () => {
-    expect(androidEmulatorApiLevels('current')).toEqual([CURRENT_ANDROID_API_LEVEL]);
-    expect(androidEmulatorApiLevels('all')).toEqual([
+    expect(androidEmulatorApiLevels()).toEqual([
       CURRENT_ANDROID_API_LEVEL,
       MIN_ANDROID_API_LEVEL,
     ]);
 
     const yml = read('.github/workflows/android-deploy.yml');
     expect(yml).toContain(
-      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs current'
+      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs)'
     );
     expect(yml).toContain(
-      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs all'
-    );
-    expect(yml).toContain(
-      "api-level: ${{ fromJSON(github.event_name == 'workflow_dispatch' && needs.emulator-api-levels.outputs.all || needs.emulator-api-levels.outputs.current) }}"
+      'api-level: ${{ fromJSON(needs.emulator-api-levels.outputs.levels) }}'
     );
     expect(yml).toContain('api-level: ${{ matrix.api-level }}');
     expect(yml).not.toMatch(/api-level:\s*\d+/);
@@ -112,9 +109,14 @@ const SUPPORT_FLOOR_CLAIMS = [
     /\|\s+Native Android min SDK\s+\|\s+`android\/variables\.gradle` → `minSdkVersion`\s+\|\s+`(?<api>\d+)`/,
   ],
   [
-    'floor-validation emulator claim',
+    'floor-validation CI claim',
     'docs/COMPATIBILITY.md',
-    /The\s+stock\s+Android\s+API\s+(?<api>\d+)\s+emulator\s+image\s+ships\s+a\s+pre-floor\s+WebView\s+\(a\s+maintained\s+Android\s+(?<releaseMajor>\d+)\s+device/,
+    /the\s+Android\s+API\s+(?<api>\d+)\s+floor\s+is\s+CI-validated/,
+  ],
+  [
+    'tagged smoke floor claim',
+    'docs/TESTING.md',
+    /the\s+declared\s+API\s+(?<api>\d+)\s+floor/,
   ],
   [
     'minimum supported OS statement',
