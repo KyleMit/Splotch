@@ -106,6 +106,12 @@ npx @capacitor/assets generate --ios
 * **Native smoke test**: `npm run test:ios` boots a simulator, builds + installs, runs the Maestro
   flow, and tears down. No signing required. See the `testing` skill for Maestro installation and
   the full three-tier strategy.
+* **iOS 16.4 floor check**: boot an iOS 16.4 iPhone simulator in Xcode, shut down other booted
+  iPhone simulators, then run `npm run test:ios` so the helper reuses the floor device. For a
+  physical 16.4 device, use `npm run cap:ios`, select it in Xcode, run the app, and verify that
+  `Settings` paints. Hosted floor-runtime experiments reached a successful simulator boot and app
+  build but not a working Maestro XCTest driver; `docs/COMPATIBILITY.md` owns that evidence and
+  explains what current-WebKit CI does and does not prove.
 * **Release configuration**: the tagged deploy workflow runs `ios:build:release` before the Debug
   boot smoke. This catches Release-only Swift/compiler and project-setting failures under the
   simulator SDK without store signing; device-SDK-only code and settings remain covered by the local

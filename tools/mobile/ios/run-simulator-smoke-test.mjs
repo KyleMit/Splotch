@@ -9,39 +9,21 @@
 // Requires macOS with full Xcode (simulators ship with it) and Maestro.
 
 import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { join } from 'node:path';
-import { parseArgs, promisify } from 'node:util';
 import { ROOT, fail, sh } from '../../lib/proc.mjs';
 import { runMaestroSmoke } from '../lib/mobile-smoke-test.mjs';
-import {
-  IOS_RUNTIME_VERSION_PATTERN,
-  selectIphoneSimulator,
-} from './lib/ios-simulator-runtime.mjs';
 
 const execFileAsync = promisify(execFile);
-const SIMCTL_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
+const SKIP_SYNC_FLAG = '--skip-sync';
 
-let values;
-try {
-  ({ values } = parseArgs({
-    args: process.argv.slice(2),
-    options: {
-      'skip-sync': { type: 'boolean' },
-      runtime: { type: 'string' },
-    },
-    strict: true,
-  }));
-} catch (error) {
-  fail(error.message);
-}
-const skipSync = values['skip-sync'];
-const requestedRuntime = values.runtime;
-if (requestedRuntime && !IOS_RUNTIME_VERSION_PATTERN.test(requestedRuntime)) {
-  fail(`Invalid iOS runtime "${requestedRuntime}". Expected a major.minor version such as 16.4.`);
-}
+const args = process.argv.slice(2);
+const unsupportedArgs = args.filter((arg) => arg !== SKIP_SYNC_FLAG);
+if (unsupportedArgs.length > 0) fail(`Unknown argument: ${unsupportedArgs[0]}`);
+const skipSync = args.includes(SKIP_SYNC_FLAG);
 
 const simctl = async (...args) =>
-  (await execFileAsync('xcrun', ['simctl', ...args], { maxBuffer: SIMCTL_MAX_BUFFER_BYTES })).stdout;
+  (await execFileAsync('xcrun', ['simctl', ...args], { maxBuffer: 16 * 1024 * 1024 })).stdout;
 
 // 1. Preflight: macOS with full Xcode (Command Line Tools alone has no simctl).
 if (process.platform !== 'darwin')
@@ -57,21 +39,21 @@ try {
 
 // 2. Pick a simulator: reuse a booted iPhone, else boot the newest available one.
 const { devices } = JSON.parse(await simctl('list', 'devices', 'available', '--json'));
-const device = selectIphoneSimulator(devices, requestedRuntime);
-if (!device) {
-  if (requestedRuntime) {
-    fail(
-      `No iPhone simulators available for iOS ${requestedRuntime}. Install that runtime before retrying.`
-    );
-  }
-  fail('No iPhone simulators available — open Xcode once so it installs an iOS runtime.');
-}
-const bootedByUs = device.state !== 'Booted';
+const iphones = Object.entries(devices)
+  .filter(([runtime]) => runtime.includes('iOS'))
+  .sort(([a], [b]) => b.localeCompare(a, undefined, { numeric: true })) // newest runtime first
+  .flatMap(([, list]) => list.filter((d) => d.name.includes('iPhone')));
+
+let device = iphones.find((d) => d.state === 'Booted');
+const bootedByUs = !device;
 if (bootedByUs) {
-  console.log(`Booting simulator: ${device.name} (${device.udid}, ${device.runtime})`);
+  device = iphones[0];
+  if (!device)
+    fail('No iPhone simulators available — open Xcode once so it installs an iOS runtime.');
+  console.log(`Booting simulator: ${device.name} (${device.udid})`);
   await simctl('bootstatus', device.udid, '-b'); // boots the device and blocks until ready
 } else {
-  console.log(`Reusing booted simulator: ${device.name} (${device.udid}, ${device.runtime})`);
+  console.log(`Reusing booted simulator: ${device.name} (${device.udid})`);
 }
 
 // 3. Build + install, run the flow, and shut down anything we started.

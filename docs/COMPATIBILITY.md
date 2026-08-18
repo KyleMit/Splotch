@@ -198,7 +198,9 @@ non-polyfill choices:
 
 * **Engine family:** every push/PR runs the Chromium E2E suite plus a WebKit critical-path smoke
   (`web/tests/webkit-smoke.spec.ts` — boot, stroke, Settings, Color Picker). That covers the
-  *engine*, not the floor *version* — CI runs current WebKit, not Safari 16.4.
+  *engine*, not the floor *version* — CI runs current desktop WebKit, not Safari 16.4, and does not
+  boot the native app. `web/src/browserFloor.test.ts` separately guards that the emitted bundle's
+  declared Safari/iOS target remains at or below the native deployment target.
 * **Floor versions:** the Android API 24 **OS floor** is CI-validated on every release tag. The
   workflow derives that matrix leg from `MIN_ANDROID_API_LEVEL`; the first
   [dispatch experiment](https://github.com/KyleMit/Splotch/actions/runs/32104162028) installed the
@@ -207,12 +209,30 @@ non-polyfill choices:
   completed Maestro's exact "Settings" visibility assertion and uploaded artifact
   `maestro-report-api-24` (artifact ID `9312695009`). This proves OS-floor boot only: the image's
   bundled WebView version is neither pinned nor asserted, so the Chrome 111 engine floor remains
-  uncovered. The iOS 16.4 floor remains a manual/device concern because its simulator runtime needs
-  an on-runner download experiment, tracked by
-  [#484](https://github.com/KyleMit/Splotch/issues/484).
+  uncovered. Native iOS 16.4 remains a manual release check. Two 2026-08-18 dispatch experiments
+  downloaded and booted the exact runtime, then compiled both Release and Debug successfully: one
+  used
+  [`macos-latest` with Xcode 26.6](https://github.com/KyleMit/Splotch/actions/runs/32109658968/job/95626154650),
+  and the other used
+  [`macos-15` with Xcode 16.4](https://github.com/KyleMit/Splotch/actions/runs/32110897903/job/95629895129).
+  In both, Maestro 2.4.0's XCTest driver never listened on `127.0.0.1:7001` and hit its 120-second
+  startup timeout. The second dispatch's
+  [newest-runtime leg](https://github.com/KyleMit/Splotch/actions/runs/32110897903/job/95629895037)
+  passed the same smoke flow. Together the runs establish that runtime download, disk headroom,
+  simulator boot, and both builds are viable, but they do not establish that the app paints on iOS
+  16.4 because the driver fails before the flow. Revisit a hosted floor leg when Maestro's driver or
+  the runner toolchain changes; a longer timeout is not app validation unless the driver first
+  establishes its listener.
+* **Manual native iOS floor:** boot an iOS 16.4 iPhone simulator in Xcode, shut down other booted
+  iPhone simulators, and run `npm run test:ios`. The helper reuses the booted floor device and the
+  shared Maestro flow asserts that the production bundle paints `Settings`. For a physical iOS 16.4
+  device, use `npm run cap:ios`, select the device in Xcode, run the app, and verify the same
+  visible `Settings` control. Record the OS version and result with the release evidence. This is
+  the native OS-floor check; current desktop WebKit CI is only the automated engine-family
+  counterpart above.
 * **Native boot:** the tag-only Maestro smoke boots the shipped app on current Android API 33, the
   declared Android API 24 floor, and the newest iOS simulator. Android has current-and-floor boot
-  coverage; iOS currently has current-device coverage only.
+  coverage; hosted iOS has current-device coverage, with the 16.4 floor covered manually.
 
 ## Maintaining this
 

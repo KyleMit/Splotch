@@ -424,7 +424,9 @@ also runs on **WebKit** as the `webkit` Playwright project:
   debugging; it is still not part of `npm test`.
 
 CI runs current WebKit, not the floor's Safari 16.4 — it proves engine-family coverage, not the
-floor version (that remains a manual/device concern; see `docs/COMPATIBILITY.md`).
+floor version or a native iOS boot. The declared bundle target has separate drift coverage, while
+native iOS 16.4 remains a manual/device concern; see `docs/COMPATIBILITY.md` for the exact boundary
+and hosted-run evidence.
 
 ### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
 
@@ -521,6 +523,12 @@ npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcod
 > SDK locations resolve per-platform in `tools/mobile/android/lib/android-toolchain.mjs`; override
 > the SDK with `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's
 > install location resolves in `tools/mobile/lib/maestro.mjs`.
+
+For a manual iOS floor check, boot an iOS 16.4 iPhone simulator, shut down any other booted iPhone
+simulators, and run `npm run test:ios`; the helper reuses that booted device. The tag workflow stays
+on the newest installed runtime because hosted experiments could download, boot, and build for iOS
+16.4 but Maestro's XCTest driver never became reachable there. `docs/COMPATIBILITY.md` records both
+experiments and the complementary current-WebKit CI coverage.
 
 ### Prerequisites
 
