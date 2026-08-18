@@ -44,6 +44,28 @@ body {
   opacity: 1;
 }
 
+/* Classic (space-taking) scrollbars — desktop web, and any OS set to keep
+   scrollbars visible — otherwise wear the UA's own chrome: a full-bleed track
+   that reads as system furniture beside the app's rounded, themed surfaces and
+   paints straight through a scroller's border-radius, squaring off the corners
+   of the coloring picker's card. A transparent track and a themed thumb leave
+   the scroller's own surface and radius showing through the gutter.
+
+   The standard scrollbar properties, not `::-webkit-scrollbar`: the
+   pseudo-element route swaps WebKit's overlay scrollbar for a custom one that
+   is always visible and takes layout space, so it would buy a desktop detail by
+   parking a permanent gutter in every scroller on iOS and macOS Safari. These
+   two only recolor and narrow whatever scrollbar the platform was already
+   drawing, and touch platforms keep their overlay behavior.
+
+   Above the floor (Chrome 121 / Safari 18.2 / Firefox 64, docs/COMPATIBILITY.md):
+   older engines keep the UA scrollbar they draw today. Every scroller, not the
+   root alone: `scrollbar-color` inherits but `scrollbar-width` does not. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--control-track-hover) transparent;
+}
+
 /* Shared first-paint width of the landscape Color Palette. The palette and
    Actions Panel both consume it before ResizeObserver can publish the measured
    width; actionButtonLayout.fallback.test.ts guards these literals against the

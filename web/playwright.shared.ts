@@ -1,4 +1,6 @@
-import type { PlaywrightTestConfig } from '@playwright/test';
+// cSpell:ignore SLOWMO
+import { existsSync, readdirSync } from 'node:fs';
+import { chromium, type LaunchOptions, type PlaywrightTestConfig } from '@playwright/test';
 
 import { ADMIN_ACCESS_TOKEN } from './tests/admin-helpers';
 
@@ -44,6 +46,49 @@ export const playwrightBaseURL = `http://localhost:${playwrightPort}`;
  * very hang it exists to catch.
  */
 const RUN_DEADLOCK_CEILING_MS = 1_200_000;
+
+// Cloud sessions cache Chromium under PLAYWRIGHT_BROWSERS_PATH, but the pinned
+// revision can drift from what playwright-core resolves (e.g. the env installed
+// 1223 while this version wants 1228), so the run fails with "Executable doesn't
+// exist". If the resolved binary is missing, fall back to any Chromium present
+// so E2E still runs. `PLAYWRIGHT_CHROMIUM` overrides; undefined lets Playwright
+// use its own (correct) binary. Keep `.claude/cloud/setup.sh` pinned to this
+// package's version so the fallback is rarely needed.
+function chromiumExecutablePath(): string | undefined {
+  if (process.env.PLAYWRIGHT_CHROMIUM) return process.env.PLAYWRIGHT_CHROMIUM;
+  try {
+    if (existsSync(chromium.executablePath())) return undefined; // pinned build present
+  } catch {
+    // An absent or unreadable browser path should fall through to discovery.
+  }
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  const chromiumPrefix = 'chromium-';
+  try {
+    const builds = readdirSync(base)
+      .filter((d) => /^chromium-\d+$/.test(d))
+      .sort(
+        (a, b) => Number(b.slice(chromiumPrefix.length)) - Number(a.slice(chromiumPrefix.length))
+      );
+    for (const build of builds) {
+      for (const sub of ['chrome-linux', 'chrome-linux64']) {
+        const p = `${base}/${build}/${sub}/chrome`;
+        if (existsSync(p)) return p;
+      }
+    }
+  } catch {
+    // An absent or unreadable browser path should fall through to Playwright.
+  }
+  return undefined;
+}
+
+/** Slow every browser interaction down by this many ms — `SLOWMO=500 npm run test:e2e:headed`. */
+export const playwrightSlowMo = Number(process.env.SLOWMO) || 0;
+
+/** The Chromium project's launch options, also spread by any spec that has to
+ *  launch its own Chromium (scrollbar-chrome.spec.ts drops a default arg). */
+export function chromiumLaunchOptions(): LaunchOptions {
+  return { slowMo: playwrightSlowMo, executablePath: chromiumExecutablePath() };
+}
 
 export const commonPlaywrightConfig = {
   testDir: './tests',
