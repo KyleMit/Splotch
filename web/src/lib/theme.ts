@@ -62,7 +62,7 @@ export const THEME_COLOR_META_SELECTOR = 'meta[name="theme-color"]';
 export function setThemeColorMeta(color: string) {
   if (typeof document === 'undefined') return;
   const meta = document.querySelector(THEME_COLOR_META_SELECTOR);
-  if (meta?.getAttribute('content') !== color) meta?.setAttribute('content', color);
+  if (meta && meta.getAttribute('content') !== color) meta.setAttribute('content', color);
 }
 
 export function updateThemeColorMeta(resolved: ResolvedTheme) {

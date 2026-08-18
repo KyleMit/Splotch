@@ -3,12 +3,16 @@ import { rotateViewportViaCdp } from './cdp';
 import { openDrawer } from './flows-harness';
 import { draw, firstOpaquePixel, gotoApp } from './helpers';
 
+test('the live paper keeps its compositor promotion', async ({ page }) => {
+  await gotoApp(page);
+  await expect(page.locator('.live-paper-view')).toHaveCSS('will-change', 'transform');
+});
+
 test('rotating with ink CSS-presents the locked tiled paper until undo empties it', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await gotoApp(page);
-  await expect(page.locator('.live-paper-view')).toHaveCSS('will-change', 'transform');
   const initialPaperWidth = await page
     .locator('.live-paper-view')
     .evaluate((view: HTMLElement) => view.style.width);
