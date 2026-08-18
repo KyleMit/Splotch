@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt } from '../lib/asset-paths.mjs';
 import { LOCAL_WARP_MAX_PX, localWarp } from '../lib/local-warp.mjs';
 import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
+import { scoreGoldenPage } from '../lib/golden-catalog.mjs';
 
 function lineArt({ shiftedFeatureX = 0, shiftedFeatureY = 0 } = {}) {
   return Buffer.from(`
@@ -56,35 +57,53 @@ describe('local-warp registration score', () => {
 
     expect(Math.hypot(score.globalDx, score.globalDy)).toBeLessThan(2);
     expect(score.localWarpMax).toBeGreaterThan(LOCAL_WARP_MAX_PX);
-    expect(score.worstTile).toMatchObject({ confident: true });
+    expect(score.worstTile).toMatchObject({ confident: true, boundaryPeak: false });
+    expect(score.worstTile.falloff).toBeLessThan(0.99);
   });
 });
 
 describe('catalog calibration', () => {
-  async function scoreLight(page) {
+  async function scorePage(page, theme = 'light') {
     const [category, name] = page.split('/');
+    const penPath = join(COLORING_DIR, category, `${name}.outline.webp`);
+    const pen = await readFile(penPath);
+    const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
     return localWarp(
-      await readFile(join(COLORING_DIR, category, `${name}.outline.webp`)),
-      await readFile(join(FILL_SRC_DIR, category, `${name}.light.raw.webp`))
+      source,
+      await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`))
     );
   }
 
-  it('separates the excavator piston warp from the historical big-nudge controls', async () => {
-    const [pig, excavator, stegosaurus] = await Promise.all([
-      scoreLight('farm/pig-wide'),
-      scoreLight('vehicles/excavator-wide'),
-      scoreLight('dinosaur/stegosaurus-wide'),
+  it('rejects the excavator aperture ridge while historical big-nudge controls stay clean', async () => {
+    const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
+      scorePage('farm/pig-wide'),
+      scorePage('vehicles/excavator-wide'),
+      scorePage('vehicles/excavator-wide', 'night'),
+      scorePage('dinosaur/stegosaurus-wide'),
     ]);
 
     expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
     expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(excavator.localWarpMax).toBeGreaterThan(LOCAL_WARP_MAX_PX);
-    expect(Math.hypot(excavator.globalDx, excavator.globalDy)).toBeLessThan(3);
-    expect(excavator.worstTile).toMatchObject({
-      centerX: 384,
-      centerY: 384,
-      confidence: 'split-peak',
-    });
+    expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+    expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+    expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
+    expect(excavatorLight.tiles).toContainEqual(
+      expect.objectContaining({
+        centerX: 384,
+        centerY: 384,
+        dx: -5,
+        dy: 11,
+        boundaryPeak: true,
+        confident: false,
+      })
+    );
+    expect(excavatorNight.tiles).toContainEqual(
+      expect.objectContaining({
+        centerX: 384,
+        centerY: 384,
+        confident: false,
+      })
+    );
   });
 
   it('bounds every reviewed baseline exception while new pages keep the strict default', async () => {
@@ -92,12 +111,9 @@ describe('catalog calibration', () => {
       ['farm/dog-tall', 'light'],
       ['farm/horse-tall', 'night'],
       ['farm/horse-wide', 'night'],
-      ['objects/apple-tall', 'light'],
       ['shapes/heart-tall', 'light'],
       ['space/astronaut-wide', 'light'],
       ['space/ship-wide', 'night'],
-      ['vehicles/excavator-wide', 'light'],
-      ['vehicles/excavator-wide', 'night'],
     ];
 
     for (const [page, theme] of exceptions) {
@@ -110,7 +126,6 @@ describe('catalog calibration', () => {
       const max = pageLevers(page, theme).flags['warp-max'];
 
       expect(score.localWarpMax, `${page} ${theme}`).toBeLessThanOrEqual(max);
-      expect(max - score.localWarpMax, `${page} ${theme} margin`).toBeLessThanOrEqual(0.51);
     }
 
     expect(pageLevers('vehicles/new-page-wide', 'light')).toBeNull();
@@ -118,10 +133,23 @@ describe('catalog calibration', () => {
   });
 
   it('lets an explicit CLI ceiling tighten a reviewed page baseline', () => {
-    const levers = pageLevers('vehicles/excavator-wide', 'light');
+    const levers = pageLevers('space/astronaut-wide', 'light');
     expect(mergeFlags({ 'warp-max': '3' }, levers)).toEqual({
       merged: { 'warp-max': '3' },
       fromRegistry: [],
     });
+  });
+
+  it('makes the golden warp verdict use the reviewed page ceiling', async () => {
+    const page = 'space/astronaut-wide';
+    const [pen, lightRaw] = await Promise.all([
+      readFile(join(COLORING_DIR, `${page}.outline.webp`)),
+      readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`)),
+    ]);
+
+    const entry = await scoreGoldenPage({ page, pen, lightRaw });
+
+    expect(entry.light.localWarpMax).toBeGreaterThan(LOCAL_WARP_MAX_PX);
+    expect(entry.light.warpOk).toBe(true);
   });
 });

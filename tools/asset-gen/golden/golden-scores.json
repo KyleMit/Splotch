@@ -1490,7 +1490,7 @@
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
@@ -1706,7 +1706,7 @@
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1756,7 +1756,7 @@
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2499,13 +2499,13 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 10.05,
-        "warpTiles": 1,
+        "localWarpMax": 0,
+        "warpTiles": 0,
         "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": null
       },
       "night": {
@@ -3230,12 +3230,12 @@
         "localKeep": 1,
         "worstTile": null,
         "localWarpMax": 8.06,
-        "warpTiles": 2,
+        "warpTiles": 1,
         "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": null
       },
       "night": {
@@ -3785,7 +3785,7 @@
         "eyeCores": 6,
         "eyeLively": 0,
         "driftOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": false
       },
       "night": {
@@ -4216,7 +4216,7 @@
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -4409,21 +4409,21 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 11.66,
-        "warpTiles": 2,
+        "localWarpMax": 0,
+        "warpTiles": 0,
         "residualShift": 1.41,
         "eyeCores": 8,
         "eyeLively": 4,
         "driftOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 24.4,
         "lineWhite": 251,
-        "localWarpMax": 8.06,
-        "warpTiles": 1,
+        "localWarpMax": 0,
+        "warpTiles": 0,
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
@@ -4431,7 +4431,7 @@
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
-        "warpOk": false,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }

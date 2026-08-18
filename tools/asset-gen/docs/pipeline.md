@@ -237,10 +237,12 @@ keep-best-of-5:
 * **keep ≥ 92% / worst-tile ≥ 80%** — the worst-tile gate exists because a 93% global keep once
   shipped with a single flower drifted to 34% (nature/ant-wide, pre-gate);
 * **local warp ≤ 4px** — overlapping 128px edge tiles search ±12px; their median vector is residual
-  global shift and is subtracted before the worst confident tile is gated. A 3–4px result requests
-  review. Reviewed current exceptions carry their exact measured baseline plus a 0.5px decoder
-  margin in `notes.json`; new pages retain the strict default, and explicit `--warp-max` always
-  wins;
+  global shift and is subtracted before the worst confident tile is gated. Weak split peaks must be
+  interior to the search box, fall off beyond their argmax, and contain diverse edge directions;
+  this rejects straight-edge aperture ridges. A 3–4px result requests review. Reviewed current
+  exceptions carry their exact measured baseline plus a 0.5px decoder margin in `notes.json`; new
+  pages retain the strict default, and explicit `--warp-max` always wins. The committed-fill audit
+  warns without failing for an in-ceiling baseline or a now-stale loose ceiling;
 * **white ≤ 5%** — big blank areas read as uncolored under the brush;
 * **eyes** — at least one reviewed, measurable eye core reads lively (`judgeLightEyes`). Pages whose
   eye cores are all band-blind, or whose reviewed nested regions are all non-face geometry, are

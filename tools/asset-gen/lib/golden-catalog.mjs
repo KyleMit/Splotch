@@ -18,11 +18,23 @@ import {
   scoreChalkInkDiff,
 } from './chalk-ink-diff.mjs';
 import { LOCAL_WARP_MAX_PX, prepareLocalWarpSource, scoreLocalWarp } from './local-warp.mjs';
+import { parseNonNegative } from './asset-cli.mjs';
+import { mergeFlags, pageLevers } from './page-notes.mjs';
 
 const round = (v, digits) => {
   const f = 10 ** digits;
   return Math.round(v * f) / f;
 };
+
+function pageWarpMax(page, theme) {
+  const { merged } = mergeFlags({}, pageLevers(page, theme));
+  return parseNonNegative(
+    merged['warp-max'],
+    '--warp-max',
+    LOCAL_WARP_MAX_PX,
+    `${page} ${theme} via notes.json`
+  );
+}
 
 // Score one page's line art plus its committed raw fills (when present) into
 // the shape frozen in golden/golden-scores.json — the shape GOLDEN_METRICS
@@ -84,7 +96,7 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
       eyeCores: lightEyes.cores.length,
       eyeLively: lightEyes.cores.filter((c) => c.lively).length,
       driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
-      warpOk: warp.localWarpMax <= LOCAL_WARP_MAX_PX,
+      warpOk: warp.localWarpMax <= pageWarpMax(page, 'light'),
       eyesOk: lightVerdict.gated ? lightVerdict.passes : null,
     };
   }
@@ -116,7 +128,7 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
       driftOk: drift.ratio <= DRIFT_THRESHOLD_DEFAULT,
       moodOk: night.bgLuma <= NIGHT_BG_LUMA_MAX_DEFAULT,
       lineOk: line.lineWhite >= LINE_WHITE_MIN_DEFAULT,
-      warpOk: warp.localWarpMax <= LOCAL_WARP_MAX_PX,
+      warpOk: warp.localWarpMax <= pageWarpMax(page, 'night'),
       eyesOk: eyes?.eyesOk ?? null,
       orbOk: eyes?.orbOk ?? null,
     };

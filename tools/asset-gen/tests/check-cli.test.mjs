@@ -38,7 +38,7 @@ vi.mock('../lib/asset-paths.mjs', () => ({
   get SAMPLES_DIR() {
     return state.roots.samples;
   },
-  resolveNightLineArt: async () => ({ source: null, chalk: null }),
+  resolveNightLineArt: async (_path, pen) => ({ source: pen, chalk: null }),
   toPosix(rel) {
     return rel.replaceAll('\\', '/');
   },
@@ -183,6 +183,7 @@ async function addPage(
     corruptFill = false,
     drifted = false,
     warped = false,
+    night = false,
     outlineIssues = [],
   } = {}
 ) {
@@ -202,7 +203,18 @@ async function addPage(
           ? WARP_FILL_BYTES
           : 'valid fill'
   );
+  if (night)
+    await writeFile(join(state.roots.fillSrc, `test/${name}.night.raw.webp`), WARP_FILL_BYTES);
   return outline;
+}
+
+async function addWarpNotes(name, max) {
+  await writeFile(
+    join(state.roots.fillSrc, 'test/notes.json'),
+    JSON.stringify({
+      [name]: { light: { flags: { 'warp-max': max } }, night: { flags: { 'warp-max': max } } },
+    })
+  );
 }
 
 async function runCli(script, ...args) {
@@ -269,7 +281,52 @@ it('coloring drift fails a confident local warp and reports residual shift separ
   expect(outputOf(log)).toContain('test/warped');
   expect(outputOf(log)).toContain('8.0px');
   expect(outputOf(log)).toContain('LOCAL WARP');
+  expect(outputOf(log)).toContain('npm run gen:coloring-fills -- test/warped --apply');
   expect(process.exitCode).toBe(1);
+});
+
+it('coloring drift accepts a reviewed page ceiling but an explicit CLI ceiling still fails', async () => {
+  state.pages = [await addPage('warped', { warped: true, night: true })];
+  await addWarpNotes('warped', 8.5);
+
+  await runCli('check-fill-drift.mjs');
+
+  expect(outputOf(log)).toContain('baseline exception (notes.json 8.5px)');
+  expect(process.exitCode).toBeUndefined();
+
+  log.mockClear();
+  await runCli('check-fill-drift.mjs', '--warp-max', '7.5');
+
+  const output = outputOf(log);
+  expect(output).toContain('LOCAL WARP');
+  expect(output).toContain('npm run gen:coloring-fills -- test/warped --apply');
+  expect(output).toContain(
+    'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/coloring/gen-night-fills.mjs test/warped --apply'
+  );
+  expect(process.exitCode).toBe(1);
+});
+
+it('coloring drift reports an obsolete loose notes ceiling without failing an improved page', async () => {
+  state.pages = [await addPage('improved')];
+  await addWarpNotes('improved', 8.5);
+
+  await runCli('check-fill-drift.mjs');
+
+  expect(outputOf(log)).toContain('stale warp ceiling (notes.json 8.5px)');
+  expect(process.exitCode).toBeUndefined();
+});
+
+it('coloring drift sorts a failed outline ahead of a larger non-failing baseline warp', async () => {
+  state.pages = [
+    await addPage('baseline', { warped: true }),
+    await addPage('outline-failure', { drifted: true }),
+  ];
+  await addWarpNotes('baseline', 8.5);
+
+  await runCli('check-fill-drift.mjs');
+
+  const output = outputOf(log);
+  expect(output.indexOf('test/outline-failure')).toBeLessThan(output.indexOf('test/baseline'));
 });
 
 it('fill eyes reports a corrupt fill, continues, and exits non-zero', async () => {

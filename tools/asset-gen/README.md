@@ -105,25 +105,27 @@ the fill's fills under the overlay's lines, so a drifted region shows the wrong 
 lines. `gen-light-fills` scores every candidate two ways (`lib/outline-match.mjs`): global outline
 coverage (`keep`) and the **worst grid tile** (`localKeep`). It also cross-correlates overlapping
 128px edge tiles within ±12px (`lib/local-warp.mjs`). The median tile vector is reported as residual
-global shift and subtracted; only a confident tile's remaining displacement is local warp. The local
-bars are important — a large aligned subject can hold a 93% global keep while one small feature (a
-flower) sits at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource` only
-corrects a single global nudge, so a self-drifted feature can't be aligned away. Every best
-candidate and registration overlay lands in `.coloring-samples/` for review. Committed raws and
-their punched shipped assets change only with `--apply`, only after every requested page passes all
-gates; exhausted gates exit nonzero without partially applying the batch.
+global shift and subtracted; only a confident tile's remaining displacement is local warp. A weak
+split peak must sit away from the search boundary, fall off when sampled past its argmax, and
+contain enough edge-direction diversity, so a straight-edge aperture ridge cannot masquerade as
+movement. The local bars are important — a large aligned subject can hold a 93% global keep while
+one small feature (a flower) sits at 34%, which is exactly how `nature/ant-wide` shipped drifted.
+`alignToSource` only corrects a single global nudge, so a self-drifted feature can't be aligned
+away. Every best candidate and registration overlay lands in `.coloring-samples/` for review.
+Committed raws and their punched shipped assets change only with `--apply`, only after every
+requested page passes all gates; exhausted gates exit nonzero without partially applying the batch.
 
 `check:coloring-fill-drift` runs the same scoring over both themes' **committed raw fills** in
 `fill-src/` (it reads committed assets only — no key, no network) and prints the pages that fail,
 with a ready-to-run regenerate command. It scores the raws rather than the shipped fills because the
 shipped ones are punched fills-only (no outlines left to register); a clean raw guarantees a clean
-punch. Local warp warns at 3px and rejects above 4px by default. Nine reviewed raws exceed that
-strict audit bar; their per-page `notes.json` entries preserve the exact measured baseline plus a
-0.5px decoder margin so ordinary regeneration remains possible but a worse candidate cannot pass.
-New pages keep 4px, and an explicit `--warp-max` can tighten any run. The offline audit deliberately
-continues to flag all nine rather than treating the generation exceptions as clean. `--overlay`
-dumps a drift map per failing light page (red = source outline the fill left uncovered) to
-`.coloring-samples/drift/`.
+punch. Local warp warns at 3px and rejects above 4px by default. Six reviewed raws exceed that
+default; their per-page `notes.json` entries preserve the exact measured baseline plus a 0.5px
+decoder margin so ordinary regeneration remains possible but a worse candidate cannot pass. New
+pages keep 4px, and an explicit `--warp-max` can tighten any run. The offline audit reports reviewed
+baselines and stale loose ceilings as non-failing warnings, while an over-ceiling page exits
+nonzero. `--overlay` dumps a drift map per failing light page (red = source outline the fill left
+uncovered) to `.coloring-samples/drift/`.
 
 ### The committed regression fixtures (`golden/`)
 

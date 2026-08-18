@@ -11,9 +11,12 @@ const LOCAL_WARP_GAIN_MAX = 10;
 const LOCAL_WARP_ORIENTATION_DISPERSION_MIN = 0.08;
 const LOCAL_WARP_SPLIT_GAIN_MIN = 1.05;
 const LOCAL_WARP_SPLIT_PEAK_MAX = 3.3;
-const LOCAL_WARP_SPLIT_ORIENTATION_DISPERSION_MIN = 0.05;
+const LOCAL_WARP_SPLIT_ORIENTATION_DISPERSION_MIN = 0.2;
+const LOCAL_WARP_PEAK_BOUNDARY_MARGIN_PX = 1;
+const LOCAL_WARP_PEAK_FALLOFF_MAX = 0.99;
 export const LOCAL_WARP_WARN_PX = 3;
 export const LOCAL_WARP_MAX_PX = 4;
+export const LOCAL_WARP_BASELINE_MARGIN_PX = 0.5;
 
 const OFFSETS = [];
 for (let dy = -LOCAL_WARP_SEARCH_RADIUS_PX; dy <= LOCAL_WARP_SEARCH_RADIUS_PX; dy++) {
@@ -141,23 +144,29 @@ export async function prepareLocalWarpSource(sourceBuffer) {
   return { width, height, columns, rows, tiles };
 }
 
+function correlationAt(tile, fillEdges, width, height, dx, dy) {
+  let score = 0;
+  for (const point of tile.points) {
+    const x = point.x + dx;
+    const y = point.y + dy;
+    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+    score += point.weight * fillEdges[y * width + x];
+  }
+  return score;
+}
+
 function scoreTile(tile, fillEdges, width, height) {
   let best = { dx: 0, dy: 0, score: -1 };
   let zeroScore = 0;
   let sumScore = 0;
   for (const { dx, dy } of OFFSETS) {
-    let score = 0;
-    for (const point of tile.points) {
-      const x = point.x + dx;
-      const y = point.y + dy;
-      if (x < 0 || x >= width || y < 0 || y >= height) continue;
-      score += point.weight * fillEdges[y * width + x];
-    }
+    const score = correlationAt(tile, fillEdges, width, height, dx, dy);
     sumScore += score;
     if (dx === 0 && dy === 0) zeroScore = score;
     if (score > best.score) best = { dx, dy, score };
   }
   const meanScore = sumScore / OFFSETS.length;
+  const pastPeakScore = correlationAt(tile, fillEdges, width, height, best.dx * 2, best.dy * 2);
   return {
     x: tile.x,
     y: tile.y,
@@ -169,6 +178,10 @@ function scoreTile(tile, fillEdges, width, height) {
     inkPixels: tile.inkPixels,
     gain: zeroScore > 0 ? best.score / zeroScore : Infinity,
     peak: meanScore > 0 ? best.score / meanScore : 0,
+    falloff: best.score > 0 ? pastPeakScore / best.score : Infinity,
+    boundaryPeak:
+      Math.max(Math.abs(best.dx), Math.abs(best.dy)) >=
+      LOCAL_WARP_SEARCH_RADIUS_PX - LOCAL_WARP_PEAK_BOUNDARY_MARGIN_PX,
     orientationDispersion: tile.orientationDispersion,
   };
 }
@@ -186,7 +199,9 @@ export async function scoreLocalWarp(preparedSource, fillBuffer) {
   const globalDy = median(tiles.map((tile) => tile.dy));
   for (const tile of tiles) {
     tile.localWarp = Math.hypot(tile.dx - globalDx, tile.dy - globalDy);
+    const localizedPeak = !tile.boundaryPeak && tile.falloff <= LOCAL_WARP_PEAK_FALLOFF_MAX;
     const strongGain =
+      localizedPeak &&
       tile.gain >= LOCAL_WARP_GAIN_MIN &&
       tile.gain < LOCAL_WARP_GAIN_MAX &&
       tile.orientationDispersion >= LOCAL_WARP_ORIENTATION_DISPERSION_MIN;
@@ -198,6 +213,7 @@ export async function scoreLocalWarp(preparedSource, fillBuffer) {
       tile.gain >= LOCAL_WARP_SPLIT_GAIN_MIN &&
       tile.gain < LOCAL_WARP_GAIN_MAX &&
       tile.peak <= LOCAL_WARP_SPLIT_PEAK_MAX &&
+      localizedPeak &&
       tile.orientationDispersion >= LOCAL_WARP_SPLIT_ORIENTATION_DISPERSION_MIN;
     tile.confidence = strongGain ? 'strong-gain' : splitPeak ? 'split-peak' : null;
     tile.confident = tile.confidence !== null;
