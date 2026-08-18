@@ -22,8 +22,20 @@ interface LayoutState {
 }
 
 const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
+// The physical-iPad profile for issue 977 improved with a 200 ms rotation-only
+// hold. This bounds JS layout lag during orientation events; ordinary resizes
+// continue publishing synchronously.
+const ROTATION_VIEWPORT_SETTLE_MS = 200;
+let rotationViewportSyncTimer: number | undefined;
+let pendingPaletteMeasurement: PaletteMeasurement | undefined;
 
-function readLiveOrientation(): Orientation {
+function readViewportOrientation(): Orientation {
+  if (window.innerWidth > window.innerHeight) return 'landscape';
+  if (window.innerHeight > window.innerWidth) return 'portrait';
+  return readCssOrientation();
+}
+
+function readCssOrientation(): Orientation {
   return (portraitQuery?.matches ?? false) ? 'portrait' : 'landscape';
 }
 
@@ -33,7 +45,7 @@ function readOrientation(): Orientation {
   // to a live matchMedia read if the attribute is absent (e.g. unit tests).
   const stamped = document.documentElement.dataset.orientation;
   if (stamped === 'portrait' || stamped === 'landscape') return stamped;
-  return readLiveOrientation();
+  return readCssOrientation();
 }
 
 export const layout: LayoutState = $state({
@@ -45,8 +57,8 @@ export const layout: LayoutState = $state({
   paletteMeasurement: { width: 0, height: 0, orientation: null },
 
   // Viewport orientation and the measured env(safe-area-inset-*) values, kept
-  // fresh by the single shared listener set below (resize, orientationchange,
-  // and a visibility re-entry re-sync) so components can $derive off them
+  // fresh by the single shared listener set below (resize, legacy and standard
+  // orientation changes, and visibility re-entry) so components can $derive off them
   // instead of each wiring its own listeners.
   // Seeded from the head-script stamp on the client so JS-driven consumers never
   // see the SSR 'landscape' default; stays 'landscape' during prerender (no DOM).
@@ -62,35 +74,77 @@ export const layout: LayoutState = $state({
 });
 
 export function publishPaletteMeasurement(width: number, height: number): void {
-  layout.paletteMeasurement = { width, height, orientation: readLiveOrientation() };
+  // The rect comes from CSS layout, so its guard tag must use the matching
+  // media-query orientation even when viewport geometry flips first.
+  const measurement = { width, height, orientation: readCssOrientation() };
+  if (rotationViewportSyncTimer !== undefined) {
+    pendingPaletteMeasurement = measurement;
+    return;
+  }
+  layout.paletteMeasurement = measurement;
 }
 
 export function clearPaletteMeasurement(): void {
+  pendingPaletteMeasurement = undefined;
   layout.paletteMeasurement = { width: 0, height: 0, orientation: null };
 }
 
 function syncViewport() {
-  const next = readLiveOrientation();
+  const next = readViewportOrientation();
   layout.orientation = next;
   // Keep the [data-orientation] hook the head script stamped in sync on rotate.
-  document.documentElement.dataset.orientation = next;
+  document.documentElement.dataset.orientation = readCssOrientation();
   // Per-field assign so equal re-measurements don't wake dependents.
   Object.assign(layout.safeArea, measureSafeAreaInsets());
   layout.viewportWidth = window.innerWidth;
   layout.viewportHeight = window.innerHeight;
 }
 
+function flushPendingPaletteMeasurement() {
+  if (pendingPaletteMeasurement === undefined) return;
+  layout.paletteMeasurement = pendingPaletteMeasurement;
+  pendingPaletteMeasurement = undefined;
+}
+
+function finishViewportRotation() {
+  rotationViewportSyncTimer = undefined;
+  syncViewport();
+  flushPendingPaletteMeasurement();
+}
+
+function deferViewportSyncForRotation() {
+  if (rotationViewportSyncTimer !== undefined) return;
+  rotationViewportSyncTimer = window.setTimeout(
+    finishViewportRotation,
+    ROTATION_VIEWPORT_SETTLE_MS
+  );
+}
+
+function syncViewportOnResize() {
+  if (rotationViewportSyncTimer === undefined) syncViewportImmediately();
+}
+
+function syncViewportImmediately() {
+  if (rotationViewportSyncTimer !== undefined) {
+    window.clearTimeout(rotationViewportSyncTimer);
+    rotationViewportSyncTimer = undefined;
+  }
+  syncViewport();
+  flushPendingPaletteMeasurement();
+}
+
 // Installed at module load (not from a component) so the values are live before
 // the first component renders, and so five consumers share one listener set.
 if (browser) {
-  syncViewport();
-  window.addEventListener('resize', syncViewport);
-  window.addEventListener('orientationchange', syncViewport);
+  syncViewportImmediately();
+  window.addEventListener('resize', syncViewportOnResize);
+  window.addEventListener('orientationchange', deferViewportSyncForRotation);
+  screen.orientation?.addEventListener('change', deferViewportSyncForRotation);
   // Neither event fires while the document is hidden, so a rotation while the
   // app is backgrounded would otherwise stay stale on re-entry. Re-measure when
   // the document becomes visible again (the native WebViews hide the document
   // while the app is backgrounded, so this covers Capacitor resume too).
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') syncViewport();
+    if (document.visibilityState === 'visible') syncViewportImmediately();
   });
 }
