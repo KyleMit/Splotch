@@ -130,6 +130,22 @@ describe('Android support floor single source', () => {
 });
 
 describe('Android manifest kids-compliance', () => {
+  it('keeps the declared permission set limited to network and legacy gallery saving', () => {
+    const manifest = read('android/app/src/main/AndroidManifest.xml');
+    const permissions = [...manifest.matchAll(/<uses-permission\b[^>]*android:name="([^"]+)"/g)]
+      .map((match) => match[1])
+      .sort();
+
+    expect(permissions).toEqual([
+      'android.permission.ACCESS_NETWORK_STATE',
+      'android.permission.INTERNET',
+      'android.permission.WRITE_EXTERNAL_STORAGE',
+    ]);
+    expect(manifest).toMatch(
+      /android:name="android\.permission\.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/
+    );
+  });
+
   it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
     const manifest = read('android/app/src/main/AndroidManifest.xml');
     expect(manifest).toContain('android:allowBackup="false"');

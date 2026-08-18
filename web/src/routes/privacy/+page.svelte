@@ -1,24 +1,27 @@
 <script lang="ts">
-  // Friendly, plain-language privacy policy. The only automatic request is the
-  // pseudonymous free-allowance check disclosed below; drawing content is sent
-  // only when someone deliberately requests AI art or a grown-up reports it.
-  // This page exists mostly to *prove* that. It's required by the app stores
-  // (see the `mobile` skill's store-release checklist). Keep the tone simple
-  // enough for a parent to skim in 30 seconds. Bump LAST_UPDATED whenever the
+  // Friendly, plain-language privacy policy. Drawing content is sent only when
+  // someone deliberately requests AI art or a grown-up reports it; the few
+  // automatic network requests are named below. This page is required by the
+  // app stores (see the `mobile` skill's store-release checklist). Keep the tone
+  // simple enough for a parent to skim quickly. Bump LAST_UPDATED whenever the
   // wording changes.
 
   import { onMount, type Component } from 'svelte';
   import PageShell from '$lib/components/page/PageShell.svelte';
   import RuleLabel from '$lib/components/page/RuleLabel.svelte';
   import { parentalGateLink } from '$lib/actions/parentalGateLink';
+  import { GENERATION_JOB_TTL_MS } from '$lib/ai/limits';
+  import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
   import { scheduleIdle } from '$lib/idle';
+  import { IMAGE_REPORT_RETENTION_DAYS } from '$lib/imageReport';
   import { paletteHex, type PaletteLabel } from '$lib/palette';
   import { createSingleFlight } from '$lib/singleFlight';
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import type { Origin } from '$lib/state/modal.svelte';
   import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
 
-  const LAST_UPDATED = 'August 14, 2026';
+  const LAST_UPDATED = 'August 17, 2026';
+  const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
   // the same visual vocabulary as the masthead's CrayonStrip.
@@ -26,7 +29,11 @@
     { label: 'Red', lead: 'No ads.', body: 'Ever. None.' },
     { label: 'Orange', lead: 'No tracking.', body: "We don't follow you around the internet." },
     { label: 'Yellow', lead: 'No accounts.', body: 'No sign-up, no login, no passwords.' },
-    { label: 'Green', lead: 'No analytics.', body: 'No third-party trackers or SDKs.' },
+    {
+      label: 'Green',
+      lead: 'No analytics.',
+      body: 'No advertising, analytics, or tracking SDKs.',
+    },
     {
       label: 'Blue',
       lead: 'No hidden collection.',
@@ -142,15 +149,18 @@
   <p>
     Ordinary drawing stays on your device. Splotch does not create a profile about you or your
     child, does not sell information, and does not show advertising of any kind. The optional
-    internet features below send content only when you deliberately choose to send it.
+    features below explain every time drawing or feedback content leaves your device, plus the few
+    automatic requests that do not contain a drawing.
   </p>
 
   <h3>When the internet is used</h3>
   <p>
     Splotch has an optional “magic image” button that re-imagines a child's drawing as a polished
-    illustration. Each installation gets ten successful creations free, and the operation runs
-    through the grown-up check configured in Parent Center. After the free creations are used, a
-    grown-up can add an OpenAI key in Settings. A drawing is sent only when someone taps the button.
+    illustration. The button is available by default while the free service is available, and it can
+    be switched off in Settings. Each installation can receive up to {FREE_GENERATION_LIMIT}
+    successful creations through a server-authoritative allowance. The operation follows the grown-up-check
+    policy configured in Parent Center. After the free creations are used, a grown-up can add an access
+    code or their own OpenAI key in Settings. A drawing is sent only when someone taps the button.
   </p>
   <ul>
     <li>
@@ -158,11 +168,12 @@
       a new picture, which is sent right back.
     </li>
     <li>
-      <strong>We don't keep the drawing or result from an ordinary magic-image request.</strong>
-      Making a picture takes about a minute, so the drawing waits on our service for the few seconds it
-      takes to start and the finished picture waits there until the app collects it — each is deleted
-      the moment it is handed on, and both are gone within minutes either way. Nothing is kept afterwards,
-      unless a grown-up separately confirms “Report this picture” or “Report this refusal.”
+      <strong>We don't retain the drawing or result after an ordinary magic-image job ends.</strong>
+      Our service briefly stores the drawing while handing it to the generation worker, then stores the
+      finished picture until the app collects it. Collected jobs are deleted immediately. An uncollected
+      job expires after {GENERATION_JOB_TTL_MINUTES} minutes, and an hourly cleanup removes its remaining
+      files. Longer retention happens only if a grown-up separately confirms “Report this picture” or
+      “Report this refusal.”
     </li>
     <li>
       OpenAI generates the picture on its own systems, under the
@@ -177,8 +188,8 @@
       <strong
         >OpenAI does not use what is sent through its API to train its models, unless the account
         holder opts in to sharing</strong
-      >, and it does keep a copy to check for abuse. That copy is normally deleted after 30 days,
-      but OpenAI's
+      >, and it does keep a copy to check for abuse. That copy is normally retained for up to 30
+      days, but OpenAI's
       <a
         href="https://developers.openai.com/api/docs/guides/your-data"
         target="_blank"
@@ -189,26 +200,35 @@
       > allows it to keep one longer where the law requires it or where it is needed to stop harm, and
       a picture its scanner flags as possible child sexual abuse material is kept for a person to review
       whatever the account's settings say. That retention is OpenAI's, not ours. We also ask OpenAI not
-      to keep the picture in its own logs, which is the one part of its retention we control.
+      to store the API response as application state, which is the one part of its retention we control.
     </li>
     <li>
-      If you've added your <em>own</em> OpenAI key in Settings, the drawing still passes through our
-      service on the way to OpenAI, along with your key — which we use for that one request and
-      never store. It reaches OpenAI under <em>your</em> account and the terms that apply to it, rather
-      than ours. That includes the training setting on your account: if you have opted in to sharing,
-      it is your child's drawing that is shared, so it's worth checking before you add a key.
+      If you've added your <em>own</em> OpenAI key in Settings, the app keeps it locally: in the
+      Keychain or secure storage in the native apps, and encrypted in the browser's IndexedDB on the
+      web. The drawing still passes through our service on the way to OpenAI, along with your key —
+      which our service uses for that request and never stores. It reaches OpenAI under
+      <em>your</em>
+      account and the terms that apply to it, rather than ours. That includes the training setting on
+      your account: if you have opted in to sharing, it is your child's drawing that is shared, so it's
+      worth checking before you add a key.
     </li>
     <li>
-      To enforce the ten free creations, the app sends a one-way, app-purpose installation code when
-      it checks the remaining allowance and requests a free image. We store that code with counts,
-      timestamps, and broad failure reasons. We never receive the underlying device ID, and the code
-      is not combined with an account, advertising ID, hardware fingerprint, or location. Clearing
-      browser data and some iOS uninstall sequences can create a new code.
+      To enforce the {FREE_GENERATION_LIMIT} free creations, the app sends a one-way, app-purpose installation
+      code when it checks the remaining allowance and requests a free image. Native apps hash the platform-provided
+      app or vendor identifier; the web hashes a random value created and kept in that browser. We store
+      only the resulting code with attempt and success counts, timestamps, short-lived reservations, and
+      broad failure reasons. A separate anonymous daily total caps project-funded requests. We never receive
+      the underlying identifier, and the code is not combined with an account, advertising ID, hardware
+      fingerprint, or location. Clearing browser data and some iOS uninstall sequences can create a new
+      code.
     </li>
     <li>
-      We keep a simple count of how often each access code is used, purely to prevent abuse — along
-      with the date and which art style was picked. This isn't tied to a person, isn't used to
-      identify anyone, and is deleted when the access code is retired.
+      For an access code, we keep an abuse-prevention tally with its count, first and latest use,
+      latest art style, and latest server-written image instruction. That tally is deleted when the
+      access code is retired. Access-code and own-key requests also write an operational server log
+      with the date, credential category, art style, and server-written instruction — never the
+      drawing or full key. These records are not used for advertising, tracking, or product
+      analytics.
     </li>
     <li>
       Drawings are not used to build profiles, are not sold, and are not used for advertising or
@@ -216,6 +236,33 @@
     </li>
     <li>
       If your device is offline, this button is hidden and the rest of the app works normally.
+    </li>
+  </ul>
+
+  <h3>Hosting, downloads, and security</h3>
+  <p>
+    Splotch's website, API, temporary generation jobs, and retained report evidence are hosted by
+    Netlify. Like any internet host, it receives normal request details such as an IP address and
+    browser information. Our API uses an address in short-lived memory to slow abuse; Splotch does
+    not add it to the allowance records or use it to follow a person or device.
+  </p>
+  <ul>
+    <li>
+      When coloring books are enabled, Splotch may automatically download additional packs from our
+      site. Those requests contain public file paths and normal request details, not a drawing,
+      name, account, or location.
+    </li>
+    <li>
+      On the web, a browser may automatically send our first-party security endpoint a report when
+      the site's content-security policy blocks something. It can include the page and
+      blocked-resource URLs, the rule that fired, and source location. We write it to the Netlify
+      function log to diagnose a broken security policy; there is no third-party error-reporting
+      service.
+    </li>
+    <li>
+      Links that leave Splotch open the named destination, such as OpenAI's policy or key page and
+      the project's GitHub page. They are not opened automatically. In the store apps, they follow
+      the external-links grown-up-check policy described below.
     </li>
   </ul>
 
@@ -234,11 +281,14 @@
   </p>
   <p>
     A confirmed picture report stores the drawing, exact server-generated instruction, selected art
-    style, report time, and AI-generated picture. Confirmed reports go into our private support
-    system so we can investigate and respond within 24 hours. The report bundle is automatically
-    deleted after
-    <strong>30 days</strong> by a daily cleanup job. To ask us to delete one sooner, use the
-    {@render feedbackLink()} and include the report reference shown after it was sent.
+    style, report time, and AI-generated picture. The evidence is stored privately on Splotch's
+    Netlify account. A private GitHub support issue tells the maintainer where to find it and
+    includes report metadata, but not the image files. We investigate and respond within 24 hours.
+    The report bundle is scheduled for deletion after <strong
+      >{IMAGE_REPORT_RETENTION_DAYS} days</strong
+    >
+    by a daily cleanup job. To ask us to delete one sooner, use the {@render feedbackLink()} and include
+    the report reference shown after it was sent.
   </p>
 
   <h3>Sending feedback</h3>
@@ -249,38 +299,51 @@
   </p>
   <p>
     For a bug, you can <em>optionally</em> tick a box to include basic device details (like your app version,
-    operating system, browser, and screen size) to help us reproduce the problem. It's off by default,
-    you can expand it to see exactly what will be sent first, and some of those details (such as your
-    browser's user-agent) can be somewhat identifying — so it's entirely your choice. We never include
-    your name, account, or location, because Splotch doesn't have any of those.
+    platform, operating system, device model or browser, screen and window sizes, pixel ratio, language,
+    display mode, and online status) to help us reproduce the problem. It's off by default, you can expand
+    it to see exactly what will be sent first, and some of those details (such as a browser's full user-agent
+    or a device model) can be somewhat identifying — so it's entirely your choice. We never add your name,
+    account, location, advertising ID, or the installation value used for the free allowance.
   </p>
 
   <h3>Saving pictures</h3>
   <p>
-    When you save a drawing, it's stored <strong>locally</strong> in your device's own photo gallery.
-    Splotch never uploads your saved photos anywhere.
+    Saved pictures stay <strong>local</strong>. Android saves them in a Splotch gallery album;
+    iPhone and iPad save them to the photo library. On the web, Splotch uses a normal browser
+    download, or a folder a parent has chosen in supported desktop browsers. Splotch never uploads a
+    saved copy as part of saving it. If AI is used, the separate AI request described above sends
+    the current drawing.
   </p>
 
   <h3>Settings on your device</h3>
   <p>
-    Splotch remembers small preferences (like sound on/off and your last color or brush size) using
-    your device's local storage. Those preferences stay on your device and are never sent to us. On
-    the web, a random local installation value is used only to create the one-way free-allowance
-    code described above.
+    Splotch remembers small preferences (like appearance, sound, enabled tools, brush and line
+    sizes, and grown-up-check choices) using local storage. Native apps also mirror those settings
+    to the operating system's preferences so they survive WebView cleanup; Android cloud backup is
+    disabled. A supported desktop browser can separately remember a parent-chosen save-folder handle
+    in IndexedDB. These preferences stay on the device and are not sent to us. The locally stored AI
+    access code and own-key storage are described above. On the web, a random local installation
+    value is used only to create the one-way free-allowance code.
   </p>
 
   <h3>Children's privacy</h3>
   <p>
     Splotch is designed for young children. It has no accounts, ads, tracking, or analytics, and has
-    no advertising or analytics SDKs. When the app opens online, it checks the free allowance using
-    the one-way installation code described above; it does not send drawing content during that
-    check. Sending feedback and reporting an AI result each has its own grown-up-check policy in
-    Parent Center. The App Store and Google Play versions ask every time to begin with; on the web
-    those checks start off, and you turn on the ones you want. Splotch does not ask for a child's
-    name, email address, account, or location, and the submitted content is not used to identify a
-    child. We handle these deliberate flows in line with children's privacy laws, including COPPA
-    and the GDPR's protections for children. There are no social features, comments, chat,
-    advertising, or in-app purchases.
+    no advertising, analytics, or tracking SDKs. When the app opens online with magic images enabled
+    and no other credential, it checks the free allowance using the one-way installation code; no
+    drawing is sent during that check. Parent Center has separate policies for generating an AI
+    image, reporting an AI picture or refusal, opening an external link, sending feedback, and
+    opening Parent Center itself. The App Store and Google Play versions start with every policy set
+    to Every time; the web starts with them set to Never. A parent can change each policy to Every
+    time, Per session, or Never, except that iOS never allows external links to be permanently
+    unchecked. Opening Settings or a bundled page such as this policy is not a grown-up check. These
+    checks protect action boundaries; they are not accounts or proof of legal consent.
+  </p>
+  <p>
+    Splotch does not ask for a child's name, email address, account, or location, and does not use
+    submitted content to identify a child. These choices minimize children's data and support the
+    protections required by COPPA and the GDPR. There are no social features, comments, chat, public
+    sharing, advertising, purchases, or subscriptions.
   </p>
 
   <h3>Changes to this policy</h3>

@@ -185,7 +185,8 @@ npx @capacitor/assets generate --ios
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke the production build
       on hardware.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
-      notes*, explain Settings and the parent-enabled, bring-your-own-key AI feature up front.
+      notes*, explain the default gated free AI allowance and the later access-code /
+      bring-your-own-key paths up front.
 
 ### Kids Category (kids compliance)
 
@@ -195,15 +196,17 @@ policy). The Apple Kids Category adds:
 * [ ] Use the **Kids Category** (optional but fitting; age band **5 & Under**). Kids Category apps
       **must not** include third-party analytics/advertising and must gate any external links /
       purchases behind a **parental gate**.
-* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content
-      and optional Other Diagnostic Data exactly as written in `store-assets/STORE-LISTING-IOS.md`.
-      Both are app functionality, not linked, and not tracking; confirmed AI reports alone retain
-      image evidence for up to 30 days. A refusal report retains the rejected drawing and provider
-      refusal reason, while a picture report also retains the generated output.
+* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content,
+      Customer Support, optional Other Diagnostic Data, Device ID, and Product Interaction exactly
+      as written in `store-assets/STORE-LISTING-IOS.md`. All five are app functionality, not linked,
+      and not tracking. Confirmed AI reports retain image evidence until the daily purge after their
+      30-day retention date. A refusal report retains the rejected drawing and provider refusal
+      reason, while a picture report also retains the generated output.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
-      generation is already disabled until a parent supplies a credential and contains no browsing,
-      chat, or sharing.
+      generation includes ten free creations per installation while the project-funded service is
+      available, then accepts a parent-supplied access code or OpenAI key. The App Store build's
+      generation policy starts at Every time. There is no browsing, chat, or sharing.
 * [x] Audit outbound links: source on GitHub, the OpenAI API keys page, OpenAI terms, and the hosted
       feedback form all use Parent Center's external-link gate at the point where they leave the
       app. The bundled privacy policy remains internal. The native bundle excludes the server-backed

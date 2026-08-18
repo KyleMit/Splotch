@@ -154,15 +154,25 @@ alone won't register it.
 
 ### Data & privacy posture (important for store forms)
 
-* **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
-* Data leaves the device only through an explicit feature: a **drawing image** sent to the AI
-  endpoint, a confirmed AI report, or private feedback (plus an invite token). Nothing is sold or
-  used for tracking. Ordinary AI requests and refusals are not retained by Splotch. A confirmed
-  report retains the input, server-resolved prompt, style, and timestamp privately for at most 30
-  days; a refusal report also retains the provider's signed refusal reason, and a picture report
-  retains the generated output. A daily scheduled function purges it. Optional feedback device
-  details are private. Coloring-pack requests contain only public static asset paths; they carry no
-  drawing or child data.
+* **No analytics, tracking, ads, accounts, or advertising/analytics/tracking SDKs.** The native
+  dependency set is Capacitor plus functional plugins for device APIs, storage, media saving,
+  networking, screen orientation, and coloring-pack downloads.
+* Deliberate data-out features are a **drawing image**, chosen style, and generation credential sent
+  for AI generation; a confirmed AI report; and private feedback. Nothing is sold or used for
+  tracking. Ordinary AI jobs are temporary within Splotch: collected jobs are deleted immediately;
+  uncollected jobs expire after 20 minutes and an hourly cleanup removes them. OpenAI separately
+  normally keeps an abuse-monitoring copy for up to 30 days, subject to the exceptions in its
+  published policy.
+* While free AI is enabled, the app automatically checks its server-authoritative ten-creation
+  allowance with a one-way installation pseudonym derived from the platform app/vendor identifier.
+  The server stores the pseudonym with allowance attempts, successes, failures, timestamps, and
+  short-lived reservations. Access-code and own-key requests also create operational generation
+  metadata; the full key and drawing are excluded.
+* A confirmed AI report retains the input, server-resolved prompt, style, and timestamp privately
+  until a daily purge after its 30-day retention date; a refusal report also retains the provider's
+  signed refusal reason, and a picture report retains the generated output. Optional feedback device
+  details are private. Coloring-pack requests contain only public static asset paths and normal host
+  request details, not a drawing or child identity.
 * Photos are saved **locally** to the device gallery (a "Splotch" album).
 
 ## 2. Shared web-asset / sync commands
@@ -206,9 +216,10 @@ generated from the real app where possible:
 
 ## 4. Kids / Families compliance (shared posture)
 
-Because the audience is children, **both** stores apply stricter rules. Splotch does not collect in
-the background, but its deliberate AI and support flows still need exact disclosure. The per-store
-attestations live with each platform's release checklist:
+Because the audience is children, **both** stores apply stricter rules. Splotch never collects a
+drawing in the background, but it does automatically check the free AI allowance and download
+enabled coloring packs. Those requests and its deliberate AI/support flows need exact disclosure.
+The per-store attestations live with each platform's release checklist:
 
 * Google Play — Families policy → **[android.md](android.md)**
 * Apple App Store — Kids Category → **[ios.md](ios.md)**
@@ -228,8 +239,9 @@ The shared baseline both depend on:
       Contact is through Splotch's private feedback form. Native opens the hosted form behind the
       external-link gate because the static app cannot run the form's server action; the hosted
       page's conditional email fallback is excluded from the native bundle. The policy must state:
-      no background collection, ads, tracking, or third-party analytics; explain ordinary ephemeral
-      AI processing, private feedback, and the confirmed-report-only 30-day retention rule.
+      no background drawing collection, ads, tracking, or third-party analytics; explain the
+      automatic allowance and coloring-pack requests, ordinary ephemeral AI processing, private
+      feedback, and the confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
       `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` ("Splotch can save a

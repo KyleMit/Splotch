@@ -52,13 +52,13 @@ Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Read quick tips for locking the app to one screen using your device's built-in Guided Access, so playtime stays in Splotch.
 
 OPTIONAL AI "MAGIC IMAGE"
-For families who want it, Splotch can turn a child's drawing into a piece of AI art using OpenAI. This feature is off until a parent enables it with an access code or their own OpenAI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
+For families who want it, Splotch can turn a child's drawing into a piece of AI art using OpenAI. Each installation can make up to 10 free creations while the project-funded service is available. In the App Store app, every creation starts with a grown-up check by default, and the feature can be switched off. After the free allowance, a parent can add an access code or their own OpenAI key; Splotch never stores a parent's key. A drawing is sent only when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review.
 
 WORKS OFFLINE
-The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
+The core drawing experience — canvas, colors, installed coloring books, sounds, and saving — works offline. Optional AI, feedback and support, additional coloring-book downloads, and pages outside Splotch need the internet. The AI button hides itself when you're offline.
 
 PRIVACY YOU CAN TRUST
-Splotch collects nothing in the background. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. Ordinary drawings stay on the device; optional AI and support features send only what a grown-up deliberately chooses. A confirmed AI report is kept privately for no more than 30 days. Read the full policy at https://splotch.art/privacy.
+No ads. No tracking. No analytics. No advertising, analytics, or tracking SDKs. No sign-in. Ordinary drawings stay on the device; the privacy policy explains optional AI and support sends, the free-allowance check, coloring-book downloads, and normal hosting and security requests. A confirmed AI report is kept privately and scheduled for deletion after 30 days. Read the full policy at https://splotch.art/privacy.
 
 Splotch is also free and open source. If you spot a problem or have an idea, you can reach us through the project on GitHub.
 
@@ -100,16 +100,26 @@ Declare exactly this — it must match `ios/App/App/PrivacyInfo.xcprivacy`, Play
 privacy policy:
 
 * **User Content → Other User Content**: collected, used for **App Functionality**, **not linked to
-  identity**, and **not used for tracking**. It covers drawings sent for AI processing, typed
-  private feedback, and confirmed AI reports. Ordinary generation and refusals are ephemeral; a
-  confirmed report retains the input drawing, server-resolved prompt, style, and timestamp privately
-  for up to 30 days, plus the provider reason for a refusal report or the output for a picture
-  report.
+  identity**, and **not used for tracking**. It covers drawings sent for AI processing and confirmed
+  AI reports. Ordinary generation and refusals are ephemeral within Splotch; OpenAI normally retains
+  an abuse-monitoring copy for up to 30 days, subject to its published exceptions. A confirmed
+  report retains its evidence privately and is scheduled for deletion after 30 days.
+* **User Content → Customer Support**: collected when a grown-up sends private feedback, used for
+  **App Functionality**, **not linked to identity**, and **not used for tracking**.
 * **Diagnostics → Other Diagnostic Data**: collected only when a grown-up opts to attach the
   feedback form's app/device snapshot, used for **App Functionality**, **not linked to identity**,
   and **not used for tracking**.
-* No contact information, location, identifiers, purchases, usage analytics, advertising data, or
-  tracking. No ad or analytics SDKs and no accounts.
+* **Identifiers → Device ID**: collected automatically while the free AI service is enabled, used
+  for **App Functionality**, **not linked to identity**, and **not used for tracking**. This is a
+  one-way, app-purpose installation code derived from the vendor identifier; Splotch never receives
+  the underlying identifier.
+* **Usage Data → Product Interaction**: collected when AI is used or its allowance is checked, used
+  for **App Functionality**, **not linked to identity**, and **not used for tracking**. This covers
+  allowance attempts, successes, failures, timestamps, and short-lived reservations, plus
+  operational access-code and own-key request dates, styles, and server-resolved instructions; it
+  never contains a drawing or full key.
+* No contact information, location, purchases, advertising data, or tracking. No advertising,
+  analytics, or tracking SDKs and no accounts.
 
 ## Age rating answers
 
@@ -130,15 +140,17 @@ Enter the current questionnaire from the shipped behavior:
 
 ## App Review notes — AI safety
 
-Splotch's optional image-to-image AI feature is disabled until a parent supplies an access code or
-API key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum and
+Splotch's optional image-to-image AI feature includes up to 10 project-funded creations per
+installation while that service is available. In the App Store build, every generation requires a
+grown-up check by default. After the allowance, a parent can supply an access code or OpenAI API
+key. Users cannot enter free-form prompts: the server accepts only a closed art-style enum and
 constructs the full prompt. Every output is visibly labelled “AI-generated picture.” A grown-up can
 report either an inappropriate picture or a possible false-positive refusal, review a confirmation,
 follow the dedicated parental-gate policy, and privately send the evidence named there. A refusal
 report contains the input drawing, resolved prompt, style, provider refusal reason, and timestamp; a
 picture report contains the drawing, prompt, style, output, and timestamp. A human reviews reports
-within 24 hours; evidence is automatically deleted after 30 days. There is no browsing, chat, public
-sharing, or user-to-user distribution.
+within 24 hours; evidence is scheduled for deletion after 30 days by a daily purge. There is no
+browsing, chat, public sharing, or user-to-user distribution.
 
 ## Screenshots (this folder)
 
@@ -154,9 +166,9 @@ Store Connect takes the 1024×1024 `AppIcon` from the binary's asset catalog
 ## Kids Category notes (review will check these)
 
 * No third-party analytics or advertising — true, keep it that way.
-* External links / purchases must sit behind a parental gate. The outbound links are in Settings'
-  About section (GitHub, privacy policy); opening Settings is not proof of adulthood, so verify each
-  link and gate the affected action before submission.
-* The AI feature sends the child's own drawing for processing at an explicit tap, requires a parent
-  to enable it first, allows no free-form prompt, visibly labels its output, and provides gated
-  private reporting — use the review-note text above.
+* External links must sit behind a parental gate. The privacy policy is a bundled internal page and
+  stays available without a gate; links from it or Settings to GitHub and OpenAI follow the separate
+  external-links gate, which iOS never permits a parent to set to “Never.” There are no purchases.
+* The AI feature sends the child's own drawing only after an explicit, gated tap, includes the free
+  allowance described above, allows no free-form prompt, visibly labels its output, and provides
+  separately gated private reporting — use the review-note text above.

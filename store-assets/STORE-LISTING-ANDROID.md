@@ -40,13 +40,13 @@ Tucked in the corner, behind a button kids tend to ignore, Settings lets you:
 • Read quick tips for locking the app to one screen using your device's built-in screen pinning, so playtime stays in Splotch.
 
 OPTIONAL AI "MAGIC IMAGE"
-For families who want it, Splotch can turn a child's drawing into a piece of AI art using OpenAI. This feature is off until a parent enables it with an access code or their own OpenAI key. We never keep a copy of a parent's key. A child's drawing is only sent for processing when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review. The whole feature can stay switched off.
+For families who want it, Splotch can turn a child's drawing into a piece of AI art using OpenAI. Each installation can make up to 10 free creations while the project-funded service is available. In the Play app, every creation starts with a grown-up check by default, and the feature can be switched off. After the free allowance, a parent can add an access code or their own OpenAI key; Splotch never stores a parent's key. A drawing is sent only when the button is tapped, every result is labelled AI-generated, and a grown-up can report a result from inside the app for human review.
 
 WORKS OFFLINE
-The whole drawing experience — canvas, colors, coloring books, sounds, and saving — works completely offline. No connection required. (The optional AI feature is the only part that needs the internet, and it hides itself when you're offline.)
+The core drawing experience — canvas, colors, installed coloring books, sounds, and saving — works offline. Optional AI, feedback and support, additional coloring-book downloads, and pages outside Splotch need the internet. The AI button hides itself when you're offline.
 
 PRIVACY YOU CAN TRUST
-Splotch collects nothing in the background. No ads. No tracking. No analytics. No third-party advertising SDKs. No sign-in. Ordinary drawings stay on the device; optional AI and support features send only what a grown-up deliberately chooses. A confirmed AI report is kept privately for no more than 30 days. Read the full policy at https://splotch.art/privacy.
+No ads. No tracking. No analytics. No advertising, analytics, or tracking SDKs. No sign-in. Ordinary drawings stay on the device; the privacy policy explains optional AI and support sends, the free-allowance check, coloring-book downloads, and normal hosting and security requests. A confirmed AI report is kept privately and scheduled for deletion after 30 days. Read the full policy at https://splotch.art/privacy.
 
 Splotch is also free and open source. If you spot a problem or have an idea, you can reach us through the project on GitHub.
 
@@ -65,19 +65,30 @@ than selecting a more favorable-sounding category.
   generation, exactly as disclosed in the privacy policy. It is not sold, used for advertising, or
   used for tracking by Splotch.
 * **Photos and videos**: collected, optional, not linked to identity, purpose **App functionality**.
-  Ordinary AI requests and refusals are processed ephemerally by Splotch. If a grown-up confirms
-  “Report this picture” or “Report this refusal,” the input drawing is retained privately for up to
-  30 days; a refusal report also retains the provider's reason, and a picture report retains the
-  generated output.
+  Ordinary AI requests and refusals are processed ephemerally by Splotch. OpenAI normally retains an
+  abuse-monitoring copy for up to 30 days, subject to the exceptions in its published policy. If a
+  grown-up confirms “Report this picture” or “Report this refusal,” the input drawing is retained
+  privately and scheduled for deletion after 30 days; a refusal report also retains the provider's
+  reason, and a picture report retains the generated output.
 * **Other user-generated content**: collected, optional, not linked to identity, purpose **App
-  functionality / developer communications**. This covers typed feedback and the server-resolved
-  prompt, style, and timestamp retained with a confirmed AI report.
-* **Device or other IDs / diagnostics**: the feedback form can optionally attach app version,
-  platform, OS, browser/device description, and screen size. Declare the nearest current Play
-  diagnostic/device category as collected, optional, not linked to identity, purpose **App
-  functionality / developer communications**.
+  functionality / developer communications**. This covers typed feedback and the prompt, style, and
+  timestamp retained with a confirmed AI report.
+* **Device or other IDs**: collected automatically while the free AI service is enabled, not linked
+  to identity, purpose **App functionality / fraud prevention, security, and compliance**. This is a
+  one-way, app-purpose installation code derived from the platform app identifier; Splotch never
+  receives the underlying identifier. It is stored with allowance records and is not used for ads,
+  tracking, or analytics.
+* **App activity → App interactions**: collected automatically when AI is used or its free allowance
+  is checked, not linked to identity, purpose **App functionality / fraud prevention, security, and
+  compliance**. This covers allowance attempts, successes, failures, timestamps, and short-lived
+  reservations, plus operational access-code and own-key request dates, styles, and server-resolved
+  instructions. It does not include a drawing or full key.
+* **Diagnostics**: the feedback form can optionally attach app version, platform, OS, browser/device
+  description, screen and window sizes, pixel ratio, language, display mode, and online status.
+  Declare the nearest current Play diagnostic category as collected, optional, not linked to
+  identity, purpose **App functionality / developer communications**.
 * Data is encrypted in transit. A parent can request deletion through the privacy-policy contact;
-  reported-image evidence is also purged automatically after 30 days.
+  reported-image evidence is also scheduled for deletion after 30 days by a daily purge.
 
 ### AI-generated content and content rating
 
