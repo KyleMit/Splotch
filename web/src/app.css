@@ -70,9 +70,11 @@ body {
    whatever scrollbar the platform was already drawing, and touch platforms keep
    their overlay behavior.
 
-   Above the floor (Chrome 121 / Safari 18.2 / Firefox 64, docs/COMPATIBILITY.md):
-   older engines keep the UA scrollbar they draw today. `scrollbar-color` is
-   inherited, so the root declaration reaches every scroller in the app. */
+   Above the floor (Chrome 121 / Safari 26.2 / Firefox 64, docs/COMPATIBILITY.md):
+   older engines keep the UA scrollbar they draw today, which on WebKit means
+   every Safari before 26.2 — 18.2 shipped `scrollbar-width` and
+   `scrollbar-gutter`, not this. `scrollbar-color` is inherited, so the root
+   declaration reaches every scroller in the app. */
 :root {
   scrollbar-color: var(--icon-muted) transparent;
 }
