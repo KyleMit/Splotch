@@ -312,6 +312,20 @@ Desktop and Android actions harnesses pass no allowances, and historical capture
 cross-platform snapshots reuse the transport and schema, never the iPad baseline. A regression past
 an allowance still fails; the full measurements live in ADR-0049's amendment.
 
+## Amendment (2026-08): theme switches activate by trusted native tap
+
+The dialog-controls rule above ("ordinary `onclick` controls inside dialogs use WebDriver's semantic
+element click") carries one measured exception: the two theme switches. A WebDriver element click
+executes as an Inspector-evaluate atom on the page's main thread, and a theme switch is gated on the
+single frame the entire document restyles in — a Time Profiler capture on issue #976 attributed
+10-15 ms of the ~38 ms dark-to-light worst frame to that atom plus the element click's focus-driven
+`scrollToFocusedElement` layout, against ~15-22 ms of actual product cost. For every other dialog
+control the atom runs in a frame nobody scores, so the convention stands; for the theme rows the
+activation mechanism itself was the largest line item in the gated number. They now use the default
+trusted native tap (like Settings open/close), accepting the chrome-geometry dependence the rule
+avoids because a mis-aimed tap self-reports: native-touch activation requires captured trusted
+events, so a missed button fails activation rather than polluting the distribution.
+
 Hosted Appium endpoint:
 
 ```sh
