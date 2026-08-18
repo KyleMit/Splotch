@@ -23,6 +23,7 @@ const privacyInventory = JSON.parse(read('tools/mobile/privacy-permission-invent
 // .claude/.agents mirrors.
 const ENFORCED = [
   'package.json',
+  'docs/MOBILE/native.md',
   'docs/MOBILE/android.md',
   'docs/TESTING.md',
   'docs/COMPATIBILITY.md',
@@ -35,7 +36,8 @@ const EMULATOR_API_PATTERNS = [
   /Pixel_7_Pro_API_(\d+)/g,
   /\bAPI (\d+) system image\b/g,
   /api-level:\s*(\d+)/g,
-  /current(?: Android)? API (\d+)/g,
+  /current(?: Android)? API (\d+)/gi,
+  /\| Android current\s+\|.*?\| The `Maestro launch smoke test \(API (\d+)\)`/g,
   /\(API (\d+) \+ API \d+\)/g,
   /shipped app on Android API (\d+)/g,
 ];
@@ -208,6 +210,11 @@ const SUPPORT_FLOOR_CLAIMS = [
     'minimum supported OS statement',
     'docs/MOBILE/android.md',
     /Minimum supported OS: \*\*Android (?<release>\d+\.\d+) \/ API (?<api>\d+)\*\*/,
+  ],
+  [
+    'native support matrix floor row',
+    'docs/MOBILE/native.md',
+    /\| Android floor\s+\| Android API (?<api>\d+) on/,
   ],
 ];
 

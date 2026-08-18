@@ -221,6 +221,9 @@ multi-touch input — the best way to get accurate profiles.
       `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into
       `android/app/build.gradle`, which is the source of truth. Only a hand-built release needs them
       set manually.
+* [ ] Confirm both Android rows in the shared
+      [native support matrix](native.md#native-support-matrix) passed for this tag before publishing
+      signed artifacts.
 * [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
       (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
       each August against the
