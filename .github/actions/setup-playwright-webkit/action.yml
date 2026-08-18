@@ -35,8 +35,9 @@ runs:
           # SIGALRM terminates the process, which bash reports as 128 + 14.
           if [ "$status" = 142 ]; then
             echo "::error title=Playwright WebKit install timed out::Exceeded ${SETUP_TIMEOUT_S}s." \
-              'Network starvation on this runner, not a test failure — re-run the job to get a' \
-              'different machine.'
+              'Network starvation on this runner, not a test failure — a different machine is' \
+              'the remedy. rerun-setup-timeouts.yml re-runs the failed jobs once automatically;' \
+              'a check that stays red has spent that re-run, so re-run the job by hand.'
           fi
           exit $status
         }

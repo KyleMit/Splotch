@@ -398,13 +398,17 @@ also runs on **WebKit** as the `webkit` Playwright project:
   pushes/PRs there. Run it alone with `npm run test:webkit:smoke`.
 * In CI it is its own `webkit-smoke` job, parallel to Tests, rather than a project inside the Tests
   run. WebKit's apt dependencies pull the whole GStreamer/ffmpeg media stack — ~110 packages the
-  Chromium suite doesn't need — and unlike the browser binaries they can't be cached, so that
-  install lands on every run. Off the critical path it costs nothing; inside Tests it cost ~40s per
+  Chromium suite doesn't need — and installing them lands on every run (the `setup-playwright`
+  action's apt package cache feeds that install from cached `.deb` files, taking the network out of
+  it, not the install itself). Off the critical path it costs nothing; inside Tests it cost ~40s per
   run for four tests. That's also why Tests passes `browsers: chromium` to the `setup-playwright`
   action: it *relies* on WebKit being absent so the project drops.
 * Both Ubuntu jobs get their browsers from `.github/actions/setup-playwright` (browser cache +
-  `install-deps`, keyed per browser set); macOS keeps its own `setup-playwright-webkit`, which needs
-  no apt step and caches elsewhere.
+  `install-deps` behind an apt `.deb` cache, each keyed per browser set); macOS keeps its own
+  `setup-playwright-webkit`, which needs no apt step and caches elsewhere. When a network-starved
+  runner drags a setup step past its bound, the step fails with a labelled annotation and
+  `rerun-setup-timeouts.yml` re-runs the failed jobs once automatically — a red check that stays red
+  means that automatic re-run is spent.
 * **Routing is by tag, not filename.** `WEBKIT_ONLY_TAG` (`tests/tags.ts`) sits on the spec's
   `test.describe`; the `webkit` project `grep`s for it and `chromium` `grepInvert`s it, from the one
   shared constant. The two projects are therefore exact complements — a test runs on exactly one
