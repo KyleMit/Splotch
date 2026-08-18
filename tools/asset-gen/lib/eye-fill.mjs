@@ -164,15 +164,15 @@ function median(vals) {
   return quantile(vals, 0.5);
 }
 
-function coreLuma(luma, w, core, label) {
+function coreLuma(lumas, w, core, label) {
   const coreVals = [];
   for (let y = core.minY; y <= core.maxY; y++)
     for (let x = core.minX; x <= core.maxX; x++)
-      if (label[y * w + x] === core.id) coreVals.push(luma[y * w + x]);
+      if (label[y * w + x] === core.id) coreVals.push(lumas[y * w + x]);
   return median(coreVals);
 }
 
-function sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r) {
+function sampleAnnulus(lumas, ink, label, w, h, core, cx, cy, r) {
   // Neighborhood: a TIGHT geometric annulus just outside the core's ring —
   // wide enough to cross a double-stroked ring into the next region, narrow
   // enough that features beyond the eye (a lit cheek, the dark face) barely
@@ -219,7 +219,7 @@ function sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r) {
           }
         }
       }
-      if (!nearInk) bandVals.push(luma[p]);
+      if (!nearInk) bandVals.push(lumas[p]);
     }
   }
   return { bandVals, annulusInkFrac: annulusTotal ? annulusInk / annulusTotal : 0 };

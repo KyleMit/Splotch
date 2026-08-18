@@ -11,6 +11,10 @@ async function decodeOutline(sourceBuf) {
     .raw()
     .toBuffer({ resolveWithObject: true });
   const { width: w, height: h, channels } = info;
+  // chalk-ink-diff.mjs thresholds analysis.luma with OUTLINE_INK_CUTOFF calibrated
+  // against libvips greyscale weighting. Unifying this conversion with image-stats
+  // luma requires rebuilding the chalk-ink-diff fixtures and re-freezing the
+  // coloring golden scores.
   const lumas =
     channels === 1
       ? data

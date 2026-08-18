@@ -47,9 +47,12 @@ describe('luma', () => {
     expect(luma(0, 255, 0)).toBe(0.299 * 0 + 0.587 * 255 + 0.114 * 0);
     expect(luma(0, 0, 255)).toBe(0.299 * 0 + 0.587 * 0 + 0.114 * 255);
     expect(luma(17, 129, 250)).toBe(0.299 * 17 + 0.587 * 129 + 0.114 * 250);
+    // Order-sensitive: left-to-right produces 0.9999999999999999, while reversing
+    // the terms produces exactly 1.
+    expect(luma(1, 1, 1)).toBe(0.299 * 1 + 0.587 * 1 + 0.114 * 1);
   });
 
-  it('keeps Rec.601 coefficient math centralized in the shared helper', async () => {
+  it('keeps Rec.601 coefficient math centralized across the Node libraries', async () => {
     const libDir = new URL('../lib/', import.meta.url);
     const files = (await readdir(libDir, { recursive: true })).filter(
       (file) => file.endsWith('.mjs') && file !== 'image-stats.mjs'
@@ -62,5 +65,32 @@ describe('luma', () => {
         duplicates.push(file);
     }
     expect(duplicates).toEqual([]);
+  });
+
+  it('keeps the proof-sheet browser bundle aligned with the pipeline convention', async () => {
+    const client = await readFile(
+      new URL(
+        '../coloring-book-proof-sheet-assets/coloring-book-proof-sheet.client.js',
+        import.meta.url
+      ),
+      'utf8'
+    );
+    const generator = await readFile(
+      new URL('../coloring/gen-book-proof-sheet.mjs', import.meta.url),
+      'utf8'
+    );
+    const coefficientMatch = client.match(
+      /const l = (\d+\.\d+) \* d\[i\] \+ (\d+\.\d+) \* d\[i \+ 1\] \+ (\d+\.\d+) \* d\[i \+ 2\]/
+    );
+    expect(coefficientMatch).not.toBeNull();
+    expect(coefficientMatch.slice(1).map(Number)).toEqual([
+      luma(1, 0, 0),
+      luma(0, 1, 0),
+      luma(0, 0, 1),
+    ]);
+    expect(generator).toContain("import { OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';");
+    expect(generator).toContain('outlineLuma: OUTLINE_LUMA_THRESHOLD');
+    expect(client).toContain('outlineLuma: OUTLINE_LUMA');
+    expect(client).toContain('l < OUTLINE_LUMA');
   });
 });
