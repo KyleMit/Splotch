@@ -5,7 +5,10 @@ end-to-end, 2026-08-02 (issue #621) to keep responsive coloring derivatives out 
 an explicit canonical offline fallback, and 2026-08-05 (issue #778) to place the version-mismatch
 cache-bust redirect under the same canvas-empty guard as the waiting-worker reload. **Date:**
 2026-06. Amended 2026-08-08 by [ADR-0103](0103-progressive-coloring-book-packs.md) so only the Farm
-starter book is precached and other books use verified runtime pack caches.
+starter book is precached and other books use verified runtime pack caches. Amended 2026-08-18 to
+activate a version-matched waiting worker silently (no reload) and to defer the stale-page reload to
+the hidden edge (`visibilitychange` → hidden), so a visible session is never reloaded out from under
+the user.
 
 ## Context
 
@@ -108,12 +111,34 @@ entry or a downloaded canonical entry.
 It:
 
 * Calls `registration.update()` on page load, on `visibilitychange` to visible, on `focus`, and
-  hourly — so the browser always has a fresh copy of `sw.js` to compare against.
-* When a new SW is found in the `waiting` state, calls `activateWaitingSW()`, which checks
-  `canvasState.canvasEmpty`. If the canvas is blank it posts `{ type: 'SKIP_WAITING' }` to the
-  waiting SW (the Workbox-generated SW handles this message) and sets a `{ once: true }`
-  `controllerchange` listener that reloads the page. If the canvas has content the update is
-  silently deferred to the next launch (the waiting SW activates when the old SW loses all clients).
+  hourly — so the browser always has a fresh copy of `sw.js` to compare against. A check only
+  *downloads* the new worker; applying it is a separate decision.
+* When a new SW reaches the `waiting` state, fetches `/version.json` and compares the deployed
+  version with the running page's `__APP_VERSION__`. An installing worker is always observed before
+  a waiting one is classified: `registration.update()` resolves as soon as the new worker starts
+  installing, so with frequent deploys the registration can hold a stale waiting worker from an
+  earlier deploy alongside it — deciding on the stale worker would compare the newest deploy's
+  version against the page and silently activate the wrong precache. The decision runs only once the
+  install has settled into `waiting`, and is abandoned if the waiting worker is replaced while the
+  version fetch is in flight.
+  * **Equal** — every online cold launch, since navigations are NetworkFirst and fresh HTML boots
+    under the old SW while the new one installs. The waiting worker is activated **silently**
+    (`{ type: 'SKIP_WAITING' }`, no reload, regardless of canvas state): same-version precache means
+    no asset skew, so nothing visible needs to happen. Before this amendment the app reloaded an
+    already-current page here — the refresh users saw seconds after every post-deploy launch.
+  * **Different, or `version.json` unreachable** — the page is stale, typically a resumed PWA that
+    predates a deploy. The update holds in a `ready` state and `applyPendingUpdate()` posts
+    `SKIP_WAITING` with a `{ once: true }` `controllerchange` listener that reloads — but only from
+    the `visibilitychange` → hidden handler, and only while the canvas is blank. The reload happens
+    while the app is backgrounded (for an iPad PWA, "hidden" is what "closed" looks like), so a
+    visible session — an open settings menu, a mid-tap — is never yanked, and the next resume boots
+    the new version with no visible refresh. Because `controllerchange` delivery is asynchronous — a
+    suspended PWA can resume before the new worker takes control — the callback re-checks
+    `document.visibilityState` and defers to the `owed` state instead of reloading a session that
+    turned visible again. `SKIP_WAITING` and the reload stay atomic: activating without reloading a
+    stale page would let lazy-loaded chunks miss under the new worker's precache. If the app is
+    never hidden with a blank canvas, the waiting SW activates on the next full launch as before (it
+    activates when the old SW loses all clients).
 * Also calls `checkVersionMismatch()`: fetches `/version.json` (not precached; always network) with
   `cache: 'no-store'`, compares its `version` field against `__APP_VERSION__` (a Vite compile-time
   constant). If they differ the running SW is serving stale HTML, so it redirects to
@@ -168,13 +193,23 @@ one exempt from the invariant the rest of the module defends.
 could silently re-introduce a conflicting default — the config and this ADR should be reviewed
 together on any major version bump.
 
+**+** A cold online launch never visibly reloads: the page is already the deployed version (HTML is
+NetworkFirst), so the freshly installed worker activates silently instead of reloading a current
+page. With multiple deploys a day, this was the most common visible refresh.
+
 **-** Deferring an update mid-drawing means a user might run old JS code under a new SW for the
 duration of a drawing session. In practice this is safe because the new SW serves new assets and the
 old SW's cache is cleaned up by `cleanupOutdatedCaches`, but it means the app version in memory and
 the SW version in control can briefly diverge.
 
-**-** If the canvas is never blank in a session (unlikely but possible), the update defers
-indefinitely until the app is closed and reopened.
+**-** A stale visible session keeps running its old build until the app is next hidden with a blank
+canvas — a deeper version of the divergence above, deliberately traded for never reloading a visible
+session. If the canvas is never blank, or the app is never hidden, the update defers until the app
+is closed and reopened.
+
+**-** The silent-activation decision costs one extra `/version.json` fetch per pending update (not
+per check), and depends on that endpoint staying un-precached and un-cached; an unreachable
+`version.json` degrades safely to the hidden-edge reload path.
 
 **-** The guarded cache-bust narrows the escape hatch: a client on stale HTML that starts drawing
 before `/version.json` answers keeps running that stale HTML for the rest of the session. The
