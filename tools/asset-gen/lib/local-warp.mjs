@@ -199,9 +199,9 @@ export async function scoreLocalWarp(preparedSource, fillBuffer) {
   const globalDy = median(tiles.map((tile) => tile.dy));
   for (const tile of tiles) {
     tile.localWarp = Math.hypot(tile.dx - globalDx, tile.dy - globalDy);
-    const localizedPeak = !tile.boundaryPeak && tile.falloff <= LOCAL_WARP_PEAK_FALLOFF_MAX;
+    const fallingPeak = tile.falloff <= LOCAL_WARP_PEAK_FALLOFF_MAX;
     const strongGain =
-      localizedPeak &&
+      fallingPeak &&
       tile.gain >= LOCAL_WARP_GAIN_MIN &&
       tile.gain < LOCAL_WARP_GAIN_MAX &&
       tile.orientationDispersion >= LOCAL_WARP_ORIENTATION_DISPERSION_MIN;
@@ -213,10 +213,15 @@ export async function scoreLocalWarp(preparedSource, fillBuffer) {
       tile.gain >= LOCAL_WARP_SPLIT_GAIN_MIN &&
       tile.gain < LOCAL_WARP_GAIN_MAX &&
       tile.peak <= LOCAL_WARP_SPLIT_PEAK_MAX &&
-      localizedPeak &&
+      fallingPeak &&
+      !tile.boundaryPeak &&
       tile.orientationDispersion >= LOCAL_WARP_SPLIT_ORIENTATION_DISPERSION_MIN;
     tile.confidence = strongGain ? 'strong-gain' : splitPeak ? 'split-peak' : null;
     tile.confident = tile.confidence !== null;
+    // A strong peak at the search boundary proves only a lower bound. Keep it
+    // gated at the radius; weak split peaks remain too aperture-prone to clamp.
+    tile.clamped = strongGain && tile.boundaryPeak && tile.localWarp >= LOCAL_WARP_MAX_PX;
+    if (tile.clamped) tile.localWarp = Math.max(tile.localWarp, LOCAL_WARP_SEARCH_RADIUS_PX);
   }
   const confidentTiles = tiles.filter((tile) => tile.confident);
   const worstTile = confidentTiles.reduce(

@@ -7,11 +7,16 @@ import { LOCAL_WARP_MAX_PX, localWarp } from '../lib/local-warp.mjs';
 import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
 import { scoreGoldenPage } from '../lib/golden-catalog.mjs';
 
-function lineArt({ shiftedFeatureX = 0, shiftedFeatureY = 0 } = {}) {
+function lineArt({
+  shiftedFeatureX = 0,
+  shiftedFeatureY = 0,
+  background = 'white',
+  stroke = 'black',
+} = {}) {
   return Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
-      <rect width="512" height="512" fill="white"/>
-      <g fill="none" stroke="black" stroke-width="8">
+      <rect width="512" height="512" fill="${background}"/>
+      <g fill="none" stroke="${stroke}" stroke-width="8">
         <circle cx="96" cy="96" r="48"/>
         <rect x="304" y="48" width="112" height="96" rx="20"/>
         <path d="M48 352 Q96 272 160 352 T272 352"/>
@@ -29,24 +34,27 @@ async function rendered(options) {
 }
 
 describe('local-warp registration score', () => {
-  it('subtracts a rigid translation instead of reporting it as local warp', async () => {
-    const source = await rendered();
-    const translated = await sharp(source)
-      .affine(
-        [
-          [1, 0],
-          [0, 1],
-        ],
-        { idx: 4, idy: -4, background: '#ffffff' }
-      )
-      .png()
-      .toBuffer();
+  it.each([4, 12])(
+    'subtracts a rigid %ipx translation instead of reporting it as local warp',
+    async (shift) => {
+      const source = await rendered();
+      const translated = await sharp(source)
+        .affine(
+          [
+            [1, 0],
+            [0, 1],
+          ],
+          { idx: shift, idy: -shift, background: '#ffffff' }
+        )
+        .png()
+        .toBuffer();
 
-    const score = await localWarp(source, translated);
+      const score = await localWarp(source, translated);
 
-    expect(Math.hypot(score.globalDx, score.globalDy)).toBeGreaterThanOrEqual(4);
-    expect(score.localWarpMax).toBeLessThanOrEqual(LOCAL_WARP_MAX_PX);
-  });
+      expect(Math.hypot(score.globalDx, score.globalDy)).toBeGreaterThanOrEqual(shift);
+      expect(score.localWarpMax).toBeLessThanOrEqual(LOCAL_WARP_MAX_PX);
+    }
+  );
 
   it('rejects a locally displaced articulated feature', async () => {
     const source = await rendered();
@@ -60,6 +68,27 @@ describe('local-warp registration score', () => {
     expect(score.worstTile).toMatchObject({ confident: true, boundaryPeak: false });
     expect(score.worstTile.falloff).toBeLessThan(0.99);
   });
+
+  it.each([12, 20])(
+    'rejects a %ipx night-palette displacement at or beyond the search boundary',
+    async (shiftedFeatureX) => {
+      const score = await localWarp(
+        await rendered(),
+        await rendered({
+          shiftedFeatureX,
+          background: '#182450',
+          stroke: '#ffffff',
+        })
+      );
+
+      expect(score.localWarpMax).toBeGreaterThanOrEqual(12);
+      expect(score.worstTile).toMatchObject({
+        confident: true,
+        boundaryPeak: true,
+        clamped: true,
+      });
+    }
+  );
 });
 
 describe('catalog calibration', () => {

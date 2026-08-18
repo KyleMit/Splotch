@@ -108,12 +108,14 @@ coverage (`keep`) and the **worst grid tile** (`localKeep`). It also cross-corre
 global shift and subtracted; only a confident tile's remaining displacement is local warp. A weak
 split peak must sit away from the search boundary, fall off when sampled past its argmax, and
 contain enough edge-direction diversity, so a straight-edge aperture ridge cannot masquerade as
-movement. The local bars are important — a large aligned subject can hold a 93% global keep while
-one small feature (a flower) sits at 34%, which is exactly how `nature/ant-wide` shipped drifted.
-`alignToSource` only corrects a single global nudge, so a self-drifted feature can't be aligned
-away. Every best candidate and registration overlay lands in `.coloring-samples/` for review.
-Committed raws and their punched shipped assets change only with `--apply`, only after every
-requested page passes all gates; exhausted gates exit nonzero without partially applying the batch.
+movement. A strong, falling peak at the boundary is still a rejection: its magnitude is clamped to
+the 12px search radius and reported as a lower bound instead of disappearing. The local bars are
+important — a large aligned subject can hold a 93% global keep while one small feature (a flower)
+sits at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource` only corrects a
+single global nudge, so a self-drifted feature can't be aligned away. Every best candidate and
+registration overlay lands in `.coloring-samples/` for review. Committed raws and their punched
+shipped assets change only with `--apply`, only after every requested page passes all gates;
+exhausted gates exit nonzero without partially applying the batch.
 
 `check:coloring-fill-drift` runs the same scoring over both themes' **committed raw fills** in
 `fill-src/` (it reads committed assets only — no key, no network) and prints the pages that fail,

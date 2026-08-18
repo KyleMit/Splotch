@@ -239,7 +239,9 @@ keep-best-of-5:
 * **local warp ≤ 4px** — overlapping 128px edge tiles search ±12px; their median vector is residual
   global shift and is subtracted before the worst confident tile is gated. Weak split peaks must be
   interior to the search box, fall off beyond their argmax, and contain diverse edge directions;
-  this rejects straight-edge aperture ridges. A 3–4px result requests review. Reviewed current
+  this rejects straight-edge aperture ridges. A strong, falling boundary peak is clamped to the 12px
+  search radius and treated as a lower bound, so larger local movement still fails without
+  pretending the search measured its full distance. A 3–4px result requests review. Reviewed current
   exceptions carry their exact measured baseline plus a 0.5px decoder margin in `notes.json`; new
   pages retain the strict default, and explicit `--warp-max` always wins. The committed-fill audit
   warns without failing for an in-ceiling baseline or a now-stale loose ceiling;
