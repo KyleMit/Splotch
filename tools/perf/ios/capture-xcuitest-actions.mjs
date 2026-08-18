@@ -1001,6 +1001,14 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       'dark theme preparation'
     );
     await sleep(ACTION_SETTLE_MS);
+    // The theme switches take the default trusted native tap rather than a
+    // semantic WebDriver click: an element click is an Inspector-evaluate atom
+    // on the page's main thread, and a theme switch's scored first frame is the
+    // one frame the whole document restyles in — a Time Profiler capture
+    // (issue #976) measured ~10-15 ms of Inspector dispatch plus a
+    // click-focus scrollToFocusedElement layout inside that frame, dwarfing
+    // the product cost it exists to score. A native tap keeps the activation
+    // out of the scored frame the same way `open Settings` already does.
     await record(
       measureClick({
         client,
@@ -1010,7 +1018,6 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#themeOption-light',
         ready: `document.documentElement.dataset.theme === 'light'`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
       })
     );
     await record(
@@ -1022,7 +1029,6 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: '#themeOption-dark',
         ready: `document.documentElement.dataset.theme === 'dark'`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
-        activation: 'webdriver',
       })
     );
   }
