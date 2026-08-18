@@ -154,6 +154,11 @@ alone won't register it.
 
 ### Data & privacy posture (important for store forms)
 
+The reviewed machine-readable declaration is `tools/mobile/privacy-permission-inventory.json`.
+Tools-tier drift guards compare it with the native manifests, store data categories, retention
+constants, production outbound call sites, and `/privacy`; store forms remain human-submitted from
+the platform checklists.
+
 * **No analytics, tracking, ads, accounts, or advertising/analytics/tracking SDKs.** The native
   dependency set is Capacitor plus functional plugins for device APIs, storage, media saving,
   networking, screen orientation, and coloring-pack downloads.
@@ -244,9 +249,8 @@ The shared baseline both depend on:
       feedback, and the confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
-      `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` ("Splotch can save a
-      screenshot of your drawing to your photo library."); the Android runtime prompt is
-      system-worded.
+      `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` and guarded by the
+      privacy-permission inventory; the Android runtime prompt is system-worded.
 
 ## 5. Known follow-ups / nice-to-haves (cross-platform)
 

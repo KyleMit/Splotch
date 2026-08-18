@@ -372,11 +372,13 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 `tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
 `web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.
 
-**Consistency chain.** The same ephemeral-by-default / 30-day-on-confirmed-report boundary must read
-identically in five places: `ios/App/App/PrivacyInfo.xcprivacy` → the ASC nutrition label
-(`STORE-LISTING-IOS.md`) → the Play Data safety form (`STORE-LISTING-ANDROID.md`) →
-`web/src/routes/privacy/+page.svelte` → ADR-0104/ADR-0105. A change to any one of them is a change
-to all five.
+**Machine-checked consistency.** `tools/mobile/privacy-permission-inventory.json` declares the
+permissions, data categories, ephemeral-by-default / 30-day-on-confirmed-report boundary, and
+production outbound-host classes. The tools-tier drift guards compare it with the Android manifest,
+iOS usage strings and privacy manifest, the ASC nutrition label, the Play Data safety form,
+implementation constants and call sites, and `web/src/routes/privacy/+page.svelte`. The store forms
+remain human-submitted from their checklists; ADR-0104/ADR-0105 remain the design provenance rather
+than another declaration to keep aligned by hand.
 
 ## Open items
 

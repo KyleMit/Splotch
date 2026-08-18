@@ -8,6 +8,7 @@ import { themes } from '../../../../web/src/lib/design/tokens.ts';
 import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
 
 const read = (p) => readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
+const privacyInventory = JSON.parse(read('tools/mobile/privacy-permission-inventory.json'));
 
 // Files allowed to carry the emulator API level / AVD name as literals — each
 // goes red the moment a literal disagrees with ANDROID_API_LEVEL. Deliberately
@@ -130,20 +131,19 @@ describe('Android support floor single source', () => {
 });
 
 describe('Android manifest kids-compliance', () => {
-  it('keeps the declared permission set limited to network and legacy gallery saving', () => {
+  it('matches the reviewed permission inventory', () => {
     const manifest = read('android/app/src/main/AndroidManifest.xml');
-    const permissions = [...manifest.matchAll(/<uses-permission\b[^>]*android:name="([^"]+)"/g)]
-      .map((match) => match[1])
-      .sort();
+    const permissions = [...manifest.matchAll(/<uses-permission\b([^>]*)\/>/g)]
+      .map(([, attributes]) => ({
+        name: attributes.match(/android:name="([^"]+)"/)?.[1],
+        maxSdkVersion: Number(attributes.match(/android:maxSdkVersion="(\d+)"/)?.[1]) || null,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const expected = privacyInventory.permissions.android
+      .map(({ name, maxSdkVersion = null }) => ({ name, maxSdkVersion }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-    expect(permissions).toEqual([
-      'android.permission.ACCESS_NETWORK_STATE',
-      'android.permission.INTERNET',
-      'android.permission.WRITE_EXTERNAL_STORAGE',
-    ]);
-    expect(manifest).toMatch(
-      /android:name="android\.permission\.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/
-    );
+    expect(permissions).toEqual(expected);
   });
 
   it('keeps allowBackup disabled so drawings never leave the device via cloud backup', () => {
