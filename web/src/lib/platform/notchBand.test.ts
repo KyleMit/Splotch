@@ -18,6 +18,11 @@ import { PAPER_COLORS } from '../theme';
 // Representative insets: a clear notch vs. a bezel/status-bar device.
 const NOTCH_INSET = 47; // iPhone notch (portrait)
 const BEZEL_INSET = 20; // iPad / plain status bar
+const TRANSPARENT_EDGE_COLORS = {
+  top: 'transparent',
+  left: 'transparent',
+  right: 'transparent',
+};
 
 // A complete input with no cutout on any edge; spread + override per test.
 const NO_CUTOUT: NotchBandInput = {
@@ -211,7 +216,7 @@ describe('computeNotchBandState — deployment targets', () => {
     expect(state.themeColor).toBe(purple);
     expect(state.statusBarStyle).toBeNull();
     expect(state.statusBarHidden).toBeNull();
-    expect(state.backgroundColor).toBe('transparent');
+    expect(state.backgroundColors).toEqual(TRANSPARENT_EDGE_COLORS);
   });
 
   it('web on iOS: standalone PWA paints the CSS band under the notch', () => {
@@ -222,7 +227,11 @@ describe('computeNotchBandState — deployment targets', () => {
       insetTop: NOTCH_INSET,
       activeColor: purple,
     });
-    expect(state.backgroundColor).toBe(purple);
+    expect(state.backgroundColors).toEqual({
+      top: purple,
+      left: 'transparent',
+      right: 'transparent',
+    });
     // Web cannot call the native plugin even on iOS.
     expect(state.statusBarStyle).toBeNull();
   });
@@ -234,7 +243,7 @@ describe('computeNotchBandState — deployment targets', () => {
       insetTop: 34,
       activeColor: purple,
     });
-    expect(state.backgroundColor).toBe(purple);
+    expect(state.backgroundColors.top).toBe(purple);
     expect(state.statusBarStyle).toBe(statusBarStyleForBand(purple));
     expect(state.statusBarHidden).toBe(false); // portrait
   });
@@ -246,7 +255,7 @@ describe('computeNotchBandState — deployment targets', () => {
       insetTop: NOTCH_INSET,
       activeColor: '#0a0b10',
     });
-    expect(state.backgroundColor).toBe('#0a0b10');
+    expect(state.backgroundColors.top).toBe('#0a0b10');
     expect(state.statusBarStyle).toBe('DARK'); // black band → light icons
     expect(state.statusBarHidden).toBeNull(); // iOS keeps its default status bar
   });
@@ -258,12 +267,30 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
       ...NO_CUTOUT,
       platform: 'android',
       orientation: 'landscape',
-      insetTop: 0,
+      insetTop: NOTCH_INSET,
       insetLeft: NOTCH_INSET,
       activeColor: '#62A2E9',
     });
-    expect(state.backgroundColor).toBe('#62A2E9');
+    expect(state.backgroundColors).toEqual({
+      top: 'transparent',
+      left: '#62A2E9',
+      right: 'transparent',
+    });
     expect(state.statusBarHidden).toBe(true);
+  });
+
+  it('paints only the tie-breaking right edge when both side insets match', () => {
+    const state = computeNotchBandState({
+      ...NO_CUTOUT,
+      orientation: 'landscape',
+      insetLeft: NOTCH_INSET,
+      insetRight: NOTCH_INSET,
+    });
+    expect(state.backgroundColors).toEqual({
+      top: 'transparent',
+      left: 'transparent',
+      right: '#AB71E1',
+    });
   });
 
   it('hides the status bar in landscape even with no cutout (notch-less phone)', () => {
@@ -272,7 +299,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
       platform: 'android',
       orientation: 'landscape',
     });
-    expect(state.backgroundColor).toBe('transparent');
+    expect(state.backgroundColors).toEqual(TRANSPARENT_EDGE_COLORS);
     expect(state.statusBarHidden).toBe(true); // but still reclaim the top edge
   });
 });
@@ -282,15 +309,15 @@ describe('computeNotchBandState — no-cutout devices skip the band', () => {
 
   it('bezel iPad (camera in the bezel) gets no band and no icon flip', () => {
     const state = computeNotchBandState(baseline);
-    expect(state.backgroundColor).toBe('transparent');
+    expect(state.backgroundColors).toEqual(TRANSPARENT_EDGE_COLORS);
     expect(state.statusBarStyle).toBeNull();
   });
 
   it('desktop web gets no band', () => {
     expect(
       computeNotchBandState({ ...baseline, platform: 'web', native: false, insetTop: 0 })
-        .backgroundColor
-    ).toBe('transparent');
+        .backgroundColors
+    ).toEqual(TRANSPARENT_EDGE_COLORS);
   });
 });
 
@@ -301,7 +328,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       insetTop: NOTCH_INSET,
       activeColor: '#62A2E9',
     });
-    expect(state.backgroundColor).toBe('#62A2E9');
+    expect(state.backgroundColors.top).toBe('#62A2E9');
     expect(state.themeColor).toBe('#62A2E9');
   });
 
@@ -312,7 +339,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       activeColor: '#62A2E9',
       eraser: true,
     });
-    expect(state.backgroundColor).toBe(PAPER_COLORS.light);
+    expect(state.backgroundColors.top).toBe(PAPER_COLORS.light);
     expect(state.themeColor).toBe(PAPER_COLORS.light);
     expect(state.statusBarStyle).toBe('LIGHT');
   });
@@ -325,7 +352,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       eraser: true,
       paperColor: PAPER_COLORS.dark,
     });
-    expect(state.backgroundColor).toBe(PAPER_COLORS.dark);
+    expect(state.backgroundColors.top).toBe(PAPER_COLORS.dark);
     expect(state.themeColor).toBe(PAPER_COLORS.dark);
     expect(state.statusBarStyle).toBe('DARK');
   });
