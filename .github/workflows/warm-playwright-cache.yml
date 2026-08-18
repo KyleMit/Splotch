@@ -10,6 +10,14 @@
 # The daily schedule tracks runner-image rotations, which land on GitHub's clock, not
 # this repo's. Playwright bumps are covered by the push trigger: the lockfile path
 # filter fires exactly when a merge changes dependency versions.
+#
+# Tests also warms these caches incidentally — it runs on every push to main and its
+# jobs save on a key miss — so on an active day this workflow mostly no-ops. Its
+# marginal coverage, the reason it is not redundant with Tests: a rotation that lands
+# when nothing is merging (weekends and quiet stretches, when Dependabot still opens
+# PRs against the cold key), a main Tests run that goes red after setup (the cache
+# post step saves only when the job succeeds), and the head start of a ~1-minute
+# setup-only job over a ~4-minute test run.
 name: Warm Playwright caches
 
 on:
