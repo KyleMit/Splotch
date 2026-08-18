@@ -40,7 +40,12 @@ jobs:
           failed_jobs_output="$(gh api --paginate \
             "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/jobs?filter=latest&per_page=100" \
             --jq '.jobs[] | select(.conclusion == "failure") | .id')"
-          mapfile -t failed_job_ids < <(printf '%s' "$failed_jobs_output")
+          # No mapfile: tools/tests/rerun-setup-timeouts.test.mjs executes this script
+          # with the system bash, and macOS ships Bash 3.2.
+          failed_job_ids=()
+          while IFS= read -r job_id; do
+            [ -n "$job_id" ] && failed_job_ids+=("$job_id")
+          done <<< "$failed_jobs_output"
 
           if ((${#failed_job_ids[@]} == 0)); then
             echo 'No failed jobs to examine; nothing to re-run.'
