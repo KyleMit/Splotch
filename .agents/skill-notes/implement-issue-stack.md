@@ -66,7 +66,9 @@ checkout. Continuation prompts verify prior blockers and the response delta, adm
 finding only when the response introduced it, earlier evidence could not expose it, or a critical
 safety/security/data-loss risk justifies surfacing a prior miss, and explicitly accept a clean
 result. One full review plus two continuation rounds bounds the process. Remaining valid blockers
-quarantine the issue rather than turning suggestions or nits into mandatory churn.
+quarantine the issue rather than turning suggestions or nits into mandatory churn. The fixed
+publisher owns the authoritative count and refuses a fourth published turn; the orchestrator's
+checkpoint mirrors that state rather than enforcing a budget from prose alone.
 
 The campaign boundary follows the same blast-radius rule. Missing shared authorization, broken
 repository-wide gates, or unavailable common infrastructure remain global blockers because later

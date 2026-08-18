@@ -200,7 +200,9 @@ reviewer's earlier miss. Require the reviewer to state which condition applies.
 Allow the initial full review plus at most two resumed convergence rounds across the issue. After
 that bound, any unresolved valid blocking finding—or any product-code change that would require an
 unavailable fourth review turn—quarantines only this issue. Suggestions, nits, and answered
-questions do not prevent delivery when their threads have explicit dispositions.
+questions do not prevent delivery when their threads have explicit dispositions. The fixed reviewer
+wrapper enforces this round budget from its verified-publication record; do not bypass or reset it
+to gain another review turn.
 
 ### 7. Drive final CI to green
 

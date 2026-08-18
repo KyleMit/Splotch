@@ -37,6 +37,8 @@ export const REVIEWER_PATHS = {
 const REPOSITORY = 'KyleMit/Splotch';
 const SHA_PATTERN = /^[0-9a-f]{40}$/i;
 const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_REVIEW_ROUNDS = 3;
+const MISSING_SESSION_MESSAGE = 'No conversation found with session ID';
 // Longer than the runner's default: an empirical review legitimately sits silent while a build or
 // targeted test run executes between a tool_use event and its tool_result.
 const REVIEW_STALL_TIMEOUT_MS = 30 * 60 * 1000;
@@ -112,7 +114,11 @@ export function reviewerSessionRecordPath(directory, prNumber) {
 export function readReviewerSession(directory, prNumber) {
   const path = reviewerSessionRecordPath(directory, prNumber);
   if (!existsSync(path)) return null;
-  return JSON.parse(readFileSync(path, 'utf8'));
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    throw new Error(`unreadable reviewer session record: ${path}`);
+  }
 }
 
 function writeReviewerSession(directory, prNumber, record, exclusive = false) {
@@ -130,8 +136,16 @@ function writeReviewerSession(directory, prNumber, record, exclusive = false) {
 export function planReviewerSession(prNumber, paths = REVIEWER_PATHS) {
   const record = readReviewerSession(paths.sessionsDirectory, prNumber);
   if (record) {
-    if (record.prNumber !== prNumber || !SESSION_ID_PATTERN.test(record.sessionId ?? '')) {
+    if (
+      record.prNumber !== prNumber ||
+      !SESSION_ID_PATTERN.test(record.sessionId ?? '') ||
+      !Number.isInteger(record.completedRounds) ||
+      record.completedRounds < 0
+    ) {
       throw new Error(`invalid reviewer session record for pull request ${prNumber}`);
+    }
+    if (record.completedRounds >= MAX_REVIEW_ROUNDS) {
+      throw new Error(`review round budget exhausted for pull request ${prNumber}`);
     }
     return { mode: 'resume', id: record.sessionId, record };
   }
@@ -152,20 +166,57 @@ export function reviewerSessionArguments(session) {
   throw new Error(`unsupported reviewer session mode: ${session.mode}`);
 }
 
-function recordCompletedReview(session, metadata, paths) {
+export function recordCompletedReview(session, metadata, paths = REVIEWER_PATHS) {
+  const completedRounds = session.record.completedRounds + 1;
+  if (completedRounds > MAX_REVIEW_ROUNDS) {
+    throw new Error(`review round budget exhausted for pull request ${metadata.number}`);
+  }
   writeReviewerSession(paths.sessionsDirectory, metadata.number, {
     ...session.record,
-    completedRounds: session.record.completedRounds + 1,
+    completedRounds,
     lastBaseOid: metadata.baseRefOid,
     lastHeadOid: metadata.headRefOid,
     lastCompletedAt: new Date().toISOString(),
   });
 }
 
+export function recordAdoptedReview(metadata, paths = REVIEWER_PATHS) {
+  const record = readReviewerSession(paths.sessionsDirectory, metadata.number);
+  if (!record) return;
+  if (
+    record.prNumber !== metadata.number ||
+    !SESSION_ID_PATTERN.test(record.sessionId ?? '') ||
+    !Number.isInteger(record.completedRounds) ||
+    record.completedRounds < 0
+  ) {
+    throw new Error(`invalid reviewer session record for pull request ${metadata.number}`);
+  }
+  if (record.lastBaseOid === metadata.baseRefOid && record.lastHeadOid === metadata.headRefOid) {
+    return;
+  }
+  if (record.completedRounds >= MAX_REVIEW_ROUNDS) {
+    throw new Error(`review round budget exhausted for pull request ${metadata.number}`);
+  }
+  recordCompletedReview({ record }, metadata, paths);
+}
+
 export function endReviewerSession(prNumber, paths = REVIEWER_PATHS) {
-  const record = readReviewerSession(paths.sessionsDirectory, prNumber);
+  const recordPath = reviewerSessionRecordPath(paths.sessionsDirectory, prNumber);
+  let record;
+  try {
+    record = readReviewerSession(paths.sessionsDirectory, prNumber);
+  } catch {
+    rmSync(recordPath, { force: true });
+    console.log(`removed unreadable reviewer session record for pull request ${prNumber}`);
+    return;
+  }
   if (!record) {
     console.log(`no reviewer session recorded for pull request ${prNumber}`);
+    return;
+  }
+  if (record.prNumber !== prNumber || !SESSION_ID_PATTERN.test(record.sessionId ?? '')) {
+    rmSync(recordPath, { force: true });
+    console.log(`removed invalid reviewer session record for pull request ${prNumber}`);
     return;
   }
   let removed = 0;
@@ -180,10 +231,24 @@ export function endReviewerSession(prNumber, paths = REVIEWER_PATHS) {
       }
     }
   }
-  rmSync(reviewerSessionRecordPath(paths.sessionsDirectory, prNumber), { force: true });
+  rmSync(recordPath, { force: true });
   console.log(
     `ended reviewer session for pull request ${prNumber} (${removed} transcript path${removed === 1 ? '' : 's'} removed)`
   );
+}
+
+export function isMissingReviewerSessionError(error) {
+  return error instanceof Error && error.message.includes(MISSING_SESSION_MESSAGE);
+}
+
+export function endReviewerSessionSafely(
+  prNumber,
+  paths = REVIEWER_PATHS,
+  environment = process.env
+) {
+  assertNoApiBillingEnvironment(environment);
+  verifyInstallation(paths);
+  endReviewerSession(prNumber, paths);
 }
 
 function digest(path) {
@@ -310,9 +375,9 @@ function adoptPublishedReview(metadata, paths) {
   }
   if (matches.length === 1) {
     console.log('adopted the existing marked Claude review for this base/head');
-    return true;
+    return matches[0];
   }
-  return false;
+  return null;
 }
 
 function verifyPublishedReview(metadata, reviewMarker, paths) {
@@ -330,12 +395,16 @@ function verifyPublishedReview(metadata, reviewMarker, paths) {
   }
 }
 
-export async function publishReview(prNumber, paths = REVIEWER_PATHS, environment = process.env) {
+async function publishReviewAttempt(prNumber, paths, environment) {
   assertNoApiBillingEnvironment(environment);
   verifyInstallation(paths);
   const metadata = readMetadata(prNumber, paths);
   verifyRepositoryAndRefs(metadata, paths);
-  if (adoptPublishedReview(metadata, paths)) return;
+  const adoptedReview = adoptPublishedReview(metadata, paths);
+  if (adoptedReview) {
+    recordAdoptedReview(metadata, paths);
+    return;
+  }
   const session = planReviewerSession(prNumber, paths);
   console.error(`review session id: ${session.id} (${session.mode})`);
   const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-claude-review-'));
@@ -398,7 +467,6 @@ export async function publishReview(prNumber, paths = REVIEWER_PATHS, environmen
       },
       REVIEW_STALL_TIMEOUT_MS
     );
-
     const finalMetadata = readMetadata(prNumber, paths);
     if (finalMetadata.headRefOid !== metadata.headRefOid) {
       throw new Error(
@@ -419,10 +487,28 @@ export async function publishReview(prNumber, paths = REVIEWER_PATHS, environmen
   }
 }
 
+export async function publishReview(
+  prNumber,
+  paths = REVIEWER_PATHS,
+  environment = process.env,
+  allowSessionReset = true
+) {
+  try {
+    await publishReviewAttempt(prNumber, paths, environment);
+  } catch (error) {
+    if (allowSessionReset && isMissingReviewerSessionError(error)) {
+      endReviewerSession(prNumber, paths);
+      await publishReviewAttempt(prNumber, paths, environment);
+      return;
+    }
+    throw error;
+  }
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const options = parseReviewerArgs(process.argv.slice(2));
-    if (options.endSession) endReviewerSession(options.prNumber);
+    if (options.endSession) endReviewerSessionSafely(options.prNumber);
     else await publishReview(options.prNumber);
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);

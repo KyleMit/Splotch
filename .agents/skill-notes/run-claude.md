@@ -124,6 +124,20 @@ blockers that could not have been seen earlier. The orchestrator explicitly ends
 delivery or quarantine. This preserves empirical isolation per head without resetting review intent
 between rounds.
 
+The first implementation persisted the generated session ID before fetch, worktree creation, or the
+Claude spawn. A mechanical failure in that window left a record for a conversation that never
+existed, so every retry attempted a fatal `--resume`. The wrapper now recognizes Claude's specific
+missing-conversation failure, removes that bounded record and any matching transcript, and retries
+once with a fresh session. Verified publication increments a wrapper-enforced three-round budget,
+and adopting a review after a crash fills the missing round metadata without double-counting an
+already recorded range.
+
+Cleanup is deliberately total but never trusts record contents. The CLI re-runs the installed-byte
+and authentication guards, validates the recorded session UUID before scanning Claude project
+directories, and treats unreadable or invalid JSON as authority to remove only the known per-PR
+record path. This keeps `--end-session` usable as the recovery action without letting a malformed
+record steer recursive deletion.
+
 Open validation questions:
 
 * Whether Claude adds a stable machine-readable subscription field that should become a required

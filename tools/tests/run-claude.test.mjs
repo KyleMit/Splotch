@@ -33,11 +33,15 @@ import {
 import {
   buildAuthorizationPrompt,
   endReviewerSession,
+  isMissingReviewerSessionError,
   parseReviewerArgs,
   planReviewerSession,
+  recordAdoptedReview,
+  recordCompletedReview,
   readReviewerSession,
   REVIEWER_PATHS,
   reviewerSessionArguments,
+  reviewerSessionRecordPath,
 } from '../../.agents/skills/run-claude/scripts/claude-review-publish.mjs';
 import { HEALTH_PATHS } from '../../.agents/skills/run-claude/scripts/claude-health.mjs';
 import {
@@ -553,6 +557,91 @@ describe('trusted Claude PR reviewer', () => {
     }
   });
 
+  it('enforces the review budget and accounts for adopted reviews exactly once', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-budget-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const created = planReviewerSession(42, paths);
+      recordCompletedReview(created, metadata, paths);
+      recordAdoptedReview(metadata, paths);
+      expect(readReviewerSession(paths.sessionsDirectory, 42).completedRounds).toBe(1);
+
+      const secondMetadata = { ...metadata, headRefOid: 'c'.repeat(40) };
+      recordAdoptedReview(secondMetadata, paths);
+      const third = planReviewerSession(42, paths);
+      const thirdMetadata = { ...metadata, headRefOid: 'd'.repeat(40) };
+      recordCompletedReview(third, thirdMetadata, paths);
+
+      expect(readReviewerSession(paths.sessionsDirectory, 42)).toMatchObject({
+        completedRounds: 3,
+        lastHeadOid: thirdMetadata.headRefOid,
+      });
+      expect(() => planReviewerSession(42, paths)).toThrow('review round budget exhausted');
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('recovers round state from an adopted marked review', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-adopted-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const created = planReviewerSession(42, paths);
+      recordAdoptedReview(metadata, paths);
+      expect(readReviewerSession(paths.sessionsDirectory, 42)).toMatchObject({
+        sessionId: created.id,
+        completedRounds: 1,
+        lastBaseOid: metadata.baseRefOid,
+        lastHeadOid: metadata.headRefOid,
+      });
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('removes corrupt records without following an invalid session id', () => {
+    const temporaryRoot = mkdtempSync(join(tmpdir(), 'splotch-review-corrupt-'));
+    try {
+      const paths = {
+        sessionsDirectory: join(temporaryRoot, 'sessions'),
+        claudeProjects: join(temporaryRoot, 'projects'),
+      };
+      const recordPath = reviewerSessionRecordPath(paths.sessionsDirectory, 42);
+      const victim = join(temporaryRoot, 'VICTIM');
+      mkdirSync(paths.sessionsDirectory, { recursive: true });
+      mkdirSync(join(paths.claudeProjects, 'review-project'), { recursive: true });
+      mkdirSync(victim);
+      writeFileSync(recordPath, '{"prNumber":42,"sessionId":"../../VICTIM"}');
+      endReviewerSession(42, paths);
+      expect(existsSync(victim)).toBe(true);
+      expect(existsSync(recordPath)).toBe(false);
+
+      writeFileSync(recordPath, '{oops');
+      expect(() => readReviewerSession(paths.sessionsDirectory, 42)).toThrow(recordPath);
+      endReviewerSession(42, paths);
+      expect(existsSync(recordPath)).toBe(false);
+    } finally {
+      rmSync(temporaryRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('recognizes only Claude missing-session failures for the bounded self-heal', () => {
+    expect(
+      isMissingReviewerSessionError(
+        new Error('claude exited 1: No conversation found with session ID: missing')
+      )
+    ).toBe(true);
+    expect(isMissingReviewerSessionError(new Error('claude exited 1: another failure'))).toBe(
+      false
+    );
+  });
+
   it('hardcodes Auto and safe mode and installs every trusted byte', () => {
     const wrapper = readFileSync(
       join(repositoryRoot, '.agents/skills/run-claude/scripts/claude-review-publish.mjs'),
@@ -579,6 +668,7 @@ describe('trusted Claude PR reviewer', () => {
     expect(wrapper).toContain("'--slurp'");
     expect(wrapper).toContain("matches[0].state !== 'COMMENTED'");
     expect(wrapper).toContain('adoptPublishedReview(metadata, paths)');
+    expect(wrapper).toContain('endReviewerSessionSafely(options.prNumber)');
     expect(wrapper).toContain('splotch-claude-review:base=${metadata.baseRefOid};head=');
     const expected = expectedRunClaudeFiles();
     const manifest = JSON.parse(expected.manifest.toString());

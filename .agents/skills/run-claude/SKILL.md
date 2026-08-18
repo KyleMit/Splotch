@@ -132,7 +132,10 @@ per base/head. End the conversation after delivery or quarantine:
 ```
 
 The disposable worktree is still removed after every invocation; only the narrowly bound review
-conversation persists between rounds.
+conversation persists between rounds. The publisher enforces the issue-stack budget of three
+published review rounds and retries once with a new conversation if the recorded session was never
+created or later disappeared. `--end-session` verifies the installed wrapper before cleanup and
+removes an unreadable or invalid record without following its contents into the transcript tree.
 
 ## Intermediate feedback
 

@@ -28,7 +28,10 @@ directory, then removes the record. The progress stream and stall watchdog chang
 process group, and no profile gains a tool or an external write from streaming; the PR publisher
 keeps a separate owner-only session record bound to one validated PR number. Its later invocations
 can resume only that PR's recorded session, and `--pr <number> --end-session` deletes the transcript
-and record after delivery or quarantine.
+and record after delivery or quarantine. Cleanup re-verifies the installed wrapper and validates the
+recorded UUID before recursive transcript removal; a corrupt record can remove only its own known
+record path. A recorded conversation that was never created or later disappeared self-heals once,
+and the wrapper refuses a fourth published review round.
 
 The PR publisher accepts `--pr <positive-integer>` for `KyleMit/Splotch`, optionally with
 `--end-session`. It passes that same narrow authorization to Claude and runs with:
