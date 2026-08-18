@@ -117,6 +117,15 @@ describe('Android emulator API levels', () => {
     );
   });
 
+  it('gives the checkout-free failure reporter explicit repository context', () => {
+    const reportJob = androidWorkflow.slice(androidWorkflow.indexOf('  report-failure:'));
+    expect(reportJob).not.toContain('actions/checkout@');
+    expect(reportJob).toContain('GH_REPO: ${{ github.repository }}');
+    expect(reportJob.indexOf('GH_REPO: ${{ github.repository }}')).toBeLessThan(
+      reportJob.indexOf('gh issue list')
+    );
+  });
+
   for (const file of ENFORCED) {
     it(`${file} carries no stale AVD/API-level literals`, () => {
       const text = read(file);

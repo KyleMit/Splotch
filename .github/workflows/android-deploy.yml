@@ -164,6 +164,7 @@ jobs:
       - name: File the failure
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BUILD_RESULT: ${{ needs.build.result }}
           SMOKE_RESULT: ${{ needs.smoke.result }}
