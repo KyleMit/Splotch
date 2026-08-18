@@ -403,7 +403,7 @@ context.<span class="fn">quadraticCurveTo</span>(seg.cx, seg.cy, seg.x, seg.y);<
         <article class="life-step" data-step="1"><h3>Begin</h3><p>The first pixel of the whole multi-finger group records whether the canvas was empty and opens one active command.</p></article>
         <article class="life-step" data-step="2"><h3>First tile mutation</h3><p>Copy that tile once, then union every operation’s transformed dirty bounds into the command’s rectangle.</p></article>
         <article class="life-step" data-step="3"><h3>Commit</h3><p>Crop each temporary tile copy to its dirty rectangle; push the command; retain up to 20 steps.</p></article>
-        <article class="life-step" data-step="4"><h3>Budget</h3><p>If patches exceed three aggregate papers of RGBA bytes, drop the oldest patches but keep at least the newest two.</p></article>
+        <article class="life-step" data-step="4"><h3>Budget</h3><p>If patches exceed six aggregate papers of RGBA bytes, drop the oldest patches but keep at least the newest two.</p></article>
         <article class="life-step" data-step="5"><h3>Wait</h3><p>Pointerdown cancels compaction. After 1.5 seconds without input, one non-undoable command may fold.</p></article>
         <article class="life-step" data-step="6"><h3>Fold</h3><p>Replay that command through the same renderer into the offscreen 4×4 raster base, then discard its vector entry.</p></article>
         <article class="life-step" data-step="7"><h3>Undo</h3><p>Pop the newest command; clear only its dirty patch rectangles and blit the saved “before” pixels back.</p></article>
@@ -480,7 +480,7 @@ tile.ctx.<span class="fn">restore</span>();</code></pre>
 
       <h3>Magic brush: paint through an immutable color sheet</h3>
       <p>A coloring-page fill—or a generated rainbow on blank paper—is contain-fitted into the engine’s paper space. When the platform supports it, a worker fetches, decodes, rasterizes, and transfers an <code>ImageBitmap</code>. Each tile crops its own pattern source so WebKit never samples one giant full-page pattern during live drawing.</p>
-      <p>The first time a Magic operation paints, it captures the current sheet snapshot on that operation. Later theme or page changes do not recolor history. An operation created before an asynchronous sheet is ready initially paints nothing; one gated repaint resolves it when the sheet arrives.</p>
+      <p>The first time a Magic operation paints, it captures the current sheet snapshot on that operation. Removing or swapping the coloring page recodes retained Magic ops to the new page’s sheet as one undoable command; a theme change recodes them in place without adding an undo step. An operation created before an asynchronous sheet is ready initially paints nothing; one gated repaint resolves it when the sheet arrives.</p>
 
       <div class="crayon-pipeline" role="img" aria-label="Crayon pipeline from fixed noise to a tile pattern, phase shifted pass, preview buffers, and stamped normal ink">
         <div class="crayon-stage"><div class="tooth" aria-hidden="true"></div><b>Fixed tooth field</b><small>tileable value noise + dither</small></div><div class="crayon-arrow" aria-hidden="true">→</div>
@@ -696,6 +696,7 @@ target.globalAlpha = <span class="num">1</span> - mix;
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0091-alpha-overlays-and-worker-magic-sheets.md">ADR-0091 · worker Magic sheets</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0090-tiered-real-ipad-performance-regression-gates.md">ADR-0090 · physical iPad gates</a>
         <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0110-single-replay-worker-canvas-context-recovery.md">ADR-0110 · worker context recovery</a>
+        <a href="https://github.com/KyleMit/Splotch/blob/main/docs/adrs/0121-recode-retained-magic-ink-with-coloring-appearance.md">ADR-0121 · Magic ink recode</a>
       </div>
     </section>
   </div>
