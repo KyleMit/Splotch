@@ -292,7 +292,12 @@ The rAF recorder runs inside MobileSafari, so WebDriver's Mac/device round-trip 
 frame score. The reported first-observed readiness is only an upper bound: the driver must return
 from native context before it can observe the DOM condition. Drawing controls use native XCUITest
 pointer sequences because `scribbleTap` intentionally ignores an element-click pointer surrogate;
-ordinary dialog and Settings controls use semantic WebDriver clicks.
+ordinary dialog and Settings controls use semantic WebDriver clicks. The theme switches are the
+exception among Settings controls: a WebDriver element click executes as an Inspector-evaluate atom
+on the page's main thread, and the theme switch is scored on the single frame the whole document
+restyles in, so the atom's dispatch cost (and the element click's focus-scroll layout) lands inside
+the number being gated — a Time Profiler capture on issue #976 measured that overhead at 10-15 ms of
+a ~38 ms frame. They use the trusted native tap instead, like `open Settings`.
 
 For a hosted real-device endpoint, pass a credentialed `--appium-url=`,
 `--capabilities-file=/path/outside/repo/provider.json`, and a preview URL the device can reach. ADR
