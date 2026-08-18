@@ -99,6 +99,12 @@ import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { darkFillPrompt } from '../lib/prompts.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
+import {
+  LOCAL_WARP_MAX_PX,
+  LOCAL_WARP_WARN_PX,
+  prepareLocalWarpSource,
+  scoreLocalWarp,
+} from '../lib/local-warp.mjs';
 
 const WEBP_QUALITY = 90;
 
@@ -174,6 +180,7 @@ const { values, positionals } = parseArgs({
     'night-luma-max': { type: 'string' },
     'line-white-min': { type: 'string' },
     'halo-score-max': { type: 'string' },
+    'warp-max': { type: 'string' },
     'dilate-lines': { type: 'string' },
     notes: { type: 'string' },
     'dry-run': { type: 'boolean' },
@@ -212,6 +219,7 @@ function nightSettings(v, source) {
       NIGHT_HALO_SCORE_MAX,
       source
     ),
+    'warp-max': parseNonNegative(v['warp-max'], '--warp-max', LOCAL_WARP_MAX_PX, source),
     'dilate-lines': v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
     notes: v.notes,
   };
@@ -224,6 +232,7 @@ function nightSettings(v, source) {
     nightLumaMax: leverSettings['night-luma-max'],
     lineWhiteMin: leverSettings['line-white-min'],
     haloScoreMax: leverSettings['halo-score-max'],
+    warpMax: leverSettings['warp-max'],
     dilateLines: leverSettings['dilate-lines'],
     notes: leverSettings.notes,
     leverSettings,
@@ -317,6 +326,7 @@ for (const page of pages) {
   // line art dark mode actually renders, so it is both the model's input and
   // the registration/scoring reference. Un-forked pages fall back to the pen.
   const { source, chalk } = await resolveNightLineArt(page, pen);
+  const warpSource = await prepareLocalWarpSource(source);
   const darkInput = values.rescore ? null : await toDarkInput(source, cfg.dilateLines);
   // Eye reference: which nested cores the committed light fill paints as lively
   // eyes — cores keyed off the PEN outline on both sides of the comparison.
@@ -326,9 +336,10 @@ for (const page of pages) {
   const lightEyes = lightRaw ? await scoreEyeFill(lightRaw, pen) : null;
   const scoreCandidate = async (candidate, shift, attempt) => {
     const analysis = await prepareNightFillAnalysis(candidate, source);
-    const [{ drift, night, line }, punched] = await Promise.all([
+    const [{ drift, night, line }, punched, warp] = await Promise.all([
       scoreNightFillGates(analysis),
       punchNightCandidate(analysis),
+      scoreLocalWarp(warpSource, candidate),
     ]);
     const halo = await scoreNightHalo(analysis, punched);
     // Eye cores always come from the PEN outline (the chalk's solid sclera has
@@ -352,7 +363,7 @@ for (const page of pages) {
       orbFailed: orb.failed,
       worstOrb: orb.worst ?? null,
     };
-    return { candidate, ...shift, drift, night, line, halo, eyes, attempt };
+    return { candidate, ...shift, drift, night, line, halo, warp, eyes, attempt };
   };
 
   for (let i = 0; i < samples; i++) {
@@ -392,7 +403,7 @@ for (const page of pages) {
       const status = take.accepted
         ? `ok${take.attemptsRun > 1 ? `  kept attempt ${take.attempt}/${take.attemptsRun}` : ''}`
         : `kept least-bad attempt ${take.attempt}/${take.attemptsRun}`;
-      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)} halo ${take.halo.haloScore.toFixed(3)} rawHalo ${take.halo.rawScore.toFixed(3)}`;
+      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)} halo ${take.halo.haloScore.toFixed(3)} rawHalo ${take.halo.rawScore.toFixed(3)} warp ${take.warp.localWarpMax.toFixed(1)}px residual ${take.warp.globalDx},${take.warp.globalDy}`;
       const failed = take.accepted
         ? ''
         : (take.night.bgLuma > cfg.nightLumaMax
@@ -404,6 +415,9 @@ for (const page of pages) {
           (take.halo.haloScore > cfg.haloScoreMax
             ? `  halo-gate FAILED (halo ${take.halo.haloScore.toFixed(3)} > max ${cfg.haloScoreMax}; hotspot ${take.halo.hotspots[0]?.left ?? '-'},${take.halo.hotspots[0]?.top ?? '-'})`
             : '') +
+          (take.warp.localWarpMax > cfg.warpMax
+            ? `  warp-gate FAILED (warp ${take.warp.localWarpMax.toFixed(1)}px > max ${cfg.warpMax}px; tile ${take.warp.worstTile?.x ?? '-'},${take.warp.worstTile?.y ?? '-'})`
+            : '') +
           (take.eyes.coreFailed ? `  eye-gate FAILED (${take.eyes.coreFailed} flat eyes)` : '') +
           (take.eyes.orbFailed
             ? `  orb-gate FAILED (${take.eyes.orbFailed} blank-orb eyes, coreDark ${take.eyes.worstOrb?.coreDarkFrac})`
@@ -412,6 +426,9 @@ for (const page of pages) {
         (take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '') +
         (take.halo.rawScore > NIGHT_HALO_RAW_REVIEW_THRESHOLD
           ? `  ⚠ crop review (rawHalo ${take.halo.rawScore.toFixed(3)} > ${NIGHT_HALO_RAW_REVIEW_THRESHOLD})`
+          : '') +
+        (take.warp.localWarpMax >= LOCAL_WARP_WARN_PX && take.warp.localWarpMax <= cfg.warpMax
+          ? `  ⚠ warp review (${take.warp.localWarpMax.toFixed(1)}px)`
           : '');
       console.log(`${status}${nudge}${stats}${failed}${warn}  -> ${relative(REPO_ROOT, out)}`);
       if (take.accepted) passingCandidates.push({ rel, candidate: take.candidate });

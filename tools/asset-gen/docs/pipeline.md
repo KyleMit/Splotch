@@ -236,6 +236,11 @@ keep-best-of-5:
   nudge the model tends to add;
 * **keep ≥ 92% / worst-tile ≥ 80%** — the worst-tile gate exists because a 93% global keep once
   shipped with a single flower drifted to 34% (nature/ant-wide, pre-gate);
+* **local warp ≤ 4px** — overlapping 128px edge tiles search ±12px; their median vector is residual
+  global shift and is subtracted before the worst confident tile is gated. A 3–4px result requests
+  review. Reviewed current exceptions carry their exact measured baseline plus a 0.5px decoder
+  margin in `notes.json`; new pages retain the strict default, and explicit `--warp-max` always
+  wins;
 * **white ≤ 5%** — big blank areas read as uncolored under the brush;
 * **eyes** — at least one reviewed, measurable eye core reads lively (`judgeLightEyes`). Pages whose
   eye cores are all band-blind, or whose reviewed nested regions are all non-face geometry, are
@@ -256,8 +261,8 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
 cell (`nature/ant-tall`). Tuning: `--samples N` (takes per page), `--max-attempts N` (default 3; 4–5
 is a better batch default), `-t F`, `--notes "…"`, plus per-gate bars (`--drift-threshold`,
-`--night-luma-max`, `--line-white-min`, `--halo-score-max`) and `--dilate-lines N`; `--dry-run`
-prints each page's resolved levers without an API call. Writes to the gitignored
+`--night-luma-max`, `--line-white-min`, `--halo-score-max`, `--warp-max`) and `--dilate-lines N`;
+`--dry-run` prints each page's resolved levers without an API call. Writes to the gitignored
 `.coloring-samples-dark/`. `--rescore` re-gates those exact saved candidate bytes offline; combine
 it with `--apply` after human review to write the passing raw and its deterministic shipped punch.
 Every rejected candidate is counted at every sample count and exits nonzero as a gate failure,

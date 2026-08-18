@@ -40,7 +40,11 @@ vi.mock('../lib/asset-cli.mjs', async (importOriginal) => ({
     throw new Error(message);
   },
 }));
-vi.mock('../lib/page-notes.mjs', () => ({ pageLevers: () => null, describeLevers: () => '' }));
+vi.mock('../lib/page-notes.mjs', () => ({
+  pageLevers: () => null,
+  mergeFlags: (values) => ({ merged: values, fromRegistry: [] }),
+  describeLevers: () => '',
+}));
 vi.mock('../lib/align-to-source.mjs', () => ({
   alignToSource: async (buffer) => ({ buffer, dx: 0, dy: 0 }),
 }));

@@ -43,6 +43,7 @@ import {
 } from '../lib/outline-frame.mjs';
 import { GOLDEN_VERDICTS, diffGoldenPage, scoreGoldenPage } from '../lib/golden-catalog.mjs';
 import { CHALK_INK_DIFF_MAX_DEFAULT } from '../lib/chalk-ink-diff.mjs';
+import { LOCAL_WARP_MAX_PX } from '../lib/local-warp.mjs';
 import {
   DRIFT_THRESHOLD_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
@@ -106,10 +107,11 @@ async function scoreCatalog() {
   for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
   return {
     catalog: {
-      version: 4,
+      version: 5,
       thresholds: {
         keep: KEEP_THRESHOLD,
         localKeep: LOCAL_KEEP_THRESHOLD,
+        localWarpMax: LOCAL_WARP_MAX_PX,
         nightDriftMax: DRIFT_THRESHOLD_DEFAULT,
         bgLumaMax: NIGHT_BG_LUMA_MAX_DEFAULT,
         lineWhiteMin: LINE_WHITE_MIN_DEFAULT,

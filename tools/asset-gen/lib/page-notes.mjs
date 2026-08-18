@@ -19,8 +19,8 @@
 // flags use the generator's exact long option names so the merge is mechanical.
 // Values may be numbers/booleans in JSON; they are normalized to the strings
 // parseArgs would have produced, so downstream Number() coercions are unchanged.
-// The "light" tool key is reserved data: gen-light-fills.mjs has no --notes /
-// gate-override flags to merge yet, so it only prints a page's review/why/motifs.
+// Light-fill flags currently cover its local-warp gate; other light entries remain
+// review/why/motif evidence until the corresponding generator lever exists.
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { FILL_SRC_DIR, toPosix } from './asset-paths.mjs';

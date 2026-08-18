@@ -16,6 +16,7 @@
 //   npm run gen:coloring-fills -- farm/dog-wide --apply        ship a passing candidate
 //   npm run gen:coloring-fills -- farm/dog-wide --samples 5    5 candidates
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
+//   npm run gen:coloring-fills -- farm/dog-wide --warp-max 5   reviewed override
 //
 // Each candidate is post-processed and scored before it's kept:
 //   1. alignToSource undoes the few-pixel GLOBAL nudge the model tends to add, so
@@ -24,7 +25,10 @@
 //   2. outlineMatch reports `keep` (global outline coverage) AND `localKeep` (the
 //      worst grid tile's coverage) by overlaying the two outline masks. localKeep
 //      is the gate that catches a localized drift a high global keep would hide.
-//   3. whiteFraction reports how much of the page is left pure white; big blank
+//   3. scoreLocalWarp cross-correlates overlapping 128px edge tiles within ±12px,
+//      subtracting their median vector so a residual rigid shift is not confused
+//      with a feature that bent or moved on its own.
+//   4. whiteFraction reports how much of the page is left pure white; big blank
 //      areas would look uncolored under the child's brush, so they're rejected.
 // A candidate that fails any gate is retried (temperature nudged up). Every best
 // attempt is retained in review scratch, but only a passing candidate can ship,
@@ -42,16 +46,28 @@ import {
   SAMPLES_DIR,
   toPosix,
 } from '../lib/asset-paths.mjs';
-import { fail, MAX_ATTEMPTS, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
+import {
+  fail,
+  MAX_ATTEMPTS,
+  parseNonNegative,
+  parsePositiveInt,
+  parseTemperature,
+} from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
-import { pageLevers, describeLevers } from '../lib/page-notes.mjs';
+import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
 import { punchFill } from '../lib/punch-fill.mjs';
 import { FILL_PROMPT } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/candidate-report.mjs';
+import {
+  LOCAL_WARP_MAX_PX,
+  LOCAL_WARP_WARN_PX,
+  prepareLocalWarpSource,
+  scoreLocalWarp,
+} from '../lib/local-warp.mjs';
 
 const WEBP_QUALITY = 90;
 
@@ -106,19 +122,21 @@ const WHITE_THRESHOLD = 0.05; // >5% pure white ⇒ blank areas left uncolored
 // A candidate clears if it holds the outline globally AND in its worst tile,
 // isn't mostly blank white, and painted the eyes when the reviewed outline has
 // a measurable eye core (lib/eye-fill.mjs).
-const passes = (c) =>
+const passes = (c, warpMax) =>
   c.keep >= KEEP_THRESHOLD &&
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
+  c.warp.localWarpMax <= warpMax &&
   c.white <= WHITE_THRESHOLD &&
   c.eyesOk;
 // Rank for keeping the best of several imperfect attempts: fidelity is the hard
 // constraint (global then worst-tile), then gated eyes, then less leftover white.
-const rank = (c) =>
-  (passes(c) ? 1000 : 0) +
+const rank = (c, warpMax) =>
+  (passes(c, warpMax) ? 1000 : 0) +
   c.localKeep * 200 +
   (c.eyesGated && c.eyesOk ? 150 : 0) +
   (1 - c.white) * 100 +
-  c.keep;
+  c.keep -
+  c.warp.localWarpMax;
 
 export async function run(argv) {
   const { values, positionals } = parseArgs({
@@ -128,6 +146,7 @@ export async function run(argv) {
       apply: { type: 'boolean' },
       samples: { type: 'string', short: 'n' },
       temperature: { type: 'string', short: 't' },
+      'warp-max': { type: 'string' },
     },
   });
 
@@ -157,7 +176,7 @@ export async function run(argv) {
   // Generate, size-match, re-register onto the source outline, and score one
   // candidate; retry until it passes both gates, keeping the best attempt if none
   // fully do. Returns the winning colored bytes, its scores, and its overlay.
-  async function renderClean(source, width, height, slot, page) {
+  async function renderClean(source, warpSource, width, height, slot, page, warpMax) {
     let best = null;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const temperature = Math.min(2, baseTempForSlot(slot) + attempt * 0.15);
@@ -172,8 +191,9 @@ export async function run(argv) {
       const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
       const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-      const [{ keep, drift, localKeep, worstTile }, white, eyeScore] = await Promise.all([
+      const [{ keep, drift, localKeep, worstTile }, warp, white, eyeScore] = await Promise.all([
         outlineMatch(source, colored),
+        scoreLocalWarp(warpSource, colored),
         whiteFraction(colored),
         scoreEyeFill(colored, source),
       ]);
@@ -184,14 +204,15 @@ export async function run(argv) {
         drift,
         localKeep,
         worstTile,
+        warp,
         white,
         eyesOk: eyeVerdict.passes,
         eyesGated: eyeVerdict.gated,
         shift: { dx, dy },
         attempt,
       };
-      if (!best || rank(cand) > rank(best)) best = cand;
-      if (passes(cand)) break;
+      if (!best || rank(cand, warpMax) > rank(best, warpMax)) best = cand;
+      if (passes(cand, warpMax)) break;
     }
     const { overlay } = await outlineMatch(source, best.colored, { overlay: true });
     return { ...best, overlay };
@@ -201,38 +222,50 @@ export async function run(argv) {
   const passingCandidates = [];
   for (const page of pages) {
     const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
-    // The registry's "light" entries are informational only for now — this
-    // generator has no --notes / gate-override flags to merge, so a page's
-    // review/why/motifs notes are printed but nothing is auto-applied
-    // (lib/page-notes.mjs documents the reserved key).
     const levers = pageLevers(rel, 'light');
+    const { merged, fromRegistry } = mergeFlags(values, levers);
+    const warpMax = parseNonNegative(
+      merged['warp-max'],
+      '--warp-max',
+      LOCAL_WARP_MAX_PX,
+      `${rel} via notes.json`
+    );
     if (levers)
       console.log(
-        describeLevers({ rel, levers, fromRegistry: [], cliValues: values, settings: {} })
+        describeLevers({
+          rel,
+          levers,
+          fromRegistry,
+          cliValues: values,
+          settings: { 'warp-max': warpMax },
+        })
       );
     const source = await readFile(page);
     const { width, height } = await sharp(source).metadata();
+    const warpSource = await prepareLocalWarpSource(source);
 
     for (let i = 0; i < samples; i++) {
       const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
       process.stdout.write(`${label} ... `);
       try {
-        const cand = await renderClean(source, width, height, i, rel);
+        const cand = await renderClean(source, warpSource, width, height, i, rel, warpMax);
         const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
         const warn = [];
         if (keep < KEEP_THRESHOLD) warn.push('drifting');
         if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
+        if (cand.warp.localWarpMax > warpMax) warn.push('local warp');
+        else if (cand.warp.localWarpMax >= LOCAL_WARP_WARN_PX) warn.push('warp review');
         if (white > WHITE_THRESHOLD) warn.push('white');
         if (!cand.eyesGated) warn.push('eyes ungated');
         else if (!cand.eyesOk) warn.push('flat eyes');
-        const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%`;
+        const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  warp ${cand.warp.localWarpMax.toFixed(1)}px  residual ${cand.warp.globalDx},${cand.warp.globalDy}  white ${(white * 100).toFixed(1)}%`;
 
         const dir = join(SAMPLES_DIR, rel);
         await mkdir(dir, { recursive: true });
         const out = join(dir, `sample-${i + 1}.webp`);
         await writeFile(out, colored);
         await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
-        if (passes(cand)) passingCandidates.push({ rel, colored });
+        if (passes(cand, warpMax)) passingCandidates.push({ rel, colored });
         // Multi-sample runs are review-only (--apply is rejected above): individual
         // candidates routinely miss a gate while exploring palettes, so a gate miss
         // there must not fail the run. A thrown error below always counts.

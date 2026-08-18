@@ -1,5 +1,12 @@
 {
   "heart-tall": {
+    "light": {
+      "flags": {
+        "warp-max": 8.56
+      },
+      "review": "Issue #259 baseline exception: prefer a replacement under the strict 4px default and inspect the reported tile when it is not; this ceiling preserves only the reviewed committed treatment.",
+      "why": "Issue #259 calibration at base ae4129577aff7b84444b8feb8c844e0c07a56b70 measured 8.06px local warp; the durable ceiling adds a bounded 0.5px decoder margin."
+    },
     "night": {
       "flags": {
         "halo-score-max": 3.2

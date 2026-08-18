@@ -17,6 +17,7 @@ import {
   prepareChalkInkDiff,
   scoreChalkInkDiff,
 } from './chalk-ink-diff.mjs';
+import { LOCAL_WARP_MAX_PX, prepareLocalWarpSource, scoreLocalWarp } from './local-warp.mjs';
 
 const round = (v, digits) => {
   const f = 10 ** digits;
@@ -29,7 +30,10 @@ const round = (v, digits) => {
 // art buffer when the page has forked (see docs/pen-chalk-fork.md), else
 // null; check-golden-scores.mjs resolves it from the real catalog layout.
 export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) {
-  const analysis = await prepareOutlineAnalysis(pen);
+  const [analysis, penWarpSource] = await Promise.all([
+    prepareOutlineAnalysis(pen),
+    prepareLocalWarpSource(pen),
+  ]);
   const [solidity, rings, frame] = await Promise.all([
     scoreSolidity(analysis),
     scoreEyeRings(analysis),
@@ -62,23 +66,36 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
 
   let lightEyes = null;
   if (lightRaw) {
-    const { keep, localKeep, worstTile } = await outlineMatch(pen, lightRaw);
-    lightEyes = await scoreEyeFill(lightRaw, pen);
+    const [match, warp, eyes] = await Promise.all([
+      outlineMatch(pen, lightRaw),
+      scoreLocalWarp(penWarpSource, lightRaw),
+      scoreEyeFill(lightRaw, pen),
+    ]);
+    const { keep, localKeep, worstTile } = match;
+    lightEyes = eyes;
     const lightVerdict = judgeLightEyes(lightEyes, { page });
     entry.light = {
       keep: round(keep, 4),
       localKeep: round(localKeep, 4),
       worstTile: worstTile ? `${worstTile.x},${worstTile.y}` : null,
+      localWarpMax: round(warp.localWarpMax, 2),
+      warpTiles: warp.warnedTiles,
+      residualShift: round(Math.hypot(warp.globalDx, warp.globalDy), 2),
       eyeCores: lightEyes.cores.length,
       eyeLively: lightEyes.cores.filter((c) => c.lively).length,
       driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
+      warpOk: warp.localWarpMax <= LOCAL_WARP_MAX_PX,
       eyesOk: lightVerdict.gated ? lightVerdict.passes : null,
     };
   }
 
   if (nightRaw) {
     const source = chalk ?? pen;
-    const { drift, night, line } = await scoreNightFillGates(nightRaw, source);
+    const nightWarpSource = chalk ? await prepareLocalWarpSource(chalk) : penWarpSource;
+    const [{ drift, night, line }, warp] = await Promise.all([
+      scoreNightFillGates(nightRaw, source),
+      scoreLocalWarp(nightWarpSource, nightRaw),
+    ]);
     let eyes = null;
     if (lightEyes) {
       const judged = chalk ? await compositeNight(nightRaw, chalk) : nightRaw;
@@ -90,12 +107,16 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
       drift: round(drift.ratio, 5),
       bgLuma: round(night.bgLuma, 1),
       lineWhite: round(line.lineWhite, 1),
+      localWarpMax: round(warp.localWarpMax, 2),
+      warpTiles: warp.warnedTiles,
+      residualShift: round(Math.hypot(warp.globalDx, warp.globalDy), 2),
       eyesFailed: eyes?.eyesFailed ?? null,
       orbFailed: eyes?.orbFailed ?? null,
       orbMinCoreDark: eyes?.orbMinCoreDark ?? null,
       driftOk: drift.ratio <= DRIFT_THRESHOLD_DEFAULT,
       moodOk: night.bgLuma <= NIGHT_BG_LUMA_MAX_DEFAULT,
       lineOk: line.lineWhite >= LINE_WHITE_MIN_DEFAULT,
+      warpOk: warp.localWarpMax <= LOCAL_WARP_MAX_PX,
       eyesOk: eyes?.eyesOk ?? null,
       orbOk: eyes?.orbOk ?? null,
     };
@@ -140,11 +161,17 @@ export const GOLDEN_METRICS = {
   'chalk.regionsFlagged': { noise: 0, worse: 'up' },
   'light.keep': { noise: 0.005, worse: 'down' },
   'light.localKeep': { noise: 0.005, worse: 'down' },
+  'light.localWarpMax': { noise: 0.25, worse: 'up' },
+  'light.warpTiles': { noise: 0, worse: 'up' },
+  'light.residualShift': { noise: 0.25, worse: null },
   'light.eyeCores': { noise: 0, worse: null },
   'light.eyeLively': { noise: 0, worse: 'down' },
   'night.drift': { noise: 0.001, worse: 'up' },
   'night.bgLuma': { noise: 3, worse: 'up' },
   'night.lineWhite': { noise: 3, worse: 'down' },
+  'night.localWarpMax': { noise: 0.25, worse: 'up' },
+  'night.warpTiles': { noise: 0, worse: 'up' },
+  'night.residualShift': { noise: 0.25, worse: null },
   'night.eyesFailed': { noise: 0, worse: 'up' },
   'night.orbFailed': { noise: 0, worse: 'up' },
   // Supporting diagnostic, not a gate. A real blank orb is already caught by the
@@ -161,10 +188,12 @@ export const GOLDEN_VERDICTS = [
   'outline.ringsOk',
   'outline.frameOk',
   'light.driftOk',
+  'light.warpOk',
   'light.eyesOk',
   'night.driftOk',
   'night.moodOk',
   'night.lineOk',
+  'night.warpOk',
   'night.eyesOk',
   'night.orbOk',
 ];

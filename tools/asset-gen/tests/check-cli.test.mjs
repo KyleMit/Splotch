@@ -16,6 +16,7 @@ const state = vi.hoisted(() => ({
 // "corrupt" page that quietly scores clean.
 const CORRUPT_BYTES = 'corrupt';
 const DRIFT_FILL_BYTES = 'drift fill';
+const WARP_FILL_BYTES = 'warp fill';
 
 const assertReadable = (buffer) => {
   if (buffer.toString() === CORRUPT_BYTES) throw new Error('corrupt image');
@@ -74,6 +75,29 @@ vi.mock('../lib/outline-match.mjs', async (importOriginal) => ({
       overlay: overlay ? Buffer.from('overlay') : null,
     };
   },
+}));
+
+vi.mock('../lib/local-warp.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
+  localWarp: async (source, fill) => {
+    assertReadable(source);
+    assertReadable(fill);
+    const warped = fill.toString() === WARP_FILL_BYTES;
+    return {
+      localWarpMax: warped ? 8 : 0,
+      globalDx: 0,
+      globalDy: 0,
+      warnedTiles: warped ? 1 : 0,
+      worstTile: warped ? { x: 1, y: 2, confidence: 'strong-gain' } : null,
+    };
+  },
+  prepareLocalWarpSource: async (source) => source,
+  scoreLocalWarp: async (_source, fill) => ({
+    localWarpMax: fill.toString() === WARP_FILL_BYTES ? 8 : 0,
+    globalDx: 0,
+    globalDy: 0,
+    warnedTiles: fill.toString() === WARP_FILL_BYTES ? 1 : 0,
+  }),
 }));
 
 vi.mock('../lib/solid-regions.mjs', async (importOriginal) => ({
@@ -154,7 +178,13 @@ const outputOf = (spy) => spy.mock.calls.map((args) => args.join(' ')).join('\n'
 
 async function addPage(
   name,
-  { corruptOutline = false, corruptFill = false, drifted = false, outlineIssues = [] } = {}
+  {
+    corruptOutline = false,
+    corruptFill = false,
+    drifted = false,
+    warped = false,
+    outlineIssues = [],
+  } = {}
 ) {
   const outline = join(state.roots.coloring, `test/${name}.outline.webp`);
   const fill = join(state.roots.fillSrc, `test/${name}.light.raw.webp`);
@@ -162,7 +192,16 @@ async function addPage(
     outline,
     corruptOutline ? CORRUPT_BYTES : `valid outline ${outlineIssues.join(' ')}`
   );
-  await writeFile(fill, corruptFill ? CORRUPT_BYTES : drifted ? DRIFT_FILL_BYTES : 'valid fill');
+  await writeFile(
+    fill,
+    corruptFill
+      ? CORRUPT_BYTES
+      : drifted
+        ? DRIFT_FILL_BYTES
+        : warped
+          ? WARP_FILL_BYTES
+          : 'valid fill'
+  );
   return outline;
 }
 
@@ -206,7 +245,7 @@ it('coloring drift reports a corrupt fill, continues, and exits non-zero', async
 
   await runCli('check-fill-drift.mjs');
 
-  expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
+  expect(outputOf(error)).toContain('test/bad light  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('test/good');
   expect(process.exitCode).toBe(1);
 });
@@ -220,6 +259,17 @@ it('coloring drift only renders requested overlays for failed pages', async () =
     readFile(join(state.roots.samples, 'drift/test-bad.overlay.png'), 'utf8')
   ).resolves.toBe('overlay');
   expect(state.overlayRequests).toBe(1);
+});
+
+it('coloring drift fails a confident local warp and reports residual shift separately', async () => {
+  state.pages = [await addPage('warped', { warped: true }), await addPage('good')];
+
+  await runCli('check-fill-drift.mjs');
+
+  expect(outputOf(log)).toContain('test/warped');
+  expect(outputOf(log)).toContain('8.0px');
+  expect(outputOf(log)).toContain('LOCAL WARP');
+  expect(process.exitCode).toBe(1);
 });
 
 it('fill eyes reports a corrupt fill, continues, and exits non-zero', async () => {
@@ -299,7 +349,7 @@ it('golden diff reports a corrupt outline, retains successful pages, and exits n
   await addPage('good');
   await writeFile(
     join(state.roots.assetGen, 'golden/golden-scores.json'),
-    JSON.stringify({ version: 4, pages: { 'test/bad': {}, 'test/good': {} } })
+    JSON.stringify({ version: 5, pages: { 'test/bad': {}, 'test/good': {} } })
   );
 
   await runCli('check-golden-scores.mjs', '--diff');

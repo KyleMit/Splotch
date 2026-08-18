@@ -90,7 +90,7 @@ visible in the session (see "Viewing a review sheet" below).
 ### The per-page notes registry
 
 Known per-page levers (`--notes` text, temperature, gate overrides) live in
-`fill-src/<cat>/notes.json` and **auto-load** in the night, chalk, and normalize generators
+`fill-src/<cat>/notes.json` and **auto-load** in the light, night, chalk, and normalize generators
 (`lib/page-notes.mjs` documents the schema): registry `flags` fill in whatever the CLI left unset —
 **an explicit CLI flag always wins** — and every applied value is printed with its source; `retry`
 recipes, `review` expectations, and sibling-`motifs` facts are printed, never applied. `--dry-run`
@@ -103,20 +103,27 @@ description: [`pipeline.md`](docs/pipeline.md).
 A colored fill must register on its line art pixel-for-pixel — the magic brush (ADR-0043) reveals
 the fill's fills under the overlay's lines, so a drifted region shows the wrong colour outside the
 lines. `gen-light-fills` scores every candidate two ways (`lib/outline-match.mjs`): global outline
-coverage (`keep`) and the **worst grid tile** (`localKeep`). The local bar is the important one — a
-large aligned subject can hold a 93% global keep while one small feature (a flower) sits at 34%,
-which is exactly how `nature/ant-wide` shipped drifted. `alignToSource` only corrects a single
-global nudge, so a self-drifted feature can't be aligned away. Every best candidate and registration
-overlay lands in `.coloring-samples/` for review. Committed raws and their punched shipped assets
-change only with `--apply`, only after every requested page passes all gates; exhausted gates exit
-nonzero without partially applying the batch.
+coverage (`keep`) and the **worst grid tile** (`localKeep`). It also cross-correlates overlapping
+128px edge tiles within ±12px (`lib/local-warp.mjs`). The median tile vector is reported as residual
+global shift and subtracted; only a confident tile's remaining displacement is local warp. The local
+bars are important — a large aligned subject can hold a 93% global keep while one small feature (a
+flower) sits at 34%, which is exactly how `nature/ant-wide` shipped drifted. `alignToSource` only
+corrects a single global nudge, so a self-drifted feature can't be aligned away. Every best
+candidate and registration overlay lands in `.coloring-samples/` for review. Committed raws and
+their punched shipped assets change only with `--apply`, only after every requested page passes all
+gates; exhausted gates exit nonzero without partially applying the batch.
 
-`check:coloring-fill-drift` runs the same scoring over the **committed raw fills** in `fill-src/`
-(it reads committed assets only — no key, no network) and prints the pages that fail, with a
-ready-to-run regenerate command. It scores the raws rather than the shipped fills because the
+`check:coloring-fill-drift` runs the same scoring over both themes' **committed raw fills** in
+`fill-src/` (it reads committed assets only — no key, no network) and prints the pages that fail,
+with a ready-to-run regenerate command. It scores the raws rather than the shipped fills because the
 shipped ones are punched fills-only (no outlines left to register); a clean raw guarantees a clean
-punch. `--overlay` dumps a drift map per failing page (red = source outline the fill left uncovered)
-to `.coloring-samples/drift/`.
+punch. Local warp warns at 3px and rejects above 4px by default. Nine reviewed raws exceed that
+strict audit bar; their per-page `notes.json` entries preserve the exact measured baseline plus a
+0.5px decoder margin so ordinary regeneration remains possible but a worse candidate cannot pass.
+New pages keep 4px, and an explicit `--warp-max` can tighten any run. The offline audit deliberately
+continues to flag all nine rather than treating the generation exceptions as clean. `--overlay`
+dumps a drift map per failing light page (red = source outline the fill left uncovered) to
+`.coloring-samples/drift/`.
 
 ### The committed regression fixtures (`golden/`)
 
@@ -124,12 +131,12 @@ Two fixtures freeze the current catalog's state so a change can prove it didn't 
 else (both offline, no key):
 
 * **`golden/golden-scores.json`** — every offline audit score per page (outline solidity/eye
-  rings/page frames, chalk regional ink diff, light keep/localKeep + eyes, night
-  drift/bgLuma/lineWhite + eyes), written by `update:coloring-golden-scores`.
-  `check:coloring-golden-scores` re-scores (~1 min) and exits non-zero on any verdict flip or
-  bad-direction movement beyond its calibrated noise band. Chalk region maxima use the generation
-  baseline's 10% or 8 px tolerance, whichever is larger. Run it after any pipeline or asset change,
-  and re-freeze to adopt intended changes.
+  rings/page frames, chalk regional ink diff, light keep/localKeep + eyes, both themes' local warp +
+  residual shift, and night drift/bgLuma/lineWhite + eyes), written by
+  `update:coloring-golden-scores`. `check:coloring-golden-scores` re-scores (~1 min) and exits
+  non-zero on any verdict flip or bad-direction movement beyond its calibrated noise band. Chalk
+  region maxima use the generation baseline's 10% or 8 px tolerance, whichever is larger. Run it
+  after any pipeline or asset change, and re-freeze to adopt intended changes.
 * **`golden/asset-manifest.sha256`** — one sha256 line per committed art asset (shipped coloring
   pages, style covers, `fill-src/` raws), written by `gen:assets:manifest` and verified in CI by
   `check:assets:manifest`. It turns binary churn into a reviewable text diff and guards the

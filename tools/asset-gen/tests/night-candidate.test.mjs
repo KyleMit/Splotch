@@ -10,6 +10,7 @@ const config = {
   nightLumaMax: 60,
   lineWhiteMin: 150,
   haloScoreMax: 2,
+  warpMax: 4,
   driftThreshold: 0.004,
 };
 
@@ -18,6 +19,7 @@ function candidate(overrides = {}) {
     night: { bgLuma: 30 },
     line: { lineWhite: 220 },
     halo: { haloScore: 0.5, rawScore: 0.5 },
+    warp: { localWarpMax: 0 },
     eyes: { passes: true, failed: 0 },
     drift: { ratio: 0 },
     ...overrides,
@@ -38,6 +40,11 @@ describe('night candidate halo gate and ranking', () => {
     expect(
       passesNightCandidate(candidate({ halo: { haloScore: 1.9, rawScore: 5.1 } }), config)
     ).toBe(true);
+  });
+
+  it('accepts the local-warp ceiling and rejects a candidate above it', () => {
+    expect(passesNightCandidate(candidate({ warp: { localWarpMax: 4 } }), config)).toBe(true);
+    expect(passesNightCandidate(candidate({ warp: { localWarpMax: 4.01 } }), config)).toBe(false);
   });
 
   it('prefers the lower halo score among otherwise acceptable takes', () => {
