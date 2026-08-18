@@ -1,4 +1,13 @@
 {
+  "fire-tall": {
+    "night": {
+      "flags": {
+        "halo-score-max": 2.5
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.421 / rawScore 7.610 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 2.5 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  },
   "excavator-tall": {
     "night": {
       "retry": {

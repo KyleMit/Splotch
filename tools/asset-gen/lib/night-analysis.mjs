@@ -1,3 +1,7 @@
+// Decode and resize work is shared by every composed night gate. Buffer identity
+// keys the fill/source preparation cache, so callers must treat those buffers as
+// immutable; failed preparations and size-specific resizes evict their promises
+// so a transient Sharp failure does not poison later scoring.
 import sharp from 'sharp';
 
 const preparedAnalyses = new WeakSet();

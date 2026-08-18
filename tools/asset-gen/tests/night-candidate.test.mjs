@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { passesNightCandidate, preferNightCandidate } from '../lib/night-candidate.mjs';
+import {
+  chooseNightCandidate,
+  nightRunFailureMessage,
+  passesNightCandidate,
+  preferNightCandidate,
+} from '../lib/night-candidate.mjs';
 
-const config = { nightLumaMax: 60, lineWhiteMin: 150, haloScoreMax: 2 };
+const config = {
+  nightLumaMax: 60,
+  lineWhiteMin: 150,
+  haloScoreMax: 2,
+  driftThreshold: 0.004,
+};
 
 function candidate(overrides = {}) {
   return {
@@ -42,6 +52,30 @@ describe('night candidate halo gate and ranking', () => {
     expect(preferNightCandidate(cleanerHalo, cleanerDrift, config)).toBe(true);
   });
 
+  it('returns the drift-clean take that stops the real retry loop', async () => {
+    const drifting = candidate({
+      attempt: 1,
+      halo: { haloScore: 1.9, rawScore: 1.9 },
+      drift: { ratio: 0.05 },
+    });
+    const driftClean = candidate({
+      attempt: 2,
+      halo: { haloScore: 1.95, rawScore: 1.95 },
+      drift: { ratio: 0.0001 },
+    });
+    const attempts = [drifting, driftClean];
+
+    const result = await chooseNightCandidate({
+      maxAttempts: 3,
+      config,
+      runAttempt: async (attempt) => attempts[attempt - 1],
+    });
+
+    expect(result.attempt).toBe(2);
+    expect(result.attemptsRun).toBe(2);
+    expect(result.accepted).toBe(true);
+  });
+
   it('keeps surviving eyes ahead of halo when every take fails a hard gate', () => {
     const livingEyes = candidate({
       night: { bgLuma: 70 },
@@ -52,5 +86,21 @@ describe('night candidate halo gate and ranking', () => {
       eyes: { passes: false, failed: 1 },
     });
     expect(preferNightCandidate(livingEyes, deadEyes, config)).toBe(true);
+  });
+});
+
+describe('night candidate run outcome', () => {
+  it('counts every rejected review sample without calling it a render failure', () => {
+    expect(
+      nightRunFailureMessage({ renderFailures: 0, gateFailures: 2, missingCandidates: 0 })
+    ).toBe('2 candidate(s) failed gates.');
+  });
+
+  it('reports independent render, gate, and apply-input failures together', () => {
+    expect(
+      nightRunFailureMessage({ renderFailures: 1, gateFailures: 2, missingCandidates: 3 })
+    ).toBe(
+      '1 render(s) failed. 2 candidate(s) failed gates. 3 requested candidate(s) missing for apply.'
+    );
   });
 });

@@ -31,7 +31,7 @@ const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1
 export const HALO_DARK = 145; // the mid-dark penumbra window: a visible halo pixel is
 export const HALO_PROTECT_BLACK = 55; // luma in [55, 145) — legit near-black ink sits below
 const HOTSPOT_TILE_PX = 64; // hotspot tiling grain
-// Below the reviewed benign catalog band (2.2–4.3), while repaired visible incidents score <=0.2.
+// Strict default for unreviewed candidates; reviewed page exceptions live in notes.json.
 export const NIGHT_HALO_SCORE_MAX = 2;
 // Re-inked failures start above 5; rawScore remains review-only because deliberate shading raises it.
 export const NIGHT_HALO_RAW_REVIEW_THRESHOLD = 5;

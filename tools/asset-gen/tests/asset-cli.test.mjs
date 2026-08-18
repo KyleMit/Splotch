@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   parseNonNegative,
@@ -8,6 +9,7 @@ import {
   parseTemperature,
 } from '../lib/asset-cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
+import { FILL_SRC_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
 
 let error;
 let exit;
@@ -329,5 +331,45 @@ it('night fill rescore refuses apply when a requested saved candidate is missing
 
   expect(result.status).toBe(1);
   expect(result.stdout).toContain('(skip) no candidate to rescore');
-  expect(result.stderr.trim()).toBe('1 render(s) failed.');
+  expect(result.stderr.trim()).toBe('1 requested candidate(s) missing for apply.');
+});
+
+it('night fill rescore counts every rejected review sample as a gate failure', () => {
+  const sampleDir = join(SAMPLES_DARK_DIR, 'space');
+  const samplePaths = [
+    join(sampleDir, 'station-tall.sample-1.webp'),
+    join(sampleDir, 'station-tall.sample-2.webp'),
+  ];
+  const previous = samplePaths.map((path) => (existsSync(path) ? readFileSync(path) : null));
+  const rejected = readFileSync(join(FILL_SRC_DIR, 'space', 'station-tall.night.raw.webp'));
+  mkdirSync(sampleDir, { recursive: true });
+
+  try {
+    for (const path of samplePaths) writeFileSync(path, rejected);
+    const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+    delete env.GEMINI_API_KEY;
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        entryPath('gen-night-fills.mjs'),
+        'space/station-tall',
+        '--rescore',
+        '--samples',
+        '2',
+        '--halo-score-max',
+        '2',
+      ],
+      { encoding: 'utf8', env }
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stdout.match(/halo-gate FAILED/g)).toHaveLength(2);
+    expect(result.stderr.trim()).toBe('2 candidate(s) failed gates.');
+  } finally {
+    for (let i = 0; i < samplePaths.length; i++) {
+      if (previous[i]) writeFileSync(samplePaths[i], previous[i]);
+      else rmSync(samplePaths[i], { force: true });
+    }
+  }
 });

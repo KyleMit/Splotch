@@ -52,7 +52,23 @@
       "why": "2026-07-13 ISSUES Tier 1 fix — night regenerated against the recentered chalk (take 1 unpinned lost the background flowers to sky-navy; take 2 with the pin shipped)."
     }
   },
+  "house-tall": {
+    "night": {
+      "flags": {
+        "halo-score-max": 2.5
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.474 / rawScore 6.246 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 2.5 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  },
   "house-wide": {
+    "night": {
+      "flags": {
+        "halo-score-max": 2.3
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.234 / rawScore 4.065 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. Inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 2.3 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    },
     "chalk": {
       "flags": {
         "notes": "This scene has NO EYES — that is expected and correct, not a problem with the image. Do not look for eyes. Just redraw the drawing as a chalk line drawing, whitening only small naturally-white features if there are any."

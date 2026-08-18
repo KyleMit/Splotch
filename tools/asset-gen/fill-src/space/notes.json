@@ -8,12 +8,15 @@
       "why": "2026-07-14 ISSUES Tier 1 fix (chalk-invented facial features), part 2 — the eye-flavored chalk instruction maps double-ring windows onto its sclera/pupil/catchlight recipe. The eye audit is light-referenced (0 cores), so the invented eyes were invisible to it."
     },
     "night": {
+      "flags": {
+        "halo-score-max": 2.1
+      },
       "retry": {
         "temperature": 0.4,
         "notes": "Keep the station's daytime identity colors, dimmed for night: silver-grey hull modules, deep blue checkerboard solar panels, muted red side ports and small red dots, soft green circles on the lower module, warm cream stars, and a blue-and-green Earth below. All four round windows (the three small head portholes and the large central hatch) are plain WINDOWS, not eyes: fill each one with a single plain warm amber glass color — do NOT paint pupils, eyeballs, irises, or catchlight discs inside any of them. Every hull band and panel stays one flat plain color: do NOT add rows of dots, lights, rivets, or ANY new marks or shapes anywhere in the drawing — paint only regions the line art draws. Draw crisp WHITE lines only — do NOT add dark outlines, rims, or drop shadows beside the white lines."
       },
       "review": "Conditions on the 2026-07-14 empty-window chalk. Confirm on the composite: all four windows plain amber glass (no pupils), no invented dot rows on any hull band. The fill inventing INSIDE the subject is live on this page: the first pinned take painted a row of red rivet-dots on the head's dome band, and a later take (with the dot ban in place) migrated the same dots to the central module's bands — reject any take with decorative dots the pen doesn't draw. Shipped take: drift 0.0004, bgLuma 26, lineW 255, shipped haloScore 2.068 — that score is the deliberate mid-grey window ring bands (the audit's documented benign class, rawScore 2.1, clean at 1×), matching the light fill's silver ring bands; takes that paint the ring bands deep navy score ~0.7 but this one was the only invention-free take.",
-      "why": "2026-07-14 ISSUES Tier 1 fix, part 2 — night regenerated against the de-eyed chalk; palette pinned to the light identity per the ISSUES night-contrast trap."
+      "why": "2026-07-14 ISSUES Tier 1 fix, part 2 — night regenerated against the de-eyed chalk; palette pinned to the light identity per the ISSUES night-contrast trap. Issue #268 catalog calibration rounds the deliberate shipped window-band halo ceiling to 2.1."
     }
   },
   "ship-tall": {

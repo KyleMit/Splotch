@@ -84,7 +84,11 @@ import {
   punchNightCandidate,
   scoreNightHalo,
 } from '../lib/night-halo.mjs';
-import { passesNightCandidate, preferNightCandidate } from '../lib/night-candidate.mjs';
+import {
+  chooseNightCandidate,
+  nightRunFailureMessage,
+  passesNightCandidate,
+} from '../lib/night-candidate.mjs';
 // The eye gate judges the simulated FINAL render, not the raw fill: the chalk
 // owns the eye whites, so only the composite shows whether an eye reads as
 // white-sclera / dark-pupil / white-glint.
@@ -237,8 +241,9 @@ const ai = makeClient({ optional: values['dry-run'] || values.rescore });
 // composition) until a take passes all gates or the attempt budget runs out. A
 // take is "acceptable" when its background reads as night, its outlines stayed
 // white, its punched halo is at or below the automatic bar, and its eyes are
-// painted. Among acceptable takes the lowest halo wins, then drift. Fallbacks
-// retain the eye-first safety rule before comparing failed gates and halo.
+// painted. A drift-clean acceptable take outranks a drifting one; within either
+// class the lowest halo wins, then drift. Fallbacks retain the eye-first safety
+// rule before comparing failed gates and halo.
 async function generateCleanTake({
   darkInput,
   source,
@@ -249,29 +254,26 @@ async function generateCleanTake({
   cfg,
   scoreCandidate,
 }) {
-  const { maxAttempts, driftThreshold } = cfg;
-  let best = null;
-  let attemptsRun = 0;
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    attemptsRun = attempt;
-    const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
-    const { bytes } = await generateDarkPage(ai, {
-      imageBytes: darkInput,
-      mimeType: 'image/webp',
-      temperature,
-      chalked,
-      notes: cfg.notes,
-    });
-    const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
-    // Edges are polarity-agnostic, so align the colored output to the ink-on-white
-    // line-art source (chalk when forked, else pen) to undo the model's nudge.
-    const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
-    const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
-    const take = await scoreCandidate(colored, { dx, dy }, attempt);
-    if (preferNightCandidate(take, best, cfg)) best = take;
-    if (driftThreshold >= take.drift.ratio && passesNightCandidate(take, cfg)) break;
-  }
-  return { ...best, attemptsRun, accepted: passesNightCandidate(best, cfg) };
+  return chooseNightCandidate({
+    maxAttempts: cfg.maxAttempts,
+    config: cfg,
+    runAttempt: async (attempt) => {
+      const temperature = Math.min(2, temp0 + (attempt - 1) * 0.15);
+      const { bytes } = await generateDarkPage(ai, {
+        imageBytes: darkInput,
+        mimeType: 'image/webp',
+        temperature,
+        chalked,
+        notes: cfg.notes,
+      });
+      const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
+      // Edges are polarity-agnostic, so align the colored output to the ink-on-white
+      // line-art source (chalk when forked, else pen) to undo the model's nudge.
+      const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
+      const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
+      return scoreCandidate(colored, { dx, dy }, attempt);
+    },
+  });
 }
 
 let pages = await resolveOutlineTargets(positionals, {
@@ -288,7 +290,9 @@ if (values.tall && values.wide) fail('pass only one of --tall / --wide');
 if (values.tall) pages = pages.filter((p) => p.includes('-tall'));
 if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
 
-let failures = 0;
+let renderFailures = 0;
+let gateFailures = 0;
+let missingCandidates = 0;
 const passingCandidates = [];
 for (const page of pages) {
   const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
@@ -357,7 +361,7 @@ for (const page of pages) {
     const base = rel.split('/').pop();
     const out = join(dir, samples > 1 ? `${base}.sample-${i + 1}.webp` : `${base}.webp`);
     if (values.rescore && !existsSync(out)) {
-      if (values.apply) failures++;
+      if (values.apply) missingCandidates++;
       console.log(`${label}  (skip) no candidate to rescore at ${relative(REPO_ROOT, out)}`);
       continue;
     }
@@ -411,14 +415,19 @@ for (const page of pages) {
           : '');
       console.log(`${status}${nudge}${stats}${failed}${warn}  -> ${relative(REPO_ROOT, out)}`);
       if (take.accepted) passingCandidates.push({ rel, candidate: take.candidate });
-      else if (samples === 1) failures++;
+      else gateFailures++;
     } catch (err) {
-      failures++;
+      renderFailures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);
     }
   }
 }
-if (failures) fail(`${failures} render(s) failed.`);
+const failureMessage = nightRunFailureMessage({
+  renderFailures,
+  gateFailures,
+  missingCandidates,
+});
+if (failureMessage) fail(failureMessage);
 if (values.apply) {
   for (const { rel, candidate } of passingCandidates) {
     const rawOut = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);

@@ -11,6 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { NIGHT_HALO_SCORE_MAX, punchNightCandidate, scoreNightHalo } from '../lib/night-halo.mjs';
 import { prepareNightFillAnalysis } from '../lib/night-scores.mjs';
 import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt } from '../lib/asset-paths.mjs';
+import { pageLevers } from '../lib/page-notes.mjs';
 import {
   haloRaw,
   haloLineArt,
@@ -60,9 +61,28 @@ describe('night halo catalog calibration', () => {
     expect(ship.haloScore).toBeLessThanOrEqual(0.2);
   });
 
-  it('preserves the deliberate station shading in the audit band', async () => {
-    const station = await scoreCatalogPage('space/station-tall');
-    expect(station.haloScore).toBeGreaterThan(NIGHT_HALO_SCORE_MAX);
-    expect(station.haloScore).toBeLessThan(2.2);
-  });
+  const reviewedExceptions = [
+    ['shapes/rectangle-tall', 4.3],
+    ['shapes/heart-tall', 3.2],
+    ['nature/spider-tall', 2.8],
+    ['objects/house-tall', 2.5],
+    ['vehicles/fire-tall', 2.5],
+    ['objects/house-wide', 2.3],
+    ['space/station-tall', 2.1],
+  ];
+
+  it.each(reviewedExceptions)(
+    '%s keeps its reviewed page ceiling and provenance',
+    async (page, max) => {
+      const [score, levers] = await Promise.all([
+        scoreCatalogPage(page),
+        Promise.resolve(pageLevers(page, 'night')),
+      ]);
+      expect(score.haloScore).toBeGreaterThan(NIGHT_HALO_SCORE_MAX);
+      expect(score.haloScore).toBeLessThanOrEqual(max);
+      expect(levers.flags['halo-score-max']).toBe(max);
+      expect(levers.review).toBeTruthy();
+      expect(levers.why).toContain('Issue #268');
+    }
+  );
 });

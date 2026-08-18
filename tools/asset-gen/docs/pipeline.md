@@ -260,7 +260,9 @@ is a better batch default), `-t F`, `--notes "…"`, plus per-gate bars (`--drif
 prints each page's resolved levers without an API call. Writes to the gitignored
 `.coloring-samples-dark/`. `--rescore` re-gates those exact saved candidate bytes offline; combine
 it with `--apply` after human review to write the passing raw and its deterministic shipped punch.
-`--apply` rejects multi-sample runs and never partially applies a failing batch.
+Every rejected candidate is counted at every sample count and exits nonzero as a gate failure,
+distinct from a render error; the candidate bytes remain available for review. `--apply` rejects
+multi-sample runs and never partially applies a failing batch.
 
 The model input is the **chalk outline as dark mode displays it** (white marks on near-black — the
 negation of the shipped ink-on-white chalk), falling back to the inverted pen for un-forked pages.
@@ -272,16 +274,17 @@ paints all three tones itself. If a category's renders drift from these traits, 
 regenerate — never hand-fix images.
 
 Candidate scoring shares one prepared fill/line-art analysis, then builds the same deterministic
-punch that shipping will produce. Keep-best-of-N ranks automatically acceptable candidates by lowest
-normalized halo first, then drift; fallback ranking retains the eye-first safety rule.
-Registration/mood/line gates score against the chalk (the line art the fill must sit under):
+punch that shipping will produce. Keep-best-of-N first prefers automatically acceptable candidates
+that meet the drift-clean stop condition, then ranks within that class by normalized halo and drift;
+fallback ranking retains the eye-first safety rule. Registration/mood/line gates score against the
+chalk (the line art the fill must sit under):
 
 | Gate             | Catches                                                                           | Bar                                                                                                                                                                                                                                                            |
 | ---------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scoreDrift`     | invented shapes (thin white strokes far from any source line)                     | ≤ 0.004 (clean ≈ 0)                                                                                                                                                                                                                                            |
 | `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background)   | ≤ 60 by default (good ≈ 15–50) — the bar the whole catalog was regenerated at in the 3.1 migration (shipped range 18–48, closing IDEAS #4's 4× mood spread); loosen per-run with `--night-luma-max` only as a deliberate escalation                            |
 | `scoreLineColor` | the model re-inking white outlines dark (they'd double against the chalk overlay) | median ≥ 150 (white ≈ 154–250)                                                                                                                                                                                                                                 |
-| `scoreNightHalo` | localized re-inked rims/drop-shadows that survive the punch                       | normalized `haloScore` ≤ 2 for automatic acceptance. `rawScore > 5` is a separate, non-blocking human crop-review warning; deliberate shading can raise rawScore without being a normalized halo defect.                                                       |
+| `scoreNightHalo` | localized re-inked rims/drop-shadows that survive the punch                       | normalized `haloScore` ≤ 2 by default for automatic acceptance. Seven reviewed shipped pages carry durable `halo-score-max` exceptions of 2.1–4.3 in `notes.json`; `rawScore > 5` remains a separate, non-blocking human crop-review warning.                  |
 | `judgeNightEyes` | flat-flooded eyes (below)                                                         | every strong light-lively core stays lively — judged on the **simulated final composite** (`lib/night-composite.mjs`: chalk-punched fill + screened chalk over dark paper) when the page has a chalk, since the chalk owns the whites; cores keyed off the pen |
 
 ### Levers for stubborn pages, in escalation order
@@ -349,9 +352,10 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
      tools/asset-gen/coloring/gen-night-fills.mjs <cat>/<page>-<orient> --rescore --apply
    ```
    The samples dirs live at the **repo root** (`lib/asset-paths.mjs` `SAMPLES_DARK_DIR`), not inside
-   `tools/asset-gen/`. A reviewed threshold exception must be explicit on the apply command (for
-   example `--halo-score-max 2.1`) so the diagnostic and provenance stay visible. For recovery or
-   bulk migration, manual copying remains possible, but every take sits beside its
+   `tools/asset-gen/`. A reviewed threshold exception belongs in the page's `notes.json` beside its
+   `review` and `why` provenance; use an explicit `--halo-score-max` only for a one-off
+   investigation that must not become the page's durable regeneration policy. For recovery or bulk
+   migration, manual copying remains possible, but every take sits beside its
    `<page>-<orient>.input.webp` debug sibling, so exclude those files and re-punch:
    ```bash
    for f in .coloring-samples-dark/<cat>/*.webp; do
