@@ -1,8 +1,8 @@
 // Score a SHIPPED night fill for a residual dark halo after the punch — the
 // dirty mid-dark rim that survives around the chalk strokes when the raw fill
 // re-inked its outlines dark (vehicles/train-wide's class) or painted a
-// drop-shadow hugging them (objects/teddy-wide). No generation gate sees this:
-// page-median lineWhite misses localized re-inking. Validated as IDEAS #7
+// drop-shadow hugging them (objects/teddy-wide). Page-median lineWhite misses
+// localized re-inking. Validated as IDEAS #7
 // (ideas-exploration/idea-7). Pure, deterministic, buffers-in → scores-out — no
 // API key, network, or filesystem.
 //
@@ -16,12 +16,14 @@
 //      shipped luma in the mid-dark penumbra window [HALO_PROTECT_BLACK,
 //      HALO_DARK) — legit near-black art (an owl's eye ring) sits below the
 //      window and doesn't count.
-// The score is a RANKING for human crop review, not a verdict: deliberate
-// mid-dark art hugging lines (tire rings, strap shading) scores like halo.
+// New generator candidates gate on the normalized score. rawScore remains a
+// separate crop-review signal because deliberate mid-dark art hugging lines
+// (tire rings, strap shading) raises the unwindowed measure.
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
-import { bleedUnderMask, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
+import { bleedUnderMask, encodePunchedFill, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 import { quantile } from './image-stats.mjs';
+import { isPreparedNightAnalysis, prepareNightAnalysis, sourceRgbAt } from './night-analysis.mjs';
 
 export const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
 const REF_DILATE = 4; // reference punch clears any plausible rim (bands 1..3 + slack)
@@ -29,27 +31,62 @@ const MAX_BAND = 3; // hotspots count halo px out to this ring; the score uses 1
 export const HALO_DARK = 145; // the mid-dark penumbra window: a visible halo pixel is
 export const HALO_PROTECT_BLACK = 55; // luma in [55, 145) — legit near-black ink sits below
 const HOTSPOT_TILE_PX = 64; // hotspot tiling grain
+// Below the reviewed benign catalog band (2.2–4.3), while repaired visible incidents score <=0.2.
+export const NIGHT_HALO_SCORE_MAX = 2;
+// Re-inked failures start above 5; rawScore remains review-only because deliberate shading raises it.
+export const NIGHT_HALO_RAW_REVIEW_THRESHOLD = 5;
 
-async function loadRgb(buf) {
-  const { data, info } = await sharp(buf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+async function loadRgb(buffer) {
+  const { data, info } = await sharp(buffer)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   return { rgb: data, width: info.width, height: info.height };
 }
 
 const lumaOf = (rgb, p) => 0.299 * rgb[p * 3] + 0.587 * rgb[p * 3 + 1] + 0.114 * rgb[p * 3 + 2];
 
 // The shipped punch's mask, rebuilt with lib/punch-fill.mjs's exact math.
-async function punchMask(lineArtBuf, width, height) {
-  const { data: line } = await sharp(lineArtBuf)
-    .removeAlpha()
-    .resize(width, height, { fit: 'fill' })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+async function punchMask(analysis, width, height) {
+  const { data: line } = await sourceRgbAt(analysis, width, height);
   const mask = new Uint8Array(width * height);
   for (let p = 0, i = 0; p < width * height; p++, i += 3) {
     const luma = 0.299 * line[i] + 0.587 * line[i + 1] + 0.114 * line[i + 2];
     if (luma < OUTLINE_LUMA_THRESHOLD) mask[p] = 1;
   }
   return mask;
+}
+
+const haloPreparations = new WeakMap();
+
+async function prepareHalo(analysis) {
+  const existing = haloPreparations.get(analysis);
+  if (existing) return existing;
+  const pending = (async () => {
+    const { rgb: rawRgb, width: w, height: h } = analysis.fill;
+    const mask = await punchMask(analysis, w, h);
+    const refMask = dilateMask(mask, w, h, REF_DILATE);
+    const refRgb = Buffer.from(rawRgb);
+    bleedUnderMask(refRgb, refMask, w, h);
+    return { mask, refRgb, bands: ringBands(mask, w, h, MAX_BAND), w, h };
+  })();
+  haloPreparations.set(analysis, pending);
+  try {
+    return await pending;
+  } catch (error) {
+    haloPreparations.delete(analysis);
+    throw error;
+  }
+}
+
+export async function punchNightCandidate(fillOrAnalysis, lineArtBuf) {
+  const analysis = isPreparedNightAnalysis(fillOrAnalysis)
+    ? fillOrAnalysis
+    : await prepareNightAnalysis(fillOrAnalysis, lineArtBuf);
+  const { mask, w, h } = await prepareHalo(analysis);
+  const punchedRgb = Buffer.from(analysis.fill.rgb);
+  bleedUnderMask(punchedRgb, mask, w, h);
+  return encodePunchedFill(punchedRgb, w, h);
 }
 
 function ringBands(mask, w, h, maxD) {
@@ -96,16 +133,15 @@ function ringBands(mask, w, h, maxD) {
  * @property {HaloHotspot[]} hotspots
  */
 /** @returns {Promise<HaloScore>} */
-export async function scoreNightHalo(rawBuf, lineArtBuf, shippedBuf) {
-  const { rgb: rawRgb, width: w, height: h } = await loadRgb(rawBuf);
-  const mask = await punchMask(lineArtBuf, w, h);
-  const { rgb: shipped } = await loadRgb(shippedBuf);
-
-  const refMask = dilateMask(mask, w, h, REF_DILATE);
-  const refRgb = Buffer.from(rawRgb);
-  bleedUnderMask(refRgb, refMask, w, h);
-
-  const bands = ringBands(mask, w, h, MAX_BAND);
+export async function scoreNightHalo(rawOrAnalysis, lineArtOrShipped, shippedBuf) {
+  const analysis = isPreparedNightAnalysis(rawOrAnalysis)
+    ? rawOrAnalysis
+    : await prepareNightAnalysis(rawOrAnalysis, lineArtOrShipped);
+  const shippedInput = isPreparedNightAnalysis(rawOrAnalysis) ? lineArtOrShipped : shippedBuf;
+  const { rgb: shipped, width: shippedW, height: shippedH } = await loadRgb(shippedInput);
+  const { refRgb, bands, w, h } = await prepareHalo(analysis);
+  if (shippedW !== w || shippedH !== h)
+    throw new Error(`night halo punch is ${shippedW}x${shippedH}; expected ${w}x${h}`);
   const deltaAt = (p) => lumaOf(refRgb, p) - lumaOf(shipped, p);
   const isHalo = (p) => {
     if (deltaAt(p) <= DELTA_RIM) return false;

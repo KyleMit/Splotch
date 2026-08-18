@@ -256,9 +256,11 @@ node --experimental-strip-types --disable-warning=ExperimentalWarning \
 Targets: a category (`nature`), one orientation (`nature --tall` / `nature --wide`), or a single
 cell (`nature/ant-tall`). Tuning: `--samples N` (takes per page), `--max-attempts N` (default 3; 4–5
 is a better batch default), `-t F`, `--notes "…"`, plus per-gate bars (`--drift-threshold`,
-`--night-luma-max`, `--line-white-min`) and `--dilate-lines N`; `--dry-run` prints each page's
-resolved levers without an API call. Writes to the gitignored `.coloring-samples-dark/` — never to
-shipped assets.
+`--night-luma-max`, `--line-white-min`, `--halo-score-max`) and `--dilate-lines N`; `--dry-run`
+prints each page's resolved levers without an API call. Writes to the gitignored
+`.coloring-samples-dark/`. `--rescore` re-gates those exact saved candidate bytes offline; combine
+it with `--apply` after human review to write the passing raw and its deterministic shipped punch.
+`--apply` rejects multi-sample runs and never partially applies a failing batch.
 
 The model input is the **chalk outline as dark mode displays it** (white marks on near-black — the
 negation of the shipped ink-on-white chalk), falling back to the inverted pen for un-forked pages.
@@ -269,15 +271,17 @@ catchlight are chalk) and the fill's only eye job is a deep near-black pupil; wi
 paints all three tones itself. If a category's renders drift from these traits, tweak the prompt and
 regenerate — never hand-fix images.
 
-Four gates, keep-best-of-N (fallback ranking prefers takes with more surviving eyes over least
-drift) — registration/mood/line gates score against the chalk (the line art the fill must sit
-under):
+Candidate scoring shares one prepared fill/line-art analysis, then builds the same deterministic
+punch that shipping will produce. Keep-best-of-N ranks automatically acceptable candidates by lowest
+normalized halo first, then drift; fallback ranking retains the eye-first safety rule.
+Registration/mood/line gates score against the chalk (the line art the fill must sit under):
 
 | Gate             | Catches                                                                           | Bar                                                                                                                                                                                                                                                            |
 | ---------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `scoreDrift`     | invented shapes (thin white strokes far from any source line)                     | ≤ 0.004 (clean ≈ 0)                                                                                                                                                                                                                                            |
 | `scoreNightness` | daytime "sky blue" background (median luma of the flood-filled true background)   | ≤ 60 by default (good ≈ 15–50) — the bar the whole catalog was regenerated at in the 3.1 migration (shipped range 18–48, closing IDEAS #4's 4× mood spread); loosen per-run with `--night-luma-max` only as a deliberate escalation                            |
 | `scoreLineColor` | the model re-inking white outlines dark (they'd double against the chalk overlay) | median ≥ 150 (white ≈ 154–250)                                                                                                                                                                                                                                 |
+| `scoreNightHalo` | localized re-inked rims/drop-shadows that survive the punch                       | normalized `haloScore` ≤ 2 for automatic acceptance. `rawScore > 5` is a separate, non-blocking human crop-review warning; deliberate shading can raise rawScore without being a normalized halo defect.                                                       |
 | `judgeNightEyes` | flat-flooded eyes (below)                                                         | every strong light-lively core stays lively — judged on the **simulated final composite** (`lib/night-composite.mjs`: chalk-punched fill + screened chalk over dark paper) when the page has a chalk, since the chalk owns the whites; cores keyed off the pen |
 
 ### Levers for stubborn pages, in escalation order
@@ -335,22 +339,26 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
 ### Shipping (manual on purpose — the human gate)
 
 1. Review the samples on the coloring-book proof sheet (`--source samples`) — Combined view, both
-   themes, zoom the eyes.
-2. Copy each approved take to its raw path and re-punch. The samples dirs live at the **repo root**
-   (`lib/asset-paths.mjs` `SAMPLES_DARK_DIR`), not inside `tools/asset-gen/`:
+   themes, zoom the eyes. A `rawHalo > 5` diagnostic specifically requests focused crop review; it
+   does not override a passing normalized halo gate. A normalized halo failure also prints its worst
+   hotspot origin, and the shipped audit's `--out` JSON retains all hotspot coordinates.
+2. Re-score and apply each approved single take offline. This writes the exact reviewed sample to
+   its raw path only when every requested page passes, then re-punches it:
    ```bash
-   cp .coloring-samples-dark/<cat>/<page>-<orient>.webp \
-      tools/asset-gen/fill-src/<cat>/<page>-<orient>.night.raw.webp
-   npm run gen:coloring-punched-fills -- <cat>
+   node --experimental-strip-types --disable-warning=ExperimentalWarning \
+     tools/asset-gen/coloring/gen-night-fills.mjs <cat>/<page>-<orient> --rescore --apply
    ```
-   Shipping a whole category? Every take sits beside its `<page>-<orient>.input.webp` debug sibling
-   (the negated model input), so a bare `*.webp` glob manufactures bogus `*.input.night.raw.webp`
-   raws — exclude them:
+   The samples dirs live at the **repo root** (`lib/asset-paths.mjs` `SAMPLES_DARK_DIR`), not inside
+   `tools/asset-gen/`. A reviewed threshold exception must be explicit on the apply command (for
+   example `--halo-score-max 2.1`) so the diagnostic and provenance stay visible. For recovery or
+   bulk migration, manual copying remains possible, but every take sits beside its
+   `<page>-<orient>.input.webp` debug sibling, so exclude those files and re-punch:
    ```bash
    for f in .coloring-samples-dark/<cat>/*.webp; do
      case $f in *.input.webp) continue;; esac
      cp "$f" "tools/asset-gen/fill-src/<cat>/$(basename "$f" .webp).night.raw.webp"
    done
+   npm run gen:coloring-punched-fills -- <cat>
    ```
    (Multi-take runs also leave `*.sample-N.webp` beside the pick — batch-copy only single-take
    categories. The punch skips stray `*.input.*.raw.webp` files with a warning rather than crashing,
@@ -464,10 +472,10 @@ The loop that has worked, per category:
 5. **After a regen wave, run the invention + halo audits too** (proven in the 3.1 migration, since
    promoted to first-class scripts): the invented-shape detector (`check:coloring-invented-shapes`)
    — the only thing that caught house-tall's two invented sky flowers, invisible to every standard
-   gate — and the residual-halo ranker (`check:coloring-night-halo`); both are offline and
-   deterministic, and the halo table's top scorers need a human crop review (deliberate mid-dark art
-   hugging lines scores like halo). For remaining gate-blind classes (subject/background contrast,
-   colored-fill invention inside a subject), batch-render the night composites
+   gate — and the residual-halo audit (`check:coloring-night-halo`), which verifies the final
+   committed punch and reports both the automatic candidate bar and the independent raw-score crop
+   flag. Both are offline and deterministic. For remaining gate-blind classes (subject/background
+   contrast, colored-fill invention inside a subject), batch-render the night composites
    (`lib/night-composite.mjs`) into per-category montages and eyeball them — that sweep is what
    caught police-tall's whitened pupils and circle-wide's sky-colored disc.
 6. **Diff against the golden set** (`check:coloring-golden-scores`, ~1 min offline) — the safety net
@@ -505,12 +513,12 @@ Hard-won process lessons:
 | `npm run gen:coloring-outlines:fresh -- <page> --scene "…"` | brand-new pen from a text scene (same subject, new drawing), 6 offline gates, `--apply` to ship | yes      |
 | `npm run gen:coloring-chalk -- <page-or-cat…>`              | chalk-outline redraw from the pen, 4 gates, `--apply` to ship, `--rescore` offline              | yes      |
 | `npm run gen:coloring-fills -- <pages…>`                    | gated light-fill candidates → scratch; `--apply` ships an all-passing batch                     | yes      |
-| `node … gen-night-fills.mjs <pages…>`                       | night fills (gated) → samples                                                                   | yes      |
+| `node … gen-night-fills.mjs <pages…>`                       | gated night candidates → samples; `--rescore` offline, `--apply` ships passing single takes     | yes/no   |
 | `npm run gen:coloring-punched-fills -- [pages…]`            | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
 | `npm run check:coloring-fill-drift -- [cat]`                | registration drift on committed raws                                                            | no       |
 | `npm run check:coloring-fill-eyes -- [cat]`                 | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
 | `npm run check:coloring-invented-shapes -- [cat]`           | invented colored shapes floating on the open background of committed raws                       | no       |
-| `npm run check:coloring-night-halo -- [cat]`                | residual dark halo around chalk strokes in shipped night fills (ranking for crop review)        | no       |
+| `npm run check:coloring-night-halo -- [cat]`                | shipped halo audit: normalized candidate bar plus separate raw-score crop-review flag           | no       |
 | `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
 | `npm run check:coloring-golden-scores`                      | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
 | `npm run update:coloring-golden-scores`                     | adopt the current scores as the new golden baseline                                             | no       |

@@ -72,7 +72,7 @@ npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (s
 npm run gen:coloring-fills      # light fill candidates -> .coloring-samples/ (--apply to ship)
 npm run check:coloring-fill-drift # drift-check the raw fills in fill-src/ (no key/network)
 npm run check:coloring-invented-shapes # invented colored shapes on the open background of the raws (no key/network)
-npm run check:coloring-night-halo # rank shipped night fills by residual dark halo after the punch (no key/network)
+npm run check:coloring-night-halo # audit shipped night fills against the candidate halo bar + crop-review signal (no key/network)
 npm run gen:coloring-punched-fills      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
 npm run gen:coloring-overlays   # transparent light/dark runtime overlays -> web/static/coloring/**/*.{overlay,dark.overlay}.webp
@@ -143,7 +143,7 @@ Or, from **inside this folder**, the local aliases (same flags, resolve the same
 
 ```bash
 npm run coloring-fills -- farm/dog-wide --samples 3
-npm run coloring-night-fills -- space --max-attempts 4  # not exposed as a root gen:* script
+npm run coloring-night-fills -- space --max-attempts 4  # gated candidates; --rescore is offline, --apply ships
 npm run coloring-book-proof-sheet -- space --source samples
 npm run convert-png-to-webp
 ```

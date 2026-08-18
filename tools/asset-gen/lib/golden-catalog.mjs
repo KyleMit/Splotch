@@ -5,9 +5,7 @@ import {
   DRIFT_THRESHOLD_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
-  scoreDrift,
-  scoreLineColor,
-  scoreNightness,
+  scoreNightFillGates,
 } from './night-scores.mjs';
 import { prepareOutlineAnalysis } from './outline-analysis.mjs';
 import { scoreOutlineFrame } from './outline-frame.mjs';
@@ -80,11 +78,7 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
 
   if (nightRaw) {
     const source = chalk ?? pen;
-    const [drift, night, line] = await Promise.all([
-      scoreDrift(nightRaw, source),
-      scoreNightness(nightRaw, source),
-      scoreLineColor(nightRaw, source),
-    ]);
+    const { drift, night, line } = await scoreNightFillGates(nightRaw, source);
     let eyes = null;
     if (lightEyes) {
       const judged = chalk ? await compositeNight(nightRaw, chalk) : nightRaw;

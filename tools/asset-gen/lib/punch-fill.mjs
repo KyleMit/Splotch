@@ -23,7 +23,7 @@
 // + 0.114B) below OUTLINE_LUMA_THRESHOLD is outline → inpainted; anything lighter
 // is a fill and kept — including legitimately dark fills (a ladybug's spots, a navy
 // sky), because the mask keys off the LINE ART's darkness, never the fill's.
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
@@ -39,6 +39,12 @@ export const OUTLINE_LUMA_THRESHOLD = 150;
 // alpha plane did (ant-tall.light: raw 71KB → 88KB with alpha, 82KB inpainted).
 const WEBP_QUALITY = 85;
 const WEBP_EFFORT = 6;
+
+export function encodePunchedFill(rgb, width, height) {
+  return sharp(rgb, { raw: { width, height, channels: 3 } })
+    .webp({ quality: WEBP_QUALITY, effort: WEBP_EFFORT })
+    .toBuffer();
+}
 
 // Replace every masked pixel's color with the average of its already-colored
 // 4-neighbors, peeling inward ring by ring (two-phase per ring so the bleed is
@@ -131,8 +137,6 @@ export async function punchFill(rawPath) {
   bleedUnderMask(fill, mask, width, height);
 
   const out = join(COLORING_DIR, shippedRel);
-  await sharp(fill, { raw: { width, height, channels: 3 } })
-    .webp({ quality: WEBP_QUALITY, effort: WEBP_EFFORT })
-    .toFile(out);
+  await writeFile(out, await encodePunchedFill(fill, width, height));
   return { rel: shippedRel, out, punched: punchedCount / (width * height) };
 }

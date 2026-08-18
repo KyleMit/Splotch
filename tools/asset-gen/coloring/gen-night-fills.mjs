@@ -20,16 +20,22 @@
 // those; a render above the threshold is regenerated (bumping temperature) up to
 // --max-attempts times, keeping the least-drifted take. Clean fills score ~0.
 //
-// Three automated gates run per take, each with keep-best-of-N retry: scoreDrift()
+// Halo scoring punches every candidate in memory before it can be selected or
+// applied. The normalized score is an automatic gate; rawScore independently
+// requests crop review without rejecting deliberate mid-dark shading.
+//
+// The automated signals run per take with keep-best-of-N retry: scoreDrift()
 // (invented outlines), scoreNightness() (a bright/daytime background), and
 // scoreLineColor() (the model re-inked the white outlines DARK — they must stay
-// white so they sit under the app's white "chalk" line art in dark mode).
+// white so they sit under the app's white "chalk" line art in dark mode), halo,
+// and the two eye checks.
 //
 // Full workflow (generate → review proof sheet → ship → wire → verify), the prompt
 // lessons, and the remaining-category checklist: tools/asset-gen/docs/pipeline.md (Stage 4).
 //
-// Requires GEMINI_API_KEY. Writes candidates to .coloring-samples-dark/ for
-// review — it does NOT touch the shipped assets.
+// Requires GEMINI_API_KEY except in --dry-run / --rescore. Writes candidates to
+// .coloring-samples-dark/ for review; --apply ships an all-passing single-take
+// run and re-punches it.
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space               whole category
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space/astronaut-tall one page
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space --tall         portrait pages only
@@ -37,6 +43,8 @@
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space --samples 2    2 takes each
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space --max-attempts 4  retry harder
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space --line-white-min 150  dark-outline gate
+//   node tools/asset-gen/coloring/gen-night-fills.mjs space --rescore       re-gate saved takes offline
+//   node tools/asset-gen/coloring/gen-night-fills.mjs space --rescore --apply ship reviewed passing takes
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space --dilate-lines 2  thicken white input lines
 //   node tools/asset-gen/coloring/gen-night-fills.mjs space --dry-run       print each page's resolved levers (no API)
 //
@@ -44,7 +52,7 @@
 // fill-src/<category>/notes.json registry (lib/page-notes.mjs) so a regen starts
 // from the known-good settings; explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import sharp from 'sharp';
@@ -64,11 +72,19 @@ import { alignToSource } from '../lib/align-to-source.mjs';
 // Drift / night-mood / line-color scoring is shared with check-golden-scores.mjs so the
 // committed raws can be re-scored offline with the exact generation-time math.
 import {
+  prepareNightFillAnalysis,
   scoreNightFillGates,
   DRIFT_THRESHOLD_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
 } from '../lib/night-scores.mjs';
+import {
+  NIGHT_HALO_RAW_REVIEW_THRESHOLD,
+  NIGHT_HALO_SCORE_MAX,
+  punchNightCandidate,
+  scoreNightHalo,
+} from '../lib/night-halo.mjs';
+import { passesNightCandidate, preferNightCandidate } from '../lib/night-candidate.mjs';
 // The eye gate judges the simulated FINAL render, not the raw fill: the chalk
 // owns the eye whites, so only the composite shows whether an eye reads as
 // white-sclera / dark-pupil / white-glint.
@@ -78,6 +94,7 @@ import { scoreEyeFill, judgeNightEyes } from '../lib/eye-fill.mjs';
 // core-vs-annulus eye gate misses on solid-pen eyes (lib/composite-eye.mjs).
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 import { darkFillPrompt } from '../lib/prompts.mjs';
+import { punchFill } from '../lib/punch-fill.mjs';
 
 const WEBP_QUALITY = 90;
 
@@ -142,6 +159,8 @@ async function toDarkInput(sourceBuf, dilateLines) {
 const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
+    apply: { type: 'boolean' },
+    rescore: { type: 'boolean' },
     samples: { type: 'string', short: 'n' },
     temperature: { type: 'string', short: 't' },
     tall: { type: 'boolean' },
@@ -150,12 +169,14 @@ const { values, positionals } = parseArgs({
     'drift-threshold': { type: 'string' },
     'night-luma-max': { type: 'string' },
     'line-white-min': { type: 'string' },
+    'halo-score-max': { type: 'string' },
     'dilate-lines': { type: 'string' },
     notes: { type: 'string' },
     'dry-run': { type: 'boolean' },
   },
 });
 const samples = parsePositiveInt(values.samples, '--samples', 1);
+if (values.apply && samples > 1) fail('--apply cannot be combined with --samples greater than 1.');
 
 // Per-page tuning resolves in the page loop — defaults, then the page's
 // fill-src/<cat>/notes.json registry entry, then explicit CLI flags (CLI wins).
@@ -181,6 +202,12 @@ function nightSettings(v, source) {
       LINE_WHITE_MIN_DEFAULT,
       source
     ),
+    'halo-score-max': parseNonNegative(
+      v['halo-score-max'],
+      '--halo-score-max',
+      NIGHT_HALO_SCORE_MAX,
+      source
+    ),
     'dilate-lines': v['dilate-lines'] === undefined ? 0 : Number(v['dilate-lines']),
     notes: v.notes,
   };
@@ -192,41 +219,38 @@ function nightSettings(v, source) {
     driftThreshold: leverSettings['drift-threshold'],
     nightLumaMax: leverSettings['night-luma-max'],
     lineWhiteMin: leverSettings['line-white-min'],
+    haloScoreMax: leverSettings['halo-score-max'],
     dilateLines: leverSettings['dilate-lines'],
     notes: leverSettings.notes,
     leverSettings,
   };
 }
 nightSettings(values);
-const ai = makeClient({ optional: values['dry-run'] });
+const ai = makeClient({ optional: values['dry-run'] || values.rescore });
 
-// Generate one take, register it to the source, and score four ways: structural
+// Generate one take, register it to the source, and score its structural
 // DRIFT (invented outlines), NIGHT-ness (background too bright / daytime), LINE
 // color (outlines re-inked dark instead of staying white), and EYES (every eye
 // the page's light fill paints must stay lively at night — not flooded flat;
 // lib/eye-fill.mjs, skipped when the page has no committed light raw to
 // reference). Retry (with a rising temperature to shake loose a different
 // composition) until a take passes all gates or the attempt budget runs out. A
-// take is "acceptable" when its background reads as night AND its outlines
-// stayed white AND its eyes are painted; among acceptable takes we keep the
-// least-drifted, and stop early once one is also drift-clean. If none qualify
-// we fall back to the least-drifted take overall and flag it, so even a
-// stubborn page yields a render.
+// take is "acceptable" when its background reads as night, its outlines stayed
+// white, its punched halo is at or below the automatic bar, and its eyes are
+// painted. Among acceptable takes the lowest halo wins, then drift. Fallbacks
+// retain the eye-first safety rule before comparing failed gates and halo.
 async function generateCleanTake({
   darkInput,
   source,
-  pen,
-  chalk,
-  lightRaw,
   width,
   height,
   temp0,
-  lightEyes,
+  chalked,
   cfg,
+  scoreCandidate,
 }) {
-  const { maxAttempts, nightLumaMax, lineWhiteMin, driftThreshold } = cfg;
-  let best = null; // lowest drift overall (fallback)
-  let bestAccept = null; // lowest drift among takes that pass mood + line + eyes
+  const { maxAttempts, driftThreshold } = cfg;
+  let best = null;
   let attemptsRun = 0;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     attemptsRun = attempt;
@@ -235,53 +259,19 @@ async function generateCleanTake({
       imageBytes: darkInput,
       mimeType: 'image/webp',
       temperature,
-      chalked: !!chalk,
+      chalked,
       notes: cfg.notes,
     });
     const resized = await sharp(bytes).resize(width, height, { fit: 'fill' }).png().toBuffer();
     // Edges are polarity-agnostic, so align the colored output to the ink-on-white
     // line-art source (chalk when forked, else pen) to undo the model's nudge.
     const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
-    const { drift, night, line } = await scoreNightFillGates(aligned, source);
-    // Eye cores always come from the PEN outline (the chalk's solid sclera has
-    // no nested rings to find); with a chalk the measured pixels are the
-    // simulated final composite rather than the raw fill.
-    const composite = chalk ? await compositeNight(aligned, chalk) : aligned;
-    const eyeCore = lightEyes
-      ? judgeNightEyes(await scoreEyeFill(composite, pen), lightEyes, { chalked: !!chalk })
-      : { passes: true, failed: 0 };
-    // Whole-eye check on the composite: a blank white orb where the chalk sclera
-    // and the fill's catchlight stack over a solid-pen pupil. judgeNightEyes is
-    // band-blind there (the annulus is solid pupil ink), so this owns that class.
-    const orb =
-      chalk && lightRaw
-        ? await scoreCompositeEyes(composite, lightRaw, pen)
-        : { passes: true, failed: 0 };
-    const eyes = {
-      passes: eyeCore.passes && orb.passes,
-      failed: eyeCore.failed + orb.failed,
-      coreFailed: eyeCore.failed,
-      orbFailed: orb.failed,
-      worstOrb: orb.worst ?? null,
-    };
-    const take = { aligned, dx, dy, drift, night, line, eyes, attempt };
-    // Fallback ranking: fewest dead eyes first, then least drift — a take with
-    // living eyes and a hair more drift beats a drift-perfect take whose eyes
-    // are flooded flat (the failure mode a dark-bodied subject like the spider
-    // rolls constantly).
-    if (
-      !best ||
-      eyes.failed < best.eyes.failed ||
-      (eyes.failed === best.eyes.failed && drift.ratio < best.drift.ratio)
-    )
-      best = take;
-    const moodOk = night.bgLuma <= nightLumaMax;
-    const lineOk = line.lineWhite >= lineWhiteMin;
-    if (moodOk && lineOk && eyes.passes && (!bestAccept || drift.ratio < bestAccept.drift.ratio))
-      bestAccept = take;
-    if (drift.ratio <= driftThreshold && moodOk && lineOk && eyes.passes) break;
+    const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
+    const take = await scoreCandidate(colored, { dx, dy }, attempt);
+    if (preferNightCandidate(take, best, cfg)) best = take;
+    if (driftThreshold >= take.drift.ratio && passesNightCandidate(take, cfg)) break;
   }
-  return { ...(bestAccept ?? best), attemptsRun, accepted: bestAccept !== null };
+  return { ...best, attemptsRun, accepted: passesNightCandidate(best, cfg) };
 }
 
 let pages = await resolveOutlineTargets(positionals, {
@@ -299,6 +289,7 @@ if (values.tall) pages = pages.filter((p) => p.includes('-tall'));
 if (values.wide) pages = pages.filter((p) => p.includes('-wide'));
 
 let failures = 0;
+const passingCandidates = [];
 for (const page of pages) {
   const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
@@ -322,44 +313,82 @@ for (const page of pages) {
   // line art dark mode actually renders, so it is both the model's input and
   // the registration/scoring reference. Un-forked pages fall back to the pen.
   const { source, chalk } = await resolveNightLineArt(page, pen);
-  const darkInput = await toDarkInput(source, cfg.dilateLines);
+  const darkInput = values.rescore ? null : await toDarkInput(source, cfg.dilateLines);
   // Eye reference: which nested cores the committed light fill paints as lively
   // eyes — cores keyed off the PEN outline on both sides of the comparison.
   // Absent (page has no light raw yet) the eye gate is skipped.
   const lightRawPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const lightRaw = existsSync(lightRawPath) ? await readFile(lightRawPath) : null;
   const lightEyes = lightRaw ? await scoreEyeFill(lightRaw, pen) : null;
+  const scoreCandidate = async (candidate, shift, attempt) => {
+    const analysis = await prepareNightFillAnalysis(candidate, source);
+    const [{ drift, night, line }, punched] = await Promise.all([
+      scoreNightFillGates(analysis),
+      punchNightCandidate(analysis),
+    ]);
+    const halo = await scoreNightHalo(analysis, punched);
+    // Eye cores always come from the PEN outline (the chalk's solid sclera has
+    // no nested rings to find); with a chalk the measured pixels are the
+    // simulated final composite rather than the raw fill.
+    const composite = chalk ? await compositeNight(candidate, chalk) : candidate;
+    const eyeCore = lightEyes
+      ? judgeNightEyes(await scoreEyeFill(composite, pen), lightEyes, { chalked: !!chalk })
+      : { passes: true, failed: 0 };
+    // Whole-eye check on the composite: a blank white orb where the chalk sclera
+    // and the fill's catchlight stack over a solid-pen pupil. judgeNightEyes is
+    // band-blind there (the annulus is solid pupil ink), so this owns that class.
+    const orb =
+      chalk && lightRaw
+        ? await scoreCompositeEyes(composite, lightRaw, pen)
+        : { passes: true, failed: 0 };
+    const eyes = {
+      passes: eyeCore.passes && orb.passes,
+      failed: eyeCore.failed + orb.failed,
+      coreFailed: eyeCore.failed,
+      orbFailed: orb.failed,
+      worstOrb: orb.worst ?? null,
+    };
+    return { candidate, ...shift, drift, night, line, halo, eyes, attempt };
+  };
 
   for (let i = 0; i < samples; i++) {
     const label = samples > 1 ? `${rel}  ${i + 1}/${samples}` : rel;
+    const dir = join(SAMPLES_DARK_DIR, dirname(rel));
+    const base = rel.split('/').pop();
+    const out = join(dir, samples > 1 ? `${base}.sample-${i + 1}.webp` : `${base}.webp`);
+    if (values.rescore && !existsSync(out)) {
+      if (values.apply) failures++;
+      console.log(`${label}  (skip) no candidate to rescore at ${relative(REPO_ROOT, out)}`);
+      continue;
+    }
     process.stdout.write(`${label} ... `);
     try {
-      const take = await generateCleanTake({
-        darkInput,
-        source,
-        pen,
-        chalk,
-        lightRaw,
-        width,
-        height,
-        temp0: cfg.baseTemp + i * 0.12,
-        lightEyes,
-        cfg,
-      });
-      const colored = await sharp(take.aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
-
-      const dir = join(SAMPLES_DARK_DIR, dirname(rel));
+      const take = values.rescore
+        ? {
+            ...(await scoreCandidate(await readFile(out), { dx: 0, dy: 0 }, 1)),
+            attemptsRun: 1,
+          }
+        : await generateCleanTake({
+            darkInput,
+            source,
+            width,
+            height,
+            temp0: cfg.baseTemp + i * 0.12,
+            chalked: !!chalk,
+            cfg,
+            scoreCandidate,
+          });
+      take.accepted = passesNightCandidate(take, cfg);
       await mkdir(dir, { recursive: true });
-      const base = rel.split('/').pop();
-      const out = join(dir, samples > 1 ? `${base}.sample-${i + 1}.webp` : `${base}.webp`);
-      await sharp(colored).toFile(out);
+      if (!values.rescore) await writeFile(out, take.candidate);
       // Also stash the dark input beside it once, for the review montage.
-      if (i === 0) await sharp(darkInput).toFile(join(dir, `${base}.input.webp`));
+      if (!values.rescore && i === 0)
+        await sharp(darkInput).toFile(join(dir, `${base}.input.webp`));
       const nudge = take.dx || take.dy ? `  shift ${take.dx},${take.dy}` : '';
       const status = take.accepted
         ? `ok${take.attemptsRun > 1 ? `  kept attempt ${take.attempt}/${take.attemptsRun}` : ''}`
         : `kept least-bad attempt ${take.attempt}/${take.attemptsRun}`;
-      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)}`;
+      const stats = `  drift ${take.drift.ratio.toFixed(4)} bgLuma ${take.night.bgLuma.toFixed(0)} lineW ${take.line.lineWhite.toFixed(0)} halo ${take.halo.haloScore.toFixed(3)} rawHalo ${take.halo.rawScore.toFixed(3)}`;
       const failed = take.accepted
         ? ''
         : (take.night.bgLuma > cfg.nightLumaMax
@@ -368,12 +397,21 @@ for (const page of pages) {
           (take.line.lineWhite < cfg.lineWhiteMin
             ? `  line-gate FAILED (lineW ${take.line.lineWhite.toFixed(0)} < min ${cfg.lineWhiteMin})`
             : '') +
+          (take.halo.haloScore > cfg.haloScoreMax
+            ? `  halo-gate FAILED (halo ${take.halo.haloScore.toFixed(3)} > max ${cfg.haloScoreMax}; hotspot ${take.halo.hotspots[0]?.left ?? '-'},${take.halo.hotspots[0]?.top ?? '-'})`
+            : '') +
           (take.eyes.coreFailed ? `  eye-gate FAILED (${take.eyes.coreFailed} flat eyes)` : '') +
           (take.eyes.orbFailed
             ? `  orb-gate FAILED (${take.eyes.orbFailed} blank-orb eyes, coreDark ${take.eyes.worstOrb?.coreDarkFrac})`
             : '');
-      const warn = take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '';
+      const warn =
+        (take.drift.ratio > cfg.driftThreshold ? '  ⚠ still drifting' : '') +
+        (take.halo.rawScore > NIGHT_HALO_RAW_REVIEW_THRESHOLD
+          ? `  ⚠ crop review (rawHalo ${take.halo.rawScore.toFixed(3)} > ${NIGHT_HALO_RAW_REVIEW_THRESHOLD})`
+          : '');
       console.log(`${status}${nudge}${stats}${failed}${warn}  -> ${relative(REPO_ROOT, out)}`);
+      if (take.accepted) passingCandidates.push({ rel, candidate: take.candidate });
+      else if (samples === 1) failures++;
     } catch (err) {
       failures++;
       console.log(`FAILED (${err instanceof Error ? err.message : err})`);
@@ -381,4 +419,15 @@ for (const page of pages) {
   }
 }
 if (failures) fail(`${failures} render(s) failed.`);
+if (values.apply) {
+  for (const { rel, candidate } of passingCandidates) {
+    const rawOut = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
+    await mkdir(dirname(rawOut), { recursive: true });
+    await writeFile(rawOut, candidate);
+    const { out } = await punchFill(rawOut);
+    console.log(`  ✓ applied -> ${relative(REPO_ROOT, out)}`);
+  }
+} else if (!values.rescore && samples === 1) {
+  console.log('Review the candidate, then re-run with --apply to ship it.');
+}
 console.log('Done.');
