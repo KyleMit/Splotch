@@ -14,6 +14,7 @@ import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
+import { nativeMetaCspDirectives, serializeCspDirectives } from '../../web/securityPolicy.ts';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
@@ -169,6 +170,33 @@ export function requiredNativePageProblems(dir) {
   );
 }
 
+export function nativeContentSecurityPolicyProblems(dir) {
+  if (!existsSync(dir)) return [];
+  const htmlFiles = bundleFiles(dir).filter((path) => path.endsWith('.html'));
+  if (!htmlFiles.length) return ['Native bundle contains no HTML documents'];
+
+  const normalizePolicy = (policy) =>
+    policy
+      .split(';')
+      .map((part) => part.trim().split(/\s+/))
+      .map(([directive, ...sources]) => [directive, sources.sort()])
+      .sort(([left], [right]) => left.localeCompare(right));
+  const expected = normalizePolicy(serializeCspDirectives(nativeMetaCspDirectives()));
+  return htmlFiles.flatMap((path) => {
+    const source = readFileSync(path, 'utf8');
+    const policies = [
+      ...source.matchAll(/<meta http-equiv="content-security-policy" content="([^"]*)">/gi),
+    ].map((match) => match[1]);
+    const file = relative(ROOT, path);
+    if (policies.length !== 1) {
+      return [`Native HTML ${file} has ${policies.length} CSP meta tags; expected exactly 1`];
+    }
+    return JSON.stringify(normalizePolicy(policies[0])) === JSON.stringify(expected)
+      ? []
+      : [`Native HTML ${file} has the wrong CSP meta policy: ${policies[0]}`];
+  });
+}
+
 /**
  * The other half of {@link requiredNativePageProblems}: a page that ships but
  * that nothing links to is unreachable in the app, and the store requirement is
@@ -217,6 +245,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
     ...webOnlyMarkerSourceProblems(),
     ...nativeBundleProblems(dir, sentinels),
     ...requiredNativePageProblems(dir),
+    ...nativeContentSecurityPolicyProblems(dir),
     ...requiredNativePageLinkProblems(dir),
     ...nativePrivacyFeedbackProblems(dir),
   ];
@@ -228,6 +257,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
       `no web-only support email; ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
+      `every HTML document carries one native CSP; ` +
       `privacy links to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled`
   );

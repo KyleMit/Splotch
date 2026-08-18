@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
+import { NATIVE_API_ORIGIN } from '../../securityPolicy.ts';
 import { FEEDBACK_URL, SITE_ORIGIN } from './siteUrl';
 
 // The site's own address is also a literal in a template and a build config,
@@ -19,7 +20,6 @@ it("agrees with app.html's canonical Open Graph URL", () => {
   expect(canonical?.[1]).toBe(`${SITE_ORIGIN}/`);
 });
 
-it("agrees with vite.config.ts's native API base", () => {
-  const base = read('../../vite.config.ts').match(/isCapacitor \? '([^']+)'/);
-  expect(base?.[1]).toBe(SITE_ORIGIN);
+it("agrees with the native API's build-side origin", () => {
+  expect(NATIVE_API_ORIGIN).toBe(SITE_ORIGIN);
 });

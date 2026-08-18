@@ -89,3 +89,21 @@ policy onto document responses for a spec that needs the real thing; `ai-result.
 flow uses it and fails without the `blob:` grant. Applying it suite-wide would turn every
 CSP-violating behaviour into a local failure and is worth considering, but it is a broad change to
 every spec's environment and was left out of the fix.
+
+## Update (2026-08): native static builds receive the enforcing subset as a meta policy
+
+The Android and iOS bundles have no server to deliver the web response header, so issue #617 adds a
+Capacitor-only `kit.csp` configuration in `web/svelte.config.js`. `mode: 'auto'` emits one CSP meta
+tag into every static native document; the web build leaves `kit.csp` unset and remains header-only.
+
+`web/securityPolicy.ts` is the build-side source for both targets' directive map and the hosted API
+origin. The web header serializes the canonical map unchanged. Native derives from the same map but
+widens only `connect-src`, from `'self' blob:` to `'self' blob: https://splotch.art`, because the
+Capacitor document origin is local while every `/api/*` request goes to the hosted service. Vite's
+`__NATIVE_API_BASE__` comes from that same origin, so changing one cannot silently strand the other.
+
+Meta delivery cannot enforce `frame-ancestors` or `report-uri`; SvelteKit omits both from the
+emitted native policy. `postbuild:cap` verifies the actual static export has exactly one expected
+policy per HTML document, including that omission, while the web production E2E suite guards against
+gaining a meta policy. This constrains WebView resource and Fetch/WebSocket destinations; it does
+not change Android's broad `INTERNET` permission or restrict sockets opened by native plugin code.

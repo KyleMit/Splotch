@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { GENERATION_JOB_TTL_MS } from '../../../web/src/lib/ai/limits.ts';
 import { FREE_GENERATION_LIMIT } from '../../../web/src/lib/freeGenerations.ts';
 import { IMAGE_REPORT_RETENTION_DAYS } from '../../../web/src/lib/imageReport.ts';
+import { NATIVE_API_ORIGIN } from '../../../web/securityPolicy.ts';
 
 const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
 const compact = (value) => value.replace(/\s+/g, ' ');
@@ -171,14 +172,11 @@ describe('privacy disclosure consistency', () => {
     );
     const github = privacyInventory.outboundHosts.find(({ id }) => id === 'github-api');
     const openai = privacyInventory.outboundHosts.find(({ id }) => id === 'openai-api');
-    const viteConfig = read('web/vite.config.ts');
     const githubSource = read('web/src/lib/server/github.ts');
     const openaiSource = read('web/src/lib/server/ai/openai.ts');
 
     expect(firstParty.hostPolicy).toBe('same-origin-web-and-worker-fixed-production-native');
-    expect(firstParty.productionHosts).toEqual([
-      new URL(viteConfig.match(/NATIVE_API_BASE = isCapacitor \? '([^']+)'/)?.[1]).host,
-    ]);
+    expect(firstParty.productionHosts).toEqual([new URL(NATIVE_API_ORIGIN).host]);
     expect(github.productionHosts).toEqual([
       new URL(githubSource.match(/GITHUB_API = '([^']+)'/)?.[1]).host,
     ]);

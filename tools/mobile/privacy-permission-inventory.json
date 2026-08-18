@@ -177,8 +177,12 @@
       ],
       "implementationEvidence": [
         {
+          "path": "web/securityPolicy.ts",
+          "contains": "export const NATIVE_API_ORIGIN = 'https://splotch.art';"
+        },
+        {
           "path": "web/vite.config.ts",
-          "contains": "const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';"
+          "contains": "const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);"
         },
         {
           "path": "web/src/lib/api.ts",
