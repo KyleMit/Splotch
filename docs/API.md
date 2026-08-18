@@ -66,11 +66,11 @@ When a background worker is reachable, the response is then **`202`** with
 (ADR-0115); the drawing is written to the job store for the handoff, because a background function's
 invocation body is capped in the low hundreds of KB, and the worker takes it in one read-and-delete.
 It is at rest for that handoff and no longer; the finished picture is at rest until the poll that
-hands it over deletes it, and an hourly sweep deletes whatever was never collected. The server still
-answers in-line wherever there is no worker (a plain `vite dev`, or an unconfigured signing secret),
-and a client that never sends the header always gets the synchronous shape. Since every OpenAI
-effort tier exceeds the synchronous deadline at p90, that path now usually ends in the controlled
-`502`.
+hands it over deletes it. A job expires after 20 minutes, and an hourly sweep deletes whatever was
+never collected. The server still answers in-line wherever there is no worker (a plain `vite dev`,
+or an unconfigured signing secret), and a client that never sends the header always gets the
+synchronous shape. Since every OpenAI effort tier exceeds the synchronous deadline at p90, that path
+now usually ends in the controlled `502`.
 
 The server **also still accepts the legacy `multipart/form-data` shape** (`token` / `apiKey` /
 `image` / `style` form fields) that the raw body replaced. Shipped native builds call the hosted API
@@ -87,6 +87,13 @@ deliberately generous limit (30/min), because the branch is otherwise unauthenti
 failed guesses share `/api/verify-access-code`'s per-IP budget: a limited IP gets the standard 429
 before the token is even checked (no allowlist read), while valid tokens never touch that bucket.
 See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
+
+Managed access-code requests also update a durable abuse-prevention record keyed by the access code:
+count, first/latest use, latest style, and latest server-resolved instruction. Revoking the code
+deletes that record. Managed and BYOK requests write the date, credential category, style, and
+server-resolved instruction to the function log; the managed label exposes only the code's last four
+characters and the BYOK label never includes the key. Neither record contains the drawing or full
+key. Free requests use the separate allowance records below.
 
 With neither credential, the request uses the installation's free grant and must send the
 privacy-preserving `X-Installation-Id` pseudonym. Free attempts are rate-limited per IP at 15/min,

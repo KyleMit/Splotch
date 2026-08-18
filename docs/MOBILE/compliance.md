@@ -173,9 +173,10 @@ own, so `build:cap` enforces both: `requiredNativePageProblems` in
 export, and `requiredNativePageLinkProblems` fails it if nothing in the shipped bundle links to
 `/privacy` — the in-app path is Settings → About → Privacy Policy. ADR-0120 records why that is a
 build-time assertion rather than a step in the native smoke. Consent is structured as adult action:
-the AI feature is off until a parent supplies a credential behind the gate, the feedback device
-snapshot is opt-in and off-by-default, and image reports require an explicit gated confirmation that
-names the evidence being sent (ADR-0104).
+the App Store build requires its grown-up check before each AI generation by default, including the
+ten-creation free allowance; the feedback device snapshot is opt-in and off-by-default; and image
+reports require an explicit gated confirmation that names the evidence being sent (ADR-0104). The
+gate protects action boundaries and is not itself legal consent.
 
 ### 5.1.4 Kids
 
@@ -195,9 +196,10 @@ guideline's own clarification says the math gate alone is not COPPA consent.
 the allowance behind the gate they configure), documented in `/privacy` in parent-readable terms; no
 accounts, no child name/email/location is ever requested; the free-allowance pseudonym is
 app-purpose, one-way, and never combined with other identifiers (ADR-0105); provider retention is
-disclosed with both halves stated — not used for training, kept up to 30 days for abuse monitoring
-(ADR-0114, commit 7a7cb68c608fdea6358f74535fac86e59f9beda2). Issue 846 (open) audits `/privacy`
-against shipped practice before submission.
+disclosed with both halves stated — not used for training by default, normally kept for 30 days for
+abuse monitoring with published exceptions (ADR-0114, commit
+7a7cb68c608fdea6358f74535fac86e59f9beda2). The privacy policy and store declarations are audited
+against that shipped practice before submission.
 
 ### 5.2.1 Intellectual Property
 
@@ -213,9 +215,10 @@ but the list and the stale store-assets claim were removed (issue 851, "already 
 Uploads without a `PrivacyInfo.xcprivacy` fail with **ITMS-91053** before review begins.
 `ios/App/App/PrivacyInfo.xcprivacy` declares: no tracking, no tracking domains; the one
 required-reason API in the dependency tree (`NSPrivacyAccessedAPICategoryUserDefaults`, reason
-`CA92.1`, via `@capacitor/preferences`); and two collected data types — Other User Content and Other
-Diagnostic Data, both not linked, not tracking, purpose App Functionality — matching the nutrition
-label, the Play Data safety form, and `/privacy`.
+`CA92.1`, via `@capacitor/preferences`); and five collected data types — Other User Content,
+Customer Support, Other Diagnostic Data, Device ID, and Product Interaction. All five are not
+linked, not tracking, and used for App Functionality, matching the nutrition label, the Play Data
+safety form, and `/privacy`.
 
 ## Google Play — Developer Policy Center
 
@@ -254,8 +257,9 @@ submission. Android store builds arm all five gate policies to `always` by defau
 location permission. The free-allowance installation pseudonym was designed against this rule: an
 app-purpose SHA-256 hash, never the raw device identifier, never combined with IP, account,
 advertising ID, or fingerprint (ADR-0105). `android:allowBackup="false"` keeps settings and stored
-credentials out of cloud backup. Collection that does happen (drawings on tap, reports, feedback) is
-disclosed in `/privacy` and the Data safety form.
+credentials out of cloud backup. Collection that does happen (the allowance pseudonym and
+accounting, drawings on tap, reports, and feedback) is disclosed in `/privacy` and the Data safety
+form.
 
 ### Families policy — APIs and SDKs
 
@@ -312,17 +316,18 @@ gone, the console is web-only and unlinked (ADR-0101), and the bundle guard enfo
 > data.
 
 **Impact / decisions.** The full analysis lives in `android.md` § "Third-party AI integrations":
-consent via the two adult-gated unlock paths, limited use (ordinary generation not persisted;
-`store: false` on every request, commit 88b0899e5d4bbefe86764cec5b5ae0a2f759dec4), disclosure of
-both halves of OpenAI's retention posture, and the under-18 obligations tracked in ADR-0114.
+adult action at generation time, limited use (temporary Splotch jobs; `store: false` on every
+provider request, commit 88b0899e5d4bbefe86764cec5b5ae0a2f759dec4), disclosure of both halves of
+OpenAI's retention posture, and the under-18 obligations tracked in ADR-0114.
 
 ### Data safety form
 
 Play requires the Data safety section to reflect actual practice — "'No data collected' is wrong"
 for Splotch. `STORE-LISTING-ANDROID.md` pre-records the answers: data collected yes / shared no
 (service-provider transfer to OpenAI, disclosed), photos-and-videos and other-UGC entries with the
-30-day confirmed-report retention, optional diagnostics, encryption in transit, deletion on request
-plus automatic purge.
+30-day confirmed-report retention, Device or other IDs for the one-way allowance pseudonym, App
+interactions for allowance and operational generation records, and opt-in diagnostics. It also
+records encryption in transit, deletion on request, and the automatic purge.
 
 ## Provider obligations that ride along
 
@@ -367,18 +372,19 @@ this clone's shallow-fetch boundary at 0f67a3d3fb5cfdc8b9459ce437714f87f96ff6b0;
 `tools/mobile/tests/static-bundle.test.mjs`, `web/tests/admin.spec.ts`,
 `web/tests/feedback.spec.ts`, `web/tests/beta.spec.ts`.
 
-**Consistency chain.** The same ephemeral-by-default / 30-day-on-confirmed-report boundary must read
-identically in five places: `ios/App/App/PrivacyInfo.xcprivacy` → the ASC nutrition label
-(`STORE-LISTING-IOS.md`) → the Play Data safety form (`STORE-LISTING-ANDROID.md`) →
-`web/src/routes/privacy/+page.svelte` → ADR-0104. A change to any one of them is a change to all
-five.
+**Machine-checked consistency.** `tools/mobile/privacy-permission-inventory.json` declares the
+permissions, data categories, ephemeral-by-default / 30-day-on-confirmed-report boundary, and
+production outbound-host classes. The tools-tier drift guards compare it with the Android manifest,
+iOS usage strings and privacy manifest, the ASC nutrition label, the Play Data safety form,
+implementation constants and call sites, and `web/src/routes/privacy/+page.svelte`. The store forms
+remain human-submitted from their checklists. Live retention statements in ADR-0104 and ADR-0115 are
+included in the drift guard; the remaining ADR detail is design provenance rather than another
+declaration to keep aligned by hand.
 
 ## Open items
 
 * **Issue 844** — gate the AI, feedback, and about *areas* (not just their links); the load-bearing
   change for Apple 1.3's "designated area" reading.
-* **Issue 846** — audit `/privacy` against shipped practice; deliberately last, after the gate and
-  provider decisions settle what it must say.
 * **Issue 708** — reduce how many `target="_blank"` links exist in the native bundle at all.
 * **OpenAI zero-data-retention grant** — an account-owner action outside this repo (ADR-0114).
 * **Submission-time steps** — reviewer access code, review notes on the closed prompt enum, rating

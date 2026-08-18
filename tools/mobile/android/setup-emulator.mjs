@@ -10,10 +10,10 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, hasCommand, run, capture, fail } from '../../lib/proc.mjs';
 import { maestroInstalled } from '../lib/maestro.mjs';
-import { ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android-toolchain.mjs';
+import { CURRENT_ANDROID_API_LEVEL, ANDROID_HOME, AVD_NAME } from './lib/android-toolchain.mjs';
 
 const ABI = process.arch === 'arm64' ? 'arm64-v8a' : 'x86_64';
-const SYSTEM_IMAGE = `system-images;android-${ANDROID_API_LEVEL};google_apis_playstore;${ABI}`;
+const SYSTEM_IMAGE = `system-images;android-${CURRENT_ANDROID_API_LEVEL};google_apis_playstore;${ABI}`;
 const DEVICE_ID = 'pixel_7_pro';
 
 const isMac = process.platform === 'darwin';
@@ -55,7 +55,7 @@ if (missing.length > 0) {
 const imageDir = join(
   ANDROID_HOME,
   'system-images',
-  `android-${ANDROID_API_LEVEL}`,
+  `android-${CURRENT_ANDROID_API_LEVEL}`,
   'google_apis_playstore',
   ABI
 );
