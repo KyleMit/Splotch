@@ -5,20 +5,20 @@ import {
   MIN_ANDROID_RELEASE,
 } from '../../../../web/src/lib/components/beta/androidBeta.ts';
 import { themes } from '../../../../web/src/lib/design/tokens.ts';
-import { ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
+import { CURRENT_ANDROID_API_LEVEL, AVD_NAME } from '../lib/android-toolchain.mjs';
+import { androidEmulatorApiLevels } from '../print-emulator-api-levels.mjs';
 
 const read = (p) => readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
 const privacyInventory = JSON.parse(read('tools/mobile/privacy-permission-inventory.json'));
 
 // Files allowed to carry the emulator API level / AVD name as literals — each
-// goes red the moment a literal disagrees with ANDROID_API_LEVEL. Deliberately
+// goes red the moment a literal disagrees with CURRENT_ANDROID_API_LEVEL. Deliberately
 // an allowlist, not a repo-wide grep: historical documents (docs/AUDIT*.md,
 // docs/audit-deferred/, /scrapbook) legitimately mention old values, and only
 // .ruler/ sources are enforced — ruler:check already gates the generated
 // .claude/.agents mirrors.
 const ENFORCED = [
   'package.json',
-  '.github/workflows/android-deploy.yml',
   'docs/MOBILE/android.md',
   'docs/TESTING.md',
   'docs/COMPATIBILITY.md',
@@ -33,14 +33,30 @@ const EMULATOR_API_PATTERNS = [
   /shipped app on Android API (\d+)/g,
 ];
 
-describe('Android emulator API level single source', () => {
-  it('derives the AVD name from ANDROID_API_LEVEL', () => {
-    expect(AVD_NAME).toBe(`Pixel_7_Pro_API_${ANDROID_API_LEVEL}`);
+describe('Android emulator API levels', () => {
+  it('derives the local AVD name from the current API level', () => {
+    expect(AVD_NAME).toBe(`Pixel_7_Pro_API_${CURRENT_ANDROID_API_LEVEL}`);
   });
 
-  it('workflow api-level input matches', () => {
+  it('derives the workflow matrix from the current and declared floor owners', () => {
+    expect(androidEmulatorApiLevels('current')).toEqual([CURRENT_ANDROID_API_LEVEL]);
+    expect(androidEmulatorApiLevels('all')).toEqual([
+      CURRENT_ANDROID_API_LEVEL,
+      MIN_ANDROID_API_LEVEL,
+    ]);
+
     const yml = read('.github/workflows/android-deploy.yml');
-    expect(yml.match(/api-level:\s*(\d+)/)[1]).toBe(String(ANDROID_API_LEVEL));
+    expect(yml).toContain(
+      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs current'
+    );
+    expect(yml).toContain(
+      'node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs all'
+    );
+    expect(yml).toContain(
+      "api-level: ${{ fromJSON(github.event_name == 'workflow_dispatch' && needs.emulator-api-levels.outputs.all || needs.emulator-api-levels.outputs.current) }}"
+    );
+    expect(yml).toContain('api-level: ${{ matrix.api-level }}');
+    expect(yml).not.toMatch(/api-level:\s*\d+/);
   });
 
   for (const file of ENFORCED) {
@@ -50,7 +66,7 @@ describe('Android emulator API level single source', () => {
         [...text.matchAll(pattern)].map(([, level]) => Number(level))
       );
       expect(levels.length).toBeGreaterThan(0);
-      for (const level of levels) expect(level).toBe(ANDROID_API_LEVEL);
+      for (const level of levels) expect(level).toBe(CURRENT_ANDROID_API_LEVEL);
     });
   }
 });

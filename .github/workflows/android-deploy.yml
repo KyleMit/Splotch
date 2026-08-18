@@ -18,8 +18,34 @@ permissions:
   contents: read
 
 jobs:
+  emulator-api-levels:
+    name: Resolve emulator API levels
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      current: ${{ steps.levels.outputs.current }}
+      all: ${{ steps.levels.outputs.all }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-pnpm
+        with:
+          install: false
+
+      - name: Read emulator API levels
+        id: levels
+        run: |
+          echo "current=$(node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs current)" >> "$GITHUB_OUTPUT"
+          echo "all=$(node --experimental-strip-types --disable-warning=ExperimentalWarning tools/mobile/android/print-emulator-api-levels.mjs all)" >> "$GITHUB_OUTPUT"
+
   smoke:
-    name: Maestro launch smoke test
+    name: Maestro launch smoke test (API ${{ matrix.api-level }})
+    needs: emulator-api-levels
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor is dispatch-only until its stock-WebView experiment is green.
+        api-level: ${{ fromJSON(github.event_name == 'workflow_dispatch' && needs.emulator-api-levels.outputs.all || needs.emulator-api-levels.outputs.current) }}
     # Ubuntu + KVM is the most reliable path for Android emulators in CI.
     # macOS ARM runners (macos-latest → macos-15-arm64) hit an HVF init failure
     # with emulator 36.x ("HVF error: HV_UNSUPPORTED"), so the emulator never
@@ -79,9 +105,7 @@ jobs:
         id: smoke
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          # Keep in sync with ANDROID_API_LEVEL in tools/mobile/android/lib/android-toolchain.mjs
-          # (enforced by tools/mobile/android/tests/android-config.test.mjs).
-          api-level: 33
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           force-avd-creation: false
@@ -102,7 +126,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: ./.github/actions/upload-maestro-report
         with:
-          name: maestro-report
+          name: maestro-report-api-${{ matrix.api-level }}
 
       # A tag-only gate nobody is watching is not a gate: this one was red on
       # every release tag from v1.3.0 through v1.5.0, and all three shipped
@@ -124,7 +148,7 @@ jobs:
           SMOKE_OUTCOME: ${{ steps.smoke.outcome }}
           REPORT_OUTCOME: ${{ steps.report.outcome }}
           PLATFORM: Android
-          ARTIFACT: maestro-report
+          ARTIFACT: maestro-report-api-${{ matrix.api-level }}
         run: |
           title="${PLATFORM} native deploy gate failed"
           if [[ "$SMOKE_OUTCOME" == "failure" ]]; then
