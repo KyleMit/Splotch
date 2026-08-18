@@ -8,6 +8,7 @@ import {
   adminConsoleSentinels,
   FORBIDDEN_NATIVE_HOSTS,
   nativeBundleProblems,
+  nativeContentSecurityPolicyProblems,
   nativePrivacyFeedbackProblems,
   REQUIRED_NATIVE_PAGES,
   requiredNativePageLinkProblems,
@@ -15,6 +16,7 @@ import {
   WEB_ONLY_MODULE_MARKERS,
   webOnlyMarkerSourceProblems,
 } from '../check-static-bundle.mjs';
+import { nativeMetaCspDirectives, serializeCspDirectives } from '../../../web/securityPolicy.ts';
 
 // The guard's failure mode is silence: if its sentinels stop matching anything
 // the console actually ships, `build:cap` stays green while the console returns
@@ -153,6 +155,55 @@ describe('required native pages', () => {
         writeFileSync(join(root, page), `<a href="/${page.replace(/\.html$/, '')}">`);
       }
       expect(requiredNativePageLinkProblems(root)).toHaveLength(REQUIRED_NATIVE_PAGES.length);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('native content security policy', () => {
+  const expected = serializeCspDirectives(nativeMetaCspDirectives());
+  const meta = `<meta http-equiv="content-security-policy" content="${expected}">`;
+
+  it('requires exactly the emitted native policy in every HTML document', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-'));
+    try {
+      writeFileSync(join(root, 'index.html'), `<head>${meta}</head>`);
+      writeFileSync(join(root, 'privacy.html'), `<head>${meta}</head>`);
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects a missing or duplicated policy', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-count-'));
+    try {
+      writeFileSync(join(root, 'index.html'), '<head></head>');
+      writeFileSync(join(root, 'privacy.html'), `<head>${meta}${meta}</head>`);
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([
+        expect.stringContaining('index.html has 0 CSP meta tags; expected exactly 1'),
+        expect.stringContaining('privacy.html has 2 CSP meta tags; expected exactly 1'),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an extra connect origin or a meta-unsupported directive', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-policy-'));
+    try {
+      const widened = expected.replace(
+        "connect-src 'self'",
+        "connect-src 'self' https://unexpected.example"
+      );
+      writeFileSync(
+        join(root, 'index.html'),
+        `<head><meta http-equiv="content-security-policy" content="${widened}; frame-ancestors 'none'">`
+      );
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([
+        expect.stringContaining('has the wrong CSP meta policy'),
+      ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

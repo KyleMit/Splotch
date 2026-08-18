@@ -8,30 +8,9 @@
 // drift — netlify.toml must stay literal TOML for Netlify to read it at deploy
 // time, so it can't import this module; the test asserts the values match.
 
-// One directive per line for readability, joined into the single-line canonical
-// form the header ships as. Keep the directive set and order identical to the
-// netlify.toml CSP: the guard test compares the two after collapsing
-// whitespace, and a mismatch fails CI.
-const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' blob: data:",
-  "font-src 'self'",
-  // blob: covers the app reading its own object URLs back through fetch() — the
-  // picture report posts the drawing and the AI result it is already showing.
-  // 'self' does not cover them: a blob: URL is matched by scheme, not by the
-  // origin baked into it.
-  "connect-src 'self' blob:",
-  "worker-src 'self'",
-  "manifest-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  'report-uri /api/csp-report',
-  'report-to csp',
-].join('; ');
+import { serializeCspDirectives, WEB_CSP_DIRECTIVES } from '../../../securityPolicy.ts';
+
+const CONTENT_SECURITY_POLICY = serializeCspDirectives(WEB_CSP_DIRECTIVES);
 
 /**
  * Routes whose document must disclose its own origin to itself.

@@ -111,6 +111,29 @@ npx @capacitor/assets generate --ios
   simulator SDK without store signing; device-SDK-only code and settings remain covered by the local
   signed archive. The separate smoke keeps the established simulator boot signal unchanged.
 
+### Manual iOS 16.4 floor gate
+
+The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver did not start on iOS
+16.4 in either hosted experiment recorded in the [compatibility ledger](../COMPATIBILITY.md).
+
+1. For a simulator check, install the iOS 16.4 runtime once through Xcode → Settings → Components,
+   or run:
+
+   ```bash
+   xcodebuild -downloadPlatform iOS -buildVersion 16.4
+   ```
+
+   The Universal Simulator download is about 6.2 GB. A physical iOS 16.4 device does not need this
+   download.
+2. Run `npm run cap:ios`. In Xcode, select an iPhone simulator on iOS 16.4 or a connected physical
+   iOS 16.4 device, choose **Run ▶**, and verify that the `Settings` control paints.
+3. Record the tested OS version, simulator/device, and pass result in the tag's GitHub Release notes
+   before publishing its signed artifacts.
+
+`npm run test:ios` remains useful as an optional diagnostic after booting the floor simulator and
+shutting down other booted iPhones, but its Maestro driver is unreliable on iOS 16.4 and is not the
+required floor gate unless a successful run is captured.
+
 ## 4. Release checklist
 
 ### App configuration (done — verify on first device run)
@@ -129,6 +152,10 @@ npx @capacitor/assets generate --ios
 * [x] Icons + splash generated from `assets/` (`npx @capacitor/assets generate
   --ios`); the
       1024×1024 `AppIcon` doubles as the App Store icon.
+* [ ] Complete the [manual iOS 16.4 floor gate](#manual-ios-164-floor-gate), including its entry in
+      the tag's GitHub Release notes, and confirm both iOS rows in the shared
+      [native support matrix](native.md#6-native-support-matrix) passed before publishing signed
+      artifacts.
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip against
       `https://splotch.art`), offline airplane mode (AI button hides; Farm and installed coloring
       packs remain), disable Coloring Book during a background download and confirm it cancels while
@@ -185,7 +212,8 @@ npx @capacitor/assets generate --ios
 * [ ] **TestFlight**: internal testing needs no review; invite yourself, smoke the production build
       on hardware.
 * [ ] Submit for **App Review**. Kids Category review is stricter and slower — in *App Review
-      notes*, explain Settings and the parent-enabled, bring-your-own-key AI feature up front.
+      notes*, explain the default gated free AI allowance and the later access-code /
+      bring-your-own-key paths up front.
 
 ### Kids Category (kids compliance)
 
@@ -195,15 +223,17 @@ policy). The Apple Kids Category adds:
 * [ ] Use the **Kids Category** (optional but fitting; age band **5 & Under**). Kids Category apps
       **must not** include third-party analytics/advertising and must gate any external links /
       purchases behind a **parental gate**.
-* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content
-      and optional Other Diagnostic Data exactly as written in `store-assets/STORE-LISTING-IOS.md`.
-      Both are app functionality, not linked, and not tracking; confirmed AI reports alone retain
-      image evidence for up to 30 days. A refusal report retains the rejected drawing and provider
-      refusal reason, while a picture report also retains the generated output.
+* [ ] **Privacy Nutrition Label** ("App Privacy") in App Store Connect — declare Other User Content,
+      Customer Support, optional Other Diagnostic Data, Device ID, and Product Interaction exactly
+      as written in `store-assets/STORE-LISTING-IOS.md`. All five are app functionality, not linked,
+      and not tracking. Confirmed AI reports retain image evidence until the daily purge after their
+      30-day retention date. A refusal report retains the rejected drawing and provider refusal
+      reason, while a picture report also retains the generated output.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
-      generation is already disabled until a parent supplies a credential and contains no browsing,
-      chat, or sharing.
+      generation includes ten free creations per installation while the project-funded service is
+      available, then accepts a parent-supplied access code or OpenAI key. The App Store build's
+      generation policy starts at Every time. There is no browsing, chat, or sharing.
 * [x] Audit outbound links: source on GitHub, the OpenAI API keys page, OpenAI terms, and the hosted
       feedback form all use Parent Center's external-link gate at the point where they leave the
       app. The bundled privacy policy remains internal. The native bundle excludes the server-backed

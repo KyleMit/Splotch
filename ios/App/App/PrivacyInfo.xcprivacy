@@ -19,13 +19,15 @@
 
   NSPrivacyCollectedDataTypes must stay consistent with the App Store Connect
   nutrition label and with web/src/routes/privacy — see store-assets for the
-  declared answers. OtherUserContent covers deliberate AI generation, the
-  private feedback form, and a confirmed AI report. Normal generation and
-  refusals are ephemeral; a confirmed report retains its input, resolved prompt,
-  style, and timestamp for at most 30 days, plus the provider reason for a
-  refusal report or the output for a picture report.
-  OtherDiagnosticData covers
-  the optional device snapshot attached to a feedback report.
+  declared answers. OtherUserContent covers deliberate AI generation and a
+  confirmed AI report. Normal generation and refusals are ephemeral; a confirmed
+  report retains its input, resolved prompt, style, and timestamp until the daily
+  purge after its 30-day retention date, plus the provider reason for a refusal
+  report or the output for a picture report. CustomerSupport covers the private
+  feedback form, and OtherDiagnosticData covers its optional device snapshot.
+  DeviceID covers the one-way installation pseudonym used for the free allowance,
+  and ProductInteraction covers the associated allowance and operational
+  generation records. None is linked to identity or used to track.
 -->
 <plist version="1.0">
 <dict>
@@ -61,6 +63,42 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherDiagnosticData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCustomerSupport</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<false/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>
