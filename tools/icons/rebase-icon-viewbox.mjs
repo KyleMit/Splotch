@@ -150,25 +150,47 @@ function scaleStrokeProps(tag, s) {
     .replace(/stroke-dasharray:\s*([0-9. ,]+)/, (m, v) => `stroke-dasharray:${scaleList(v)}`);
 }
 
+const GEOMETRY_ELEMENTS = ['path', 'circle', 'ellipse', 'rect', 'line', 'polyline', 'polygon'];
+
+// Every element name the transform pass knows how to leave correct. Anything
+// outside this set can carry coordinates the pass never visits (<text>,
+// <image>, <clipPath>, a nested <svg>…), and small enough artwork slips under
+// the pixel gate — so an unknown element fails the rebase loudly (ADR-0125)
+// instead of trusting the threshold.
+const KNOWN_ELEMENTS = new Set([
+  'svg',
+  'defs',
+  'title',
+  'desc',
+  'g',
+  'stop',
+  'use',
+  'linearGradient',
+  'radialGradient',
+  ...GEOMETRY_ELEMENTS,
+]);
+
 function transformSvg(svg, s, tx, ty) {
   const unhandled = [];
+  for (const m of svg.matchAll(/<([A-Za-z][\w:-]*)[\s/>]/g)) {
+    if (!KNOWN_ELEMENTS.has(m[1])) unhandled.push(`unsupported element <${m[1]}>`);
+  }
   const defsStart = svg.indexOf('<defs>');
   const defsEnd = defsStart === -1 ? -1 : svg.indexOf('</defs>', defsStart);
   const inDefs = (offset) => defsStart !== -1 && offset > defsStart && offset < defsEnd;
 
   let out = svg.replace(
-    /<(path|circle|ellipse|rect|use|linearGradient|radialGradient|g)\b[^>]*\/?>/g,
+    /<(path|circle|ellipse|rect|line|polyline|polygon|use|linearGradient|radialGradient|g)\b[^>]*\/?>/g,
     (rawTag, el, offset) => {
       const transform = getAttr(rawTag, 'transform');
       // Geometry inside <defs> is stamped through <use>, whose x/y offsets
       // receive the full transform — the def content itself only scales
       // (T(t)S(s)·T(x,y) = T(t+s·x, t+s·y)·S(s)).
-      const defScaleOnly = inDefs(offset) && ['path', 'circle', 'ellipse', 'rect'].includes(el);
+      const defScaleOnly = inDefs(offset) && GEOMETRY_ELEMENTS.includes(el);
       const etx = defScaleOnly ? 0 : tx;
       const ety = defScaleOnly ? 0 : ty;
       const bakesCoordinates =
-        ['path', 'circle', 'ellipse', 'rect'].includes(el) &&
-        (!transform || el === 'ellipse' || el === 'rect');
+        GEOMETRY_ELEMENTS.includes(el) && (!transform || el === 'ellipse' || el === 'rect');
       const tag = bakesCoordinates ? scaleStrokeProps(rawTag, s) : rawTag;
 
       if (el === 'path') {
@@ -244,6 +266,43 @@ function transformSvg(svg, s, tx, ty) {
         }
         t = setAttr(t, 'x', num(s * x + etx));
         return setAttr(t, 'y', num(s * y + ety));
+      }
+      if (el === 'line') {
+        if (transform) {
+          unhandled.push(`line transform: ${transform}`);
+          return tag;
+        }
+        let t = tag;
+        for (const [attr, off] of [
+          ['x1', etx],
+          ['y1', ety],
+          ['x2', etx],
+          ['y2', ety],
+        ]) {
+          t = setAttr(t, attr, num(s * Number(getAttr(t, attr) ?? 0) + off));
+        }
+        return t;
+      }
+      if (el === 'polyline' || el === 'polygon') {
+        if (transform) {
+          unhandled.push(`${el} transform: ${transform}`);
+          return tag;
+        }
+        const points = getAttr(tag, 'points');
+        const nums = (points ?? '')
+          .trim()
+          .split(/[\s,]+/)
+          .filter(Boolean)
+          .map(Number);
+        if (!nums.length || nums.length % 2 || nums.some(Number.isNaN)) {
+          unhandled.push(`unparseable points on <${el}>: ${points}`);
+          return tag;
+        }
+        const mapped = [];
+        for (let i = 0; i < nums.length; i += 2) {
+          mapped.push(`${num(s * nums[i] + etx)},${num(s * nums[i + 1] + ety)}`);
+        }
+        return setAttr(tag, 'points', mapped.join(' '));
       }
       if (el === 'use') {
         if (transform) {
@@ -361,8 +420,23 @@ async function badPixelFraction(svgA, svgB) {
   return bad / total;
 }
 
-async function rebaseIcon(file) {
+// The rebase (and the reference its verifier compares against) assumes the
+// default alignment: any other preserveAspectRatio would be silently
+// re-aligned by squaring the frame, and the verifier could not see it because
+// its reference letterboxes the same way. Values equivalent to the default
+// are fine; everything else fails loudly (ADR-0125).
+const DEFAULT_ASPECT_VALUES = new Set(['xMidYMid', 'xMidYMid meet']);
+
+// Exported as the seam for tools/icons/tests/rebase-icon-viewbox.test.mjs.
+export async function rebaseIcon(file) {
   const original = await readFile(file, 'utf8');
+  const rootTag = original.match(/<svg\b[^>]*>/)?.[0] ?? '';
+  const aspect = getAttr(rootTag, 'preserveAspectRatio');
+  if (aspect && !DEFAULT_ASPECT_VALUES.has(aspect.trim().replace(/\s+/g, ' '))) {
+    throw new Error(
+      `${file}: preserveAspectRatio="${aspect}" — the rebase and its pixel verifier assume the default xMidYMid meet; normalize the source first`
+    );
+  }
   const vbMatch = original.match(/viewBox="([^"]+)"/);
   if (!vbMatch) throw new Error(`${file}: no viewBox`);
   if (vbMatch[1] === CANONICAL_VIEWBOX) return { changed: false };
