@@ -1,6 +1,5 @@
-// The canonical public origin. The other copies live across bundle boundaries:
-// app.html's Open Graph tags and securityPolicy.ts's build-side native API
-// origin. siteUrl.test.ts fails when they disagree.
+// The canonical public origin. app.html's Open Graph tag cannot import this
+// constant, so siteUrl.test.ts fails when that template copy disagrees.
 //
 // Needed because the beta sign-up page prints the feedback form's address in
 // full rather than hiding it behind link text: it can be read on one device and

@@ -1,3 +1,5 @@
+import { SITE_ORIGIN } from './src/lib/siteUrl.ts';
+
 const QUOTED_SOURCES = new Set([
   'self',
   'unsafe-eval',
@@ -6,6 +8,7 @@ const QUOTED_SOURCES = new Set([
   'none',
   'strict-dynamic',
   'report-sample',
+  'script',
   'wasm-unsafe-eval',
 ]);
 
@@ -29,9 +32,12 @@ export type ContentSecurityPolicyDirectives = Readonly<
   Partial<Record<ContentSecurityPolicyDirective, readonly string[]>>
 >;
 
-export const NATIVE_API_ORIGIN = 'https://splotch.art';
+export const NATIVE_API_ORIGIN = SITE_ORIGIN;
 
-const META_UNSUPPORTED_DIRECTIVES = new Set<ContentSecurityPolicyDirective>([
+// A static WebView cannot define the Reporting API group through a response header.
+const NATIVE_UNSUPPORTED_DIRECTIVES = new Set<ContentSecurityPolicyDirective>(['report-to']);
+
+const SVELTEKIT_META_UNSUPPORTED_DIRECTIVES = new Set<ContentSecurityPolicyDirective>([
   'frame-ancestors',
   'report-uri',
 ]);
@@ -60,7 +66,12 @@ export function nativeApiBaseFor(isCapacitor: boolean): string {
 
 export function nativeCspDirectives(): ContentSecurityPolicyDirectives {
   return {
-    ...WEB_CSP_DIRECTIVES,
+    ...Object.fromEntries(
+      Object.entries(WEB_CSP_DIRECTIVES).filter(
+        ([directive]) =>
+          !NATIVE_UNSUPPORTED_DIRECTIVES.has(directive as ContentSecurityPolicyDirective)
+      )
+    ),
     'connect-src': [...WEB_CSP_DIRECTIVES['connect-src'], NATIVE_API_ORIGIN],
   };
 }
@@ -68,7 +79,8 @@ export function nativeCspDirectives(): ContentSecurityPolicyDirectives {
 export function nativeMetaCspDirectives(): ContentSecurityPolicyDirectives {
   return Object.fromEntries(
     Object.entries(nativeCspDirectives()).filter(
-      ([directive]) => !META_UNSUPPORTED_DIRECTIVES.has(directive as ContentSecurityPolicyDirective)
+      ([directive]) =>
+        !SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive as ContentSecurityPolicyDirective)
     )
   );
 }
@@ -77,7 +89,7 @@ export function serializeCspDirectives(directives: ContentSecurityPolicyDirectiv
   return Object.entries(directives)
     .map(([directive, sources]) => {
       const serializedSources = sources.map((source) =>
-        QUOTED_SOURCES.has(source) || /^(?:nonce|sha\d\d\d)-/.test(source) ? `'${source}'` : source
+        QUOTED_SOURCES.has(source) ? `'${source}'` : source
       );
       return [directive, ...serializedSources].join(' ');
     })

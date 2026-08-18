@@ -178,7 +178,7 @@
       "implementationEvidence": [
         {
           "path": "web/securityPolicy.ts",
-          "contains": "export const NATIVE_API_ORIGIN = 'https://splotch.art';"
+          "contains": "export const NATIVE_API_ORIGIN = SITE_ORIGIN;"
         },
         {
           "path": "web/vite.config.ts",

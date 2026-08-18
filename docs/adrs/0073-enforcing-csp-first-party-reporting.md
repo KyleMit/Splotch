@@ -96,14 +96,18 @@ The Android and iOS bundles have no server to deliver the web response header, s
 Capacitor-only `kit.csp` configuration in `web/svelte.config.js`. `mode: 'auto'` emits one CSP meta
 tag into every static native document; the web build leaves `kit.csp` unset and remains header-only.
 
-`web/securityPolicy.ts` is the build-side source for both targets' directive map and the hosted API
-origin. The web header serializes the canonical map unchanged. Native derives from the same map but
-widens only `connect-src`, from `'self' blob:` to `'self' blob: https://splotch.art`, because the
-Capacitor document origin is local while every `/api/*` request goes to the hosted service. Vite's
-`__NATIVE_API_BASE__` comes from that same origin, so changing one cannot silently strand the other.
+`web/securityPolicy.ts` is the build-side source for both targets' directive map and imports the
+hosted API origin from `web/src/lib/siteUrl.ts`. The web header serializes the canonical map
+unchanged. Native derives from the same map but adds `https://splotch.art` to `connect-src`, because
+the Capacitor document origin is local while every `/api/*` request goes to the hosted service.
+Vite's `__NATIVE_API_BASE__` comes from that same origin, so changing one cannot silently strand the
+other.
 
 Meta delivery cannot enforce `frame-ancestors` or `report-uri`; SvelteKit omits both from the
-emitted native policy. `postbuild:cap` verifies the actual static export has exactly one expected
-policy per HTML document, including that omission, while the web production E2E suite guards against
-gaining a meta policy. This constrains WebView resource and Fetch/WebSocket destinations; it does
-not change Android's broad `INTERNET` permission or restrict sockets opened by native plugin code.
+emitted native policy. Native also omits `report-to`: a static WebView cannot receive the
+`Reporting-Endpoints` response header that defines its reporting group, so the native policy
+enforces with no violation-reporting channel. Web reporting is unchanged. `postbuild:cap` verifies
+the actual static export has exactly one expected policy per HTML document, including those
+omissions, while the web production E2E suite guards against gaining a meta policy. This constrains
+WebView resource and Fetch/WebSocket destinations; it does not change Android's broad `INTERNET`
+permission or restrict sockets opened by native plugin code.
