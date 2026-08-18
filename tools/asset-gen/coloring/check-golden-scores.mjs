@@ -69,7 +69,7 @@ async function scorePage(outlinePath) {
     ({ chalk } = await resolveNightLineArt(outlinePath, pen));
   }
 
-  const entry = await scoreGoldenPage({ pen, lightRaw, nightRaw, chalk });
+  const entry = await scoreGoldenPage({ page: rel, pen, lightRaw, nightRaw, chalk });
   return [rel, entry];
 }
 

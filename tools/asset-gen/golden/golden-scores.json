@@ -87,7 +87,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -235,7 +235,7 @@
         "eyeCores": 3,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -272,7 +272,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -309,7 +309,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0.00362,
@@ -346,7 +346,7 @@
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -383,7 +383,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -420,7 +420,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -457,7 +457,7 @@
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -494,7 +494,7 @@
         "eyeCores": 3,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -657,7 +657,7 @@
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -805,7 +805,7 @@
         "eyeCores": 5,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -842,7 +842,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -879,7 +879,7 @@
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -953,7 +953,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -990,7 +990,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -1042,7 +1042,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -1153,7 +1153,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0.00056,
@@ -1190,7 +1190,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -1227,7 +1227,7 @@
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0.00182,
@@ -1982,7 +1982,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2108,7 +2108,7 @@
         "eyeCores": 14,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0.00149,
@@ -2145,7 +2145,7 @@
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2493,7 +2493,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2567,7 +2567,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2604,7 +2604,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2641,7 +2641,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2715,7 +2715,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2752,7 +2752,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2915,7 +2915,7 @@
         "eyeCores": 7,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -2952,7 +2952,7 @@
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0.00006,
@@ -3026,7 +3026,7 @@
         "eyeCores": 5,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -3411,7 +3411,7 @@
         "eyeCores": 3,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -3448,7 +3448,7 @@
         "eyeCores": 11,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,

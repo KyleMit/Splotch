@@ -22,6 +22,7 @@
 import sharp from 'sharp';
 import { prepareOutlineAnalysis, prepareOutlineRegions } from './outline-analysis.mjs';
 import { quantile } from './image-stats.mjs';
+import { annotatedLightEyeCores } from './light-eye-annotations.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
 // eye core and its surrounding band, the lighter side must be genuinely light,
@@ -309,13 +310,6 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
   return { eyes: measured.length, cores: measured };
 }
 
-// A light fill's eyes pass when at least one core on an eyed page reads lively
-// (the light generator paints pupils black on white reliably; zero lively cores
-// means the eyes themselves are broken, e.g. a pre-normalization outline).
-export function judgeLightEyes(scored) {
-  return { passes: scored.cores.length === 0 || scored.cores.some((c) => c.lively) };
-}
-
 // A night fill's eyes pass when EVERY eye structure the light fill paints
 // strongly also reads lively in the night fill — core by core. The light fill
 // is the reference for which cores are real eyes: shell spots and segment dots
@@ -334,6 +328,17 @@ export const STRONG_LIGHT_SIDE = 180;
 // gate. farm/duck-wide's side-profile eye measured 0.74 while every
 // thin-stroke true failure (caterpillar/ladybug spirals) sits at 0.26-0.29.
 export const BAND_BLIND_INK_FRAC = 0.5;
+
+// A light fill's eyes pass when at least one measurable, blessed eye core reads
+// lively. Solid-pen pupils are not measurable because the pen ink hides their
+// surrounding band; nested windows and hubs are excluded by the reviewed
+// per-page annotations rather than treated as anatomy.
+export function judgeLightEyes(scored, { page } = {}) {
+  const eyeCores = annotatedLightEyeCores(page, scored.cores);
+  if (eyeCores.some((core) => core.lively)) return { passes: true };
+  const measurable = eyeCores.filter((core) => core.annulusInkFrac <= BAND_BLIND_INK_FRAC);
+  return { passes: measurable.length === 0 };
+}
 
 // On a chalk-forked page the chalk owns the eye whites, so in the simulated
 // night composite every REAL eye structure has chalk-white nearby — the

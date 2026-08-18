@@ -24,7 +24,7 @@ const round = (v, digits) => {
 // and GOLDEN_VERDICTS below address by path. `chalk` is the dark-mode line
 // art buffer when the page has forked (see docs/pen-chalk-fork.md), else
 // null; check-golden-scores.mjs resolves it from the real catalog layout.
-export async function scoreGoldenPage({ pen, lightRaw, nightRaw, chalk }) {
+export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) {
   const analysis = await prepareOutlineAnalysis(pen);
   const [solidity, rings, frame] = await Promise.all([
     scoreSolidity(analysis),
@@ -58,7 +58,7 @@ export async function scoreGoldenPage({ pen, lightRaw, nightRaw, chalk }) {
       eyeCores: lightEyes.cores.length,
       eyeLively: lightEyes.cores.filter((c) => c.lively).length,
       driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
-      eyesOk: judgeLightEyes(lightEyes).passes,
+      eyesOk: judgeLightEyes(lightEyes, { page }).passes,
     };
   }
 

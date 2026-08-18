@@ -407,8 +407,10 @@ noisy:
   on pages where the chalk itself is wrong (whitened pupils, the police-tall class) the night judge
   is silent too — chalk review has to catch those (Stage 1.5 gate 4's blind-spot note).
 
-`judgeLightEyes` has NO such suppressions — light-side flat-eye flags on side-profile or band-blind
-pages are known false-positive noise (GitHub issues, label `area:asset-gen`).
+`judgeLightEyes` applies the same band-blind rule, because a solid-pen pupil makes the light band
+equally unmeasurable. A small reviewed annotation registry (`lib/light-eye-annotations.mjs`) names
+the real eye cores on pages where nested windows or hubs otherwise look anatomical; an outline
+change that moves a named core fails closed until the annotation is reviewed again.
 
 Debugging technique that keeps resolving disputes between scores and eyes: **ASCII luma maps**. When
 a crop and a score disagree, dump the region as characters — it's diffable, zoomable, and doesn't

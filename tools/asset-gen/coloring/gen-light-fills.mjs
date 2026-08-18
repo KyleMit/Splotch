@@ -153,7 +153,7 @@ export async function run(argv) {
   // Generate, size-match, re-register onto the source outline, and score one
   // candidate; retry until it passes both gates, keeping the best attempt if none
   // fully do. Returns the winning colored bytes, its scores, and its overlay.
-  async function renderClean(source, width, height, slot) {
+  async function renderClean(source, width, height, slot, page) {
     let best = null;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const temperature = Math.min(2, baseTempForSlot(slot) + attempt * 0.15);
@@ -180,7 +180,7 @@ export async function run(argv) {
         localKeep,
         worstTile,
         white,
-        eyesOk: judgeLightEyes(eyeScore).passes,
+        eyesOk: judgeLightEyes(eyeScore, { page }).passes,
         shift: { dx, dy },
         attempt,
       };
@@ -211,7 +211,7 @@ export async function run(argv) {
       const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
       process.stdout.write(`${label} ... `);
       try {
-        const cand = await renderClean(source, width, height, i);
+        const cand = await renderClean(source, width, height, i, rel);
         const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
         const warn = [];
         if (keep < KEEP_THRESHOLD) warn.push('drifting');
