@@ -56,16 +56,25 @@ describe('iOS simulator floor source', () => {
   });
 });
 
-describe('iOS floor workflow experiment', () => {
+describe('iOS floor workflow', () => {
   const workflow = read('.github/workflows/ios-deploy.yml');
 
-  it('derives and downloads the declared floor on manual dispatch', () => {
-    expect(workflow).toContain('node tools/mobile/ios/print-simulator-floor.mjs');
-    expect(workflow).toContain('xcodebuild -downloadPlatform iOS -buildVersion "$runtime"');
-    expect(workflow).toContain("if: ${{ github.event_name == 'workflow_dispatch' }}");
+  it('keeps the newest runtime leg and adds a floor leg on macOS 15 with Xcode 16.4', () => {
+    expect(workflow).toContain('runner: macos-latest');
+    expect(workflow).toContain('runner: macos-15');
+    expect(workflow).toContain(
+      'developer_dir: /Applications/Xcode_16.4.app/Contents/Developer'
+    );
   });
 
-  it('passes the explicit runtime only to the manual experiment', () => {
+  it('derives and downloads the declared floor only for the floor leg', () => {
+    expect(workflow).toContain('node tools/mobile/ios/print-simulator-floor.mjs');
+    expect(workflow).toContain('xcodebuild -downloadPlatform iOS -buildVersion "$runtime"');
+    expect(workflow.match(/if: \$\{\{ matrix\.floor \}\}/g)).toHaveLength(2);
+  });
+
+  it('passes the explicit runtime only to the floor leg', () => {
+    expect(workflow).toContain('if [[ "${{ matrix.floor }}" == "true" ]]');
     expect(workflow).toContain('args+=(--runtime "${{ steps.runtime.outputs.version }}")');
     expect(workflow).toContain('npm run test:ios -- "${args[@]}"');
   });

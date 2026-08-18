@@ -5,10 +5,11 @@
 # bundle). Neither the web E2E suite (test.yml) nor the Android smoke can catch
 # Release-only compiler/configuration errors or an iOS-only WebView boot failure.
 #
-# Tag-only by design: macOS runners are the most expensive thing in CI, so this
-# runs only when a release tag is pushed (the moment an iOS crash would reach App
-# Store users), plus on demand from the Actions tab. The debug build targets the
-# simulator, so no signing secrets or provisioning profiles are involved.
+# Tag-only by design: macOS runners are the most expensive thing in CI, so the
+# newest-runtime and deployment-floor legs run only when a release tag is pushed
+# (the moment an iOS crash would reach App Store users), plus on demand from the
+# Actions tab. The debug build targets the simulator, so no signing secrets or
+# provisioning profiles are involved.
 name: iOS Deploy Smoke
 
 on:
@@ -21,10 +22,23 @@ permissions:
 
 jobs:
   smoke:
-    name: Maestro launch smoke test (iOS simulator)
-    # macOS runners ship full Xcode and pre-installed iPhone simulators.
-    runs-on: macos-latest
+    name: Maestro launch smoke test (${{ matrix.runtime }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: newest iOS
+            runner: macos-latest
+            developer_dir: /Applications/Xcode.app/Contents/Developer
+            floor: false
+          - runtime: iOS floor
+            runner: macos-15
+            developer_dir: /Applications/Xcode_16.4.app/Contents/Developer
+            floor: true
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: ${{ matrix.developer_dir }}
     permissions:
       contents: read
       issues: write
@@ -34,11 +48,12 @@ jobs:
       - uses: ./.github/actions/setup-pnpm
 
       - name: Read iOS simulator floor
+        if: ${{ matrix.floor }}
         id: runtime
         run: echo "version=$(node tools/mobile/ios/print-simulator-floor.mjs)" >> "$GITHUB_OUTPUT"
 
       - name: Install iOS floor simulator runtime
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ matrix.floor }}
         run: |
           runtime="${{ steps.runtime.outputs.version }}"
           df -h /
@@ -59,7 +74,7 @@ jobs:
         id: smoke
         run: |
           args=(--skip-sync)
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+          if [[ "${{ matrix.floor }}" == "true" ]]; then
             args+=(--runtime "${{ steps.runtime.outputs.version }}")
           fi
           npm run test:ios -- "${args[@]}"
