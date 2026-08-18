@@ -69,6 +69,7 @@ import {
   scoreLocalWarp,
 } from '../lib/local-warp.mjs';
 
+// Soft painted fills mask compression artifacts, so q90 saves bytes without visible edge damage.
 const WEBP_QUALITY = 90;
 
 // How `run` reports the one failure mode a caller can act on: some renders were

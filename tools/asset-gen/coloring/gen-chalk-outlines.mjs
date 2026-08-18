@@ -83,6 +83,7 @@ import {
 } from '../lib/chalk-ink-diff.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 
+// Hard black/white edges expose WebP ringing, and downstream stages re-consume this output.
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 

@@ -52,6 +52,7 @@ import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/candidate-report.mjs';
 
+// Hard black/white edges expose WebP ringing, and downstream stages re-consume this output.
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'normalize');
 // The candidate's ink must all lie on the reference's (no invented strokes).

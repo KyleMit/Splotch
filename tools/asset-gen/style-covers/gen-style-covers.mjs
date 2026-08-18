@@ -35,6 +35,7 @@ import { PAPER_COLORS, RESOLVED_THEMES } from '../../../web/src/lib/theme.ts';
 import { punchFlatBackground } from '../lib/flat-background-punch.mjs';
 
 const THUMB_SIZE = 448;
+// Display-sized cover thumbnails hide q75 artifacts, so favor download bytes over source fidelity.
 const WEBP_QUALITY = 75;
 const THEMES = RESOLVED_THEMES;
 

@@ -106,6 +106,7 @@ import {
   scoreLocalWarp,
 } from '../lib/local-warp.mjs';
 
+// Soft painted fills mask compression artifacts, so q90 saves bytes without visible edge damage.
 const WEBP_QUALITY = 90;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked, notes }) {
