@@ -266,10 +266,13 @@
      under 4× CPU throttle. Keeping the closed card laid out but invisible
      pays that at idle instead: visibility excludes it from paint, hit
      testing, focus, and the accessibility tree, and the box matches the open
-     state's (same fixed centering), so the first show roughly halves. The
-     residual over a reopen is the open edge's own restyle and first paint,
-     which no hidden state can pay — npm run perf:web:settings scores first
-     open against reopen to keep that gap visible. */
+     state's (same fixed centering), so the open edge reuses it all. Opacity
+     was measured as the hiding mechanism and rejected: WebKit keeps painting
+     inside an opacity-0 card, which moved the paint bill to the idle prewarm
+     slices and the close edge on the physical iPad, and bought the open edge
+     ~3 ms. The paint the card still owes on opening is staged instead — see
+     WideShell's presentation watermark. npm run perf:web:settings scores
+     first open against reopen to keep the residual visible. */
   .settings-modal:not([open]) {
     display: block;
     visibility: hidden;
