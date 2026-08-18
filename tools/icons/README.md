@@ -6,10 +6,11 @@ disagree about which icons are colorful spot illustrations.
 
 ## Entry points
 
-| Entry point          | Public command           | Purpose                                  |
-| -------------------- | ------------------------ | ---------------------------------------- |
-| `gen-icon-names.mjs` | `npm run gen:icon-names` | Generate the typed `IconName` union      |
-| `gen-icon-sheet.mjs` | `npm run gen:icon-sheet` | Generate the icon-gallery scrapbook page |
+| Entry point               | Public command             | Purpose                                        |
+| ------------------------- | -------------------------- | ---------------------------------------------- |
+| `gen-icon-names.mjs`      | `npm run gen:icon-names`   | Generate the typed `IconName` union            |
+| `gen-icon-sheet.mjs`      | `npm run gen:icon-sheet`   | Generate the icon-gallery scrapbook page       |
+| `rebase-icon-viewbox.mjs` | `npm run gen:icon-viewbox` | Rebase icons onto the canonical square viewBox |
 
 `lib/icon-chroma.mjs` owns painted-color parsing and spot/plain classification.
 `lib/icon-chroma.d.mts` provides its TypeScript declaration, and `tests/icon-chroma.test.mjs` covers
@@ -59,3 +60,18 @@ npm run test:tools -- tools/icons/tests/icon-chroma.test.mjs
 npm run test:unit -- src/lib/components/Icon.svelte.test.ts
 npm run gen:icon-names
 ```
+
+## viewBox rebasing
+
+`rebase-icon-viewbox.mjs` puts every icon on the canonical `viewBox="0 0 1000 1000"` by baking the
+uniform scale + translate into the coordinate data itself (path commands, circle/ellipse/rect
+geometry, `<use>` stamp offsets, `userSpaceOnUse` gradient vectors, user-space stroke widths and
+dash arrays) rather than re-framing artwork through a shifted viewBox window. A non-square source
+rect is centered in the square box — exactly where `xMidYMid` letterboxing already painted it — so
+rendering is unchanged. Every write is pixel-verified: the rebased file is rasterized against the
+original at 512px and the tool refuses to write when more than antialiasing rounding differs.
+`splotchy.svg` is exempt (the mascot renders via a Vite URL import where the file's own frame is the
+source of truth). `web/src/lib/icons/iconViewBox.test.ts` enforces the grid, so a newly imported
+icon on a foreign grid (Material exports arrive on `0 -960 960 960`) fails the unit tier until
+rebased — run `npm run gen:icon-viewbox && npm run optimize:svg-assets`. The tool is idempotent and
+prints nothing but a summary when everything is already canonical.
