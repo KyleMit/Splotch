@@ -18,15 +18,18 @@ const NON_TEXT_MIN_CONTRAST = 3;
 
 // Grounds a scroll container paints under its own gutter: the document
 // (--app-bg), every card and sheet (--surface), the sections and tiles inside
-// them (--surface-2, --surface-hover), the drawing paper, and the flyouts
-// floating over it. A scroller added on a new ground belongs in this list.
+// them (--surface-2, --surface-hover), the drawing paper and its margin, and
+// the flyouts floating over it — hovered steps included, since a gutter can sit
+// over one. A scroller added on a new ground belongs in this list.
 const SCROLLER_GROUNDS = [
   'appBg',
   'surface',
   'surface2',
   'surfaceHover',
   'paper',
+  'paperMargin',
   'floatSurface',
+  'floatSurfaceHover',
 ] as const satisfies readonly (keyof ThemeTokens)[];
 
 const SCROLLBAR_COLOR = /scrollbar-color:\s*var\((--[a-z0-9-]+)\)\s+([a-z]+);/;
