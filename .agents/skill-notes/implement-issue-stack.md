@@ -53,6 +53,28 @@ invalidates the prior head review, so that exceptional path returns through revi
 CI gate is evaluated again. This preserves both guarantees—reviewed final code and green final
 code—without placing CI waits between ordinary review cycles.
 
+## Review convergence and issue-local quarantine
+
+The first issue-stack draft launched a fresh, non-resumable adversarial reviewer for every repaired
+head. That maximized independence but gave later rounds no memory of the findings they were meant to
+verify. A reviewer repeatedly prompted to perform a full adversarial pass has an incentive to widen
+scope and produce another finding, even after the product is shippable.
+
+Review independence now applies at the PR boundary, not between rounds of the same PR. The first
+round starts a fresh Claude conversation; every later head resumes it in a fresh disposable
+checkout. Continuation prompts verify prior blockers and the response delta, admit a new blocking
+finding only when the response introduced it, earlier evidence could not expose it, or a critical
+safety/security/data-loss risk justifies surfacing a prior miss, and explicitly accept a clean
+result. One full review plus two continuation rounds bounds the process. Remaining valid blockers
+quarantine the issue rather than turning suggestions or nits into mandatory churn.
+
+The campaign boundary follows the same blast-radius rule. Missing shared authorization, broken
+repository-wide gates, or unavailable common infrastructure remain global blockers because later
+results would not be trustworthy. An implementation, review, or product-CI failure confined to one
+PR is issue-local: replace its closing reference, attach a rich postmortem to the closed PR and the
+issue, remove it from the stack, restore `last_good_base`, and continue with the next pending issue.
+The campaign may therefore finish successfully with quarantined layers called out in its handoff.
+
 Open validation questions:
 
 * Whether future `gh stack` versions preserve `link`'s numeric ambiguity and `--base` behavior.

@@ -26,14 +26,16 @@ settings, and boundary prompt. `--end-session` deletes the session's transcript 
 directory, then removes the record. The progress stream and stall watchdog change observability only
 — the owner-only stream log is exclusively created, terminating a stalled run signals Claude's whole
 process group, and no profile gains a tool or an external write from streaming; the PR publisher
-remains one-shot with `--no-session-persistence`.
+keeps a separate owner-only session record bound to one validated PR number. Its later invocations
+can resume only that PR's recorded session, and `--pr <number> --end-session` deletes the transcript
+and record after delivery or quarantine.
 
-The PR publisher accepts exactly `--pr <positive-integer>` for `KyleMit/Splotch`. It passes that
-same narrow authorization to Claude and runs with:
+The PR publisher accepts `--pr <positive-integer>` for `KyleMit/Splotch`, optionally with
+`--end-session`. It passes that same narrow authorization to Claude and runs with:
 
 ```text
 --print --permission-mode auto --tools default --safe-mode
---no-chrome --strict-mcp-config --no-session-persistence
+--no-chrome --strict-mcp-config --session-id <wrapper-issued-uuid>|--resume <recorded-uuid>
 ```
 
 It never uses `--bare`, `--dangerously-skip-permissions`, or `bypassPermissions`. Claude's inner

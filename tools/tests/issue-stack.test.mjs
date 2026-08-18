@@ -115,6 +115,9 @@ describe('skill contracts', () => {
       stackSkill.indexOf('### 7. Drive final CI to green')
     );
     expect(stackSkill).toContain('Do not run CI between those renewed review rounds');
+    expect(stackSkill).toMatch(/automatically resumes it on\s+later review rounds/);
+    expect(stackSkill).toContain('A reviewer is never required to find something wrong');
+    expect(stackSkill).toMatch(/one full\s+review plus two resumed convergence rounds/);
     expect(stackSkill).toContain('establish causality');
     expect(stackSkill).toContain('One passing rerun is diagnostic evidence only');
     expect(stackSkill).toContain('Keep the product PR open and on the success path');
@@ -133,7 +136,10 @@ describe('skill contracts', () => {
     expect(stackSkill).toContain('Checkpoint every phase transition and external mutation');
     expect(stackSkill).toContain('Poll pending checks every 30 seconds for up to 45 minutes');
     expect(stackSkill).toContain('`ciRepairContinuations` starts at zero');
-    expect(stackSkill).toContain('Immediately checkpoint `--clear-stack`');
+    expect(stackSkill).toMatch(/Immediately checkpoint\s+`--clear-stack`/);
+    expect(stackSkill).toMatch(/close its unsuccessful PR with the evidence attached to the issue/);
+    expect(stackSkill).toContain('Begin the next pending issue immediately');
+    expect(stackSkill).toContain('--end-session');
     expect(leaveReview).toContain('mode=post-comments');
     expect(leaveReview).toMatch(/If no mode is\s+specified/);
     expect(leaveReview).toContain('`git diff <base-oid>...<head-oid>`');

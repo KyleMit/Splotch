@@ -52,7 +52,7 @@ export function expectedRunClaudeFiles() {
   const manifest = Buffer.from(
     `${JSON.stringify(
       {
-        version: 3,
+        version: 4,
         runnerSha256: digest(runner),
         reviewerSha256: digest(reviewer),
         healthSha256: digest(health),

@@ -111,9 +111,18 @@ other's entries through the shared file's read-modify-write cycle. The same revi
 stream log (owner-only, exclusively created, because raw tool_result events embed file contents into
 a listable temp directory) and the watchdog kill (Claude runs detached at the head of its own
 process group, terminated group-wide with a bounded SIGKILL escalation, because SIGTERM to the
-Claude PID alone leaves a hung tool grandchild running — the vite-server.mjs precedent). The PR
-publisher stays one-shot: its disposable worktree teardown is part of its contract, and a resumable
-reviewer would outlive the checkout its context assumes.
+Claude PID alone leaves a hung tool grandchild running — the vite-server.mjs precedent).
+
+The PR publisher originally stayed one-shot because its disposable worktree teardown was part of its
+contract. Issue-stack review rounds showed the opposite failure mode: a fresh adversarial
+conversation on every repaired head has no memory of its earlier scope and is rewarded for finding a
+new problem, so a shippable change can accumulate unrelated nits. The publisher now separates
+conversation lifetime from checkout lifetime. It keeps one owner-only session record bound to the
+validated PR number, creates a fresh disposable checkout for every head, resumes the same Claude
+conversation there, and injects a continuation prompt that limits new findings to regressions or
+blockers that could not have been seen earlier. The orchestrator explicitly ends the session after
+delivery or quarantine. This preserves empirical isolation per head without resetting review intent
+between rounds.
 
 Open validation questions:
 
