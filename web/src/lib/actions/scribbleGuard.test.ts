@@ -113,6 +113,76 @@ describe('scribbleTap', () => {
     expect(flushSync).not.toHaveBeenCalled();
   });
 
+  it('prepares a press before activating its completed tap', () => {
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const events: string[] = [];
+    const action = scribbleTap(el, {
+      activate: () => events.push('activate'),
+      onPressStart: () => events.push('prepare'),
+      onPressCancel: () => events.push('cancel'),
+    });
+    tapActions.add(action);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(el);
+
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointerup', 1));
+
+    expect(events).toEqual(['prepare', 'activate']);
+  });
+
+  it('cancels preparation when a press does not activate', () => {
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const events: string[] = [];
+    const action = scribbleTap(el, {
+      activate: () => events.push('activate'),
+      onPressStart: () => events.push('prepare'),
+      onPressCancel: () => events.push('cancel'),
+    });
+    tapActions.add(action);
+
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    window.dispatchEvent(pointerEvent('pointercancel', 1));
+
+    expect(events).toEqual(['prepare', 'cancel']);
+  });
+
+  it('cancels a live preparation before starting a re-entrant press', () => {
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const events: string[] = [];
+    const action = scribbleTap(el, {
+      activate: () => events.push('activate'),
+      onPressStart: () => events.push('prepare'),
+      onPressCancel: () => events.push('cancel'),
+    });
+    tapActions.add(action);
+
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    el.dispatchEvent(pointerEvent('pointerdown', 2));
+
+    expect(events).toEqual(['prepare', 'cancel', 'prepare']);
+  });
+
+  it('cancels a live preparation when the action is destroyed', () => {
+    const el = document.createElement('button');
+    document.body.appendChild(el);
+    const events: string[] = [];
+    const action = scribbleTap(el, {
+      activate: () => events.push('activate'),
+      onPressStart: () => events.push('prepare'),
+      onPressCancel: () => events.push('cancel'),
+    });
+    tapActions.add(action);
+
+    el.dispatchEvent(pointerEvent('pointerdown', 1));
+    action.destroy();
+    tapActions.delete(action);
+
+    expect(events).toEqual(['prepare', 'cancel']);
+  });
+
   it('activates on a keyboard/AT click (detail 0, no pointer press)', () => {
     const { el, activate } = tapElement();
     el.dispatchEvent(new MouseEvent('click', { detail: 0 }));

@@ -46,6 +46,7 @@ it('derives every current window seam and engine measure family', () => {
     '__committedBrushMode',
     '__drawingDebug',
     '__screenshotSaveSink',
+    '__storeCapture',
     'backingMigrationPending',
     'baseRasterBytes',
     'engine.commit',

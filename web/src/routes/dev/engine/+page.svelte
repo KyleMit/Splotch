@@ -13,6 +13,7 @@
     undo,
     clearCanvas,
     isCanvasEmpty,
+    prepareCanvasExport,
     exportCanvasBlob,
     getUndoDebug,
     setCrayonMode,
@@ -120,6 +121,7 @@
       undo,
       clearCanvas,
       isCanvasEmpty,
+      prepareCanvasExport,
       exportCanvasBlob,
       getUndoDebug,
       // Crayon brush (ADR-0065): toggle the textured-wax mode and A/B its tooth

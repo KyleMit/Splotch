@@ -84,6 +84,10 @@ declare global {
     // Instrumented-build persistence boundary for native screenshot profiling.
     // The release bundle drops both the branch and this property name.
     __screenshotSaveSink?: (blob: Blob, baseName: string) => void | Promise<void>;
+    // Set before boot by the store-asset generator, read through
+    // lib/storeCapture.ts — the one seam the app takes an input on, and the
+    // release bundle drops it with its readers.
+    __storeCapture?: boolean;
   }
 
   interface FileSystemHandle {

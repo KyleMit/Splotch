@@ -22,6 +22,16 @@ describe('/beta iOS facts', () => {
     expect(new Set(deploymentTargets)).toEqual(new Set([MIN_IOS_RELEASE]));
   });
 
+  it('keeps the shared native support matrix on the deployment floor', () => {
+    const guide = readFileSync(
+      new URL('../../../../../docs/MOBILE/native.md', import.meta.url),
+      'utf8'
+    );
+    const documentedFloor = guide.match(/\| iOS floor\s+\| iOS ([\d.]+) on/)?.[1];
+
+    expect(documentedFloor).toBe(MIN_IOS_RELEASE);
+  });
+
   it('keeps the published Splotch invitation code', () => {
     expect(TESTFLIGHT_INVITE_CODE).toBe('9GRH3JNQ');
   });

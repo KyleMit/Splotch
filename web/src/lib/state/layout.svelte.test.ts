@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { SafeAreaInsets } from '$lib/platform/safeArea';
 
 const mocks = vi.hoisted(() => ({
@@ -32,18 +32,33 @@ async function freshModule() {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers();
   mocks.portrait = false;
   mocks.insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  window.innerWidth = 1024;
+  window.innerHeight = 768;
+  delete document.documentElement.dataset.orientation;
+  Object.defineProperty(screen, 'orientation', {
+    configurable: true,
+    value: new EventTarget(),
+  });
   setMatchMedia();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe('viewport tracking', () => {
   it('seeds orientation and safe-area insets at module load', async () => {
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
     const { layout } = await freshModule();
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(document.documentElement.dataset.orientation).toBe('portrait');
   });
 
   it('re-measures on resize', async () => {
@@ -68,6 +83,33 @@ describe('viewport tracking', () => {
     expect(layout.viewportHeight).toBe(1024);
   });
 
+  it('keeps the DOM stamp defined by CSS orientation when viewport geometry differs', async () => {
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
+    const { layout } = await freshModule();
+
+    expect(layout.orientation).toBe('portrait');
+    expect(document.documentElement.dataset.orientation).toBe('landscape');
+  });
+
+  it('keeps layout current throughout a continuous non-rotation resize stream', async () => {
+    const { layout, publishPaletteMeasurement } = await freshModule();
+
+    for (let step = 1; step <= 20; step += 1) {
+      window.innerWidth = 1024 - step * 10;
+      publishPaletteMeasurement(156 - step, 76);
+      window.dispatchEvent(new Event('resize'));
+      await vi.advanceTimersByTimeAsync(100);
+    }
+
+    expect(layout.viewportWidth).toBe(824);
+    expect(layout.paletteMeasurement).toEqual({
+      width: 136,
+      height: 76,
+      orientation: 'landscape',
+    });
+  });
+
   it('re-measures on re-entry when the device rotated while backgrounded', async () => {
     const { layout } = await freshModule();
     expect(layout.orientation).toBe('landscape');
@@ -75,28 +117,54 @@ describe('viewport tracking', () => {
     // A hidden document fires no resize/orientationchange, so the rotation
     // reaches the app only via the visibilitychange on return.
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
     document.dispatchEvent(new Event('visibilitychange'));
 
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
-    expect(document.documentElement.dataset.orientation).toBe('portrait');
   });
 
   it('follows the cutout inset from the top to a side edge across a rotation', async () => {
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     mocks.insets = { top: 44, right: 0, bottom: 34, left: 0 };
-    const { layout } = await freshModule();
+    const { layout, publishPaletteMeasurement } = await freshModule();
 
-    // Rotation: orientationchange fires, then the insets settle onto a side
-    // edge and a resize follows — the same listener pair re-measures on both.
+    // Rotation: the standard orientation event fires, then the insets settle
+    // onto a side edge and a resize follows.
     mocks.portrait = false;
-    window.dispatchEvent(new Event('orientationchange'));
+    window.innerWidth = 1024;
+    window.innerHeight = 768;
+    screen.orientation.dispatchEvent(new Event('change'));
+    publishPaletteMeasurement(84, 768);
     mocks.insets = { top: 0, right: 44, bottom: 21, left: 0 };
     window.dispatchEvent(new Event('resize'));
 
+    expect(layout.orientation).toBe('portrait');
+    expect(layout.safeArea).toEqual({ top: 44, right: 0, bottom: 34, left: 0 });
+    expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
+    await vi.runAllTimersAsync();
+
     expect(layout.orientation).toBe('landscape');
     expect(layout.safeArea).toEqual({ top: 0, right: 44, bottom: 21, left: 0 });
+    expect(layout.paletteMeasurement).toEqual({ width: 84, height: 768, orientation: 'landscape' });
+  });
+
+  it('retains the legacy orientationchange trigger used by Mobile Safari', async () => {
+    const { layout } = await freshModule();
+
+    mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
+    window.dispatchEvent(new Event('orientationchange'));
+    window.dispatchEvent(new Event('resize'));
+
+    expect(layout.orientation).toBe('landscape');
+    await vi.runAllTimersAsync();
+    expect(layout.orientation).toBe('portrait');
   });
 
   it('tags palette measurements with the live CSS orientation', async () => {
@@ -111,10 +179,30 @@ describe('viewport tracking', () => {
     });
 
     mocks.portrait = true;
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
     publishPaletteMeasurement(375, 76);
     expect(layout.paletteMeasurement.orientation).toBe('portrait');
 
     clearPaletteMeasurement();
     expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
+  });
+
+  it('keeps a pre-rotation palette rect tagged to its CSS orientation', async () => {
+    const { layout, publishPaletteMeasurement } = await freshModule();
+
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
+    window.dispatchEvent(new Event('orientationchange'));
+    publishPaletteMeasurement(84, 768);
+    mocks.portrait = true;
+    await vi.runAllTimersAsync();
+
+    expect(layout.orientation).toBe('portrait');
+    expect(layout.paletteMeasurement).toEqual({
+      width: 84,
+      height: 768,
+      orientation: 'landscape',
+    });
   });
 });

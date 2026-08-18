@@ -95,7 +95,7 @@ describe('Codex policy installation', () => {
 });
 
 describe('skill contracts', () => {
-  it('makes red CI a repair loop and preserves interactive review defaults', () => {
+  it('reviews every PR before final CI and preserves interactive review defaults', () => {
     const stackSkill = readFileSync(
       join(repositoryRoot, '.agents/skills/implement-issue-stack/SKILL.md'),
       'utf8'
@@ -109,14 +109,23 @@ describe('skill contracts', () => {
       'utf8'
     );
     expect(stackSkill).toContain('A failed check is blocking');
+    expect(stackSkill).toContain('Every product PR and gate-repair support PR receives');
+    expect(stackSkill).toContain('Do not wait for CI before');
+    expect(stackSkill.indexOf('### 6. Re-review until settled')).toBeLessThan(
+      stackSkill.indexOf('### 7. Drive final CI to green')
+    );
+    expect(stackSkill).toContain('Do not run CI between those renewed review rounds');
+    expect(stackSkill).toMatch(/automatically resumes it on\s+later review rounds/);
+    expect(stackSkill).toContain('A reviewer is never required to find something wrong');
+    expect(stackSkill).toMatch(/one full\s+review plus two resumed convergence rounds/);
     expect(stackSkill).toContain('establish causality');
     expect(stackSkill).toContain('One passing rerun is diagnostic evidence only');
     expect(stackSkill).toContain('Keep the product PR open and on the success path');
     expect(stackSkill).toContain('immediately below the product PR in the GitHub stack');
-    expect(stackSkill).toMatch(/does not consume the product issue's CI\s+repair budget/);
+    expect(stackSkill).toMatch(/does not consume the product\s+issue's CI\s+repair\s+budget/);
     expect(stackSkill).toContain('Never quarantine a product issue for');
     expect(stackSkill).not.toContain('demonstrably inapplicable to this PR');
-    expect(stackSkill).toContain('Never pause merely because CI is red');
+    expect(stackSkill).toMatch(/Never\s+pause merely because CI is red/);
     expect(stackSkill).toContain('last_good_base');
     expect(stackSkill).toMatch(/`ready_for_review`\s+event/);
     expect(stackSkill).toContain('`gh stack unstack <recorded-stack-number>`');
@@ -127,7 +136,10 @@ describe('skill contracts', () => {
     expect(stackSkill).toContain('Checkpoint every phase transition and external mutation');
     expect(stackSkill).toContain('Poll pending checks every 30 seconds for up to 45 minutes');
     expect(stackSkill).toContain('`ciRepairContinuations` starts at zero');
-    expect(stackSkill).toContain('Immediately checkpoint `--clear-stack`');
+    expect(stackSkill).toMatch(/Immediately checkpoint\s+`--clear-stack`/);
+    expect(stackSkill).toMatch(/close its unsuccessful PR with the evidence attached to the issue/);
+    expect(stackSkill).toContain('Begin the next pending issue immediately');
+    expect(stackSkill).toContain('--end-session');
     expect(leaveReview).toContain('mode=post-comments');
     expect(leaveReview).toMatch(/If no mode is\s+specified/);
     expect(leaveReview).toContain('`git diff <base-oid>...<head-oid>`');

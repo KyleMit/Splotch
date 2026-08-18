@@ -138,3 +138,15 @@ credentials; their signed context is required only for refusal reports.
   or client-authored prompt into its bundle.
 * − Every refusal response now carries a credential-bound report token for its short lifetime, even
   when the parent never opens the report action.
+
+## Amendment (2026-08-17): current provider and deletion timing
+
+ADR-0113 replaced Gemini with OpenAI, so references in the original Decision to Gemini describe the
+provider at the time rather than the current report authorization. The managed access-code and BYOK
+paths now use OpenAI; the free-tier report-token amendment remains the third authorization path.
+
+The original “up to 30 days” consequence also describes the intended retention threshold, not an
+instantaneous deletion guarantee. The purge runs daily and deletes bundles once their report-id
+timestamp is older than the shared 30-day constant. Current parent and store disclosures therefore
+say a confirmed bundle is scheduled for deletion after 30 days by a daily purge. An early-deletion
+request can still remove the same prefix sooner.

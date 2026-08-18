@@ -76,6 +76,8 @@
     top: 0;
     left: 0;
     transform-origin: 0 0;
+    /* Permanent promotion avoids the rotation undo spike; engine-rotation.spec.ts enforces it. */
+    will-change: transform;
   }
 
   .live-tile {

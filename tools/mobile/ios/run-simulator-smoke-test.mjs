@@ -15,6 +15,12 @@ import { ROOT, fail, sh } from '../../lib/proc.mjs';
 import { runMaestroSmoke } from '../lib/mobile-smoke-test.mjs';
 
 const execFileAsync = promisify(execFile);
+const SKIP_SYNC_FLAG = '--skip-sync';
+
+const args = process.argv.slice(2);
+const unsupportedArgs = args.filter((arg) => arg !== SKIP_SYNC_FLAG);
+if (unsupportedArgs.length > 0) fail(`Unknown argument: ${unsupportedArgs[0]}`);
+const skipSync = args.includes(SKIP_SYNC_FLAG);
 
 const simctl = async (...args) =>
   (await execFileAsync('xcrun', ['simctl', ...args], { maxBuffer: 16 * 1024 * 1024 })).stdout;
@@ -55,7 +61,7 @@ const APP_DIR = join(ROOT, 'ios', 'App');
 const APP_PATH = join(APP_DIR, 'build', 'Build', 'Products', 'Debug-iphonesimulator', 'App.app');
 
 try {
-  await sh('npm run cap:sync');
+  if (!skipSync) await sh('npm run cap:sync');
   await sh(
     `xcodebuild -scheme App -configuration Debug -destination "id=${device.udid}" -derivedDataPath build build`,
     APP_DIR

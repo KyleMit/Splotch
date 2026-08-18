@@ -119,8 +119,23 @@ exact Splotch PR:
 This profile creates a disposable worktree, gives Claude its normal empirical-review tools under
 Auto + safe mode, injects the trusted `leave-pr-review` rubric, and permits one `COMMENT` review on
 the validated base/head OIDs. It never approves, requests changes, merges, commits, or pushes. It
-streams progress like the runner (see Intermediate feedback); the review itself stays one-shot and
-is never resumable — its disposable worktree is removed when it exits.
+streams progress like the runner (see Intermediate feedback).
+
+The first invocation creates one persistent reviewer conversation bound to that PR. A later
+invocation for a changed head automatically resumes the same conversation in a new disposable
+worktree, so Claude retains its earlier findings and treats the new round as a focused verification
+of the fixes and delta instead of inventing a fresh review surface. Publication remains idempotent
+per base/head. End the conversation after delivery or quarantine:
+
+```sh
+/Users/kylemit/.local/libexec/splotch-claude-review-publish.mjs --pr <number> --end-session
+```
+
+The disposable worktree is still removed after every invocation; only the narrowly bound review
+conversation persists between rounds. The publisher enforces the issue-stack budget of three
+published review rounds and retries once with a new conversation if the recorded session was never
+created or later disappeared. `--end-session` verifies the installed wrapper before cleanup and
+removes an unreadable or invalid record without following its contents into the transcript tree.
 
 ## Intermediate feedback
 

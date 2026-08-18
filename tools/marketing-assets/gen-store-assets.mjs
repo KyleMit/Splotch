@@ -100,6 +100,21 @@ const mockFreeGrant = (page) =>
     })
   );
 
+// Capture mode (web/src/lib/storeCapture.ts) drops the free-generation count
+// off the wand button: a per-install number that reads as noise in a marketing
+// shot. Set before navigation so it is true by the app's first paint.
+const enableCaptureMode = (page) =>
+  page.addInitScript(() => {
+    window.__storeCapture = true;
+  });
+
+// Every scene wants both: the app as a configured install shows it, without
+// the install-specific badge.
+const prepareCapture = async (page) => {
+  await mockFreeGrant(page);
+  await enableCaptureMode(page);
+};
+
 // The portrait v2 handoff enlarges the on-screen action buttons for store
 // legibility. This is the app's own Button Size setting (an integer percent of
 // the size-class step, 100 = default), seeded before the capture instead of
@@ -143,7 +158,7 @@ const insetHeroBox = (box) => ({
 async function sceneHero(browser, base, capture, orientation) {
   const { ctx, page } = await openAppPage(browser, base, capture, {
     prepare: async (page) => {
-      await mockFreeGrant(page);
+      await prepareCapture(page);
       await seedButtonScale(page);
     },
   });
@@ -162,7 +177,7 @@ async function sceneHero(browser, base, capture, orientation) {
 // The picker opens on the 8-book cover grid unless the installed set resolved
 // late and it landed on a single book (issue #936) — reopen until the grid.
 async function sceneBooks(browser, base, capture) {
-  const { ctx, page } = await openAppPage(browser, base, capture, { prepare: mockFreeGrant });
+  const { ctx, page } = await openAppPage(browser, base, capture, { prepare: prepareCapture });
   if (capture.height / capture.width >= BOOKS_TWO_COL_MIN_ASPECT) {
     await page.addStyleTag({ content: BOOKS_TWO_COL_CSS });
   }
@@ -206,7 +221,7 @@ const waitForDialogImages = (page) =>
   );
 
 async function sceneMagic(browser, base, capture, orientation) {
-  const { ctx, page } = await openAppPage(browser, base, capture, { prepare: mockFreeGrant });
+  const { ctx, page } = await openAppPage(browser, base, capture, { prepare: prepareCapture });
   await expandDrawer(page);
   await setStrokeSize(page, 5);
   await openColoringBook(page);
@@ -261,7 +276,7 @@ async function sceneParents(browser, base, capture) {
   const { ctx, page } = await openAppPage(browser, base, capture, {
     colorScheme: 'dark',
     prepare: async (page) => {
-      await mockFreeGrant(page);
+      await prepareCapture(page);
       await seedToolDrawerSettings(page);
     },
   });

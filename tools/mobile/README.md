@@ -5,6 +5,13 @@ identity checks, Capacitor static-export pruning and validation, and the Maestro
 used by both platform runners. Platform-specific build and lifecycle entry points live under
 [`android/`](android/) and [`ios/`](ios/).
 
+`privacy-permission-inventory.json` is the reviewed machine-readable declaration of native
+permissions, store data categories, retention boundaries, and production outbound-host classes. The
+tools-tier tests compare it with both native manifests, the iOS usage strings, the privacy manifest,
+implementation constants and call sites, the store checklists, and `/privacy`. Web and worker
+first-party calls remain same-origin in development and deploy previews; only native builds pin the
+production `splotch.art` host.
+
 ## Entry points
 
 | Entry point               | Public hook     | Purpose                                                                                                                  |

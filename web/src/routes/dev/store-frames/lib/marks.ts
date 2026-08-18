@@ -173,12 +173,24 @@ const LANDSCAPE_PAGE_MARKS: Record<StorePageId, readonly PageMark[]> = {
     mark('sparkle', paletteHex('Blue'), 78, 906, { scale: 0.85 }),
     dotMark(paletteHex('Orange'), 468, 920, 16),
   ],
+  // The only landscape page whose right half is a composition rather than an
+  // app capture (SHOWCASE_SPEC), so its marks carry on past the copy column:
+  // a weather-themed fill for the top strip, the gap right of the doodle, and
+  // the band below the print.
   '04-ai': [
     mark('shootingStar', paletteHex('Yellow'), 48, 56, { rot: -8 }),
     mark('swirl', paletteHex('Pink'), 484, 48),
     dotMark(paletteHex('Blue'), 396, 116, 15),
     mark('wave', paletteHex('Purple'), 72, 914),
     dotMark(paletteHex('Green'), 464, 916, 16),
+    mark('wave', paletteHex('Pink'), 920, 75, { scale: 0.78 }),
+    mark('rainbow', paletteHex('Red'), 1620, 110, { scale: 0.83 }),
+    mark('wave', paletteHex('Blue'), 1760, 280, { scale: 0.78 }),
+    dotMark(paletteHex('Orange'), 1250, 220, 13),
+    mark('zigzag', paletteHex('Purple'), 1230, 320, { scale: 0.83 }),
+    mark('dashedSwoosh', paletteHex('Purple'), 1480, 920, { scale: 0.71, rot: -4 }),
+    dotMark(paletteHex('Orange'), 1700, 960, 14),
+    mark('sparkle', paletteHex('Yellow'), 980, 920, { scale: 0.67 }),
   ],
   '05-parents': [
     mark('crescent', CRESCENT_LAVENDER, 64, 44, { rot: -14 }),

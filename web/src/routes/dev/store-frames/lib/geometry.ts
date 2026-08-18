@@ -3,27 +3,37 @@
 // pixel-for-pixel app screenshot for that frame. Authored at the Google Play
 // sizes (landscape 1920×1080, portrait 1080×1920) and scaled linearly by width
 // for the App Store sizes, so one spec produces every store slot. Landscape
-// (the 2026-08 refresh) puts the copy in a left column with the frame bleeding
-// off the right edge. Portrait (the 2026-08 portrait v2 handoff) centers the
-// copy in a zone above a fully visible frame; the handoff specified output
-// pixels at the App Store 6.9" slot (1290×2796), stored here divided by that
-// slot's k = 1290/1080.
+// (the 2026-08 refresh, refit by the 2026-08-17 handoff) puts the copy in a left
+// column with the frame fully inside the slot. Portrait (the 2026-08 portrait v2
+// handoff) centers the copy in a zone above a fully visible frame; that handoff
+// specified output pixels at the App Store 6.9" slot (1290×2796), stored here
+// divided by that slot's k = 1290/1080.
 //
 // Imported by tools/marketing-assets/gen-store-assets.mjs under
 // `node --experimental-strip-types` — relative imports only.
 
 import type { StoreOrientation, StoreTarget } from './targets.ts';
 
-// Landscape spec (1920×1080 base): copy column x=96 w=470, frame x=600 y=57
-// 1360×966 bleeding off the right edge, app UI at ~1.5× native scale.
+// Landscape spec (1920×1080 base): copy column x=96 w=470, frame x=600 y=92
+// 1263×897 sitting fully inside the slot — the earlier 1360-wide frame bled 40px
+// off the right edge and sliced the trash button in half.
 const L_BASE_W = 1920;
 export const L_BASE_H = 1080;
 const L_COPY_X = 96;
 const L_COPY_W = 470;
 const L_FRAME_X = 600;
-const L_FRAME_W = 1360;
-const L_FRAME_Y = 57;
-const L_APP_SCALE = 1.5;
+const L_FRAME_W = 1263;
+const L_FRAME_Y = 92;
+const L_FRAME_H = 897;
+// What the authored rect leaves below the frame at the 16:9 base. Taller slots
+// (ipad13's 4:3) keep filling the height between the two scaled margins rather
+// than banding out at the base aspect, so the frame stays the page's subject.
+const L_FRAME_BOTTOM = L_BASE_H - L_FRAME_Y - L_FRAME_H;
+// Not 1.5: at that scale the fitted frame captures 842×598 CSS px, and the
+// 598 drops under the app's tablet-class floor (TABLET_MIN_SIDE_PX), re-laying
+// the action buttons out as a phone. 1.3925 holds the capture viewport at the
+// 907×644 the wider frame used, so only the rendered size changes.
+const L_APP_SCALE = 1.3925;
 
 // Portrait reflow (1080×1920 base, per the portrait v2 handoff): copy centered
 // both axes in a zone spanning the full width above the frame, frame fully
@@ -78,11 +88,12 @@ export function frameGeometry(target: TargetSize): FrameGeometry {
   const { width: W, height: H, orientation } = target;
   if (orientation === 'landscape') {
     const k = W / L_BASE_W;
+    const y = Math.round(L_FRAME_Y * k);
     const frame = {
       x: Math.round(L_FRAME_X * k),
-      y: Math.round(L_FRAME_Y * k),
+      y,
       width: Math.round(L_FRAME_W * k),
-      height: H - 2 * Math.round(L_FRAME_Y * k),
+      height: H - y - Math.round(L_FRAME_BOTTOM * k),
     };
     const cssW = Math.round(frame.width / (L_APP_SCALE * k));
     const deviceScaleFactor = frame.width / cssW;

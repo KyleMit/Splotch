@@ -18,7 +18,7 @@ pre-merge blob-encoding guard retired.
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
 | Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
-| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only**                     |
+| Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
 | WebKit commit timing  | Playwright WebKit   | `npm run perf:web:undo:webkit:fast` | pushes to `main`; full suite on release tags |
 
@@ -424,7 +424,9 @@ also runs on **WebKit** as the `webkit` Playwright project:
   debugging; it is still not part of `npm test`.
 
 CI runs current WebKit, not the floor's Safari 16.4 — it proves engine-family coverage, not the
-floor version (that remains a manual/device concern; see `docs/COMPATIBILITY.md`).
+floor version or a native iOS boot. The declared bundle target has separate drift coverage, while
+native iOS 16.4 remains a manual/device concern; see `docs/COMPATIBILITY.md` for the exact boundary
+and hosted-run evidence.
 
 ### Accessibility tier — axe-core scans (`tests/a11y.spec.ts`)
 
@@ -522,6 +524,13 @@ npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcod
 > the SDK with `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's
 > install location resolves in `tools/mobile/lib/maestro.mjs`.
 
+For the required iOS floor check, follow the
+[manual iOS 16.4 floor gate](MOBILE/ios.md#manual-ios-164-floor-gate). Its primary path is
+Maestro-free; `npm run test:ios` is only an optional diagnostic on 16.4 because the hosted
+experiments could download, boot, and build for that runtime but Maestro's XCTest driver never
+became reachable. `docs/COMPATIBILITY.md` records both experiments and the complementary
+current-WebKit CI coverage.
+
 ### Prerequisites
 
 1. **Android toolchain** — the same one used to build the app: Node ≥ 22, full JDK 21, and the
@@ -570,8 +579,8 @@ npm run test:android:device     # re-run as often as you like
 | Workflow                               | Trigger                                                          | What it runs                                                                                                                                                        |
 | -------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push**                | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on pushes to `main`; full gate on release tags |
-| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | Android Maestro smoke test                                                                                                                                          |
-| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Maestro smoke test (macOS runner)                                                                                                                               |
+| `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`                   | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                        |
+| `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`                   | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                       |
 | `.github/workflows/blobs-smoke.yml`    | Netlify `deployment_status` success + manual `workflow_dispatch` | Netlify Blobs persistence round-trip (ADR-0025)                                                                                                                     |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
@@ -637,12 +646,17 @@ gate.
 
 The native smoke workflows are deliberately tag-only — an emulator/simulator job is the heaviest
 thing in CI, and a launch crash is exactly the kind of regression you want caught at release time.
-The Android job runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
-runners hit an HVF init failure), builds the **debug** APK (auto-signed, no secrets needed;
-`cap:sync` still bakes the production web bundle), installs it onto an emulator booted by
-`reactivecircus/android-emulator-runner`, and runs `npm run test:android:device`. The iOS job runs
-`npm run test:ios` on a macOS runner, which boots a simulator, builds the debug app, and runs the
-same Maestro flow. The Maestro report is uploaded as a build artifact.
+The Android workflow runs on **Ubuntu + KVM** (the emulator-runner's most reliable path; macOS ARM
+runners hit an HVF init failure). Its build job generates a disposable test key, builds the
+**Release** APK once with R8 and resource shrinking, and uploads that shared artifact. Both matrix
+legs download and boot the same APK on the current API 33 emulator and the declared API 24 floor.
+The matrix reads those levels from their source modules rather than carrying a second floor literal
+in YAML. Each leg runs `npm run test:android:device` through
+`reactivecircus/android-emulator-runner`; the Play upload key never enters CI. The iOS job first
+compiles a Release simulator app without store signing, with `CODE_SIGNING_ALLOWED=NO`, then runs
+`npm run test:ios` on a macOS runner, which boots a simulator, builds the Debug app, and runs the
+same Maestro flow. The Release compile catches configuration-only failures while the established
+Debug smoke remains the boot signal. Each Maestro leg uploads its own report artifact.
 
 > CI uses `test:android:device` (not `test:android`) because the emulator-runner action already
 > provides a booted emulator — the one-shot would try to boot a second one.

@@ -141,3 +141,10 @@ both far below `RESERVATION_LEASE_MS`, so no live invocation can reach completio
 lease. `completeFreeGeneration` therefore still rejects a missing or reclaimed reservation; the
 fail-open above is what keeps the child's image in that anomalous case, and the expire → reuse →
 both-complete interleaving is pinned by a test.
+
+## Amendment (2026-08-17): OpenAI is the current provider
+
+ADR-0113 replaced Gemini with OpenAI after this allowance decision. The original provider name is
+historical; the reservation, ten-success allowance, pseudonym, and 500-start daily ceiling are
+provider-independent and now govern project-funded OpenAI calls. After the free allowance, the BYOK
+credential is an OpenAI key rather than a Gemini key.

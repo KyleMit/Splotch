@@ -1,0 +1,58 @@
+{
+ "schema": "ipad-actions-summary/1",
+ "note": "Partial 6-repeat checkpoint (setup stalled on repeat 7); normalized from the harness output.",
+ "device": {
+  "name": "iPad",
+  "os": "26.5",
+  "id": "00008103-0006202E3CF1001E"
+ },
+ "appUrl": "http://192.168.40.53:4173/",
+ "transport": "browser",
+ "actions": [
+  "screenshot"
+ ],
+ "repeats": 6,
+ "orientation": "LANDSCAPE",
+ "passed": true,
+ "summaries": [
+  {
+   "label": "save screenshot",
+   "count": 5,
+   "totalCount": 6,
+   "activation": {
+    "captured": 6,
+    "valid": 6,
+    "passed": true
+   },
+   "firstFrame": {
+    "p50": 1,
+    "p95": 16,
+    "p99": 16,
+    "max": 15.99999999999909
+   },
+   "ready": {
+    "p50": 242,
+    "p95": 245,
+    "p99": 245,
+    "max": 245
+   },
+   "frames": {
+    "p50": 17,
+    "p95": 17,
+    "p99": 19,
+    "max": 28,
+    "raw": {
+     "p50": 17,
+     "p95": 17,
+     "p99": 18,
+     "max": 28
+    }
+   },
+   "frameSamples": {
+    "scored": 620,
+    "raw": 970
+   },
+   "passed": true
+  }
+ ]
+}

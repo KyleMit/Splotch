@@ -6,19 +6,23 @@ developer and release runbook is [`docs/MOBILE/android.md`](../../../docs/MOBILE
 
 ## Entry points
 
-| Entry point                 | Public command(s)                                                                     |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| `setup-emulator.mjs`        | `npm run android:setup`                                                               |
-| `run-emulator.mjs`          | `android:boot`, `android:emulator`, `android:live`                                    |
-| `run-gradle.mjs`            | `android:apk`, `android:run`, `android:run:device`, `android:bundle`, `android:clean` |
-| `run-smoke-test.mjs`        | `npm run test:android`                                                                |
-| `verify-release-bundle.mjs` | `npm run android:verify`                                                              |
-| `open-release-bundle.mjs`   | `npm run android:open`                                                                |
+| Entry point                     | Public command(s)                                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `setup-emulator.mjs`            | `npm run android:setup`                                                                                      |
+| `run-emulator.mjs`              | `android:boot`, `android:emulator`, `android:live`                                                           |
+| `run-gradle.mjs`                | `android:apk`, `android:apk:release`, `android:run`, `android:run:device`, `android:bundle`, `android:clean` |
+| `run-smoke-test.mjs`            | `npm run test:android`                                                                                       |
+| `print-emulator-api-levels.mjs` | Android deploy workflow matrix                                                                               |
+| `verify-release-bundle.mjs`     | `npm run android:verify`                                                                                     |
+| `open-release-bundle.mjs`       | `npm run android:open`                                                                                       |
 
 `run-emulator.mjs` retains its `boot`, `emulator`, and `live` modes. `run-gradle.mjs` forwards the
-requested tasks to the committed wrapper from the `android/` project directory. Release commands
-write and inspect `android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals
-that containing directory without changing it.
+requested tasks to the committed wrapper from the `android/` project directory.
+`android:apk:release` writes `android/app/build/outputs/apk/release/` — `app-release.apk` when
+`keystore.properties` supplies a signing key, otherwise `app-release-unsigned.apk`; the tagged CI
+gate test-signs and boots the signed filename. Bundle release commands write and inspect
+`android/app/build/outputs/bundle/release/app-release.aab`; the opener reveals that containing
+directory without changing it.
 
 The toolchain requires Node 22+, a full JDK 21, and an Android SDK. Emulator setup additionally
 requires `sdkmanager`, `avdmanager`, `emulator`, and `adb`; the smoke test requires Maestro. Release
@@ -30,10 +34,12 @@ Set `ANDROID_HOME` (or the older `ANDROID_SDK_ROOT`) to override the default SDK
 `JAVA_HOME` to a full JDK 21 so `verify-release-bundle.mjs` can locate `jarsigner`, and
 `ANDROID_SERIAL` to pick a device when an emulator is also connected.
 
-`lib/android-toolchain.mjs` owns SDK discovery, the API level and AVD name, Gradle paths, and
-release artifact paths. Update its API-level constant together with CI and documentation; the nested
-config test enforces that agreement. Keep Android-only lifecycle code here and cross-platform
-Maestro or static-export behavior at the mobile capability root.
+`lib/android-toolchain.mjs` owns SDK discovery, the current development API level and AVD name,
+Gradle paths, and release artifact paths. `print-emulator-api-levels.mjs` adds the declared Android
+floor from `/beta` to the deploy workflow's matrix without creating a second floor literal. Update
+the current API-level constant together with CI and documentation; the nested config test enforces
+that agreement. Keep Android-only lifecycle code here and cross-platform Maestro or static-export
+behavior at the mobile capability root.
 
 Run focused verification with:
 

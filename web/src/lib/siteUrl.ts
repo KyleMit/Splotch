@@ -1,7 +1,5 @@
-// The canonical public origin. Everywhere else the site's own address appears,
-// it is a literal in a file this module cannot import — app.html's Open Graph
-// tags and vite.config.ts's native API base — so siteUrl.test.ts reads those and
-// fails when they disagree.
+// The canonical public origin. app.html's Open Graph tag cannot import this
+// constant, so siteUrl.test.ts fails when that template copy disagrees.
 //
 // Needed because the beta sign-up page prints the feedback form's address in
 // full rather than hiding it behind link text: it can be read on one device and

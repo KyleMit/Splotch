@@ -1,5 +1,5 @@
 import type { MediaPlugin } from '@capacitor-community/media';
-import { exportCanvasBlob } from './engine';
+import { exportCanvasBlob, type CanvasExportPreparation } from './engine';
 import { isNative, getPlatform } from '$lib/platform';
 import {
   DRAWING_BASENAME,
@@ -17,6 +17,15 @@ const ALBUM_NAME = 'Splotch';
 
 let activeScreenshotSave: Promise<void> | null = null;
 let nextScreenshotAllowedAt = 0;
+let preparedScreenshot: PreparedScreenshot | null = null;
+
+type ExportResult = { blob: Blob | null; error?: never } | { blob?: never; error: unknown };
+
+interface PreparedScreenshot {
+  activate(): void;
+  cancel(): void;
+  result: Promise<ExportResult>;
+}
 
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -91,25 +100,91 @@ export async function saveImageBlob(
   }
 }
 
-async function saveScreenshotImage() {
-  playScreenshotFeedback();
+function createPreparedScreenshot(
+  exportPreparation: CanvasExportPreparation | null = null
+): PreparedScreenshot {
   const preview = createPolaroidPreviewRequest();
-  const blob = await exportCanvasBlob(preview ? { preview } : undefined);
-  if (!blob) return false;
-  return saveImageBlob(blob, undefined, { allowPrompt: true });
+  let activated = false;
+  let cancelled = false;
+  let pendingPreview: ImageBitmap | null = null;
+  const deferredPreview = preview
+    ? {
+        width: preview.width,
+        onReady(bitmap: ImageBitmap) {
+          if (cancelled) {
+            bitmap.close();
+          } else if (activated) {
+            preview.onReady(bitmap);
+          } else {
+            pendingPreview?.close();
+            pendingPreview = bitmap;
+          }
+        },
+      }
+    : null;
+  const exportOptions = deferredPreview ? { preview: deferredPreview } : undefined;
+  const result = (
+    exportPreparation?.complete(exportOptions) ?? exportCanvasBlob(exportOptions)
+  ).then(
+    (blob): ExportResult => ({ blob }),
+    (error): ExportResult => ({ error })
+  );
+  return {
+    activate() {
+      if (cancelled || activated) return;
+      activated = true;
+      playScreenshotFeedback();
+      if (pendingPreview) {
+        const bitmap = pendingPreview;
+        pendingPreview = null;
+        preview?.onReady(bitmap);
+      }
+    },
+    cancel() {
+      if (activated || cancelled) return;
+      cancelled = true;
+      pendingPreview?.close();
+      pendingPreview = null;
+    },
+    result,
+  };
+}
+
+export function prepareScreenshot(prepareExport: () => CanvasExportPreparation | null) {
+  if (activeScreenshotSave || performance.now() < nextScreenshotAllowedAt || preparedScreenshot) {
+    return;
+  }
+  preparedScreenshot = createPreparedScreenshot(prepareExport());
+}
+
+export function cancelScreenshotPreparation() {
+  preparedScreenshot?.cancel();
+  preparedScreenshot = null;
+}
+
+async function savePreparedScreenshot(prepared: PreparedScreenshot) {
+  prepared.activate();
+  const result = await prepared.result;
+  if ('error' in result) throw result.error;
+  if (!result.blob) return false;
+  return saveImageBlob(result.blob, undefined, { allowPrompt: true });
 }
 
 export function saveScreenshot(): Promise<void> {
   if (activeScreenshotSave) {
+    cancelScreenshotPreparation();
     playScreenshotSuppressedFeedback();
     return activeScreenshotSave;
   }
   const startedAt = performance.now();
   if (startedAt < nextScreenshotAllowedAt) {
+    cancelScreenshotPreparation();
     playScreenshotSuppressedFeedback();
     return Promise.resolve();
   }
-  activeScreenshotSave = saveScreenshotImage()
+  const prepared = preparedScreenshot ?? createPreparedScreenshot();
+  preparedScreenshot = null;
+  activeScreenshotSave = savePreparedScreenshot(prepared)
     .then((saved) => {
       if (saved) nextScreenshotAllowedAt = performance.now() + SCREENSHOT_COOLDOWN_MS;
     })

@@ -16,6 +16,7 @@ import {
 } from './src/lib/state/books';
 import { excludeNativeRoutes } from './nativeExcludedRoutes';
 import { buildColoringPackManifest } from './coloringPackManifest';
+import { nativeApiBaseFor } from './securityPolicy.ts';
 import {
   COLORING_PACK_ASSET_URL_PATTERN,
   serveInstalledColoringPackAsset,
@@ -43,7 +44,7 @@ const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCap
 
 // On a native device there is no local server, so the AI button must call the
 // hosted endpoint. On the web this stays empty and the relative path is used.
-const NATIVE_API_BASE = isCapacitor ? 'https://splotch.art' : '';
+const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);
 const coloringPackManifest = buildColoringPackManifest(APP_VERSION, isCapacitor ? 'mobile' : 'web');
 const downloadableColoringGlobIgnores = BOOKS.filter(
   (book) => book.id !== STARTER_COLORING_BOOK_ID
