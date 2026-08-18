@@ -49,11 +49,10 @@ describe('WebKit performance CI', () => {
   it('installs and caches WebKit once through the macOS-specific composite action', () => {
     expect(setupAction).toContain('uses: ./.github/actions/setup-pnpm');
     expect(setupAction).toContain('path: ~/Library/Caches/ms-playwright');
-    // Matched without the `run:` prefix: the install is wrapped in a perl alarm
-    // so a starved runner fails by name instead of resolving to a job-level
-    // cancel (macOS ships no coreutils `timeout`). What this guards is that
-    // WebKit is installed here and that no apt work leaks in, not the spelling
-    // of the wrapper.
+    // What this guards is that WebKit is installed here and that no apt work
+    // leaks in, not the spelling of the command. The install is deliberately
+    // unbounded — the calling job's timeout-minutes is the backstop for a
+    // starved runner.
     expect(setupAction).toContain('npx playwright install webkit');
     expect(setupAction).not.toContain('install-deps');
     expect(setupAction).not.toContain('--with-deps');
