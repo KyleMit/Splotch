@@ -6,6 +6,7 @@
   import ParentCenterLock from './ParentCenterLock.svelte';
   import { SECTIONS, sectionHeading, type SectionId } from './sections';
   import { settingsModal } from '$lib/state/ui.svelte';
+  import { scheduleIdle } from '$lib/idle';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { registerElement } from '$lib/actions/elementRegistry';
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
@@ -305,6 +306,18 @@
     };
   });
 
+  // The dialog mounts closed in the idle pump's last slice (ADR-0049), so the
+  // idle time before a first open pays for the rest of the pane: one section
+  // per idle slice, the open-time fill's own shape on the idle scheduler
+  // instead of frames. A first open after this finds every section mounted and
+  // pays what a reopen pays. The moment the dialog opens, the open path owns
+  // the fill — this effect re-runs and cancels its pending slice. Reading
+  // `mountedCount` (tracked) is what re-arms the next slice after each mount.
+  $effect(() => {
+    if (settingsModal.open || mountedCount >= SECTIONS.length) return;
+    return scheduleIdle(() => mountAtLeast(untrack(() => mountedCount) + 1));
+  });
+
   // The last word on a pending jump, and the end of it. Until the pane is whole
   // there may not be enough content below the target to scroll it into place at
   // all — the arithmetic is right and the scroll lands clamped — so the jump
@@ -316,7 +329,12 @@
     pendingJump = null;
   });
 
+  // Armed only while the dialog is open: the idle prewarm mounts sections into
+  // a closed — display: none — pane, where every rect reads 0, so a growth tick
+  // there would elect whichever section mounted last and park the highlight on
+  // it until the open reset. A closed pane has no reader for the spy to follow.
   $effect(() => {
+    if (!settingsModal.open) return;
     const pane = paneEl;
     const content = zoomTarget;
     if (!pane || !content) return;

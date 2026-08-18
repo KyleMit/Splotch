@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   gotoApp,
   headingOffsetFromPaneTop,
+  openSettingsModal,
   SECTION_LANDED_MAX_PX,
   SETTINGS_FILL_FRAME_BUDGET,
   settleSettingsPane,
@@ -105,14 +106,20 @@ test('the opening frame already holds the above-the-fold prefix', async ({ page 
   expect(firstFrameSectionIds.slice(0, 2)).toEqual(['appearance', 'sound']);
 });
 
+// SettingsModal's --card-height-cap and --wide-card-height-ceiling, restated
+// here as tests deliberately restate boundary values.
+const CARD_HEIGHT_CAP_FRACTION = 0.85;
+const CARD_HEIGHT_CEILING_PX = 720;
+
 test('the wide card opens at its settled height and holds it through the fill', async ({
   page,
 }) => {
-  // The settled pane always overflows the card's 85vh height cap, so the wide
-  // card claims that height up front (SettingsModal's --card-height-cap) —
-  // a content-driven height would ratchet taller as each section mounts, a
-  // layout jump chasing the staged fill. Every sampled frame must agree, and
-  // the shared value must be the cap itself rather than some other constant.
+  // The settled pane always overflows the card's height bounds, so the wide
+  // card claims min(85vh, ceiling) up front (SettingsModal's --card-height-cap
+  // and --wide-card-height-ceiling) — a content-driven height would ratchet
+  // taller as each section mounts, a layout jump chasing the staged fill.
+  // Every sampled frame must agree, and the shared value must be the bound
+  // itself rather than some other constant.
   await gotoApp(page);
 
   const { dialogHeights, viewportHeight } = await paneFillPerFrame(
@@ -120,11 +127,60 @@ test('the wide card opens at its settled height and holds it through the fill', 
     SETTINGS_FILL_FRAME_BUDGET
   );
 
-  const CARD_HEIGHT_CAP_FRACTION = 0.85;
   // Fractional-pixel rounding is the only slack: clientHeight is an integer.
-  const capPx = viewportHeight * CARD_HEIGHT_CAP_FRACTION;
+  const boundPx = Math.min(viewportHeight * CARD_HEIGHT_CAP_FRACTION, CARD_HEIGHT_CEILING_PX);
   expect(new Set(dialogHeights).size).toBe(1);
-  expect(Math.abs(dialogHeights[0]! - capPx)).toBeLessThanOrEqual(1);
+  expect(Math.abs(dialogHeights[0]! - boundPx)).toBeLessThanOrEqual(1);
+});
+
+test.describe('on a tall desktop viewport', () => {
+  test.use({ viewport: { width: 1280, height: 1400 } });
+
+  test('the card clamps to the sidebar ceiling and the whole section list shows', async ({
+    page,
+  }) => {
+    // 85vh here would tower past the reading content; the ceiling grants the
+    // sidebar its full section list (through About) plus a little air, and no
+    // more. Both halves matter: the height is the ceiling, and the nav column
+    // holds no more list than it can show — the pair is the drift guard that
+    // fails when a new section outgrows the ceiling instead of silently
+    // clipping the list behind a scroll.
+    await gotoApp(page);
+
+    const { dialogHeights } = await paneFillPerFrame(page, SETTINGS_FILL_FRAME_BUDGET);
+
+    expect(new Set(dialogHeights).size).toBe(1);
+    expect(dialogHeights[0]).toBe(CARD_HEIGHT_CEILING_PX);
+    const navFits = await page
+      .locator('.settings-nav')
+      .evaluate((nav) => nav.scrollHeight <= nav.clientHeight);
+    expect(navFits).toBe(true);
+  });
+});
+
+test('idle time prewarms the pane so a first open finds it whole', async ({ page }) => {
+  // The dialog mounts closed in the idle pump's final slice and the wide pane
+  // then fills one section per idle slice (ADR-0049), so a parent's first tap —
+  // typically minutes after boot — pays what a reopen pays. Deliberately no tap
+  // until the prewarm finishes: the tap-first path is what every other test
+  // here exercises.
+  await gotoApp(page);
+
+  await expect
+    .poll(
+      async () => {
+        const rows = await page.locator('.settings-nav .toc-row').count();
+        const sections = await page.locator('.settings-pane .settings-section').count();
+        return rows > 0 && rows === sections;
+      },
+      { timeout: 20_000 }
+    )
+    .toBe(true);
+  // Prewarming must never show the dialog — it fills behind a closed card.
+  await expect(page.locator('#settingsModal[open]')).toHaveCount(0);
+
+  await openSettingsModal(page);
+  await expect(page.locator('.settings-pane')).toHaveAttribute('aria-busy', 'false');
 });
 
 // Frames to keep watching the pane after it has said it is ready. A nested pump

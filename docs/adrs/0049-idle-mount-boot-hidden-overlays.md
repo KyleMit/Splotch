@@ -66,7 +66,24 @@ context creation onto the child's first pointerdown.
 * − One more chunk request at idle; on repeat visits it's served from the service-worker precache
   like every other asset.
 
-## Escape hatch if the overlay set grows heavier
+## Amendment (2026-08): Settings joins the idle pump, staged
+
+The first-open exception above priced SettingsModal as one ~200 ms mount — all eleven section bodies
+in a single task. The staged wide-pane fill (issue #910, PR #1124) changed that shape: the modal now
+mounts with its shell plus the two above-the-fold sections, and every further section is an
+independent slice of work. That dissolves the reason for the exception, so Settings now mounts
+**closed** as the idle queue's own final slice (after every cheap overlay is in), and `WideShell`
+keeps prewarming the pane one section per idle slice until it is whole. A parent's first tap —
+typically minutes after boot — then pays what a reopen pays: nothing. The tap-before-idle path is
+unchanged: `settingsModal.open` still latches the mount the moment the chunk lands, and that tap
+runs the original open-time frame-paced fill.
+
+Two readings shift with this: `npm run perf:web:settings` taps after a 4 s idle settle, so it now
+scores a prewarmed open (near-zero attach) rather than a cold mount, and the `perf:mount` "no
+overlay-mount long tasks after load" claim now tolerates the staged Settings slices at idle — each
+sized to a shell-plus-two-sections start and single sections after, not the ~200 ms task that earned
+the exception. `web/tests/settings-mount.spec.ts` pins the prewarm (fills closed, never shows the
+dialog, first open reports not-busy).
 
 The single barrel chunk (`CVCStUCq.js`, ~56 KB) evaluates all six overlays in one synchronous task
 when the idle `import()` resolves. That is fine **today** because the only heavy member is

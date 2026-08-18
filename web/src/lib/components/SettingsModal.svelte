@@ -263,6 +263,15 @@
   .settings-modal {
     --card-height-cap: 85vh;
 
+    /* Where 85vh outruns the content: enough height for the wide shell's
+       sidebar to show its whole section list (through About — header + rows +
+       pane padding measured ~670px at the large-tablet type step) with a
+       little air, and no more. Past that, extra height is just empty pane
+       below the reading content. settings-mount.spec.ts holds this ceiling to
+       the sidebar still fitting whole, so a new section fails the spec rather
+       than silently clipping the list. */
+    --wide-card-height-ceiling: 720px;
+
     width: min(92vw, 500px);
     max-height: var(--card-height-cap);
     overflow: hidden;
@@ -273,14 +282,14 @@
   }
 
   /* The wide pane stacks all eleven sections, so its settled content overflows
-     the cap on every viewport that selects this shell — the settled card height
-     is always the cap itself. Claiming it up front keeps the card from
+     both height bounds on every viewport that selects this shell — the settled
+     card height is always this min(). Claiming it up front keeps the card from
      ratcheting taller as the fill mounts each section behind the fly-in. Scoped
      off the compact landscape-phone shell, whose short quick-toggle card stays
      content-sized (and whose selector must also keep winning the width rules
      above on equal specificity). */
   .settings-modal.wide:not(.compact) {
-    height: var(--card-height-cap);
+    height: min(var(--card-height-cap), var(--wide-card-height-ceiling));
   }
 
   .settings-modal.wide:not(.compact) .settings-content {
