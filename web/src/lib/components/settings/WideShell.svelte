@@ -44,11 +44,20 @@
   // in the pane at all, never a placeholder.
   const SECTIONS_PER_FRAME = 1;
 
-  // How many sections, from the first, currently exist in the pane — one frame's
-  // worth to start with, since the opening tap is itself the first frame. A
-  // watermark, never lowered: the dialog is closed rather than unmounted, so a
-  // reopen keeps whatever the last open finished mounting and pays nothing again.
-  let mountedCount = $state(SECTIONS_PER_FRAME);
+  // What the opening tap itself constructs. Not one frame's worth: the default
+  // landing shows Appearance *and* Sound above the fold on the viewports that
+  // select this shell, and content the parent is already looking at arriving
+  // with the fill reads as a glitch, not as the pane growing off-screen below.
+  // The long task issue #910 measured was all eleven bodies together; these two
+  // are a handful of toggle/slider rows, well inside the tap's budget.
+  const OPENING_SECTION_COUNT = SECTIONS.findIndex((section) => section.id === 'sound') + 1;
+
+  // How many sections, from the first, currently exist in the pane — the
+  // above-the-fold prefix to start with, since the opening tap is itself the
+  // first frame. A watermark, never lowered: the dialog is closed rather than
+  // unmounted, so a reopen keeps whatever the last open finished mounting and
+  // pays nothing again.
+  let mountedCount = $state(OPENING_SECTION_COUNT);
   const mountedSections = $derived(SECTIONS.slice(0, mountedCount));
 
   // Attaching the last section is not the same as the pane being whole. What's

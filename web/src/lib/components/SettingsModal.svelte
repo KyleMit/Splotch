@@ -261,13 +261,30 @@
 
 <style>
   .settings-modal {
+    --card-height-cap: 85vh;
+
     width: min(92vw, 500px);
-    max-height: 85vh;
+    max-height: var(--card-height-cap);
     overflow: hidden;
   }
 
   .settings-modal.wide {
     width: min(94vw, 860px);
+  }
+
+  /* The wide pane stacks all eleven sections, so its settled content overflows
+     the cap on every viewport that selects this shell — the settled card height
+     is always the cap itself. Claiming it up front keeps the card from
+     ratcheting taller as the fill mounts each section behind the fly-in. Scoped
+     off the compact landscape-phone shell, whose short quick-toggle card stays
+     content-sized (and whose selector must also keep winning the width rules
+     above on equal specificity). */
+  .settings-modal.wide:not(.compact) {
+    height: var(--card-height-cap);
+  }
+
+  .settings-modal.wide:not(.compact) .settings-content {
+    height: 100%;
   }
 
   /* Landscape phone: wider than the portrait card (width is the plentiful
@@ -312,7 +329,7 @@
   .settings-content {
     display: flex;
     flex-direction: column;
-    max-height: 85vh;
+    max-height: var(--card-height-cap);
     position: relative;
     overflow: hidden;
   }
