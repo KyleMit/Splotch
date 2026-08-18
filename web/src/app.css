@@ -57,6 +57,12 @@ body {
    The corner is fixed by the transparent track alone, at whatever width the
    platform draws — scrollbar-chrome.spec.ts measures it there.
 
+   `--icon-muted` is the thumb because an authored `scrollbar-color` is no
+   longer the UA-styled control WCAG 2.2 SC 1.4.11 exempts: the thumb owes 3:1
+   against every ground it can sit on, which the quieter neutrals this started
+   with (`--control-track-hover`: 1.4:1 in both themes) never held.
+   scrollbarThumbContrast.test.ts pins the pairing to that floor.
+
    The standard property, not `::-webkit-scrollbar`: the pseudo-element route
    swaps WebKit's overlay scrollbar for a custom one that is always visible and
    takes layout space, so it would buy a desktop detail by parking a permanent
@@ -68,7 +74,7 @@ body {
    older engines keep the UA scrollbar they draw today. `scrollbar-color` is
    inherited, so the root declaration reaches every scroller in the app. */
 :root {
-  scrollbar-color: var(--control-track-hover) transparent;
+  scrollbar-color: var(--icon-muted) transparent;
 }
 
 /* Shared first-paint width of the landscape Color Palette. The palette and
