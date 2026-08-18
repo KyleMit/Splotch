@@ -220,16 +220,17 @@ non-polyfill choices:
   [newest-runtime leg](https://github.com/KyleMit/Splotch/actions/runs/32110897903/job/95629895037)
   passed the same smoke flow. Together the runs establish that runtime download, disk headroom,
   simulator boot, and both builds are viable, but they do not establish that the app paints on iOS
-  16.4 because the driver fails before the flow. Revisit a hosted floor leg when Maestro's driver or
-  the runner toolchain changes; a longer timeout is not app validation unless the driver first
-  establishes its listener.
-* **Manual native iOS floor:** boot an iOS 16.4 iPhone simulator in Xcode, shut down other booted
-  iPhone simulators, and run `npm run test:ios`. The helper reuses the booted floor device and the
-  shared Maestro flow asserts that the production bundle paints `Settings`. For a physical iOS 16.4
-  device, use `npm run cap:ios`, select the device in Xcode, run the app, and verify the same
-  visible `Settings` control. Record the OS version and result with the release evidence. This is
-  the native OS-floor check; current desktop WebKit CI is only the automated engine-family
-  counterpart above.
+  16.4 because the driver fails before the flow. Revisit a hosted floor leg under
+  [#484](https://github.com/KyleMit/Splotch/issues/484) when Maestro's driver or the runner
+  toolchain changes; a longer timeout is not app validation unless the driver first establishes its
+  listener. The result is also recorded on the
+  [#249 umbrella](https://github.com/KyleMit/Splotch/issues/249#issuecomment-5325093457).
+* **Manual native iOS floor:** follow the
+  [manual iOS 16.4 floor gate](MOBILE/ios.md#manual-ios-164-floor-gate). That canonical runbook owns
+  the one-time 6.2 GB runtime acquisition, Maestro-free simulator/physical-device check, release
+  checklist, and GitHub Release-notes evidence destination. `npm run test:ios` is only an optional
+  diagnostic until Maestro can complete the flow on 16.4. This manual check is the native OS-floor
+  proof; current desktop WebKit CI is only the automated engine-family counterpart above.
 * **Native boot:** the tag-only Maestro smoke boots the shipped app on current Android API 33, the
   declared Android API 24 floor, and the newest iOS simulator. Android has current-and-floor boot
   coverage; hosted iOS has current-device coverage, with the 16.4 floor covered manually.

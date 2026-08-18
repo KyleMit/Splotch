@@ -106,16 +106,33 @@ npx @capacitor/assets generate --ios
 * **Native smoke test**: `npm run test:ios` boots a simulator, builds + installs, runs the Maestro
   flow, and tears down. No signing required. See the `testing` skill for Maestro installation and
   the full three-tier strategy.
-* **iOS 16.4 floor check**: boot an iOS 16.4 iPhone simulator in Xcode, shut down other booted
-  iPhone simulators, then run `npm run test:ios` so the helper reuses the floor device. For a
-  physical 16.4 device, use `npm run cap:ios`, select it in Xcode, run the app, and verify that
-  `Settings` paints. Hosted floor-runtime experiments reached a successful simulator boot and app
-  build but not a working Maestro XCTest driver; `docs/COMPATIBILITY.md` owns that evidence and
-  explains what current-WebKit CI does and does not prove.
 * **Release configuration**: the tagged deploy workflow runs `ios:build:release` before the Debug
   boot smoke. This catches Release-only Swift/compiler and project-setting failures under the
   simulator SDK without store signing; device-SDK-only code and settings remain covered by the local
   signed archive. The separate smoke keeps the established simulator boot signal unchanged.
+
+### Manual iOS 16.4 floor gate
+
+The required floor gate is Maestro-free because Maestro 2.4.0's XCTest driver did not start on iOS
+16.4 in either hosted experiment recorded in the [compatibility ledger](../COMPATIBILITY.md).
+
+1. For a simulator check, install the iOS 16.4 runtime once through Xcode → Settings → Components,
+   or run:
+
+   ```bash
+   xcodebuild -downloadPlatform iOS -buildVersion 16.4
+   ```
+
+   The Universal Simulator download is about 6.2 GB. A physical iOS 16.4 device does not need this
+   download.
+2. Run `npm run cap:ios`. In Xcode, select an iPhone simulator on iOS 16.4 or a connected physical
+   iOS 16.4 device, choose **Run ▶**, and verify that the `Settings` control paints.
+3. Record the tested OS version, simulator/device, and pass result in the tag's GitHub Release notes
+   before publishing its signed artifacts.
+
+`npm run test:ios` remains useful as an optional diagnostic after booting the floor simulator and
+shutting down other booted iPhones, but its Maestro driver is unreliable on iOS 16.4 and is not the
+required floor gate unless a successful run is captured.
 
 ## 4. Release checklist
 
@@ -135,6 +152,8 @@ npx @capacitor/assets generate --ios
 * [x] Icons + splash generated from `assets/` (`npx @capacitor/assets generate
   --ios`); the
       1024×1024 `AppIcon` doubles as the App Store icon.
+* [ ] Complete the [manual iOS 16.4 floor gate](#manual-ios-164-floor-gate), including its entry in
+      the tag's GitHub Release notes, before publishing signed artifacts.
 * [ ] Test on a real iPhone/iPad: AI flow (access code → image round-trip against
       `https://splotch.art`), offline airplane mode (AI button hides; Farm and installed coloring
       packs remain), disable Coloring Book during a background download and confirm it cancels while

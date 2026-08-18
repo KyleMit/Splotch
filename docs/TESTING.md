@@ -524,11 +524,12 @@ npm run test:ios              # one-shot on the iOS simulator (macOS + full Xcod
 > the SDK with `ANDROID_HOME`); the iOS helper is macOS-only and fails fast elsewhere. Maestro's
 > install location resolves in `tools/mobile/lib/maestro.mjs`.
 
-For a manual iOS floor check, boot an iOS 16.4 iPhone simulator, shut down any other booted iPhone
-simulators, and run `npm run test:ios`; the helper reuses that booted device. The tag workflow stays
-on the newest installed runtime because hosted experiments could download, boot, and build for iOS
-16.4 but Maestro's XCTest driver never became reachable there. `docs/COMPATIBILITY.md` records both
-experiments and the complementary current-WebKit CI coverage.
+For the required iOS floor check, follow the
+[manual iOS 16.4 floor gate](MOBILE/ios.md#manual-ios-164-floor-gate). Its primary path is
+Maestro-free; `npm run test:ios` is only an optional diagnostic on 16.4 because the hosted
+experiments could download, boot, and build for that runtime but Maestro's XCTest driver never
+became reachable. `docs/COMPATIBILITY.md` records both experiments and the complementary
+current-WebKit CI coverage.
 
 ### Prerequisites
 
