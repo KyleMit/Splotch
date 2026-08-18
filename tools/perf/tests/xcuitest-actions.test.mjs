@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
 import {
   ACTION_FRAME_MAX_GATE_MS,
+  IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
+  ACTION_FRAME_P95_GATE_MS,
   ACTION_SETTLE_TAIL_FRAMES,
   scoredActionFrameGaps,
   summarizeActionGroup,
@@ -450,6 +452,33 @@ describe('action-owned frame attribution', () => {
       Array.from({ length: ACTION_SETTLE_TAIL_FRAMES }, () => 16.7)
     );
     expect(summarizeActionGroup([sample]).passed).toBe(true);
+  });
+
+  it('honors a passed-in per-action P95 allowance without loosening the default', () => {
+    const overGate = Array.from({ length: 40 }, (_, i) =>
+      frame(i * 16.7, i < 2 ? ACTION_FRAME_P95_GATE_MS + 4 : 16.7)
+    );
+    const ledger = IOS_ACTION_FRAME_P95_ALLOWANCES_MS;
+    expect(ledger['open Settings']).toBeGreaterThan(ACTION_FRAME_P95_GATE_MS);
+    expect(summarizeActionGroup([action(overGate)], 'open Settings', ledger).passed).toBe(true);
+    expect(summarizeActionGroup([action(overGate)], 'close Settings', ledger).passed).toBe(false);
+  });
+
+  it('applies no allowance unless the caller passes one', () => {
+    const overGate = Array.from({ length: 40 }, (_, i) =>
+      frame(i * 16.7, i < 2 ? ACTION_FRAME_P95_GATE_MS + 4 : 16.7)
+    );
+    expect(summarizeActionGroup([action(overGate)], 'open Settings').passed).toBe(false);
+  });
+
+  it('fails an allowed action past its own allowance', () => {
+    const ledger = IOS_ACTION_FRAME_P95_ALLOWANCES_MS;
+    const overAllowance = Array.from({ length: 40 }, (_, i) =>
+      frame(i * 16.7, i < 3 ? ledger['open Settings'] + 1 : 16.7)
+    );
+    expect(summarizeActionGroup([action(overAllowance)], 'open Settings', ledger).passed).toBe(
+      false
+    );
   });
 
   it('does not let settle-idle frames dilute the gated P95', () => {

@@ -260,14 +260,58 @@
 </dialog>
 
 <style>
+  /* A closed <dialog> is display: none by UA rule, which would leave the
+     prewarmed pane's first style and layout unpaid until showModal() — the
+     dominant share of a first-open long task that measured ~2× a reopen's
+     under 4× CPU throttle. Keeping the closed card laid out but invisible
+     pays that at idle instead: visibility excludes it from paint, hit
+     testing, focus, and the accessibility tree, and the box matches the open
+     state's (same fixed centering), so the open edge reuses it all. Opacity
+     was measured as the hiding mechanism and rejected: WebKit keeps painting
+     inside an opacity-0 card, which moved the paint bill to the idle prewarm
+     slices and the close edge on the physical iPad, and bought the open edge
+     ~3 ms. The paint the card still owes on opening is staged instead — see
+     WideShell's presentation watermark. npm run perf:web:settings scores
+     first open against reopen to keep the residual visible. */
+  .settings-modal:not([open]) {
+    display: block;
+    visibility: hidden;
+  }
+
   .settings-modal {
+    --card-height-cap: 85vh;
+
+    /* Where 85vh outruns the content: enough height for the wide shell's
+       sidebar to show its whole section list (through About — header + rows +
+       pane padding measured ~670px at the large-tablet type step) with a
+       little air, and no more. Past that, extra height is just empty pane
+       below the reading content. settings-mount.spec.ts holds this ceiling to
+       the sidebar still fitting whole, so a new section fails the spec rather
+       than silently clipping the list. */
+    --wide-card-height-ceiling: 720px;
+
     width: min(92vw, 500px);
-    max-height: 85vh;
+    max-height: var(--card-height-cap);
     overflow: hidden;
   }
 
   .settings-modal.wide {
     width: min(94vw, 860px);
+  }
+
+  /* The wide pane stacks all eleven sections, so its settled content overflows
+     both height bounds on every viewport that selects this shell — the settled
+     card height is always this min(). Claiming it up front keeps the card from
+     ratcheting taller as the fill mounts each section behind the fly-in. Scoped
+     off the compact landscape-phone shell, whose short quick-toggle card stays
+     content-sized (and whose selector must also keep winning the width rules
+     above on equal specificity). */
+  .settings-modal.wide:not(.compact) {
+    height: min(var(--card-height-cap), var(--wide-card-height-ceiling));
+  }
+
+  .settings-modal.wide:not(.compact) .settings-content {
+    height: 100%;
   }
 
   /* Landscape phone: wider than the portrait card (width is the plentiful
@@ -312,7 +356,7 @@
   .settings-content {
     display: flex;
     flex-direction: column;
-    max-height: 85vh;
+    max-height: var(--card-height-cap);
     position: relative;
     overflow: hidden;
   }

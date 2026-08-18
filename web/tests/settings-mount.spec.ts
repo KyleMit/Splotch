@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   gotoApp,
   headingOffsetFromPaneTop,
+  openSettingsModal,
   SECTION_LANDED_MAX_PX,
   SETTINGS_FILL_FRAME_BUDGET,
   settleSettingsPane,
@@ -23,22 +24,46 @@ import {
 // `sections.ts` reaches the rune modules behind the hub subtitles, so a spec
 // can't load it, and every row is in the column from the first frame anyway.
 
-/** Section bodies in the pane on each frame, from the frame the pane appears. */
+/**
+ * Section bodies in the pane on each frame, from the frame the pane appears —
+ * plus which sections that first frame held, and the dialog's layout height
+ * (`clientHeight`, so the fly-in transform cannot skew the reading) per frame.
+ */
 function paneFillPerFrame(page: Page, frameLimit: number) {
   return page.evaluate(
     (frameLimit) =>
-      new Promise<{ rows: number; sections: number[] }>((resolve) => {
+      new Promise<{
+        rows: number;
+        sections: number[];
+        firstFrameSectionIds: string[];
+        dialogHeights: number[];
+        viewportHeight: number;
+      }>((resolve) => {
         const sections: number[] = [];
+        const dialogHeights: number[] = [];
+        let firstFrameSectionIds: string[] = [];
         const rows = () => document.querySelectorAll('.settings-nav .toc-row').length;
         const step = () => {
           const pane = document.querySelector('.settings-pane');
           if (!pane) {
             document.querySelector<HTMLElement>('#settingsButton')!.click();
           } else {
+            if (!sections.length) {
+              firstFrameSectionIds = [
+                ...pane.querySelectorAll<HTMLElement>('.settings-section'),
+              ].map((el) => el.dataset.section ?? '');
+            }
             sections.push(pane.querySelectorAll('.settings-section').length);
+            dialogHeights.push(document.querySelector('#settingsModal')!.clientHeight);
           }
           if (sections.at(-1) === rows() || sections.length >= frameLimit) {
-            resolve({ rows: rows(), sections });
+            resolve({
+              rows: rows(),
+              sections,
+              firstFrameSectionIds,
+              dialogHeights,
+              viewportHeight: window.innerHeight,
+            });
           } else {
             requestAnimationFrame(step);
           }
@@ -63,6 +88,148 @@ test('the pane fills a section at a time rather than all at once', async ({ page
   expect(sections.at(-1)).toBe(rows);
   // A watermark, never lowered — nothing that arrived is taken back out.
   expect(sections).toEqual([...sections].sort((a, b) => a - b));
+});
+
+test('the opening frame already holds the above-the-fold prefix', async ({ page }) => {
+  // Appearance and Sound are both above the fold on the wide shell's default
+  // landing, so a Sound body arriving with the fill reads as a pop-in in content
+  // the parent is already looking at. The staging assertions above are
+  // deliberately generic about counts, so they would stay green if the opening
+  // watermark slid back to one section — this pins the prefix by name. Asserted
+  // on the leading pair rather than the exact list: on a starved worker the
+  // first *sampled* frame can land after the fill has begun, which only ever
+  // appends sections past the prefix.
+  await gotoApp(page);
+
+  const { firstFrameSectionIds } = await paneFillPerFrame(page, SETTINGS_FILL_FRAME_BUDGET);
+
+  expect(firstFrameSectionIds.slice(0, 2)).toEqual(['appearance', 'sound']);
+});
+
+// SettingsModal's --card-height-cap and --wide-card-height-ceiling, restated
+// here as tests deliberately restate boundary values.
+const CARD_HEIGHT_CAP_FRACTION = 0.85;
+const CARD_HEIGHT_CEILING_PX = 720;
+
+test('the wide card opens at its settled height and holds it through the fill', async ({
+  page,
+}) => {
+  // The settled pane always overflows the card's height bounds, so the wide
+  // card claims min(85vh, ceiling) up front (SettingsModal's --card-height-cap
+  // and --wide-card-height-ceiling) — a content-driven height would ratchet
+  // taller as each section mounts, a layout jump chasing the staged fill.
+  // Every sampled frame must agree, and the shared value must be the bound
+  // itself rather than some other constant.
+  await gotoApp(page);
+
+  const { dialogHeights, viewportHeight } = await paneFillPerFrame(
+    page,
+    SETTINGS_FILL_FRAME_BUDGET
+  );
+
+  // Fractional-pixel rounding is the only slack: clientHeight is an integer.
+  const boundPx = Math.min(viewportHeight * CARD_HEIGHT_CAP_FRACTION, CARD_HEIGHT_CEILING_PX);
+  expect(new Set(dialogHeights).size).toBe(1);
+  expect(Math.abs(dialogHeights[0]! - boundPx)).toBeLessThanOrEqual(1);
+});
+
+test.describe('on a tall desktop viewport', () => {
+  test.use({ viewport: { width: 1280, height: 1400 } });
+
+  test('the card clamps to the sidebar ceiling and the whole section list shows', async ({
+    page,
+  }) => {
+    // 85vh here would tower past the reading content; the ceiling grants the
+    // sidebar its full section list (through About) plus a little air, and no
+    // more. Both halves matter: the height is the ceiling, and the nav column
+    // holds no more list than it can show — the pair is the drift guard that
+    // fails when a new section outgrows the ceiling instead of silently
+    // clipping the list behind a scroll.
+    await gotoApp(page);
+
+    const { dialogHeights } = await paneFillPerFrame(page, SETTINGS_FILL_FRAME_BUDGET);
+
+    expect(new Set(dialogHeights).size).toBe(1);
+    expect(dialogHeights[0]).toBe(CARD_HEIGHT_CEILING_PX);
+    const navFits = await page
+      .locator('.settings-nav')
+      .evaluate((nav) => nav.scrollHeight <= nav.clientHeight);
+    expect(navFits).toBe(true);
+  });
+});
+
+test('idle time prewarms the pane so a first open finds it whole', async ({ page }) => {
+  // The dialog mounts closed in the idle pump's final slice and the wide pane
+  // then fills one section per idle slice (ADR-0049), so a parent's first tap —
+  // typically minutes after boot — pays what a reopen pays. Deliberately no tap
+  // until the prewarm finishes: the tap-first path is what every other test
+  // here exercises.
+  await gotoApp(page);
+
+  await expect
+    .poll(
+      async () => {
+        const rows = await page.locator('.settings-nav .toc-row').count();
+        const sections = await page.locator('.settings-pane .settings-section').count();
+        return rows > 0 && rows === sections;
+      },
+      { timeout: 20_000 }
+    )
+    .toBe(true);
+  // Prewarming must never show the dialog — it fills behind a closed card.
+  await expect(page.locator('#settingsModal[open]')).toHaveCount(0);
+
+  await openSettingsModal(page);
+  await expect(page.locator('.settings-pane')).toHaveAttribute('aria-busy', 'false');
+});
+
+test('a quick reopen without requestIdleCallback opens paint-clean', async ({ page }) => {
+  // iOS has no requestIdleCallback, so the after-close restaging drains on the
+  // cooperative timer fallback — far slower than a parent's close-then-reopen.
+  // The opening transition therefore drops the presentation watermark itself,
+  // in the same flush as the flip, so showModal never paints leftover sections
+  // (the physical-iPad open gate scored exactly that paint). Asserted on the
+  // first frame the reopened dialog reports [open]: at most the above-the-fold
+  // prefix may be presented there.
+  await page.addInitScript(() => {
+    (window as { requestIdleCallback?: unknown }).requestIdleCallback = undefined;
+  });
+  await gotoApp(page);
+  await openSettingsModal(page);
+  // Let the reveal pump finish, so a stale watermark would be at its maximum.
+  await expect
+    .poll(async () => {
+      const rows = await page.locator('.settings-nav .toc-row').count();
+      const presented = await page.locator('.settings-pane .settings-section:not(.staged)').count();
+      return rows > 0 && presented === rows;
+    })
+    .toBe(true);
+
+  const QUICK_REOPEN_MS = 500;
+  const presentedAtReopen = await page.evaluate(
+    (quickReopenMs) =>
+      new Promise<number>((resolve) => {
+        document.querySelector<HTMLElement>('.settings-close')!.click();
+        setTimeout(() => {
+          document.querySelector<HTMLElement>('#settingsButton')!.click();
+          const step = () => {
+            const dialog = document.querySelector('#settingsModal');
+            if (!dialog?.hasAttribute('open')) {
+              requestAnimationFrame(step);
+              return;
+            }
+            resolve(
+              document.querySelectorAll('.settings-pane .settings-section:not(.staged)').length
+            );
+          };
+          requestAnimationFrame(step);
+        }, quickReopenMs);
+      }),
+    QUICK_REOPEN_MS
+  );
+  // The fold may already be presented by the landing frame callback; anything
+  // past it is a leftover the flip would have painted.
+  expect(presentedAtReopen).toBeLessThanOrEqual(2);
 });
 
 // Frames to keep watching the pane after it has said it is ready. A nested pump

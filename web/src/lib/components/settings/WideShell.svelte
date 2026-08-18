@@ -6,6 +6,7 @@
   import ParentCenterLock from './ParentCenterLock.svelte';
   import { SECTIONS, sectionHeading, type SectionId } from './sections';
   import { settingsModal } from '$lib/state/ui.svelte';
+  import { scheduleIdle } from '$lib/idle';
   import { pinchTextZoom } from '$lib/actions/pinchTextZoom.svelte';
   import { registerElement } from '$lib/actions/elementRegistry';
   import { requireParentalGate, requiresParentalGate } from '$lib/state/parentalGate.svelte';
@@ -44,12 +45,39 @@
   // in the pane at all, never a placeholder.
   const SECTIONS_PER_FRAME = 1;
 
-  // How many sections, from the first, currently exist in the pane — one frame's
-  // worth to start with, since the opening tap is itself the first frame. A
-  // watermark, never lowered: the dialog is closed rather than unmounted, so a
-  // reopen keeps whatever the last open finished mounting and pays nothing again.
-  let mountedCount = $state(SECTIONS_PER_FRAME);
+  // What the opening tap itself constructs. Not one frame's worth: the default
+  // landing shows Appearance *and* Sound above the fold on the viewports that
+  // select this shell, and content the parent is already looking at arriving
+  // with the fill reads as a glitch, not as the pane growing off-screen below.
+  // The long task issue #910 measured was all eleven bodies together; these two
+  // are a handful of toggle/slider rows, well inside the tap's budget.
+  const OPENING_SECTION_COUNT = SECTIONS.findIndex((section) => section.id === 'sound') + 1;
+
+  // How many sections, from the first, currently exist in the pane. Mounted on
+  // an open tap it starts at the above-the-fold prefix — the opening tap is
+  // itself the first frame; mounted closed by the idle pump it starts empty, so
+  // every prewarm slice is one section's construction and nothing more (the
+  // physical-iPad idle gate scores each slice as a frame). A watermark, never
+  // lowered: the dialog is closed rather than unmounted, so a reopen keeps
+  // whatever the last open finished mounting and pays nothing again.
+  let mountedCount = $state(settingsModal.open ? OPENING_SECTION_COUNT : 0);
   const mountedSections = $derived(SECTIONS.slice(0, mountedCount));
+
+  // How many sections, from the first, are *presented* — painted rather than
+  // merely laid out. Layout must be whole for the scrollspy and jump
+  // arithmetic (a section is laid out in full or not in the pane at all), but
+  // paint is stageable: revealing the entire prewarmed pane on the open edge
+  // put its whole first paint inside the fly-in's frames, which the physical
+  // iPad scored at 33 ms P95 against the 20 ms gate. Sections at or past this
+  // count keep their geometry and lose only their pixels (visibility), so
+  // presentation can stage per frame the way the mount fill always has —
+  // that staged path scored 17 ms P95 on the same device. Zero while closed,
+  // deliberately: presenting even the fold in the frame that shows the dialog
+  // stacked its paint on showModal's own work and kept that frame over the
+  // gate, so the open's flip carries no paint at all and the fold arrives one
+  // frame later — inside the fly-in's first moments, where the card is still
+  // near its launch-button scale.
+  let presentedCount = $state(0);
 
   // Attaching the last section is not the same as the pane being whole. What's
   // New reveals its release-note blocks over frames of its own — ADR-0061 chose
@@ -127,6 +155,16 @@
     return true;
   }
 
+  // Presenting implies existing: raising the presentation watermark mounts the
+  // run first, so the two counters cannot disagree about a section's state.
+  function presentAtLeast(count: number): boolean {
+    const next = Math.min(count, SECTIONS.length);
+    mountAtLeast(next);
+    if (untrack(() => presentedCount) >= next) return false;
+    presentedCount = next;
+    return true;
+  }
+
   // The card flies in over its own run of frames, and the fill would otherwise
   // spend them: a section body too big to construct inside one frame drops one
   // of the animation's. So the fill waits for the card to land — nothing may
@@ -138,7 +176,15 @@
     let cancelled = false;
     const flyIn = paneEl?.closest('dialog')?.getAnimations() ?? [];
     Promise.all(flyIn.map((animation) => animation.finished.catch(() => undefined))).then(() => {
-      if (!cancelled) stopPump = pumpRemainingSections();
+      if (cancelled) return;
+      // One frame of air between the animation's end and the first reveal:
+      // animationend's own style/compositor cleanup shares the resolution
+      // frame, and stacking the heaviest section's first paint on top of it is
+      // what pushed that frame past the physical iPad's max-frame gate.
+      const breather = requestAnimationFrame(() => {
+        if (!cancelled) stopPump = pumpRemainingSections();
+      });
+      stopPump = () => cancelAnimationFrame(breather);
     });
     return () => {
       cancelled = true;
@@ -149,14 +195,17 @@
   // Each frame asks for one more than the watermark currently holds, rather than
   // counting up privately: a jump can raise the watermark mid-fill, and a
   // private counter would then find nothing left to do and stop the fill for
-  // good, stranding every section below the one that was jumped to.
+  // good, stranding every section below the one that was jumped to. Driven by
+  // the presentation watermark, which mounts what it needs on the way: on a tap
+  // that beat the prewarm each step constructs and paints one section, and on a
+  // prewarmed pane each step is one section's reveal.
   function pumpRemainingSections(): () => void {
     let frame = 0;
-    const mountNext = () => {
-      const next = untrack(() => mountedCount) + SECTIONS_PER_FRAME;
-      frame = mountAtLeast(next) ? requestAnimationFrame(mountNext) : 0;
+    const presentNext = () => {
+      const next = untrack(() => presentedCount) + SECTIONS_PER_FRAME;
+      frame = presentAtLeast(next) ? requestAnimationFrame(presentNext) : 0;
     };
-    frame = requestAnimationFrame(mountNext);
+    frame = requestAnimationFrame(presentNext);
     return () => {
       if (frame) cancelAnimationFrame(frame);
     };
@@ -261,9 +310,29 @@
   // offsets the parent left them at — which would reopen with the landing
   // section highlighted while the pane still shows wherever they stopped
   // reading. A deep-linked section scrolls into place instead of swapping in.
+  // Whether the overlay was open the last time the landing effect ran.
+  // Deliberately untracked (SettingsModal's own latch, for the same reason):
+  // only the open *transition* may drop the presentation watermark — a
+  // deep-link landing while already open must never blank the visible pane.
+  let landingWasOpen = false;
+
   $effect(() => {
-    if (!settingsModal.open) return;
+    if (!settingsModal.open) {
+      landingWasOpen = false;
+      return;
+    }
+    const opening = !landingWasOpen;
+    landingWasOpen = true;
     const landing = landingSection;
+    // A quick close-then-reopen can beat the after-close restaging — on the
+    // shipping iOS path (no requestIdleCallback) the cooperative fallback
+    // drains one section per ~quarter second, so a reopen half a second later
+    // still finds most sections presented, and showModal's flip would repaint
+    // them all at once (the physical-iPad open gate scored exactly that
+    // paint). Dropping the watermark here, in the same flush as the flip,
+    // guarantees the open frame paints nothing regardless of how far the
+    // restaging got; the frame callback below then presents the fold.
+    if (opening) presentedCount = 0;
     // Landing on Parent Center is only ever requested by a solved challenge (the
     // gate's own way into the policy editor), so that landing arrives already
     // unlocked — asking again for the section the solve was spent on would make
@@ -273,15 +342,22 @@
     spiedSection = landing;
     // A section's offset depends only on what stacks above it, so mounting the
     // run up to the landing section is what makes the landing scroll below land
-    // on a true offset. For the default landing that is one section; a deep link
-    // pays for its own prefix.
-    mountAtLeast(sectionIndex(landing) + 1);
+    // on a true offset. Presentation waits for the frame callback below.
+    mountAtLeast(Math.max(OPENING_SECTION_COUNT, sectionIndex(landing) + 1));
     let stopFill: (() => void) | undefined;
-    // A still-closed dialog is `display: none`, so both scrollers report 0 and
-    // ignore a scrollTo — and the browser then restores the offsets it kept the
-    // moment the card gets a layout box. Waiting a frame is what makes the reset
-    // stick rather than be overwritten.
+    // The open flip promotes the card to the top layer and moves focus into
+    // it, either of which can overwrite a scroll aimed at the same moment —
+    // and on a tap that beat the prewarm the card may only now be getting its
+    // layout box, where the browser restores the offsets it kept. Waiting a
+    // frame is what makes the reset stick rather than be overwritten. (A
+    // prewarmed card is laid out while closed — SettingsModal keeps it
+    // `visibility: hidden` rather than `display: none` — so its offsets are
+    // real before the open, too.)
     const frame = requestAnimationFrame(() => {
+      // The landing view paints here, one frame after the flip that showed the
+      // dialog: the card is still near its launch scale, so the fold arriving
+      // a frame late is invisible, and the open's own frame stays paint-free.
+      presentAtLeast(Math.max(OPENING_SECTION_COUNT, sectionIndex(landing) + 1));
       navEl?.scrollTo({ top: 0 });
       revealNavRow(landing, 'auto');
       // A deep-linked landing is a jump like any other, and pays the same way:
@@ -296,6 +372,30 @@
     };
   });
 
+  // The dialog mounts closed in the idle pump's last slice (ADR-0049), so the
+  // idle time before a first open pays for the rest of the pane: one section
+  // per idle slice, the open-time fill's own shape on the idle scheduler
+  // instead of frames. A first open after this finds every section mounted and
+  // pays what a reopen pays. The moment the dialog opens, the open path owns
+  // the fill — this effect re-runs and cancels its pending slice. Reading
+  // `mountedCount` (tracked) is what re-arms the next slice after each mount.
+  $effect(() => {
+    if (settingsModal.open || mountedCount >= SECTIONS.length) return;
+    return scheduleIdle(() => mountAtLeast(untrack(() => mountedCount) + 1));
+  });
+
+  // After a close, presentation returns to its closed steady state — every
+  // section staged — one section per idle slice. Re-hiding on the close frame
+  // itself is what the physical iPad's close gate scored (21 ms P95); at idle
+  // each re-hide is one small restyle, and the next open's flip then carries
+  // no paint at all.
+  $effect(() => {
+    if (settingsModal.open || presentedCount <= 0) return;
+    return scheduleIdle(() => {
+      presentedCount = Math.max(0, untrack(() => presentedCount) - 1);
+    });
+  });
+
   // The last word on a pending jump, and the end of it. Until the pane is whole
   // there may not be enough content below the target to scroll it into place at
   // all — the arithmetic is right and the scroll lands clamped — so the jump
@@ -307,7 +407,13 @@
     pendingJump = null;
   });
 
+  // Armed only while the dialog is open: a closed pane has no reader for the
+  // spy to follow, and the idle prewarm grows the closed (hidden, or on a
+  // pre-prewarm tap display: none) pane section by section — a growth tick
+  // there would elect off offsets no one is reading and park the highlight
+  // wherever it lands until the open reset.
   $effect(() => {
+    if (!settingsModal.open) return;
     const pane = paneEl;
     const content = zoomTarget;
     if (!pane || !content) return;
@@ -374,8 +480,10 @@
   async function jumpToSection(id: SectionId, trigger: HTMLElement) {
     // Every row is in the table of contents from the first frame, so one can be
     // tapped while the pane is still filling in behind it — the section it names
-    // has to exist before there is an offset to scroll to.
-    if (mountAtLeast(sectionIndex(id) + 1)) await tick();
+    // has to exist before there is an offset to scroll to, and be painted
+    // before there is anything to read at the landing (an explicit jump
+    // presents its whole run in one frame; the parent asked to go there).
+    if (presentAtLeast(sectionIndex(id) + 1)) await tick();
     const behavior = jumpBehavior();
     // Only a mid-fill jump is left pending: on a whole pane the offsets this
     // reads are already final, and re-aiming later would fight the parent's own
@@ -416,9 +524,10 @@
     bind:this={paneEl}
   >
     <div class="settings-zoom" bind:this={zoomTarget}>
-      {#each mountedSections as section (section.id)}
+      {#each mountedSections as section, index (section.id)}
         <section
           class="settings-section"
+          class:staged={index >= presentedCount}
           data-section={section.id}
           aria-labelledby={sectionHeadingId(section.id)}
           use:registerElement={registerIn(sectionEls, section.id)}
@@ -499,6 +608,15 @@
 
   .settings-section + .settings-section {
     margin-top: var(--section-gap);
+  }
+
+  /* Staged presentation: laid out, not painted. Geometry stays whole — the
+     scrollspy and jump arithmetic keep reading true offsets — while the
+     pixels arrive one section per frame after the fly-in lands, and leave the
+     same way at idle after a close. visibility also parks the section out of
+     hit testing, focus, and the accessibility tree until it is presented. */
+  .settings-section.staged {
+    visibility: hidden;
   }
 
   .settings-pane-title {

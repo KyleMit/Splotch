@@ -70,15 +70,16 @@
   // Filled one at a time by the idle mount pump (see boot/bootHiddenOverlays.ts).
   let overlays = $state<Component[]>([]);
 
-  // The Settings dialog is the one overlay too heavy even for an idle
-  // slice (~200 ms mounted under a 4× throttle), so it waits for its first
-  // open — the tap that flips settingsModal.open latches the mount, and the
-  // dialog's modalDialog $effect shows it as soon as it lands. The corner
+  // The Settings dialog mounts at whichever comes first: the idle pump's final
+  // slice (its staged wide pane makes that slice a shell plus two light
+  // sections, then prewarms the rest one section per idle slice — ADR-0049),
+  // or a tap that beats the queue — settingsModal.open latches the mount and
+  // the dialog's modalDialog $effect shows it as soon as it lands. The corner
   // button that opens it (SettingsButton) stays eagerly mounted above.
   let SettingsModal = $state<Component | null>(null);
-  let settingsModalEverOpened = $state(false);
+  let settingsModalMounted = $state(false);
   $effect(() => {
-    if (settingsModal.open) settingsModalEverOpened = true;
+    if (settingsModal.open) settingsModalMounted = true;
   });
 
   onMount(() => {
@@ -93,7 +94,8 @@
     const teardowns = [
       mountBootHiddenOverlays(
         (overlay) => (SettingsModal = overlay),
-        (overlay) => (overlays = [...overlays, overlay])
+        (overlay) => (overlays = [...overlays, overlay]),
+        () => (settingsModalMounted = true)
       ),
       installContextMenuGuard(),
       installWakeLock(),
@@ -119,6 +121,6 @@
 {#each overlays as Overlay (Overlay)}
   <Overlay />
 {/each}
-{#if SettingsModal && settingsModalEverOpened}
+{#if SettingsModal && settingsModalMounted}
   <SettingsModal />
 {/if}

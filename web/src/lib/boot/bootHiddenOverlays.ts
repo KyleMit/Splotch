@@ -6,11 +6,15 @@ import { scheduleIdle } from '$lib/idle';
 // that are invisible until a tap or a few strokes later. One overlay per idle
 // callback: mounting them all at once just relocates a long task to idle, where
 // it would jank a stroke already in progress. SettingsModal is handed back
-// separately — it's too heavy even for an idle slice and waits for its first
-// open.
+// separately: its component arrives with the chunk so a tap that beats the
+// idle queue can still mount it at once, and `onSettingsPrewarm` fires as the
+// queue's own final slice — the heaviest overlay mounts last, after every
+// cheap one is in, and its wide pane then keeps prewarming a section per idle
+// slice of its own (WideShell; ADR-0049).
 export function mountBootHiddenOverlays(
   onSettingsModal: (overlay: Component) => void,
-  onOverlay: (overlay: Component) => void
+  onOverlay: (overlay: Component) => void,
+  onSettingsPrewarm: () => void
 ): () => void {
   // The cancel handle scheduleIdle returns covers the not-yet-fired idle
   // callback; it can't reach an already-in-flight import().then continuation,
@@ -35,9 +39,13 @@ export function mountBootHiddenOverlays(
         let mounted = 0;
         const mountNext = () => {
           if (stopped) return;
+          if (mounted === queue.length) {
+            onSettingsPrewarm();
+            return;
+          }
           onOverlay(queue[mounted]);
           mounted += 1;
-          if (mounted < queue.length) scheduleIdle(mountNext);
+          scheduleIdle(mountNext);
         };
         mountNext();
       })
