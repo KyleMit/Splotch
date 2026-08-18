@@ -7,10 +7,11 @@ live-reload, and clean commands stay inline in `package.json`, as documented in
 
 ## Entry points
 
-| Entry point                    | Public command                      | Purpose                                         |
-| ------------------------------ | ----------------------------------- | ----------------------------------------------- |
-| `run-simulator-smoke-test.mjs` | `npm run test:ios [-- --skip-sync]` | Build, install, and smoke an iOS simulator      |
-| `open-release-artifacts.mjs`   | `npm run ios:open`                  | Reveal `ios/App/build/ipa/` in the file manager |
+| Entry point                    | Public command                                       | Purpose                                         |
+| ------------------------------ | ---------------------------------------------------- | ----------------------------------------------- |
+| `run-simulator-smoke-test.mjs` | `npm run test:ios [-- --skip-sync] [--runtime 16.4]` | Build, install, and smoke an iOS simulator      |
+| `print-simulator-floor.mjs`    | CI helper                                            | Print the Xcode project's iOS deployment target |
+| `open-release-artifacts.mjs`   | `npm run ios:open`                                   | Reveal `ios/App/build/ipa/` in the file manager |
 
 The smoke runner requires macOS, full Xcode with an available iPhone simulator, installed project
 dependencies, and Maestro. It reuses a booted simulator when possible, otherwise boots the newest
@@ -18,7 +19,10 @@ available iPhone, performs `cap:sync`, builds and installs the debug app, runs t
 flow, and shuts down only a simulator it started. Toolchain, build, install, Maestro, and simulator
 errors exit nonzero after cleanup. Pass `--skip-sync` only when an immediately preceding command
 already synchronized the native projects; the tagged deploy workflow uses it after
-`ios:build:release` so its Release and Debug builds share one production web bundle.
+`ios:build:release` so its Release and Debug builds share one production web bundle. Pass
+`--runtime <major.minor>` to restrict selection to that installed iOS runtime; without it, local
+runs keep the newest-runtime behavior. The deploy workflow derives the floor from the Xcode project
+with `print-simulator-floor.mjs` rather than carrying a second version literal.
 
 `tests/ios-privacy-manifest.test.mjs` guards the committed native privacy declarations. Keep
 simulator and Xcode lifecycle behavior here, shared Maestro execution at `../lib/`, and all native

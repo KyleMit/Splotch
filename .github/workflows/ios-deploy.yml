@@ -24,7 +24,7 @@ jobs:
     name: Maestro launch smoke test (iOS simulator)
     # macOS runners ship full Xcode and pre-installed iPhone simulators.
     runs-on: macos-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     permissions:
       contents: read
       issues: write
@@ -32,6 +32,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - uses: ./.github/actions/setup-pnpm
+
+      - name: Read iOS simulator floor
+        id: runtime
+        run: echo "version=$(node tools/mobile/ios/print-simulator-floor.mjs)" >> "$GITHUB_OUTPUT"
+
+      - name: Install iOS floor simulator runtime
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          runtime="${{ steps.runtime.outputs.version }}"
+          df -h /
+          xcodebuild -downloadPlatform iOS -buildVersion "$runtime"
+          df -h /
+          xcrun simctl list runtimes
 
       - name: Compile iOS Release app without store signing
         run: npm run ios:build:release
@@ -44,7 +57,12 @@ jobs:
       # same flow the Android smoke runs — then shuts the simulator down.
       - name: Run iOS simulator smoke test
         id: smoke
-        run: npm run test:ios -- --skip-sync
+        run: |
+          args=(--skip-sync)
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            args+=(--runtime "${{ steps.runtime.outputs.version }}")
+          fi
+          npm run test:ios -- "${args[@]}"
 
       - name: Upload Maestro report
         id: report

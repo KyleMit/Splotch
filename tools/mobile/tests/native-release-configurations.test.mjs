@@ -52,8 +52,9 @@ describe('native release configuration gates', () => {
     expect(releaseScript).not.toContain('local.xcconfig');
     expect(releaseScript).not.toContain('DEVELOPMENT_TEAM');
     expect(iosWorkflow).toContain('run: npm run ios:build:release');
-    expect(iosWorkflow).toContain('run: npm run test:ios -- --skip-sync');
-    expect(iosSmokeRunner).toContain("const SKIP_SYNC_FLAG = '--skip-sync';");
+    expect(iosWorkflow).toContain('args=(--skip-sync)');
+    expect(iosWorkflow).toContain('npm run test:ios -- "${args[@]}"');
+    expect(iosSmokeRunner).toContain("'skip-sync': { type: 'boolean' }");
     expect(iosSmokeRunner).toContain("if (!skipSync) await sh('npm run cap:sync');");
   });
 });
