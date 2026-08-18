@@ -86,7 +86,7 @@ describe('iOS privacy manifest', () => {
 
   it('matches the reviewed iOS permission usage descriptions', () => {
     const descriptions = Object.fromEntries(
-      [...info.matchAll(/<key>(NS[^<]+UsageDescription)<\/key>\s*<string>([^<]+)<\/string>/g)].map(
+      [...info.matchAll(/<key>(NS[^<]+UsageDescription)<\/key>\s*<string>([^<]*)<\/string>/g)].map(
         ([, key, value]) => [key, value]
       )
     );

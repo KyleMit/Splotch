@@ -1,5 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import OpenAI from 'openai';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import { GENERATION_JOB_TTL_MS } from '../../../web/src/lib/ai/limits.ts';
 import { FREE_GENERATION_LIMIT } from '../../../web/src/lib/freeGenerations.ts';
@@ -14,6 +15,49 @@ const ANDROID_LISTING_PATH = 'store-assets/STORE-LISTING-ANDROID.md';
 const PRIVACY_PAGE_PATH = 'web/src/routes/privacy/+page.svelte';
 const NATIVE_DOC_PATH = 'docs/MOBILE/native.md';
 const API_DOC_PATH = 'docs/API.md';
+const IMAGE_REPORT_ADR_PATH = 'docs/adrs/0104-retain-reported-ai-images-for-thirty-days.md';
+const GENERATION_JOB_ADR_PATH = 'docs/adrs/0115-background-generation-jobs.md';
+
+function filesUnder(directory) {
+  return readdirSync(new URL(`../../../${directory}/`, import.meta.url), { withFileTypes: true })
+    .flatMap((entry) => {
+      const path = `${directory}/${entry.name}`;
+      return entry.isDirectory() ? filesUnder(path) : [path];
+    })
+    .sort();
+}
+
+function shippedServerSourcePaths() {
+  const serverRoutes = filesUnder('web/src/routes').filter(
+    (path) => path.endsWith('/+server.ts') || path.endsWith('/+page.server.ts')
+  );
+  return [
+    ...filesUnder('web/src/lib/server').filter(
+      (path) => path.endsWith('.ts') && !path.endsWith('.test.ts')
+    ),
+    ...serverRoutes,
+    ...filesUnder('netlify/functions').filter((path) => path.endsWith('.ts')),
+    'web/src/hooks.server.ts',
+  ];
+}
+
+function absoluteUrlHosts(path) {
+  const source = ts.createSourceFile(path, read(path), ts.ScriptTarget.Latest);
+  const hosts = [];
+  const recordHosts = (value) => {
+    for (const match of value.matchAll(/https?:\/\/[^\s'"`<>()]+/g)) {
+      hosts.push(new URL(match[0]).host);
+    }
+  };
+  const visit = (node) => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))
+      recordHosts(node.text);
+    if (ts.isTemplateExpression(node)) recordHosts(node.head.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return hosts;
+}
 
 describe('privacy disclosure consistency', () => {
   const iosListing = read(IOS_LISTING_PATH);
@@ -35,11 +79,20 @@ describe('privacy disclosure consistency', () => {
     expect(retentionIds.length).toBeGreaterThan(0);
     expect(hostIds.length).toBeGreaterThan(0);
     for (const host of privacyInventory.outboundHosts) {
+      expect(host.dataCategoryIds.length, host.id).toBeGreaterThan(0);
       expect(
         host.dataCategoryIds.every((id) => categoryIds.includes(id)),
         host.id
       ).toBe(true);
       expect(host.implementationEvidence.length, host.id).toBeGreaterThan(0);
+    }
+    for (const categoryId of categoryIds) {
+      expect(
+        privacyInventory.outboundHosts.some(({ dataCategoryIds }) =>
+          dataCategoryIds.includes(categoryId)
+        ),
+        categoryId
+      ).toBe(true);
     }
   });
 
@@ -67,6 +120,10 @@ describe('privacy disclosure consistency', () => {
     expect(androidListing).toContain(`after ${reportDays} days`);
     expect(compact(nativeDoc)).toContain(`expire after ${jobMinutes} minutes`);
     expect(compact(apiDoc)).toContain(`expires after ${jobMinutes} minutes`);
+    expect(compact(read(IMAGE_REPORT_ADR_PATH))).toContain(
+      `The retention window is ${reportDays} days.`
+    );
+    expect(compact(read(GENERATION_JOB_ADR_PATH))).toContain(`${jobMinutes}-minute ceiling`);
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'ordinary-generation-job')
         .boundary
@@ -95,6 +152,19 @@ describe('privacy disclosure consistency', () => {
     });
   }
 
+  it('inventories every absolute URL host in shipped server source', () => {
+    const inventoryHosts = new Set(
+      privacyInventory.outboundHosts.flatMap(({ productionHosts }) => productionHosts)
+    );
+    const undeclared = shippedServerSourcePaths().flatMap((path) =>
+      absoluteUrlHosts(path)
+        .filter((host) => !inventoryHosts.has(host))
+        .map((host) => ({ host, path }))
+    );
+
+    expect(undeclared).toEqual([]);
+  });
+
   it('pins fixed production hosts without freezing same-origin development and preview hosts', () => {
     const firstParty = privacyInventory.outboundHosts.find(
       ({ id }) => id === 'first-party-services'
@@ -114,6 +184,14 @@ describe('privacy disclosure consistency', () => {
     ]);
     expect(openai.hostPolicy).toBe('openai-sdk-default');
     expect(openaiSource).not.toMatch(/\bbaseURL\s*:/);
-    expect(openai.productionHosts).toEqual([new URL(new OpenAI({ apiKey: 'test' }).baseURL).host]);
+    const previousBaseUrl = process.env.OPENAI_BASE_URL;
+    delete process.env.OPENAI_BASE_URL;
+    try {
+      expect(openai.productionHosts).toEqual([
+        new URL(new OpenAI({ apiKey: 'test' }).baseURL).host,
+      ]);
+    } finally {
+      if (previousBaseUrl !== undefined) process.env.OPENAI_BASE_URL = previousBaseUrl;
+    }
   });
 });
