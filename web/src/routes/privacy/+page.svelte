@@ -219,8 +219,9 @@
       only the resulting code with attempt and success counts, timestamps, short-lived reservations, and
       broad failure reasons. A separate anonymous daily total caps project-funded requests. We never receive
       the underlying identifier, and the code is not combined with an account, advertising ID, hardware
-      fingerprint, or location. Clearing browser data and some iOS uninstall sequences can create a new
-      code.
+      fingerprint, or location. On the web, clearing site data creates a new code, and some iOS uninstall
+      sequences can too. On Android the code normally stays the same even if the app is uninstalled and
+      reinstalled.
     </li>
     <li>
       For an access code, we keep an abuse-prevention tally with its count, first and latest use,
@@ -255,9 +256,9 @@
     <li>
       On the web, a browser may automatically send our first-party security endpoint a report when
       the site's content-security policy blocks something. It can include the page and
-      blocked-resource URLs, the rule that fired, and source location. We write it to the Netlify
-      function log to diagnose a broken security policy; there is no third-party error-reporting
-      service.
+      blocked-resource URLs, the rule that fired, the source location, and a short sample of the
+      blocked code. We write it to the Netlify function log to diagnose a broken security policy;
+      there is no third-party error-reporting service.
     </li>
     <li>
       Links that leave Splotch open the named destination, such as OpenAI's policy or key page and
@@ -321,9 +322,10 @@
     sizes, and grown-up-check choices) using local storage. Native apps also mirror those settings
     to the operating system's preferences so they survive WebView cleanup; Android cloud backup is
     disabled. A supported desktop browser can separately remember a parent-chosen save-folder handle
-    in IndexedDB. These preferences stay on the device and are not sent to us. The locally stored AI
-    access code and own-key storage are described above. On the web, a random local installation
-    value is used only to create the one-way free-allowance code.
+    in IndexedDB. These preferences stay on the device and are not sent to us. An AI access code is
+    kept alongside those preferences; a parent's own OpenAI key is kept in the separate secure
+    storage described above. On the web, a random local installation value is used only to create
+    the one-way free-allowance code.
   </p>
 
   <h3>Children's privacy</h3>
