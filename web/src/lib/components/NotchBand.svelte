@@ -61,18 +61,27 @@
   });
 </script>
 
+<!-- All physical edges stay mounted so live env() insets select the cutout
+     edge while JavaScript layout publication is held during rotation. -->
 <div
-  class="notch-band notch-band--{band.show ? band.edge : 'top'}"
+  class="notch-band notch-band--top"
   aria-hidden="true"
-  style:background-color={band.show ? band.color : 'transparent'}
+  style:background-color={band.backgroundColor}
+></div>
+<div
+  class="notch-band notch-band--left"
+  aria-hidden="true"
+  style:background-color={band.backgroundColor}
+></div>
+<div
+  class="notch-band notch-band--right"
+  aria-hidden="true"
+  style:background-color={band.backgroundColor}
 ></div>
 
 <style>
-  /* Fills the safe-area inset of whichever edge the hole-punch sits on, behind
-     the OS clock. The inset (and so the band's thickness) collapses to 0 on
-     devices without a cutout, and the fill stays transparent unless the inset
-     is deep enough to be a real notch. The hole-punch is at the device's
-     physical top: that's the top edge in portrait and a side edge in landscape. */
+  /* Fills the safe-area inset behind the OS clock. Insets collapse unused
+     edges to 0, and the fill stays transparent without a real cutout. */
   .notch-band {
     position: fixed;
     z-index: var(--z-notch);

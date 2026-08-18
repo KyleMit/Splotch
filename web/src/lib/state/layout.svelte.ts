@@ -22,13 +22,20 @@ interface LayoutState {
 }
 
 const portraitQuery = browser ? window.matchMedia('(orientation: portrait)') : null;
-const VIEWPORT_SETTLE_MS = 200;
-let viewportSyncTimer: number | undefined;
+// The physical-iPad profile for issue 977 improved with a 200 ms rotation-only
+// hold. This bounds JS layout lag during orientationchange; ordinary resizes
+// continue publishing synchronously.
+const ROTATION_VIEWPORT_SETTLE_MS = 200;
+let rotationViewportSyncTimer: number | undefined;
 let pendingPaletteMeasurement: PaletteMeasurement | undefined;
 
-function readLiveOrientation(): Orientation {
+function readViewportOrientation(): Orientation {
   if (window.innerWidth > window.innerHeight) return 'landscape';
   if (window.innerHeight > window.innerWidth) return 'portrait';
+  return readCssOrientation();
+}
+
+function readCssOrientation(): Orientation {
   return (portraitQuery?.matches ?? false) ? 'portrait' : 'landscape';
 }
 
@@ -38,7 +45,7 @@ function readOrientation(): Orientation {
   // to a live matchMedia read if the attribute is absent (e.g. unit tests).
   const stamped = document.documentElement.dataset.orientation;
   if (stamped === 'portrait' || stamped === 'landscape') return stamped;
-  return readLiveOrientation();
+  return readViewportOrientation();
 }
 
 export const layout: LayoutState = $state({
@@ -67,8 +74,10 @@ export const layout: LayoutState = $state({
 });
 
 export function publishPaletteMeasurement(width: number, height: number): void {
-  const measurement = { width, height, orientation: readLiveOrientation() };
-  if (viewportSyncTimer !== undefined) {
+  // The rect comes from CSS layout, so its guard tag must use the matching
+  // media-query orientation even when viewport geometry flips first.
+  const measurement = { width, height, orientation: readCssOrientation() };
+  if (rotationViewportSyncTimer !== undefined) {
     pendingPaletteMeasurement = measurement;
     return;
   }
@@ -81,7 +90,7 @@ export function clearPaletteMeasurement(): void {
 }
 
 function syncViewport() {
-  const next = readLiveOrientation();
+  const next = readViewportOrientation();
   layout.orientation = next;
   // Keep the [data-orientation] hook the head script stamped in sync on rotate.
   document.documentElement.dataset.orientation = next;
@@ -91,39 +100,45 @@ function syncViewport() {
   layout.viewportHeight = window.innerHeight;
 }
 
-function scheduleViewportSync() {
-  if (viewportSyncTimer !== undefined) window.clearTimeout(viewportSyncTimer);
-  // Mobile Safari changes the CSS viewport before its rotation frame finishes.
-  // Let media queries present that frame, then publish JS layout measurements
-  // once the native transition and its trailing resize have settled.
-  viewportSyncTimer = window.setTimeout(() => {
-    viewportSyncTimer = undefined;
-    syncViewport();
-    if (pendingPaletteMeasurement !== undefined) {
-      layout.paletteMeasurement = pendingPaletteMeasurement;
-      pendingPaletteMeasurement = undefined;
-    }
-  }, VIEWPORT_SETTLE_MS);
+function flushPendingPaletteMeasurement() {
+  if (pendingPaletteMeasurement === undefined) return;
+  layout.paletteMeasurement = pendingPaletteMeasurement;
+  pendingPaletteMeasurement = undefined;
+}
+
+function finishViewportRotation() {
+  rotationViewportSyncTimer = undefined;
+  syncViewport();
+  flushPendingPaletteMeasurement();
+}
+
+function deferViewportSyncForRotation() {
+  if (rotationViewportSyncTimer !== undefined) return;
+  rotationViewportSyncTimer = window.setTimeout(
+    finishViewportRotation,
+    ROTATION_VIEWPORT_SETTLE_MS
+  );
+}
+
+function syncViewportOnResize() {
+  if (rotationViewportSyncTimer === undefined) syncViewportImmediately();
 }
 
 function syncViewportImmediately() {
-  if (viewportSyncTimer !== undefined) {
-    window.clearTimeout(viewportSyncTimer);
-    viewportSyncTimer = undefined;
+  if (rotationViewportSyncTimer !== undefined) {
+    window.clearTimeout(rotationViewportSyncTimer);
+    rotationViewportSyncTimer = undefined;
   }
   syncViewport();
-  if (pendingPaletteMeasurement !== undefined) {
-    layout.paletteMeasurement = pendingPaletteMeasurement;
-    pendingPaletteMeasurement = undefined;
-  }
+  flushPendingPaletteMeasurement();
 }
 
 // Installed at module load (not from a component) so the values are live before
 // the first component renders, and so five consumers share one listener set.
 if (browser) {
   syncViewportImmediately();
-  window.addEventListener('resize', scheduleViewportSync);
-  window.addEventListener('orientationchange', scheduleViewportSync);
+  window.addEventListener('resize', syncViewportOnResize);
+  window.addEventListener('orientationchange', deferViewportSyncForRotation);
   // Neither event fires while the document is hidden, so a rotation while the
   // app is backgrounded would otherwise stay stale on re-entry. Re-measure when
   // the document becomes visible again (the native WebViews hide the document

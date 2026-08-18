@@ -72,13 +72,28 @@ describe('viewport tracking', () => {
     window.innerHeight = 1024;
     window.dispatchEvent(new Event('resize'));
 
-    expect(layout.orientation).toBe('landscape');
-    await vi.runAllTimersAsync();
-
     expect(layout.orientation).toBe('portrait');
     expect(layout.safeArea.top).toBe(44);
     expect(layout.viewportWidth).toBe(768);
     expect(layout.viewportHeight).toBe(1024);
+  });
+
+  it('keeps layout current throughout a continuous non-rotation resize stream', async () => {
+    const { layout, publishPaletteMeasurement } = await freshModule();
+
+    for (let step = 1; step <= 20; step += 1) {
+      window.innerWidth = 1024 - step * 10;
+      publishPaletteMeasurement(156 - step, 76);
+      window.dispatchEvent(new Event('resize'));
+      await vi.advanceTimersByTimeAsync(100);
+    }
+
+    expect(layout.viewportWidth).toBe(824);
+    expect(layout.paletteMeasurement).toEqual({
+      width: 136,
+      height: 76,
+      orientation: 'landscape',
+    });
   });
 
   it('re-measures on re-entry when the device rotated while backgrounded', async () => {
@@ -143,5 +158,23 @@ describe('viewport tracking', () => {
 
     clearPaletteMeasurement();
     expect(layout.paletteMeasurement).toEqual({ width: 0, height: 0, orientation: null });
+  });
+
+  it('keeps a pre-rotation palette rect tagged to its CSS orientation', async () => {
+    const { layout, publishPaletteMeasurement } = await freshModule();
+
+    window.innerWidth = 768;
+    window.innerHeight = 1024;
+    window.dispatchEvent(new Event('orientationchange'));
+    publishPaletteMeasurement(84, 768);
+    mocks.portrait = true;
+    await vi.runAllTimersAsync();
+
+    expect(layout.orientation).toBe('portrait');
+    expect(layout.paletteMeasurement).toEqual({
+      width: 84,
+      height: 768,
+      orientation: 'landscape',
+    });
   });
 });

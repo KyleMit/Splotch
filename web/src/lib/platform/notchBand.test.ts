@@ -211,7 +211,7 @@ describe('computeNotchBandState — deployment targets', () => {
     expect(state.themeColor).toBe(purple);
     expect(state.statusBarStyle).toBeNull();
     expect(state.statusBarHidden).toBeNull();
-    expect(state.show).toBe(false);
+    expect(state.backgroundColor).toBe('transparent');
   });
 
   it('web on iOS: standalone PWA paints the CSS band under the notch', () => {
@@ -222,9 +222,7 @@ describe('computeNotchBandState — deployment targets', () => {
       insetTop: NOTCH_INSET,
       activeColor: purple,
     });
-    expect(state.show).toBe(true);
-    expect(state.edge).toBe('top');
-    expect(state.color).toBe(purple);
+    expect(state.backgroundColor).toBe(purple);
     // Web cannot call the native plugin even on iOS.
     expect(state.statusBarStyle).toBeNull();
   });
@@ -236,8 +234,7 @@ describe('computeNotchBandState — deployment targets', () => {
       insetTop: 34,
       activeColor: purple,
     });
-    expect(state.show).toBe(true);
-    expect(state.color).toBe(purple);
+    expect(state.backgroundColor).toBe(purple);
     expect(state.statusBarStyle).toBe(statusBarStyleForBand(purple));
     expect(state.statusBarHidden).toBe(false); // portrait
   });
@@ -249,8 +246,7 @@ describe('computeNotchBandState — deployment targets', () => {
       insetTop: NOTCH_INSET,
       activeColor: '#0a0b10',
     });
-    expect(state.show).toBe(true);
-    expect(state.color).toBe('#0a0b10');
+    expect(state.backgroundColor).toBe('#0a0b10');
     expect(state.statusBarStyle).toBe('DARK'); // black band → light icons
     expect(state.statusBarHidden).toBeNull(); // iOS keeps its default status bar
   });
@@ -266,9 +262,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
       insetLeft: NOTCH_INSET,
       activeColor: '#62A2E9',
     });
-    expect(state.show).toBe(true);
-    expect(state.edge).toBe('left');
-    expect(state.color).toBe('#62A2E9');
+    expect(state.backgroundColor).toBe('#62A2E9');
     expect(state.statusBarHidden).toBe(true);
   });
 
@@ -278,7 +272,7 @@ describe('computeNotchBandState — landscape moves the band to the cutout side'
       platform: 'android',
       orientation: 'landscape',
     });
-    expect(state.show).toBe(false); // nothing to paint
+    expect(state.backgroundColor).toBe('transparent');
     expect(state.statusBarHidden).toBe(true); // but still reclaim the top edge
   });
 });
@@ -288,14 +282,15 @@ describe('computeNotchBandState — no-cutout devices skip the band', () => {
 
   it('bezel iPad (camera in the bezel) gets no band and no icon flip', () => {
     const state = computeNotchBandState(baseline);
-    expect(state.show).toBe(false);
+    expect(state.backgroundColor).toBe('transparent');
     expect(state.statusBarStyle).toBeNull();
   });
 
   it('desktop web gets no band', () => {
     expect(
-      computeNotchBandState({ ...baseline, platform: 'web', native: false, insetTop: 0 }).show
-    ).toBe(false);
+      computeNotchBandState({ ...baseline, platform: 'web', native: false, insetTop: 0 })
+        .backgroundColor
+    ).toBe('transparent');
   });
 });
 
@@ -306,7 +301,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       insetTop: NOTCH_INSET,
       activeColor: '#62A2E9',
     });
-    expect(state.color).toBe('#62A2E9');
+    expect(state.backgroundColor).toBe('#62A2E9');
     expect(state.themeColor).toBe('#62A2E9');
   });
 
@@ -317,7 +312,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       activeColor: '#62A2E9',
       eraser: true,
     });
-    expect(state.color).toBe(PAPER_COLORS.light);
+    expect(state.backgroundColor).toBe(PAPER_COLORS.light);
     expect(state.themeColor).toBe(PAPER_COLORS.light);
     expect(state.statusBarStyle).toBe('LIGHT');
   });
@@ -330,7 +325,7 @@ describe('computeNotchBandState — color follows the active tool', () => {
       eraser: true,
       paperColor: PAPER_COLORS.dark,
     });
-    expect(state.color).toBe(PAPER_COLORS.dark);
+    expect(state.backgroundColor).toBe(PAPER_COLORS.dark);
     expect(state.themeColor).toBe(PAPER_COLORS.dark);
     expect(state.statusBarStyle).toBe('DARK');
   });

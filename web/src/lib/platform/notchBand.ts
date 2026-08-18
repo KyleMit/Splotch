@@ -66,12 +66,8 @@ export interface NotchBandInput {
 }
 
 export interface NotchBandState {
-  /** Paint the colored CSS band? False on devices without a real cutout. */
-  show: boolean;
-  /** Edge to paint the band along (the edge the cutout sits on). */
-  edge: NotchEdge;
-  /** Band fill (and theme-color) value. */
-  color: string;
+  /** CSS band fill, transparent on devices without a real cutout. */
+  backgroundColor: string;
   /** Value to write to <meta name="theme-color">. */
   themeColor: string;
   /** Native status-bar icon style, or null when no native call should be made. */
@@ -140,12 +136,10 @@ export function applyStatusBar(
 
 export function computeNotchBandState(input: NotchBandInput): NotchBandState {
   const color = bandColor(input.activeColor, input.eraser, input.paperColor);
-  const { edge, inset } = cutoutEdge(input);
+  const { inset } = cutoutEdge(input);
   const show = hasNotch(inset);
   return {
-    show,
-    edge,
-    color,
+    backgroundColor: show ? color : 'transparent',
     // Always reflect the color in theme-color — it's the Android-web mechanism
     // and a no-op everywhere else.
     themeColor: color,
