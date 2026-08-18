@@ -1,0 +1,233 @@
+{
+  "schemaVersion": 1,
+  "permissions": {
+    "android": [
+      {
+        "name": "android.permission.ACCESS_NETWORK_STATE",
+        "purpose": "Read connectivity state so online-only features can be hidden while offline."
+      },
+      {
+        "name": "android.permission.INTERNET",
+        "purpose": "Reach the hosted API and download coloring packs."
+      },
+      {
+        "name": "android.permission.WRITE_EXTERNAL_STORAGE",
+        "maxSdkVersion": 28,
+        "purpose": "Save drawings to the gallery on Android 9 and older."
+      }
+    ],
+    "iosUsageDescriptions": [
+      {
+        "key": "NSPhotoLibraryAddUsageDescription",
+        "value": "Splotch saves your child's drawing to your photo library.",
+        "purpose": "Add a saved drawing to the photo library without reading the library."
+      }
+    ]
+  },
+  "iosPrivacyManifest": {
+    "tracking": false,
+    "trackingDomains": [],
+    "requiredReasonApis": [
+      {
+        "category": "NSPrivacyAccessedAPICategoryUserDefaults",
+        "reasons": ["CA92.1"],
+        "purpose": "Capacitor Preferences stores app settings through UserDefaults."
+      }
+    ]
+  },
+  "dataCategories": [
+    {
+      "id": "other-user-content",
+      "iosType": "NSPrivacyCollectedDataTypeOtherUserContent",
+      "iosPurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+      "linked": false,
+      "tracking": false,
+      "privacyPageFacts": [
+        "current drawing is sent to our image service",
+        "A confirmed picture report stores the drawing"
+      ],
+      "storeListingFacts": {
+        "ios": ["**User Content → Other User Content**"],
+        "android": ["**Photos and videos**", "**Other user-generated content**"]
+      }
+    },
+    {
+      "id": "customer-support",
+      "iosType": "NSPrivacyCollectedDataTypeCustomerSupport",
+      "iosPurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+      "linked": false,
+      "tracking": false,
+      "privacyPageFacts": ["only what you type is sent to our", "support tracker on GitHub"],
+      "storeListingFacts": {
+        "ios": ["**User Content → Customer Support**"],
+        "android": ["**Other user-generated content**"]
+      }
+    },
+    {
+      "id": "other-diagnostic-data",
+      "iosType": "NSPrivacyCollectedDataTypeOtherDiagnosticData",
+      "iosPurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+      "linked": false,
+      "tracking": false,
+      "privacyPageFacts": ["include basic device details", "It's off by default"],
+      "storeListingFacts": {
+        "ios": ["**Diagnostics → Other Diagnostic Data**"],
+        "android": ["**Diagnostics**"]
+      }
+    },
+    {
+      "id": "device-id",
+      "iosType": "NSPrivacyCollectedDataTypeDeviceID",
+      "iosPurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+      "linked": false,
+      "tracking": false,
+      "privacyPageFacts": [
+        "platform-provided app or vendor identifier",
+        "We never receive the underlying identifier"
+      ],
+      "storeListingFacts": {
+        "ios": ["**Identifiers → Device ID**"],
+        "android": ["**Device or other IDs**"]
+      }
+    },
+    {
+      "id": "product-interaction",
+      "iosType": "NSPrivacyCollectedDataTypeProductInteraction",
+      "iosPurposes": ["NSPrivacyCollectedDataTypePurposeAppFunctionality"],
+      "linked": false,
+      "tracking": false,
+      "privacyPageFacts": ["attempt and success counts", "operational server log"],
+      "storeListingFacts": {
+        "ios": ["**Usage Data → Product Interaction**"],
+        "android": ["**App activity → App interactions**"]
+      }
+    }
+  ],
+  "retentionBoundaries": [
+    {
+      "id": "ordinary-generation-job",
+      "owner": "Splotch",
+      "boundary": {
+        "kind": "duration",
+        "value": 20,
+        "unit": "minutes",
+        "cleanupCadence": "hourly",
+        "deleteOnCollection": true
+      },
+      "privacyPageFacts": [
+        "Collected jobs are deleted immediately.",
+        "an hourly cleanup removes its remaining files"
+      ]
+    },
+    {
+      "id": "confirmed-ai-report",
+      "owner": "Splotch",
+      "boundary": {
+        "kind": "duration",
+        "value": 30,
+        "unit": "days",
+        "cleanupCadence": "daily",
+        "earlyDeletionAvailable": true
+      },
+      "privacyPageFacts": [
+        "The report bundle is scheduled for deletion after",
+        "by a daily cleanup job."
+      ]
+    },
+    {
+      "id": "openai-abuse-monitoring",
+      "owner": "OpenAI",
+      "boundary": {
+        "kind": "provider-window",
+        "value": 30,
+        "unit": "days",
+        "qualifier": "normally-up-to",
+        "exceptions": ["legal-requirement", "harm-prevention", "potential-csam-review"]
+      },
+      "privacyPageFacts": [
+        "normally retained for up to 30 days",
+        "where the law requires it",
+        "needed to stop harm",
+        "possible child sexual abuse material"
+      ]
+    },
+    {
+      "id": "access-code-usage",
+      "owner": "Splotch",
+      "boundary": {
+        "kind": "event",
+        "event": "access-code-retirement"
+      },
+      "privacyPageFacts": ["That tally is deleted when the access code is retired."]
+    }
+  ],
+  "outboundHosts": [
+    {
+      "id": "first-party-services",
+      "productionHosts": ["splotch.art"],
+      "hostPolicy": "same-origin-web-and-worker-fixed-production-native",
+      "actors": ["web-client", "native-client", "server-worker-dispatch"],
+      "purposes": ["hosted-api", "coloring-pack-downloads", "hosted-feedback"],
+      "dataCategoryIds": [
+        "other-user-content",
+        "customer-support",
+        "other-diagnostic-data",
+        "device-id",
+        "product-interaction"
+      ],
+      "implementationEvidence": [
+        {
+          "path": "web/securityPolicy.ts",
+          "contains": "export const NATIVE_API_ORIGIN = SITE_ORIGIN;"
+        },
+        {
+          "path": "web/vite.config.ts",
+          "contains": "const NATIVE_API_BASE = nativeApiBaseFor(isCapacitor);"
+        },
+        {
+          "path": "web/src/lib/api.ts",
+          "contains": "const base = typeof __NATIVE_API_BASE__ !== 'undefined' ? __NATIVE_API_BASE__ : '';"
+        },
+        {
+          "path": "web/src/lib/server/generationStart.ts",
+          "contains": "fetch(`${origin}${WORKER_PATH}`"
+        }
+      ],
+      "privacyPageFacts": [
+        "hosted by Netlify",
+        "automatically download additional packs from our site"
+      ]
+    },
+    {
+      "id": "openai-api",
+      "productionHosts": ["api.openai.com"],
+      "hostPolicy": "openai-sdk-default",
+      "actors": ["server"],
+      "purposes": ["ai-generation", "api-key-verification"],
+      "dataCategoryIds": ["other-user-content"],
+      "implementationEvidence": [
+        { "path": "web/src/lib/server/ai/openai.ts", "contains": "import OpenAI from 'openai';" },
+        {
+          "path": "web/src/lib/server/ai/openai.ts",
+          "contains": "return new OpenAI({ apiKey, timeout: timeoutMs, maxRetries });"
+        }
+      ],
+      "privacyPageFacts": ["which uses OpenAI", "OpenAI generates the picture on its own systems"]
+    },
+    {
+      "id": "github-api",
+      "productionHosts": ["api.github.com"],
+      "hostPolicy": "fixed",
+      "actors": ["server"],
+      "purposes": ["private-feedback", "private-ai-report-notification"],
+      "dataCategoryIds": ["customer-support", "other-diagnostic-data", "product-interaction"],
+      "implementationEvidence": [
+        {
+          "path": "web/src/lib/server/github.ts",
+          "contains": "const GITHUB_API = 'https://api.github.com';"
+        }
+      ],
+      "privacyPageFacts": ["support tracker on GitHub", "private GitHub support issue"]
+    }
+  ]
+}

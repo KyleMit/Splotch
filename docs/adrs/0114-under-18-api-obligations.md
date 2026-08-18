@@ -146,3 +146,13 @@ its quality or cost report on the old orchestrator silently.
   ever gains a surface a child reads, or an older audience.
 * **−** The guidance is a third-party document that can change. It is worth re-reading whenever the
   provider or the audience changes, and the age floor here (2+) leaves no margin.
+
+## Amendment (2026-08-17): retention wording revalidated
+
+OpenAI's current data-controls documentation describes the ordinary abuse-monitoring period as “up
+to 30 days,” but it does not make the original “then deleted” sentence an unconditional promise. It
+allows longer retention when legally required, and image inputs flagged as potential CSAM are kept
+for manual review even under Modified Abuse Monitoring or Zero Data Retention. Current `/privacy`
+and store declarations state the ordinary period and those exceptions together. The architectural
+decision remains unchanged: every Responses request sets `store: false`, and ZDR remains an
+account-level action outside this repository.

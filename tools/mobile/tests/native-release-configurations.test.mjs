@@ -22,9 +22,24 @@ describe('native release configuration gates', () => {
 
     expect(androidWorkflow).toContain('keytool -genkeypair -noprompt');
     expect(androidWorkflow).toContain('storeFile=$RUNNER_TEMP/splotch-release-smoke.p12');
-    expect(androidWorkflow).toContain('run: npm run android:apk:release');
+    expect(androidWorkflow.match(/run: npm run android:apk:release/g)).toHaveLength(1);
+    expect(androidWorkflow).toContain(
+      'uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1'
+    );
+    expect(androidWorkflow).toContain(
+      'uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1'
+    );
+    expect(androidWorkflow.match(/name: android-release-apk/g)).toHaveLength(2);
+    expect(
+      androidWorkflow.match(
+        /path: android\/app\/build\/outputs\/apk\/release(?:\/app-release\.apk)?/g
+      )
+    ).toHaveLength(2);
     expect(androidWorkflow).toContain(
       'adb install -r android/app/build/outputs/apk/release/app-release.apk'
+    );
+    expect(androidWorkflow.indexOf('  smoke:')).toBeGreaterThan(
+      androidWorkflow.indexOf('- name: Upload test-signed release APK')
     );
     expect(androidWorkflow).not.toContain('android/app/build/outputs/apk/debug/app-debug.apk');
   });

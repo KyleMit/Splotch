@@ -154,15 +154,30 @@ alone won't register it.
 
 ### Data & privacy posture (important for store forms)
 
-* **No analytics, no tracking, no ads, no accounts, no third-party SDKs.**
-* Data leaves the device only through an explicit feature: a **drawing image** sent to the AI
-  endpoint, a confirmed AI report, or private feedback (plus an invite token). Nothing is sold or
-  used for tracking. Ordinary AI requests and refusals are not retained by Splotch. A confirmed
-  report retains the input, server-resolved prompt, style, and timestamp privately for at most 30
-  days; a refusal report also retains the provider's signed refusal reason, and a picture report
-  retains the generated output. A daily scheduled function purges it. Optional feedback device
-  details are private. Coloring-pack requests contain only public static asset paths; they carry no
-  drawing or child data.
+The reviewed machine-readable declaration is `tools/mobile/privacy-permission-inventory.json`.
+Tools-tier drift guards compare it with the native manifests, store data categories, retention
+constants, production outbound call sites, and `/privacy`; store forms remain human-submitted from
+the platform checklists.
+
+* **No analytics, tracking, ads, accounts, or advertising/analytics/tracking SDKs.** The native
+  dependency set is Capacitor plus functional plugins for device APIs, storage, media saving,
+  networking, screen orientation, and coloring-pack downloads.
+* Deliberate data-out features are a **drawing image**, chosen style, and generation credential sent
+  for AI generation; a confirmed AI report; and private feedback. Nothing is sold or used for
+  tracking. Ordinary AI jobs are temporary within Splotch: collected jobs are deleted immediately;
+  uncollected jobs expire after 20 minutes and an hourly cleanup removes them. OpenAI separately
+  normally keeps an abuse-monitoring copy for up to 30 days, subject to the exceptions in its
+  published policy.
+* While free AI is enabled, the app automatically checks its server-authoritative ten-creation
+  allowance with a one-way installation pseudonym derived from the platform app/vendor identifier.
+  The server stores the pseudonym with allowance attempts, successes, failures, timestamps, and
+  short-lived reservations. Access-code and own-key requests also create operational generation
+  metadata; the full key and drawing are excluded.
+* A confirmed AI report retains the input, server-resolved prompt, style, and timestamp privately
+  until a daily purge after its 30-day retention date; a refusal report also retains the provider's
+  signed refusal reason, and a picture report retains the generated output. Optional feedback device
+  details are private. Coloring-pack requests contain only public static asset paths and normal host
+  request details, not a drawing or child identity.
 * Photos are saved **locally** to the device gallery (a "Splotch" album).
 
 ## 2. Shared web-asset / sync commands
@@ -206,9 +221,10 @@ generated from the real app where possible:
 
 ## 4. Kids / Families compliance (shared posture)
 
-Because the audience is children, **both** stores apply stricter rules. Splotch does not collect in
-the background, but its deliberate AI and support flows still need exact disclosure. The per-store
-attestations live with each platform's release checklist:
+Because the audience is children, **both** stores apply stricter rules. Splotch never collects a
+drawing in the background, but it does automatically check the free AI allowance and download
+enabled coloring packs. Those requests and its deliberate AI/support flows need exact disclosure.
+The per-store attestations live with each platform's release checklist:
 
 * Google Play — Families policy → **[android.md](android.md)**
 * Apple App Store — Kids Category → **[ios.md](ios.md)**
@@ -228,13 +244,13 @@ The shared baseline both depend on:
       Contact is through Splotch's private feedback form. Native opens the hosted form behind the
       external-link gate because the static app cannot run the form's server action; the hosted
       page's conditional email fallback is excluded from the native bundle. The policy must state:
-      no background collection, ads, tracking, or third-party analytics; explain ordinary ephemeral
-      AI processing, private feedback, and the confirmed-report-only 30-day retention rule.
+      no background drawing collection, ads, tracking, or third-party analytics; explain the
+      automatic allowance and coloring-pack requests, ordinary ephemeral AI processing, private
+      feedback, and the confirmed-report-only 30-day retention rule.
 * [ ] (Optional) **Terms of Use**.
 * [x] Wording for the **photo-library add** permission prompt: iOS
-      `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` ("Splotch can save a
-      screenshot of your drawing to your photo library."); the Android runtime prompt is
-      system-worded.
+      `NSPhotoLibraryAddUsageDescription` is set in `ios/App/App/Info.plist` and guarded by the
+      privacy-permission inventory; the Android runtime prompt is system-worded.
 
 ## 5. Known follow-ups / nice-to-haves (cross-platform)
 
@@ -251,7 +267,30 @@ The shared baseline both depend on:
 * [ ] (Android) `@capacitor/app` to handle the hardware back button — see
       **[android.md](android.md)**.
 
-## 6. Uploading builds to the stores
+## 6. Native support matrix
+
+This is a release-time compatibility matrix, not a UI journey matrix. Every automated row reuses the
+one boot-and-paint assertion in `.maestro/smoke.yaml` (ADR-0120); phone/tablet layout and
+orientation behavior stay in the web test tiers. The automated rows run on `v*` tags and can be
+started from `workflow_dispatch`. There is no periodic `schedule` trigger: on-demand dispatch is the
+preflight and reproduction path, while the iOS floor row is completed manually for each release.
+
+Before publishing signed artifacts, confirm all four rows for that tag:
+
+| Coverage        | Target and check                                                                                                                                        | Result and diagnostic evidence                                                                                                                                                                                                                                                               | Evidence owner                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Android current | Current Android API 33 on a throwaway `google_apis` / `x86_64` emulator; install the test-signed optimized Release APK and wait for `Settings` to paint | The `Maestro launch smoke test (API 33)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-33` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
+| Android floor   | Android API 24 on the same emulator/image shape; install the same Release APK and run the same first-paint assertion                                    | The `Maestro launch smoke test (API 24)` job status is the result. Its log identifies the API/image/architecture and install; `maestro-report-api-24` contains the Maestro flow log and screenshot.                                                                                          | GitHub Actions owns the run, job log, and artifact.                                                    |
+| iOS current     | Newest installed iPhone simulator on `macos-latest`; compile Release without store signing, then install and boot the Debug app                         | The `Maestro launch smoke test (iOS simulator)` job status is the result. The log names the selected iPhone and UDID, and Xcode's destination identifies its runtime; `maestro-ios-report` contains the Maestro flow log and screenshot.                                                     | GitHub Actions owns the run, job log, and artifact.                                                    |
+| iOS floor       | iOS 16.4 on a named iPhone simulator or physical device; follow the [manual iOS 16.4 floor gate](ios.md#manual-ios-164-floor-gate)                      | The GitHub Release notes state the exact OS version, simulator/device, and pass result. No Maestro artifact is expected: hosted 16.4 runs can build and boot the simulator, but Maestro 2.4.0 fails before it can observe the app; `docs/COMPATIBILITY.md` owns that infeasibility evidence. | The release operator owns the Release-notes entry before `publish-artifacts` attaches signed binaries. |
+
+When an automated gate is red on a tag, that platform's deploy workflow files or updates its
+platform-specific failure issue. A manual dispatch does not file an issue because its dispatcher
+already owns the run; use the named job log and report artifact directly. The Android matrix derives
+both API levels from code owners rather than YAML literals, and `docs/COMPATIBILITY.md` remains the
+canonical ledger for what each row proves and what it leaves uncovered.
+
+## 7. Uploading builds to the stores
 
 > **Both uploads are currently manual.** The npm pipeline ends at producing the signed binary;
 > getting it to the store is a hands-on step today.

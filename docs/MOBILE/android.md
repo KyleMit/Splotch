@@ -169,7 +169,8 @@ gateway and those tools fail — the working path is a self-hosted chisel revers
 * **Native smoke test**: `npm run test:android` boots an emulator, builds + installs, and runs the
   Maestro flow. See the `testing` skill for Maestro installation and the full three-tier strategy.
 * **Release configuration**: the tagged deploy workflow creates a disposable test key, builds
-  `android:apk:release`, and boots that APK through the same Maestro flow. This exercises R8,
+  `android:apk:release` once, uploads the APK, and boots that same artifact through the Maestro
+  matrix on the current API 33 emulator and the declared API 24 floor. This exercises R8,
   `proguard-android-optimize.txt`, and resource shrinking without putting the Play upload key in CI.
 
 ### Performance profiling with Chrome DevTools (remote debugging)
@@ -220,6 +221,9 @@ multi-touch input — the best way to get accurate profiles.
       `tools/release/cut-release.mjs` (`setAndroidVersion`) derives both and writes them into
       `android/app/build.gradle`, which is the source of truth. Only a hand-built release needs them
       set manually.
+* [ ] Confirm both Android rows in the shared
+      [native support matrix](native.md#6-native-support-matrix) passed for this tag before
+      publishing signed artifacts.
 * [x] `targetSdkVersion` meets the current Play requirement: `android/variables.gradle` sets **36**
       (Android 16), which satisfies the **Aug 31, 2026** deadline. Play raises this yearly — recheck
       each August against the
@@ -300,8 +304,8 @@ policy). Google Play adds:
 * [ ] **COPPA / GDPR-K**: confirm the exact shipped flows. Splotch asks for no child's name,
       account, email, or location, but deliberate AI/support content still needs disclosure.
 * [ ] If you want the **"Teacher Approved"** badge, you can opt into review (optional).
-* [ ] Account/permission hygiene: don't request permissions you don't use (we only request network
-      state + legacy storage).
+* [ ] Account/permission hygiene: don't request permissions you don't use (we only request internet,
+      network state, and legacy storage through Android 9).
 * [x] **Backups disabled** (`android:allowBackup="false"` in the manifest): no app data — settings,
       the AI access token, or secure-storage ciphertext — is copied to Google cloud backup or
       device-to-device transfer. Drawings are unaffected (they save to the photo gallery). Keep it
@@ -315,28 +319,22 @@ use, disclosure, and consent — the vendor running the model does not shift tha
 integration is `/api/generate-image` → OpenAI (ADR-0113). What keeps it compliant, and what to
 re-verify if that flow changes:
 
-* **Consent** — generation is never automatic; it fires only on a tap, and only after a grown-up
-  supplied a credential. There are **two** unlock paths, and a Play reviewer asking how consent is
-  obtained needs both:
-  1. **Typed in Settings** — `AiKeyManager.svelte` verifies the input and stores it
-     (`setAiAccessToken` for an access code, `setAiUserApiKey` for a BYO OpenAI key). Consent is the
-     grown-up's own deliberate entry. Opening Settings is not itself a parental gate; if policy
-     requires a challenge for credential entry, apply it to this operation.
-  2. **An invite link** — `captureAiAccessTokenFromUrl` (`state/settings.svelte.ts:236-241`) reads
-     `?ai_access_token=` on load, stores it, and rewrites the URL. The links are minted by
-     `buildInvites` in `/admin` (`server/admin.ts:92-95`). Consent is still parent-mediated — an
-     admin hands the link to a specific grown-up — but it is *not* a Settings interaction, so don't
-     describe Settings as a gate.
-
-  Keep both paths grown-up-initiated. Anything that unlocks generation without a credential a
-  grown-up chose to supply breaks the consent story.
-* **Limited use** — ordinary generation passes the drawing to OpenAI and returns the result without
-  Splotch persistence. Only a grown-up's separate, gated confirmation of “Report this picture” or
-  “Report this refusal” retains evidence in the private report store. Both retain the input,
-  server-resolved prompt, style, and timestamp; a refusal report also retains the provider's signed
-  refusal reason, and a picture report retains the output. A daily purge deletes the bundle after 30
-  days. `lib/server/usage.ts` separately stores only a per-token tally and `deleteUsage` drops that
-  tally when the token is revoked.
+* **Adult action** — generation is never automatic; it fires only on a tap. The Play build's AI
+  policy defaults to a grown-up check every time. A fresh installation can make ten successful free
+  creations while the project allowance is available. After that, a parent can type an access code
+  or BYO OpenAI key in Settings, or receive an admin-minted invite link. Key entry and opening
+  Settings are not themselves gated, but the generation action remains governed by its Parent Center
+  policy. The math gate protects the action boundary; it is not proof of legal consent.
+* **Limited use** — ordinary generation passes the drawing to OpenAI. Splotch holds the input and
+  output only for its asynchronous job: collection deletes the job immediately; an uncollected job
+  expires after 20 minutes and an hourly cleanup removes it. Only a grown-up's separate, gated
+  confirmation of “Report this picture” or “Report this refusal” retains evidence in the private
+  report store. Both retain the input, server-resolved prompt, style, and timestamp; a refusal
+  report also retains the provider's signed refusal reason, and a picture report retains the output.
+  A daily purge deletes the bundle after its 30-day retention date. `lib/server/usage.ts` separately
+  stores a per-token tally, including the latest server-resolved instruction, and `deleteUsage`
+  drops that tally when the token is revoked. Allowance records retain the installation pseudonym
+  and attempt/success/failure accounting defined by ADR-0105.
 * **Disclosure** — `/privacy` names OpenAI, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing

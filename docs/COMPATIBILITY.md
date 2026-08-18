@@ -198,15 +198,42 @@ non-polyfill choices:
 
 * **Engine family:** every push/PR runs the Chromium E2E suite plus a WebKit critical-path smoke
   (`web/tests/webkit-smoke.spec.ts` — boot, stroke, Settings, Color Picker). That covers the
-  *engine*, not the floor *version* — CI runs current WebKit, not Safari 16.4.
-* **Floor versions:** not currently CI-validated; they're a manual/device concern. The stock Android
-  API 24 emulator image ships a pre-floor WebView (a maintained Android 7 device tops out at
-  WebView/Chrome 119 ≥ the 111 floor, but the emulator doesn't emulate "maintained"), and an iOS
-  16.4 simulator runtime needs an on-runner download experiment. Both are tracked as issues
-  [#483](https://github.com/KyleMit/Splotch/issues/483) and
-  [#484](https://github.com/KyleMit/Splotch/issues/484).
-* **Native boot:** the tag-only Maestro smoke boots the shipped app on Android API 33 and the newest
-  iOS simulator — current-device coverage, not floor coverage.
+  *engine*, not the floor *version* — CI runs current desktop WebKit, not Safari 16.4, and does not
+  boot the native app. `web/src/browserFloor.test.ts` separately guards that the emitted bundle's
+  declared Safari/iOS target remains at or below the native deployment target.
+* **Floor versions:** the Android API 24 **OS floor** is CI-validated on every release tag. The
+  workflow derives that matrix leg from `MIN_ANDROID_API_LEVEL`; the first
+  [dispatch experiment](https://github.com/KyleMit/Splotch/actions/runs/32104162028) installed the
+  stock `google_apis` image and the optimized Release APK, then its
+  [API 24 job](https://github.com/KyleMit/Splotch/actions/runs/32104162028/job/95610330372)
+  completed Maestro's exact "Settings" visibility assertion and uploaded artifact
+  `maestro-report-api-24` (artifact ID `9312695009`). This proves OS-floor boot only: the image's
+  bundled WebView version is neither pinned nor asserted, so the Chrome 111 engine floor remains
+  uncovered. Native iOS 16.4 remains a manual release check. Two 2026-08-18 dispatch experiments
+  downloaded and booted the exact runtime, then compiled both Release and Debug successfully: one
+  used
+  [`macos-latest` with Xcode 26.6](https://github.com/KyleMit/Splotch/actions/runs/32109658968/job/95626154650),
+  and the other used
+  [`macos-15` with Xcode 16.4](https://github.com/KyleMit/Splotch/actions/runs/32110897903/job/95629895129).
+  In both, Maestro 2.4.0's XCTest driver never listened on `127.0.0.1:7001` and hit its 120-second
+  startup timeout. The second dispatch's
+  [newest-runtime leg](https://github.com/KyleMit/Splotch/actions/runs/32110897903/job/95629895037)
+  passed the same smoke flow. Together the runs establish that runtime download, disk headroom,
+  simulator boot, and both builds are viable, but they do not establish that the app paints on iOS
+  16.4 because the driver fails before the flow. Revisit a hosted floor leg under
+  [#484](https://github.com/KyleMit/Splotch/issues/484) when Maestro's driver or the runner
+  toolchain changes; a longer timeout is not app validation unless the driver first establishes its
+  listener. The result is also recorded on the
+  [#249 umbrella](https://github.com/KyleMit/Splotch/issues/249#issuecomment-5325093457).
+* **Manual native iOS floor:** follow the
+  [manual iOS 16.4 floor gate](MOBILE/ios.md#manual-ios-164-floor-gate). That canonical runbook owns
+  the one-time 6.2 GB runtime acquisition, Maestro-free simulator/physical-device check, release
+  checklist, and GitHub Release-notes evidence destination. `npm run test:ios` is only an optional
+  diagnostic until Maestro can complete the flow on 16.4. This manual check is the native OS-floor
+  proof; current desktop WebKit CI is only the automated engine-family counterpart above.
+* **Native boot:** the tag-only Maestro smoke boots the shipped app on current Android API 33, the
+  declared Android API 24 floor, and the newest iOS simulator. Android has current-and-floor boot
+  coverage; hosted iOS has current-device coverage, with the 16.4 floor covered manually.
 
 ## Maintaining this
 
