@@ -73,24 +73,38 @@ in a single task. The staged wide-pane fill (issue #910, PR #1124) changed that 
 mounts with its shell plus the two above-the-fold sections, and every further section is an
 independent slice of work. That dissolves the reason for the exception, so Settings now mounts
 **closed** as the idle queue's own final slice (after every cheap overlay is in), and `WideShell`
-keeps prewarming the pane one section per idle slice until it is whole. A parent's first tap —
-typically minutes after boot — then pays what a reopen pays: nothing. The tap-before-idle path is
-unchanged: `settingsModal.open` still latches the mount the moment the chunk lands, and that tap
-runs the original open-time frame-paced fill.
+keeps prewarming the pane one section per idle slice until it is whole. Mounting alone is not
+enough: a closed `<dialog>` is `display: none` by UA rule, so the prewarmed subtree would carry no
+computed styles or layout boxes and the first `showModal()` would pay all of that on the tap —
+measured (same machine, same harness, 4× throttle) as a ~186 ms first-open long task against ~52 ms
+on a reopen. The closed Settings card therefore stays **laid out but hidden** (`visibility: hidden`
+overriding the UA's `display: none`, in `SettingsModal.svelte`), which pays the style and layout at
+idle and roughly halves the first show, to ~96 ms — for a modest tax on later edges (~73 ms
+reopens), since each open/close now flips visibility across the subtree. The residual first-show gap
+over a reopen is the open edge's own restyle plus the subtree's first paint, which no hidden state
+can pay (an idle near-invisible "render flash" was probed and reached ~75 ms — not worth the
+input-swallowing frame it costs). The tap-before-idle path is unchanged: `settingsModal.open` still
+latches the mount the moment the chunk lands, and that tap runs the original open-time frame-paced
+fill.
 
-Two readings shift with this: `npm run perf:web:settings` taps after a 4 s idle settle, so it now
-scores a prewarmed open (near-zero attach) rather than a cold mount, and the `perf:mount` "no
-overlay-mount long tasks after load" claim now tolerates the staged Settings slices at idle — each
-sized to a shell-plus-two-sections start and single sections after, not the ~200 ms task that earned
-the exception. `web/tests/settings-mount.spec.ts` pins the prewarm (fills closed, never shows the
+Two readings shift with this: `npm run perf:web:settings` now measures what the tap actually is
+after this change — **first-show latency on an already-warm dialog, scored against a reopen in the
+same session** (the first-open-over-reopen gap is the residual first-render cost above, tracked so a
+regression shows up as the gap growing; its ready selectors are gated on `[open]` since the warm
+pane satisfies the bare selector before any tap) — and the `perf:mount` "no overlay-mount long tasks
+after load" claim now tolerates the staged Settings slices at idle — each sized to a
+shell-plus-two-sections start and single sections after, not the ~200 ms task that earned the
+exception. `web/tests/settings-mount.spec.ts` pins the prewarm (fills closed, never shows the
 dialog, first open reports not-busy).
+
+## Escape hatch if the overlay set grows heavier
 
 The single barrel chunk (`CVCStUCq.js`, ~56 KB) evaluates all six overlays in one synchronous task
 when the idle `import()` resolves. That is fine **today** because the only heavy member is
-SettingsModal (~42 KB, ~75 % of the chunk) and it is already deferred to first open; the other five
-are ~1.6 KB gzip each, so the co-evaluation never forms a >50 ms task in a `perf:mount` trace. If a
-*second* SettingsModal-scale overlay is ever added to the barrel, that one eval would start reliably
-crossing the 50 ms long-task line at idle.
+SettingsModal (~42 KB, ~75 % of the chunk) and its mount is staged across idle slices by the
+amendment above; the other five are ~1.6 KB gzip each, so the co-evaluation never forms a >50 ms
+task in a `perf:mount` trace. If a *second* SettingsModal-scale overlay is ever added to the barrel,
+that one eval would start reliably crossing the 50 ms long-task line at idle.
 
 The documented fix at that point — measured neutral now (2026-07), so **not adopted yet**: change
 `lib/components/overlayChunk.ts` from static re-exports to a list of per-component lazy loaders

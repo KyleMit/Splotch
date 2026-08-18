@@ -1,10 +1,15 @@
-// First-open cost of the Settings dialog. The dialog is the one overlay too
-// heavy for an idle slice, so it mounts on the tap that opens it (ADR-0049) —
-// which makes that tap the whole budget. This measures it the way issue #910
-// framed it: the production build, a `longtask` PerformanceObserver, and the
-// wide table-of-contents shell scored against the phone hub, which renders the
-// same modal chrome and the same eleven rows with no section bodies at all and
-// is therefore the floor the wide shell is trying to reach.
+// First-show cost of the Settings dialog, scored against a reopen. The dialog
+// mounts closed, its pane prewarms at idle, and the closed card stays laid
+// out but hidden (ADR-0049's amendment), so a first tap paints the whole pane
+// at once with its style and layout already paid. What remains on the first
+// show — the open edge's own restyle and the subtree's first paint — is
+// unpayable from any hidden state, so the pair is the measurement: the
+// first-open-over-reopen gap is that residual, and the number to watch for
+// regressions. Measured on the production build with a `longtask`
+// PerformanceObserver, the wide table-of-contents shell against the phone
+// hub, which renders the same modal chrome and the same eleven rows with no
+// section bodies at all. The settle before the tap is what lets the idle
+// prewarm finish; a tap that beats idle (the cold path) is not scored here.
 //
 //   npm run perf:web:settings                       (both shells, 4x CPU throttle)
 //   node tools/perf/web/capture-settings-open.mjs --throttle=1 --repeats=5 --no-build
@@ -24,15 +29,21 @@ import { LONG_TASK_MS } from '../lib/performance-thresholds.mjs';
 
 // The two shells the section list renders into, at the viewport that selects
 // each (SettingsModal's 700px WIDE_QUERY). The hub is not a variant under test —
-// it is the baseline, unchanged by this work.
+// it is the baseline, unchanged by this work. Gated on `[open]`: the prewarmed
+// pane satisfies the bare selector before the tap, so only the open attribute
+// distinguishes "shown" from "warm and waiting".
 const SHELLS = {
-  wide: { device: DEVICES.desktop, ready: '#settingsModal .settings-pane[aria-busy="false"]' },
-  'phone-hub': { device: DEVICES.phone, ready: '#settingsModal .hub-row' },
+  wide: {
+    device: DEVICES.desktop,
+    ready: '#settingsModal[open] .settings-pane[aria-busy="false"]',
+  },
+  'phone-hub': { device: DEVICES.phone, ready: '#settingsModal[open] .hub-row' },
 };
 
-// The Settings chunk loads at idle well after the page settles (ADR-0049); this
-// keeps that import, and every other idle boot step, out of the measured window
-// so the tap is scored on the mount alone.
+// The Settings chunk loads — and the closed dialog mounts and prewarms — at
+// idle well after the page settles (ADR-0049); this keeps all of that idle
+// boot work out of the measured window, so the tap is scored on showing an
+// already-warm dialog.
 const IDLE_BOOT_SETTLE_MS = 4000;
 // Long tasks are reported to the observer after they end, and a tail one can
 // start just as the pane completes. Kept short enough that a run of repeats
@@ -46,7 +57,61 @@ const { throttle, port, build, flag } = parsePerfArgs({
 });
 const repeats = requireNumberFlag('repeats', flag('repeats', '3'), isMain(import.meta.url));
 
-async function measureOneOpen(browser, cdpThrottle, { device, ready }, base) {
+// A beat between closing the dialog and the reopen tap, so the close frame and
+// any tail long task it reports land outside the reopen's measured window.
+const REOPEN_SETTLE_MS = 500;
+
+// One tap-to-shown cycle. Both timings are taken in the page, a frame apart at
+// worst. Read from the driver instead, a `waitForSelector` plus a round trip
+// lands ~150 ms of its own polling on a number this small. The fly-in is
+// recorded because a tap that beats the prewarm still holds its fill until the
+// card lands: without that split, the wait reads as work.
+async function measureOpenCycle(page, ready) {
+  const { tapAt, taskFloor } = await page.evaluate((ready) => {
+    const at = performance.now();
+    const floor = window.__settingsOpen.longTasks.length;
+    window.__settingsOpen.shownMs = undefined;
+    window.__settingsOpen.flyInMs = undefined;
+    document.querySelector('#settingsButton').click();
+    const pollReady = () => {
+      if (document.querySelector(ready)) window.__settingsOpen.shownMs = performance.now() - at;
+      else requestAnimationFrame(pollReady);
+    };
+    requestAnimationFrame(() => {
+      pollReady();
+      const dialog = document.querySelector('#settingsModal');
+      Promise.all(
+        dialog.getAnimations().map((animation) => animation.finished.catch(() => undefined))
+      ).then(() => {
+        window.__settingsOpen.flyInMs = performance.now() - at;
+      });
+    });
+    return { tapAt: at, taskFloor: floor };
+  }, ready);
+  await page.waitForSelector(ready);
+  await page.waitForTimeout(TAIL_SETTLE_MS);
+  const { shownMs, flyInMs } = await page.evaluate(() => ({
+    shownMs: window.__settingsOpen.shownMs ?? 0,
+    flyInMs: window.__settingsOpen.flyInMs ?? 0,
+  }));
+
+  // Kept by end, not by start: the task the tap itself runs in began before
+  // the clock was read inside it, and where the open does real work that task
+  // IS the cost — filtering on `start` drops precisely the measurement and
+  // reports a clean zero. Sliced from the observer index taken at this tap so
+  // an earlier cycle's tasks can't bleed into this one.
+  const longTasks = await page.evaluate(
+    ({ tapAt, taskFloor }) =>
+      window.__settingsOpen.longTasks
+        .slice(taskFloor)
+        .filter((task) => task.start + task.duration >= tapAt)
+        .map((task) => ({ afterTapMs: task.start - tapAt, duration: task.duration })),
+    { tapAt, taskFloor }
+  );
+  return { shownMs, flyInMs, longTasks };
+}
+
+async function measureFirstOpenAndReopen(browser, cdpThrottle, { device, ready }, base) {
   const ctx = await browser.newContext({
     viewport: { width: device.width, height: device.height },
     deviceScaleFactor: device.deviceScaleFactor,
@@ -66,7 +131,7 @@ async function measureOneOpen(browser, cdpThrottle, { device, ready }, base) {
           }
         }).observe({ type: 'longtask', buffered: true });
       } catch {
-        // longtask unsupported on this engine — the attach timing still works
+        // longtask unsupported on this engine — the shown timing still works
       }
     });
 
@@ -79,49 +144,17 @@ async function measureOneOpen(browser, cdpThrottle, { device, ready }, base) {
     await page.waitForSelector('#drawingCanvas');
     await page.waitForTimeout(IDLE_BOOT_SETTLE_MS);
 
-    // Both timings are taken in the page, a frame apart at worst. Read from the
-    // driver instead, a `waitForSelector` plus a round trip lands ~150 ms of its
-    // own polling on a number this small. The fly-in is recorded because the
-    // wide shell deliberately holds its fill until the card lands: without that
-    // split, the wait reads as work.
-    const tapAt = await page.evaluate((ready) => {
-      const at = performance.now();
-      document.querySelector('#settingsButton').click();
-      const pollReady = () => {
-        if (document.querySelector(ready))
-          window.__settingsOpen.attachedMs = performance.now() - at;
-        else requestAnimationFrame(pollReady);
-      };
-      requestAnimationFrame(() => {
-        pollReady();
-        const dialog = document.querySelector('#settingsModal');
-        Promise.all(
-          dialog.getAnimations().map((animation) => animation.finished.catch(() => undefined))
-        ).then(() => {
-          window.__settingsOpen.flyInMs = performance.now() - at;
-        });
-      });
-      return at;
-    }, ready);
-    await page.waitForSelector(ready);
-    await page.waitForTimeout(TAIL_SETTLE_MS);
-    const { attachedMs, flyInMs } = await page.evaluate(() => ({
-      attachedMs: window.__settingsOpen.attachedMs ?? 0,
-      flyInMs: window.__settingsOpen.flyInMs ?? 0,
-    }));
-
-    // Kept by end, not by start: the task the tap itself runs in began before
-    // the clock was read inside it, and on a shell that mounts everything at
-    // once that task IS the cost — filtering on `start` drops precisely the
-    // measurement and reports a clean zero.
-    const longTasks = await page.evaluate(
-      (at) =>
-        window.__settingsOpen.longTasks
-          .filter((task) => task.start + task.duration >= at)
-          .map((task) => ({ afterTapMs: task.start - at, duration: task.duration })),
-      tapAt
-    );
-    return { attachedMs, flyInMs, longTasks };
+    const firstOpen = await measureOpenCycle(page, ready);
+    // Close through the dialog's own close(): modalDialog re-syncs the open
+    // flag off the `close` event, so this is the Esc path without synthesizing
+    // keyboard input.
+    await page.evaluate(() => document.querySelector('#settingsModal').close());
+    // Attached, not visible: a closed dialog never matches Playwright's
+    // default visible state.
+    await page.waitForSelector('#settingsModal:not([open])', { state: 'attached' });
+    await page.waitForTimeout(REOPEN_SETTLE_MS);
+    const reopen = await measureOpenCycle(page, ready);
+    return { firstOpen, reopen };
   } finally {
     await ctx.close();
   }
@@ -129,6 +162,21 @@ async function measureOneOpen(browser, cdpThrottle, { device, ready }, base) {
 
 const round = (n) => Math.round(n);
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
+const longestTask = (cycle) => Math.max(0, ...cycle.longTasks.map((task) => task.duration));
+
+const cycleDetail = (cycle) => ({
+  shownMs: round(cycle.shownMs),
+  longTasks: cycle.longTasks.map((task) => ({
+    afterTapMs: round(task.afterTapMs),
+    durationMs: round(task.duration),
+  })),
+});
+
+const cycleMedians = (cycles) => ({
+  medianShownMs: round(median(cycles.map((cycle) => cycle.shownMs))),
+  medianFlyInMs: round(median(cycles.map((cycle) => cycle.flyInMs))),
+  medianLongestTaskMs: round(median(cycles.map(longestTask))),
+});
 
 export async function runSettingsOpenProfile() {
   const outDir = profilePath('settings-open', throttle.tag);
@@ -144,22 +192,16 @@ export async function runSettingsOpenProfile() {
     for (const [name, shell] of Object.entries(SHELLS)) {
       const runs = [];
       for (let i = 0; i < repeats; i += 1) {
-        runs.push(await measureOneOpen(browser, throttle, shell, base));
+        runs.push(await measureFirstOpenAndReopen(browser, throttle, shell, base));
       }
       results[name] = {
         viewport: `${shell.device.width}x${shell.device.height}`,
         runs: runs.map((run) => ({
-          attachedMs: round(run.attachedMs),
-          longTasks: run.longTasks.map((task) => ({
-            afterTapMs: round(task.afterTapMs),
-            durationMs: round(task.duration),
-          })),
+          firstOpen: cycleDetail(run.firstOpen),
+          reopen: cycleDetail(run.reopen),
         })),
-        medianAttachedMs: round(median(runs.map((run) => run.attachedMs))),
-        medianFlyInMs: round(median(runs.map((run) => run.flyInMs))),
-        medianLongestTaskMs: round(
-          median(runs.map((run) => Math.max(0, ...run.longTasks.map((task) => task.duration))))
-        ),
+        firstOpen: cycleMedians(runs.map((run) => run.firstOpen)),
+        reopen: cycleMedians(runs.map((run) => run.reopen)),
       };
     }
   } finally {
@@ -171,14 +213,16 @@ export async function runSettingsOpenProfile() {
   writeFileSync(join(outDir, 'settings-open.json'), JSON.stringify(summary, null, 2));
 
   for (const [name, result] of Object.entries(results)) {
+    const describeCycle = (label, cycle) =>
+      `${label}: longest task ${cycle.medianLongestTaskMs} ms, shown in ${cycle.medianShownMs} ms`;
     console.log(
       `${name.padEnd(10)} ${result.viewport.padEnd(9)} cpu ${throttle.tag}  ` +
-        `longest long task ${result.medianLongestTaskMs} ms, ` +
-        `attached in ${result.medianAttachedMs} ms (fly-in ${result.medianFlyInMs} ms)  ` +
-        `(runs: ${result.runs
+        `${describeCycle('first open', result.firstOpen)}  ` +
+        `${describeCycle('reopen', result.reopen)}  ` +
+        `(first-open runs: ${result.runs
           .map(
             (run) =>
-              `[${run.longTasks.map((task) => `${task.durationMs}ms@+${task.afterTapMs}`).join(' ')}]`
+              `[${run.firstOpen.longTasks.map((task) => `${task.durationMs}ms@+${task.afterTapMs}`).join(' ')}]`
           )
           .join(' ')})`
     );

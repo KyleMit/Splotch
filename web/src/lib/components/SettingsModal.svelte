@@ -260,6 +260,21 @@
 </dialog>
 
 <style>
+  /* A closed <dialog> is display: none by UA rule, which would leave the
+     prewarmed pane's first style and layout unpaid until showModal() — the
+     dominant share of a first-open long task that measured ~2× a reopen's
+     under 4× CPU throttle. Keeping the closed card laid out but invisible
+     pays that at idle instead: visibility excludes it from paint, hit
+     testing, focus, and the accessibility tree, and the box matches the open
+     state's (same fixed centering), so the first show roughly halves. The
+     residual over a reopen is the open edge's own restyle and first paint,
+     which no hidden state can pay — npm run perf:web:settings scores first
+     open against reopen to keep that gap visible. */
+  .settings-modal:not([open]) {
+    display: block;
+    visibility: hidden;
+  }
+
   .settings-modal {
     --card-height-cap: 85vh;
 

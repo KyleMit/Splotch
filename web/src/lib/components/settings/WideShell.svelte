@@ -287,10 +287,14 @@
     // pays for its own prefix.
     mountAtLeast(sectionIndex(landing) + 1);
     let stopFill: (() => void) | undefined;
-    // A still-closed dialog is `display: none`, so both scrollers report 0 and
-    // ignore a scrollTo — and the browser then restores the offsets it kept the
-    // moment the card gets a layout box. Waiting a frame is what makes the reset
-    // stick rather than be overwritten.
+    // The open flip promotes the card to the top layer and moves focus into
+    // it, either of which can overwrite a scroll aimed at the same moment —
+    // and on a tap that beat the prewarm the card may only now be getting its
+    // layout box, where the browser restores the offsets it kept. Waiting a
+    // frame is what makes the reset stick rather than be overwritten. (A
+    // prewarmed card is laid out while closed — SettingsModal keeps it
+    // `visibility: hidden` rather than `display: none` — so its offsets are
+    // real before the open, too.)
     const frame = requestAnimationFrame(() => {
       navEl?.scrollTo({ top: 0 });
       revealNavRow(landing, 'auto');
@@ -329,10 +333,11 @@
     pendingJump = null;
   });
 
-  // Armed only while the dialog is open: the idle prewarm mounts sections into
-  // a closed — display: none — pane, where every rect reads 0, so a growth tick
-  // there would elect whichever section mounted last and park the highlight on
-  // it until the open reset. A closed pane has no reader for the spy to follow.
+  // Armed only while the dialog is open: a closed pane has no reader for the
+  // spy to follow, and the idle prewarm grows the closed (hidden, or on a
+  // pre-prewarm tap display: none) pane section by section — a growth tick
+  // there would elect off offsets no one is reading and park the highlight
+  // wherever it lands until the open reset.
   $effect(() => {
     if (!settingsModal.open) return;
     const pane = paneEl;
