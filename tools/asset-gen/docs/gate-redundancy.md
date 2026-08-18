@@ -91,6 +91,10 @@ regression-locked by its own broken/good fixtures:
   pass/fail gate, so its test asserts a haloed fill ranks above a clean punch.
 * `scoreCompositeEyes` (`tests/composite-eye.test.mjs`) — `(comp, light, pen)`; the blank-orb class,
   on recovered real crops.
+* `scoreChalkInkDiff` (`tests/chalk-ink-diff.test.mjs`) — `(pen, chalk)`; chalk-only ink inside
+  pen-bounded foreground regions plus copied ink inside solid-pen cores. Its real-fixture regression
+  keeps the shipped caterpillar whitening failure and the repaired ship page as the negative
+  control.
 
 ## The negative space — classes NO gate catches
 
@@ -98,12 +102,11 @@ The matrix proves the gates don't overlap wastefully; it does **not** claim the 
 GitHub issues labeled `area:asset-gen` are the living list of gate blind spots — the failure classes
 only human composite review catches today. The load-bearing ones as of the 2026-07 migration:
 
-* **Invention *inside* the subject** (ISSUES #7, #8): `detectInventedShapes` scans only the open
-  background; a colored shape or a chalk-invented face inside a pen-bounded interior is unseen.
+* **Colored-fill invention *inside* the subject** (ISSUES #7): `detectInventedShapes` scans only the
+  open background; the chalk side is covered by `scoreChalkInkDiff`, but a colored shape added by a
+  fill inside a pen-bounded interior remains unseen.
 * **Hero-region ↔ background contrast** (ISSUES #6): a fill can paint the subject a colour
   indistinguishable from the night sky and pass every gate.
-* **Chalk whitening on solid-pen-eye pages** (ISSUES #8): a solid pen pupil has no nested rings, so
-  `findEyeCores` finds nothing and the eye gates pass vacuously.
 * **Palette / motif coherence across light↔night and tall↔wide** (ISSUES #11, #12): each fill is an
   independent generation; nothing checks subject-colour plausibility.
 

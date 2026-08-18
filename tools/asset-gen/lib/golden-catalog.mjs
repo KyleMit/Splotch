@@ -13,6 +13,7 @@ import { prepareOutlineAnalysis } from './outline-analysis.mjs';
 import { scoreOutlineFrame } from './outline-frame.mjs';
 import { KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD, outlineMatch } from './outline-match.mjs';
 import { scoreSolidity } from './solid-regions.mjs';
+import { prepareChalkInkDiff, scoreChalkInkDiff } from './chalk-ink-diff.mjs';
 
 const round = (v, digits) => {
   const f = 10 ** digits;
@@ -46,6 +47,15 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
       frameOk: frame.passes,
     },
   };
+
+  if (chalk) {
+    const ink = await scoreChalkInkDiff(chalk, await prepareChalkInkDiff(analysis));
+    entry.chalk = {
+      addedInkPx: ink.addedInkPx,
+      solidInkPx: ink.solidInkPx,
+      regionsFlagged: ink.absoluteFlaggedRegions.length,
+    };
+  }
 
   let lightEyes = null;
   if (lightRaw) {
@@ -118,6 +128,9 @@ export const GOLDEN_METRICS = {
   'outline.ringDepth': { noise: 0, worse: 'up' },
   'outline.frameCoverage': { noise: 0.005, worse: 'up' },
   'outline.ghostCoverage': { noise: 0.005, worse: 'up' },
+  'chalk.addedInkPx': { noise: 8, worse: 'up' },
+  'chalk.solidInkPx': { noise: 8, worse: 'up' },
+  'chalk.regionsFlagged': { noise: 0, worse: 'up' },
   'light.keep': { noise: 0.005, worse: 'down' },
   'light.localKeep': { noise: 0.005, worse: 'down' },
   'light.eyeCores': { noise: 0, worse: null },

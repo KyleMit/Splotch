@@ -48,6 +48,18 @@ describe('golden catalog frame coverage direction', () => {
   });
 });
 
+describe('golden catalog chalk ink direction', () => {
+  it('reports new bounded ink and newly flagged regions as regressions', () => {
+    const out = diff(
+      { chalk: { addedInkPx: 20, solidInkPx: 10, regionsFlagged: 0 } },
+      { chalk: { addedInkPx: 40, solidInkPx: 10, regionsFlagged: 1 } }
+    );
+
+    expect(out.regressions).toContain('fixture/page  chalk.addedInkPx 20 -> 40');
+    expect(out.regressions).toContain('fixture/page  chalk.regionsFlagged 0 -> 1');
+  });
+});
+
 describe('golden catalog blank-orb verdict', () => {
   // Scoring a fixture runs the full-resolution eye pipeline (~550 ms each), and
   // both direction tests need the same pair — only the argument order to diff()
@@ -169,7 +181,7 @@ describe('golden catalog shape drift guard', () => {
       pen,
       lightRaw,
       nightRaw,
-      chalk: null,
+      chalk: pen,
     });
 
     for (const path of GOLDEN_VERDICTS) expect(get(entry, path), path).not.toBeUndefined();

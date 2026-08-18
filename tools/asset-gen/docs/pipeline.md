@@ -134,10 +134,10 @@ light → chalk → night → punch. Decision record + the 2026-07-13 five-page 
 ## Stage 1.5 — Chalk outlines
 
 `npm run gen:coloring-chalk -- <page-or-category…> [--apply] [--notes "…"]
-[-t F] [--max-attempts N] [--force] [--dry-run]`
+[-t F] [--max-attempts N] [--ink-diff-max N] [--force] [--dry-run]`
 — Gemini image-edit redraws the inverted pen as a chalk line drawing (`gen-chalk-outlines.mjs`),
 keep-best-of-N with a rising temperature ladder, candidates in `.coloring-samples-dark/chalk/` (each
-with a `.display.webp` preview of what dark mode will show and a registration overlay). Four gates
+with a `.display.webp` preview of what dark mode will show and a registration overlay). Five gates
 per candidate (`--rescore` re-runs them over saved candidates offline — no API — after a gate
 change):
 
@@ -156,15 +156,30 @@ change):
    stroke, rejecting 9 of nature's 12 perfectly good chalks;
 3. **white budget** — total whitened area ≤ 10% of the page (a chalk that whitens a whole body is a
    review-worthy surprise, not a judgment call);
-4. **eye polarity** — pen eye cores the committed light raw paints DARK (pupils) must stay
+4. **regional chalk-vs-pen ink diff** (`lib/chalk-ink-diff.mjs`) — at the shared 512 px analysis
+   scale, every pen-bounded foreground region gets its own count of chalk ink beyond the pen's 2 px
+   registration slack. Pen solid interiors are eroded into separate cores and count retained chalk
+   ink too, so copying a solid pen pupil or nose is visible even though it is not "new" ink. A new
+   page may add at most 31 px per region/core by default (`--ink-diff-max` raises the reviewed
+   allowance). On regeneration, the shipped chalk supplies the regional baseline: each region may
+   keep its existing deliberate sclera, catchlight, or marking plus 10% or 8 px of crisping noise,
+   whichever is larger. This preserves intentional whites while rejecting a new face, solidified
+   pupil, or promoted patch in a previously clean region. Candidate keep/reject and fallback ranking
+   both use the verdict; the report's `ink added/solid px` pair exposes the worst two regions.
+   Golden scores freeze the absolute maxima and count of regions over the default, so a later asset
+   change cannot worsen the catalog silently. Calibration keeps the default just below the recovered
+   duck solid core (32 px) and the shipped caterpillar/teddy failures (35–41 px), while repaired
+   dog-wide and ship-tall top out at 28 px and 0 px. The baseline margin keeps repaired
+   flower-wide's 495 px deliberate sclera usable but rejects its recovered 571 px asymmetric take;
+5. **eye polarity** — pen eye cores the committed light raw paints DARK (pupils) must stay
    non-ink/fillable in the chalk; cores it paints BRIGHT (catchlights) should be chalk ink (warns
    only). Added after the first spider/caterpillar chalks whitened whole eyeballs — pupil included —
    which the registration gates can't see (the rings are all still traced) and the night-fill
    composite gate only catches after a fill has been burned. **Blind spot: this gate needs pen eye
    CORES to exist.** A solid-ink pen pupil has no nested rings, so `findEyeCores` finds nothing and
-   the gate passes vacuously — vehicles/police-tall's 3.1 chalk whitened both pupils this way and
-   only composite review caught it (fixed with an erase-and-redraw `--notes`). On any solid-pen-eye
-   page, render the night composite before trusting a chalk (GitHub issues, label `area:asset-gen`).
+   this eye-specific gate passes vacuously — vehicles/police-tall's 3.1 chalk whitened both pupils
+   this way. The regional ink diff above is the independent backstop; composite review remains
+   required for art-direction calls.
 
 Candidates render to ink polarity through a **crisping S-curve** (`lib/crisp-ink.mjs`) instead of
 the pen tools' gentle contrast: on the dark board the invert + screen render and the binary night
@@ -449,10 +464,10 @@ The loop that has worked, per category:
    — the only thing that caught house-tall's two invented sky flowers, invisible to every standard
    gate — and the residual-halo ranker (`check:coloring-night-halo`); both are offline and
    deterministic, and the halo table's top scorers need a human crop review (deliberate mid-dark art
-   hugging lines scores like halo). For gate-blind classes (solid-pen-eye chalks, subject/background
-   contrast), batch-render the night composites (`lib/night-composite.mjs`) into per-category
-   montages and eyeball them — that sweep is what caught police-tall's whitened pupils and
-   circle-wide's sky-colored disc.
+   hugging lines scores like halo). For remaining gate-blind classes (subject/background contrast,
+   colored-fill invention inside a subject), batch-render the night composites
+   (`lib/night-composite.mjs`) into per-category montages and eyeball them — that sweep is what
+   caught police-tall's whitened pupils and circle-wide's sky-colored disc.
 6. **Diff against the golden set** (`check:coloring-golden-scores`, ~1 min offline) — the safety net
    that keeps "improved train-wide" from silently degrading the other 93 pages. Regressions exit
    non-zero; the changed pages should be exactly the ones you touched. Re-freeze

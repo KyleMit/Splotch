@@ -222,6 +222,11 @@ const commandCases = [
     ['nature/ant-tall', '--dry-run', '--invented-max', 'invalid'],
     '--invented-max must be a non-negative number, got "invalid"',
   ],
+  [
+    'gen-chalk-outlines.mjs',
+    ['nature/ant-tall', '--dry-run', '--ink-diff-max', 'invalid'],
+    '--ink-diff-max must be a non-negative number, got "invalid"',
+  ],
 ];
 
 const entryPath = (script) =>

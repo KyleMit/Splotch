@@ -124,10 +124,11 @@ Two fixtures freeze the current catalog's state so a change can prove it didn't 
 else (both offline, no key):
 
 * **`golden/golden-scores.json`** — every offline audit score per page (outline solidity/eye
-  rings/page frames, light keep/localKeep + eyes, night drift/bgLuma/lineWhite + eyes), written by
-  `update:coloring-golden-scores`. `check:coloring-golden-scores` re-scores (~1 min) and exits
-  non-zero on any verdict flip or bad-direction movement — run it after any pipeline or asset
-  change, and re-freeze to adopt intended changes.
+  rings/page frames, chalk regional ink diff, light keep/localKeep + eyes, night
+  drift/bgLuma/lineWhite + eyes), written by `update:coloring-golden-scores`.
+  `check:coloring-golden-scores` re-scores (~1 min) and exits non-zero on any verdict flip or
+  bad-direction movement — run it after any pipeline or asset change, and re-freeze to adopt
+  intended changes.
 * **`golden/asset-manifest.sha256`** — one sha256 line per committed art asset (shipped coloring
   pages, style covers, `fill-src/` raws), written by `gen:assets:manifest` and verified in CI by
   `check:assets:manifest`. It turns binary churn into a reviewable text diff and guards the

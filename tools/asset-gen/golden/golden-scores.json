@@ -43,6 +43,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 96,
+        "solidInkPx": 120,
+        "regionsFlagged": 5
+      },
       "light": {
         "keep": 0.9996,
         "localKeep": 0.9872,
@@ -79,6 +84,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 84,
+        "regionsFlagged": 3
       },
       "light": {
         "keep": 1,
@@ -117,6 +127,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 37,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -153,6 +168,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 0.999,
@@ -191,6 +211,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 6,
+        "solidInkPx": 36,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -227,6 +252,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 5,
+        "solidInkPx": 9,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -265,6 +295,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 42,
+        "solidInkPx": 345,
+        "regionsFlagged": 3
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -301,6 +336,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 143,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -339,6 +379,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 124,
+        "solidInkPx": 10,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -375,6 +420,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -413,6 +463,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 60,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -449,6 +504,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 203,
+        "solidInkPx": 58,
+        "regionsFlagged": 5
       },
       "light": {
         "keep": 1,
@@ -487,6 +547,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 4,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -523,6 +588,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 8,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -576,6 +646,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 124,
+        "solidInkPx": 64,
+        "regionsFlagged": 4
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -612,6 +687,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 25,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -650,6 +730,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 25,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -686,6 +771,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 33,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -724,6 +814,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 115,
+        "solidInkPx": 0,
+        "regionsFlagged": 6
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -760,6 +855,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 13,
+        "solidInkPx": 29,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 0.9998,
@@ -798,6 +898,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 56,
+        "solidInkPx": 161,
+        "regionsFlagged": 3
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -834,6 +939,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 304,
+        "solidInkPx": 0,
+        "regionsFlagged": 7
       },
       "light": {
         "keep": 1,
@@ -872,6 +982,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 57,
+        "solidInkPx": 149,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -908,6 +1023,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -946,6 +1066,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 3,
+        "solidInkPx": 123,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -982,6 +1107,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 22,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1035,6 +1165,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 26,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1071,6 +1206,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 17,
+        "solidInkPx": 36,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -1109,6 +1249,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 4,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1145,6 +1290,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 28,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1183,6 +1333,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 48,
+        "solidInkPx": 3,
+        "regionsFlagged": 3
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1219,6 +1374,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1257,6 +1417,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1293,6 +1458,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 39,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -1331,6 +1501,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 140,
+        "solidInkPx": 48,
+        "regionsFlagged": 3
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1367,6 +1542,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 893,
+        "solidInkPx": 0,
+        "regionsFlagged": 6
       },
       "light": {
         "keep": 1,
@@ -1405,6 +1585,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 183,
+        "solidInkPx": 0,
+        "regionsFlagged": 3
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1441,6 +1626,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 147,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -1479,6 +1669,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 7,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1515,6 +1710,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 81,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -1553,6 +1753,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 507,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 0.9998,
         "localKeep": 0.9939,
@@ -1589,6 +1794,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 40,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 0.9942,
@@ -1642,6 +1852,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 120,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1678,6 +1893,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -1716,6 +1936,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 95,
+        "solidInkPx": 0,
+        "regionsFlagged": 4
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1752,6 +1977,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 507,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -1790,6 +2020,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 150,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1826,6 +2061,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 25,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1864,6 +2104,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 2,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1900,6 +2145,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -1938,6 +2188,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 703,
+        "solidInkPx": 0,
+        "regionsFlagged": 11
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -1974,6 +2229,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 64,
+        "solidInkPx": 24,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -2027,6 +2287,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 667,
+        "solidInkPx": 2,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2063,6 +2328,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 495,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -2101,6 +2371,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 242,
+        "solidInkPx": 0,
+        "regionsFlagged": 9
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2137,6 +2412,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 163,
+        "solidInkPx": 0,
+        "regionsFlagged": 6
       },
       "light": {
         "keep": 1,
@@ -2175,6 +2455,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2211,6 +2496,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 7,
+        "solidInkPx": 58,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -2249,6 +2539,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 75,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2285,6 +2580,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 288,
+        "solidInkPx": 0,
+        "regionsFlagged": 7
       },
       "light": {
         "keep": 1,
@@ -2323,6 +2623,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 268,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2359,6 +2664,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2412,6 +2722,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 5244,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2448,6 +2763,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -2486,6 +2806,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 226,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2522,6 +2847,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 598,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -2560,6 +2890,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 178,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2596,6 +2931,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 149,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -2634,6 +2974,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 160,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2670,6 +3015,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 44,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -2708,6 +3058,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 124,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2744,6 +3099,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 181,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -2782,6 +3142,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 61,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2818,6 +3183,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 0.999,
@@ -2871,6 +3241,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 5,
+        "solidInkPx": 39,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2907,6 +3282,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 265,
+        "solidInkPx": 0,
+        "regionsFlagged": 3
       },
       "light": {
         "keep": 1,
@@ -2945,6 +3325,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 61,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -2981,6 +3366,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 360,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -3019,6 +3409,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 198,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3055,6 +3450,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 18,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3093,6 +3493,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3129,6 +3534,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 1724,
+        "solidInkPx": 0,
+        "regionsFlagged": 8
       },
       "light": {
         "keep": 0.9999,
@@ -3167,6 +3577,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3203,6 +3618,11 @@
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 271,
+        "solidInkPx": 0,
+        "regionsFlagged": 3
       },
       "light": {
         "keep": 1,
@@ -3256,6 +3676,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 23,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3292,6 +3717,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 15,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
@@ -3330,6 +3760,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 211,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3366,6 +3801,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -3404,6 +3844,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 37,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3440,6 +3885,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 56,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
       },
       "light": {
         "keep": 1,
@@ -3478,6 +3928,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 254,
+        "solidInkPx": 0,
+        "regionsFlagged": 3
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3514,6 +3969,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 1856,
+        "solidInkPx": 15,
+        "regionsFlagged": 8
       },
       "light": {
         "keep": 1,
@@ -3552,6 +4012,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 73,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3588,6 +4053,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 123,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
       },
       "light": {
         "keep": 1,
@@ -3626,6 +4096,11 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 58,
+        "solidInkPx": 7,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
@@ -3662,6 +4137,11 @@
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
+      },
+      "chalk": {
+        "addedInkPx": 10,
+        "solidInkPx": 4,
+        "regionsFlagged": 0
       },
       "light": {
         "keep": 1,
