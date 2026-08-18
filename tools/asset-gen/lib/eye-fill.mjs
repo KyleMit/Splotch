@@ -329,15 +329,15 @@ export const STRONG_LIGHT_SIDE = 180;
 // thin-stroke true failure (caterpillar/ladybug spirals) sits at 0.26-0.29.
 export const BAND_BLIND_INK_FRAC = 0.5;
 
-// A light fill's eyes pass when at least one measurable, blessed eye core reads
-// lively. Solid-pen pupils are not measurable because the pen ink hides their
-// surrounding band; nested windows and hubs are excluded by the reviewed
-// per-page annotations rather than treated as anatomy.
+// A light fill's eyes are gated when at least one blessed eye core has a
+// measurable surrounding band. Solid-pen pupils are not measurable because
+// the pen ink hides their surrounding band; nested windows and hubs are
+// excluded by the reviewed per-page annotations rather than treated as anatomy.
 export function judgeLightEyes(scored, { page } = {}) {
   const eyeCores = annotatedLightEyeCores(page, scored.cores);
-  if (eyeCores.some((core) => core.lively)) return { passes: true };
   const measurable = eyeCores.filter((core) => core.annulusInkFrac <= BAND_BLIND_INK_FRAC);
-  return { passes: measurable.length === 0 };
+  const gated = measurable.length > 0;
+  return { passes: !gated || eyeCores.some((core) => core.lively), gated };
 }
 
 // On a chalk-forked page the chalk owns the eye whites, so in the simulated

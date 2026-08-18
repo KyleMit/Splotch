@@ -51,6 +51,7 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
   if (lightRaw) {
     const { keep, localKeep, worstTile } = await outlineMatch(pen, lightRaw);
     lightEyes = await scoreEyeFill(lightRaw, pen);
+    const lightVerdict = judgeLightEyes(lightEyes, { page });
     entry.light = {
       keep: round(keep, 4),
       localKeep: round(localKeep, 4),
@@ -58,7 +59,7 @@ export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) 
       eyeCores: lightEyes.cores.length,
       eyeLively: lightEyes.cores.filter((c) => c.lively).length,
       driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
-      eyesOk: judgeLightEyes(lightEyes, { page }).passes,
+      eyesOk: lightVerdict.gated ? lightVerdict.passes : null,
     };
   }
 

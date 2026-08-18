@@ -3,7 +3,12 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const state = vi.hoisted(() => ({ roots: null, pages: [], overlayRequests: 0 }));
+const state = vi.hoisted(() => ({
+  roots: null,
+  pages: [],
+  overlayRequests: 0,
+  lightVerdict: { passes: true, gated: true },
+}));
 
 // The fixture files carry their meaning in their bytes: addPage writes one of
 // these, and the mocked decoders below recognise it. Named so a typo at either
@@ -98,7 +103,7 @@ vi.mock('../lib/eye-fill.mjs', async (importOriginal) => ({
     assertReadable(buffer);
     return { cores: [] };
   },
-  judgeLightEyes: () => ({ passes: true }),
+  judgeLightEyes: () => state.lightVerdict,
   judgeNightEyes: () => ({ passes: true }),
 }));
 
@@ -183,6 +188,7 @@ beforeEach(async () => {
   ]);
   state.pages = [];
   state.overlayRequests = 0;
+  state.lightVerdict = { passes: true, gated: true };
   process.exitCode = undefined;
   log = vi.spyOn(console, 'log').mockImplementation(() => {});
   error = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -224,6 +230,17 @@ it('fill eyes reports a corrupt fill, continues, and exits non-zero', async () =
   expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('test/good');
   expect(process.exitCode).toBe(1);
+});
+
+it('fill eyes reports an accepted unmeasurable page as ungated', async () => {
+  state.pages = [await addPage('ungated')];
+  state.lightVerdict = { passes: true, gated: false };
+
+  await runCli('check-fill-eyes.mjs');
+
+  expect(outputOf(log)).toContain('test/ungated');
+  expect(outputOf(log)).toMatch(/test\/ungated\s+0\s+0\s+n\/a/);
+  expect(process.exitCode).toBeUndefined();
 });
 
 it('outline solidity reports a corrupt outline, continues, and exits non-zero', async () => {

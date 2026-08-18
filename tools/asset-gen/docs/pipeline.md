@@ -220,8 +220,9 @@ keep-best-of-5:
 * **keep ≥ 92% / worst-tile ≥ 80%** — the worst-tile gate exists because a 93% global keep once
   shipped with a single flower drifted to 34% (nature/ant-wide, pre-gate);
 * **white ≤ 5%** — big blank areas read as uncolored under the brush;
-* **eyes** — at least one eye core reads lively (`judgeLightEyes`); zero lively cores means the
-  outline itself is broken.
+* **eyes** — at least one reviewed, measurable eye core reads lively (`judgeLightEyes`). Pages whose
+  eye cores are all band-blind, or whose reviewed nested regions are all non-face geometry, are
+  accepted but reported as **ungated** instead of spending retries on an unmeasurable signal.
 
 Each best candidate and its registration overlay land in `.coloring-samples/`, including the best
 failed take for diagnosis. Gate exhaustion exits nonzero. `--apply` writes the raws to `fill-src/`
@@ -410,7 +411,10 @@ noisy:
 `judgeLightEyes` applies the same band-blind rule, because a solid-pen pupil makes the light band
 equally unmeasurable. A small reviewed annotation registry (`lib/light-eye-annotations.mjs`) names
 the real eye cores on pages where nested windows or hubs otherwise look anatomical; an outline
-change that moves a named core fails closed until the annotation is reviewed again.
+change that moves a named core or changes the reviewed total core count fails closed until the
+annotation is reviewed again. The light-fill generator reports unmeasurable annotations as
+`eyes ungated`, the audit prints `n/a`, and the golden catalog records `light.eyesOk: null`; none of
+those representations claims that a dead fill was observed to be healthy.
 
 Debugging technique that keeps resolving disputes between scores and eyes: **ASCII luma maps**. When
 a crop and a score disagree, dump the region as characters — it's diffable, zoomable, and doesn't

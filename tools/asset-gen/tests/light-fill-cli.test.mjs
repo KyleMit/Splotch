@@ -14,6 +14,7 @@ const state = vi.hoisted(() => ({
   candidate: null,
   gateResults: [],
   overlayRequests: 0,
+  eyeVerdict: { passes: true, gated: true },
 }));
 
 vi.mock('../lib/asset-paths.mjs', () => ({
@@ -68,7 +69,7 @@ vi.mock('../lib/outline-match.mjs', async (importOriginal) => ({
 }));
 vi.mock('../lib/eye-fill.mjs', () => ({
   scoreEyeFill: async () => ({}),
-  judgeLightEyes: () => ({ passes: true }),
+  judgeLightEyes: () => state.eyeVerdict,
 }));
 vi.mock('../lib/punch-fill.mjs', () => ({
   punchFill: async (rawPath) => {
@@ -122,6 +123,7 @@ beforeEach(async () => {
     .toBuffer();
   state.gateResults = [];
   state.overlayRequests = 0;
+  state.eyeVerdict = { passes: true, gated: true };
   process.env.GEMINI_API_KEY = 'test';
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -178,6 +180,15 @@ it('does not ship a passing candidate without apply', async () => {
   expect(await readFile(join(state.roots.coloring, 'test/page-tall.light.webp'), 'utf8')).toBe(
     'known-shipped-page-tall'
   );
+});
+
+it('accepts an ungated eye verdict without ranking it as positive evidence', async () => {
+  await addPage('page-tall');
+  state.gateResults = [true];
+  state.eyeVerdict = { passes: true, gated: false };
+
+  expect(await run(['test/page-tall'])).toEqual({ failed: 0, shipped: [] });
+  expect(console.log).toHaveBeenCalledWith(expect.stringContaining('eyes ungated'));
 });
 
 it('surfaces sample drift for review without failing the run', async () => {

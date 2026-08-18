@@ -101,6 +101,13 @@ describe('golden catalog blank-orb verdict', () => {
 });
 
 describe('golden catalog missing-key detection', () => {
+  it('reports a light-eye scoreability change without calling it a regression', () => {
+    const out = diff({ light: { eyesOk: false } }, { light: { eyesOk: null } });
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  light.eyesOk false -> null (scoreability changed)');
+  });
+
   it('reports a key dropped from the current score shape as a loud regression', () => {
     const out = diff({ outline: { solidOk: true } }, { outline: {} });
 

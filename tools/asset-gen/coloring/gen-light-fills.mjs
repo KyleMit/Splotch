@@ -104,17 +104,21 @@ async function whiteFraction(buf) {
 const WHITE_THRESHOLD = 0.05; // >5% pure white ⇒ blank areas left uncolored
 
 // A candidate clears if it holds the outline globally AND in its worst tile,
-// isn't mostly blank white, and painted the eyes (at least one nested eye core
-// reads lively — lib/eye-fill.mjs; pages with no eye cores pass vacuously).
+// isn't mostly blank white, and painted the eyes when the reviewed outline has
+// a measurable eye core (lib/eye-fill.mjs).
 const passes = (c) =>
   c.keep >= KEEP_THRESHOLD &&
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
   c.white <= WHITE_THRESHOLD &&
   c.eyesOk;
 // Rank for keeping the best of several imperfect attempts: fidelity is the hard
-// constraint (global then worst-tile), then eyes, then less leftover white.
+// constraint (global then worst-tile), then gated eyes, then less leftover white.
 const rank = (c) =>
-  (passes(c) ? 1000 : 0) + c.localKeep * 200 + (c.eyesOk ? 150 : 0) + (1 - c.white) * 100 + c.keep;
+  (passes(c) ? 1000 : 0) +
+  c.localKeep * 200 +
+  (c.eyesGated && c.eyesOk ? 150 : 0) +
+  (1 - c.white) * 100 +
+  c.keep;
 
 export async function run(argv) {
   const { values, positionals } = parseArgs({
@@ -173,6 +177,7 @@ export async function run(argv) {
         whiteFraction(colored),
         scoreEyeFill(colored, source),
       ]);
+      const eyeVerdict = judgeLightEyes(eyeScore, { page });
       const cand = {
         colored,
         keep,
@@ -180,7 +185,8 @@ export async function run(argv) {
         localKeep,
         worstTile,
         white,
-        eyesOk: judgeLightEyes(eyeScore, { page }).passes,
+        eyesOk: eyeVerdict.passes,
+        eyesGated: eyeVerdict.gated,
         shift: { dx, dy },
         attempt,
       };
@@ -217,7 +223,8 @@ export async function run(argv) {
         if (keep < KEEP_THRESHOLD) warn.push('drifting');
         if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
         if (white > WHITE_THRESHOLD) warn.push('white');
-        if (!cand.eyesOk) warn.push('flat eyes');
+        if (!cand.eyesGated) warn.push('eyes ungated');
+        else if (!cand.eyesOk) warn.push('flat eyes');
         const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  white ${(white * 100).toFixed(1)}%`;
 
         const dir = join(SAMPLES_DIR, rel);
