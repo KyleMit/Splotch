@@ -2,8 +2,12 @@ import { MIN_ANDROID_API_LEVEL } from '../../../web/src/lib/components/beta/andr
 import { isMain } from '../../lib/proc.mjs';
 import { CURRENT_ANDROID_API_LEVEL } from './lib/android-toolchain.mjs';
 
+export function uniqueAndroidEmulatorApiLevels(currentApiLevel, floorApiLevel) {
+  return [...new Set([currentApiLevel, floorApiLevel])];
+}
+
 export function androidEmulatorApiLevels() {
-  return [CURRENT_ANDROID_API_LEVEL, MIN_ANDROID_API_LEVEL];
+  return uniqueAndroidEmulatorApiLevels(CURRENT_ANDROID_API_LEVEL, MIN_ANDROID_API_LEVEL);
 }
 
 export function printAndroidEmulatorApiLevels() {
