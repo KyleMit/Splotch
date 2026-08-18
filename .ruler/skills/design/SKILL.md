@@ -175,12 +175,12 @@ That second case is how a canvas-floating control de-duplicates: hoist the share
 not a wrapper component, which the bespoke-paper-treatment carve-out above rules out anyway.
 
 `app.css` also dresses one piece of UA chrome the app never marks up: a **classic, space-taking
-scrollbar** wears `scrollbar-width: thin` with the thumb in `--control-track-hover` over a
-transparent track, so a scroller's gutter shows its own surface instead of a full-bleed system track
-painted through its rounded corners. It is declared on `*` (`scrollbar-width` does not inherit) and
-uses the standard properties rather than `::-webkit-scrollbar`, which would trade WebKit's overlay
-scrollbar for a permanent gutter on iOS and macOS Safari. Don't restyle scrollbars per component —
-`scrollbar-chrome.spec.ts` guards the shared treatment.
+scrollbar** gets a transparent track with the thumb in `--control-track-hover`, so a scroller's
+gutter shows its own surface instead of a system track painted through its rounded corners. It is
+one inherited `:root` declaration, and deliberately color only — the gutter's width is the reader's
+OS preference — using the standard property rather than `::-webkit-scrollbar`, which would trade
+WebKit's overlay scrollbar for a permanent gutter on iOS and macOS Safari. Don't restyle scrollbars
+per component; `scrollbar-chrome.spec.ts` guards the shared treatment.
 
 **Extract a new primitive at the third duplicate**, not before — and add it to `/design` and the
 component table above when you do.

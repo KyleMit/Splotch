@@ -1,30 +1,26 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { chromiumLaunchOptions } from '../playwright.shared';
-import { openSettingsModal, settleFlyIn } from './helpers';
+import { settleFlyIn } from './helpers';
 import {
   gotoAppWithAllColoringBooksInstalled,
   openColoringBookGrid,
   openDrawer,
 } from './flows-harness';
 
-// How the app dresses a classic, space-taking scrollbar (app.css): a thin thumb
-// in a theme color over a transparent track, so the gutter shows the scroller's
-// own surface rather than UA chrome painted through its rounded corners.
+// How the app dresses a classic, space-taking scrollbar (app.css): a transparent
+// track, so the gutter shows the scroller's own surface rather than UA chrome
+// painted through its rounded corners. The gutter keeps whatever width the
+// platform draws, which is why this measures the corner and not the geometry.
 //
 // Every other spec runs blind to it — Playwright launches Chromium with
 // `--hide-scrollbars`, so no scrollbar is drawn at all — hence the separate
-// launch here, and hence the gutter measurement each test opens with: with
-// nothing taking layout space, these would pass on an app that had lost the
-// treatment entirely.
+// launch here, and hence the gutter measurement below: with nothing taking
+// layout space the corner reads as round whatever the app declares.
 test.use({
   launchOptions: { ...chromiumLaunchOptions(), ignoreDefaultArgs: ['--hide-scrollbars'] },
   viewport: { width: 1400, height: 800 },
 });
-
-// Every desktop platform draws its own scrollbar at least this wide; `thin` is
-// the narrower one the app asks for.
-const UA_SCROLLBAR_WIDTH_PX = 15;
 
 // A square this far into a corner sits entirely outside a --radius-lg (16px)
 // arc — its innermost pixel is 17px from the arc's center — so it is backdrop
@@ -72,9 +68,9 @@ test('the picker keeps its rounded corners under a classic scrollbar', async ({ 
   await dialog.getByRole('button', { name: 'Farm coloring book' }).click();
   await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();
 
-  const gutter = await scrollbarGutterWidth(dialog);
-  expect(gutter).toBeGreaterThan(0);
-  expect(gutter).toBeLessThan(UA_SCROLLBAR_WIDTH_PX);
+  // A scrollbar taking no layout space is the overlay kind, which paints
+  // nothing through the corner and leaves this test with nothing to measure.
+  expect(await scrollbarGutterWidth(dialog)).toBeGreaterThan(0);
 
   const box = (await dialog.boundingBox())!;
   const cornerLuminance = (x: number) =>
@@ -83,19 +79,4 @@ test('the picker keeps its rounded corners under a classic scrollbar', async ({ 
   const scrollbarCorner = await cornerLuminance(box.x + box.width - OUTSIDE_CORNER_PX);
   const plainCorner = await cornerLuminance(box.x);
   expect(Math.abs(scrollbarCorner - plainCorner)).toBeLessThan(CORNER_LUMINANCE_TOLERANCE);
-});
-
-// `scrollbar-width` is not an inherited property, so a root-only declaration
-// would dress the document's own scrollbar and leave every scroller inside the
-// app — this pane among them — wearing the UA's.
-test('a scroller nested inside a modal takes the thin scrollbar too', async ({ page }) => {
-  await gotoAppWithAllColoringBooksInstalled(page);
-  await openSettingsModal(page);
-
-  const pane = page.locator('#settingsModal .settings-pane');
-  await expect(pane).toBeVisible();
-
-  const gutter = await scrollbarGutterWidth(pane);
-  expect(gutter).toBeGreaterThan(0);
-  expect(gutter).toBeLessThan(UA_SCROLLBAR_WIDTH_PX);
 });
