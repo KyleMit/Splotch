@@ -78,6 +78,9 @@ const PUPIL_ERODE_PX = 2;
 export const CORE_DARK_FRAC_MIN = 0.07;
 
 async function grayResized(buf, w, h) {
+  // DARK, WHITE, and CORE_DARK_FRAC_MIN are calibrated under libvips grayscale
+  // weighting. Unifying this conversion with image-stats luma requires rebuilding
+  // the composite-eye fixtures and re-freezing the coloring golden scores.
   const { data } = await sharp(buf)
     .removeAlpha()
     .resize(w, h, { fit: 'fill' })

@@ -3,8 +3,9 @@
 // convention — every scorer now indexes floor(f * (n - 1)) into a sorted
 // copy, rather than the mix of >>1 / floor(len*f) each call site used to
 // hand-roll — so that's what these tests pin down.
+import { readFile, readdir } from 'node:fs/promises';
 import { describe, it, expect } from 'vitest';
-import { median, quantile } from '../lib/image-stats.mjs';
+import { luma, median, quantile } from '../lib/image-stats.mjs';
 
 describe('quantile', () => {
   const vals = [50, 10, 40, 20, 30]; // sorted: 10 20 30 40 50 (n=5, last index 4)
@@ -37,5 +38,29 @@ describe('median', () => {
 
   it('returns undefined for an empty array', () => {
     expect(median([])).toBeUndefined();
+  });
+});
+
+describe('luma', () => {
+  it('preserves the exact Rec.601 arithmetic used by the scoring pipeline', () => {
+    expect(luma(255, 0, 0)).toBe(0.299 * 255 + 0.587 * 0 + 0.114 * 0);
+    expect(luma(0, 255, 0)).toBe(0.299 * 0 + 0.587 * 255 + 0.114 * 0);
+    expect(luma(0, 0, 255)).toBe(0.299 * 0 + 0.587 * 0 + 0.114 * 255);
+    expect(luma(17, 129, 250)).toBe(0.299 * 17 + 0.587 * 129 + 0.114 * 250);
+  });
+
+  it('keeps Rec.601 coefficient math centralized in the shared helper', async () => {
+    const libDir = new URL('../lib/', import.meta.url);
+    const files = (await readdir(libDir, { recursive: true })).filter(
+      (file) => file.endsWith('.mjs') && file !== 'image-stats.mjs'
+    );
+    const duplicates = [];
+    for (const file of files) {
+      const source = await readFile(new URL(file, libDir), 'utf8');
+      const executable = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+      if (['0.299', '0.587', '0.114'].every((coefficient) => executable.includes(coefficient)))
+        duplicates.push(file);
+    }
+    expect(duplicates).toEqual([]);
   });
 });

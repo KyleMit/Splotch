@@ -21,7 +21,7 @@
 // detected eye core aren't gated.
 import sharp from 'sharp';
 import { prepareOutlineAnalysis, prepareOutlineRegions } from './outline-analysis.mjs';
-import { quantile } from './image-stats.mjs';
+import { luma, quantile } from './image-stats.mjs';
 import { annotatedLightEyeCores } from './light-eye-annotations.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
@@ -275,9 +275,8 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
     .resize(w, h, { fit: 'fill' })
     .raw()
     .toBuffer({ resolveWithObject: true });
-  const luma = new Float32Array(w * h);
-  for (let p = 0, i = 0; p < w * h; p++, i += 3)
-    luma[p] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+  const lumas = new Float32Array(w * h);
+  for (let p = 0, i = 0; p < w * h; p++, i += 3) lumas[p] = luma(data[i], data[i + 1], data[i + 2]);
 
   const measured = [];
   for (const core of cores) {
@@ -285,8 +284,8 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
     const cy = (core.minY + core.maxY) / 2;
     const r = Math.max(core.maxX - core.minX, core.maxY - core.minY) / 2 + 1;
 
-    const measuredCoreLuma = coreLuma(luma, w, core, label);
-    const { bandVals, annulusInkFrac } = sampleAnnulus(luma, ink, label, w, h, core, cx, cy, r);
+    const measuredCoreLuma = coreLuma(lumas, w, core, label);
+    const { bandVals, annulusInkFrac } = sampleAnnulus(lumas, ink, label, w, h, core, cx, cy, r);
     if (bandVals.length < MIN_BAND_SAMPLES) continue;
 
     // p15/p85, not min/max or quartiles: the contrasting element can be a

@@ -22,7 +22,7 @@
 import sharp from 'sharp';
 import { dilateMask } from './morphology.mjs';
 import { bleedUnderMask, encodePunchedFill, OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
-import { quantile } from './image-stats.mjs';
+import { luma, quantile } from './image-stats.mjs';
 import { isPreparedNightAnalysis, prepareNightAnalysis, sourceRgbAt } from './night-analysis.mjs';
 
 export const DELTA_RIM = 40; // rimΔ above this = much darker than the true local fill
@@ -44,15 +44,15 @@ async function loadRgb(buffer) {
   return { rgb: data, width: info.width, height: info.height };
 }
 
-const lumaOf = (rgb, p) => 0.299 * rgb[p * 3] + 0.587 * rgb[p * 3 + 1] + 0.114 * rgb[p * 3 + 2];
+const lumaOf = (rgb, p) => luma(rgb[p * 3], rgb[p * 3 + 1], rgb[p * 3 + 2]);
 
 // The shipped punch's mask, rebuilt with lib/punch-fill.mjs's exact math.
 async function punchMask(analysis, width, height) {
   const { data: line } = await sourceRgbAt(analysis, width, height);
   const mask = new Uint8Array(width * height);
   for (let p = 0, i = 0; p < width * height; p++, i += 3) {
-    const luma = 0.299 * line[i] + 0.587 * line[i + 1] + 0.114 * line[i + 2];
-    if (luma < OUTLINE_LUMA_THRESHOLD) mask[p] = 1;
+    const pixelLuma = luma(line[i], line[i + 1], line[i + 2]);
+    if (pixelLuma < OUTLINE_LUMA_THRESHOLD) mask[p] = 1;
   }
   return mask;
 }

@@ -10,7 +10,7 @@
 import { dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
 import { floodBackground } from './regions.mjs';
-import { median } from './image-stats.mjs';
+import { luma, median } from './image-stats.mjs';
 import {
   fillLumaAt,
   fillRgbAt,
@@ -66,7 +66,7 @@ async function scoreNightnessPrepared(analysis) {
     const r = t.data[i * 3];
     const g = t.data[i * 3 + 1];
     const b = t.data[i * 3 + 2];
-    lumas.push(0.299 * r + 0.587 * g + 0.114 * b);
+    lumas.push(luma(r, g, b));
   }
   // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
   if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
@@ -105,9 +105,9 @@ function scoreDriftRasters(s, t) {
     const r = t.data[i * 3];
     const g = t.data[i * 3 + 1];
     const b = t.data[i * 3 + 2];
-    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    const pixelLuma = luma(r, g, b);
     const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
+    if (pixelLuma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
   }
   const blobs = dilateMask(erodeMask(white, w, h, DRIFT_THIN), w, h, DRIFT_THIN);
   let added = 0;

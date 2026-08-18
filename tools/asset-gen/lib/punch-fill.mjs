@@ -28,6 +28,7 @@ import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
 import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from './asset-paths.mjs';
+import { luma } from './image-stats.mjs';
 
 // Same bar the runtime mask used before the punch moved to build time (ADR-0043):
 // darker than this is outline, lighter is fill. Exported so the halo auditor
@@ -128,8 +129,8 @@ export async function punchFill(rawPath) {
   const mask = new Uint8Array(width * height);
   let punchedCount = 0;
   for (let p = 0, i = 0; p < width * height; p++, i += 3) {
-    const luma = 0.299 * line[i] + 0.587 * line[i + 1] + 0.114 * line[i + 2];
-    if (luma < OUTLINE_LUMA_THRESHOLD) {
+    const pixelLuma = luma(line[i], line[i + 1], line[i + 2]);
+    if (pixelLuma < OUTLINE_LUMA_THRESHOLD) {
       mask[p] = 1;
       punchedCount++;
     }
