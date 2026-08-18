@@ -15,9 +15,21 @@
 // Everything below tolerates registration arriving late — checkForUpdates
 // no-ops until a registration exists.
 //
-// Update checks run on init, hourly, on visibility change, and on focus. A
-// waiting worker is applied (with a reload) only while the canvas is blank —
-// never mid-drawing; otherwise it activates on the next launch.
+// Update checks run on init, hourly, on visibility change, and on focus — but
+// a check only *downloads* the new worker. Applying it depends on whether the
+// running page already matches the deployed version:
+//   • Already current — the cold-launch case: navigations are NetworkFirst, so
+//     fresh HTML boots under the old SW while the new one installs. The
+//     waiting worker is activated silently; same-version precache means no
+//     asset skew, so no reload is needed and none happens.
+//   • Stale (or the deployed version is unreachable) — the resumed-PWA case:
+//     an old page becomes visible again after a deploy. Activating now would
+//     require a reload that yanks whatever the user is doing (the settings
+//     menu, mid-tap), so the update holds in 'ready' and the SKIP_WAITING +
+//     reload pair fires only when the document goes hidden — the iPad-PWA
+//     equivalent of "closed" — and the canvas is blank. The reload happens
+//     while nobody is looking; the next resume is already the new version. A
+//     visible session is never reloaded out from under the user.
 //
 // Cache-bust for stale clients: on every init we fetch /version.json from the
 // network and compare it with __APP_VERSION__ (compiled in at build time). If
@@ -26,10 +38,10 @@
 // unfamiliar URL, fetches fresh HTML from the origin, and we're unstuck. A
 // ?v= already in the URL means we just tried that version, so we never
 // redirect to it again — one attempt per deployed version, no reload loop.
-// That navigation obeys the same blank-canvas rule as the waiting-worker
-// reload: the fetch can take seconds on a slow connection and the child can
-// draw from the first frame (ADR-0072), so a stale session that has ink on it
-// keeps running until the next blank-canvas boot.
+// That navigation obeys the same blank-canvas rule as the update reload: the
+// fetch can take seconds on a slow connection and the child can draw from the
+// first frame (ADR-0072), so a stale session that has ink on it keeps running
+// until the next blank-canvas boot.
 
 import { canvasState } from '$lib/state/canvas.svelte';
 import { scheduleIdle } from '$lib/idle';
@@ -45,6 +57,14 @@ export const ACTIVATION_RECOVERY_MS = 10_000;
 // Allow registration.waiting to settle after the installing worker reaches installed.
 export const WAITING_SETTLE_MS = 100;
 
+// 'silent': the running page already matches the deployed version, so the
+// waiting worker takes control with no reload — nothing visible happens.
+// 'reload': the page is stale; controllerchange hands control to a worker
+// whose precache no longer matches the running assets, so a reload must
+// immediately follow activation (they stay atomic — activating without
+// reloading would let lazy-loaded chunks 404 under the new worker).
+type ActivationMode = 'silent' | 'reload';
+
 function serviceWorkerSupported() {
   return typeof navigator !== 'undefined' && 'serviceWorker' in navigator;
 }
@@ -55,12 +75,19 @@ function saveDataEnabled() {
 
 export function createPWAUpdates() {
   let initialized = false;
-  // none → activating after activateWaitingSW posts SKIP_WAITING.
-  // activating → none on failure/timeout, or before reload when
-  // controllerchange finds an empty canvas.
+  // none → ready when a waiting worker is found and the page is stale (or the
+  //   deployed version is unknown); the apply waits for the hidden edge.
+  // ready → activating when applyPendingUpdate posts SKIP_WAITING, or
+  //   → activating via silent activation when the page turns out current.
+  // activating → none on silent success/failure, or before reload when
+  //   controllerchange finds an empty canvas; → ready on reload-mode
+  //   failure/timeout so the next hidden moment retries.
   // activating → owed when controllerchange arrives after ink appears.
-  // owed → none and reload when a later update check finds the canvas empty.
-  let updateReload: 'none' | 'activating' | 'owed' = 'none';
+  // owed → none and reload at the next hidden moment with a blank canvas.
+  let updateReload: 'none' | 'ready' | 'activating' | 'owed' = 'none';
+  // Held so applyPendingUpdate can reach registration.waiting synchronously
+  // inside the visibilitychange handler.
+  let updateRegistration: ServiceWorkerRegistration | null = null;
   let registrationScheduled = false;
   const observedInstallingWorkers = new WeakSet<ServiceWorker>();
 
@@ -131,7 +158,11 @@ export function createPWAUpdates() {
     }, UPDATE_CHECK_INTERVAL_MS);
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') void checkForUpdates();
+      if (document.visibilityState === 'visible') {
+        void checkForUpdates();
+        return;
+      }
+      applyPendingUpdate();
     };
     const onFocus = () => {
       void checkForUpdates();
@@ -148,29 +179,92 @@ export function createPWAUpdates() {
     };
   }
 
-  async function checkVersionMismatch(attemptedVersion: string | null = null) {
+  async function fetchDeployedVersion(): Promise<string | null> {
     try {
       const resp = await fetch(VERSION_JSON_PATH, { cache: 'no-store' });
-      if (!resp.ok) return;
+      if (!resp.ok) return null;
       const { version } = (await resp.json()) as { version?: unknown };
-      if (typeof version !== 'string' || version.length === 0) return;
-      if (version !== __APP_VERSION__ && version !== attemptedVersion) {
-        if (!canvasState.canvasEmpty) return;
-        const next = new URL(window.location.href);
-        next.searchParams.set('v', version);
-        window.location.replace(next.toString());
-      }
+      return typeof version === 'string' && version.length > 0 ? version : null;
     } catch {
-      // offline or version.json unavailable — skip
+      // offline or version.json unavailable
+      return null;
     }
   }
 
-  function activateWaitingSW(sw: ServiceWorker): void {
-    if (updateReload !== 'none' || !canvasState.canvasEmpty) return;
+  async function checkVersionMismatch(attemptedVersion: string | null = null) {
+    const version = await fetchDeployedVersion();
+    if (version === null) return;
+    if (version !== __APP_VERSION__ && version !== attemptedVersion) {
+      if (!canvasState.canvasEmpty) return;
+      const next = new URL(window.location.href);
+      next.searchParams.set('v', version);
+      window.location.replace(next.toString());
+    }
+  }
+
+  // A waiting worker whose build matches the running page can take control
+  // without a reload: this is every online cold launch (NetworkFirst serves
+  // the new HTML before the new worker finishes installing), which used to
+  // reload a page that was already current. Only a genuinely stale page — a
+  // resumed session that predates the deploy — defers to the hidden edge.
+  async function decideWaitingActivation(sw: ServiceWorker): Promise<void> {
+    if (updateReload !== 'none') return;
+    updateReload = 'ready';
+    const deployedVersion = await fetchDeployedVersion();
+    if (updateReload !== 'ready') return;
+    // A deploy landing while the version fetch was in flight can replace the
+    // waiting worker; activating the captured one would apply a precache that
+    // no longer matches what /version.json reported. Release to 'none' so the
+    // next check re-decides on the current worker.
+    if (updateRegistration?.waiting !== sw) {
+      updateReload = 'none';
+      return;
+    }
+    if (deployedVersion === __APP_VERSION__) activateWaitingSW(sw, 'silent');
+  }
+
+  // Drains a pending update while nothing is on screen to disrupt — the
+  // visibilitychange→hidden handler is the production caller, so the reload
+  // half of 'reload' mode happens while the app is backgrounded and the next
+  // resume boots the new version with no visible refresh.
+  function applyPendingUpdate(): void {
+    if (!canvasState.canvasEmpty) return;
+    if (updateReload === 'owed') {
+      reloadForUpdate();
+      return;
+    }
+    if (updateReload !== 'ready') return;
+    const waiting = updateRegistration?.waiting;
+    if (!waiting) {
+      // The waiting worker activated on its own (all clients closed) or was
+      // discarded — nothing left to apply.
+      updateReload = 'none';
+      return;
+    }
+    try {
+      activateWaitingSW(waiting, 'reload');
+    } catch {
+      // postMessage failed — activateWaitingSW restored 'ready', so the next
+      // hidden moment retries.
+    }
+  }
+
+  function activateWaitingSW(sw: ServiceWorker, mode: ActivationMode): void {
+    const priorState = updateReload;
     let recoveryTimer: ReturnType<typeof setTimeout> | undefined = undefined;
     const onControllerChange = () => {
       clearTimeout(recoveryTimer);
-      if (!canvasState.canvasEmpty) {
+      if (mode === 'silent') {
+        updateReload = 'none';
+        return;
+      }
+      // Being in reload mode means the apply started at the hidden edge, but
+      // controllerchange delivery is asynchronous: a backgrounded PWA can be
+      // suspended right after SKIP_WAITING and resumed before the new worker
+      // takes control, landing this callback in a visible session. Reloading
+      // then is the yank the hidden-edge apply exists to prevent — defer to
+      // 'owed' and drain at the next hidden moment instead.
+      if (!canvasState.canvasEmpty || document.visibilityState === 'visible') {
         deferReload();
         return;
       }
@@ -184,56 +278,61 @@ export function createPWAUpdates() {
       sw.postMessage({ type: 'SKIP_WAITING' });
     } catch (error) {
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-      updateReload = 'none';
+      updateReload = priorState;
       throw error;
     }
     // A dropped SKIP_WAITING — or an activation that never emits controllerchange —
     // must not pin the lifecycle in 'activating' for the rest of the session: that
     // short-circuits every later checkForUpdates (line: `if (updateReload ===
-    // 'activating') return`) and the owed-reload path, silently blocking all
-    // future updates. Release back to none after a grace period so a later check
-    // re-attempts; controllerchange clears this the moment it fires.
+    // 'activating') return`), silently blocking all future updates. Release after
+    // a grace period — silent mode back to none so a later check re-decides,
+    // reload mode back to ready so the next hidden moment retries the apply;
+    // controllerchange clears this the moment it fires.
     recoveryTimer = setTimeout(() => {
       if (updateReload !== 'activating') return;
       navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
-      updateReload = 'none';
+      updateReload = mode === 'silent' ? 'none' : 'ready';
     }, ACTIVATION_RECOVERY_MS);
   }
 
   async function checkForUpdates() {
     try {
-      if (updateReload === 'owed') {
-        if (canvasState.canvasEmpty) {
-          reloadForUpdate();
-        }
-        return;
-      }
-      if (updateReload === 'activating') return;
+      if (updateReload === 'owed' || updateReload === 'activating') return;
 
       const registration = await navigator.serviceWorker.getRegistration();
       if (!registration) return;
+      updateRegistration = registration;
 
       await registration.update();
 
-      if (registration.waiting) {
-        activateWaitingSW(registration.waiting);
+      // An installing worker outranks a waiting one: update() resolves as soon
+      // as the new worker starts installing, so with frequent deploys the
+      // registration can hold a stale waiting worker from an earlier deploy
+      // alongside the installing one. Deciding on the stale worker compares
+      // /version.json (the newest deploy) against the page and can silently
+      // activate the wrong precache — wait for the install to settle into
+      // `waiting` and decide on that worker instead.
+      const installing = registration.installing;
+      if (installing) {
+        if (!observedInstallingWorkers.has(installing)) {
+          observedInstallingWorkers.add(installing);
+          installing.addEventListener(
+            'statechange',
+            () => {
+              if (installing.state === 'installed' && registration.waiting) {
+                setTimeout(() => {
+                  if (registration.waiting) void decideWaitingActivation(registration.waiting);
+                }, WAITING_SETTLE_MS);
+              }
+            },
+            { once: true }
+          );
+        }
         return;
       }
 
-      const installing = registration.installing;
-      if (installing && !observedInstallingWorkers.has(installing)) {
-        observedInstallingWorkers.add(installing);
-        installing.addEventListener(
-          'statechange',
-          () => {
-            if (installing.state === 'installed' && registration.waiting) {
-              setTimeout(() => {
-                if (registration.waiting) activateWaitingSW(registration.waiting);
-              }, WAITING_SETTLE_MS);
-            }
-          },
-          { once: true }
-        );
+      if (registration.waiting) {
+        await decideWaitingActivation(registration.waiting);
       }
     } catch {
       // registration lookup or update failed (e.g. offline) — try again later
@@ -245,6 +344,7 @@ export function createPWAUpdates() {
     registerDeferredServiceWorker,
     checkForUpdates,
     checkVersionMismatch,
+    applyPendingUpdate,
   };
 }
 
