@@ -105,7 +105,8 @@ export const themeUsage: Record<keyof ThemeTokens, string> = {
     'De-emphasized copy: help text, metadata, separators, input placeholders. Holds 4.5:1 even at small sizes.',
   iconInk:
     'Monochrome icon fill on themed surfaces — and the hover state of --icon-muted: quiet icons hover to full ink.',
-  iconMuted: 'Quiet chrome icons at rest.',
+  iconMuted:
+    'Quiet chrome icons at rest, and the scrollbar thumb over its transparent track. Holds the 3:1 non-text minimum on every scroller ground.',
   brandWash: 'Brand-tinted selected/active fills that keep dark ink.',
   brandWashHover: 'The hovered step of --brand-wash.',
   brandText: 'Brand-colored ink on plain surfaces: links, active labels.',

@@ -44,6 +44,41 @@ body {
   opacity: 1;
 }
 
+/* Classic (space-taking) scrollbars — desktop web, and any OS set to keep
+   scrollbars visible — otherwise wear the UA's own chrome: a full-bleed track
+   that reads as system furniture beside the app's rounded, themed surfaces and
+   paints straight through a scroller's border-radius, squaring off the corners
+   of the coloring picker's card. A transparent track leaves the scroller's own
+   surface and radius showing through the gutter.
+
+   Color only, never `scrollbar-width`: the gutter's width is the reader's own
+   OS preference, and the people who set it are exactly the ones this rule is
+   visible to (CSS Scrollbars 1 reserves `thin` for genuinely cramped space).
+   The corner is fixed by the transparent track alone, at whatever width the
+   platform draws — scrollbar-chrome.spec.ts measures it there.
+
+   `--icon-muted` is the thumb because an authored `scrollbar-color` is no
+   longer the UA-styled control WCAG 2.2 SC 1.4.11 exempts: the thumb owes 3:1
+   against every ground it can sit on, which the quieter neutrals this started
+   with (`--control-track-hover`: 1.4:1 in both themes) never held.
+   scrollbarThumbContrast.test.ts pins the pairing to that floor.
+
+   The standard property, not `::-webkit-scrollbar`: the pseudo-element route
+   swaps WebKit's overlay scrollbar for a custom one that is always visible and
+   takes layout space, so it would buy a desktop detail by parking a permanent
+   gutter in every scroller on iOS and macOS Safari. This one only recolors
+   whatever scrollbar the platform was already drawing, and touch platforms keep
+   their overlay behavior.
+
+   Above the floor (Chrome 121 / Safari 26.2 / Firefox 64, docs/COMPATIBILITY.md):
+   older engines keep the UA scrollbar they draw today, which on WebKit means
+   every Safari before 26.2 — 18.2 shipped `scrollbar-width` and
+   `scrollbar-gutter`, not this. `scrollbar-color` is inherited, so the root
+   declaration reaches every scroller in the app. */
+:root {
+  scrollbar-color: var(--icon-muted) transparent;
+}
+
 /* Shared first-paint width of the landscape Color Palette. The palette and
    Actions Panel both consume it before ResizeObserver can publish the measured
    width; actionButtonLayout.fallback.test.ts guards these literals against the
