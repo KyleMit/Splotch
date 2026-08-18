@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
+import { themes } from '../src/lib/design/tokens';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 import {
@@ -50,6 +51,17 @@ async function submitAiKey(page: Page, value: string) {
 
 function scrollPaneToTop(page: Page) {
   return page.locator('.settings-pane').evaluate((el) => el.scrollTo({ top: 0 }));
+}
+
+async function resolveCssColor(page: Page, color: string) {
+  return page.evaluate((value) => {
+    const probe = document.createElement('div');
+    probe.style.backgroundColor = value;
+    document.body.append(probe);
+    const resolved = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    return resolved;
+  }, color);
 }
 
 test('the Settings table of contents drives one continuous pane (tablet layout)', async ({
@@ -195,6 +207,33 @@ test('the theme picker is one tab stop and the arrow keys move the selection', a
   await expect(light).toHaveAttribute('aria-checked', 'true');
   await light.press('ArrowUp');
   await expect(system).toHaveAttribute('aria-checked', 'true');
+});
+
+test('explicit theme switches repaint the paper while offscreen sections stay contained', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openSettingsModal(page);
+  await expect(page.locator('.settings-section').first()).toHaveCSS('content-visibility', 'auto');
+
+  await page.locator('#themeOption-dark').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('.paper-sheet')).toHaveCSS(
+    'background-color',
+    await resolveCssColor(page, themes.dark.paper)
+  );
+
+  await page.locator('#themeOption-light').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('.paper-sheet')).toHaveCSS(
+    'background-color',
+    await resolveCssColor(page, themes.light.paper)
+  );
+
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#settingsModal')).not.toBeVisible();
+  await openSettingsModal(page);
+  await expect(page.locator('#themeOption-light')).toBeVisible();
 });
 
 test('the shortest sidebar viewport can still reach every section', async ({ page }) => {

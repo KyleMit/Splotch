@@ -419,6 +419,7 @@
       {#each mountedSections as section (section.id)}
         <section
           class="settings-section"
+          class:render-contained={fullyMounted}
           data-section={section.id}
           aria-labelledby={sectionHeadingId(section.id)}
           use:registerElement={registerIn(sectionEls, section.id)}
@@ -499,6 +500,14 @@
 
   .settings-section + .settings-section {
     margin-top: var(--section-gap);
+  }
+
+  /* Wait until every section has a real measured height, then let the browser
+     skip offscreen subtree rendering while retaining those exact dimensions.
+     The pane's scrollspy and table-of-contents jumps both depend on them. */
+  .settings-section.render-contained {
+    content-visibility: auto;
+    contain-intrinsic-size: auto none;
   }
 
   .settings-pane-title {
