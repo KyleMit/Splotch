@@ -58,7 +58,10 @@ function sendJson(response, status, body, headers = {}) {
 }
 
 async function startDeploy({
+  failPath,
+  functionSecurityHeader,
   hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
+  omitHomeAsset = false,
   omitSecurityHeader,
   version = expectedVersion,
 } = {}) {
@@ -67,15 +70,21 @@ async function startDeploy({
     let requestBody = '';
     for await (const chunk of request) requestBody += chunk;
     const url = new URL(request.url, 'http://localhost');
+    if (url.pathname === failPath) {
+      request.socket.destroy();
+      return;
+    }
     const routeSecurityHeaders = Object.fromEntries(
       Object.entries(securityHeaders)
         .filter(([name]) => name !== omitSecurityHeader)
         .map(([name, value]) => [name, name === 'Strict-Transport-Security' ? hsts : value])
     );
 
-    if (url.pathname === '/' || url.pathname === '/privacy') {
+    if (url.pathname === '/' || url.pathname === '/privacy' || url.pathname === '/admin') {
       const asset =
-        url.pathname === '/' ? '<script src="/_app/immutable/start-abc.js"></script>' : '';
+        url.pathname === '/' && !omitHomeAsset
+          ? '<script src="/_app/immutable/start-abc.js"></script>'
+          : '';
       send(response, 200, `<html><body>${asset}</body></html>`, {
         'Content-Type': 'text/html',
         ...routeSecurityHeaders,
@@ -101,7 +110,13 @@ async function startDeploy({
       return;
     }
     if (request.method === 'OPTIONS' && url.pathname.startsWith('/api/')) {
-      send(response, 204, '', { ...corsHeaders, ...netlifyEdgeSecurityHeaders });
+      send(response, 204, '', {
+        ...corsHeaders,
+        ...netlifyEdgeSecurityHeaders,
+        ...(functionSecurityHeader
+          ? { [functionSecurityHeader]: securityHeaders[functionSecurityHeader] }
+          : {}),
+      });
       return;
     }
     if (url.pathname === '/api/admin/login') {
@@ -166,13 +181,26 @@ async function runSmoke(base, env = {}) {
   return { code, stdout, stderr };
 }
 
+function importSpecifiers(source) {
+  const sideEffectSpecifiers = [
+    ...source.matchAll(/^[ \t]*import[ \t]*['"]([^'"\r\n]+)['"][ \t]*;?[ \t]*$/gm),
+  ].map((match) => match[1]);
+  const staticSpecifiers = [
+    ...source.matchAll(
+      /^[ \t]*import[ \t]+(?!['"])[\s\S]*?\sfrom\s+['"]([^'"\r\n]+)['"][ \t]*;?[ \t]*$/gm
+    ),
+  ].map((match) => match[1]);
+  const dynamicSpecifiers = [...source.matchAll(/\bimport\s*\(\s*['"]([^'"\r\n]+)['"]\s*\)/g)].map(
+    (match) => match[1]
+  );
+  return [...sideEffectSpecifiers, ...staticSpecifiers, ...dynamicSpecifiers];
+}
+
 function bareImports(entry, visited = new Set()) {
   if (visited.has(entry)) return [];
   visited.add(entry);
   const source = readFileSync(entry, 'utf8');
-  const specifiers = [...source.matchAll(/^import[\s\S]*?from\s+['"]([^'"]+)['"];?$/gm)].map(
-    (match) => match[1]
-  );
+  const specifiers = importSpecifiers(source);
   return specifiers.flatMap((specifier) => {
     if (specifier.startsWith('node:')) return [];
     if (!specifier.startsWith('.')) return [specifier];
@@ -181,6 +209,20 @@ function bareImports(entry, visited = new Set()) {
 }
 
 describe('hosted deploy contract smoke', () => {
+  it('detects every dependency-bearing import form used by Node modules', () => {
+    const source = [
+      "import 'side-effect-package';",
+      "import value from 'static-package';",
+      "const loaded = import('dynamic-package');",
+    ].join('\n');
+
+    expect(importSpecifiers(source)).toEqual([
+      'side-effect-package',
+      'static-package',
+      'dynamic-package',
+    ]);
+  });
+
   it('keeps the no-install workflow entry transitively dependency-free', () => {
     expect(bareImports(join(repoRoot, 'tools/api-smoke/check-deployed-contract.mjs'))).toEqual([]);
   });
@@ -189,6 +231,7 @@ describe('hosted deploy contract smoke', () => {
     const result = await runSmoke(await startDeploy());
 
     expect(result.code, result.stderr).toBe(0);
+    expect(result.stdout).toContain('GET /admin → deployed HTML with security headers');
     expect(result.stdout).toContain('version.json → 200 current checked-out web version');
     expect(result.stdout).toContain('Blobs is live on the deployed function (persistent:true)');
   });
@@ -240,6 +283,31 @@ describe('hosted deploy contract smoke', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('GET / → deployed HTML with security headers');
     expect(result.stderr).toContain('X-Frame-Options=null');
+  });
+
+  it('reports the home response size when no immutable asset can be found', async () => {
+    const result = await runSmoke(await startDeploy({ omitHomeAsset: true }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'searched 26 response bytes for /_app/immutable/*.{css,js,woff2}'
+    );
+  });
+
+  it('continues through the admin persistence round-trip after a transport failure', async () => {
+    const result = await runSmoke(await startDeploy({ failPath: '/version.json' }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('version stage completed');
+    expect(result.stdout).toContain('Blobs is live on the deployed function (persistent:true)');
+    expect(result.stdout).toContain('DELETE removes the probe token');
+  });
+
+  it('rejects an app-owned security header on a function response', async () => {
+    const result = await runSmoke(await startDeploy({ functionSecurityHeader: 'X-Frame-Options' }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('leaked X-Frame-Options');
   });
 
   it('fails when Netlify serves an ineffective HSTS policy', async () => {
