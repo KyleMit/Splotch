@@ -13,6 +13,8 @@ const reviewPage = readFileSync(
 
 const PAGE_TITLE = 'Splotch asset-gen — image-quality backlog burn-down';
 const STALE_PAGE_NAME = /Splotch asset-gen — IDEAS\.md burn-down/;
+// The committed-page check performs hundreds of Sharp encodes and shares CI CPU with the suite.
+const REVIEW_BUILD_TEST_TIMEOUT_MS = 30_000;
 
 describe('ideas exploration review page', () => {
   it('generates both visible labels from the current shared title', () => {
@@ -28,15 +30,19 @@ describe('ideas exploration review page', () => {
     expect(reviewPage.match(/<h1>([^<]+)<\/h1>/)?.[1]).toBe(PAGE_TITLE);
   });
 
-  it('passes the non-mutating drift check for the committed artifact', () => {
-    const result = spawnSync(process.execPath, [fileURLToPath(reviewBuilderPath), '--check'], {
-      encoding: 'utf8',
-    });
+  it(
+    'passes the non-mutating drift check for the committed artifact',
+    () => {
+      const result = spawnSync(process.execPath, [fileURLToPath(reviewBuilderPath), '--check'], {
+        encoding: 'utf8',
+      });
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('ideas-review.html is current');
-    expect(result.stderr).toBe('');
-  }, 10_000);
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('ideas-review.html is current');
+      expect(result.stderr).toBe('');
+    },
+    REVIEW_BUILD_TEST_TIMEOUT_MS
+  );
 
   it('rejects an artifact that differs from the generated page', () => {
     expect(compareGeneratedReview('generated page', 'stale page')).toEqual({
