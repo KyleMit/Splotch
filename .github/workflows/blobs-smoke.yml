@@ -1,6 +1,7 @@
 # Verifies the hosted site as one deployed system: prerendered routes, security
 # and cache headers, the version built from this commit, native CORS, safe API
-# failure shapes, and the ADR-0025 Blobs persistence round-trip.
+# failure shapes, and the ADR-0025 Blobs persistence signal. Preview targets
+# also exercise the token write round-trip; production remains read-only.
 #
 # GitHub's deployment_status event is repository-wide, and this repository's
 # deployment records belong to the static scrapbook on GitHub Pages rather than
@@ -8,8 +9,8 @@
 # intended Netlify preview or production URL.
 #
 # Requires a repo secret ADMIN_ACCESS_TOKEN matching the deploy's admin secret;
-# it only travels in the login POST body over https. Normal runs remove their
-# probe token; process-level interruption may require the README's manual cleanup.
+# it only travels in the login POST body over https. Preview runs remove their
+# probe token; production runs never create one.
 name: Hosted Deploy Smoke
 
 on:

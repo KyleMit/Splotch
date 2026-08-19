@@ -14,8 +14,10 @@ storage together. A narrower entry point remains available when only Blobs persi
 | `check-deployed-blobs.mjs`    | `npm run test:blobs:smoke`  | Validate only Blobs persistence on a real deployment |
 
 `lib/admin-client.mjs` owns the shared `/api/admin` request plumbing.
-`lib/deployed-admin-contract.mjs` owns the persistent token round-trip used by both deployed entry
-points. Assertions remain in the contract layers rather than in the request client.
+`lib/deployed-admin-target.mjs` allows writes only for Netlify preview hostnames and loopback test
+servers, and `lib/deployed-admin-contract.mjs` owns the persistent-token assertion plus the
+preview-only token round-trip used by both deployed entry points. Assertions remain in the contract
+layers rather than in the request client.
 
 ## Local contract inputs and outputs
 
@@ -42,14 +44,16 @@ The URL may instead be passed as `--url=https://…`.
 It checks `/`, `/privacy`, and the SSR-rendered `/admin`, their full security-header set, an
 immutable app asset, `version.json` and its no-cache policy, both Capacitor-origin preflights,
 representative canonical API failures that stop before any model call, and the persistent admin
-token round-trip. The deployed version must exactly match the ADR-0030 version derived from the
-checker's current git commit. Run a manual preview check from the same branch/ref that Netlify
-built; pointing a different ref at that preview is intentionally reported as stale.
+token contract. Production asserts `persistent: true` through a read-only token snapshot; a preview
+also adds, reads back, and removes a unique token. The deployed version must exactly match the
+ADR-0030 version derived from the checker's current git commit. Run a manual preview check from the
+same branch/ref that Netlify built; pointing a different ref at that preview is intentionally
+reported as stale.
 
-The dependency-free workflow checks production daily. Manual dispatch accepts an optional URL so it
-can check either production by default or an intended Netlify preview. GitHub's repository-wide
-`deployment_status` records belong to the static scrapbook on GitHub Pages, so they are not a valid
-Netlify trigger or target source.
+The dependency-free workflow checks production daily without mutating Blobs. Manual dispatch accepts
+an optional URL so it can check either production by default or an intended Netlify preview.
+GitHub's repository-wide `deployment_status` records belong to the static scrapbook on GitHub Pages,
+so they are not a valid Netlify trigger or target source.
 
 Production workflow runs set `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=false`, whether production is the
 default or its canonical URL is entered explicitly. They still require a valid version shape and the
@@ -67,12 +71,13 @@ BLOBS_SMOKE_URL=https://deploy-preview-123--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
 ```
 
-The URL may instead be the first positional argument. The check logs into `/api/admin`, asserts that
-the token snapshot reports `persistent: true`, adds a unique probe token, reads it back, and removes
-it. Cleanup is attempted again after a failure and is idempotent, but if a run is interrupted
-inspect the admin console for a `blobs-smoke-*` token. Missing configuration exits with status 2; a
-failed contract exits nonzero. This reversible probe is a bounded exception to ADR-0111's otherwise
-read-only `check` contract because persistence cannot be validated without a write and read-back.
+The URL may instead be the first positional argument. The check logs into `/api/admin` and asserts
+that the token snapshot reports `persistent: true`. Production stops there. A preview additionally
+adds a unique probe token, reads it back, and removes it; cleanup is attempted again after a failure
+and is idempotent. If a preview run is interrupted, inspect the admin console for a `blobs-smoke-*`
+token. Missing configuration exits with status 2; a failed contract exits nonzero. The preview's
+reversible probe is a bounded exception to ADR-0111's otherwise read-only `check` contract because
+write persistence cannot be validated without a write and read-back.
 
 ## Maintenance
 
@@ -88,8 +93,8 @@ contract, and the shared tool modules — must stay dependency-free. Adding an n
 of them breaks the deploy gate at runtime rather than in CI's unit job.
 
 All workflow runs share a single concurrency group because previews and production use the same
-site-wide store. Keep target selection in the workflow rather than teaching the deploy-agnostic CLI
-about repository providers.
+site-wide store. Keep production-write classification in `lib/deployed-admin-target.mjs`; the
+workflow's separate URL test controls only version-freshness strictness.
 
 Run focused verification with:
 
@@ -98,8 +103,8 @@ npm run test:tools -- tools/tests/e2e-server-env.test.mjs tools/tests/tool-speci
 npm run test:api:smoke
 ```
 
-The deployed Blobs check mutates a real shared store briefly and requires deployment credentials, so
-run it only against an intended preview or production target. Its `finally` cleanup cannot run when
-the process or runner is terminated. In that case, remove the unguessable but live `blobs-smoke-*`
-credential manually through the admin console. Do not automate a prefix-wide sweep: this CLI can run
-outside the workflow's concurrency group and could delete another smoke's active probe.
+The deployed Blobs check requires deployment credentials. Production is read-only; a preview briefly
+mutates the real shared store. A preview's `finally` cleanup cannot run when the process or runner
+is terminated. In that case, remove the unguessable but live `blobs-smoke-*` credential manually
+through the admin console. Do not automate a prefix-wide sweep: this CLI can run outside the
+workflow's concurrency group and could delete another smoke's active probe.

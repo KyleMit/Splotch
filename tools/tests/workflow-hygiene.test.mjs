@@ -11,6 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { shouldWriteBlobsProbe } from '../api-smoke/lib/deployed-admin-target.mjs';
 
 // Line-oriented on purpose: no YAML parser ships in this repo's dependency
 // tree, and these invariants (top-level keys, job-level keys, uses: refs) sit
@@ -238,6 +239,32 @@ describe('workflow hygiene', () => {
         '        run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs'
       );
       expect(blobsSmoke.lines.join('\n')).not.toContain('deployment_status.environment_url');
+    });
+
+    it('keeps automated production Blobs checks on the read-only contract', () => {
+      const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
+      const defaultTarget = blobsSmoke.lines
+        .find((line) => line.includes('DEPLOY_SMOKE_URL:'))
+        ?.match(/\|\| '([^']+)'/)?.[1];
+
+      expect(defaultTarget).toBeDefined();
+      expect(shouldWriteBlobsProbe(defaultTarget)).toBe(false);
+    });
+
+    it.each([
+      ['canonical production', 'https://splotch.art', false],
+      ['production with a path', 'https://splotch.art/admin', false],
+      ['production www alias', 'https://www.splotch.art', false],
+      ['production Netlify alias', 'https://splotchy.netlify.app', false],
+      ['unknown remote host', 'https://example.com', false],
+      ['insecure remote preview', 'http://feature--splotchy.netlify.app', false],
+      ['deploy preview', 'https://deploy-preview-1104--splotchy.netlify.app', true],
+      ['branch preview', 'https://feature--splotchy.netlify.app', true],
+      ['IPv4 loopback fixture', 'http://127.0.0.1:4173', true],
+      ['IPv6 loopback fixture', 'http://[::1]:4173', true],
+      ['localhost fixture', 'http://localhost:4173', true],
+    ])('classifies the %s target for Blobs writes', (_label, target, expected) => {
+      expect(shouldWriteBlobsProbe(target)).toBe(expected);
     });
 
     it('the Netlify build pins the engines floor major', () => {

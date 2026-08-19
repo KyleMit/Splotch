@@ -450,7 +450,9 @@ mutations never need a follow-up fetch:
 
 `persistent` reports whether the list is durably backed by Netlify Blobs (`true`) or the in-memory
 env-seeded read fallback (`false` — local dev, or a deployed function without the Blobs context; see
-ADR-0025). `tools/api-smoke/check-deployed-contract.mjs` asserts it is `true` against a real deploy.
+ADR-0025). `tools/api-smoke/check-deployed-contract.mjs` asserts it is `true` against a real deploy;
+that assertion is read-only on production and unrecognized targets, and paired with a token
+round-trip only on Netlify preview hostnames.
 
 | Method   | Body                  | Effect                                                                            |
 | -------- | --------------------- | --------------------------------------------------------------------------------- |
@@ -521,13 +523,14 @@ ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
 
 It checks the deployed `/`, `/privacy`, and SSR-rendered `/admin` routes, security and cache
 headers, exact ADR-0030 version freshness, both native CORS origins, representative canonical
-failures that cannot reach a model call, and an admin token persistence round-trip. The workflow
-probes production daily; manual dispatch accepts an optional preview or production URL and otherwise
-uses production. The unrelated GitHub Pages `deployment_status` event is not a trigger or target
-source. Checks with an explicit preview URL compare the deployed version to their selected ref
-exactly; production checks require the version shape and no-cache policy but allow the build to
-trail docs/tooling-only commits excluded by ADR-0070, including when its canonical URL is entered
-explicitly.
+failures that cannot reach a model call, and the admin-token persistence contract. The workflow
+probes production daily with a read-only `persistent:true` assertion; a manually targeted Netlify
+preview also completes the token write/read/delete round-trip. Manual dispatch accepts an optional
+preview or production URL and otherwise uses production. The unrelated GitHub Pages
+`deployment_status` event is not a trigger or target source. Checks with an explicit preview URL
+compare the deployed version to their selected ref exactly; production checks require the version
+shape and no-cache policy but allow the build to trail docs/tooling-only commits excluded by
+ADR-0070, including when its canonical URL is entered explicitly.
 
 To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 
@@ -536,8 +539,9 @@ BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
 ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
 ```
 
-It logs in, asserts the snapshot's `persistent` is `true` (false ⇒ Blobs is dead on that deploy),
-round-trips a unique token through Blobs, and cleans it up. The full hosted gate uses the same
+It logs in and asserts the snapshot's `persistent` is `true` (false ⇒ Blobs is dead on that deploy).
+Production and unrecognized targets stop after that read. A Netlify preview also round-trips a
+unique token through Blobs and cleans it up. The full hosted gate uses the same target-sensitive
 persistence contract.
 
 ## Local development

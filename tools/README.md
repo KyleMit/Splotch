@@ -34,9 +34,10 @@ The action verbs communicate behavior:
 Precise domain verbs such as `convert`, `normalize`, `optimize`, `publish`, `encrypt`, and `archive`
 are welcome when they are more accurate. `audit` names a capability or npm namespace, not an
 executable action. ADR-0111 records two bounded `check` exceptions: the existing multi-mode golden
-score tool and the deployed Blobs persistence probe, whose validation requires a reversible write.
-`tools/ruler/check-generated-files.mjs` is a third migration-defined exception: it regenerates and
-formats provider output in place before comparing it with the staged or committed versions.
+score tool and the deployed Blobs persistence probe, whose preview validation requires a reversible
+write; its production path is read-only. `tools/ruler/check-generated-files.mjs` is a third
+migration-defined exception: it regenerates and formats provider output in place before comparing it
+with the staged or committed versions.
 
 ## Root entry points
 

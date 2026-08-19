@@ -125,8 +125,8 @@ can surface the same warning after every successful snapshot.
 * **−** **Storage is coupled to the adapter major.** adapter-netlify must stay ≥ 6 (V2 functions); a
   downgrade re-breaks Blobs with only the runtime banner to show for it. Any adapter or
   Netlify-config bump should run `npm run test:deploy:smoke` against a deploy preview. The full
-  hosted gate includes this ADR's `persistent:true` assertion and token round-trip;
-  `test:blobs:smoke` remains the narrower persistence diagnostic.
+  hosted gate includes this ADR's `persistent:true` assertion everywhere and the token round-trip on
+  previews; `test:blobs:smoke` remains the narrower persistence diagnostic.
 * **−** Local `vite dev` has no Blobs, so token edits and usage live in a per-instance in-memory
   list that resets on restart. A production preview without Blobs still serves env-seeded reads but
   refuses token edits, matching a deployed function whose durable store is unavailable; the admin
@@ -156,6 +156,21 @@ manual admin-console operation: preview and production smokes share the site-wid
 automatic prefix sweep could delete another run's active probe. GitHub Actions runs use one global
 concurrency group to prevent that overlap inside the workflow; a newer queued run can still replace
 an older pending one, while an in-flight run is allowed to finish its cleanup.
+
+## Amendment (2026-08-19): Automated production persistence checks are read-only
+
+The unattended production schedule no longer performs the token write/read/delete round-trip
+described above. Its decisive ADR-0025 signal is the authenticated token snapshot's
+`persistent: true`, which is a read and still fails when a V1 function loses the Blobs context.
+Deploy previews retain the full round-trip so adapter and Netlify configuration changes prove that
+writes durably land before merge.
+
+Both deployed smoke entry points fail closed: only HTTPS Netlify preview/branch hostnames and
+loopback test servers take the write path; production aliases and every unrecognized remote target
+remain read-only. This makes the production guarantee intrinsic to the shared admin contract rather
+than dependent on cleanup or a particular workflow trigger. `tools/tests/workflow-hygiene.test.mjs`
+binds the workflow's automatic target to that classification and pins the allowlist, while the
+hosted-contract tests cover both the persistence failure and the preview write path.
 
 ## Amendment (2026-08-19): Minimized, expiring usage records
 

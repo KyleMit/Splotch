@@ -84,7 +84,9 @@ Three Node smoke entry points guard the server contract:
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
   SSR-rendered `/admin`, security and cache headers, the checked-out commit's exact `version.json`,
   both native-origin CORS preflights, safe unauthenticated API failures, and the admin persistence
-  round-trip. It never makes a model call. Run it from the ref that produced the target deploy:
+  contract. Production and unrecognized targets use only the read-only `persistent:true` assertion;
+  Netlify previews add the token write/read/delete round-trip. It never makes a model call. Run it
+  from the ref that produced the target deploy:
   ```bash
   DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
@@ -102,10 +104,10 @@ Three Node smoke entry points guard the server contract:
   BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
   ```
-  It asserts `persistent:true`, round-trips a unique token through Blobs, and cleans up. Run it on a
-  PR's deploy preview before merging any adapter/Netlify-config change, and against
-  `https://splotch.art` to isolate a production persistence failure. The full hosted gate includes
-  this same round-trip.
+  It asserts `persistent:true`. On a Netlify preview it also round-trips a unique token through
+  Blobs and cleans up; production and unrecognized targets remain read-only. Run it on a PR's deploy
+  preview before merging any adapter/Netlify-config change, and against production to isolate a
+  persistence failure. The full hosted gate includes this same target-sensitive contract.
 
 ---
 
@@ -608,7 +610,7 @@ npm run test:android:device     # re-run as often as you like
 | `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on pushes to `main`; full gate on release tags |
 | `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                        |
 | `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                       |
-| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including the ADR-0025 persistence round-trip; automatic runs target production, manual runs accept an intended Netlify URL            |
+| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including ADR-0025 persistence; automatic production runs are read-only, while a manually targeted preview adds the write round-trip   |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` +
@@ -635,10 +637,11 @@ reduction alone.
 
 The Hosted Deploy Smoke workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching production's
 admin secret; without it the automatic job fails at the login step. A manually supplied preview must
-use that same secret. A process-level interruption can strand an unguessable but live
-`blobs-smoke-*` credential; inspect and remove one manually from the admin console because an
-automatic prefix sweep could race a smoke against another URL. The iOS smoke mirrors Android but on
-a `macos-latest` runner — the debug build targets the simulator, so no signing secrets are involved.
+use that same secret. Production never creates a probe token. A process-level interruption of a
+preview check can strand an unguessable but live `blobs-smoke-*` credential; inspect and remove one
+manually from the admin console because an automatic prefix sweep could race a smoke against another
+URL. The iOS smoke mirrors Android but on a `macos-latest` runner — the debug build targets the
+simulator, so no signing secrets are involved.
 
 ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
 The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside

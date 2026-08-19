@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildMetadata } from '../../../web/buildVersion.ts';
 import {
   serializeCspDirectives,
@@ -12,6 +12,7 @@ import {
   WEB_CSP_DIRECTIVES,
 } from '../../../web/securityPolicy.ts';
 import { missingStaticSecurityHeaders } from '../check-deployed-contract.mjs';
+import { checkDeployedAdminContract } from '../lib/deployed-admin-contract.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const packageVersion = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).version;
@@ -93,6 +94,7 @@ async function startDeploy({
   omitPrerenderedMeta = false,
   prerenderedDataBlocks = '',
   omitSecurityHeader,
+  persistent = true,
   version = expectedVersion,
 } = {}) {
   const tokens = new Set(['existing-token']);
@@ -178,7 +180,7 @@ async function startDeploy({
           ok: true,
           tokens: [...tokens],
           invites: [],
-          persistent: true,
+          persistent,
         },
         corsHeaders
       );
@@ -267,6 +269,40 @@ describe('hosted deploy contract smoke', () => {
     expect(bareImports(join(repoRoot, 'tools/api-smoke/check-deployed-contract.mjs'))).toEqual([]);
   });
 
+  it('keeps the canonical production admin contract read-only', async () => {
+    const requests = [];
+    const originalFetch = globalThis.fetch;
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    globalThis.fetch = async (url, options = {}) => {
+      const method = options.method ?? 'GET';
+      requests.push({ method, url });
+      if (url.endsWith('/api/admin/login')) {
+        return Response.json({ ok: true, session });
+      }
+      return Response.json({
+        ok: true,
+        tokens: ['existing-token'],
+        invites: [],
+        persistent: true,
+      });
+    };
+
+    try {
+      await checkDeployedAdminContract('https://splotch.art', 'test-admin-secret');
+      expect(log).toHaveBeenCalledWith(
+        '  ✓ target persistence check is read-only (no probe write)'
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+      log.mockRestore();
+    }
+
+    expect(requests).toEqual([
+      { method: 'POST', url: 'https://splotch.art/api/admin/login' },
+      { method: 'GET', url: 'https://splotch.art/api/admin/tokens' },
+    ]);
+  });
+
   it('passes the complete dependency-free remote contract', async () => {
     const result = await runSmoke(await startDeploy());
 
@@ -274,6 +310,14 @@ describe('hosted deploy contract smoke', () => {
     expect(result.stdout).toContain('GET /admin → deployed HTML with security headers');
     expect(result.stdout).toContain('version.json → 200 current checked-out web version');
     expect(result.stdout).toContain('Blobs is live on the deployed function (persistent:true)');
+    expect(result.stdout).toContain('DELETE removes the probe token');
+  });
+
+  it('fails when a deployed function loses its persistent Blobs context', async () => {
+    const result = await runSmoke(await startDeploy({ persistent: false }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Blobs is live on the deployed function (persistent:true)');
   });
 
   it('limits semantic HSTS matching to Netlify-owned and loopback hosts', () => {

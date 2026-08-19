@@ -135,3 +135,10 @@ decomposition, new mobile wrappers, and output renames are deferred until the ne
 * − Useful documentation cannot be enforced mechanically, so reviewers must continue judging whether
   a README and a verb accurately describe the capability.
 * − Verb-first page-inventory commands no longer sort into one npm namespace.
+
+## Amendment (2026-08-19): Production deployed checks are read-only
+
+The deployed-smoke exception applies only to preview targets. Production uses the same `check-*`
+entry points but stops after the read-only `persistent: true` assertion; only previews perform and
+clean up the unique-token write round-trip. This preserves the tool names while removing unattended
+production mutation from their contract.
