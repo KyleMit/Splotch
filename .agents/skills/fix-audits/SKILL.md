@@ -76,15 +76,11 @@ comment (per the per-item loop), don't force a shaky fix.
 
 ## Per-item loop
 
+Launch exactly one implementer at a time when subagents share a working tree: subagents may run
+asynchronously, so await each implementer and complete step 2's commit before launching the next.
+Genuine parallel implementation requires a separate worktree per subagent.
+
 Process the issues in the sweep order chosen in Setup. For each issue:
-
-In a cloud session, launch exactly one implementer at a time: cloud subagents may run asynchronously
-while sharing one working tree, so await each implementer and commit its changes before launching
-the next. Genuine parallel implementation requires a separate worktree per subagent.
-
-For an issue that changes `.ruler/**`, run `npm run ruler:apply`, commit the regenerated output with
-the authored change, and then run `npm run ruler:check`. The check diffs generated results against
-`HEAD`, so running it before that commit reports the uncommitted generated output as drift.
 
 1. **Delegate to a fresh subagent.** Launch a `general-purpose` agent whose prompt contains the
    issue's full text verbatim (number, title, body, labels) plus repo conventions. A fresh agent per
@@ -132,6 +128,8 @@ the authored change, and then run `npm run ruler:check`. The check diffs generat
         tests covering the touched files, and where the problem was reproduced empirically in step
         1, re-run that same reproduction to prove the fix resolves it — not merely that the suite
         stays green. A new helper script must actually run (invoke it, or its smoke).
+      * If the fix changes `.ruler/**`, the subagent must run `npm run ruler:apply` and report the
+        regenerated paths with its result.
       * If the fix only changed **docs / skills / rules / `CLAUDE.md` / ADRs**, there is nothing to
         typecheck — `npm run check` and `npm test` are irrelevant, so don't report a green run you
         didn't need as if it validated the edit. Instead re-run the issue's verification, grep for
@@ -150,7 +148,12 @@ the authored change, and then run `npm run ruler:check`. The check diffs generat
    * Verify the tree has changes and the reported checks passed (re-run `npm run check` if the
      report is ambiguous).
    * Commit the fix as one commit with a descriptive message that **references the issue so it
-     closes on merge** — `Fixes #<NN>` in the commit body — then push.
+     closes on merge** — `Fixes #<NN>` in the commit body.
+   * For a `.ruler/**` change, include the regenerated output in the same commit as the authored
+     change, then run `npm run ruler:check`. The check re-applies Ruler and flags any generated file
+     left modified in the working tree; output that was only staged before the check is accepted
+     too.
+   * Push the commit.
    * Record — the issue number/title, the commit SHA, the subagent's summary, test/check results,
      and any caveats worth a reviewer's attention. **In Draft-PR mode**, post it as a PR comment
      (`gh pr comment`, or the GitHub MCP `add_issue_comment` tool on the PR number). **In
