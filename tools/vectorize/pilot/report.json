@@ -1,0 +1,122 @@
+[
+  {
+    "name": "farm-cover",
+    "dimensions": "1024x1024",
+    "bytes": {
+      "source": 83480,
+      "currentDisplayAssets": {
+        "web/static/coloring/farm/cover.thumb.webp": 19090,
+        "web/static/coloring/max-240px/farm/cover.thumb.webp": 9856
+      },
+      "svg": 49404,
+      "svgGzip": 20929,
+      "svgBrotli": 18216
+    },
+    "shapes": 3,
+    "alpha": {
+      "meanAbsoluteError": 0.8721075057983398,
+      "maximumError": 118,
+      "pixelsOver4Fraction": 0.05875968933105469,
+      "pixelsOver16Fraction": 0.012762069702148438,
+      "binaryPrecision": 0.9882726239735866,
+      "binaryRecall": 0.9923361749763197,
+      "binaryIou": 0.9807868252516011
+    },
+    "composite": {
+      "meanAbsoluteChannelError": 0.8721075057983398,
+      "maximumChannelError": 118,
+      "pixelsOver4Fraction": 0.05875968933105469,
+      "pixelsOver16Fraction": 0.012762069702148438
+    }
+  },
+  {
+    "name": "circle-tall-pen",
+    "dimensions": "1024x1536",
+    "bytes": {
+      "source": 52338,
+      "currentDisplayAssets": {
+        "web/static/coloring/shapes/circle-tall.overlay.webp": 61396,
+        "web/static/coloring/max-1152px/shapes/circle-tall.overlay.webp": 41430
+      },
+      "svg": 16474,
+      "svgGzip": 7330,
+      "svgBrotli": 6267
+    },
+    "shapes": 4,
+    "alpha": {
+      "meanAbsoluteError": 0.8229160308837891,
+      "maximumError": 120,
+      "pixelsOver4Fraction": 0.039683024088541664,
+      "pixelsOver16Fraction": 0.017450332641601562,
+      "binaryPrecision": 0.9905144156799786,
+      "binaryRecall": 0.9860554319885992,
+      "binaryIou": 0.9768313278446275
+    },
+    "composite": {
+      "meanAbsoluteChannelError": 0.4597969055175781,
+      "maximumChannelError": 86,
+      "pixelsOver4Fraction": 0.03196907043457031,
+      "pixelsOver16Fraction": 0.011552810668945312
+    }
+  },
+  {
+    "name": "owl-tall-pen",
+    "dimensions": "1024x1536",
+    "bytes": {
+      "source": 115342,
+      "currentDisplayAssets": {
+        "web/static/coloring/creatures/owl-tall.overlay.webp": 105042,
+        "web/static/coloring/max-1152px/creatures/owl-tall.overlay.webp": 72514
+      },
+      "svg": 39775,
+      "svgGzip": 17604,
+      "svgBrotli": 15319
+    },
+    "shapes": 4,
+    "alpha": {
+      "meanAbsoluteError": 1.2675940195719402,
+      "maximumError": 105,
+      "pixelsOver4Fraction": 0.1264019012451172,
+      "pixelsOver16Fraction": 0.009200414021809896,
+      "binaryPrecision": 0.9898673507945032,
+      "binaryRecall": 0.9890019273948377,
+      "binaryIou": 0.979089827191093
+    },
+    "composite": {
+      "meanAbsoluteChannelError": 0.7080423567030165,
+      "maximumChannelError": 97,
+      "pixelsOver4Fraction": 0.09414354960123698,
+      "pixelsOver16Fraction": 0.0034548441569010415
+    }
+  },
+  {
+    "name": "owl-tall-chalk",
+    "dimensions": "1024x1536",
+    "bytes": {
+      "source": 96660,
+      "currentDisplayAssets": {
+        "web/static/coloring/creatures/owl-tall.dark.overlay.webp": 70652,
+        "web/static/coloring/max-1152px/creatures/owl-tall.dark.overlay.webp": 55080
+      },
+      "svg": 43506,
+      "svgGzip": 19205,
+      "svgBrotli": 16835
+    },
+    "shapes": 7,
+    "alpha": {
+      "meanAbsoluteError": 1.2251720428466797,
+      "maximumError": 219,
+      "pixelsOver4Fraction": 0.05429522196451823,
+      "pixelsOver16Fraction": 0.018570582071940105,
+      "binaryPrecision": 0.9886884716519814,
+      "binaryRecall": 0.985678281025792,
+      "binaryIou": 0.9746866529624711
+    },
+    "composite": {
+      "meanAbsoluteChannelError": 0.7318640814887153,
+      "maximumChannelError": 169,
+      "pixelsOver4Fraction": 0.04386266072591146,
+      "pixelsOver16Fraction": 0.013095855712890625
+    }
+  }
+]

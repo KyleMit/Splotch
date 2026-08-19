@@ -411,3 +411,7 @@ Run focused verification with:
 npm run test:tools -- tools/vectorize/tests/vectorize-image.test.mjs
 npm run vectorize -- --help
 ```
+
+The committed [`pilot/`](pilot/) records the coloring-outline experiment that established the keeper
+parameters and compared one cover plus simple/dense pen and chalk pages. It is evidence for the
+proposed runtime direction, not part of the production coloring pipeline.

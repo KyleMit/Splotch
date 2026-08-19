@@ -25,6 +25,7 @@
     ".ruler/skills/*/*.mjs",
     "tools/asset-gen/{coloring,style-covers,crayon-reference}/*.mjs",
     "tools/vectorize/*.mjs",
+    "tools/vectorize/pilot/*.mjs",
     "tools/asset-gen/tests/*.test.mjs"
   ],
   "project": [
