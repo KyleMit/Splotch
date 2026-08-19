@@ -130,6 +130,18 @@ function darkScenePrompt() {
   return buildPromptForStyle(null, {}, 'dark').slice(DEFAULT_PROMPT.length).trim();
 }
 
+// Candidate arms for restoring imagination on top of the anchoring win. The
+// shipped overlay wording keeps placement but also reads as license to trace,
+// so a stick figure comes back a stick figure. Both arms keep the placement
+// rules and add an explicit instruction to render what each shape MEANS as a
+// fully realized subject; `realized-magic` also licenses proportion changes
+// and a slight nudge in position.
+const REALIZED_PROMPT =
+  "Paint over this child's drawing so the finished picture keeps the child's composition: every shape the child drew stays about where they drew it and about the size they drew it, and nothing is pulled to the center, blown up to fill the frame, zoomed into, or cropped. Within that layout, bring the drawing all the way to life. Read what the child meant each shape to be and paint that thing for real, the way a finished storybook illustration would: a stick figure becomes a whole character with a body, clothes, hair, and an expression; a circle ringed with lines becomes a real sun; a box on wheels becomes a real vehicle. Give each subject proper form, volume, texture, and small charming details, keeping its place, its scale, its pose, and the colors the child chose - you may reshape its proportions and nudge it a little when that is what it takes to make it a believable, fully realized subject rather than a traced outline. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Fill the open background with the atmosphere and setting the drawing suggests - sky, light, water, ground, soft distant scenery - in even washes, but never with new characters or objects that would compete with what the child drew.";
+
+const REALIZED_MAGIC_PROMPT =
+  "Turn this child's drawing into a magical, fully realized illustration painted over the top of it, so the finished picture still reads as the child's own picture: each thing they drew stays about where they put it and about the size they made it - no pulling things to the center, no blowing the subject up to fill the frame, no zooming or cropping - and things they drew apart stay apart. Everything else is yours to realize. Read what each shape is meant to be and paint it as that thing for real, with proper form, volume, texture, warm light, and charming detail: a stick figure becomes a whole character with a body, clothes, hair, and an expression; a lumpy oval becomes a real animal with fur and eyes; a wobbly box becomes a real house with a roof and windows. Keep the child's colors and each subject's pose and gesture, but you have license to refine its proportions, give it depth, and nudge it slightly so it stands convincingly in the scene. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Give the picture a real place to happen in: fill the open background with the setting the drawing implies - sky, weather, light, water, ground, soft distant scenery - and let a little wonder in through light, color, and atmosphere rather than through new characters or props the child did not draw.";
+
 const LABS = [
   { key: 'baseline', label: 'production prompt', prompt: DEFAULT_PROMPT, imageToolOverrides: {} },
   {
@@ -162,6 +174,18 @@ const LABS = [
     prompt: DEFAULT_PROMPT,
     imageToolOverrides: { input_fidelity: 'high' },
     variant: GPT_IMAGE_1_5_LOW,
+  },
+  {
+    key: 'realized',
+    label: 'anchored placement + fully-realized subjects',
+    prompt: REALIZED_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'realized-magic',
+    label: 'fully-realized subjects + reshape/nudge license',
+    prompt: REALIZED_MAGIC_PROMPT,
+    imageToolOverrides: {},
   },
   {
     key: 'night',
