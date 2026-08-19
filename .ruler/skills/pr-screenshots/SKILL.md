@@ -74,6 +74,31 @@ end-to-end — see the ADR's Verification table.
    `HTTP/1.1 200 Connection Established`, masking the real origin status so a 404'd URL still reads
    `200`.)
 
+3. **In a PR *comment*, write the image as an HTML `<img>` tag, not markdown image syntax.** Posting
+   a comment through the GitHub MCP `add_issue_comment` tool defuses the markdown form — the stored
+   body comes back with the URL wrapped in double backticks, which GitHub renders as an `<img>` with
+   an empty `src`: a broken-image icon with the URL beside it as dead monospace. Written, then
+   stored as:
+
+   ```text
+   ![after](https://raw.githubusercontent.com/.../after.png)
+   ![after](``https://raw.githubusercontent.com/.../after.png)``
+   ```
+
+   The filter keys on the bang-bracket sequence itself, and strips a lone bang even from one written
+   inside a code span. Plain markdown links pass through untouched, and so does raw HTML:
+
+   ```html
+   <img alt="after" src="https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/<pr-slug>/after.png" width="900">
+   ```
+
+   which GitHub renders normally. Verified on PR 1136. Markdown image syntax is still correct in
+   **repo files** — a `docs/…/*.md` walkthrough renders relative image paths fine on github.com —
+   this rule is only about text posted through the comment API. Whether PR *bodies* written via
+   `create_pull_request` are filtered the same way is untested; use `<img>` there too and you don't
+   have to care. After posting, confirm rather than assume: fetch the PR page and check the rendered
+   `<img>` carries a non-empty `src`.
+
 > Two escape hatches, neither better here: committing shots into the **feature branch**
 > (`docs/pr/…`) is simplest but drags binaries into `main` on merge — the thing the orphan branch
 > avoids. **Release assets** (`--prerelease` tagged by PR #) is the token-authenticated route that
