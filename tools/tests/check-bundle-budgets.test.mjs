@@ -1,15 +1,16 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import {
+  checkBundleBudgets,
   MAX_LAZY_CHUNK_BYTES,
   MAX_NATIVE_EXPORT_BYTES,
   MAX_STARTUP_JS_CSS_BYTES,
   measureNativeExport,
   measureWebBundle,
   nativeExportBudgetProblems,
-  startupResourceHrefsFromHtml,
+  startupResourcesFromHtml,
   webBundleBudgetProblems,
 } from '../check-bundle-budgets.mjs';
 
@@ -30,17 +31,22 @@ afterEach(() => {
   temporaryDirectories.splice(0).forEach((directory) => rmSync(directory, { recursive: true }));
 });
 
-it('reads modulepreload and stylesheet hrefs with structured HTML parsing', () => {
+it('reads startup links and inline CSS with structured HTML parsing', () => {
   expect(
-    startupResourceHrefsFromHtml(`
+    startupResourcesFromHtml(`
       <!doctype html>
       <html><head>
         <link href="./entry.js" crossorigin rel="modulepreload preload">
         <link media="screen" rel='stylesheet' href='./app.css'>
+        <link rel="stylesheet" href="./navigation.css" disabled media="(max-width: 0)">
         <link rel="icon" href="./favicon.png">
+        <style>a{content:"é"}</style>
       </head></html>
     `)
-  ).toEqual(['./entry.js', './app.css']);
+  ).toEqual({
+    hrefs: ['./entry.js', './app.css'],
+    inlineStyleBytes: Buffer.byteLength('a{content:"é"}'),
+  });
 });
 
 it('measures linked startup resources and the largest non-startup JavaScript chunk', () => {
@@ -56,12 +62,15 @@ it('measures linked startup resources and the largest non-startup JavaScript chu
     prerenderedIndex,
     '<link href="./_app/immutable/entry/app.js" rel="modulepreload">' +
       '<link rel="stylesheet" href="./_app/immutable/assets/app.css">' +
-      '<link rel="modulepreload" href="./_app/env.js">'
+      '<link rel="stylesheet" href="./_app/immutable/assets/navigation.css" disabled>' +
+      '<link rel="modulepreload" href="./_app/env.js">' +
+      '<style>a{b:c}</style>'
   );
 
   expect(measureWebBundle({ prerenderedIndex, clientDir })).toEqual({
-    startupBytes: 8,
+    startupBytes: 14,
     startupFileCount: 2,
+    inlineStyleBytes: 6,
     largestLazyChunk: { path: '_app/immutable/chunks/lazy.js', bytes: 11 },
   });
 });
@@ -96,6 +105,32 @@ it('measures every file in the native export and rejects an oversized package', 
   expect(nativeExportBudgetProblems({ bytes: MAX_NATIVE_EXPORT_BYTES + 1 })).toEqual([
     `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`,
   ]);
+});
+
+it('rejects an oversized web bundle through the checker entry point', async () => {
+  const root = temporaryDirectory();
+  const clientDir = join(root, 'client');
+  const prerenderedIndex = join(root, 'prerendered/pages/index.html');
+  writeSizedFile(join(clientDir, '_app/immutable/entry/app.js'), MAX_STARTUP_JS_CSS_BYTES + 1);
+  writeSizedFile(join(clientDir, '_app/immutable/chunks/lazy.js'), 1);
+  mkdirSync(dirname(prerenderedIndex), { recursive: true });
+  writeFileSync(
+    prerenderedIndex,
+    '<link href="./_app/immutable/entry/app.js" rel="modulepreload">'
+  );
+
+  await expect(checkBundleBudgets({ prerenderedIndex, clientDir, log: vi.fn() })).rejects.toThrow(
+    `Startup JS/CSS is ${MAX_STARTUP_JS_CSS_BYTES + 1} bytes, above the ${MAX_STARTUP_JS_CSS_BYTES}-byte budget`
+  );
+});
+
+it('rejects an oversized native export through the checker entry point', async () => {
+  const nativeDir = temporaryDirectory();
+  writeSizedFile(join(nativeDir, 'index.html'), MAX_NATIVE_EXPORT_BYTES + 1);
+
+  await expect(checkBundleBudgets({ native: true, nativeDir, log: vi.fn() })).rejects.toThrow(
+    `Native static export is ${MAX_NATIVE_EXPORT_BYTES + 1} bytes, above the ${MAX_NATIVE_EXPORT_BYTES}-byte budget`
+  );
 });
 
 it('is wired into both release build lifecycle hooks', () => {

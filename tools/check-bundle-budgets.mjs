@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
 import { parse } from 'svelte/compiler';
+import { filesRecursively } from './lib/filesystem.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const OUTPUT_DIR = join(ROOT, 'web/.svelte-kit/output');
@@ -10,11 +11,11 @@ const CLIENT_DIR = join(OUTPUT_DIR, 'client');
 const NATIVE_DIR = join(ROOT, 'web/build');
 const RUNTIME_GENERATED_STARTUP_URLS = new Set(['_app/env.js']);
 
-// The reviewed 2026-08-19 startup baseline is 470,780 bytes; 54,220 bytes of headroom permits ordinary app growth while catching another large eager dependency.
+// The reviewed 2026-08-19 startup baseline is 470,860 bytes; 54,140 bytes of headroom permits ordinary app growth while catching another large eager dependency.
 export const MAX_STARTUP_JS_CSS_BYTES = 525_000;
-// The reviewed 2026-08-19 largest-lazy-chunk baseline is 65,418 bytes; 9,582 bytes of headroom allows modest feature growth without hiding a major chunk merger.
+// The reviewed 2026-08-19 largest bundle-wide lazy chunk is the public /design route at 65,418 bytes; 9,582 bytes of headroom permits modest growth while catching a larger deployed lazy route.
 export const MAX_LAZY_CHUNK_BYTES = 75_000;
-// The reviewed 2026-08-19 stripped native-export baseline is 6,629,735 bytes; 370,265 bytes of headroom accommodates normal asset churn while rejecting another bundled coloring book.
+// The reviewed 2026-08-19 stripped native-export baseline is 6,629,727 bytes; 370,273 bytes of headroom accommodates normal asset churn while rejecting another bundled coloring book.
 export const MAX_NATIVE_EXPORT_BYTES = 7_000_000;
 
 function staticAttribute(element, name) {
@@ -28,8 +29,10 @@ function staticAttribute(element, name) {
   return attribute.value.map((part) => part.data).join('');
 }
 
-export function startupResourceHrefsFromHtml(html) {
+export function startupResourcesFromHtml(html) {
+  const parsed = parse(html, { modern: true });
   const hrefs = [];
+  let inlineStyleBytes = Buffer.byteLength(parsed.css?.content.styles ?? '');
   const visited = new Set();
   const visit = (node) => {
     if (!node || typeof node !== 'object' || visited.has(node)) return;
@@ -41,24 +44,24 @@ export function startupResourceHrefsFromHtml(html) {
     if (node.type === 'RegularElement' && node.name === 'link') {
       const rel = staticAttribute(node, 'rel');
       const href = staticAttribute(node, 'href');
-      if (
-        href &&
-        rel?.split(/\s+/).some((value) => ['modulepreload', 'stylesheet'].includes(value))
-      ) {
+      const relations = new Set(rel?.split(/\s+/));
+      const disabled = node.attributes.some(
+        (attribute) => attribute.type === 'Attribute' && attribute.name === 'disabled'
+      );
+      if (href && (relations.has('modulepreload') || (relations.has('stylesheet') && !disabled))) {
         hrefs.push(href);
       }
     }
+    if (node.type === 'RegularElement' && node.name === 'style') {
+      if (node.fragment.nodes.some((part) => part.type !== 'Text')) {
+        throw new Error('Prerendered <style> must contain static CSS');
+      }
+      inlineStyleBytes += Buffer.byteLength(node.fragment.nodes.map((part) => part.data).join(''));
+    }
     Object.values(node).forEach(visit);
   };
-  visit(parse(html, { modern: true }).fragment);
-  return hrefs;
-}
-
-function filesRecursively(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    return entry.isDirectory() ? filesRecursively(path) : [path];
-  });
+  visit(parsed.fragment);
+  return { hrefs, inlineStyleBytes };
 }
 
 function clientPathFromHref(clientDir, href) {
@@ -74,13 +77,15 @@ export function measureWebBundle({ prerenderedIndex, clientDir }) {
   if (!existsSync(prerenderedIndex)) {
     throw new Error(`Prerendered home page does not exist: ${prerenderedIndex}`);
   }
-  const hrefs = startupResourceHrefsFromHtml(readFileSync(prerenderedIndex, 'utf8'));
+  const { hrefs, inlineStyleBytes } = startupResourcesFromHtml(
+    readFileSync(prerenderedIndex, 'utf8')
+  );
   if (!hrefs.length) {
-    throw new Error(`No modulepreload or stylesheet links found in ${prerenderedIndex}`);
+    throw new Error(`No modulepreload or active stylesheet links found in ${prerenderedIndex}`);
   }
 
   const startupPaths = new Set();
-  let startupBytes = 0;
+  let startupBytes = inlineStyleBytes;
   for (const href of hrefs) {
     const path = clientPathFromHref(clientDir, href);
     const clientRelativePath = relative(clientDir, path);
@@ -102,7 +107,12 @@ export function measureWebBundle({ prerenderedIndex, clientDir }) {
     .sort((left, right) => right.bytes - left.bytes);
   if (!lazyChunks.length) throw new Error(`No lazy JavaScript chunks found in ${clientDir}`);
 
-  return { startupBytes, startupFileCount: startupPaths.size, largestLazyChunk: lazyChunks[0] };
+  return {
+    startupBytes,
+    startupFileCount: startupPaths.size,
+    inlineStyleBytes,
+    largestLazyChunk: lazyChunks[0],
+  };
 }
 
 export function measureNativeExport(dir) {
@@ -136,25 +146,31 @@ export function nativeExportBudgetProblems({ bytes }) {
     : [];
 }
 
-export async function checkBundleBudgets({ native }) {
+export async function checkBundleBudgets({
+  native = false,
+  prerenderedIndex = PRERENDERED_INDEX,
+  clientDir = CLIENT_DIR,
+  nativeDir = NATIVE_DIR,
+  log = console.log,
+} = {}) {
   if (native) {
-    const measurement = measureNativeExport(NATIVE_DIR);
+    const measurement = measureNativeExport(nativeDir);
     const problems = nativeExportBudgetProblems(measurement);
     if (problems.length) throw new Error(problems.join('\n'));
-    console.log(
+    log(
       `[bundle-budgets] native export ${measurement.bytes}/${MAX_NATIVE_EXPORT_BYTES} bytes across ${measurement.fileCount} files`
     );
     return;
   }
 
   const measurement = measureWebBundle({
-    prerenderedIndex: PRERENDERED_INDEX,
-    clientDir: CLIENT_DIR,
+    prerenderedIndex,
+    clientDir,
   });
   const problems = webBundleBudgetProblems(measurement);
   if (problems.length) throw new Error(problems.join('\n'));
-  console.log(
-    `[bundle-budgets] startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} files; ` +
+  log(
+    `[bundle-budgets] startup JS/CSS ${measurement.startupBytes}/${MAX_STARTUP_JS_CSS_BYTES} bytes across ${measurement.startupFileCount} linked files + ${measurement.inlineStyleBytes} inline CSS bytes; ` +
       `largest lazy JS ${measurement.largestLazyChunk.bytes}/${MAX_LAZY_CHUNK_BYTES} bytes (${measurement.largestLazyChunk.path})`
   );
 }

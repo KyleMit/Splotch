@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
+import { filesRecursively } from './lib/filesystem.mjs';
 import { ROOT, isMain, runMain } from './lib/proc.mjs';
 
 const CLIENT_DIR = join(ROOT, 'web/.svelte-kit/output/client');
@@ -15,13 +16,6 @@ export function precacheUrlsFromSource(source) {
   return [...source.matchAll(/\{url:("(?:\\.|[^"\\])*"),revision:/g)].map((match) =>
     JSON.parse(match[1])
   );
-}
-
-function filesRecursively(directory) {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(directory, entry.name);
-    return entry.isDirectory() ? filesRecursively(path) : [path];
-  });
 }
 
 export function pwaPrecacheProblems({
