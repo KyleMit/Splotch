@@ -109,6 +109,7 @@ then commit. The Pages deploy runs on merge to `main`.
 | `safety`           | pretend-play boundary probe (toy sword) — should be allowed                               |
 | `gen`              | model-authored **filled** art — solid shapes and scribble fill                            |
 | `line`             | model-authored **stroke-only** art — open outlines, nothing filled, plus degenerate cases |
+| `store`            | the authored store-screenshot scenes, rasterized onto paper — full multi-subject art      |
 
 Inputs are built to match what `/api/generate-image` actually receives — a flattened canvas of the
 theme paper, real `web/static/coloring` line art, and the child's marks in the app's palette — so

@@ -15,6 +15,7 @@
 //   scribble-1color   sporadic strokes of a single palette color, toddler-placed
 //   art-detail        freehand scenes at low / medium / high line counts
 //   safety            pretend-play boundary probe (toy sword) — should be allowed
+//   store             the authored store-screenshot scenes, rasterized onto paper
 //
 // Gemini-authored inputs (prefix `gen`) are added separately by
 // tools/model-eval/gen-model-inputs.mjs and are not touched here.
@@ -349,6 +350,34 @@ add({
   dim: 'tall',
   layers: [{ op: 'scene', scene: 'toysword' }],
 });
+
+// I) store — the authored store-screenshot scenes (tools/store-drawings/samples),
+// rasterized onto paper. They are the corpus's only full multi-subject drawings:
+// several colors, several subjects, and the stroke character of art drawn in the
+// app itself rather than synthesized here.
+const STORE_SAMPLES = join(ROOT, 'tools/store-drawings/samples');
+const SVG_VIEWBOX = /viewBox="0 0 ([\d.]+) ([\d.]+)"/;
+for (const file of readdirSync(STORE_SAMPLES)
+  .filter((f) => f.endsWith('.svg'))
+  .sort()) {
+  const svg = readFileSync(join(STORE_SAMPLES, file), 'utf8');
+  const viewBox = SVG_VIEWBOX.exec(svg);
+  if (!viewBox) fail(`No zero-origin viewBox in ${file}`);
+  const name = file.replace(/\.svg$/, '');
+  add({
+    id: `store__${name.replace(/-(tall|wide)$/, '')}`,
+    theme: 'light',
+    dim: name.endsWith('-tall') ? 'tall' : 'wide',
+    layers: [
+      {
+        op: 'art',
+        uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`,
+        w: Number(viewBox[1]),
+        h: Number(viewBox[2]),
+      },
+    ],
+  });
+}
 
 // Any layer carrying a `uri` (built via pickAsset/resolveAsset above) resolves it from
 // the coloring assets on disk; catch a missing or renamed one here, in one pass across
