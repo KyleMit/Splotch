@@ -24,6 +24,10 @@ then makes one engine call per compiled stroke. The engine emits one path operat
 the renderer sees the same midpoint and anti-aliasing boundaries rather than one newly batched path.
 Color tokens and the five-level width remain the compiled inputs; the final green palette click in
 `sceneHero` still uses the real UI so the photographed selection ring is genuine.
+`web/tests/store-drawing-replay.spec.ts` keeps the two delivery paths in lockstep with a small
+three-stroke live-app comparison rather than paying the full hero's pointer cost in CI. Engine
+replay also rejects eraser mode because the store instruction vocabulary does not include erasing
+and that pointer lifecycle has additional width and empty-canvas behavior.
 
 The production-build comparison used the actual portrait island and landscape dinosaur hero
 captures:

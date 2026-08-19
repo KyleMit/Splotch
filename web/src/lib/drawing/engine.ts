@@ -570,16 +570,20 @@ export interface HarnessStrokeReplay {
 export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
   if (!dev && !__DEV_HARNESS__) throw new Error();
   const { color, points, size } = replay;
-  if (!engineLive || points.length === 0) return;
+  if (points.length === 0) return;
+  if (eraserActive) throw new Error('Store drawing replay does not support the eraser');
+  if (!engineLive) throw new Error('Drawing engine is not live');
   if (activePointers.size > 0 || penStreamAdopter.hasCanvasExit()) {
     throw new Error('Cannot replay a stroke while pointer input is active');
   }
 
   const rect = measure.rect;
   if (rect.width === 0 || rect.height === 0) throw new Error('Drawing canvas is not measured');
-  const toPaper = ({ x, y }: Point) =>
-    screenToPaper({ x: (x * viewport.width) / rect.width, y: (y * viewport.height) / rect.height });
-  const paperPoints = points.map(toPaper);
+  const screenPoints = points.map(({ x, y }) => ({
+    x: (x * viewport.width) / rect.width,
+    y: (y * viewport.height) / rect.height,
+  }));
+  const paperPoints = screenPoints.map(screenToPaper);
   const first = paperPoints[0];
   const lineWidth = getStrokeWidthPx(size) * renderScale;
   const pointerState: PointerState = {
@@ -588,8 +592,8 @@ export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
     y: first.y,
     midX: first.x,
     midY: first.y,
-    startX: points[0].x,
-    startY: points[0].y,
+    startX: screenPoints[0].x,
+    startY: screenPoints[0].y,
     color,
     lineWidth,
     erase: eraserActive,

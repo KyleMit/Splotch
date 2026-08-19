@@ -158,7 +158,9 @@ closed width/color vocabularies, and exact generator drift without launching a b
 
 `web/tests/store-drawing-replay.spec.ts` is the complementary browser contract for ADR-0122's hero
 capture seam: it invokes one stroke on the real drawing route and asserts that the engine commits a
-rendered history command without leaving synthetic pointer chrome behind.
+rendered history command without leaving synthetic pointer chrome behind. A small three-stroke scene
+then runs through both the pointer and engine paths on separate live pages and requires their
+composited canvases to retain greater than 0.9998 soft color fidelity.
 
 ## Repo-script unit tests — Vitest
 
