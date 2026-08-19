@@ -1,19 +1,14 @@
-import { execFileSync, spawn } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { buildMetadata } from '../../../web/buildVersion.ts';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const packageVersion = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).version;
-const commitCount = execFileSync('git', ['describe', '--tags', '--long', '--match', 'v*'], {
-  cwd: repoRoot,
-  encoding: 'utf8',
-})
-  .trim()
-  .match(/-(\d+)-g[0-9a-f]+$/)[1];
-const expectedVersion = `${packageVersion.split('.').slice(0, 2).join('.')}.${commitCount}`;
+const expectedVersion = buildMetadata({ isCapacitor: false, packageVersion }).appVersion;
 const session = 'a'.repeat(64);
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
