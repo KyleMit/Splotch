@@ -15,7 +15,8 @@ const FILLSRC = 'tools/asset-gen/fill-src';
 const sha = (b) => createHash('sha256').update(b).digest('hex').slice(0, 16);
 
 const pages = [];
-for await (const f of glob(`${FILLSRC}/*/*.light.raw.webp`)) pages.push(f.replace(`${FILLSRC}/`, '').replace('.light.raw.webp', ''));
+for await (const f of glob(`${FILLSRC}/*/*.light.raw.webp`))
+  pages.push(f.replace(`${FILLSRC}/`, '').replace('.light.raw.webp', ''));
 pages.sort();
 
 const out = {};
@@ -42,11 +43,38 @@ for (const page of pages) {
   const punched = await punchNightCandidate(analysis, lineArt);
 
   out[page] = {
-    inkHash, lumaHash,
-    eyesLight: eyesLight.cores.map((c) => [c.x, c.y, c.coreLuma, c.bandDark, c.bandLight, c.contrast, c.lively, c.annulusInkFrac]),
-    eyesNight: eyesNight.cores.map((c) => [c.x, c.y, c.coreLuma, c.bandDark, c.bandLight, c.contrast, c.lively, c.annulusInkFrac]),
-    nightness, drift,
-    halo: { haloScore: halo.haloScore, rawScore: halo.rawScore, haloPx12: halo.haloPx12, rimPx12: halo.rimPx12, bandStats: halo.bandStats, hotspots: halo.hotspots },
+    inkHash,
+    lumaHash,
+    eyesLight: eyesLight.cores.map((c) => [
+      c.x,
+      c.y,
+      c.coreLuma,
+      c.bandDark,
+      c.bandLight,
+      c.contrast,
+      c.lively,
+      c.annulusInkFrac,
+    ]),
+    eyesNight: eyesNight.cores.map((c) => [
+      c.x,
+      c.y,
+      c.coreLuma,
+      c.bandDark,
+      c.bandLight,
+      c.contrast,
+      c.lively,
+      c.annulusInkFrac,
+    ]),
+    nightness,
+    drift,
+    halo: {
+      haloScore: halo.haloScore,
+      rawScore: halo.rawScore,
+      haloPx12: halo.haloPx12,
+      rimPx12: halo.rimPx12,
+      bandStats: halo.bandStats,
+      hotspots: halo.hotspots,
+    },
     punchHash: sha(punched),
   };
   process.stderr.write('.');
