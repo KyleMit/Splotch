@@ -48,5 +48,11 @@
       "review": "Solid-pen-eye page: the pen's pupils are solid ink, so findEyeCores finds nothing and the eye-polarity gate passes VACUOUSLY (the gate-blind class in ISSUES). Render the night composite and confirm the pupils stayed black before trusting any chalk of this page.",
       "why": "Sibling police-tall's 3.1-wave chalk whitened both pupils exactly this way and only composite review caught it; an erase-and-redraw note + -t 0.4 fixed it (gemini-3.1-migration.md). Retry text reconstructed. 3.1 resists erase-style edits on solid ink — budget extra attempts."
     }
+  },
+  "train-tall": {
+    "light": {
+      "review": "The light eye gate intentionally reports n/a: its two pupil cores are source-solid pen regions, while the third annotated core is the mouth/tongue. The Combined light view retains the natural dark pupils through the pen overlay; do not make the raw fill paint beyond their boundaries to force a gated verdict.",
+      "why": "Issue #1139 catalog sweep confirmed vehicles/train-tall is the only page besides space/astronaut-wide whose light verdict becomes ungated when source-solid pen pupils are excluded. The committed golden transition from true to null is reviewed rather than silent."
+    }
   }
 }

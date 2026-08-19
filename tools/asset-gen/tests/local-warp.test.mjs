@@ -105,37 +105,41 @@ describe('catalog calibration', () => {
     );
   }
 
-  it('rejects the excavator aperture ridge while historical big-nudge controls stay clean', async () => {
-    const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
-      scorePage('farm/pig-wide'),
-      scorePage('vehicles/excavator-wide'),
-      scorePage('vehicles/excavator-wide', 'night'),
-      scorePage('dinosaur/stegosaurus-wide'),
-    ]);
+  it(
+    'rejects the excavator aperture ridge while historical big-nudge controls stay clean',
+    async () => {
+      const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
+        scorePage('farm/pig-wide'),
+        scorePage('vehicles/excavator-wide'),
+        scorePage('vehicles/excavator-wide', 'night'),
+        scorePage('dinosaur/stegosaurus-wide'),
+      ]);
 
-    expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
-    expect(excavatorLight.tiles).toContainEqual(
-      expect.objectContaining({
-        centerX: 384,
-        centerY: 384,
-        dx: -5,
-        dy: 11,
-        boundaryPeak: true,
-        confident: false,
-      })
-    );
-    expect(excavatorNight.tiles).toContainEqual(
-      expect.objectContaining({
-        centerX: 384,
-        centerY: 384,
-        confident: false,
-      })
-    );
-  });
+      expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
+      expect(excavatorLight.tiles).toContainEqual(
+        expect.objectContaining({
+          centerX: 384,
+          centerY: 384,
+          dx: -5,
+          dy: 11,
+          boundaryPeak: true,
+          confident: false,
+        })
+      );
+      expect(excavatorNight.tiles).toContainEqual(
+        expect.objectContaining({
+          centerX: 384,
+          centerY: 384,
+          confident: false,
+        })
+      );
+    },
+    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
+  );
 
   it(
     'bounds every reviewed baseline exception while new pages keep the strict default',
