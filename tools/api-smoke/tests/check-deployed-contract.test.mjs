@@ -61,14 +61,20 @@ function sendJson(response, status, body, headers = {}) {
   });
 }
 
-async function startDeploy({ omitSecurityHeader, version = expectedVersion } = {}) {
+async function startDeploy({
+  hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
+  omitSecurityHeader,
+  version = expectedVersion,
+} = {}) {
   const tokens = new Set(['existing-token']);
   const server = createServer(async (request, response) => {
     let requestBody = '';
     for await (const chunk of request) requestBody += chunk;
     const url = new URL(request.url, 'http://localhost');
     const routeSecurityHeaders = Object.fromEntries(
-      Object.entries(securityHeaders).filter(([name]) => name !== omitSecurityHeader)
+      Object.entries(securityHeaders)
+        .filter(([name]) => name !== omitSecurityHeader)
+        .map(([name, value]) => [name, name === 'Strict-Transport-Security' ? hsts : value])
     );
 
     if (url.pathname === '/' || url.pathname === '/privacy') {
@@ -215,5 +221,12 @@ describe('hosted deploy contract smoke', () => {
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('GET / → deployed HTML with security headers');
     expect(result.stderr).toContain('X-Frame-Options=null');
+  });
+
+  it('fails when Netlify serves an ineffective HSTS policy', async () => {
+    const result = await runSmoke(await startDeploy({ hsts: 'max-age=0' }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('Strict-Transport-Security="max-age=0"');
   });
 });

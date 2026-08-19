@@ -20,10 +20,13 @@ const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
 const CAPACITOR_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const VERSION_CACHE_CONTROL = ['no-cache', 'no-store', 'must-revalidate'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
-const NETLIFY_EDGE_SECURITY_HEADERS = new Set([
-  'Strict-Transport-Security',
-  'X-Content-Type-Options',
-]);
+const HSTS_HEADER = 'Strict-Transport-Security';
+// Netlify rewrites HSTS per hostname, so validate its security semantics instead of one site value.
+const MINIMUM_HSTS_MAX_AGE_SECONDS = 31_536_000;
+const NETLIFY_EDGE_SECURITY_HEADERS = new Set([HSTS_HEADER, 'X-Content-Type-Options']);
+const EXACT_STATIC_SECURITY_HEADERS = Object.fromEntries(
+  Object.entries(SECURITY_HEADERS).filter(([name]) => name !== HSTS_HEADER)
+);
 const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
@@ -47,12 +50,27 @@ function hasCacheDirectives(response, expected) {
   return expected.every((value) => actual.has(value));
 }
 
+function missingStaticSecurityHeaders(response) {
+  const missing = missingHeaders(response, EXACT_STATIC_SECURITY_HEADERS);
+  const hsts = response.headers.get(HSTS_HEADER) ?? '';
+  const maxAge = Number(hsts.match(/(?:^|;)\s*max-age=(\d+)(?:;|$)/i)?.[1]);
+  const directives = new Set(hsts.split(';').map((value) => value.trim().toLowerCase()));
+  if (
+    !Number.isFinite(maxAge) ||
+    maxAge < MINIMUM_HSTS_MAX_AGE_SECONDS ||
+    !directives.has('includesubdomains')
+  ) {
+    missing.push(`${HSTS_HEADER}=${JSON.stringify(hsts || null)}`);
+  }
+  return missing;
+}
+
 async function checkStaticRoutes() {
   let rootHtml = '';
   for (const path of ['/', '/privacy']) {
     const response = await fetch(`${BASE}${path}`);
     const body = await response.text();
-    const missingSecurity = missingHeaders(response, SECURITY_HEADERS);
+    const missingSecurity = missingStaticSecurityHeaders(response);
     check(
       `GET ${path} → deployed HTML with security headers`,
       response.status === 200 &&
