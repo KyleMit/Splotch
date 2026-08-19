@@ -49,6 +49,7 @@ vi.mock('../lib/page-notes.mjs', () => ({
     fromRegistry: Object.keys(levers?.flags ?? {}).filter((key) => values[key] === undefined),
   }),
   describeLevers: () => '',
+  withPageNotes: (base, notes) => (notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base),
 }));
 vi.mock('../lib/align-to-source.mjs', () => ({
   alignToSource: async (buffer) => ({ buffer, dx: 0, dy: 0 }),
@@ -303,4 +304,34 @@ it('re-scores and applies the exact saved candidate without a model call', async
   await expect(
     readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'))
   ).resolves.toEqual(reviewed);
+});
+
+it('re-scores and applies the selected reviewed sample', async () => {
+  await addPage('page-tall');
+  const selected = await sharp({
+    create: { width: 8, height: 8, channels: 3, background: '#00ff00' },
+  })
+    .webp()
+    .toBuffer();
+  await mkdir(join(state.roots.samples, 'test/page-tall'), { recursive: true });
+  await writeFile(join(state.roots.samples, 'test/page-tall/sample-3.webp'), selected);
+  state.gateResults = [true];
+  delete process.env.GEMINI_API_KEY;
+
+  expect(await run(['test/page-tall', '--rescore', '--sample', '3', '--apply'])).toEqual({
+    failed: 0,
+    shipped: [{ rel: 'test/page-tall' }],
+  });
+  await expect(
+    readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'))
+  ).resolves.toEqual(selected);
+  expect(state.prompts).toEqual([]);
+});
+
+it('rejects selecting one review sample during generation', async () => {
+  await addPage('page-tall');
+
+  await expect(run(['test/page-tall', '--sample', '2'])).rejects.toThrow(
+    '--sample can only be combined with --rescore.'
+  );
 });

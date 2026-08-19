@@ -67,6 +67,10 @@ export function mergeFlags(cliValues, levers) {
   return { merged, fromRegistry };
 }
 
+export function withPageNotes(base, notes) {
+  return notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base;
+}
+
 const short = (v) => (typeof v === 'string' && v.length > 72 ? `${v.slice(0, 69)}...` : v);
 
 // One-look provenance block for a page: every resolved setting tagged

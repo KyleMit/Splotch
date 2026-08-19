@@ -17,6 +17,8 @@
 //   npm run gen:coloring-fills -- farm/dog-wide --rescore --apply
 //                                                            ship the exact reviewed candidate
 //   npm run gen:coloring-fills -- farm/dog-wide --samples 5    5 candidates
+//   npm run gen:coloring-fills -- farm/dog-wide --rescore --sample 3 --apply
+//                                                            ship reviewed sample 3
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
 //   npm run gen:coloring-fills -- farm/dog-wide --warp-max 5   reviewed override
 //
@@ -58,7 +60,7 @@ import {
 } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
-import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+import { pageLevers, mergeFlags, describeLevers, withPageNotes } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { scoreEyeFill, judgeLightEyes } from '../lib/eye-fill.mjs';
@@ -89,7 +91,7 @@ export class RenderFailuresError extends Error {
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason.
 async function generateColoredPage(ai, { imageBytes, mimeType, temperature, notes }) {
-  const prompt = notes ? `${FILL_PROMPT}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : FILL_PROMPT;
+  const prompt = withPageNotes(FILL_PROMPT, notes);
   return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 
@@ -150,6 +152,7 @@ export async function run(argv) {
     options: {
       apply: { type: 'boolean' },
       rescore: { type: 'boolean' },
+      sample: { type: 'string' },
       samples: { type: 'string', short: 'n' },
       temperature: { type: 'string', short: 't' },
       'warp-max': { type: 'string' },
@@ -157,6 +160,11 @@ export async function run(argv) {
     },
   });
 
+  if (values.sample !== undefined && !values.rescore)
+    fail('--sample can only be combined with --rescore.');
+  if (values.sample !== undefined && values.samples !== undefined)
+    fail('--sample and --samples cannot be combined.');
+  const selectedSample = parsePositiveInt(values.sample, '--sample', 1);
   const samples = parsePositiveInt(values.samples, '--samples', 1);
   if (values.apply && samples > 1)
     fail('--apply cannot be combined with --samples greater than 1.');
@@ -258,9 +266,10 @@ export async function run(argv) {
     const warpSource = await prepareLocalWarpSource(source);
 
     for (let i = 0; i < samples; i++) {
-      const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
+      const sampleNumber = values.sample === undefined ? i + 1 : selectedSample;
+      const label = sampleMode ? `${rel}  sample ${sampleNumber}/${samples}` : rel;
       const dir = join(SAMPLES_DIR, rel);
-      const out = join(dir, `sample-${i + 1}.webp`);
+      const out = join(dir, `sample-${sampleNumber}.webp`);
       if (values.rescore && !existsSync(out)) {
         failures++;
         console.log(`${label}  (skip) no candidate to rescore at ${relative(REPO_ROOT, out)}`);
@@ -286,7 +295,7 @@ export async function run(argv) {
 
         await mkdir(dir, { recursive: true });
         if (!values.rescore) await writeFile(out, colored);
-        await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
+        await sharp(overlay).toFile(join(dir, `sample-${sampleNumber}.overlay.png`));
         if (passes(cand, warpMax)) passingCandidates.push({ rel, colored });
         // Multi-sample runs are review-only (--apply is rejected above): individual
         // candidates routinely miss a gate while exploring palettes, so a gate miss

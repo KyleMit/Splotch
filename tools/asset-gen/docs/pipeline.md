@@ -256,9 +256,10 @@ registry for a bounded experiment.
 
 Each best candidate and its registration overlay land in `.coloring-samples/`, including the best
 failed take for diagnosis. Gate exhaustion exits nonzero. After review, `--rescore --apply` re-gates
-those exact saved bytes offline, writes passing raws to `fill-src/`, and punches their shipped
-fills; one failed page cannot partially apply a batch. `--samples N` remains review-only and cannot
-be combined with `--apply`.
+saved `sample-1.webp` bytes offline by default; add `--sample N` to promote a different reviewed
+take from a prior `--samples N` exploration. Passing raws are written to `fill-src/` and punched
+into their shipped fills; one failed page cannot partially apply a batch. `--samples N` remains
+review-only and cannot be combined with `--apply`.
 
 ## Stage 4 — Night fills
 
