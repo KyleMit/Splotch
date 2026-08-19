@@ -19,7 +19,9 @@
 //    of 10+ is chrome-tier stacking and must use the --z-* tokens so the
 //    stacking order stays legible in one place. Single-digit values (local
 //    ordering inside an isolated stacking context), var(--z-…), and calc()
-//    stay legal.
+//    stay legal. The first legitimate one-off gets a BASELINE-style per-file
+//    allowlist map like the hex ratchet, never an inline exception or weakened
+//    check.
 //
 // 3. Raw font-size values — a ratchet like the hex one, against
 //    FONT_SIZE_BASELINE. The type ramp (--font-size-*, --input-font-size)
