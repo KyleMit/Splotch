@@ -67,6 +67,15 @@ describe('SECURITY_HEADERS mirrors the netlify.toml `for = "/*"` block', () => {
       expect(tomlHeaders[name]).toBe(normalize(value));
     });
   }
+
+  it('keeps the platform CSP complementary to SvelteKit script enforcement', () => {
+    const policy = tomlHeaders['Content-Security-Policy'];
+    expect(policy).toContain("frame-ancestors 'none'");
+    expect(policy).toContain('report-uri /api/csp-report');
+    expect(policy).not.toContain('default-src');
+    expect(policy).not.toContain('script-src');
+    expect(policy).not.toContain('unsafe-inline');
+  });
 });
 
 // The one per-route override. It exists because /feedback is the only page that

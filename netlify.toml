@@ -123,10 +123,14 @@
     # issue #235, flipped after a full Playwright sweep of every surface — draw/
     # undo/clear, coloring book, screenshot save, AI dialog, Settings,
     # /admin, /privacy, SW registration + repeat visit — against this exact
-    # policy came back violation-free). 'unsafe-inline' covers what nonces don't
-    # yet replace: SvelteKit's inline hydration boot code, the app.html
-    # pre-hydration state stamp, and every component-scoped stylesheet inlined
-    # into <head> (svelte.config.js inlineStyleThreshold: Infinity). img-src
+    # policy came back violation-free). SvelteKit now owns the full resource
+    # policy: hashes in a meta tag on prerendered pages and nonces in a response
+    # header on SSR pages. This platform header carries only the directives a
+    # meta policy cannot express. It deliberately has no default-src/script-src:
+    # a second policy would otherwise block the inline scripts whose hashes the
+    # SvelteKit policy permits. style-src keeps 'unsafe-inline' in the SvelteKit
+    # policy because inlineStyleThreshold: Infinity and transitions require it.
+    # img-src
     # blob:/data: is the AI/screenshot object-URL previews; connect-src is the
     # same-origin /api/* calls plus blob:, which 'self' does not imply — a blob:
     # URL matches by scheme, not by the origin baked into it — and which the
@@ -141,20 +145,8 @@
     # (issue #470). securityHeaders.test.ts parses this block and asserts the
     # two copies agree, so keep the header values here in sync with that module.
     Content-Security-Policy = """\
-      default-src 'self'; \
-      script-src 'self' 'unsafe-inline'; \
-      style-src 'self' 'unsafe-inline'; \
-      img-src 'self' blob: data:; \
-      font-src 'self'; \
-      connect-src 'self' blob:; \
-      worker-src 'self'; \
-      manifest-src 'self'; \
-      base-uri 'self'; \
-      form-action 'self'; \
       frame-ancestors 'none'; \
-      object-src 'none'; \
-      report-uri /api/csp-report; \
-      report-to csp\
+      report-uri /api/csp-report\
       """
 
 [[headers]]

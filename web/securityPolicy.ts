@@ -12,6 +12,8 @@ const QUOTED_SOURCES = new Set([
   'wasm-unsafe-eval',
 ]);
 
+const CRYPTO_SOURCE = /^(?:nonce|sha\d\d\d)-/;
+
 type ContentSecurityPolicyDirective =
   | 'default-src'
   | 'script-src'
@@ -34,6 +36,15 @@ export type ContentSecurityPolicyDirectives = Readonly<
 
 export const NATIVE_API_ORIGIN = SITE_ORIGIN;
 
+// app.html is shared by prerendered and SSR pages, so its synchronous pre-paint
+// stamp cannot use SvelteKit's SSR-only nonce placeholder. securityPolicy.test.ts
+// hashes the exact script body and guards this source against template drift.
+export const APP_TEMPLATE_SCRIPT_HASH = 'sha256-mNUxsAvXfBPI/0A3jXzQqVYRxLn0XYxIvMaQFU9eECg=';
+
+// /beta injects one other pre-paint script from BETA_PLATFORM_BOOT_SCRIPT.
+// securityPolicy.test.ts guards this hash against that source constant.
+export const BETA_PLATFORM_SCRIPT_HASH = 'sha256-WvgdDI1VX7Gk+PbiIGa5DjGz1ifTAj0qXp/mhUP/W54=';
+
 // A static WebView cannot define the Reporting API group through a response header.
 const NATIVE_UNSUPPORTED_DIRECTIVES = new Set<ContentSecurityPolicyDirective>(['report-to']);
 
@@ -44,7 +55,7 @@ const SVELTEKIT_META_UNSUPPORTED_DIRECTIVES = new Set<ContentSecurityPolicyDirec
 
 export const WEB_CSP_DIRECTIVES = Object.freeze({
   'default-src': Object.freeze(['self']),
-  'script-src': Object.freeze(['self', 'unsafe-inline']),
+  'script-src': Object.freeze(['self', APP_TEMPLATE_SCRIPT_HASH, BETA_PLATFORM_SCRIPT_HASH]),
   'style-src': Object.freeze(['self', 'unsafe-inline']),
   'img-src': Object.freeze(['self', 'blob:', 'data:']),
   'font-src': Object.freeze(['self']),
@@ -59,6 +70,17 @@ export const WEB_CSP_DIRECTIVES = Object.freeze({
   'report-uri': Object.freeze(['/api/csp-report']),
   'report-to': Object.freeze(['csp']),
 }) satisfies Required<ContentSecurityPolicyDirectives>;
+
+// Netlify must deliver the directives a prerendered CSP meta tag cannot. This
+// deliberately has neither default-src nor script-src: it composes with
+// SvelteKit's hash-bearing meta policy instead of independently blocking the
+// inline scripts that policy authorizes. SSR responses already carry the full
+// SvelteKit nonce policy, so hooks.server.ts preserves it rather than replacing
+// it with this subset.
+export const RESPONSE_CSP_DIRECTIVES = Object.freeze({
+  'frame-ancestors': WEB_CSP_DIRECTIVES['frame-ancestors'],
+  'report-uri': WEB_CSP_DIRECTIVES['report-uri'],
+}) satisfies ContentSecurityPolicyDirectives;
 
 export function nativeApiBaseFor(isCapacitor: boolean): string {
   return isCapacitor ? NATIVE_API_ORIGIN : '';
@@ -89,7 +111,7 @@ export function serializeCspDirectives(directives: ContentSecurityPolicyDirectiv
   return Object.entries(directives)
     .map(([directive, sources]) => {
       const serializedSources = sources.map((source) =>
-        QUOTED_SOURCES.has(source) ? `'${source}'` : source
+        QUOTED_SOURCES.has(source) || CRYPTO_SOURCE.test(source) ? `'${source}'` : source
       );
       return [directive, ...serializedSources].join(' ');
     })

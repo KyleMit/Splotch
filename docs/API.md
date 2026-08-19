@@ -363,10 +363,11 @@ hours. See ADR-0104.
 ### `POST /api/csp-report`
 
 First-party receiver for browser CSP violation reports (issue #457) — the `report-uri` / `report-to`
-target of the site's `Content-Security-Policy` header (root `netlify.toml`, which also sends the
-matching `Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured
-`[csp-report]` lines in the Netlify function log — the app's only telemetry sink (no third-party
-reporting by design; same stance as `handleError` in `hooks.server.ts`).
+target of the site's composed Content Security Policy (SvelteKit's resource policy plus the
+meta-unsupported subset in root `netlify.toml`, which also sends the matching
+`Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured `[csp-report]`
+lines in the Netlify function log — the app's only telemetry sink (no third-party reporting by
+design; same stance as `handleError` in `hooks.server.ts`).
 
 Browsers post these unauthenticated, so there is no credential gate. Accepted `Content-Type`s:
 `application/csp-report` (the legacy `report-uri` batch, `{"csp-report": {…kebab-case…}}` — Firefox

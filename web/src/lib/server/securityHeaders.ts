@@ -8,9 +8,9 @@
 // drift — netlify.toml must stay literal TOML for Netlify to read it at deploy
 // time, so it can't import this module; the test asserts the values match.
 
-import { serializeCspDirectives, WEB_CSP_DIRECTIVES } from '../../../securityPolicy.ts';
+import { RESPONSE_CSP_DIRECTIVES, serializeCspDirectives } from '../../../securityPolicy.ts';
 
-const CONTENT_SECURITY_POLICY = serializeCspDirectives(WEB_CSP_DIRECTIVES);
+const CONTENT_SECURITY_POLICY = serializeCspDirectives(RESPONSE_CSP_DIRECTIVES);
 
 /**
  * Routes whose document must disclose its own origin to itself.

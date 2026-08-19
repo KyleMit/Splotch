@@ -1,13 +1,18 @@
 // @vitest-environment node
+import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { BETA_PLATFORM_BOOT_SCRIPT } from './src/lib/components/beta/betaPlatform';
 import { SECURITY_HEADERS } from './src/lib/server/securityHeaders';
 import {
   type ContentSecurityPolicyDirectives,
+  APP_TEMPLATE_SCRIPT_HASH,
+  BETA_PLATFORM_SCRIPT_HASH,
   nativeApiBaseFor,
   nativeCspDirectives,
   nativeMetaCspDirectives,
   NATIVE_API_ORIGIN,
+  RESPONSE_CSP_DIRECTIVES,
   serializeCspDirectives,
   WEB_CSP_DIRECTIVES,
 } from './securityPolicy.ts';
@@ -15,10 +20,16 @@ import {
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8');
 
 describe('shared content security policy', () => {
-  it('serializes the canonical directives into the unchanged web header', () => {
+  it('serializes only the meta-unsupported directives into the platform header', () => {
     expect(SECURITY_HEADERS['Content-Security-Policy']).toBe(
-      serializeCspDirectives(WEB_CSP_DIRECTIVES)
+      serializeCspDirectives(RESPONSE_CSP_DIRECTIVES)
     );
+    expect(RESPONSE_CSP_DIRECTIVES).toEqual({
+      'frame-ancestors': WEB_CSP_DIRECTIVES['frame-ancestors'],
+      'report-uri': WEB_CSP_DIRECTIVES['report-uri'],
+    });
+    expect(RESPONSE_CSP_DIRECTIVES).not.toHaveProperty('default-src');
+    expect(RESPONSE_CSP_DIRECTIVES).not.toHaveProperty('script-src');
   });
 
   it('widens native connect-src and omits reporting that a static WebView cannot configure', () => {
@@ -39,7 +50,25 @@ describe('shared content security policy', () => {
     expect(nativeApiBaseFor(true)).toBe(NATIVE_API_ORIGIN);
     expect(nativeApiBaseFor(false)).toBe('');
     expect(read('./vite.config.ts')).toContain('nativeApiBaseFor(isCapacitor)');
-    expect(read('./svelte.config.js')).toContain('directives: nativeCspDirectives()');
+    expect(read('./svelte.config.js')).toContain(
+      'directives: isCapacitor ? nativeCspDirectives() : WEB_CSP_DIRECTIVES'
+    );
+  });
+
+  it('guards the app template script hash against exact-content drift', () => {
+    const scripts = [
+      ...read('./src/app.html').matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g),
+    ];
+    expect(scripts).toHaveLength(1);
+    const hash = `sha256-${createHash('sha256').update(scripts[0][1]).digest('base64')}`;
+    expect(APP_TEMPLATE_SCRIPT_HASH).toBe(hash);
+    expect(WEB_CSP_DIRECTIVES['script-src']).toContain(hash);
+  });
+
+  it('guards the beta pre-paint script hash against exact-content drift', () => {
+    const hash = `sha256-${createHash('sha256').update(BETA_PLATFORM_BOOT_SCRIPT).digest('base64')}`;
+    expect(BETA_PLATFORM_SCRIPT_HASH).toBe(hash);
+    expect(WEB_CSP_DIRECTIVES['script-src']).toContain(hash);
   });
 
   it('models every directive omitted from the native meta policy', () => {
@@ -51,6 +80,9 @@ describe('shared content security policy', () => {
 
   it("quotes SvelteKit's complete fixed source vocabulary", () => {
     expect(serializeCspDirectives({ 'script-src': ['script'] })).toBe("script-src 'script'");
+    expect(serializeCspDirectives({ 'script-src': [APP_TEMPLATE_SCRIPT_HASH] })).toBe(
+      `script-src '${APP_TEMPLATE_SCRIPT_HASH}'`
+    );
   });
 
   it('keeps the canonical policy immutable', () => {

@@ -1,7 +1,7 @@
 import adapterNetlify from '@sveltejs/adapter-netlify';
 import adapterStatic from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
-import { nativeCspDirectives } from './securityPolicy.ts';
+import { nativeCspDirectives, WEB_CSP_DIRECTIVES } from './securityPolicy.ts';
 
 // The web app ships to Netlify (SSR + the /api/generate-image function and the
 // /admin token console). The native apps bundle a fully static export instead,
@@ -14,12 +14,14 @@ const isCapacitor = process.env.CAPACITOR === 'true';
 const config = {
   preprocess: vitePreprocess(),
   kit: {
-    csp: isCapacitor
-      ? {
-          mode: 'auto',
-          directives: nativeCspDirectives(),
-        }
-      : undefined,
+    // Hashes protect prerendered pages through a CSP meta tag; per-response
+    // nonces protect SSR pages. The Netlify/SSR security-header layer supplies
+    // the directives that meta delivery cannot express without overriding this
+    // resource policy (ADR-0073).
+    csp: {
+      mode: 'auto',
+      directives: isCapacitor ? nativeCspDirectives() : WEB_CSP_DIRECTIVES,
+    },
     // adapterNetlify() (no opts) emits SSR as a Node serverless function. If we ever pass
     // { edge: true } to run SSR on Netlify's Deno edge runtime, un-ignore and commit deno.lock
     // (currently gitignored) so the edge runtime pins are reproducible.

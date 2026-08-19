@@ -91,15 +91,11 @@ export function touchEventPrevented(
   );
 }
 
-/** Stamp the shipped Content-Security-Policy onto the app's document responses.
+/** Stamp the platform half of the shipped CSP onto document responses.
  *
- *  Nothing in this suite serves the policy on its own: `vite preview` returns
- *  the prerendered pages as plain static files, and in production those get
- *  their headers from the netlify.toml `for = "/*"` block, which only Netlify's
- *  CDN reads. So every spec runs with no CSP at all, and a client behaviour the
- *  policy forbids passes here and fails on splotch.art — that is how the
- *  picture report shipped with a `fetch()` of an object URL that the policy's
- *  `connect-src` blocked for every user.
+ *  SvelteKit's hash-bearing meta tag already enforces the resource policy in
+ *  `vite preview`; only Netlify's complementary frame/reporting header is absent
+ *  locally. Stamping it here reproduces the two-policy production composition.
  *
  *  Call before `gotoApp`, and before any `page.route` a spec needs to win over
  *  this one: Playwright checks the most recently added handler first, so a
