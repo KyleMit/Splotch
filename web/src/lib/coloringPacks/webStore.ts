@@ -58,6 +58,18 @@ async function deleteOldCaches(currentName: string) {
   );
 }
 
+async function hasVerifiedCachedFile(
+  cache: Cache,
+  file: ResolvedColoringPackBookManifest['files'][number]
+): Promise<boolean> {
+  const response = await cache.match(file.path);
+  if (!response) return false;
+  const bytes = await response.arrayBuffer();
+  if (bytes.byteLength === file.bytes && (await digestHex(bytes)) === file.sha256) return true;
+  await cache.delete(file.path);
+  return false;
+}
+
 async function hasCompleteBook(
   cache: Cache,
   manifest: ResolvedColoringPackManifest,
@@ -68,8 +80,10 @@ async function hasCompleteBook(
   if (!marker) return false;
   const markerValue = coloringPackMarkerValue(book);
   if ((await marker.text()) === markerValue) return true;
-  const cachedFiles = await Promise.all(book.files.map((file) => cache.match(file.path)));
-  const complete = cachedFiles.every((response) => !!response);
+  let complete = true;
+  for (const file of book.files) {
+    if (!(await hasVerifiedCachedFile(cache, file))) complete = false;
+  }
   if (!complete) {
     await cache.delete(markerPath);
     return false;
@@ -125,7 +139,7 @@ export function createWebColoringPackStore(): ColoringPackStore {
       const cache = await caches.open(coloringPackCacheName(manifest));
       const installed = await Promise.all(
         manifest.books.map(async (book) =>
-          (await cache.match(coloringPackMarkerPath(manifest, book.id))) ? book.bytes : 0
+          (await hasCompleteBook(cache, manifest, book)) ? book.bytes : 0
         )
       );
       return installed.reduce((sum, bytes) => sum + bytes, 0);
