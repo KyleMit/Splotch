@@ -59,6 +59,7 @@ function sendJson(response, status, body, headers = {}) {
 
 async function startDeploy({
   failPath,
+  functionSecurityHeader,
   hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
   omitHomeAsset = false,
   omitSecurityHeader,
@@ -109,7 +110,13 @@ async function startDeploy({
       return;
     }
     if (request.method === 'OPTIONS' && url.pathname.startsWith('/api/')) {
-      send(response, 204, '', { ...corsHeaders, ...netlifyEdgeSecurityHeaders });
+      send(response, 204, '', {
+        ...corsHeaders,
+        ...netlifyEdgeSecurityHeaders,
+        ...(functionSecurityHeader
+          ? { [functionSecurityHeader]: securityHeaders[functionSecurityHeader] }
+          : {}),
+      });
       return;
     }
     if (url.pathname === '/api/admin/login') {
@@ -294,6 +301,13 @@ describe('hosted deploy contract smoke', () => {
     expect(result.stderr).toContain('version stage completed');
     expect(result.stdout).toContain('Blobs is live on the deployed function (persistent:true)');
     expect(result.stdout).toContain('DELETE removes the probe token');
+  });
+
+  it('rejects an app-owned security header on a function response', async () => {
+    const result = await runSmoke(await startDeploy({ functionSecurityHeader: 'X-Frame-Options' }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('leaked X-Frame-Options');
   });
 
   it('fails when Netlify serves an ineffective HSTS policy', async () => {
