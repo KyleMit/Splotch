@@ -162,6 +162,13 @@ describe('getTokensStatus', () => {
     const { getTokensStatus } = await freshTokens('a');
     expect(await getTokensStatus()).toEqual({ tokens: ['a'], persistent: false });
   });
+
+  it('still serves env-seeded reads outside Vite dev', async () => {
+    const { getTokensStatus, isAllowedToken } = await freshTokensOutsideDev('seeded');
+
+    expect(await getTokensStatus()).toEqual({ tokens: ['seeded'], persistent: false });
+    expect(await isAllowedToken('seeded')).toBe(true);
+  });
 });
 
 describe('mutations when getStore fails', () => {

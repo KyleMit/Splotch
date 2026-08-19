@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
 
@@ -18,6 +19,12 @@ async function expectTokenAddUnavailable(page: Page, token: string) {
     page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
   ).toBeVisible();
   await expect(page.getByText(token, { exact: true })).toBeHidden();
+}
+
+function tokenRow(page: Page, token: string) {
+  return page.getByRole('row').filter({
+    has: page.getByRole('button', { name: `Remove ${token}`, exact: true }),
+  });
 }
 
 test('web /admin rejects a wrong key', async ({ page }) => {
@@ -55,8 +62,8 @@ test('web /admin signs in, fails closed without durable tokens, and signs out', 
 // see the tally in admin-helpers.ts.
 test('web /admin ledger keeps its rows usable across viewport widths', async ({ page }) => {
   await signInToAdmin(page);
-  const token = 'daycare-club';
-  const row = page.getByRole('row').filter({ hasText: token });
+  const token = MANAGED_ACCESS_TOKEN;
+  const row = tokenRow(page, token);
   await expect(row).toBeVisible();
 
   // Wide layouts: the full action set renders inside the ledger's box.
@@ -89,7 +96,7 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   // Phone: Copy plus the disclosure chevron; the remaining actions expand in
   // place inside the row — no centered modal covering the list.
   await page.setViewportSize({ width: 390, height: 900 });
-  const more = row.getByRole('button', { name: `More options for ${token}` });
+  const more = row.getByRole('button', { name: `More options for ${token}`, exact: true });
   await expect(more).toBeVisible();
   await expect
     .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
@@ -130,12 +137,12 @@ test('web /admin chevron press feedback beats hover on a hover-capable pointer',
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
-  const token = 'daycare-club';
+  const token = MANAGED_ACCESS_TOKEN;
 
-  const more = page
-    .getByRole('row')
-    .filter({ hasText: token })
-    .getByRole('button', { name: `More options for ${token}` });
+  const more = tokenRow(page, token).getByRole('button', {
+    name: `More options for ${token}`,
+    exact: true,
+  });
   await expect(more).toBeVisible();
   await more.scrollIntoViewIfNeeded();
 
@@ -181,16 +188,17 @@ test('web /admin closing the reveal removes its actions from the tab order immed
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
-  // A second row after the probed one gives the forward Tab a landing spot
-  // inside the ledger — from the last row's chevron it would legitimately
-  // leave the document, which is indistinguishable from the focus dump.
-  const token = 'daycare-club';
-  const nextToken = 'e2e-harness-probe';
+  // allowedTokensList appends the harness probe after the managed codes, so a
+  // second row after the probed one gives the forward Tab a landing spot
+  // inside the ledger. From the last row's chevron it would legitimately leave
+  // the document, which is indistinguishable from the focus dump.
+  const token = MANAGED_ACCESS_TOKEN;
+  const nextToken = HARNESS_PROBE_CODE;
   await expect(page.getByText(token, { exact: true })).toBeVisible();
   await expect(page.getByText(nextToken, { exact: true })).toBeVisible();
 
-  const row = page.getByRole('row').filter({ hasText: token });
-  const more = row.getByRole('button', { name: `More options for ${token}` });
+  const row = tokenRow(page, token);
+  const more = row.getByRole('button', { name: `More options for ${token}`, exact: true });
   const reveal = row.locator('.row-actions');
   await expect(reveal).toHaveAttribute('inert', '');
   await more.click();
@@ -259,7 +267,7 @@ test('admin API requires a valid bearer session and durable mutation storage', a
 
   const removed = await request.delete('/api/admin/tokens', {
     headers,
-    data: { token: 'daycare-club' },
+    data: { token: MANAGED_ACCESS_TOKEN },
   });
   expect(removed.status()).toBe(503);
   expect(await removed.json()).toMatchObject({ ok: false, error: expect.any(String) });

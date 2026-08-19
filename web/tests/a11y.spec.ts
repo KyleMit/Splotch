@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { adminConsole, signInToAdmin } from './admin-helpers';
+import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
+import { signInToAdmin } from './admin-helpers';
 import { gotoApp, openSettingsModal, seedCompletedSettingsActivitySessions } from './helpers';
 import { openParentalGate } from './flows-harness';
 import { openAiResult } from './ai-harness';
@@ -107,16 +108,17 @@ test('/admin logged out has no serious accessibility violations', async ({ page 
 test('/admin logged in has no serious accessibility violations', async ({ page }) => {
   await signInToAdmin(page);
 
-  // Populate an invite row so the token list UI is part of the scan.
-  const token = `e2e-a11y-${Date.now()}`;
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
-  await expect(page.getByText(token, { exact: true })).toBeVisible();
+  // The env-seeded invite row keeps the token list UI in the scan without a
+  // mutation that the production preview refuses.
+  const row = page.getByRole('row').filter({
+    has: page.getByRole('button', {
+      name: `Remove ${MANAGED_ACCESS_TOKEN}`,
+      exact: true,
+    }),
+  });
+  await expect(row).toBeVisible();
 
   await expectNoSeriousViolations(page);
-
-  await page.getByRole('button', { name: `Remove ${token}` }).click();
-  await expect(page.getByText(token, { exact: true })).toBeHidden();
 });
 
 test('Settings has no serious accessibility violations', async ({ page }) => {

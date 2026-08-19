@@ -111,7 +111,7 @@ export const productionPreviewCommand = `npx vite build && ${previewOnlyCommand}
 const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS = 180_000;
 
 /** The managed access code tests/generate-image.spec.ts bursts against. */
-const MANAGED_ACCESS_TOKEN = 'daycare-club';
+export const MANAGED_ACCESS_TOKEN = 'daycare-club';
 
 /**
  * A distinct code per attempt. The throttle spec fills a 60s per-token window
@@ -123,9 +123,9 @@ export function managedAccessTokenForRetry(retry: number): string {
 }
 
 /**
- * A managed code no spec sends, so tests/global-setup.ts can ask the server
- * that answered the port whether it holds this env without spending the
- * per-code budget the throttle spec bursts through.
+ * A managed code no generation spec sends, so tests/global-setup.ts can ask
+ * the server that answered the port whether it holds this env without
+ * spending the per-code budget the throttle spec bursts through.
  */
 export const HARNESS_PROBE_CODE = 'e2e-harness-probe';
 
