@@ -202,6 +202,21 @@ describe('native content security policy', () => {
     }
   });
 
+  it('does not require hashes for inline JSON data blocks', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-data-'));
+    try {
+      writeFileSync(
+        join(root, 'index.html'),
+        `<head>${meta}</head>` +
+          '<script type="application/json" data-sveltekit-fetched>{"data":true}</script>' +
+          '<script type="application/ld+json">{"@type":"Thing"}</script>'
+      );
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('rejects a missing or duplicated policy', () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-count-'));
     try {

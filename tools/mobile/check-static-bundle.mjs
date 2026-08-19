@@ -15,7 +15,11 @@ import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
-import { nativeMetaCspDirectives, serializeCspDirectives } from '../../web/securityPolicy.ts';
+import {
+  inlineExecutableScriptBodies,
+  nativeMetaCspDirectives,
+  serializeCspDirectives,
+} from '../../web/securityPolicy.ts';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
@@ -191,10 +195,9 @@ export function nativeContentSecurityPolicyProblems(dir) {
     if (policies.length !== 1) {
       return [`Native HTML ${file} has ${policies.length} CSP meta tags; expected exactly 1`];
     }
-    const inlineScriptHashes = [...source.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
-      .map((match) => match[1])
-      .filter(Boolean)
-      .map((script) => `sha256-${createHash('sha256').update(script).digest('base64')}`);
+    const inlineScriptHashes = inlineExecutableScriptBodies(source).map(
+      (script) => `sha256-${createHash('sha256').update(script).digest('base64')}`
+    );
     const native = nativeMetaCspDirectives();
     const expected = normalizePolicy(
       serializeCspDirectives({

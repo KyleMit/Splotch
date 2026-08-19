@@ -1,12 +1,8 @@
-// Single source of truth for the site's security response headers. The root
-// netlify.toml `[[headers]] for = "/*"` block sets these on every CDN/static
-// response — but Netlify custom headers never reach function-served SSR
-// responses (ADR-0073), so `/admin` (prerender = false) shipped with none of
-// them: no CSP, no X-Frame-Options, on the most security-sensitive page.
-// hooks.server.ts stamps this same set onto SSR responses so `/admin` matches
-// the static pages. securityHeaders.test.ts guards the two copies against
-// drift — netlify.toml must stay literal TOML for Netlify to read it at deploy
-// time, so it can't import this module; the test asserts the values match.
+// Single source of truth for the site's platform response headers. Netlify
+// stamps the literal mirror onto CDN/static responses. For SSR, hooks.server.ts
+// adds the non-CSP headers but preserves SvelteKit's complete nonce CSP instead
+// of replacing it with this prerender-only complementary subset. The TOML
+// cannot import this module, so securityHeaders.test.ts guards both copies.
 
 import { RESPONSE_CSP_DIRECTIVES, serializeCspDirectives } from '../../../securityPolicy.ts';
 

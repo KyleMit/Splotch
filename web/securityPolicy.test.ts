@@ -14,6 +14,7 @@ import {
   NATIVE_API_ORIGIN,
   RESPONSE_CSP_DIRECTIVES,
   serializeCspDirectives,
+  SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
   WEB_CSP_DIRECTIVES,
 } from './securityPolicy.ts';
 
@@ -24,10 +25,20 @@ describe('shared content security policy', () => {
     expect(SECURITY_HEADERS['Content-Security-Policy']).toBe(
       serializeCspDirectives(RESPONSE_CSP_DIRECTIVES)
     );
-    expect(RESPONSE_CSP_DIRECTIVES).toEqual({
-      'frame-ancestors': WEB_CSP_DIRECTIVES['frame-ancestors'],
-      'report-uri': WEB_CSP_DIRECTIVES['report-uri'],
-    });
+    expect(RESPONSE_CSP_DIRECTIVES).toEqual(
+      Object.fromEntries(
+        Object.entries(WEB_CSP_DIRECTIVES).filter(([directive]) =>
+          [...SVELTEKIT_META_UNSUPPORTED_DIRECTIVES].some(
+            (metaDirective) => metaDirective === directive
+          )
+        )
+      )
+    );
+    expect([...SVELTEKIT_META_UNSUPPORTED_DIRECTIVES]).toEqual([
+      'frame-ancestors',
+      'report-uri',
+      'sandbox',
+    ]);
     expect(RESPONSE_CSP_DIRECTIVES).not.toHaveProperty('default-src');
     expect(RESPONSE_CSP_DIRECTIVES).not.toHaveProperty('script-src');
   });

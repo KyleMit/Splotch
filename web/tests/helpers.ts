@@ -104,11 +104,15 @@ export async function enforceProductionCsp(page: Page) {
   await page.route('**/*', async (route) => {
     if (route.request().resourceType() !== 'document') return route.fallback();
     const response = await route.fetch();
+    const existingPolicy = response.headers()['content-security-policy'];
+    const platformPolicy = SECURITY_HEADERS['Content-Security-Policy'];
     await route.fulfill({
       response,
       headers: {
         ...response.headers(),
-        'content-security-policy': SECURITY_HEADERS['Content-Security-Policy'],
+        'content-security-policy': existingPolicy
+          ? `${existingPolicy}, ${platformPolicy}`
+          : platformPolicy,
       },
     });
   });

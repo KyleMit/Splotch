@@ -127,9 +127,20 @@ either directive in that second policy would block the inline boot code that Sve
 nonces authorize. On SSR responses, `hooks.server.ts` preserves SvelteKit's existing full CSP
 instead of replacing it with the platform subset. On prerendered responses, Netlify supplies the
 subset that meta delivery cannot express, while SvelteKit's meta policy retains `report-to csp` and
-the response's `Reporting-Endpoints` header defines that group. The inherent meta limitation means
-legacy `report-uri` reporting covers the platform subset on prerendered pages; resource-policy
-reports there use the Reporting API.
+the response's `Reporting-Endpoints` header defines that group.
+
+Reporting coverage is not equivalent across the two delivery modes. Header-delivered SSR CSP keeps
+both reporting mechanisms. On prerendered pages, legacy `report-uri` covers only violations of the
+platform subset because browsers forbid it in a meta policy. The meta resource policy can generate
+`report-to` entries in Chromium and WebKit — verified against the deployed policy through each
+engine's `ReportingObserver` — but Reporting API network delivery is explicitly best-effort and the
+same probe did not reach the Netlify receiver. Firefox versions without Reporting API delivery, and
+users or privacy tools that disable it, have no fallback for meta resource-policy violations. This
+loss is accepted to preserve prerendering and SvelteKit's generated script hashes; enforcement is
+unchanged. Generating per-route Netlify policies from build output would restore a header reporting
+channel but add a second CSP generator, while disabling prerendering would change the site's
+delivery and performance model. Either remains a reversible follow-up if complete reporting becomes
+more important than those costs.
 
 The hand-authored pre-paint stamp in `app.html` cannot use `%sveltekit.nonce%`, because SvelteKit
 forbids that placeholder anywhere in a prerendered template. Its exact body is authorized by

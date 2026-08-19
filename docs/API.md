@@ -369,6 +369,13 @@ meta-unsupported subset in root `netlify.toml`, which also sends the matching
 lines in the Netlify function log — the app's only telemetry sink (no third-party reporting by
 design; same stance as `handleError` in `hooks.server.ts`).
 
+Delivery is browser-best-effort rather than complete telemetry. SSR policies are response headers
+and carry both `report-uri` and `report-to`. Prerendered resource policies are meta-delivered, where
+`report-uri` is forbidden; Chromium and WebKit generate observable `report-to` entries, but network
+delivery is not guaranteed, and Firefox versions without Reporting API delivery have no fallback.
+The complementary response policy's own violations still use `report-uri`. See ADR-0073 for the
+accepted prerendering tradeoff.
+
 Browsers post these unauthenticated, so there is no credential gate. Accepted `Content-Type`s:
 `application/csp-report` (the legacy `report-uri` batch, `{"csp-report": {…kebab-case…}}` — Firefox
 and Safari), `application/reports+json` (the Reporting-API batch, an array of

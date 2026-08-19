@@ -4,7 +4,11 @@ import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { buildMetadata } from '../../web/buildVersion.ts';
-import { WEB_CSP_DIRECTIVES } from '../../web/securityPolicy.ts';
+import {
+  inlineExecutableScriptBodies,
+  SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
+  WEB_CSP_DIRECTIVES,
+} from '../../web/securityPolicy.ts';
 import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
 import { isMain } from '../lib/proc.mjs';
 import { check, fatal, json, summarize } from '../lib/smoke.mjs';
@@ -33,7 +37,6 @@ const EXACT_STATIC_SECURITY_HEADERS = Object.fromEntries(
 const EXACT_SSR_SECURITY_HEADERS = Object.fromEntries(
   Object.entries(SECURITY_HEADERS).filter(([name]) => name !== HSTS_HEADER && name !== CSP_HEADER)
 );
-const META_UNSUPPORTED_CSP_DIRECTIVES = new Set(['frame-ancestors', 'report-uri']);
 const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
@@ -102,7 +105,7 @@ function cspProblems(policy, { html, prerendered }) {
     if (!expectedDirectives.has(directive)) problems.push(`${directive}=unexpected`);
   }
   for (const [directive, expectedSources] of Object.entries(WEB_CSP_DIRECTIVES)) {
-    if (prerendered && META_UNSUPPORTED_CSP_DIRECTIVES.has(directive)) {
+    if (prerendered && SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive)) {
       if (directives.has(directive)) problems.push(`${directive} must be response-header-only`);
       continue;
     }
@@ -131,9 +134,8 @@ function cspProblems(policy, { html, prerendered }) {
     if (generatedSources.some((source) => !/^sha256-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
       problems.push('script-src has a non-hash generated source');
     }
-    for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
-      if (!match[1]) continue;
-      const hash = `sha256-${createHash('sha256').update(match[1]).digest('base64')}`;
+    for (const script of inlineExecutableScriptBodies(html)) {
+      const hash = `sha256-${createHash('sha256').update(script).digest('base64')}`;
       if (!scriptSources.has(hash)) problems.push(`script-src missing inline ${hash}`);
     }
   } else {

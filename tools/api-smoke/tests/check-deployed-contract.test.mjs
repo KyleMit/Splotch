@@ -6,7 +6,11 @@ import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildMetadata } from '../../../web/buildVersion.ts';
-import { serializeCspDirectives, WEB_CSP_DIRECTIVES } from '../../../web/securityPolicy.ts';
+import {
+  serializeCspDirectives,
+  SVELTEKIT_META_UNSUPPORTED_DIRECTIVES,
+  WEB_CSP_DIRECTIVES,
+} from '../../../web/securityPolicy.ts';
 import { missingStaticSecurityHeaders } from '../check-deployed-contract.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -45,7 +49,7 @@ const inlineBootHash = `sha256-${createHash('sha256').update(inlineBootScript).d
 const prerenderedCsp = serializeCspDirectives({
   ...Object.fromEntries(
     Object.entries(WEB_CSP_DIRECTIVES).filter(
-      ([directive]) => directive !== 'frame-ancestors' && directive !== 'report-uri'
+      ([directive]) => !SVELTEKIT_META_UNSUPPORTED_DIRECTIVES.has(directive)
     )
   ),
   'script-src': [...WEB_CSP_DIRECTIVES['script-src'], inlineBootHash],
@@ -55,11 +59,11 @@ const ssrCsp = serializeCspDirectives({
   'script-src': [...WEB_CSP_DIRECTIVES['script-src'], 'nonce-dGVzdC1ub25jZQ=='],
 });
 
-function prerenderedHtml(asset = '', omitMeta = false) {
+function prerenderedHtml(asset = '', omitMeta = false, dataBlocks = '') {
   const meta = omitMeta
     ? ''
     : `<meta http-equiv="content-security-policy" content="${prerenderedCsp}">`;
-  return `<html><head>${meta}</head><body>${asset}<script>${inlineBootScript}</script></body></html>`;
+  return `<html><head>${meta}</head><body>${asset}<script>${inlineBootScript}</script>${dataBlocks}</body></html>`;
 }
 
 afterEach(async () => {
@@ -87,6 +91,7 @@ async function startDeploy({
   hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
   omitHomeAsset = false,
   omitPrerenderedMeta = false,
+  prerenderedDataBlocks = '',
   omitSecurityHeader,
   version = expectedVersion,
 } = {}) {
@@ -110,7 +115,7 @@ async function startDeploy({
         url.pathname === '/' && !omitHomeAsset
           ? '<script src="/_app/immutable/start-abc.js"></script>'
           : '';
-      send(response, 200, prerenderedHtml(asset, omitPrerenderedMeta), {
+      send(response, 200, prerenderedHtml(asset, omitPrerenderedMeta, prerenderedDataBlocks), {
         'Content-Type': 'text/html',
         ...routeSecurityHeaders,
       });
@@ -334,6 +339,15 @@ describe('hosted deploy contract smoke', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain('CSP meta tag count=0');
+  });
+
+  it('accepts prerendered JSON data blocks without executable-script hashes', async () => {
+    const prerenderedDataBlocks =
+      '<script type="application/json" data-sveltekit-fetched>{"data":true}</script>' +
+      '<script type="application/ld+json">{"@type":"Thing"}</script>';
+    const result = await runSmoke(await startDeploy({ prerenderedDataBlocks }));
+
+    expect(result.code, result.stderr).toBe(0);
   });
 
   it('rejects an SSR script policy that falls back to unsafe-inline', async () => {
