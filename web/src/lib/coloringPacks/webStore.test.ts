@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ResolvedColoringPackManifest } from './manifest';
-import { coloringPackCacheName, coloringPackMarkerPath } from './cacheKeys';
+import {
+  coloringPackCacheName,
+  coloringPackMarkerPath,
+  coloringPackMarkerValue,
+} from './cacheKeys';
 
 vi.mock('$lib/idle', () => ({
   scheduleIdle: (callback: () => void) => {
@@ -39,19 +43,19 @@ const manifest: ResolvedColoringPackManifest = {
   ],
 };
 
-const cachedPaths = new Set<string>();
+const cachedResponses = new Map<string, string>();
 const cache = {
   match: vi.fn(async (path: string) =>
-    cachedPaths.has(path) ? new Response('cached') : undefined
+    cachedResponses.has(path) ? new Response(cachedResponses.get(path)) : undefined
   ),
-  put: vi.fn(async (path: string) => {
-    cachedPaths.add(path);
+  put: vi.fn(async (path: string, response: Response) => {
+    cachedResponses.set(path, await response.text());
   }),
-  delete: vi.fn(async (path: string) => cachedPaths.delete(path)),
+  delete: vi.fn(async (path: string) => cachedResponses.delete(path)),
 };
 
 beforeEach(() => {
-  cachedPaths.clear();
+  cachedResponses.clear();
   cache.match.mockClear();
   cache.put.mockClear();
   cache.delete.mockClear();
@@ -68,8 +72,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('web coloring-pack inventory', () => {
   it('backfills a file added to a previously marked book', async () => {
     const book = manifest.books[0];
-    cachedPaths.add(coloringPackMarkerPath(manifest, book.id));
-    cachedPaths.add(book.files[0].path);
+    cachedResponses.set(coloringPackMarkerPath(manifest, book.id), book.id);
+    cachedResponses.set(book.files[0].path, 'cached');
     const store = createWebColoringPackStore();
 
     expect(await store.installed(manifest)).toEqual([]);
@@ -81,5 +85,20 @@ describe('web coloring-pack inventory', () => {
     expect(fetch).toHaveBeenCalledWith(book.files[1].downloadPath, expect.any(Object));
     expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
     expect(await store.usage(manifest)).toBe(book.bytes);
+    expect(cachedResponses.get(coloringPackMarkerPath(manifest, book.id))).toBe(
+      coloringPackMarkerValue(book)
+    );
+  });
+
+  it('upgrades a complete legacy marker to the current inventory value', async () => {
+    const book = manifest.books[0];
+    const markerPath = coloringPackMarkerPath(manifest, book.id);
+    cachedResponses.set(markerPath, book.id);
+    for (const file of book.files) cachedResponses.set(file.path, 'cached');
+    const store = createWebColoringPackStore();
+
+    expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
+    expect(cachedResponses.get(markerPath)).toBe(coloringPackMarkerValue(book));
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

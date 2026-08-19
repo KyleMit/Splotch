@@ -7,6 +7,7 @@ import {
   COLORING_PACK_CACHE_PREFIX,
   coloringPackCacheName,
   coloringPackMarkerPath,
+  coloringPackMarkerValue,
 } from './cacheKeys';
 
 async function waitForIdle(signal: AbortSignal): Promise<void> {
@@ -63,10 +64,17 @@ async function hasCompleteBook(
   book: ResolvedColoringPackBookManifest
 ): Promise<boolean> {
   const markerPath = coloringPackMarkerPath(manifest, book.id);
-  if (!(await cache.match(markerPath))) return false;
+  const marker = await cache.match(markerPath);
+  if (!marker) return false;
+  const markerValue = coloringPackMarkerValue(book);
+  if ((await marker.text()) === markerValue) return true;
   const cachedFiles = await Promise.all(book.files.map((file) => cache.match(file.path)));
   const complete = cachedFiles.every((response) => !!response);
-  if (!complete) await cache.delete(markerPath);
+  if (!complete) {
+    await cache.delete(markerPath);
+    return false;
+  }
+  await cache.put(markerPath, new Response(markerValue));
   return complete;
 }
 
@@ -95,7 +103,10 @@ export function createWebColoringPackStore(): ColoringPackStore {
         await waitForIdle(signal);
         await cache.put(file.path, await verifiedResponse(file, signal));
       }
-      await cache.put(coloringPackMarkerPath(manifest, book.id), new Response(book.id));
+      await cache.put(
+        coloringPackMarkerPath(manifest, book.id),
+        new Response(coloringPackMarkerValue(book))
+      );
       return { id: book.id };
     },
 
