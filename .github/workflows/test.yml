@@ -162,16 +162,17 @@ jobs:
   # a shared artifact serializes every shard behind `needs:` (measured ≈81s +
   # tests) while concurrent per-shard builds overlap (≈69s + tests). Playwright's
   # `--shard` deals out individual tests (fullyParallel), self-balancing by
-  # count as tests are added — no hand-kept partition.
+  # count as tests are added — no hand-kept partition. The matrix is wide enough
+  # to disperse adjacent stress tests while setup still overlaps every shard.
   test:
-    name: Tests (${{ matrix.shard }}/3)
+    name: Tests (${{ matrix.shard }}/${{ strategy.job-total }})
     if: ${{ github.event_name != 'push' || !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -185,7 +186,7 @@ jobs:
           browsers: chromium
 
       - name: Run e2e tests
-        run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
+        run: npm run test:e2e -- --shard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       # The gen:* generators drive the live app through tools/app-driver/lib/app-driver.mjs
       # and never run elsewhere in CI, so this smoke keeps that module from rotting
