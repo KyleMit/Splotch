@@ -615,14 +615,17 @@ blind to duration — so the longest shard is bounded by the slowest single test
 the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts` (the header comment there
 explains why their cost is intrinsic).
 
-The 2026-08-19 shard-count measurement used the per-test JSON embedded in the Playwright reports
-from runs 31990017276 and 31984251977. Four count-based shards made the duration spread worse
-because the adjacent tile-history stress tests remained concentrated; eight cut the modeled slowest
-test load from 403–405 summed test-seconds to 187–199. That moves the expected e2e step to roughly
-62–66 seconds. Checkout, dependency/browser setup, and the two shard-1 smokes then dominate the test
-jobs, while the 129–152-second unit job measured in those runs becomes the likely pull-request
-floor. Further sharding should therefore re-measure setup and the whole workflow, not extrapolate
-the test-load reduction alone.
+The 2026-08-19 shard-count measurement is preserved in the
+[shard-timing scratchpad](scratchpad/playwright-shard-timing-2026-08-19.md), including the expiring
+report-derived partitions, the fixed build/preview term, and the first real eight-way pull-request
+run. Four count-based shards kept the adjacent tile-history stress tests concentrated; eight cut the
+modeled slowest test load roughly in half. Holding the measured 17.1-second build/preview cost out
+of that scaling projected a roughly 77-second slowest e2e step, which the real warm-cache run
+matched. At that point checkout, dependency/browser setup, the two shard-1 smokes, and the unit job
+dominate the pull-request floor. Cold-cache eight-way contention has not been measured; the warming
+workflow mitigates it, and the scratchpad records what to inspect on the next runner-image rotation.
+Further sharding should re-measure setup and the whole workflow, not extrapolate the test-load
+reduction alone.
 
 The Hosted Deploy Smoke workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching production's
 admin secret; without it the automatic job fails at the login step. A manually supplied preview must
