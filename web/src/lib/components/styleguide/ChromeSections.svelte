@@ -2,10 +2,20 @@
   import Icon from '$lib/components/Icon.svelte';
   import SliderRow from '$lib/components/settings/SliderRow.svelte';
   import ToggleRow from '$lib/components/settings/ToggleRow.svelte';
+  import {
+    AI_AUTO_SAVE_HELP,
+    AI_AUTO_SAVE_LABEL,
+    AI_CREATE_HELP,
+    AI_CREATE_LABEL,
+    AI_CUSTOMIZATION_HELP,
+    AI_CUSTOMIZATION_LABEL,
+  } from '$lib/components/settings/aiSettingsCopy';
   import { paletteHex } from '$lib/palette';
   import ChromeMiniMap, { type MiniMapZone } from './ChromeMiniMap.svelte';
 
-  let demoToggle = $state(true);
+  let demoAiEnabled = $state(false);
+  let demoAiCustomization = $state(true);
+  let demoAutoSaveAi = $state(false);
   let demoSlider = $state(60);
 
   const demoBrushes = [
@@ -151,12 +161,28 @@
   </p>
   <div class="furniture-demo">
     <ToggleRow
-      icon="volume-on"
-      label="Sound"
-      id="styleguide-demo-toggle"
-      checked={demoToggle}
-      onToggle={(next) => (demoToggle = next)}
-      help="Help text is one calm sentence."
+      icon="wand-stars"
+      label={AI_CREATE_LABEL}
+      id="styleguide-demo-ai-toggle"
+      checked={demoAiEnabled}
+      onToggle={(next) => (demoAiEnabled = next)}
+      help={demoAiEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
+    />
+    <ToggleRow
+      icon="customize"
+      label={AI_CUSTOMIZATION_LABEL}
+      id="styleguide-demo-ai-customization-toggle"
+      checked={demoAiCustomization}
+      onToggle={(next) => (demoAiCustomization = next)}
+      help={AI_CUSTOMIZATION_HELP}
+    />
+    <ToggleRow
+      icon="download"
+      label={AI_AUTO_SAVE_LABEL}
+      id="styleguide-demo-auto-save-ai-toggle"
+      checked={demoAutoSaveAi}
+      onToggle={(next) => (demoAutoSaveAi = next)}
+      help={AI_AUTO_SAVE_HELP}
     />
     <SliderRow
       id="styleguide-demo-slider"

@@ -27,6 +27,7 @@ beforeEach(() => {
   secureStore.accessCode = null;
   settings.aiAccessToken = '';
   settings.aiUserApiKey = '';
+  settings.aiImageEnabled = false;
   vi.mocked(saveAccessCode)
     .mockReset()
     .mockImplementation(async (value: string) => {
@@ -150,6 +151,7 @@ describe('captureAiAccessTokenFromUrl', () => {
     await captureAiAccessTokenFromUrl();
 
     expect(settings.aiAccessToken).toBe('invitation-code');
+    expect(settings.aiImageEnabled).toBe(true);
     expect(secureStore.accessCode).toBe('invitation-code');
     expect(window.location.search).toBe('?other=1');
   });

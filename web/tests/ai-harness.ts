@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
 import { drawCommittedStroke, gotoApp } from './helpers';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
 // Shared harness for the AI generation flow, used by ai-result.spec.ts (the
 // result modal's presentation) and ai-report.spec.ts (the report flow). The
@@ -136,6 +137,12 @@ export interface AiGenerationOptions {
 
 export async function prepareAiGeneration(page: Page, options: AiGenerationOptions = {}) {
   const endpoint = await mockAiEndpoint(page);
+  if (options.freeTier) {
+    await page.addInitScript(
+      (aiImageEnabled) => localStorage.setItem(aiImageEnabled, 'true'),
+      STORAGE_KEYS.aiImageEnabled
+    );
+  }
   await gotoApp(page, options.freeTier ? '/' : '/?ai_access_token=test-token');
   await drawPreview(page);
   return endpoint;

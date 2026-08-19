@@ -141,6 +141,7 @@ for (const viewport of NARROW_LANDSCAPE_VIEWPORTS) {
     await page.addInitScript(() => {
       localStorage.setItem('splotch-drawer-open', 'true');
       localStorage.setItem('splotch-ai-access-token', 'test-token');
+      localStorage.setItem('splotch-ai-image-enabled', 'true');
     });
     await page.setViewportSize(viewport);
     await gotoApp(page);

@@ -1,7 +1,7 @@
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 import { clearAccessCode, loadAccessCode, saveAccessCode } from '../secureStorage';
 import { readString, removeKey, STORAGE_KEYS } from '../storage';
-import { settings } from './settings.svelte';
+import { settings, setAiImage } from './settings.svelte';
 import { createSecureCredentialCoordinator } from './secureCredentialCoordinator';
 
 async function persistAiAccessToken(value: string) {
@@ -42,6 +42,7 @@ export async function captureAiAccessTokenFromUrl() {
 
   const persisted = await setAiAccessToken(token);
   if (!persisted) return;
+  setAiImage(true);
   url.searchParams.delete(AI_ACCESS_TOKEN_PARAM);
   window.history.replaceState({}, '', url);
 }

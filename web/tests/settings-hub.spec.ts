@@ -132,6 +132,54 @@ test('a hub switch acts on its setting without leaving the list', async ({ page 
   await expect(page.locator('#soundToggle')).toHaveAttribute('aria-checked', 'false');
 });
 
+test('AI Art reports its off state in the phone hub', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoApp(page);
+  await openSettingsModal(page);
+
+  await expect(page.locator('.hub-row[data-section="ai"] .hub-subtitle')).toHaveText('Turned off');
+});
+
+test('AI Art removes setup controls from the phone DOM until its master switch is on', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoApp(page);
+
+  await openSettingsModal(page);
+  const aiRow = page.locator('.hub-row[data-section="ai"]');
+  await aiRow.click();
+
+  const toggle = page.locator('#aiImageToggle');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByText('What turning this on does')).toBeVisible();
+  await expect(page.locator('#aiKeyInput')).toHaveCount(0);
+  await expect(page.locator('#aiCustomizationToggle')).toHaveCount(0);
+
+  await toggle.click();
+  await expect(page.locator('#aiKeyInput')).toBeVisible();
+  await expect(page.locator('#aiCustomizationToggle')).toBeAttached();
+  await expect(page.getByText('What turning this on does')).toHaveCount(0);
+});
+
+test('the phone AI Art card keeps its height while the master switch reveals setup', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await gotoApp(page);
+
+  const modal = await openSettingsModal(page);
+  await page.locator('.hub-row[data-section="ai"]').click();
+  const toggle = page.locator('#aiImageToggle');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  const offHeight = await modal.evaluate((element) => element.clientHeight);
+
+  await toggle.click();
+  await expect(page.locator('#aiKeyInput')).toBeVisible();
+  const onHeight = await modal.evaluate((element) => element.clientHeight);
+  expect(onHeight).toBe(offHeight);
+});
+
 // Night Mode is binary over the resolved theme, so the hub switch and the
 // three-way picker inside Appearance have to agree about which way it is set.
 test('the hub Night Mode switch themes the app and matches the Appearance picker', async ({
