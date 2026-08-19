@@ -369,7 +369,7 @@ it('fill eyes reports an accepted unmeasurable page as ungated', async () => {
 });
 
 it('night halo audits source pages without treating responsive derivatives as pages', async () => {
-  state.pages = [await addPage('primary', { night: true })];
+  state.pages = [await addPage('primary', { night: true }), await addPage('outline-only')];
   await mkdir(join(state.roots.coloring, 'max-1152px/test'), { recursive: true });
   await writeFile(
     join(state.roots.coloring, 'max-1152px/test/primary.night.webp'),
@@ -380,8 +380,17 @@ it('night halo audits source pages without treating responsive derivatives as pa
 
   expect(outputOf(error)).toContain('1/1  test/primary');
   expect(outputOf(log)).toContain('test/primary');
+  expect(outputOf(log)).not.toContain('outline-only');
   expect(outputOf(log)).not.toContain('max-1152px');
   expect(process.exitCode).toBeUndefined();
+});
+
+it('night halo rejects an explicit outline that has no shipped night fill', async () => {
+  state.pages = [await addPage('outline-only')];
+
+  await expect(runCli('check-night-halo.mjs', 'test/outline-only')).rejects.toThrow(
+    'no night page or category "test/outline-only"'
+  );
 });
 
 it('outline solidity reports a corrupt outline, continues, and exits non-zero', async () => {

@@ -31,6 +31,7 @@
 //   npm run check:coloring-night-halo -- vehicles/train-wide
 //   npm run check:coloring-night-halo -- --out scores.json   full per-page JSON
 import { parseArgs } from 'node:util';
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
@@ -78,15 +79,39 @@ const { values, positionals } = parseArgs({
   options: { out: { type: 'string' } },
 });
 
-const pages = (
-  await resolveOutlineTargets(positionals, {
-    includeCovers: false,
-    explicitFiles: false,
-    sort: 'all',
-    defaultAll: true,
-    onMissing: (target) => fail(`no night page or category "${target}" under ${COLORING_DIR}`),
-  })
-).map((page) => toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '')));
+const nightTargetError = (target, root = COLORING_DIR) =>
+  fail(`no night page or category "${target}" under ${relative(process.cwd(), root)}`);
+const hasShippedNightFill = (page) => existsSync(page.replace(/\.outline\.webp$/, '.night.webp'));
+const resolveOptions = {
+  includeCovers: false,
+  explicitFiles: false,
+  sort: 'all',
+  defaultAll: true,
+  onMissing: nightTargetError,
+};
+
+async function resolveNightTargets(targets) {
+  if (!targets.length) {
+    const outlines = await resolveOutlineTargets([], resolveOptions);
+    return outlines.filter(hasShippedNightFill);
+  }
+  const groups = await Promise.all(
+    targets.map(async (target) => {
+      const outlines = await resolveOutlineTargets([target], {
+        ...resolveOptions,
+        defaultAll: false,
+      });
+      const nightPages = outlines.filter(hasShippedNightFill);
+      if (!nightPages.length) nightTargetError(target);
+      return nightPages;
+    })
+  );
+  return groups.flat().sort();
+}
+
+const pages = (await resolveNightTargets(positionals)).map((page) =>
+  toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''))
+);
 if (!pages.length) fail('No shipped night fills found for the given pages.');
 
 const results = [];
