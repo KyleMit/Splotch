@@ -34,10 +34,11 @@ Settings section renders an explanation of the feature and does not mount creden
 or auto-save controls. The canvas action and free-allowance request remain gated by the same
 setting, so the off state does not merely hide configuration UI.
 
-Entering a valid key or capturing a managed access code is an explicit setup action and enables the
-feature after the credential has been persisted securely. Turning the switch off retains the
-credential. This separates permission to use AI image creation from the mechanics of how an enabled
-request is authorized.
+Submitting a valid key or access code from Settings is an explicit setup action and enables the
+feature after the credential has been persisted securely. Capturing an access code from an invite
+URL persists the credential but leaves the feature off; opening a link is not itself an opt-in.
+Turning the switch off retains the credential. This separates permission to use AI image creation
+from the mechanics of how an enabled request is authorized.
 
 ADR-0094's operation-level parental challenge remains a separate policy. The preference answers
 whether AI image creation is available at all; a configured parental challenge answers what must

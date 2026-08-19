@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
+import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { signInToAdmin } from './admin-helpers';
 import { gotoApp, openSettingsModal, seedCompletedSettingsActivitySessions } from './helpers';
 import { openParentalGate } from './flows-harness';
@@ -45,6 +46,13 @@ async function expectNoSeriousViolations(page: Page, include?: string) {
     serious.map((v) => v.id),
     `axe violations:\n${report}`
   ).toEqual([]);
+}
+
+async function seedAiEnabled(page: Page) {
+  await page.addInitScript(
+    (aiImageEnabled) => localStorage.setItem(aiImageEnabled, 'true'),
+    STORAGE_KEYS.aiImageEnabled
+  );
 }
 
 test('/privacy has no serious accessibility violations', async ({ page }) => {
@@ -155,7 +163,7 @@ test('the locked Parent Center card has no serious accessibility violations', as
 });
 
 test('the parental gate has no serious accessibility violations', async ({ page }) => {
-  // The access-code param reveals the AI button, the gate's opener.
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openParentalGate(page);
 
@@ -223,7 +231,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 // fills are unthemed crayon hues and the ink is fixed, so one theme covers
 // both.
 test('the parental gate operand digits hold WCAG AA large-text contrast', async ({ page }) => {
-  // The access-code param reveals the AI button, the gate's opener.
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openParentalGate(page);
 

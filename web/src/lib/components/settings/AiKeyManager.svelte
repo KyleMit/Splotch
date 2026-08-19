@@ -156,6 +156,7 @@
       }
       if (!persisted) return;
 
+      // A verified credential submitted here is the explicit opt-in boundary in ADR-0127.
       setAiImage(true);
       keyInput = '';
       keyStatus = 'success';
@@ -181,7 +182,7 @@
   }
 </script>
 
-<div class="ai-section">
+<div class="ai-settings-stack">
   <section class="setting-group ai-primary-toggle">
     <div class="setting">
       <ToggleRow
@@ -344,14 +345,14 @@
 </div>
 
 <style>
-  .ai-section,
+  .ai-settings-stack,
   .ai-enabled-settings {
     display: flex;
     flex-direction: column;
     gap: var(--space-5);
   }
 
-  .ai-section :global(.setting-group) {
+  .ai-settings-stack :global(.setting-group) {
     margin-bottom: 0;
   }
 

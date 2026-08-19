@@ -2,6 +2,8 @@
   import Icon from '../Icon.svelte';
   import { FREE_GENERATION_LIMIT } from '$lib/freeGenerations';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
+  import { freeGenerations } from '$lib/state/freeGenerations.svelte';
+  import { aiCredentialKind } from '$lib/state/settings.svelte';
 
   const STEPS = [
     {
@@ -22,6 +24,7 @@
   ] as const;
 
   const theme = $derived(resolvedTheme());
+  const credentialKind = $derived(aiCredentialKind());
 </script>
 
 <section class="ai-value-prop" aria-labelledby="ai-value-prop-title">
@@ -52,12 +55,32 @@
 
   <ul class="ai-value-prop-claims">
     <li>
-      <span class="ai-value-prop-check" aria-hidden="true">✓</span>
-      <span>The first {FREE_GENERATION_LIMIT} pictures are free — nothing to set up, no card.</span>
+      <Icon name="check" class="ai-value-prop-claim-icon" />
+      <span>
+        {#if credentialKind === 'accessCode'}
+          Your access code is saved — turn this on whenever you're ready.
+        {:else if credentialKind === 'apiKey'}
+          Your OpenAI key is saved and ready whenever you turn this on.
+        {:else if freeGenerations.available && freeGenerations.remaining === 0}
+          Your {FREE_GENERATION_LIMIT} free pictures are used up.
+        {:else if freeGenerations.available && freeGenerations.remaining < FREE_GENERATION_LIMIT}
+          You have {freeGenerations.remaining} free pictures left — nothing to set up, no card.
+        {:else}
+          The first {FREE_GENERATION_LIMIT} pictures are free — nothing to set up, no card.
+        {/if}
+      </span>
     </li>
     <li>
-      <Icon name="lock" class="ai-value-prop-lock" />
-      <span>After that, use your own OpenAI key — saved on this device only.</span>
+      <Icon name="lock" class="ai-value-prop-claim-icon" />
+      <span>
+        {#if credentialKind === 'accessCode'}
+          AI art is on us with your access code — no OpenAI key needed.
+        {:else if credentialKind === 'apiKey'}
+          Your key stays saved on this device only.
+        {:else}
+          After that, use your own OpenAI key — saved on this device only.
+        {/if}
+      </span>
     </li>
   </ul>
 </section>
@@ -159,21 +182,14 @@
     line-height: 1.45;
   }
 
-  .ai-value-prop-check {
-    color: var(--success-text);
-    font-size: var(--font-size-lg);
-    font-weight: var(--font-weight-bold);
-    line-height: 1;
-  }
-
-  :global(.ai-value-prop-lock) {
+  :global(.ai-value-prop-claim-icon) {
     width: 14px;
     height: 14px;
     margin-top: 3px;
     color: var(--success-text);
   }
 
-  :global(.ai-value-prop-lock svg) {
+  :global(.ai-value-prop-claim-icon svg) {
     fill: currentColor;
   }
 

@@ -151,7 +151,7 @@ describe('captureAiAccessTokenFromUrl', () => {
     await captureAiAccessTokenFromUrl();
 
     expect(settings.aiAccessToken).toBe('invitation-code');
-    expect(settings.aiImageEnabled).toBe(true);
+    expect(settings.aiImageEnabled).toBe(false);
     expect(secureStore.accessCode).toBe('invitation-code');
     expect(window.location.search).toBe('?other=1');
   });
