@@ -14,6 +14,7 @@ import { spawnViteServer } from '../lib/vite-server.mjs';
 import { waitForUrl } from '../lib/net.mjs';
 import { check, fatal, summarize, json } from '../lib/smoke.mjs';
 import { adminClient } from './lib/admin-client.mjs';
+import { CORS_HEADERS } from './lib/contract-expectations.mjs';
 // Type-stripped at runtime (the npm script passes --experimental-strip-types)
 // so the absence assertions below name the same headers the hook stamps — a new
 // security header is covered here the moment it's added to that module.
@@ -79,18 +80,8 @@ async function checkCorsContract(base, noAuth) {
   // set. Neither may carry the SSR security headers: `handleSecurityHeaders`
   // skips /api, and a preflight short-circuits the handle sequence before it
   // runs at all.
-  const CORS_SET = {
-    'access-control-allow-origin': '*',
-    'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
-    'access-control-allow-headers':
-      'Content-Type, Authorization, X-Access-Token, X-Api-Key, X-Async-Generation, X-Installation-Id, X-Report-Token',
-    // X-Report-Token is sent one way and read back the other, so it appears in
-    // both lists: generate-image returns it, report-image consumes it.
-    'access-control-expose-headers': 'X-Free-Generations-Remaining, X-Report-Token',
-    'access-control-max-age': '86400',
-  };
   const wrongCors = (res) =>
-    Object.entries(CORS_SET)
+    Object.entries(CORS_HEADERS)
       .filter(([name, value]) => res.headers.get(name) !== value)
       .map(([name]) => `${name}: ${res.headers.get(name)}`);
   const leakedSecurity = (res) => Object.keys(SECURITY_HEADERS).filter((h) => res.headers.has(h));
@@ -127,8 +118,8 @@ async function checkTokensCrud(admin, auth) {
     `got ${list.status}`
   );
   // vite dev has no Netlify Blobs, so the snapshot must report the in-memory
-  // fallback. The deployed counterpart (tools/api-smoke/check-deployed-blobs.mjs)
-  // asserts the opposite — persistent:true — against a real function.
+  // fallback. The hosted deploy contract asserts the opposite —
+  // persistent:true — against a real function.
   check(
     'tokens GET → persistent:false under vite dev',
     listBody?.persistent === false,

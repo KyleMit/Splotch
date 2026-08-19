@@ -46,6 +46,14 @@ tab and the `updates.ts` mismatch check pick it up with no other code changes. T
 is safe to fire per-deploy: it runs only once at init (page load, canvas empty), never on the
 focus/visibility/ interval paths, so it cannot interrupt a mid-drawing session.
 
+The hosted deploy smoke independently derives the version from its checked-out ref and requires the
+remote `version.json` to match exactly. Its workflow fetches full history and tags before running so
+the comparison uses this normal-path derivation rather than the SHA fallback. A manual preview check
+therefore runs from the same ref Netlify built; a mismatched ref/URL pair correctly fails as stale.
+The daily production check still requires the version shape and no-cache policy but omits the exact
+ref comparison: ADR-0070 intentionally leaves production on the prior build after a
+docs/tooling-only commit, so repository `HEAD` is not always the deployed commit.
+
 **This relies on git history + tags at build time.** Netlify's deploy is **not** a shallow clone —
 it is a *blobless* clone (`git clone --filter=blob:none`), which carries the full commit graph and
 defers only file blobs, so `git

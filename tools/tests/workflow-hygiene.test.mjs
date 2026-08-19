@@ -213,7 +213,7 @@ describe('workflow hygiene', () => {
       expect(runtimeMajor).toBe(floorMajor);
     });
 
-    it('keeps Node setup active when blobs-smoke skips dependencies', () => {
+    it('keeps Node setup active when the hosted deploy smoke skips dependencies', () => {
       const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
 
       expect(setupPnpmAction.lines.some((line) => /^\s+if:/.test(line))).toBe(false);
@@ -221,14 +221,21 @@ describe('workflow hygiene', () => {
       expect(blobsSmoke.lines).toContain("          install: 'false'");
     });
 
-    it('runs the automatic Blobs smoke only on its production schedule', () => {
+    it('runs the automatic hosted deploy smoke only on its production schedule', () => {
       const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
 
       expect(blobsSmoke.lines).not.toContain('  deployment_status:');
       expect(blobsSmoke.lines).toContain(
-        "          BLOBS_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}"
+        "          DEPLOY_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}"
       );
-      expect(blobsSmoke.lines).toContain('  group: blobs-smoke');
+      expect(blobsSmoke.lines).toContain('  group: hosted-deploy-smoke');
+      expect(blobsSmoke.lines).toContain('          fetch-depth: 0');
+      expect(blobsSmoke.lines).toContain(
+        "          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}"
+      );
+      expect(blobsSmoke.lines).toContain(
+        '        run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs'
+      );
       expect(blobsSmoke.lines.join('\n')).not.toContain('deployment_status.environment_url');
     });
 

@@ -17,6 +17,7 @@ pre-merge blob-encoding guard retired.
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
 | Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
+| Smoke (hosted deploy) | Node + Netlify      | `npm run test:deploy:smoke`         | daily production + manual deploy URL         |
 | Smoke (WebKit)        | Playwright WebKit   | `npm run test:webkit:smoke`         | every push / PR (parallel job)               |
 | Smoke (Android)       | Maestro + emulator  | `npm run test:android`              | **tagged releases only** (API 33 + API 24)   |
 | Smoke (iOS)           | Maestro + simulator | `npm run test:ios`                  | **tagged releases only** (macOS runner)      |
@@ -24,8 +25,8 @@ pre-merge blob-encoding guard retired.
 
 A separate `quality` CI job (type-check, ESLint, Prettier `--format:check`, and
 `npm audit --audit-level=critical`) also runs on every push/PR alongside the tests — see Continuous
-integration below. One more server-contract smoke test, `test:blobs:smoke`, runs against real
-deploys rather than on every push.
+integration below. The hosted deploy smoke runs separately against real deployments; its narrower
+`test:blobs:smoke` diagnostic is manual.
 
 `npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
 `test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
@@ -71,16 +72,29 @@ nothing matches reports nothing, which is indistinguishable from a clean repo.
 the rule fires, and pins what each deliberate relaxation lets through. Extend it when you add a
 rule.
 
-## Server-contract smoke tests — `test:api:smoke`, `test:blobs:smoke`
+## Server-contract smoke tests — `test:api:smoke`, `test:deploy:smoke`, `test:blobs:smoke`
 
-Two Node smoke tests guard the server contract:
+Three Node smoke entry points guard the server contract:
 
 * **`test:api:smoke`** boots a throwaway `vite dev` and checks the `/api/*` shapes (admin auth flow,
   bearer gate, token add/remove, `verify-access-code`) plus the CORS/preflight contract the native
   apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
   browserless `unit` job on every push/PR; run it locally after any endpoint change (see the `api`
   skill).
-* **`test:blobs:smoke`** runs against a **real deploy** to prove Netlify Blobs is actually live on
+* **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/` and `/privacy`, security
+  and cache headers, the checked-out commit's exact `version.json`, both native-origin CORS
+  preflights, safe unauthenticated API failures, and the admin persistence round-trip. It never
+  makes a model call. Run it from the ref that produced the target deploy:
+  ```bash
+  DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+  ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
+  ```
+  The Hosted Deploy Smoke workflow probes production daily and accepts an explicit preview or
+  production URL on manual dispatch. It does not use the unrelated GitHub Pages `deployment_status`
+  event. Manual runs require the deploy's version to match the selected ref exactly. Scheduled runs
+  require a valid, non-cacheable version but allow production to trail docs/tooling-only commits
+  that ADR-0070 intentionally excludes from Netlify builds.
+* **`test:blobs:smoke`** is the narrower diagnostic that proves Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:
   ```bash
@@ -89,10 +103,8 @@ Two Node smoke tests guard the server contract:
   ```
   It asserts `persistent:true`, round-trips a unique token through Blobs, and cleans up. Run it on a
   PR's deploy preview before merging any adapter/Netlify-config change, and against
-  `https://splotch.art` to confirm prod. The Blobs Smoke workflow probes production daily. GitHub
-  Pages is the repository's only deployment-status publisher, so the unrelated repository-wide event
-  is not a workflow trigger. Manual dispatch keeps the supplied URL so an intended Netlify preview
-  can still be checked directly.
+  `https://splotch.art` to isolate a production persistence failure. The full hosted gate includes
+  this same round-trip.
 
 ---
 
@@ -589,7 +601,7 @@ npm run test:android:device     # re-run as often as you like
 | `.github/workflows/test.yml`           | every push to `main`, every PR, **`v*` tag push** | quality, unit, and sharded e2e jobs on branch/PR events, plus the parallel WebKit smoke job; fast WebKit commit gate on pushes to `main`; full gate on release tags |
 | `.github/workflows/android-deploy.yml` | **`v*` tag push** + manual `workflow_dispatch`    | One test-signed Android Release APK build + Maestro boot-smoke matrix on current API 33 and the API 24 floor                                                        |
 | `.github/workflows/ios-deploy.yml`     | **`v*` tag push** + manual `workflow_dispatch`    | iOS Release simulator compile without store signing + Debug Maestro boot smoke (macOS runner)                                                                       |
-| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Netlify Blobs persistence round-trip (ADR-0025); automatic runs target production, while manual runs accept an intended Netlify deploy URL                          |
+| `.github/workflows/blobs-smoke.yml`    | Daily + manual `workflow_dispatch`                | Full hosted deploy contract, including the ADR-0025 persistence round-trip; automatic runs target production, manual runs accept an intended Netlify URL            |
 
 Inside `test.yml`, every job runs on its own runner in parallel — runner minutes are free on this
 public repo, wall clock is not. The Vitest suites (`test:unit` + `test:asset-gen` +
@@ -602,12 +614,12 @@ blind to duration — so the longest shard is bounded by the slowest single test
 the deliberately heavy stress tests of `tests/flows-tile-history.spec.ts` (the header comment there
 explains why their cost is intrinsic).
 
-The `blobs-smoke` workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching production's admin
-secret; without it the automatic job fails at the login step. A manually supplied preview must use
-that same secret. A process-level interruption can strand an unguessable but live `blobs-smoke-*`
-credential; inspect and remove one manually from the admin console because an automatic prefix sweep
-could race a smoke against another URL. The iOS smoke mirrors Android but on a `macos-latest` runner
-— the debug build targets the simulator, so no signing secrets are involved.
+The Hosted Deploy Smoke workflow needs a repo secret `ADMIN_ACCESS_TOKEN` matching production's
+admin secret; without it the automatic job fails at the login step. A manually supplied preview must
+use that same secret. A process-level interruption can strand an unguessable but live
+`blobs-smoke-*` credential; inspect and remove one manually from the admin console because an
+automatic prefix sweep could race a smoke against another URL. The iOS smoke mirrors Android but on
+a `macos-latest` runner — the debug build targets the simulator, so no signing secrets are involved.
 
 ADR-0100 originally split the commit gate into a structural Chromium half and a WebKit timing half.
 The structural half asserted that the deleted snapshot/blob history never ran `engine.encode` inside

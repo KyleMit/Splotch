@@ -489,7 +489,7 @@ curl -s https://splotch.art/api/admin/tokens \
 
 ## Validating the API
 
-Run `npm run test:api:smoke` to check the live `/api/*` contract end-to-end. It's self-contained —
+Run `npm run test:api:smoke` to check the local `/api/*` contract end-to-end. It's self-contained —
 it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
 (login success/failure, the bearer gate, and a token add/remove round-trip), the CORS contract
 (`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
@@ -503,9 +503,23 @@ are out of scope. Use it to sanity-check the contract after changing any endpoin
 counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `unit` job of
 `test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
 
-`test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so it can't catch the
-failure mode of ADR-0025 (a deployed function without the Blobs context). For that, run
-`npm run test:blobs:smoke` against a real deploy:
+`test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs or deployed CDN
+configuration. The normal real-deploy gate is `npm run test:deploy:smoke`:
+
+```bash
+DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
+```
+
+It checks the deployed static routes, security and cache headers, exact ADR-0030 version freshness,
+both native CORS origins, representative canonical failures that cannot reach a model call, and an
+admin token persistence round-trip. The workflow probes production daily; manual dispatch keeps its
+explicit preview or production URL. The unrelated GitHub Pages `deployment_status` event is not a
+trigger or target source. Manual checks compare the deployed version to their selected ref exactly;
+scheduled checks require the version shape and no-cache policy but allow the production build to
+trail docs/tooling-only commits excluded by ADR-0070.
+
+To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 
 ```bash
 BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
@@ -513,12 +527,8 @@ ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
 ```
 
 It logs in, asserts the snapshot's `persistent` is `true` (false ⇒ Blobs is dead on that deploy),
-round-trips a unique token through Blobs, and cleans it up. Run it against a PR's deploy preview
-before merging an adapter/Netlify-config change, and against `https://splotch.art` to confirm
-production. The automated workflow always targets production: GitHub's repository-wide
-`deployment_status` event is emitted by the static scrapbook's GitHub Pages deployment, so its
-`environment_url` cannot host `/api/*` and is not used as a trigger. A manual workflow dispatch
-preserves its supplied URL for an intended Netlify preview.
+round-trips a unique token through Blobs, and cleans it up. The full hosted gate uses the same
+persistence contract.
 
 ## Local development
 
