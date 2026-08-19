@@ -66,6 +66,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
 
     expect(duck.cores.length).toBeGreaterThan(0);
     expect(duck.cores.every((core) => !core.lively)).toBe(true);
+    expect(duck.cores.every((core) => core.sourceSolid)).toBe(true);
     expect(duck.cores.every((core) => core.annulusInkFrac > BAND_BLIND_INK_FRAC)).toBe(true);
     expect(judgeLightEyes(duck, { page })).toEqual({ passes: true, gated: false });
     expect(judgeLightEyes(flooded, { page })).toEqual({ passes: true, gated: false });
@@ -77,8 +78,27 @@ describe('scoreEyeFill + judgeLightEyes', () => {
     const flooded = await scoreEyeFill(await flatFill(source), source);
 
     expect(flooded.cores.length).toBeGreaterThan(0);
+    expect(flooded.cores.every((core) => !core.sourceSolid)).toBe(true);
     expect(flooded.cores.every((core) => !core.lively)).toBe(true);
     expect(judgeLightEyes(flooded, { page })).toEqual({ passes: false, gated: true });
+  });
+
+  it('does not force light-fill paint outside the astronaut source-solid pupils', async () => {
+    const page = 'space/astronaut-wide';
+    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
+    const astronaut = await scoreEyeFill(fill, source);
+    const childEyes = astronaut.cores.filter(
+      (core) =>
+        (core.x === 836 && core.y === 415) ||
+        (core.x === 844 && core.y === 408) ||
+        (core.x === 742 && core.y === 452)
+    );
+
+    expect(childEyes).toHaveLength(3);
+    expect(childEyes.every((core) => core.sourceSolid)).toBe(true);
+    expect(childEyes.every((core) => !core.lively)).toBe(true);
+    expect(judgeLightEyes(astronaut, { page })).toEqual({ passes: true, gated: false });
   });
 
   it('uses blessed page cores to ignore windows and hubs', async () => {
@@ -123,6 +143,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
           contrast: 220,
           lively: true,
           annulusInkFrac: 0.9,
+          sourceSolid: false,
         },
       ],
     };

@@ -4,8 +4,8 @@
       "flags": {
         "warp-max": 6.9
       },
-      "review": "Issue #259 baseline exception: prefer a replacement under the strict 4px default and inspect the reported tile when it is not; this ceiling preserves only the reviewed committed treatment.",
-      "why": "Issue #259 calibration at base ae4129577aff7b84444b8feb8c844e0c07a56b70 measured 6.4px local warp; the durable ceiling adds a bounded 0.5px decoder margin."
+      "review": "Issue #259 baseline exception: prefer a replacement under the strict 4px default and inspect the reported tile when it is not; this ceiling preserves only the reviewed committed treatment. Issue #1139's bounded replacement scored 1.4px but visibly enlarged both child pupils by painting outside the source-solid pen shapes, so it was rejected and the natural-eyed baseline retained.",
+      "why": "Issue #259 calibration at base ae4129577aff7b84444b8feb8c844e0c07a56b70 measured 6.4px local warp; the durable ceiling adds a bounded 0.5px decoder margin. Issue #1139 established that source-solid light pupils are owned by the composited pen overlay and must not force raw-fill paint beyond their boundary."
     }
   },
   "ship-wide": {
@@ -13,8 +13,8 @@
       "flags": {
         "warp-max": 6.58
       },
-      "review": "Issue #259 baseline exception: prefer a replacement under the strict 4px default and inspect the reported tile when it is not; this ceiling preserves only the reviewed committed treatment.",
-      "why": "Issue #259 calibration at base ae4129577aff7b84444b8feb8c844e0c07a56b70 measured 6.08px local warp; the durable ceiling adds a bounded 0.5px decoder margin."
+      "review": "Issue #259 baseline exception: prefer a replacement under the strict 4px default and inspect the reported tile when it is not; this ceiling preserves only the reviewed committed treatment. Issue #1139's bounded candidate scored 1.4px but introduced gradients/shading on the rocket, planet, and smoke, so it was rejected.",
+      "why": "Issue #259 calibration at base ae4129577aff7b84444b8feb8c844e0c07a56b70 measured 6.08px local warp; the durable ceiling adds a bounded 0.5px decoder margin. Issue #1139 retained the flat-color reviewed baseline because its one notes-aware candidate regressed the required visual style."
     }
   },
   "station-tall": {
