@@ -5,6 +5,7 @@ import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildMetadata } from '../../../web/buildVersion.ts';
+import { missingStaticSecurityHeaders } from '../check-deployed-contract.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
 const packageVersion = JSON.parse(readFileSync(join(repoRoot, 'package.json'), 'utf8')).version;
@@ -190,6 +191,29 @@ describe('hosted deploy contract smoke', () => {
     expect(result.code, result.stderr).toBe(0);
     expect(result.stdout).toContain('version.json → 200 current checked-out web version');
     expect(result.stdout).toContain('Blobs is live on the deployed function (persistent:true)');
+  });
+
+  it('limits semantic HSTS matching to Netlify-owned and loopback hosts', () => {
+    const previewHsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'];
+    const previewResponse = new Response('', {
+      headers: { ...securityHeaders, 'Strict-Transport-Security': previewHsts },
+    });
+    const configuredResponse = new Response('', { headers: securityHeaders });
+
+    expect(
+      missingStaticSecurityHeaders(
+        previewResponse,
+        'feature-issue-218-hosted-contract-preview--splotchy.netlify.app'
+      )
+    ).toEqual([]);
+    expect(missingStaticSecurityHeaders(previewResponse, '127.0.0.1')).toEqual([]);
+    expect(missingStaticSecurityHeaders(previewResponse, 'splotch.art')).toEqual([
+      `Strict-Transport-Security=${JSON.stringify(previewHsts)}`,
+    ]);
+    expect(missingStaticSecurityHeaders(previewResponse, 'notnetlify.app')).toEqual([
+      `Strict-Transport-Security=${JSON.stringify(previewHsts)}`,
+    ]);
+    expect(missingStaticSecurityHeaders(configuredResponse, 'splotch.art')).toEqual([]);
   });
 
   it('allows default production to trail an intentionally skipped commit', async () => {

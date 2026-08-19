@@ -21,7 +21,8 @@ const CAPACITOR_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const VERSION_CACHE_CONTROL = ['no-cache', 'no-store', 'must-revalidate'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
 const HSTS_HEADER = 'Strict-Transport-Security';
-// Netlify rewrites HSTS per hostname, so validate its security semantics instead of one site value.
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+const NETLIFY_HOST_SUFFIX = '.netlify.app';
 const MINIMUM_HSTS_MAX_AGE_SECONDS = 31_536_000;
 const NETLIFY_EDGE_SECURITY_HEADERS = new Set([HSTS_HEADER, 'X-Content-Type-Options']);
 const EXACT_STATIC_SECURITY_HEADERS = Object.fromEntries(
@@ -50,7 +51,12 @@ function hasCacheDirectives(response, expected) {
   return expected.every((value) => actual.has(value));
 }
 
-function missingStaticSecurityHeaders(response) {
+/** Exported so tests can exercise hostname-specific edge behavior without DNS interception. */
+export function missingStaticSecurityHeaders(response, hostname) {
+  const platformManagesHsts =
+    hostname.endsWith(NETLIFY_HOST_SUFFIX) || LOOPBACK_HOSTS.has(hostname);
+  if (!platformManagesHsts) return missingHeaders(response, SECURITY_HEADERS);
+
   const missing = missingHeaders(response, EXACT_STATIC_SECURITY_HEADERS);
   const hsts = response.headers.get(HSTS_HEADER) ?? '';
   const maxAge = Number(hsts.match(/(?:^|;)\s*max-age=(\d+)(?:;|$)/i)?.[1]);
@@ -65,12 +71,12 @@ function missingStaticSecurityHeaders(response) {
   return missing;
 }
 
-async function checkStaticRoutes() {
+async function checkStaticRoutes(hostname) {
   let rootHtml = '';
   for (const path of ['/', '/privacy']) {
     const response = await fetch(`${BASE}${path}`);
     const body = await response.text();
-    const missingSecurity = missingStaticSecurityHeaders(response);
+    const missingSecurity = missingStaticSecurityHeaders(response, hostname);
     check(
       `GET ${path} → deployed HTML with security headers`,
       response.status === 200 &&
@@ -198,8 +204,8 @@ async function checkUnauthenticatedApi() {
   );
 }
 
-async function run() {
-  await checkStaticRoutes();
+async function run(target) {
+  await checkStaticRoutes(target.hostname);
   await checkVersion();
   await checkCors();
   await checkUnauthenticatedApi();
@@ -217,7 +223,7 @@ export async function checkDeployedContract() {
   const allowedHttpHost =
     ALLOW_HTTP_FOR_TESTS &&
     parsedBase?.protocol === 'http:' &&
-    ['localhost', '127.0.0.1', '[::1]'].includes(parsedBase.hostname);
+    LOOPBACK_HOSTS.has(parsedBase.hostname);
   if (!parsedBase || (parsedBase.protocol !== 'https:' && !allowedHttpHost) || !ADMIN_SECRET) {
     console.error(
       [
@@ -233,7 +239,7 @@ export async function checkDeployedContract() {
   console.log(`[deploy-smoke] target: ${BASE}`);
   console.log(`[deploy-smoke] expected version: ${EXPECTED_VERSION}\n`);
   try {
-    await run();
+    await run(parsedBase);
   } catch (err) {
     fatal(err);
   }
