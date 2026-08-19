@@ -48,3 +48,11 @@ it('separates solid from thin with margin on the blob bar', async () => {
   // clear air between the classes, not a hair over the bar
   expect(broken.biggestBlob - good.biggestBlob).toBeGreaterThan(SOLID_BLOB_MAX);
 });
+
+it('reuses the default solidity score for the same prepared outline', async () => {
+  const source = await thinStrokeOutline();
+  const first = await scoreSolidity(source);
+
+  await expect(scoreSolidity(source)).resolves.toBe(first);
+  await expect(scoreSolidity(source, { openRadius: first.openRadius })).resolves.not.toBe(first);
+});

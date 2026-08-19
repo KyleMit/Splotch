@@ -1484,8 +1484,8 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 9.06,
-        "warpTiles": 1,
+        "localWarpMax": 0,
+        "warpTiles": 0,
         "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 2,
@@ -1788,10 +1788,10 @@
         "warpTiles": 0,
         "residualShift": 0,
         "eyeCores": 2,
-        "eyeLively": 0,
+        "eyeLively": 2,
         "driftOk": true,
         "warpOk": true,
-        "eyesOk": false
+        "eyesOk": true
       },
       "night": {
         "drift": 0,
@@ -3229,8 +3229,8 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 8.06,
-        "warpTiles": 1,
+        "localWarpMax": 0,
+        "warpTiles": 0,
         "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
@@ -3786,7 +3786,7 @@
         "eyeLively": 0,
         "driftOk": true,
         "warpOk": true,
-        "eyesOk": false
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
@@ -4866,7 +4866,7 @@
         "eyeLively": 1,
         "driftOk": true,
         "warpOk": true,
-        "eyesOk": true
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00028,

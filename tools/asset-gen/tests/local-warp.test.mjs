@@ -105,46 +105,48 @@ describe('catalog calibration', () => {
     );
   }
 
-  it('rejects the excavator aperture ridge while historical big-nudge controls stay clean', async () => {
-    const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
-      scorePage('farm/pig-wide'),
-      scorePage('vehicles/excavator-wide'),
-      scorePage('vehicles/excavator-wide', 'night'),
-      scorePage('dinosaur/stegosaurus-wide'),
-    ]);
+  it(
+    'rejects the excavator aperture ridge while historical big-nudge controls stay clean',
+    async () => {
+      const [pig, excavatorLight, excavatorNight, stegosaurus] = await Promise.all([
+        scorePage('farm/pig-wide'),
+        scorePage('vehicles/excavator-wide'),
+        scorePage('vehicles/excavator-wide', 'night'),
+        scorePage('dinosaur/stegosaurus-wide'),
+      ]);
 
-    expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
-    expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
-    expect(excavatorLight.tiles).toContainEqual(
-      expect.objectContaining({
-        centerX: 384,
-        centerY: 384,
-        dx: -5,
-        dy: 11,
-        boundaryPeak: true,
-        confident: false,
-      })
-    );
-    expect(excavatorNight.tiles).toContainEqual(
-      expect.objectContaining({
-        centerX: 384,
-        centerY: 384,
-        confident: false,
-      })
-    );
-  });
+      expect(pig.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(stegosaurus.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(excavatorLight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(excavatorNight.localWarpMax).toBeLessThan(LOCAL_WARP_MAX_PX);
+      expect(Math.hypot(excavatorLight.globalDx, excavatorLight.globalDy)).toBeLessThan(3);
+      expect(excavatorLight.tiles).toContainEqual(
+        expect.objectContaining({
+          centerX: 384,
+          centerY: 384,
+          dx: -5,
+          dy: 11,
+          boundaryPeak: true,
+          confident: false,
+        })
+      );
+      expect(excavatorNight.tiles).toContainEqual(
+        expect.objectContaining({
+          centerX: 384,
+          centerY: 384,
+          confident: false,
+        })
+      );
+    },
+    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
+  );
 
   it(
     'bounds every reviewed baseline exception while new pages keep the strict default',
     async () => {
       const exceptions = [
-        ['farm/dog-tall', 'light'],
         ['farm/horse-tall', 'night'],
         ['farm/horse-wide', 'night'],
-        ['shapes/heart-tall', 'light'],
         ['space/astronaut-wide', 'light'],
         ['space/ship-wide', 'night'],
       ];
@@ -167,24 +169,34 @@ describe('catalog calibration', () => {
     REAL_IMAGE_CALIBRATION_TIMEOUT_MS
   );
 
-  it('lets an explicit CLI ceiling tighten a reviewed page baseline', () => {
-    const levers = pageLevers('space/astronaut-wide', 'light');
+  it('keeps other registry flags when an explicit CLI ceiling is provided', () => {
+    const levers = {
+      flags: {
+        'warp-max': 6.9,
+        notes: 'preserve the reviewed eye treatment',
+      },
+    };
     expect(mergeFlags({ 'warp-max': '3' }, levers)).toEqual({
-      merged: { 'warp-max': '3' },
-      fromRegistry: [],
+      merged: {
+        'warp-max': '3',
+        notes: 'preserve the reviewed eye treatment',
+      },
+      fromRegistry: ['notes'],
     });
   });
 
   it('makes the golden warp verdict use the reviewed page ceiling', async () => {
-    const page = 'space/astronaut-wide';
-    const [pen, lightRaw] = await Promise.all([
-      readFile(join(COLORING_DIR, `${page}.outline.webp`)),
-      readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`)),
+    const page = 'farm/horse-wide';
+    const penPath = join(COLORING_DIR, `${page}.outline.webp`);
+    const [pen, nightRaw] = await Promise.all([
+      readFile(penPath),
+      readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`)),
     ]);
+    const { chalk } = await resolveNightLineArt(penPath, pen);
 
-    const entry = await scoreGoldenPage({ page, pen, lightRaw });
+    const entry = await scoreGoldenPage({ page, pen, nightRaw, chalk });
 
-    expect(entry.light.localWarpMax).toBeGreaterThan(LOCAL_WARP_MAX_PX);
-    expect(entry.light.warpOk).toBe(true);
+    expect(entry.night.localWarpMax).toBeGreaterThan(LOCAL_WARP_MAX_PX);
+    expect(entry.night.warpOk).toBe(true);
   });
 });

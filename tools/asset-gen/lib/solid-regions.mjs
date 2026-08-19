@@ -44,6 +44,8 @@ const OPEN_RADIUS_MAX = 8;
 export const SOLID_BLOB_MAX = 100;
 export const SOLID_INTERIOR_MAX = 60;
 
+const solidityPromises = new WeakMap();
+
 // 90th-percentile stroke width in px: 2x the chamfer distance-to-light over
 // the ink mask. The p90 (not median) captures junction thickness, so the
 // opening radius clears crossings without a blob-sized safety margin.
@@ -94,8 +96,8 @@ function largestComponent(mask, w, h) {
 //   solidPx     — the opening (interior re-grown, clipped to ink): the full
 //                 footprint of every solid region
 //   biggestBlob — largest connected interior component; the gate signal
-export async function scoreSolidity(source, { openRadius } = {}) {
-  const { ink: dark, w, h } = await prepareOutlineAnalysis(source);
+async function scorePreparedSolidity(analysis, openRadius) {
+  const { ink: dark, w, h } = analysis;
   let darkPx = 0;
   for (const pixel of dark) darkPx += pixel;
   const strokeW = strokeWidthP90(dark, w, h);
@@ -126,6 +128,21 @@ export async function scoreSolidity(source, { openRadius } = {}) {
     passes: biggestBlob <= SOLID_BLOB_MAX && interiorPx <= SOLID_INTERIOR_MAX,
     masks: { dark, solid, interior },
   };
+}
+
+export async function scoreSolidity(source, { openRadius } = {}) {
+  const analysis = await prepareOutlineAnalysis(source);
+  if (openRadius !== undefined) return scorePreparedSolidity(analysis, openRadius);
+  const existing = solidityPromises.get(analysis);
+  if (existing) return existing;
+  const pending = scorePreparedSolidity(analysis);
+  solidityPromises.set(analysis, pending);
+  try {
+    return await pending;
+  } catch (error) {
+    solidityPromises.delete(analysis);
+    throw error;
+  }
 }
 
 // Width of the boundary ring kept when whitening a solid region — about one

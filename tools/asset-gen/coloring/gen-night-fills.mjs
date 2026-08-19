@@ -67,7 +67,7 @@ import {
 import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
-import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+import { pageLevers, mergeFlags, describeLevers, withPageNotes } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 // Drift / night-mood / line-color scoring is shared with check-golden-scores.mjs so the
 // committed raws can be re-scored offline with the exact generation-time math.
@@ -111,7 +111,7 @@ const WEBP_QUALITY = 90;
 
 async function generateDarkPage(ai, { imageBytes, mimeType, temperature, chalked, notes }) {
   const base = darkFillPrompt(chalked);
-  const prompt = notes ? `${base}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : base;
+  const prompt = withPageNotes(base, notes);
   return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 

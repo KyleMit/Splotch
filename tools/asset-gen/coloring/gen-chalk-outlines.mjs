@@ -68,7 +68,7 @@ import {
 import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
-import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
+import { pageLevers, mergeFlags, describeLevers, withPageNotes } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { crispInk } from '../lib/crisp-ink.mjs';
@@ -162,9 +162,7 @@ function chalkSettings(v, source) {
     ),
     notes: v.notes,
   };
-  const instruction = leverSettings.notes
-    ? `${CHALK_INSTRUCTION}\n\nPAGE-SPECIFIC NOTES:\n${leverSettings.notes}`
-    : CHALK_INSTRUCTION;
+  const instruction = withPageNotes(CHALK_INSTRUCTION, leverSettings.notes);
   return {
     baseTemp: leverSettings.temperature,
     maxAttempts: leverSettings['max-attempts'],

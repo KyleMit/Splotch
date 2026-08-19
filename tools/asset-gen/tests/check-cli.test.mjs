@@ -157,9 +157,24 @@ vi.mock('../lib/golden-catalog.mjs', async (importOriginal) => ({
 
 vi.mock('../lib/night-scores.mjs', async (importOriginal) => ({
   ...(await importOriginal()),
+  prepareNightFillAnalysis: async (buffer) => buffer,
   scoreDrift: async () => ({ ratio: 0 }),
   scoreNightness: async () => ({ bgLuma: 0 }),
   scoreLineColor: async () => ({ lineWhite: 255 }),
+}));
+
+vi.mock('../lib/night-halo.mjs', async (importOriginal) => ({
+  ...(await importOriginal()),
+  scoreNightHalo: async () => ({
+    w: 10,
+    h: 10,
+    haloScore: 0,
+    rawScore: 0,
+    haloPx12: 0,
+    rimPx12: 1,
+    bandStats: [],
+    hotspots: [],
+  }),
 }));
 
 const originalArgv = process.argv;
@@ -170,6 +185,7 @@ let error;
 const cliImports = {
   'check-fill-drift.mjs': () => import('../coloring/check-fill-drift.mjs'),
   'check-fill-eyes.mjs': () => import('../coloring/check-fill-eyes.mjs'),
+  'check-night-halo.mjs': () => import('../coloring/check-night-halo.mjs'),
   'check-outline-quality.mjs': () => import('../coloring/check-outline-quality.mjs'),
   'check-golden-scores.mjs': () => import('../coloring/check-golden-scores.mjs'),
 };
@@ -203,8 +219,10 @@ async function addPage(
           ? WARP_FILL_BYTES
           : 'valid fill'
   );
-  if (night)
+  if (night) {
     await writeFile(join(state.roots.fillSrc, `test/${name}.night.raw.webp`), WARP_FILL_BYTES);
+    await writeFile(join(state.roots.coloring, `test/${name}.night.webp`), 'shipped night');
+  }
   return outline;
 }
 
@@ -348,6 +366,31 @@ it('fill eyes reports an accepted unmeasurable page as ungated', async () => {
   expect(outputOf(log)).toContain('test/ungated');
   expect(outputOf(log)).toMatch(/test\/ungated\s+0\s+0\s+n\/a/);
   expect(process.exitCode).toBeUndefined();
+});
+
+it('night halo audits source pages without treating responsive derivatives as pages', async () => {
+  state.pages = [await addPage('primary', { night: true }), await addPage('outline-only')];
+  await mkdir(join(state.roots.coloring, 'max-1152px/test'), { recursive: true });
+  await writeFile(
+    join(state.roots.coloring, 'max-1152px/test/primary.night.webp'),
+    'responsive night'
+  );
+
+  await runCli('check-night-halo.mjs');
+
+  expect(outputOf(error)).toContain('1/1  test/primary');
+  expect(outputOf(log)).toContain('test/primary');
+  expect(outputOf(log)).not.toContain('outline-only');
+  expect(outputOf(log)).not.toContain('max-1152px');
+  expect(process.exitCode).toBeUndefined();
+});
+
+it('night halo rejects an explicit outline that has no shipped night fill', async () => {
+  state.pages = [await addPage('outline-only')];
+
+  await expect(runCli('check-night-halo.mjs', 'test/outline-only')).rejects.toThrow(
+    'no night page or category "test/outline-only"'
+  );
 });
 
 it('outline solidity reports a corrupt outline, continues, and exits non-zero', async () => {
