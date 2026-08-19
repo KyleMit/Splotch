@@ -144,11 +144,18 @@ deployment records come from the static scrapbook's Pages workflow, whose `envir
 `https://KyleMit.github.io/Splotch/` and cannot host `/api/*`; POSTing the admin login there
 returns 405. Netlify does not publish GitHub deployment records for this site.
 
-The automated Blobs smoke therefore treats a successful repository deployment status only as a
-cadence signal and always probes `https://splotch.art`. A daily schedule keeps the canary active
-between Pages publishes. Manual dispatch continues to preserve its supplied URL for an intended
-Netlify preview. Target selection does not change the smoke contract: every run still requires the
-matching admin secret, asserts `persistent: true`, and completes the write/read/delete round-trip.
+The unrelated `deployment_status` event does not trigger the Blobs smoke. A daily schedule probes
+`https://splotch.art`, and manual dispatch preserves its supplied URL for an intended Netlify
+preview. Every run still requires the matching admin secret, asserts `persistent: true`, and
+completes the write/read/delete round-trip.
+
+The schedule changes production from deliberate on-demand mutation to one unattended probe per day.
+The script removes its token after ordinary success or failure, but process-level interruption can
+skip that cleanup and strand an unguessable, live `blobs-smoke-*` credential. Cleanup remains a
+manual admin-console operation: preview and production smokes share the site-wide store, so an
+automatic prefix sweep could delete another run's active probe. GitHub Actions runs use one global
+concurrency group to prevent that overlap inside the workflow; a newer queued run can still replace
+an older pending one, while an in-flight run is allowed to finish its cleanup.
 
 ## Amendment (2026-08-19): Minimized, expiring usage records
 

@@ -221,15 +221,15 @@ describe('workflow hygiene', () => {
       expect(blobsSmoke.lines).toContain("          install: 'false'");
     });
 
-    it('never sends an automatic Blobs smoke to another deployment provider', () => {
+    it('runs the automatic Blobs smoke only on its production schedule', () => {
       const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
 
+      expect(blobsSmoke.lines).not.toContain('  deployment_status:');
       expect(blobsSmoke.lines).toContain(
         "          BLOBS_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}"
       );
-      expect(blobsSmoke.lines.join('\n')).not.toContain(
-        'github.event.deployment_status.environment_url }}'
-      );
+      expect(blobsSmoke.lines).toContain('  group: blobs-smoke');
+      expect(blobsSmoke.lines.join('\n')).not.toContain('deployment_status.environment_url');
     });
 
     it('the Netlify build pins the engines floor major', () => {

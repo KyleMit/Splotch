@@ -4,19 +4,17 @@
 # fallback. tools/api-smoke/check-deployed-blobs.mjs round-trips a token through the live deploy
 # and asserts the snapshot's `persistent` flag is true.
 #
-# GitHub's deployment_status event is repository-wide. The scrapbook's GitHub
-# Pages publisher is the repository's deployment source, so its environment URL
-# cannot serve /api/*. Automatic runs use it only as a cadence signal and probe
-# production; the daily schedule keeps the canary active between Pages deploys.
-# workflow_dispatch can target any intended Netlify preview or production URL.
+# GitHub's deployment_status event is repository-wide, and this repository's
+# deployment records belong to the static scrapbook on GitHub Pages rather than
+# Netlify. The daily run probes production; workflow_dispatch can target any
+# intended Netlify preview or production URL.
 #
 # Requires a repo secret ADMIN_ACCESS_TOKEN matching the deploy's admin secret;
-# it only travels in the login POST body over https. The token add/remove is
-# self-cleaning, so the shared store is left untouched.
+# it only travels in the login POST body over https. Normal runs remove their
+# probe token; process-level interruption may require the README's manual cleanup.
 name: Blobs Smoke
 
 on:
-  deployment_status:
   schedule:
     - cron: '23 9 * * *'
   workflow_dispatch:
@@ -28,18 +26,15 @@ on:
 permissions:
   contents: read
 
-# Serialize smokes against the same deploy instead of cancelling, so an in-flight round-trip can clean up.
+# Every deploy shares one site-wide Blobs store, so serialize all workflow runs. An in-flight run
+# is not cancelled and can clean up; GitHub may replace an older pending run when another queues.
 concurrency:
-  group: blobs-smoke-${{ github.event.inputs.url || 'https://splotch.art' }}
+  group: blobs-smoke
   cancel-in-progress: false
 
 jobs:
   smoke:
     name: Netlify Blobs persistence
-    if: >-
-      github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
-      (github.event.deployment_status.state == 'success' &&
-       github.event.deployment_status.environment_url != '')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

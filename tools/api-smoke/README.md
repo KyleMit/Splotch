@@ -56,10 +56,11 @@ that entry point and everything it loads — `lib/admin-client.mjs`, `tools/lib/
 `tools/lib/smoke.mjs` — must stay dependency-free. Adding an npm dependency to any of those modules
 breaks the deploy gate at runtime rather than in CI's unit job.
 
-Automatic workflow runs target `https://splotch.art`; the repository-wide `deployment_status` event
-belongs to the static GitHub Pages scrapbook and is only a cadence signal. Manual dispatch preserves
-its supplied URL so an intended Netlify preview can be checked. Keep target selection in the
-workflow rather than teaching this deploy-agnostic CLI about repository providers.
+Daily workflow runs target `https://splotch.art`; the repository-wide `deployment_status` event
+belongs to the static GitHub Pages scrapbook and does not trigger this smoke. Manual dispatch
+preserves its supplied URL so an intended Netlify preview can be checked. All workflow runs share a
+single concurrency group because previews and production use the same site-wide store. Keep target
+selection in the workflow rather than teaching this deploy-agnostic CLI about repository providers.
 
 Run focused verification with:
 
@@ -69,4 +70,7 @@ npm run test:api:smoke
 ```
 
 The deployed Blobs check mutates a real shared store briefly and requires deployment credentials, so
-run it only against an intended preview or production target.
+run it only against an intended preview or production target. Its `finally` cleanup cannot run when
+the process or runner is terminated. In that case, remove the unguessable but live `blobs-smoke-*`
+credential manually through the admin console. Do not automate a prefix-wide sweep: this CLI can run
+outside the workflow's concurrency group and could delete another smoke's active probe.

@@ -517,8 +517,8 @@ round-trips a unique token through Blobs, and cleans it up. Run it against a PR'
 before merging an adapter/Netlify-config change, and against `https://splotch.art` to confirm
 production. The automated workflow always targets production: GitHub's repository-wide
 `deployment_status` event is emitted by the static scrapbook's GitHub Pages deployment, so its
-`environment_url` cannot host `/api/*`. A manual workflow dispatch preserves its supplied URL for an
-intended Netlify preview.
+`environment_url` cannot host `/api/*` and is not used as a trigger. A manual workflow dispatch
+preserves its supplied URL for an intended Netlify preview.
 
 ## Local development
 
