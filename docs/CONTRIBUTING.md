@@ -88,6 +88,7 @@ Read through `$env/dynamic/private` at request time, so `web/.env` works for all
 | `ALLOWED_TOKENS_LIST`           | `server/tokens.ts`          | Comma-separated managed access tokens. A **one-time seed** into Blobs on first read, not the live list — `/admin` owns it after that |
 | `ADMIN_ACCESS_TOKEN`            | `server/admin.ts`           | The `/admin` console secret, and the HMAC key for its derived session token                                                          |
 | `OPENAI_API_KEY`                | `server/config.ts`          | The credential `/api/generate-image` bills hosted generation to. Unset ⇒ `/api/free-generation-grant` also 503s                      |
+| `USAGE_GRANT_ID_SECRET`         | `server/usage.ts`           | HMAC key for opaque grant ids. Unset ⇒ generation works, but durable tallies and `/admin` usage stats are disabled                   |
 | `GITHUB_ISSUE_TOKEN`            | `server/config.ts`          | Fine-grained PAT that files feedback as issues. Unset ⇒ `/api/report`, `/api/report-image`, and the `/feedback` form action all 503  |
 | `GITHUB_ISSUE_REPO`             | `server/config.ts`          | Overrides the feedback repo (default `KyleMit/splotch-feedback`)                                                                     |
 | `REPORT_TOKEN_SECRET`           | `server/reportToken.ts`     | Signs the report token bound to a generation. Unset ⇒ free-tier picture reports **and every refusal report** 503                     |

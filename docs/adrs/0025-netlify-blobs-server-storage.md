@@ -149,10 +149,12 @@ under the previous secret are inaccessible from the current code and age out ind
 
 The blob contains only the request count, first/latest timestamps, a fixed `deleteAfter`, the latest
 validated art-style category, and the latest outcome category (`accepted`, `succeeded`, `refused`,
-or `failed`). Prompt text and provider error/refusal details are absent from both blobs and
-operational logs. Logs carry only time, credential category, style category, and outcome category;
-Netlify's documented function-log availability is at least 24 hours and up to 7 days depending on
-plan.
+or `failed`). Prompt text is absent from both the blob and the `[ai-usage]` log line, and neither
+carries provider error or refusal detail. That log line carries only time, credential category,
+style category, and outcome category. A failed upstream call separately logs the provider's message
+from `server/ai/openai.ts` or `netlify/functions/generate-image-background.ts`; this usage record
+does not control those operational logs. Netlify's documented function-log availability is at least
+24 hours and up to 7 days depending on plan.
 
 Each tally's `deleteAfter` is exactly 30 days after its first recorded request. Later requests
 increment the tally without moving that boundary; a request at or after the boundary overwrites it

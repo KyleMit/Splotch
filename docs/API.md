@@ -90,10 +90,12 @@ See `web/src/routes/api/generate-image` and ADR-0006 / ADR-0014.
 
 Managed access-code requests also update a durable abuse-prevention tally keyed by a dedicated-key
 HMAC grant ID: count, first/latest use, fixed deletion time, latest validated style category, and
-latest outcome category. It never contains the code, prompt, drawing, provider detail, or key.
-Managed and BYOK requests write only the date, credential category, style category, and outcome
-category to the function log. Free requests use the separate allowance records below. The exact
-tally retention and deletion behavior is documented with the admin endpoint below.
+latest outcome category. It never contains the code, prompt, drawing, provider detail, or key. The
+`[ai-usage]` line for managed and BYOK requests contains only the date, credential category, style
+category, and outcome category. A failed upstream call separately logs the provider's message from
+the provider adapter or background worker; the usage record does not control those operational logs.
+Free requests use the separate allowance records below. The exact tally retention and deletion
+behavior is documented with the admin endpoint below.
 
 With neither credential, the request uses the installation's free grant and must send the
 privacy-preserving `X-Installation-Id` pseudonym. Free attempts are rate-limited per IP at 15/min,

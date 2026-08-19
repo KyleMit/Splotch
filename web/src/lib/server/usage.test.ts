@@ -262,16 +262,35 @@ describe('getUsage', () => {
     expect(store.get).toHaveBeenCalledWith(grantKey(), { type: 'json' });
   });
 
-  it('returns an empty map when the HMAC secret or Blobs is unavailable', async () => {
+  it('isolates one token read failure while returning the other tallies', async () => {
+    const goodToken = 'good-token';
+    const badToken = 'bad-token';
+    const store = makeStore();
+    store.get.mockImplementation(async (key: string) => {
+      if (key === grantKey(badToken)) throw new Error('one key is unavailable');
+      return key === grantKey(goodToken) ? usageOf(2) : null;
+    });
+    getStoreMock.mockReturnValue(store);
+
+    await expect(getUsage([badToken, goodToken])).resolves.toEqual({
+      [goodToken]: usageOf(2),
+    });
+    expect(console.warn).toHaveBeenCalledWith(
+      '[ai-usage] failed to read usage for a token:',
+      'one key is unavailable'
+    );
+  });
+
+  it('returns unavailable when the HMAC secret or Blobs is unavailable', async () => {
     delete envState.USAGE_GRANT_ID_SECRET;
-    expect(await getUsage([TOKEN])).toEqual({});
+    expect(await getUsage([TOKEN])).toBeNull();
     expect(getStoreMock).not.toHaveBeenCalled();
 
     envState.USAGE_GRANT_ID_SECRET = SECRET;
     getStoreMock.mockImplementation(() => {
       throw new Error('MissingBlobsEnvironment');
     });
-    expect(await getUsage([TOKEN])).toEqual({});
+    expect(await getUsage([TOKEN])).toBeNull();
   });
 });
 
@@ -320,7 +339,9 @@ describe('purgeExpiredUsageRecords', () => {
     getStoreMock.mockReturnValue(store);
 
     await expect(purgeExpiredUsageRecords()).resolves.toEqual({
-      deletedRecords: 3,
+      deletedExpiredRecords: 1,
+      deletedLegacyRecords: 1,
+      deletedMalformedRecords: 1,
       retainedRecords: 1,
     });
     expect(store.delete.mock.calls.map(([key]) => key)).toEqual([expiredKey, malformedKey, TOKEN]);

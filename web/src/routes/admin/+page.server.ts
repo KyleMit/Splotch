@@ -70,17 +70,15 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
   // forward — an actively-used admin never has to log in again.
   setSession(cookies);
   const { tokens, persistent } = await getTokensStatus();
-  // Pair each invite with its generation tally. `usage[token] ?? null` keeps the
-  // field always-defined so the component can tell "never used" (null) apart
-  // from "usage unavailable" (undefined, the JSON /api/admin/tokens snapshot,
-  // which carries no usage).
+  // Pair each invite with its generation tally. The component distinguishes
+  // "never used" (null) from "usage unavailable" (undefined).
   const [usage, freeGrantStats] = await Promise.all([
     getUsage(tokens),
     getFreeGenerationGrantAdminStats(),
   ]);
   const invites = buildInvites(tokens, url.origin).map((invite) => ({
     ...invite,
-    usage: usage[invite.token] ?? null,
+    usage: usage === null ? undefined : (usage[invite.token] ?? null),
   }));
   return { authed: true, persistent, invites, freeGrantStats };
 };

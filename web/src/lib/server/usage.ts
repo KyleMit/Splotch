@@ -18,6 +18,8 @@ const HMAC_ALGORITHM = 'sha256';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const USAGE_RECORD_RETENTION_MS = USAGE_RECORD_RETENTION_DAYS * DAY_MS;
 const CAS_ATTEMPTS = 3;
+// A failed conditional write can reflect replica lag, so only retries pause
+// before re-reading instead of immediately observing the same stale version.
 const CAS_BACKOFF_MS = 50;
 
 function usageGrantKey(token: string): string | null {
@@ -47,9 +49,15 @@ export function recordByokUsage(style: StyleName | null, outcome: UsageOutcome):
 }
 
 /**
- * Usage tracking is best-effort and cannot fail an image request. The fixed
- * deleteAfter value bounds every tally to one retention window; a request at
- * the boundary starts a fresh tally instead of extending the old record.
+ * Usage tracking is best-effort and cannot fail an image request. Two devices
+ * sharing a code can generate concurrently, so an unconditional read/write
+ * would let both read N and write N+1, undercounting exactly the abuse this
+ * tally exists to detect. Conditional writes and bounded retries serialize
+ * those increments.
+ *
+ * The fixed deleteAfter value bounds every tally to one retention window; a
+ * request at the boundary starts a fresh tally instead of extending the old
+ * record.
  */
 export async function recordTokenUsage(
   token: string,
@@ -118,14 +126,14 @@ export async function deleteUsage(token: string) {
  * recorded usage are omitted (so the caller can distinguish "never used" from a
  * Blobs outage). Eventual consistency (the default) is sufficient — slightly-stale
  * counts are fine here, and it sidesteps the strong-read context requirements
- * entirely (ADR-0025). Best-effort: any read failure yields an empty map rather
- * than throwing, so a Blobs hiccup never 500s the admin page.
+ * entirely (ADR-0025). A null result means the whole snapshot is unavailable;
+ * one token's read or expiry-delete failure is isolated from the other tokens.
  */
-export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage>> {
+export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage> | null> {
   const keyedTokens = tokens.map((token) => ({ token, key: usageGrantKey(token) }));
   if (keyedTokens.some(({ key }) => key === null)) {
     console.warn('[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available');
-    return {};
+    return null;
   }
 
   let store: ReturnType<typeof getStore>;
@@ -136,7 +144,7 @@ export async function getUsage(tokens: string[]): Promise<Record<string, TokenUs
       '[ai-usage] Netlify Blobs unavailable, no usage stats:',
       err instanceof Error ? err.message : err
     );
-    return {};
+    return null;
   }
 
   const entries = await Promise.all(
