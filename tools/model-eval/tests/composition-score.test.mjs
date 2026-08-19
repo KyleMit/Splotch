@@ -45,6 +45,52 @@ const driftedOutput = () =>
     <circle cx="220" cy="90" r="48" fill="#FFD84D"/>
   </svg>`);
 
+const BLUE = '#62A2E9';
+
+// A scribbled-in region: back-and-forth blue passes across a band, the way a
+// toddler colours water in. The gaps between passes are what make it a fill
+// rather than a drawn shape.
+const scribbleStrokes = (y0, y1, rows) => {
+  const step = (y1 - y0) / rows;
+  return Array.from({ length: rows }, (_, i) => {
+    const y = y0 + step * (i + 0.5);
+    return `<path d="M 30 ${y} L 290 ${y - 4}" stroke="${BLUE}" stroke-width="7" fill="none"/>`;
+  }).join('');
+};
+
+const scribbleFilledInput = () =>
+  rasterize(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">
+    <rect width="320" height="320" fill="${PAPER}"/>
+    ${scribbleStrokes(170, 250, 7)}
+    <circle cx="250" cy="60" r="28" fill="${YELLOW}"/>
+  </svg>`);
+
+// What the child meant: that whole band is water now.
+const regionColouredIn = () =>
+  rasterize(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">
+    <rect width="320" height="320" fill="#CFE7F7"/>
+    <rect x="24" y="164" width="272" height="92" fill="#3E92E8"/>
+    <circle cx="250" cy="60" r="30" fill="#FFD84D"/>
+  </svg>`);
+
+// The cheat: the same water painted underneath, with the child's strokes
+// redrawn on top of it so the edges still line up stroke for stroke.
+const regionWithStrokesOnTop = () =>
+  rasterize(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">
+    <rect width="320" height="320" fill="#CFE7F7"/>
+    <rect x="24" y="164" width="272" height="92" fill="#3E92E8"/>
+    ${scribbleStrokes(170, 250, 7)}
+    <circle cx="250" cy="60" r="30" fill="#FFD84D"/>
+  </svg>`);
+
+// Line work over the same span: one drawn wave, not a coloured-in area.
+const drawnLineInput = () =>
+  rasterize(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">
+    <rect width="320" height="320" fill="${PAPER}"/>
+    <path d="M 30 210 L 290 206" stroke="${BLUE}" stroke-width="7" fill="none"/>
+    <circle cx="250" cy="60" r="28" fill="${YELLOW}"/>
+  </svg>`);
+
 describe('gridSizeFor', () => {
   it('keeps the long side fixed and preserves aspect', () => {
     expect(gridSizeFor(1024, 1024)).toEqual({ width: 160, height: 160 });
@@ -151,6 +197,48 @@ describe('scoreComposition', () => {
     expect(faithfulRed.scaleFactor).toBeGreaterThan(0.85);
     expect(faithfulRed.scaleFactor).toBeLessThan(1.2);
     expect(faithfulRed.centroidShiftPct).toBeLessThan(3);
+  });
+});
+
+describe('scribbled-in fill regions', () => {
+  it('classes a scribbled band as a fill and a drawn line as line work', async () => {
+    const filled = await scoreComposition({
+      inputBytes: await scribbleFilledInput(),
+      outputBytes: await regionColouredIn(),
+    });
+    const line = await scoreComposition({
+      inputBytes: await drawnLineInput(),
+      outputBytes: await regionColouredIn(),
+    });
+    expect(filled.elements.find((el) => el.label === 'Blue').kind).toBe('fill');
+    expect(line.elements.find((el) => el.label === 'Blue')?.kind).not.toBe('fill');
+  });
+
+  it('does not class a shape the child drew solid as a fill', async () => {
+    const solid = await scoreComposition({
+      inputBytes: await inputDrawing(),
+      outputBytes: await faithfulOutput(),
+    });
+    expect(solid.elements.every((el) => el.kind !== 'fill')).toBe(true);
+  });
+
+  it('scores colouring the region in far above redrawing the strokes over it', async () => {
+    const inputBytes = await scribbleFilledInput();
+    const coloured = await scoreComposition({
+      inputBytes,
+      outputBytes: await regionColouredIn(),
+    });
+    const strokesOnTop = await scoreComposition({
+      inputBytes,
+      outputBytes: await regionWithStrokesOnTop(),
+    });
+    const fillOf = (s) => s.elements.find((el) => el.label === 'Blue');
+    expect(fillOf(coloured).coverage).toBeGreaterThan(0.85);
+    // The cheat is legible in the echo ratio alone: the same coverage, but the
+    // output's edges sit on the child's strokes instead of anywhere else.
+    expect(fillOf(coloured).strokeEchoRatio).toBeGreaterThan(0.8);
+    expect(fillOf(strokesOnTop).strokeEchoRatio).toBeLessThan(0.3);
+    expect(coloured.layoutScore).toBeGreaterThan(strokesOnTop.layoutScore + 15);
   });
 });
 

@@ -70,6 +70,60 @@ const ELEMENT_MIN_AREA_FRACTION = 0.002;
 const WASH_MIN_SPAN_FRACTION = 0.7;
 const WASH_MIN_AREA_FRACTION = 0.1;
 
+// A color cluster whose ink fills this much of its own bounding box was
+// scribbled in as a REGION rather than drawn as lines. The child coloured an
+// area, and what the finished picture owes them is that area rendered as the
+// one filled thing it depicts — water, sky, grass — not their individual
+// strokes preserved on top of it. Below this density the cluster is line work
+// (an outline, a wave, a stick figure) where stroke placement is the point.
+const FILL_INK_DENSITY_MIN = 0.28;
+// …and it has to occupy a real area before "region" means anything.
+const FILL_MIN_AREA_FRACTION = 0.01;
+// Closing radius, as a fraction of the grid's long side, that merges the gaps
+// between back-and-forth scribble strokes into the solid region they mean.
+const FILL_CLOSE_RADIUS_FRACTION = 0.04;
+// Neighbouring elements (the boat floating in the water) are lifted out of the
+// region before it is scored, so a subject sitting inside a fill cannot read as
+// a hole in it.
+const FILL_NEIGHBOUR_MARGIN_FRACTION = 0.015;
+// Lab distance below which two elements are the same ink seen through
+// antialiasing rather than two things the child drew.
+const NEIGHBOUR_DISTINCT_DELTA_E = 30;
+// A region this much covered by the element's colour counts as fully coloured
+// in; models leave soft edges and highlights, and chasing the last few percent
+// would score gloss rather than intent.
+const FILL_COVERAGE_TARGET = 0.8;
+// Fill colour is matched by HUE, not by Lab distance. A painted sea is the same
+// blue the child chose at a fraction of its chroma and twice its lightness —
+// ΔE reads that as a different colour entirely (measured: median ΔE 69 against
+// palette blue for a watercolour sea that is unmistakably the child's water),
+// which would score "you changed the shade" as "you never filled it in". Hue
+// separates the cases the coverage term exists to separate: a pale blue sea
+// still points at blue, a cream sky does not.
+const FILL_HUE_TOLERANCE_DEG = 38;
+// Below this chroma a pixel has no meaningful hue — it is paper, white, or a
+// grey — so it cannot count as the region having been coloured in.
+const FILL_MIN_CHROMA = 7;
+// An element colour this achromatic (the black crayon) has no hue to compare
+// against either, so its coverage falls back to plain Lab distance.
+const FILL_ACHROMATIC_ELEMENT_CHROMA = 15;
+const FILL_COLOR_MATCH_DELTA_E = 34;
+// How much of the closed region is gaps between the strokes that made it. A
+// shape the child filled in solid closes to itself and has none; a
+// back-and-forth scribble always leaves paper showing between passes. This is
+// what separates "coloured this area in" from "drew this object", and only the
+// first is scored on coverage rather than on placement.
+const FILL_STROKE_GAP_MIN = 0.12;
+// How closely the output still draws along the child's own scribble strokes,
+// as a chamfer ratio against the region's chance level — the same normalization
+// the global term uses, so a region full of unrelated texture cannot read as
+// preserved strokes. Near 0 means the strokes are still there stroke for
+// stroke, which is the cheat this term exists to catch: paint the sea
+// underneath, redraw the squiggles on top, and every edge still lines up.
+// Near 1 means the output's edges have nothing to do with where the child's
+// passes fell, which is what colouring the area in looks like.
+const FILL_STROKE_ECHO_TOLERANCE = 0.5;
+
 // An output color-mask component owning at least this share of the frame
 // border is a background wash (a sky or field that adopted the element's hue),
 // not the element itself.
@@ -336,6 +390,38 @@ function globalAlignment(points, dist, width, height) {
 
 // --- per-element analysis ----------------------------------------------------
 
+// Grow a mask by `radius` grid pixels, reusing the chamfer distance transform
+// rather than a second neighbourhood loop.
+function dilateMask(mask, width, height, radius) {
+  const dist = distanceTransform(mask, width, height);
+  const out = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) if (dist[p] <= radius) out[p] = 1;
+  return out;
+}
+
+// Shrink a mask by `radius`: the complement's dilation, inverted.
+function erodeMask(mask, width, height, radius) {
+  const complement = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) complement[p] = mask[p] ? 0 : 1;
+  const grown = dilateMask(complement, width, height, radius);
+  const out = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) out[p] = grown[p] ? 0 : 1;
+  return out;
+}
+
+// Morphological closing: the solid region a set of scribble strokes covers.
+// Dilating alone would inflate the region past what the child actually filled,
+// so the same radius is eroded back off.
+function closeMask(mask, width, height, radius) {
+  const grown = dilateMask(mask, width, height, radius);
+  const complement = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) complement[p] = grown[p] ? 0 : 1;
+  const grownComplement = dilateMask(complement, width, height, radius);
+  const out = new Uint8Array(mask.length);
+  for (let p = 0; p < mask.length; p++) out[p] = grownComplement[p] ? 0 : 1;
+  return out;
+}
+
 function connectedComponents(mask, width, height) {
   const labels = new Int32Array(width * height).fill(-1);
   const components = [];
@@ -418,7 +504,9 @@ function inputElements(grid, mask) {
       maxX: 0,
       minY: height,
       maxY: 0,
+      mask: new Uint8Array(mask.length),
     };
+    entry.mask[p] = 1;
     entry.area++;
     entry.sx += x;
     entry.sy += y;
@@ -429,27 +517,120 @@ function inputElements(grid, mask) {
     perColor.set(bestColor.label, entry);
   }
   const frameArea = width * height;
-  return [...perColor.values()]
+  const closeRadius = Math.max(2, Math.round(Math.max(width, height) * FILL_CLOSE_RADIUS_FRACTION));
+  const elements = [...perColor.values()]
     .filter((entry) => entry.area / frameArea >= ELEMENT_MIN_AREA_FRACTION)
     .map((entry) => {
       const areaFraction = entry.area / frameArea;
+      const boxArea = (entry.maxX - entry.minX + 1) * (entry.maxY - entry.minY + 1);
+      const inkDensity = entry.area / boxArea;
       const spanFraction = Math.max(
         (entry.maxX - entry.minX + 1) / width,
         (entry.maxY - entry.minY + 1) / height
       );
+      // Fill is decided before wash and compact: a scribbled-in sea spans the
+      // frame like a wash and a coloured-in apple is compact, but for both the
+      // question is whether the area got coloured, not where its strokes landed.
+      // Density alone would also catch a shape the child drew solid — a boat
+      // hull — and that one is a subject whose position and scale still matter,
+      // so a fill must additionally show the gaps between passes that closing
+      // the mask fills in. A solid shape closes to itself; a scribble does not.
+      const dense = inkDensity >= FILL_INK_DENSITY_MIN && areaFraction >= FILL_MIN_AREA_FRACTION;
+      const region = dense ? closeMask(entry.mask, width, height, closeRadius) : null;
+      const regionArea = region ? region.reduce((sum, v) => sum + v, 0) : 0;
+      const strokeGapFraction = regionArea ? 1 - entry.area / regionArea : 0;
+      const isFill = dense && strokeGapFraction >= FILL_STROKE_GAP_MIN;
+      const kind = isFill
+        ? 'fill'
+        : spanFraction >= WASH_MIN_SPAN_FRACTION || areaFraction >= WASH_MIN_AREA_FRACTION
+          ? 'wash'
+          : 'compact';
       return {
         label: entry.color.label,
         hex: entry.color.hex,
         lab: entry.color.lab,
         areaFraction,
-        kind:
-          spanFraction >= WASH_MIN_SPAN_FRACTION || areaFraction >= WASH_MIN_AREA_FRACTION
-            ? 'wash'
-            : 'compact',
+        inkDensity,
+        strokeGapFraction,
+        kind,
+        mask: entry.mask,
+        region: isFill ? region : null,
         centroid: { x: entry.sx / entry.area / width, y: entry.sy / entry.area / height },
       };
     })
     .sort((a, b) => b.areaFraction - a.areaFraction);
+
+  // A fill region swallows whatever the child drew inside it (the boat on the
+  // water), so those pixels are lifted out before the region is scored —
+  // otherwise a correctly painted sea is charged for the boat floating in it.
+  const neighbourMargin = Math.max(
+    1,
+    Math.round(Math.max(width, height) * FILL_NEIGHBOUR_MARGIN_FRACTION)
+  );
+  for (const element of elements) {
+    if (!element.region) continue;
+    for (const other of elements) {
+      if (other === element) continue;
+      // Antialiasing along a stroke lands a rim of pixels on neighbouring
+      // palette entries, so one drawn mark surfaces as two or three elements —
+      // and that rim traces every scribble pass, so subtracting it would have
+      // the fill cut itself to shreds. Two guards: a near-identical colour is
+      // the same ink, and eroding by a pixel deletes a rim entirely while a real
+      // subject sitting in the fill (the boat on the water) survives it.
+      if (labDistance(element.lab, other.lab) < NEIGHBOUR_DISTINCT_DELTA_E) continue;
+      const core = erodeMask(other.mask, width, height, 1);
+      if (!core.some(Boolean)) continue;
+      const grown = dilateMask(core, width, height, neighbourMargin);
+      for (let q = 0; q < element.region.length; q++) if (grown[q]) element.region[q] = 0;
+    }
+  }
+  return elements;
+}
+
+// Score one fill region on the two things that make it a fill: did that area
+// come back coloured in, and did it come back as an area rather than as the
+// child's strokes redrawn on top of a painted one.
+function matchFill(element, outputGrid, outputEdgeDistance) {
+  const { data, width, height } = outputGrid;
+  const elementChroma = Math.hypot(element.lab[1], element.lab[2]);
+  const elementHue = Math.atan2(element.lab[2], element.lab[1]);
+  const byHue = elementChroma >= FILL_ACHROMATIC_ELEMENT_CHROMA;
+  let regionArea = 0;
+  let covered = 0;
+  let chanceDistance = 0;
+  for (let p = 0, i = 0; p < element.region.length; p++, i += 3) {
+    if (!element.region[p]) continue;
+    regionArea++;
+    chanceDistance += outputEdgeDistance[p];
+    const lab = srgbToLab(data[i], data[i + 1], data[i + 2]);
+    if (!byHue) {
+      if (labDistance(lab, element.lab) <= FILL_COLOR_MATCH_DELTA_E) covered++;
+      continue;
+    }
+    if (Math.hypot(lab[1], lab[2]) < FILL_MIN_CHROMA) continue;
+    const delta = Math.abs(((Math.atan2(lab[2], lab[1]) - elementHue) * 180) / Math.PI);
+    if (Math.min(delta, 360 - delta) <= FILL_HUE_TOLERANCE_DEG) covered++;
+  }
+  if (!regionArea) return { found: false, backgroundLike: false };
+
+  // Where the child's passes actually fell, and how far the output's nearest
+  // edge is from each of them.
+  const strokePoints = maskEdgePoints(element.mask, width, height).filter(
+    ([x, y]) => element.region[y * width + x]
+  );
+  let strokeDistance = 0;
+  for (const [x, y] of strokePoints) strokeDistance += outputEdgeDistance[y * width + x];
+  const chance = chanceDistance / regionArea;
+  const strokeEchoRatio =
+    strokePoints.length && chance > 0 ? strokeDistance / strokePoints.length / chance : 1;
+
+  return {
+    found: true,
+    backgroundLike: false,
+    regionAreaFraction: regionArea / (width * height),
+    coverage: covered / regionArea,
+    strokeEchoRatio,
+  };
 }
 
 // Locate one input element's color mass in the output. Components that own a
@@ -497,9 +678,12 @@ function matchElement(element, outputGrid) {
   };
 }
 
-function compareElements(elements, outputGrid) {
+function compareElements(elements, outputGrid, outputEdgeDistance) {
   return elements.map((element) => {
-    const match = matchElement(element, outputGrid);
+    const match =
+      element.kind === 'fill'
+        ? matchFill(element, outputGrid, outputEdgeDistance)
+        : matchElement(element, outputGrid);
     if (!match.found) {
       return {
         label: element.label,
@@ -508,6 +692,19 @@ function compareElements(elements, outputGrid) {
         inputAreaFraction: element.areaFraction,
         found: false,
         backgroundLike: match.backgroundLike,
+      };
+    }
+    if (element.kind === 'fill') {
+      return {
+        label: element.label,
+        hex: element.hex,
+        kind: element.kind,
+        inputAreaFraction: element.areaFraction,
+        found: true,
+        backgroundLike: false,
+        regionAreaFraction: match.regionAreaFraction,
+        coverage: match.coverage,
+        strokeEchoRatio: match.strokeEchoRatio,
       };
     }
     const shift = Math.hypot(
@@ -561,10 +758,20 @@ export function compositeScore(global, elementComparisons) {
   }
   for (const element of elementComparisons) {
     const weight = Math.sqrt(element.inputAreaFraction) * (element.kind === 'wash' ? 0.5 : 1);
+
     if (!element.found) {
-      if (element.kind === 'compact') {
+      if (element.kind === 'compact' || element.kind === 'fill') {
         terms.push({ weight, value: LOST_COMPACT_ELEMENT_VALUE });
       }
+      continue;
+    }
+    if (element.kind === 'fill') {
+      const coverageTerm = clamp01(element.coverage / FILL_COVERAGE_TARGET);
+      // Inverted against the other terms on purpose: here a LOW ratio is the
+      // failure, because it means the child's strokes are still being drawn.
+      const filledNotDrawnTerm =
+        1 - Math.exp(-((element.strokeEchoRatio / FILL_STROKE_ECHO_TOLERANCE) ** 2));
+      terms.push({ weight, value: coverageTerm * filledNotDrawnTerm });
       continue;
     }
     if (element.kind === 'wash') {
@@ -601,13 +808,30 @@ export async function scoreComposition({ inputBytes, outputBytes }) {
 
   const paper = estimatePaperColor(inputGrid);
   const mask = inkMask(inputGrid, paper);
-  const points = maskEdgePoints(mask, width, height);
+  const elements = inputElements(inputGrid, mask);
+
+  // Fill regions are deliberately kept out of the global chamfer. Inside one,
+  // reproducing the child's strokes is the failure being measured, not the
+  // fidelity being rewarded — leaving them in let an output paint the sea and
+  // redraw the scribbles over it to score as the most faithful of the set.
+  const lineMask = Uint8Array.from(mask);
+  for (const element of elements) {
+    if (!element.region) continue;
+    // The whole zone comes out, not just the pixels that matched this element's
+    // colour: the antialiased rim of a scribble lands on a neighbouring palette
+    // entry, and leaving those rim pixels in would trace the very strokes the
+    // exclusion exists to stop rewarding.
+    const zone = new Uint8Array(lineMask.length);
+    for (let p = 0; p < zone.length; p++) zone[p] = element.region[p] || element.mask[p] ? 1 : 0;
+    const grown = dilateMask(zone, width, height, 1);
+    for (let p = 0; p < lineMask.length; p++) if (grown[p]) lineMask[p] = 0;
+  }
+  const points = maskEdgePoints(lineMask, width, height);
   const outputEdges = sobelEdgeMap(outputGrid);
   const dist = distanceTransform(outputEdges, width, height);
   const global = globalAlignment(points, dist, width, height);
 
-  const elements = inputElements(inputGrid, mask);
-  const elementComparisons = compareElements(elements, outputGrid);
+  const elementComparisons = compareElements(elements, outputGrid, dist);
 
   return {
     grid: { width, height },

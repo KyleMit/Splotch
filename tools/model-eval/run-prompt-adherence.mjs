@@ -157,6 +157,15 @@ const DRAWN_WORLD_PROMPT =
 const DRAWN_WORLD_RICH_PROMPT =
   "Paint over this child's drawing to bring it to life without taking it over. Keep the marks the child made as the marks the child made: their lines stay their lines, in the same place, at the same size, with the same wobble and the same color. Do not redraw a drawn figure as a realistic person - if the child drew a stick figure, it stays a stick figure, only warmer and better coloured. Where the child closed a shape, though - a house, a boat, an animal's body, a sun, a balloon - finish it as the real thing it is: fill it in and give it the surfaces and small details that thing would really have, such as walls, a roof, windows, petals, fur, or fabric, all kept inside the outline they drew. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Everything the child left empty is yours to fill, and filling it generously is the point: build the drawing a whole storybook world to sit in - sky and weather, distant hills, water, a grassy field with flowers, blossom, butterflies, birds far off, warm light coming from somewhere - so the page feels like a place rather than a sheet of paper. Keep that world behind and around the child's marks: it may be as rich as you like, but nothing you add may sit on top of what they drew, compete with it for attention, or become a second main character. If the child's marks do not depict anything in particular - loose squiggles, a few stray lines - play the game of making those exact lines add up to something: leave every line exactly where it is and invent the playful, magical picture that makes them all make sense together. Render everything as a hand-drawn children's book illustration on paper - crayon, colored pencil, gouache, or soft watercolor, with flat colour and a little paper grain. Never a 3D render: no glossy plastic surfaces, no inflated balloon shapes, no airbrushed CGI shine.";
 
+// The fill half of the round-two review: the keep-the-strokes rule was
+// written for line work and over-applied to scribble fill, so a sea the
+// child scribbled in came back as a painted sea with their squiggles redrawn
+// on top of it. This arm splits the two kinds of mark explicitly - a line
+// stays a line, a scribbled-in area becomes the thing it depicts - and drops
+// the flat-fill sentence it replaces.
+const DRAWN_WORLD_FILL_PROMPT =
+  "Paint over this child's drawing to bring it to life without taking it over. The child made two kinds of marks, and they are owed different things. A line they drew to describe something - an outline, a figure, a wave, a stem, a ray of sun - stays exactly as they drew it: same place, same size, same wobble, same colour. But where they scribbled back and forth to colour an area in, the area is the thing and the strokes were only how they got there: render that whole region as the one thing it depicts - the sea, the sky, the grass, the roof - filled edge to edge in that colour, and let their individual passes disappear into it. Do not paint that area underneath and then redraw their scribble on top of it; the scribble becomes the sea. Do not redraw a drawn figure as a realistic person - if the child drew a stick figure, it stays a stick figure, only warmer and better coloured. Where the child closed a shape, though - a house, a boat, an animal's body, a sun, a balloon - finish it as the real thing it is: fill it in and give it the surfaces and small details that thing would really have, such as walls, a roof, windows, petals, fur, or fabric, all kept inside the outline they drew. Then bring the world around the drawing to life, because bare paper is the one thing the finished picture should never be: fill the empty space with the setting the drawing implies - sky, weather, light, water, ground, grass, a few flowers or drifting clouds - so the marks sit in a real place, and never add a character or object that would compete with what the child drew. If the child's marks do not depict anything in particular - loose squiggles, a few stray lines - play the game of making those exact lines add up to something: leave every line exactly where it is and invent the playful, magical picture that makes them all make sense together. Render everything as a hand-drawn children's book illustration on paper - crayon, colored pencil, gouache, or soft watercolor, with flat colour and a little paper grain. Never a 3D render: no glossy plastic surfaces, no inflated balloon shapes, no airbrushed CGI shine.";
+
 const LABS = [
   { key: 'baseline', label: 'production prompt', prompt: DEFAULT_PROMPT, imageToolOverrides: {} },
   {
@@ -212,6 +221,12 @@ const LABS = [
     key: 'drawn-world-rich',
     label: 'same, with a full storybook setting',
     prompt: DRAWN_WORLD_RICH_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'drawn-world-fill',
+    label: 'drawn-world, with scribbled-in areas rendered as areas',
+    prompt: DRAWN_WORLD_FILL_PROMPT,
     imageToolOverrides: {},
   },
   {
@@ -287,6 +302,9 @@ function elementRows(elements) {
       const swatch = `<span style="display:inline-block;width:0.7em;height:0.7em;border-radius:2px;background:${esc(el.hex)};margin-right:0.3em"></span>`;
       if (!el.found) {
         return `<div>${swatch}${esc(el.label)}: <em>${el.backgroundLike ? 'became background' : 'not found'}</em></div>`;
+      }
+      if (el.kind === 'fill') {
+        return `<div>${swatch}${esc(el.label)} (filled area): coloured ${(el.coverage * 100).toFixed(0)}% · stroke echo ${el.strokeEchoRatio.toFixed(2)}</div>`;
       }
       return `<div>${swatch}${esc(el.label)}: shift ${el.centroidShiftPct.toFixed(1)}% · scale ${el.scaleFactor.toFixed(2)}×</div>`;
     })
