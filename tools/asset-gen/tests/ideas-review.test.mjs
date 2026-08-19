@@ -45,4 +45,16 @@ describe('ideas exploration review page', () => {
         '[ideas-review] ideas-review.html is stale. Run node tools/asset-gen/ideas-exploration/build-review.mjs and commit the result.',
     });
   });
+
+  it('ignores only platform-dependent inline WebP bytes', () => {
+    const prefix = '<!-- Inline-image sources: same; transform: same -->';
+    const generated = `${prefix}<img src="data:image/webp;base64,AAAA">`;
+    const committed = `${prefix}<img src="data:image/webp;base64,BBBB">`;
+
+    expect(compareGeneratedReview(generated, committed).status).toBe(0);
+    expect(
+      compareGeneratedReview(generated, committed.replace('sources: same', 'sources: drifted'))
+        .status
+    ).toBe(1);
+  });
 });
