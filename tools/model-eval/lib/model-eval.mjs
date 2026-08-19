@@ -24,8 +24,8 @@ export const ORCHESTRATOR_REASONING_EFFORT = 'medium';
 // naming a VARIANTS key, so a prompt round can never be tuned against a model
 // the app no longer ships; assertProductionConfig fails on drift from the app
 // source, the way the orchestrator and prompt constants above already do.
-export const IMAGE_MODEL = 'gpt-image-2';
-export const IMAGE_QUALITY = 'low';
+const IMAGE_MODEL = 'gpt-image-2';
+const IMAGE_QUALITY = 'low';
 
 // Every cell under comparison. `key` is filesystem-safe because it names the
 // output files; `role` is what the report prints beside the label.
