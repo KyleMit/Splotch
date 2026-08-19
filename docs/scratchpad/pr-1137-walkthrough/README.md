@@ -1,6 +1,8 @@
 # PR #1137 — visual walkthrough evidence
 
-Figures and measurement scripts backing the visual walkthrough comment on PR #1137 ("Document
+[**WALKTHROUGH.md**](WALKTHROUGH.md) is the walkthrough itself — read that first.
+
+This folder holds the figures and measurement scripts behind it, for PR #1137 ("Document
 per-generator WebP quality choices"). The PR itself adds six comment lines and changes no behavior;
 this folder holds the empirical check of whether each comment's stated rationale is visually and
 numerically true.
