@@ -41,7 +41,7 @@ beforeEach(() => {
 });
 
 describe('setAiUserApiKey', () => {
-  it('requests persistent storage when a parent saves a key without waiting for permission', async () => {
+  it('requests persistent storage after a key is saved without waiting for permission', async () => {
     vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
 
     await setAiUserApiKey('sk-persisted');
@@ -89,6 +89,7 @@ describe('setAiUserApiKey', () => {
 
     expect(settings.aiUserApiKey).toBe('');
     expect(secureStore.apiKey).toBeNull();
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 
   it('a second call supersedes an in-flight first write', async () => {
@@ -115,6 +116,7 @@ describe('setAiUserApiKey', () => {
     expect(await firstWrite).toBe(false);
     expect(settings.aiUserApiKey).toBe('second');
     expect(secureStore.apiKey).toBe('second');
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
   });
 
   it('ownership lost mid-flight restores the prior credential', async () => {
@@ -132,6 +134,7 @@ describe('setAiUserApiKey', () => {
     expect(result).toBe(false);
     expect(settings.aiUserApiKey).toBe('prior-key');
     expect(secureStore.apiKey).toBe('prior-key');
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 });
 

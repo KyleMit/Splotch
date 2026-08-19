@@ -13,13 +13,19 @@ vi.mock('../secureStorage', () => ({
   }),
 }));
 
+vi.mock('../idb', () => ({
+  requestPersistentStorage: vi.fn(async () => false),
+}));
+
 import { loadAccessCode, saveAccessCode } from '../secureStorage';
+import { requestPersistentStorage } from '../idb';
 import { STORAGE_KEYS } from '../storage';
 import { aiCredentialKind, settings } from './settings.svelte';
 import {
   captureAiAccessTokenFromUrl,
   hydrateAiAccessToken,
   setAiAccessToken,
+  setUserSubmittedAiAccessToken,
 } from './aiAccessToken';
 
 beforeEach(() => {
@@ -36,6 +42,7 @@ beforeEach(() => {
   vi.mocked(loadAccessCode)
     .mockReset()
     .mockImplementation(async () => secureStore.accessCode);
+  vi.mocked(requestPersistentStorage).mockReset().mockResolvedValue(false);
   window.history.replaceState({}, '', '/');
 });
 
@@ -74,6 +81,26 @@ describe('setAiAccessToken', () => {
     await expect(setAiAccessToken('rejected-code')).rejects.toThrow('secure storage unavailable');
 
     expect(settings.aiAccessToken).toBe('');
+    expect(secureStore.accessCode).toBeNull();
+  });
+});
+
+describe('setUserSubmittedAiAccessToken', () => {
+  it('requests persistent storage after an access code is saved without waiting for permission', async () => {
+    vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
+
+    await setUserSubmittedAiAccessToken('managed-code');
+
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
+    expect(secureStore.accessCode).toBe('managed-code');
+  });
+
+  it('does not request persistent storage when a parent forgets an access code', async () => {
+    secureStore.accessCode = 'managed-code';
+
+    await setUserSubmittedAiAccessToken('');
+
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
     expect(secureStore.accessCode).toBeNull();
   });
 });
@@ -154,6 +181,7 @@ describe('captureAiAccessTokenFromUrl', () => {
     expect(settings.aiImageEnabled).toBe(false);
     expect(secureStore.accessCode).toBe('invitation-code');
     expect(window.location.search).toBe('?other=1');
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 
   it('keeps the invitation parameter and live state when secure persistence fails', async () => {

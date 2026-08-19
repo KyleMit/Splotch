@@ -11,7 +11,7 @@
   import { SECTION_SLIDE } from './sections';
   import { settings, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
-  import { setAiAccessToken } from '$lib/state/aiAccessToken';
+  import { setUserSubmittedAiAccessToken } from '$lib/state/aiAccessToken';
   import {
     verifyCredential,
     type CredentialKind,
@@ -122,7 +122,7 @@
     if (result.kind === 'apiKey') {
       await setAiUserApiKey(value, () => latest.isCurrent(id));
     } else {
-      await setAiAccessToken(result.accessCode || value, () => latest.isCurrent(id));
+      await setUserSubmittedAiAccessToken(result.accessCode || value, () => latest.isCurrent(id));
     }
     return latest.isCurrent(id);
   }
@@ -176,7 +176,7 @@
   }
 
   async function forgetAccessCode() {
-    await setAiAccessToken('');
+    await setUserSubmittedAiAccessToken('');
     keyInput = '';
     resetKeyFeedback();
   }

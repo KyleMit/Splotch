@@ -6,6 +6,7 @@ import { STORAGE_KEYS } from '$lib/storage';
 // module caches the handle and the chosen-flag lives in localStorage, so each
 // test re-imports a fresh module instance via vi.resetModules().
 const store = new Map<string, unknown>();
+const requestPersistentStorage = vi.hoisted(() => vi.fn(async () => false));
 let openDbCalls = 0;
 let getCalls = 0;
 let failIdb = false;
@@ -24,6 +25,11 @@ vi.mock('idb', () => ({
       delete: async (_s: string, k: string) => void store.delete(k),
     };
   },
+}));
+
+vi.mock('$lib/idb', async (importActual) => ({
+  ...(await importActual<typeof import('$lib/idb')>()),
+  requestPersistentStorage,
 }));
 
 type FolderSave = typeof import('./folderSave');
@@ -67,6 +73,7 @@ beforeEach(async () => {
   getCalls = 0;
   failIdb = false;
   pendingGet = null;
+  requestPersistentStorage.mockReset().mockResolvedValue(false);
   vi.resetModules();
   folderSave = await import('./folderSave');
 });
@@ -100,6 +107,7 @@ describe('chooseSaveFolder', () => {
     expect(handle.requestPermission).toHaveBeenCalledOnce();
     expect(store.get('saveDir')).toBe(handle);
     expect(await folderSave.getSaveFolderName()).toBe('Splotch Art');
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
   });
 
   it('does not remember the folder when permission is denied', async () => {
@@ -108,6 +116,7 @@ describe('chooseSaveFolder', () => {
 
     expect(await folderSave.chooseSaveFolder()).toBeNull();
     expect(await folderSave.getSaveFolderName()).toBeNull();
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 
   it('returns null when the parent cancels the picker', async () => {
@@ -146,6 +155,7 @@ describe('chooseSaveFolder', () => {
     expect(await folderSave.getSaveFolderName()).toBe('Splotch Art');
     expect(await folderSave.saveBlobToFolder(blob, 'a.png', { allowPrompt: false })).toBe(true);
     expect(writable.write).toHaveBeenCalledWith(blob);
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 });
 

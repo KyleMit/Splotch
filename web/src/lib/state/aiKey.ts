@@ -23,9 +23,13 @@ const aiKeyWriteCoordinator = createSecureCredentialCoordinator(
   persistAiUserApiKey
 );
 
-export function setAiUserApiKey(value: string, ownsRequest?: () => boolean) {
-  if (value) void requestPersistentStorage();
-  return aiKeyWriteCoordinator.setCredential(value, ownsRequest);
+export async function setAiUserApiKey(value: string, ownsRequest?: () => boolean) {
+  const persisted = await aiKeyWriteCoordinator.setCredential(value, ownsRequest);
+  // Best-effort, and only after a successful explicit save: requesting during
+  // boot hydration makes Firefox prompt parents who have not touched the feature
+  // (ADR-0128).
+  if (persisted && value) void requestPersistentStorage();
+  return persisted;
 }
 
 // Pull the saved API key out of secure storage into the live store on boot.
