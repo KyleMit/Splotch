@@ -1,10 +1,12 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildMetadata } from '../../../web/buildVersion.ts';
+import { serializeCspDirectives, WEB_CSP_DIRECTIVES } from '../../../web/securityPolicy.ts';
 import { missingStaticSecurityHeaders } from '../check-deployed-contract.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -38,6 +40,27 @@ const securityHeaders = Object.fromEntries(
     (match[2] ?? match[3] ?? match[4]).replace(/\\\s*/g, ' ').replace(/\s+/g, ' ').trim(),
   ])
 );
+const inlineBootScript = 'globalThis.__deploySmokeBoot = true;';
+const inlineBootHash = `sha256-${createHash('sha256').update(inlineBootScript).digest('base64')}`;
+const prerenderedCsp = serializeCspDirectives({
+  ...Object.fromEntries(
+    Object.entries(WEB_CSP_DIRECTIVES).filter(
+      ([directive]) => directive !== 'frame-ancestors' && directive !== 'report-uri'
+    )
+  ),
+  'script-src': [...WEB_CSP_DIRECTIVES['script-src'], inlineBootHash],
+});
+const ssrCsp = serializeCspDirectives({
+  ...WEB_CSP_DIRECTIVES,
+  'script-src': [...WEB_CSP_DIRECTIVES['script-src'], 'nonce-dGVzdC1ub25jZQ=='],
+});
+
+function prerenderedHtml(asset = '', omitMeta = false) {
+  const meta = omitMeta
+    ? ''
+    : `<meta http-equiv="content-security-policy" content="${prerenderedCsp}">`;
+  return `<html><head>${meta}</head><body>${asset}<script>${inlineBootScript}</script></body></html>`;
+}
 
 afterEach(async () => {
   await Promise.all(
@@ -58,10 +81,12 @@ function sendJson(response, status, body, headers = {}) {
 }
 
 async function startDeploy({
+  adminCsp = ssrCsp,
   failPath,
   functionSecurityHeader,
   hsts = netlifyEdgeSecurityHeaders['Strict-Transport-Security'],
   omitHomeAsset = false,
+  omitPrerenderedMeta = false,
   omitSecurityHeader,
   version = expectedVersion,
 } = {}) {
@@ -80,14 +105,24 @@ async function startDeploy({
         .map(([name, value]) => [name, name === 'Strict-Transport-Security' ? hsts : value])
     );
 
-    if (url.pathname === '/' || url.pathname === '/privacy' || url.pathname === '/admin') {
+    if (url.pathname === '/' || url.pathname === '/privacy') {
       const asset =
         url.pathname === '/' && !omitHomeAsset
           ? '<script src="/_app/immutable/start-abc.js"></script>'
           : '';
-      send(response, 200, `<html><body>${asset}</body></html>`, {
+      send(response, 200, prerenderedHtml(asset, omitPrerenderedMeta), {
         'Content-Type': 'text/html',
         ...routeSecurityHeaders,
+      });
+      return;
+    }
+    if (url.pathname === '/admin') {
+      send(response, 200, '<html><body>Admin</body></html>', {
+        'Content-Type': 'text/html',
+        ...routeSecurityHeaders,
+        ...(omitSecurityHeader === 'Content-Security-Policy'
+          ? {}
+          : { 'Content-Security-Policy': adminCsp }),
       });
       return;
     }
@@ -290,8 +325,25 @@ describe('hosted deploy contract smoke', () => {
 
     expect(result.code).toBe(1);
     expect(result.stderr).toContain(
-      'searched 26 response bytes for /_app/immutable/*.{css,js,woff2}'
+      `searched ${prerenderedHtml().length} response bytes for /_app/immutable/*.{css,js,woff2}`
     );
+  });
+
+  it('rejects a prerendered document without its hash-bearing CSP meta policy', async () => {
+    const result = await runSmoke(await startDeploy({ omitPrerenderedMeta: true }));
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('CSP meta tag count=0');
+  });
+
+  it('rejects an SSR script policy that falls back to unsafe-inline', async () => {
+    const result = await runSmoke(
+      await startDeploy({ adminCsp: "script-src 'self' 'unsafe-inline'" })
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain('script-src contains unsafe-inline');
+    expect(result.stderr).toContain('script-src missing an SSR nonce');
   });
 
   it('continues through the admin persistence round-trip after a transport failure', async () => {

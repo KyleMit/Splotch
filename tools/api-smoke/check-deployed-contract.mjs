@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { parseArgs } from 'node:util';
 import { buildMetadata } from '../../web/buildVersion.ts';
+import { WEB_CSP_DIRECTIVES } from '../../web/securityPolicy.ts';
 import { SECURITY_HEADERS } from '../../web/src/lib/server/securityHeaders.ts';
 import { isMain } from '../lib/proc.mjs';
 import { check, fatal, json, summarize } from '../lib/smoke.mjs';
@@ -21,6 +22,7 @@ const CAPACITOR_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const VERSION_CACHE_CONTROL = ['no-cache', 'no-store', 'must-revalidate'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
 const HSTS_HEADER = 'Strict-Transport-Security';
+const CSP_HEADER = 'Content-Security-Policy';
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 const NETLIFY_HOST_SUFFIX = '.netlify.app';
 const MINIMUM_HSTS_MAX_AGE_SECONDS = 31_536_000;
@@ -28,6 +30,10 @@ const NETLIFY_EDGE_SECURITY_HEADERS = new Set([HSTS_HEADER, 'X-Content-Type-Opti
 const EXACT_STATIC_SECURITY_HEADERS = Object.fromEntries(
   Object.entries(SECURITY_HEADERS).filter(([name]) => name !== HSTS_HEADER)
 );
+const EXACT_SSR_SECURITY_HEADERS = Object.fromEntries(
+  Object.entries(SECURITY_HEADERS).filter(([name]) => name !== HSTS_HEADER && name !== CSP_HEADER)
+);
+const META_UNSUPPORTED_CSP_DIRECTIVES = new Set(['frame-ancestors', 'report-uri']);
 const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
@@ -51,23 +57,108 @@ function hasCacheDirectives(response, expected) {
   return expected.every((value) => actual.has(value));
 }
 
-/** Exported so tests can exercise hostname-specific edge behavior without DNS interception. */
-export function missingStaticSecurityHeaders(response, hostname) {
+function hstsProblems(response, hostname) {
   const platformManagesHsts =
     hostname.endsWith(NETLIFY_HOST_SUFFIX) || LOOPBACK_HOSTS.has(hostname);
-  if (!platformManagesHsts) return missingHeaders(response, SECURITY_HEADERS);
-
-  const missing = missingHeaders(response, EXACT_STATIC_SECURITY_HEADERS);
+  if (!platformManagesHsts) {
+    return missingHeaders(response, { [HSTS_HEADER]: SECURITY_HEADERS[HSTS_HEADER] });
+  }
   const hsts = response.headers.get(HSTS_HEADER) ?? '';
   const maxAge = Number(hsts.match(/(?:^|;)\s*max-age=(\d+)(?:;|$)/i)?.[1]);
   const directives = new Set(hsts.split(';').map((value) => value.trim().toLowerCase()));
-  if (
-    !Number.isFinite(maxAge) ||
-    maxAge < MINIMUM_HSTS_MAX_AGE_SECONDS ||
-    !directives.has('includesubdomains')
-  ) {
-    missing.push(`${HSTS_HEADER}=${JSON.stringify(hsts || null)}`);
+  return Number.isFinite(maxAge) &&
+    maxAge >= MINIMUM_HSTS_MAX_AGE_SECONDS &&
+    directives.has('includesubdomains')
+    ? []
+    : [`${HSTS_HEADER}=${JSON.stringify(hsts || null)}`];
+}
+
+/** Exported so tests can exercise hostname-specific edge behavior without DNS interception. */
+export function missingStaticSecurityHeaders(response, hostname) {
+  const missing = missingHeaders(response, EXACT_STATIC_SECURITY_HEADERS);
+  missing.push(...hstsProblems(response, hostname));
+  return missing;
+}
+
+function normalizedCsp(policy) {
+  return new Map(
+    policy
+      .split(';')
+      .map((part) => part.trim().split(/\s+/))
+      .filter(([directive]) => directive)
+      .map(([directive, ...sources]) => [
+        directive,
+        new Set(sources.map((source) => source.replace(/^'(.*)'$/, '$1'))),
+      ])
+  );
+}
+
+function cspProblems(policy, { html, prerendered }) {
+  if (!policy) return ['Content-Security-Policy=null'];
+  const directives = normalizedCsp(policy);
+  const problems = [];
+  const expectedDirectives = new Set(Object.keys(WEB_CSP_DIRECTIVES));
+  for (const directive of directives.keys()) {
+    if (!expectedDirectives.has(directive)) problems.push(`${directive}=unexpected`);
   }
+  for (const [directive, expectedSources] of Object.entries(WEB_CSP_DIRECTIVES)) {
+    if (prerendered && META_UNSUPPORTED_CSP_DIRECTIVES.has(directive)) {
+      if (directives.has(directive)) problems.push(`${directive} must be response-header-only`);
+      continue;
+    }
+    const actualSources = directives.get(directive);
+    if (!actualSources) {
+      problems.push(`${directive}=missing`);
+      continue;
+    }
+    for (const source of expectedSources) {
+      if (!actualSources.has(source)) problems.push(`${directive} missing ${source}`);
+    }
+    if (directive !== 'script-src') {
+      for (const source of actualSources) {
+        if (!expectedSources.includes(source)) problems.push(`${directive} unexpected ${source}`);
+      }
+    }
+  }
+
+  const scriptSources = directives.get('script-src') ?? new Set();
+  if (scriptSources.has('unsafe-inline')) problems.push('script-src contains unsafe-inline');
+  const expectedScriptSources = new Set(WEB_CSP_DIRECTIVES['script-src']);
+  const generatedSources = [...scriptSources].filter(
+    (source) => !expectedScriptSources.has(source)
+  );
+  if (prerendered) {
+    if (generatedSources.some((source) => !/^sha256-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
+      problems.push('script-src has a non-hash generated source');
+    }
+    for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
+      if (!match[1]) continue;
+      const hash = `sha256-${createHash('sha256').update(match[1]).digest('base64')}`;
+      if (!scriptSources.has(hash)) problems.push(`script-src missing inline ${hash}`);
+    }
+  } else {
+    if (!generatedSources.some((source) => /^nonce-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
+      problems.push('script-src missing an SSR nonce');
+    }
+    if (generatedSources.some((source) => !/^nonce-[A-Za-z0-9+/]+={0,2}$/.test(source))) {
+      problems.push('script-src has a non-nonce generated source');
+    }
+  }
+  return problems;
+}
+
+function metaCspPolicies(html) {
+  return [
+    ...html.matchAll(/<meta\s+http-equiv="content-security-policy"\s+content="([^"]*)"[^>]*>/gi),
+  ].map((match) => match[1]);
+}
+
+/** Exported so the deploy-smoke fixture can pin the SSR-specific policy shape. */
+export function missingSsrSecurityHeaders(response, hostname, html) {
+  const missing = missingHeaders(response, EXACT_SSR_SECURITY_HEADERS);
+  missing.push(...hstsProblems(response, hostname));
+  missing.push(...cspProblems(response.headers.get(CSP_HEADER), { html, prerendered: false }));
+  if (metaCspPolicies(html).length !== 0) missing.push('SSR HTML contains a CSP meta tag');
   return missing;
 }
 
@@ -76,7 +167,18 @@ async function checkStaticRoutes(hostname) {
   for (const path of ['/', '/privacy', '/admin']) {
     const response = await fetch(`${BASE}${path}`);
     const body = await response.text();
-    const missingSecurity = missingStaticSecurityHeaders(response, hostname);
+    const prerendered = path !== '/admin';
+    const missingSecurity = prerendered
+      ? missingStaticSecurityHeaders(response, hostname)
+      : missingSsrSecurityHeaders(response, hostname, body);
+    if (prerendered) {
+      const policies = metaCspPolicies(body);
+      if (policies.length !== 1) {
+        missingSecurity.push(`CSP meta tag count=${policies.length}`);
+      } else {
+        missingSecurity.push(...cspProblems(policies[0], { html: body, prerendered: true }));
+      }
+    }
     check(
       `GET ${path} → deployed HTML with security headers`,
       response.status === 200 &&
