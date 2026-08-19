@@ -56,6 +56,11 @@ that entry point and everything it loads — `lib/admin-client.mjs`, `tools/lib/
 `tools/lib/smoke.mjs` — must stay dependency-free. Adding an npm dependency to any of those modules
 breaks the deploy gate at runtime rather than in CI's unit job.
 
+Automatic workflow runs target `https://splotch.art`; the repository-wide `deployment_status` event
+belongs to the static GitHub Pages scrapbook and is only a cadence signal. Manual dispatch preserves
+its supplied URL so an intended Netlify preview can be checked. Keep target selection in the
+workflow rather than teaching this deploy-agnostic CLI about repository providers.
+
 Run focused verification with:
 
 ```sh

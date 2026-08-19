@@ -137,6 +137,19 @@ can surface the same warning after every successful snapshot.
   code added from a preview's `/admin` lands in the real `access-tokens` store. Useful for
   verification, but remember to clean up test entries.
 
+## Amendment (2026-08-19): Deploy-smoke target selection
+
+GitHub's `deployment_status` event is repository-wide, not Netlify-specific. The repository's GitHub
+deployment records come from the static scrapbook's Pages workflow, whose `environment_url` is
+`https://KyleMit.github.io/Splotch/` and cannot host `/api/*`; POSTing the admin login there
+returns 405. Netlify does not publish GitHub deployment records for this site.
+
+The automated Blobs smoke therefore treats a successful repository deployment status only as a
+cadence signal and always probes `https://splotch.art`. A daily schedule keeps the canary active
+between Pages publishes. Manual dispatch continues to preserve its supplied URL for an intended
+Netlify preview. Target selection does not change the smoke contract: every run still requires the
+matching admin secret, asserts `persistent: true`, and completes the write/read/delete round-trip.
+
 ## Amendment (2026-08-19): Minimized, expiring usage records
 
 The original tally used the raw access code as its blob key and retained the latest fully resolved

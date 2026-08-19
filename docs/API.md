@@ -515,7 +515,10 @@ ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
 It logs in, asserts the snapshot's `persistent` is `true` (false ⇒ Blobs is dead on that deploy),
 round-trips a unique token through Blobs, and cleans it up. Run it against a PR's deploy preview
 before merging an adapter/Netlify-config change, and against `https://splotch.art` to confirm
-production.
+production. The automated workflow always targets production: GitHub's repository-wide
+`deployment_status` event is emitted by the static scrapbook's GitHub Pages deployment, so its
+`environment_url` cannot host `/api/*`. A manual workflow dispatch preserves its supplied URL for an
+intended Netlify preview.
 
 ## Local development
 

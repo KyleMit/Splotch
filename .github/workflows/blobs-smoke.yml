@@ -4,9 +4,11 @@
 # fallback. tools/api-smoke/check-deployed-blobs.mjs round-trips a token through the live deploy
 # and asserts the snapshot's `persistent` flag is true.
 #
-# Runs automatically on every successful Netlify deploy (preview catches a
-# regression before merge; production guards the live site), and can be run
-# manually against any URL from the Actions tab.
+# GitHub's deployment_status event is repository-wide. The scrapbook's GitHub
+# Pages publisher is the repository's deployment source, so its environment URL
+# cannot serve /api/*. Automatic runs use it only as a cadence signal and probe
+# production; the daily schedule keeps the canary active between Pages deploys.
+# workflow_dispatch can target any intended Netlify preview or production URL.
 #
 # Requires a repo secret ADMIN_ACCESS_TOKEN matching the deploy's admin secret;
 # it only travels in the login POST body over https. The token add/remove is
@@ -15,6 +17,8 @@ name: Blobs Smoke
 
 on:
   deployment_status:
+  schedule:
+    - cron: '23 9 * * *'
   workflow_dispatch:
     inputs:
       url:
@@ -26,14 +30,14 @@ permissions:
 
 # Serialize smokes against the same deploy instead of cancelling, so an in-flight round-trip can clean up.
 concurrency:
-  group: blobs-smoke-${{ github.event.inputs.url || github.event.deployment_status.environment_url }}
+  group: blobs-smoke-${{ github.event.inputs.url || 'https://splotch.art' }}
   cancel-in-progress: false
 
 jobs:
   smoke:
     name: Netlify Blobs persistence
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       (github.event.deployment_status.state == 'success' &&
        github.event.deployment_status.environment_url != '')
     runs-on: ubuntu-latest
@@ -50,6 +54,6 @@ jobs:
       # builtins, so installing the full dependency tree here would be waste.
       - name: Round-trip a token through Blobs on the live deploy
         env:
-          BLOBS_SMOKE_URL: ${{ github.event.inputs.url || github.event.deployment_status.environment_url }}
+          BLOBS_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}
           ADMIN_ACCESS_TOKEN: ${{ secrets.ADMIN_ACCESS_TOKEN }}
         run: node tools/api-smoke/check-deployed-blobs.mjs

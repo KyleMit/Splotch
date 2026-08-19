@@ -221,6 +221,17 @@ describe('workflow hygiene', () => {
       expect(blobsSmoke.lines).toContain("          install: 'false'");
     });
 
+    it('never sends an automatic Blobs smoke to another deployment provider', () => {
+      const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
+
+      expect(blobsSmoke.lines).toContain(
+        "          BLOBS_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}"
+      );
+      expect(blobsSmoke.lines.join('\n')).not.toContain(
+        'github.event.deployment_status.environment_url }}'
+      );
+    });
+
     it('the Netlify build pins the engines floor major', () => {
       const netlifyToml = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
       expect(netlifyToml.match(/^\s*NODE_VERSION = "(\d+)"$/m)?.[1]).toBe(floorMajor);
