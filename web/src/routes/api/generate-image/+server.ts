@@ -33,6 +33,7 @@ import {
   startBackgroundGeneration,
   synchronousDeadlineMs,
 } from '$lib/server/generationStart';
+import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
 import {
   completeFreeGeneration,
   failFreeGeneration,
@@ -45,8 +46,6 @@ import type { RequestHandler } from './$types';
 // child should try a *different* drawing, not retry the same one. We surface it
 // as a distinct 422 (vs 502 for genuine upstream failures) so the client can
 // show the right guidance. See ADR-0023.
-const SAFETY_STATUS = 422;
-
 function reportTokenBinding(authorization: GenerationAuthorization): ReportTokenBinding {
   switch (authorization.kind) {
     case 'byok':
@@ -65,7 +64,7 @@ function safetyRefusal(reason: string, authorization: GenerationAuthorization): 
     refusalReason: reason,
   });
   if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-  return fail(SAFETY_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
+  return fail(SAFETY_REFUSAL_STATUS, `Drawing was blocked for safety: ${reason}`, headers);
 }
 
 function assertAllowedImageType(mimeType: string): void {
@@ -164,7 +163,7 @@ function recordGenerationUsage(
 
 function freeFailureKind(cause: unknown): FreeGenerationFailureKind {
   if (!isHttpError(cause)) return 'upstream';
-  if (cause.status === SAFETY_STATUS) return 'safety';
+  if (cause.status === SAFETY_REFUSAL_STATUS) return 'safety';
   if (cause.status >= 500) return 'upstream';
   return 'invalid-request';
 }

@@ -13,8 +13,8 @@ export type AiImageResponse =
   | { kind: 'free-unavailable' }
   | { kind: 'error'; status: number; detail: string };
 
-const SAFETY_REFUSAL_STATUS = 422;
-const THROTTLED_STATUS = 429;
+export const SAFETY_REFUSAL_STATUS = 422;
+export const THROTTLED_STATUS = 429;
 const ACCEPTED_STATUS = 202;
 
 async function readStarted(

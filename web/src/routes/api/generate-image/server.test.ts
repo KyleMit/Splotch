@@ -32,6 +32,7 @@ vi.mock('$lib/server/reportToken', () => ({
 }));
 
 import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
+import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
 import { POST } from './+server';
 
 function post() {
@@ -101,7 +102,7 @@ describe('POST /api/generate-image', () => {
 
     const response = await post();
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(SAFETY_REFUSAL_STATUS);
     expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
     await expect(response.json()).resolves.toEqual({
       ok: false,
@@ -133,7 +134,7 @@ describe('POST /api/generate-image', () => {
 
     const response = await post();
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(SAFETY_REFUSAL_STATUS);
     expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
     expect(mocks.issueReportToken).toHaveBeenCalledWith(authorization.binding, {
       kind: 'false-positive-refusal',
