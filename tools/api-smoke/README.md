@@ -14,10 +14,10 @@ storage together. A narrower entry point remains available when only Blobs persi
 | `check-deployed-blobs.mjs`    | `npm run test:blobs:smoke`  | Validate only Blobs persistence on a real deployment |
 
 `lib/admin-client.mjs` owns the shared `/api/admin` request plumbing.
-`lib/deployed-admin-target.mjs` classifies the canonical production origin as read-only, and
-`lib/deployed-admin-contract.mjs` owns the persistent-token assertion plus the preview-only token
-round-trip used by both deployed entry points. Assertions remain in the contract layers rather than
-in the request client.
+`lib/deployed-admin-target.mjs` allows writes only for Netlify preview hostnames and loopback test
+servers, and `lib/deployed-admin-contract.mjs` owns the persistent-token assertion plus the
+preview-only token round-trip used by both deployed entry points. Assertions remain in the contract
+layers rather than in the request client.
 
 ## Local contract inputs and outputs
 
@@ -93,8 +93,8 @@ contract, and the shared tool modules — must stay dependency-free. Adding an n
 of them breaks the deploy gate at runtime rather than in CI's unit job.
 
 All workflow runs share a single concurrency group because previews and production use the same
-site-wide store. Keep production classification in `lib/deployed-admin-target.mjs`, based on the
-canonical `SITE_ORIGIN`; the workflow only supplies the intended deploy URL.
+site-wide store. Keep production-write classification in `lib/deployed-admin-target.mjs`; the
+workflow's separate URL test controls only version-freshness strictness.
 
 Run focused verification with:
 

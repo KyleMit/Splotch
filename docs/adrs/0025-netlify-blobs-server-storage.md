@@ -165,11 +165,12 @@ described above. Its decisive ADR-0025 signal is the authenticated token snapsho
 Deploy previews retain the full round-trip so adapter and Netlify configuration changes prove that
 writes durably land before merge.
 
-Both deployed smoke entry points classify the canonical `SITE_ORIGIN` as read-only. This makes the
-production guarantee intrinsic to the shared admin contract rather than dependent on cleanup or a
-particular workflow trigger. `tools/tests/workflow-hygiene.test.mjs` binds the workflow's automatic
-target to that classification, while the hosted-contract tests pin both the persistence failure and
-the preview write path.
+Both deployed smoke entry points fail closed: only HTTPS Netlify preview/branch hostnames and
+loopback test servers take the write path; production aliases and every unrecognized remote target
+remain read-only. This makes the production guarantee intrinsic to the shared admin contract rather
+than dependent on cleanup or a particular workflow trigger. `tools/tests/workflow-hygiene.test.mjs`
+binds the workflow's automatic target to that classification and pins the allowlist, while the
+hosted-contract tests cover both the persistence failure and the preview write path.
 
 ## Amendment (2026-08-19): Minimized, expiring usage records
 

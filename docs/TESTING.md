@@ -84,9 +84,9 @@ Three Node smoke entry points guard the server contract:
 * **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
   SSR-rendered `/admin`, security and cache headers, the checked-out commit's exact `version.json`,
   both native-origin CORS preflights, safe unauthenticated API failures, and the admin persistence
-  contract. Production uses only the read-only `persistent:true` assertion; previews add the token
-  write/read/delete round-trip. It never makes a model call. Run it from the ref that produced the
-  target deploy:
+  contract. Production and unrecognized targets use only the read-only `persistent:true` assertion;
+  Netlify previews add the token write/read/delete round-trip. It never makes a model call. Run it
+  from the ref that produced the target deploy:
   ```bash
   DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
@@ -104,10 +104,10 @@ Three Node smoke entry points guard the server contract:
   BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
   ```
-  It asserts `persistent:true`. On a preview it also round-trips a unique token through Blobs and
-  cleans up; on `https://splotch.art` it remains read-only. Run it on a PR's deploy preview before
-  merging any adapter/Netlify-config change, and against production to isolate a persistence
-  failure. The full hosted gate includes this same target-sensitive contract.
+  It asserts `persistent:true`. On a Netlify preview it also round-trips a unique token through
+  Blobs and cleans up; production and unrecognized targets remain read-only. Run it on a PR's deploy
+  preview before merging any adapter/Netlify-config change, and against production to isolate a
+  persistence failure. The full hosted gate includes this same target-sensitive contract.
 
 ---
 

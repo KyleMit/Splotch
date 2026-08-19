@@ -4,7 +4,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { once } from 'node:events';
 import { dirname, join, resolve } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildMetadata } from '../../../web/buildVersion.ts';
 import {
   serializeCspDirectives,
@@ -272,6 +272,7 @@ describe('hosted deploy contract smoke', () => {
   it('keeps the canonical production admin contract read-only', async () => {
     const requests = [];
     const originalFetch = globalThis.fetch;
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     globalThis.fetch = async (url, options = {}) => {
       const method = options.method ?? 'GET';
       requests.push({ method, url });
@@ -288,8 +289,12 @@ describe('hosted deploy contract smoke', () => {
 
     try {
       await checkDeployedAdminContract('https://splotch.art', 'test-admin-secret');
+      expect(log).toHaveBeenCalledWith(
+        '  ✓ target persistence check is read-only (no probe write)'
+      );
     } finally {
       globalThis.fetch = originalFetch;
+      log.mockRestore();
     }
 
     expect(requests).toEqual([

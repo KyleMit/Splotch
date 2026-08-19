@@ -40,7 +40,7 @@ export async function checkDeployedAdminContract(base, adminSecret) {
     );
 
     if (!writeProbe) {
-      console.log('[blobs-smoke] production persistence check is read-only');
+      check('target persistence check is read-only (no probe write)', true);
       return;
     }
 

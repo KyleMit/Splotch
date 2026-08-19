@@ -249,7 +249,22 @@ describe('workflow hygiene', () => {
 
       expect(defaultTarget).toBeDefined();
       expect(shouldWriteBlobsProbe(defaultTarget)).toBe(false);
-      expect(shouldWriteBlobsProbe('https://deploy-preview-1104--splotchy.netlify.app')).toBe(true);
+    });
+
+    it.each([
+      ['canonical production', 'https://splotch.art', false],
+      ['production with a path', 'https://splotch.art/admin', false],
+      ['production www alias', 'https://www.splotch.art', false],
+      ['production Netlify alias', 'https://splotchy.netlify.app', false],
+      ['unknown remote host', 'https://example.com', false],
+      ['insecure remote preview', 'http://feature--splotchy.netlify.app', false],
+      ['deploy preview', 'https://deploy-preview-1104--splotchy.netlify.app', true],
+      ['branch preview', 'https://feature--splotchy.netlify.app', true],
+      ['IPv4 loopback fixture', 'http://127.0.0.1:4173', true],
+      ['IPv6 loopback fixture', 'http://[::1]:4173', true],
+      ['localhost fixture', 'http://localhost:4173', true],
+    ])('classifies the %s target for Blobs writes', (_label, target, expected) => {
+      expect(shouldWriteBlobsProbe(target)).toBe(expected);
     });
 
     it('the Netlify build pins the engines floor major', () => {

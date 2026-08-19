@@ -97,7 +97,7 @@
     "test:ios": "node tools/mobile/ios/run-simulator-smoke-test.mjs",
     "test:api:smoke": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/run-local-contract.mjs",
     "test:deploy:smoke": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs",
-    "test:blobs:smoke": "node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-blobs.mjs",
+    "test:blobs:smoke": "node tools/api-smoke/check-deployed-blobs.mjs",
     "test:driver:smoke": "node tools/app-driver/run-driver-smoke-test.mjs",
     "test:sweep:smoke": "node tools/e2e-tuning/run-worker-sweep.mjs --workers=1 --reps=1 --prebuilt --grep=changelog.spec.ts --out=/tmp/sweep-smoke",
     "test:webkit:smoke": "node tools/run-web-tool.mjs playwright test --project webkit",
