@@ -32,12 +32,6 @@ import {
   paintRainbowGradient,
   type RainbowGradient,
 } from './magicSheetGradient';
-
-export {
-  createRainbowGradient,
-  MAGIC_GRADIENT_COUNT,
-  type RainbowGradient,
-} from './magicSheetGradient';
 // Give the line art first use of the connection, then recover independently if
 // its decode never settles and therefore never releases the deferred fill.
 const DEFERRED_FILL_FALLBACK_MS = 15_000;
@@ -127,6 +121,25 @@ function invalidateSheet() {
   patternCache = new WeakMap();
 }
 
+function publishWorkerSheet(
+  bitmap: ImageBitmap,
+  bounds: { x: number; y: number; width: number; height: number },
+  sourceUrl: string | null
+) {
+  sheetCanvas = bitmap;
+  sheetOriginX = bounds.x;
+  sheetOriginY = bounds.y;
+  sheetReady = true;
+  sheetGeometryStale = false;
+  sheetSnapshot = {
+    canvas: sheetCanvas,
+    originX: sheetOriginX,
+    originY: sheetOriginY,
+    sourceUrl,
+  };
+  host?.repaint();
+}
+
 function rasterizeFillOffThread(
   image: HTMLImageElement,
   imageUrl: string,
@@ -169,18 +182,7 @@ function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
         return;
       }
       pendingFillRaster = null;
-      sheetCanvas = bitmap;
-      sheetOriginX = bounds.x;
-      sheetOriginY = bounds.y;
-      sheetReady = true;
-      sheetGeometryStale = false;
-      sheetSnapshot = {
-        canvas: sheetCanvas,
-        originX: sheetOriginX,
-        originY: sheetOriginY,
-        sourceUrl: imageUrl,
-      };
-      host?.repaint();
+      publishWorkerSheet(bitmap, bounds, imageUrl);
     })
     .catch(() => {
       if (pendingFillRaster !== image || fillImage !== image) return;
@@ -209,18 +211,7 @@ function beginGradientRaster(gradient: RainbowGradient) {
         return;
       }
       pendingGradientRaster = null;
-      sheetCanvas = bitmap;
-      sheetOriginX = bounds.x;
-      sheetOriginY = bounds.y;
-      sheetReady = true;
-      sheetGeometryStale = false;
-      sheetSnapshot = {
-        canvas: sheetCanvas,
-        originX: sheetOriginX,
-        originY: sheetOriginY,
-        sourceUrl: null,
-      };
-      host?.repaint();
+      publishWorkerSheet(bitmap, bounds, null);
     })
     .catch(() => {
       if (pendingGradientRaster !== request || activeGradient !== gradient || fillUrl) return;
@@ -241,10 +232,6 @@ export function initMagicBrush(h: MagicBrushHost) {
   host = h;
 }
 
-// Build one random rainbow: a hue sweep across a randomly angled line, with a
-// random span, saturation, and lightness so the ten pooled gradients read as
-// distinct rainbows rather than the same ramp rotated. `rand` is injectable so the
-// pure generation stays unit-testable.
 function buildGradientPool(): RainbowGradient[] {
   return Array.from({ length: MAGIC_GRADIENT_COUNT }, () => createRainbowGradient());
 }
@@ -264,8 +251,6 @@ function activeSource(): SheetSource | null {
   return null;
 }
 
-// Fill the sheet with a gradient whose line spans the whole canvas at spec.angle,
-// so every stroke position on the canvas samples a colour along the rainbow.
 // The picture (fill) is drawn at box (ox,oy,bw,bh) inside a W×H sheet and can leave
 // transparent letterbox margins on any side — top/bottom or left/right where the
 // fill is contain-fit in the paper, AND (under a rotation lock) the other axis where

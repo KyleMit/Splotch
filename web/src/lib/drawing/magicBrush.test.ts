@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createRainbowGradient, MAGIC_GRADIENT_COUNT, edgeMargins } from './magicBrush';
+import { edgeMargins } from './magicBrush';
+import { createRainbowGradient, MAGIC_GRADIENT_COUNT } from './magicSheetGradient';
 
 // A deterministic pseudo-random sequence so gradient generation is reproducible
 // in the test (the module defaults to Math.random in the app).
