@@ -10,8 +10,9 @@ import { describe, expect, it } from 'vitest';
 // all five of these bases at a deleted tree and every gate stayed green.
 //
 // These assertions are cheap because they check the committed half only: the
-// encrypted fixtures and the tracked gen__* inputs. The plaintext and output
-// trees are gitignored by design (ADR-0023) and must not be asserted here.
+// encrypted fixtures and the tracked corpus sources under samples/. The
+// plaintext, generated-input, and output trees are gitignored by design
+// (ADR-0023 for redteam) and must not be asserted here.
 const repoRoot = join(import.meta.dirname, '..', '..');
 
 /**
@@ -56,24 +57,34 @@ describe('model-eval corpus', () => {
     ['tools/model-eval/run-model-evaluation.mjs', 'BASE'],
     ['tools/model-eval/gen-model-fixtures.mjs', 'OUT'],
     ['tools/model-eval/gen-model-inputs.mjs', 'OUT'],
+    ['tools/model-eval/gen-crayon-inputs.mjs', 'OUT'],
   ].map(([file, name]) => ({ file, base: declaredBase(file, name) }));
+  const samples = declaredBase('tools/model-eval/gen-model-fixtures.mjs', 'SAMPLES');
 
-  it.each(bases)('$file points at a directory that exists', ({ base }) => {
-    expect(existsSync(join(repoRoot, base))).toBe(true);
+  // inputs/ is generated in full and gitignored, so it is absent from a fresh
+  // clone and cannot be asserted to exist. What must exist is the harness root
+  // and the committed sources it is rebuilt from; the agreement assertion below
+  // is what catches an inputs/ path that drifts from the runner's.
+  it('has the harness root and the committed sources on disk', () => {
+    expect(existsSync(join(repoRoot, bases[0].base))).toBe(true);
+    expect(existsSync(join(repoRoot, samples))).toBe(true);
   });
 
-  it('has the two generators writing where the runner reads', () => {
+  it('has every generator writing where the runner reads', () => {
     const [runner, ...generators] = bases;
     for (const { file, base } of generators) {
       expect(base, `${file} writes outside the runner's corpus`).toBe(`${runner.base}/inputs`);
     }
   });
 
-  // Both authored prefixes are tracked because neither is reproducible: a rerun
-  // of the generator draws different art. The deterministic fixtures under the
-  // other prefixes are gitignored and rebuilt on demand.
-  it.each(['gen__', 'line__'])('finds the tracked %s inputs under that base', (prefix) => {
-    const inputs = join(repoRoot, bases[1].base);
-    expect(readdirSync(inputs).filter((name) => name.startsWith(prefix)).length).toBeGreaterThan(0);
-  });
+  // Every authored category is tracked because none of it is reproducible: a
+  // rerun of the generator draws different art, and the crayon captures need the
+  // app. The deterministic fixtures are gitignored and rebuilt on demand.
+  it.each(['gen__', 'line__', 'scribble__', 'mess__', 'crayon__'])(
+    'finds the tracked %s sources under samples/',
+    (prefix) => {
+      const tracked = readdirSync(join(repoRoot, samples));
+      expect(tracked.filter((name) => name.startsWith(prefix)).length).toBeGreaterThan(0);
+    }
+  );
 });

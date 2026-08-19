@@ -33,7 +33,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   ROOT,
-  VARIANTS,
+  PRODUCTION_VARIANT,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
   assertProductionConfig,
@@ -77,12 +77,14 @@ const CALL_TIMEOUT_MS = 300_000;
 const REPORT_THUMB_LONG_SIDE_PX = 512;
 const REPORT_THUMB_JPEG_QUALITY = 82;
 
-// The default arm model is the cheapest candidate tier — it is the one that
-// drifts, and the one production picked (web/src/lib/server/ai/openai.ts). A
-// lab may override `variant` to pit another model+knob combo against the same
-// prompts; gpt-image-1.5 is the newest OpenAI model that still accepts
-// input_fidelity (gpt-image-2 rejects the parameter with a 400).
-const DEFAULT_VARIANT = VARIANTS.find((v) => v.key === 'gpt-image-2-low');
+// The default arm is whatever production renders with, resolved from the
+// IMAGE_MODEL/IMAGE_QUALITY pair the drift check pins to
+// web/src/lib/server/ai/openai.ts — a prompt round measured against a model the
+// app does not ship is worse than no measurement. A lab may override `variant`
+// to pit another model+knob combo against the same prompts; gpt-image-1.5 is the
+// newest OpenAI model that still accepts input_fidelity (gpt-image-2 rejects the
+// parameter with a 400).
+const DEFAULT_VARIANT = PRODUCTION_VARIANT;
 const GPT_IMAGE_1_5_LOW = {
   key: 'gpt-image-1-5-low',
   label: 'gpt-image-1.5 · low',
@@ -130,6 +132,40 @@ function darkScenePrompt() {
   return buildPromptForStyle(null, {}, 'dark').slice(DEFAULT_PROMPT.length).trim();
 }
 
+// Candidate arms for restoring imagination on top of the anchoring win. The
+// shipped overlay wording keeps placement but also reads as license to trace,
+// so a stick figure comes back a stick figure. Both arms keep the placement
+// rules and add an explicit instruction to render what each shape MEANS as a
+// fully realized subject; `realized-magic` also licenses proportion changes
+// and a slight nudge in position.
+const REALIZED_PROMPT =
+  "Paint over this child's drawing so the finished picture keeps the child's composition: every shape the child drew stays about where they drew it and about the size they drew it, and nothing is pulled to the center, blown up to fill the frame, zoomed into, or cropped. Within that layout, bring the drawing all the way to life. Read what the child meant each shape to be and paint that thing for real, the way a finished storybook illustration would: a stick figure becomes a whole character with a body, clothes, hair, and an expression; a circle ringed with lines becomes a real sun; a box on wheels becomes a real vehicle. Give each subject proper form, volume, texture, and small charming details, keeping its place, its scale, its pose, and the colors the child chose - you may reshape its proportions and nudge it a little when that is what it takes to make it a believable, fully realized subject rather than a traced outline. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Fill the open background with the atmosphere and setting the drawing suggests - sky, light, water, ground, soft distant scenery - in even washes, but never with new characters or objects that would compete with what the child drew.";
+
+const REALIZED_MAGIC_PROMPT =
+  "Turn this child's drawing into a magical, fully realized illustration painted over the top of it, so the finished picture still reads as the child's own picture: each thing they drew stays about where they put it and about the size they made it - no pulling things to the center, no blowing the subject up to fill the frame, no zooming or cropping - and things they drew apart stay apart. Everything else is yours to realize. Read what each shape is meant to be and paint it as that thing for real, with proper form, volume, texture, warm light, and charming detail: a stick figure becomes a whole character with a body, clothes, hair, and an expression; a lumpy oval becomes a real animal with fur and eyes; a wobbly box becomes a real house with a roof and windows. Keep the child's colors and each subject's pose and gesture, but you have license to refine its proportions, give it depth, and nudge it slightly so it stands convincingly in the scene. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Every part of the scene, including broad areas like the sky and ground, should read as a solid filled shape rather than visible individual strokes. Give the picture a real place to happen in: fill the open background with the setting the drawing implies - sky, weather, light, water, ground, soft distant scenery - and let a little wonder in through light, color, and atmosphere rather than through new characters or props the child did not draw.";
+
+// Round-two candidates, from review of the round-one arms: realizing a stick
+// figure into a rendered child is too big a shift (a stick figure is allowed
+// to stay sticky), the realized arms read as 3D rather than drawn, and the
+// thing actually worth enriching is the world around the marks rather than
+// the marks themselves. Both keep the child's strokes, finish closed shapes,
+// pin the medium to hand-drawn, and license invention on abstract squiggles;
+// `drawn-world-rich` spends far more of that license on the setting.
+const DRAWN_WORLD_PROMPT =
+  "Paint over this child's drawing to bring it to life without taking it over. Keep the marks the child made as the marks the child made: their lines stay their lines, in the same place, at the same size, with the same wobble and the same color. Do not redraw a drawn figure as a realistic person - if the child drew a stick figure, it stays a stick figure, only warmer and better coloured. Where the child closed a shape, though - a house, a boat, an animal's body, a sun, a balloon - finish it as the real thing it is: fill it in and give it the surfaces and small details that thing would really have, such as walls, a roof, windows, petals, fur, or fabric, all kept inside the outline they drew. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Then bring the world around the drawing to life, because bare paper is the one thing the finished picture should never be: fill the empty space with the setting the drawing implies - sky, weather, light, water, ground, grass, a few flowers or drifting clouds - so the marks sit in a real place, and never add a character or object that would compete with what the child drew. If the child's marks do not depict anything in particular - loose squiggles, a few stray lines - play the game of making those exact lines add up to something: leave every line exactly where it is and invent the playful, magical picture that makes them all make sense together. Render everything as a hand-drawn children's book illustration on paper - crayon, colored pencil, gouache, or soft watercolor, with flat colour and a little paper grain. Never a 3D render: no glossy plastic surfaces, no inflated balloon shapes, no airbrushed CGI shine.";
+
+const DRAWN_WORLD_RICH_PROMPT =
+  "Paint over this child's drawing to bring it to life without taking it over. Keep the marks the child made as the marks the child made: their lines stay their lines, in the same place, at the same size, with the same wobble and the same color. Do not redraw a drawn figure as a realistic person - if the child drew a stick figure, it stays a stick figure, only warmer and better coloured. Where the child closed a shape, though - a house, a boat, an animal's body, a sun, a balloon - finish it as the real thing it is: fill it in and give it the surfaces and small details that thing would really have, such as walls, a roof, windows, petals, fur, or fabric, all kept inside the outline they drew. Treat the child's coloring as intent rather than texture: wherever they scribbled back and forth to fill a shape, render that whole region as one flat, even area of that solid color, the way a clean finished illustration would. Everything the child left empty is yours to fill, and filling it generously is the point: build the drawing a whole storybook world to sit in - sky and weather, distant hills, water, a grassy field with flowers, blossom, butterflies, birds far off, warm light coming from somewhere - so the page feels like a place rather than a sheet of paper. Keep that world behind and around the child's marks: it may be as rich as you like, but nothing you add may sit on top of what they drew, compete with it for attention, or become a second main character. If the child's marks do not depict anything in particular - loose squiggles, a few stray lines - play the game of making those exact lines add up to something: leave every line exactly where it is and invent the playful, magical picture that makes them all make sense together. Render everything as a hand-drawn children's book illustration on paper - crayon, colored pencil, gouache, or soft watercolor, with flat colour and a little paper grain. Never a 3D render: no glossy plastic surfaces, no inflated balloon shapes, no airbrushed CGI shine.";
+
+// The fill half of the round-two review: the keep-the-strokes rule was
+// written for line work and over-applied to scribble fill, so a sea the
+// child scribbled in came back as a painted sea with their squiggles redrawn
+// on top of it. This arm splits the two kinds of mark explicitly - a line
+// stays a line, a scribbled-in area becomes the thing it depicts - and drops
+// the flat-fill sentence it replaces.
+const DRAWN_WORLD_FILL_PROMPT =
+  "Paint over this child's drawing to bring it to life without taking it over. The child made two kinds of marks, and they are owed different things. A line they drew to describe something - an outline, a figure, a wave, a stem, a ray of sun - stays exactly as they drew it: same place, same size, same wobble, same colour. But where they scribbled back and forth to colour an area in, the area is the thing and the strokes were only how they got there: render that whole region as the one thing it depicts - the sea, the sky, the grass, the roof - filled edge to edge in that colour, and let their individual passes disappear into it. Do not paint that area underneath and then redraw their scribble on top of it; the scribble becomes the sea. Do not redraw a drawn figure as a realistic person - if the child drew a stick figure, it stays a stick figure, only warmer and better coloured. Where the child closed a shape, though - a house, a boat, an animal's body, a sun, a balloon - finish it as the real thing it is: fill it in and give it the surfaces and small details that thing would really have, such as walls, a roof, windows, petals, fur, or fabric, all kept inside the outline they drew. Then bring the world around the drawing to life, because bare paper is the one thing the finished picture should never be: fill the empty space with the setting the drawing implies - sky, weather, light, water, ground, grass, a few flowers or drifting clouds - so the marks sit in a real place, and never add a character or object that would compete with what the child drew. If the child's marks do not depict anything in particular - loose squiggles, a few stray lines - play the game of making those exact lines add up to something: leave every line exactly where it is and invent the playful, magical picture that makes them all make sense together. Render everything as a hand-drawn children's book illustration on paper - crayon, colored pencil, gouache, or soft watercolor, with flat colour and a little paper grain. Never a 3D render: no glossy plastic surfaces, no inflated balloon shapes, no airbrushed CGI shine.";
+
 const LABS = [
   { key: 'baseline', label: 'production prompt', prompt: DEFAULT_PROMPT, imageToolOverrides: {} },
   {
@@ -162,6 +198,36 @@ const LABS = [
     prompt: DEFAULT_PROMPT,
     imageToolOverrides: { input_fidelity: 'high' },
     variant: GPT_IMAGE_1_5_LOW,
+  },
+  {
+    key: 'realized',
+    label: 'anchored placement + fully-realized subjects',
+    prompt: REALIZED_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'realized-magic',
+    label: 'fully-realized subjects + reshape/nudge license',
+    prompt: REALIZED_MAGIC_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'drawn-world',
+    label: 'keep the strokes, finish shapes, wake the world',
+    prompt: DRAWN_WORLD_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'drawn-world-rich',
+    label: 'same, with a full storybook setting',
+    prompt: DRAWN_WORLD_RICH_PROMPT,
+    imageToolOverrides: {},
+  },
+  {
+    key: 'drawn-world-fill',
+    label: 'drawn-world, with scribbled-in areas rendered as areas',
+    prompt: DRAWN_WORLD_FILL_PROMPT,
+    imageToolOverrides: {},
   },
   {
     key: 'night',
@@ -236,6 +302,9 @@ function elementRows(elements) {
       const swatch = `<span style="display:inline-block;width:0.7em;height:0.7em;border-radius:2px;background:${esc(el.hex)};margin-right:0.3em"></span>`;
       if (!el.found) {
         return `<div>${swatch}${esc(el.label)}: <em>${el.backgroundLike ? 'became background' : 'not found'}</em></div>`;
+      }
+      if (el.kind === 'fill') {
+        return `<div>${swatch}${esc(el.label)} (filled area): coloured ${(el.coverage * 100).toFixed(0)}% · spill ${el.spillRatio.toFixed(2)} · stroke echo ${el.strokeEchoRatio.toFixed(2)}</div>`;
       }
       return `<div>${swatch}${esc(el.label)}: shift ${el.centroidShiftPct.toFixed(1)}% · scale ${el.scaleFactor.toFixed(2)}×</div>`;
     })

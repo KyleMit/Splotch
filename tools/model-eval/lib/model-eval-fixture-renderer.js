@@ -105,6 +105,17 @@
     ctx.drawImage(off, b.x, b.y, b.w, b.h);
     ctx.restore();
   }
+  // Authored SVG scenes (tools/store-drawings/samples) draw straight onto the
+  // paper: they are already the child's colored strokes on transparency, so
+  // unlike coloring line art there is nothing to multiply or invert away. The
+  // viewBox dimensions come from the spec because an <img> holding a
+  // width/height-less SVG reports no intrinsic size.
+  async function drawArt(uri, vw, vh) {
+    if (!uri) return;
+    const img = await loadImg(uri);
+    const b = containBox(vw || img.naturalWidth, vh || img.naturalHeight);
+    ctx.drawImage(img, b.x, b.y, b.w, b.h);
+  }
   async function revealFill(uri, strokes) {
     if (!uri) return;
     const img = await loadImg(uri);
@@ -493,6 +504,7 @@
     paper(spec.theme);
     for (const L of spec.layers) {
       if (L.op === 'outline') await drawOutline(L.uri, L.invert);
+      else if (L.op === 'art') await drawArt(L.uri, L.w, L.h);
       else if (L.op === 'reveal') await revealFill(L.uri, L.strokes);
       else if (L.op === 'gradient') revealGradient(L.angle, L.strokes);
       else if (L.op === 'strokes') paletteStrokes(L.strokes, L.color);

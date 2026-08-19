@@ -15,18 +15,29 @@
 //   scribble-1color   sporadic strokes of a single palette color, toddler-placed
 //   art-detail        freehand scenes at low / medium / high line counts
 //   safety            pretend-play boundary probe (toy sword) — should be allowed
+//   store             the authored store-screenshot scenes, rasterized onto paper
 //
 // Gemini-authored inputs (prefix `gen`) are added separately by
 // tools/model-eval/gen-model-inputs.mjs and are not touched here.
 
 import { chromium } from '@playwright/test';
+import sharp from 'sharp';
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { fail } from '../lib/proc.mjs';
+import { fail, isMain } from '../lib/proc.mjs';
 
 const OUT = join(ROOT, 'tools/model-eval/inputs');
+// Both sample trees carry a zero-origin viewBox; the traced files quote their
+// numbers with decimals, the authored store SVGs do not.
+const SVG_VIEWBOX = /viewBox="0(?:\.0+)? 0(?:\.0+)? ([\d.]+) ([\d.]+)"/;
+// Traced SVGs are rendered at 4x their viewBox and downsampled back to it: the
+// tracer's curves are resolution-independent, and supersampling keeps the
+// stroke edges as smooth as the PNG the trace came from. The viewBox itself is
+// the source canvas size, so that is what the corpus gets.
+const SVG_SUPERSAMPLE = 4;
+const SVG_BASE_DENSITY_DPI = 72;
 const COLORING = join(ROOT, 'web/static/coloring');
 
 // --- deterministic RNG + stroke geometry (node side, seeded per fixture) ---
@@ -350,6 +361,33 @@ add({
   layers: [{ op: 'scene', scene: 'toysword' }],
 });
 
+// I) store — the authored store-screenshot scenes (tools/store-drawings/samples),
+// rasterized onto paper. They are the corpus's only full multi-subject drawings:
+// several colors, several subjects, and the stroke character of art drawn in the
+// app itself rather than synthesized here.
+const STORE_SAMPLES = join(ROOT, 'tools/store-drawings/samples');
+for (const file of readdirSync(STORE_SAMPLES)
+  .filter((f) => f.endsWith('.svg'))
+  .sort()) {
+  const svg = readFileSync(join(STORE_SAMPLES, file), 'utf8');
+  const viewBox = SVG_VIEWBOX.exec(svg);
+  if (!viewBox) fail(`No zero-origin viewBox in ${file}`);
+  const name = file.replace(/\.svg$/, '');
+  add({
+    id: `store__${name.replace(/-(tall|wide)$/, '')}`,
+    theme: 'light',
+    dim: name.endsWith('-tall') ? 'tall' : 'wide',
+    layers: [
+      {
+        op: 'art',
+        uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`,
+        w: Number(viewBox[1]),
+        h: Number(viewBox[2]),
+      },
+    ],
+  });
+}
+
 // Any layer carrying a `uri` (built via pickAsset/resolveAsset above) resolves it from
 // the coloring assets on disk; catch a missing or renamed one here, in one pass across
 // the whole corpus with the path(s) it looked for, rather than letting it render as a
@@ -365,13 +403,76 @@ if (missingAssets.length) fail(`Missing coloring assets for: ${missingAssets.joi
 // Lives in its own file so it is real, lintable browser JS rather than a template string.
 const RENDERER = join(ROOT, 'tools/model-eval/lib/model-eval-fixture-renderer.js');
 
+// The committed corpus sources live in samples/ — vector where tracing the
+// drawing beat storing its pixels (most of them, by 3-59x), raster where it did
+// not (crayon grain and the densest scribbles, which trace to something larger
+// than the PNG). Both render into inputs/, which is generated and gitignored in
+// full, so the corpus is reproducible from a clone without carrying 60MB of
+// PNGs in history. A traced SVG's viewBox is the source canvas, so it rasterizes
+// at its own size with nothing to fit or letterbox.
+const SAMPLES = join(ROOT, 'tools/model-eval/samples');
+
+async function renderCommittedSamples(files) {
+  for (const file of files) {
+    const source = join(SAMPLES, file);
+    const dest = join(OUT, file.replace(/\.svg$/, '.png'));
+    if (!file.endsWith('.svg')) {
+      await sharp(source).png().toFile(dest);
+      continue;
+    }
+    const viewBox = SVG_VIEWBOX.exec(readFileSync(source, 'utf8'));
+    if (!viewBox) fail(`No viewBox in ${file}`);
+    const [width, height] = [Math.round(Number(viewBox[1])), Math.round(Number(viewBox[2]))];
+    await sharp(source, { density: SVG_BASE_DENSITY_DPI * SVG_SUPERSAMPLE })
+      .resize(width, height, { fit: 'fill' })
+      .png()
+      .toFile(dest);
+  }
+  return files.length;
+}
+
+// Everything this generator produces, by filename: one per fixture spec, one per
+// committed sample. Anything else in inputs/ belongs to someone else — most
+// importantly a fresh authoring run, since model-eval:gen-inputs (paid calls)
+// and model-eval:gen-crayon (live-app capture) both write here and their results
+// only reach samples/ after a human has looked at them. Clearing the directory
+// outright would spend real money and then delete the result.
+export function managedInputNames(fixtureSpecs, sampleFiles) {
+  return new Set([
+    ...fixtureSpecs.map((spec) => `${spec.id}__${spec.dim}.png`),
+    ...sampleFiles.map((file) => file.replace(/\.svg$/, '.png')),
+  ]);
+}
+
+// Of the PNGs already in inputs/: which this run owns and will rewrite, and
+// which it has no claim on. An unclaimed file is either authored output waiting
+// to be promoted into samples/ — keep it — or a leftover from a spec or sample
+// that has since been renamed, which no longer has anything to rewrite it and
+// would otherwise sit in the corpus unnoticed. Reporting both beats guessing.
+export function partitionInputs(existingFiles, managed) {
+  const pngs = existingFiles.filter((file) => file.endsWith('.png'));
+  return {
+    owned: pngs.filter((file) => managed.has(file)),
+    unclaimed: pngs.filter((file) => !managed.has(file)),
+  };
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  // Clear only the locally-generated fixtures; leave the committed
-  // model-authored inputs (gen__* and line__*) intact.
-  for (const f of readdirSync(OUT))
-    if (f.endsWith('.png') && !f.startsWith('gen__') && !f.startsWith('line__'))
-      rmSync(join(OUT, f));
+  const sampleFiles = existsSync(SAMPLES)
+    ? readdirSync(SAMPLES).filter((f) => f.endsWith('.svg') || f.endsWith('.png'))
+    : [];
+  const { owned, unclaimed } = partitionInputs(
+    readdirSync(OUT),
+    managedInputNames(specs, sampleFiles)
+  );
+  for (const f of owned) rmSync(join(OUT, f));
+  if (unclaimed.length) {
+    console.warn(
+      `Left ${unclaimed.length} input(s) this run does not produce — authored output awaiting ` +
+        `promotion into samples/, or stale after a rename:\n  ${unclaimed.join('\n  ')}`
+    );
+  }
 
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();
@@ -404,7 +505,10 @@ async function main() {
     else if (n % 8 === 0) console.log(`  …${n}/${list.length}`);
   }
   await browser.close();
-  console.log(`Generated ${n} local fixtures → tools/model-eval/inputs/`);
+  const samples = await renderCommittedSamples(sampleFiles);
+  console.log(
+    `Generated ${n} local fixtures + ${samples} committed sample(s) → tools/model-eval/inputs/`
+  );
 }
 
-await main();
+if (isMain(import.meta.url)) await main();

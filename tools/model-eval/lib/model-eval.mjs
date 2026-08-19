@@ -19,6 +19,14 @@ export { ROOT };
 export const ORCHESTRATOR_MODEL = 'gpt-5.6-sol';
 export const ORCHESTRATOR_REASONING_EFFORT = 'medium';
 
+// The image model and effort tier production actually renders with. The
+// adherence lab's default arm resolves its variant from these rather than
+// naming a VARIANTS key, so a prompt round can never be tuned against a model
+// the app no longer ships; assertProductionConfig fails on drift from the app
+// source, the way the orchestrator and prompt constants above already do.
+const IMAGE_MODEL = 'gpt-image-2';
+const IMAGE_QUALITY = 'low';
+
 // Every cell under comparison. `key` is filesystem-safe because it names the
 // output files; `role` is what the report prints beside the label.
 export const VARIANTS = [
@@ -87,6 +95,17 @@ export const VARIANTS = [
     role: 'openai budget',
   },
 ];
+
+// The one VARIANTS row production is currently running. Resolved rather than
+// named so the pair above stays the single source of that fact.
+export const PRODUCTION_VARIANT = VARIANTS.find(
+  (v) => v.provider === 'openai' && v.model === IMAGE_MODEL && v.quality === IMAGE_QUALITY
+);
+if (!PRODUCTION_VARIANT) {
+  throw new Error(
+    `No VARIANTS row for the production config ${IMAGE_MODEL} · ${IMAGE_QUALITY} — add one.`
+  );
+}
 
 // Published list rates, $ per 1M tokens. Image-output tokens dominate the
 // per-image cost; the input and text-output legs are carried so the measured
@@ -162,6 +181,16 @@ const PRODUCTION_SOURCES = [
     name: 'SAFETY_SYSTEM_INSTRUCTION',
     candidates: ['web/src/lib/server/ai/openai.ts'],
     value: SAFETY_SYSTEM_INSTRUCTION,
+  },
+  {
+    name: 'IMAGE_MODEL',
+    candidates: ['web/src/lib/server/ai/openai.ts'],
+    value: `const IMAGE_MODEL = '${IMAGE_MODEL}';`,
+  },
+  {
+    name: 'IMAGE_QUALITY',
+    candidates: ['web/src/lib/server/ai/openai.ts'],
+    value: `const IMAGE_QUALITY = '${IMAGE_QUALITY}';`,
   },
   { name: 'DEFAULT_PROMPT', candidates: ['web/src/lib/ai/prompt.ts'], value: DEFAULT_PROMPT },
 ];
