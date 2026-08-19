@@ -200,15 +200,15 @@ ios/local.xcconfig
 /tools/redteam/decrypted/
 /tools/redteam/output/
 
-# Image-model eval harness (tools/model-eval/). Generated inputs are regenerable
-# (npm run model-eval:fixtures); opt-in report inputs are temporary child-created
-# evidence; and run outputs are large, so all stay local. The model-authored
-# gen__* (filled) and line__* (stroke-only) inputs are kept in git because a
-# rerun of the generator draws different art, and the published reference report
-# lives in scrapbook/model-eval/ (ADR-0059).
-/tools/model-eval/inputs/*
-!/tools/model-eval/inputs/gen__*
-!/tools/model-eval/inputs/line__*
+# Image-model eval harness (tools/model-eval/). inputs/ is generated in full by
+# npm run model-eval:fixtures — from the coloring assets, the palette, and the
+# committed sources in samples/ — so none of it is tracked. The sources are: a
+# rerun of the authoring generator draws different art, so the art itself has to
+# be kept, and it is kept as traced SVG wherever that beat storing the pixels
+# (3-59x smaller, round-trip error under 3/255) and as quantized PNG where it did
+# not. Run outputs are large and local; the published reference report lives in
+# scrapbook/model-eval/ (ADR-0059).
+/tools/model-eval/inputs/
 /tools/model-eval/output/
 # Scratch dir for ad-hoc eval debugging.
 /.eval-tmp/

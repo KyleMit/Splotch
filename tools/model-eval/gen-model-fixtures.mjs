@@ -21,6 +21,7 @@
 // tools/model-eval/gen-model-inputs.mjs and are not touched here.
 
 import { chromium } from '@playwright/test';
+import sharp from 'sharp';
 import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
@@ -28,6 +29,15 @@ import { chromiumExecutablePath } from '../lib/playwright.mjs';
 import { fail } from '../lib/proc.mjs';
 
 const OUT = join(ROOT, 'tools/model-eval/inputs');
+// Both sample trees carry a zero-origin viewBox; the traced files quote their
+// numbers with decimals, the authored store SVGs do not.
+const SVG_VIEWBOX = /viewBox="0(?:\.0+)? 0(?:\.0+)? ([\d.]+) ([\d.]+)"/;
+// Traced SVGs are rendered at 4x their viewBox and downsampled back to it: the
+// tracer's curves are resolution-independent, and supersampling keeps the
+// stroke edges as smooth as the PNG the trace came from. The viewBox itself is
+// the source canvas size, so that is what the corpus gets.
+const SVG_SUPERSAMPLE = 4;
+const SVG_BASE_DENSITY_DPI = 72;
 const COLORING = join(ROOT, 'web/static/coloring');
 
 // --- deterministic RNG + stroke geometry (node side, seeded per fixture) ---
@@ -356,7 +366,6 @@ add({
 // several colors, several subjects, and the stroke character of art drawn in the
 // app itself rather than synthesized here.
 const STORE_SAMPLES = join(ROOT, 'tools/store-drawings/samples');
-const SVG_VIEWBOX = /viewBox="0 0 ([\d.]+) ([\d.]+)"/;
 for (const file of readdirSync(STORE_SAMPLES)
   .filter((f) => f.endsWith('.svg'))
   .sort()) {
@@ -394,13 +403,46 @@ if (missingAssets.length) fail(`Missing coloring assets for: ${missingAssets.joi
 // Lives in its own file so it is real, lintable browser JS rather than a template string.
 const RENDERER = join(ROOT, 'tools/model-eval/lib/model-eval-fixture-renderer.js');
 
+// The committed corpus sources live in samples/ — vector where tracing the
+// drawing beat storing its pixels (most of them, by 3-59x), raster where it did
+// not (crayon grain and the densest scribbles, which trace to something larger
+// than the PNG). Both render into inputs/, which is generated and gitignored in
+// full, so the corpus is reproducible from a clone without carrying 60MB of
+// PNGs in history. A traced SVG's viewBox is the source canvas, so it rasterizes
+// at its own size with nothing to fit or letterbox.
+const SAMPLES = join(ROOT, 'tools/model-eval/samples');
+
+async function renderCommittedSamples() {
+  if (!existsSync(SAMPLES)) return 0;
+  const files = readdirSync(SAMPLES).filter((f) => f.endsWith('.svg') || f.endsWith('.png'));
+  for (const file of files) {
+    const source = join(SAMPLES, file);
+    const dest = join(OUT, file.replace(/\.svg$/, '.png'));
+    if (!file.endsWith('.svg')) {
+      await sharp(source).png().toFile(dest);
+      continue;
+    }
+    const viewBox = SVG_VIEWBOX.exec(readFileSync(source, 'utf8'));
+    if (!viewBox) fail(`No viewBox in ${file}`);
+    const [width, height] = [Math.round(Number(viewBox[1])), Math.round(Number(viewBox[2]))];
+    await sharp(source, { density: SVG_BASE_DENSITY_DPI * SVG_SUPERSAMPLE })
+      .resize(width, height, { fit: 'fill' })
+      .png()
+      .toFile(dest);
+  }
+  return files.length;
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  // Clear only the locally-generated fixtures; leave the committed
-  // model-authored inputs (gen__* and line__*) intact.
-  for (const f of readdirSync(OUT))
-    if (f.endsWith('.png') && !f.startsWith('gen__') && !f.startsWith('line__'))
-      rmSync(join(OUT, f));
+  // Clear only the categories this generator owns, so a renamed spec cannot
+  // leave a stale fixture behind — and so the committed model-authored inputs
+  // survive whatever prefixes they are added under, which a denylist of the
+  // authored prefixes known today would not.
+  // inputs/ is generated in full now — both the synthesized fixtures and the
+  // committed samples are rewritten below, so clearing it outright is safe and
+  // leaves no stale file from a renamed spec or a deleted sample.
+  for (const f of readdirSync(OUT)) if (f.endsWith('.png')) rmSync(join(OUT, f));
 
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();
@@ -433,7 +475,10 @@ async function main() {
     else if (n % 8 === 0) console.log(`  …${n}/${list.length}`);
   }
   await browser.close();
-  console.log(`Generated ${n} local fixtures → tools/model-eval/inputs/`);
+  const samples = await renderCommittedSamples();
+  console.log(
+    `Generated ${n} local fixtures + ${samples} committed sample(s) → tools/model-eval/inputs/`
+  );
 }
 
 await main();
