@@ -33,6 +33,7 @@ import {
   DEFAULT_SIZE,
   ERASER_SIZE_MULTIPLIER,
   getStrokeWidthPx,
+  type StrokeSize,
 } from '$lib/state/strokeWidth.svelte';
 import {
   calculateStrokeSpeed,
@@ -558,6 +559,61 @@ function strokeCrayonSegments(ps: PointerState, points: Point[]) {
 function strokeSegments(ps: PointerState, points: Point[]) {
   if (ps.passTracker) strokeCrayonSegments(ps, points);
   else strokeSmoothSegments(ps, points);
+}
+
+export interface HarnessStrokeReplay {
+  color: string;
+  points: Point[];
+  size: StrokeSize;
+}
+
+export function replayHarnessStroke(replay: HarnessStrokeReplay): void {
+  if (!dev && !__DEV_HARNESS__) throw new Error();
+  const { color, points, size } = replay;
+  if (points.length === 0) return;
+  if (eraserActive) throw new Error('Store drawing replay does not support the eraser');
+  if (!engineLive) throw new Error('Drawing engine is not live');
+  if (activePointers.size > 0 || penStreamAdopter.hasCanvasExit()) {
+    throw new Error('Cannot replay a stroke while pointer input is active');
+  }
+
+  const rect = measure.rect;
+  if (rect.width === 0 || rect.height === 0) throw new Error('Drawing canvas is not measured');
+  const screenPoints = points.map(({ x, y }) => ({
+    x: (x * viewport.width) / rect.width,
+    y: (y * viewport.height) / rect.height,
+  }));
+  const paperPoints = screenPoints.map(screenToPaper);
+  const first = paperPoints[0];
+  const lineWidth = getStrokeWidthPx(size) * renderScale;
+  const pointerState: PointerState = {
+    id: -1,
+    x: first.x,
+    y: first.y,
+    midX: first.x,
+    midY: first.y,
+    startX: screenPoints[0].x,
+    startY: screenPoints[0].y,
+    color,
+    lineWidth,
+    erase: eraserActive,
+    magic: magicActive,
+    crayon: crayonActive,
+    seed: crayonActive ? crayonSeedCounter++ : 0,
+    passTracker:
+      crayonActive && !eraserActive && !magicActive
+        ? new CrayonPassTracker(first.x, first.y, lineWidth)
+        : null,
+    lastTime: 0,
+    speedSamples: [],
+    edgeSwipeGuard: null,
+    pendingPoints: [],
+  };
+
+  renderStrokeStart(pointerState);
+  for (const point of paperPoints.slice(1)) strokeSegments(pointerState, [point]);
+  if (pointerState.passTracker) recordCrayonFlush();
+  finishStrokeGroup();
 }
 
 // Push the finished stroke group onto the undo log (once per group, when the

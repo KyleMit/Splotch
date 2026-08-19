@@ -81,6 +81,8 @@ declare global {
     };
     // Dev-gated invoke handle for the production AI flow (ADR-0109).
     __aiGenerate?: typeof import('$lib/drawing/aiImage').generateAiImage;
+    // Dev-gated engine-rendered stroke replay for store hero captures (ADR-0122).
+    __replayStroke?: typeof import('$lib/boot/devHarnessSeam').replayStoreDrawingStroke;
     // Instrumented-build persistence boundary for native screenshot profiling.
     // The release bundle drops both the branch and this property name.
     __screenshotSaveSink?: (blob: Blob, baseName: string) => void | Promise<void>;

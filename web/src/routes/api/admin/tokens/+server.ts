@@ -48,7 +48,7 @@ function requireSession(request: Request) {
 // it just replaces its local state with the response. `persistent` reports whether
 // the list is durably backed by Netlify Blobs (true) or the in-memory env-seeded
 // fallback (false) — the same signal the web /admin banner uses (ADR-0025), and
-// what the deploy smoke test (tools/api-smoke/check-deployed-blobs.mjs) asserts to prove the
+// what the deploy smoke test (tools/api-smoke/check-deployed-contract.mjs) asserts to prove the
 // deployed function actually has the Blobs context. After a mutation we keep the
 // caller's `tokens` (authoritative, read-after-write safe under eventual
 // consistency); `persistent` comes from the fresh status read.

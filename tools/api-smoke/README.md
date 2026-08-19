@@ -2,19 +2,20 @@
 
 This capability exercises Splotch's HTTP API as a running system. One entry point boots a local
 throwaway Vite server and checks the documented request/response contract without live model or
-storage credentials. The other checks a deployed Netlify function to prove its Blobs context is
-persistent and writable.
+storage credentials. The hosted check verifies the built site, safe API failures, and durable
+storage together. A narrower entry point remains available when only Blobs persistence is relevant.
 
 ## Entry points
 
-| Entry point                | Public command             | Purpose                                           |
-| -------------------------- | -------------------------- | ------------------------------------------------- |
-| `run-local-contract.mjs`   | `npm run test:api:smoke`   | Run the local `/api/*` contract smoke test        |
-| `check-deployed-blobs.mjs` | `npm run test:blobs:smoke` | Validate Blobs persistence on a deployed function |
+| Entry point                   | Public command              | Purpose                                              |
+| ----------------------------- | --------------------------- | ---------------------------------------------------- |
+| `run-local-contract.mjs`      | `npm run test:api:smoke`    | Run the local `/api/*` contract smoke test           |
+| `check-deployed-contract.mjs` | `npm run test:deploy:smoke` | Validate the complete hosted deploy contract         |
+| `check-deployed-blobs.mjs`    | `npm run test:blobs:smoke`  | Validate only Blobs persistence on a real deployment |
 
-`lib/admin-client.mjs` owns the shared `/api/admin` login exchange and token CRUD request plumbing.
-It returns raw responses and parsed JSON together; assertions and lifecycle policy remain in the
-entry points.
+`lib/admin-client.mjs` owns the shared `/api/admin` request plumbing.
+`lib/deployed-admin-contract.mjs` owns the persistent token round-trip used by both deployed entry
+points. Assertions remain in the contract layers rather than in the request client.
 
 ## Local contract inputs and outputs
 
@@ -27,7 +28,37 @@ Keep its server environment in agreement with every private environment variable
 app. `tools/tests/e2e-server-env.test.mjs` enforces that agreement so a developer's `web/.env`
 cannot make the smoke test reach a real service accidentally.
 
-## Deployed Blobs inputs and outputs
+## Hosted deploy inputs and outputs
+
+`check-deployed-contract.mjs` requires an HTTPS deployment URL and its matching admin secret:
+
+```sh
+DEPLOY_SMOKE_URL=https://deploy-preview-123--splotchy.netlify.app \
+  ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
+```
+
+The URL may instead be passed as `--url=https://…`.
+
+It checks `/`, `/privacy`, and the SSR-rendered `/admin`, their full security-header set, an
+immutable app asset, `version.json` and its no-cache policy, both Capacitor-origin preflights,
+representative canonical API failures that stop before any model call, and the persistent admin
+token round-trip. The deployed version must exactly match the ADR-0030 version derived from the
+checker's current git commit. Run a manual preview check from the same branch/ref that Netlify
+built; pointing a different ref at that preview is intentionally reported as stale.
+
+The dependency-free workflow checks production daily. Manual dispatch accepts an optional URL so it
+can check either production by default or an intended Netlify preview. GitHub's repository-wide
+`deployment_status` records belong to the static scrapbook on GitHub Pages, so they are not a valid
+Netlify trigger or target source.
+
+Production workflow runs set `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=false`, whether production is the
+default or its canonical URL is entered explicitly. They still require a valid version shape and the
+no-cache policy, but do not compare it to repository `HEAD`. ADR-0070 deliberately skips Netlify
+builds for docs/tooling-only commits, so `HEAD` can correctly be newer than production. Direct CLI
+runs and workflow runs with an explicit non-production URL retain the exact comparison because they
+pair a specific ref with a specific deploy.
+
+## Deployed Blobs-only inputs and outputs
 
 `check-deployed-blobs.mjs` requires an HTTPS deployment URL and its matching admin secret:
 
@@ -50,11 +81,15 @@ endpoint or response shape changes, update the reference, extend the local smoke
 keep the owned admin client request-only. Changes to deployed persistence semantics must update the
 Blobs workflow and ADR-0025 expectations together.
 
-The [Blobs Smoke workflow](../../.github/workflows/blobs-smoke.yml) runs
-`node tools/api-smoke/check-deployed-blobs.mjs` directly with `install: 'false'` and no install, so
-that entry point and everything it loads — `lib/admin-client.mjs`, `tools/lib/proc.mjs`, and
-`tools/lib/smoke.mjs` — must stay dependency-free. Adding an npm dependency to any of those modules
-breaks the deploy gate at runtime rather than in CI's unit job.
+The [Hosted Deploy Smoke workflow](../../.github/workflows/blobs-smoke.yml) runs
+`check-deployed-contract.mjs` with `install: 'false'`. That entry point and everything it loads —
+including `web/buildVersion.ts`, `web/src/lib/server/securityHeaders.ts`, the deployed admin
+contract, and the shared tool modules — must stay dependency-free. Adding an npm dependency to any
+of them breaks the deploy gate at runtime rather than in CI's unit job.
+
+All workflow runs share a single concurrency group because previews and production use the same
+site-wide store. Keep target selection in the workflow rather than teaching the deploy-agnostic CLI
+about repository providers.
 
 Run focused verification with:
 
@@ -64,4 +99,7 @@ npm run test:api:smoke
 ```
 
 The deployed Blobs check mutates a real shared store briefly and requires deployment credentials, so
-run it only against an intended preview or production target.
+run it only against an intended preview or production target. Its `finally` cleanup cannot run when
+the process or runner is terminated. In that case, remove the unguessable but live `blobs-smoke-*`
+credential manually through the admin console. Do not automate a prefix-wide sweep: this CLI can run
+outside the workflow's concurrency group and could delete another smoke's active probe.

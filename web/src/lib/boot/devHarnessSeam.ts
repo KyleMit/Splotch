@@ -4,9 +4,27 @@ import {
   getDrawingWorkDebug,
   getLiveSurfaceTopology,
   getUndoDebug,
+  replayHarnessStroke,
 } from '$lib/drawing/engine';
 import { generateAiImage } from '$lib/drawing/aiImage';
+import { PALETTE_COLORS, type PaletteLabel } from '$lib/palette';
 import { PERF_MARKS } from '$lib/drawing/perf';
+
+type StoreDrawingColor = { kind: 'palette'; label: PaletteLabel } | { kind: 'picker'; hex: string };
+
+type StoreDrawingStrokeReplay = Omit<Parameters<typeof replayHarnessStroke>[0], 'color'> & {
+  color: StoreDrawingColor;
+};
+
+/** @public */
+export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrokeReplay): void {
+  const hex =
+    color.kind === 'picker'
+      ? color.hex
+      : PALETTE_COLORS.find(({ label }) => label === color.label)?.hex;
+  if (!hex) throw new Error(`Unknown store drawing color ${JSON.stringify(color)}`);
+  replayHarnessStroke({ ...stroke, color: hex });
+}
 
 // The drawing route's gated `window` seams — what the E2E harness and the
 // on-device profiler need to see and no DOM state exposes. One module rather than
@@ -41,14 +59,18 @@ import { PERF_MARKS } from '$lib/drawing/perf';
 //   __aiGenerate (ADR-0109) — invokes the production AI-generation flow so
 //     Playwright can mock its existing HTTP boundary while covering canvas
 //     export, upload encoding, response parsing, and state application.
+//   __replayStroke (ADR-0122) — commits one compiled store-art stroke through
+//     the engine's renderer and history while the store capture harness is open.
 export function installDevHarnessSeam(): () => void {
   if (!dev && !__DEV_HARNESS__ && !PERF_MARKS) return () => {};
   window.__committedBrushMode = committedBrushMode;
   window.__drawingDebug = { getDrawingWorkDebug, getLiveSurfaceTopology, getUndoDebug };
   window.__aiGenerate = generateAiImage;
+  if (dev || __DEV_HARNESS__) window.__replayStroke = replayStoreDrawingStroke;
   return () => {
     delete window.__committedBrushMode;
     delete window.__drawingDebug;
     delete window.__aiGenerate;
+    delete window.__replayStroke;
   };
 }

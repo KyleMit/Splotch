@@ -124,9 +124,9 @@ can surface the same warning after every successful snapshot.
   as live data.
 * **−** **Storage is coupled to the adapter major.** adapter-netlify must stay ≥ 6 (V2 functions); a
   downgrade re-breaks Blobs with only the runtime banner to show for it. Any adapter or
-  Netlify-config bump should re-verify Blobs on a deploy preview — run `npm run test:blobs:smoke`
-  against the preview URL (it asserts `persistent:true` and round-trips a token), which is the
-  automated guard against this regression.
+  Netlify-config bump should run `npm run test:deploy:smoke` against a deploy preview. The full
+  hosted gate includes this ADR's `persistent:true` assertion and token round-trip;
+  `test:blobs:smoke` remains the narrower persistence diagnostic.
 * **−** Local `vite dev` has no Blobs, so token edits and usage live in a per-instance in-memory
   list that resets on restart. A production preview without Blobs still serves env-seeded reads but
   refuses token edits, matching a deployed function whose durable store is unavailable; the admin
@@ -136,6 +136,26 @@ can surface the same warning after every successful snapshot.
 * **−** Deploy previews/branch deploys share the site-wide stores (they are not deploy-scoped), so a
   code added from a preview's `/admin` lands in the real `access-tokens` store. Useful for
   verification, but remember to clean up test entries.
+
+## Amendment (2026-08-19): Deploy-smoke target selection
+
+GitHub's `deployment_status` event is repository-wide, not Netlify-specific. The repository's GitHub
+deployment records come from the static scrapbook's Pages workflow, whose `environment_url` is
+`https://KyleMit.github.io/Splotch/` and cannot host `/api/*`; POSTing the admin login there
+returns 405. Netlify does not publish GitHub deployment records for this site.
+
+The unrelated `deployment_status` event does not trigger the hosted deploy smoke. A daily schedule
+probes `https://splotch.art`, and manual dispatch preserves its supplied URL for an intended Netlify
+preview. The gate checks the full hosted contract and still requires the matching admin secret,
+asserts `persistent: true`, and completes the write/read/delete round-trip.
+
+The schedule changes production from deliberate on-demand mutation to one unattended probe per day.
+The script removes its token after ordinary success or failure, but process-level interruption can
+skip that cleanup and strand an unguessable, live `blobs-smoke-*` credential. Cleanup remains a
+manual admin-console operation: preview and production smokes share the site-wide store, so an
+automatic prefix sweep could delete another run's active probe. GitHub Actions runs use one global
+concurrency group to prevent that overlap inside the workflow; a newer queued run can still replace
+an older pending one, while an in-flight run is allowed to finish its cleanup.
 
 ## Amendment (2026-08-19): Minimized, expiring usage records
 

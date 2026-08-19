@@ -1,7 +1,7 @@
 # Store screenshot drawings
 
-The free-draw store screenshot is recreated through ordinary palette, stroke-width, and pointer
-interactions in the live app. Runtime drawing never parses or renders SVG. The generated
+The free-draw store screenshot is recreated by feeding compiled strokes through a dev-gated API on
+the live app's real drawing engine. Runtime drawing never parses or renders SVG. The generated
 [`generated/store-drawings.mjs`](generated/store-drawings.mjs) contains static numeric pointer
 coordinates and exports one named function per scene, including `drawHouseTall` and `drawHouseWide`.
 
@@ -87,7 +87,9 @@ The overlays visualize occupancy separately: red-only pixels belong to the refer
 pixels belong to the converted or runtime image, and overlapping pixels are purple-white.
 
 After reviewing the report and images, `npm run gen:store-assets` uses the named static drawing
-functions for the real store captures.
+functions for the real store captures. Its hero scene passes `{ replay: 'engine' }`; the default
+remains pointer replay so this evaluator and the brush-review workflow continue to exercise the
+user-input boundary they are designed to measure.
 
 ## Brush review captures
 
@@ -110,10 +112,11 @@ committed module only after every selected SVG converts successfully; `--check` 
 render in memory and never updates it. Evaluation and review write only beneath their gitignored
 `screenshots/` directories and never replace `store-assets/`.
 
-`lib/drawing-instructions.mjs` owns scene fitting and replay. The browser-driving entry points
-deliberately import `tools/app-driver/lib/app-driver.mjs`; keep that ownership edge rather than
-forking selectors or pointer delivery. Regenerate and commit `generated/store-drawings.mjs` whenever
-samples or conversion policy change.
+`lib/drawing-instructions.mjs` owns scene fitting and both replay paths. Pointer replay delegates to
+`tools/app-driver/lib/app-driver.mjs`; engine replay converts the same page-space box to
+canvas-local coordinates, expands the driver's shared sample count, and calls the dev-gated engine
+seam once per stroke. Keep that ownership edge rather than forking selectors or sample delivery.
+Regenerate and commit `generated/store-drawings.mjs` whenever samples or conversion policy change.
 
 Run focused verification with:
 

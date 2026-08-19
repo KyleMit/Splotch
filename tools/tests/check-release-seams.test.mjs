@@ -45,6 +45,7 @@ it('derives every current window seam and engine measure family', () => {
     '__aiGenerate',
     '__committedBrushMode',
     '__drawingDebug',
+    '__replayStroke',
     '__screenshotSaveSink',
     '__storeCapture',
     'backingMigrationPending',

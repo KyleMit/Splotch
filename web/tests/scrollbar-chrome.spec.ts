@@ -44,7 +44,8 @@ async function meanLuminance(
 ) {
   const png = await page.screenshot({ clip });
   return page.evaluate(async (base64) => {
-    const blob = await (await fetch(`data:image/png;base64,${base64}`)).blob();
+    const bytes = Uint8Array.from(atob(base64), (character) => character.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'image/png' });
     const bitmap = await createImageBitmap(blob);
     const surface = new OffscreenCanvas(bitmap.width, bitmap.height);
     const context = surface.getContext('2d')!;

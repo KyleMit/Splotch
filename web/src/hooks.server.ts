@@ -34,6 +34,10 @@ const CORS_HEADERS = {
 
 function applyHeaders(response: Response, headers: Record<string, string>) {
   for (const [key, value] of Object.entries(headers)) {
+    // SvelteKit's SSR response already carries the full nonce-bearing policy.
+    // SECURITY_HEADERS has only the meta-unsupported fallback for static pages;
+    // replacing the generated policy here would remove script enforcement.
+    if (key === 'Content-Security-Policy' && response.headers.has(key)) continue;
     response.headers.set(key, value);
   }
 }

@@ -112,49 +112,14 @@
     # autoplay are deliberately NOT listed — the canvas calls requestFullscreen()
     # and drawing plays audio, and both default to `self`.
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-    # Reporting-Endpoints names the endpoint the CSP's report-to directive routes
-    # to (Chromium's Reporting API; report-uri below covers Firefox/Safari). The
-    # relative URL resolves against the response URL per the Reporting API spec,
-    # so previews report to themselves and production to splotch.art. Both point
-    # at the first-party /api/csp-report receiver (no third-party telemetry by
-    # design) — violations land as [csp-report] lines in the function log.
+    # The CSP reporting endpoint group. Browser and delivery limits are recorded
+    # in ADR-0073; securityHeaders.test.ts drift-guards this literal value.
     Reporting-Endpoints = 'csp="/api/csp-report"'
-    # Content-Security-Policy — ENFORCING (issue #457; staged as report-only by
-    # issue #235, flipped after a full Playwright sweep of every surface — draw/
-    # undo/clear, coloring book, screenshot save, AI dialog, Settings,
-    # /admin, /privacy, SW registration + repeat visit — against this exact
-    # policy came back violation-free). 'unsafe-inline' covers what nonces don't
-    # yet replace: SvelteKit's inline hydration boot code, the app.html
-    # pre-hydration state stamp, and every component-scoped stylesheet inlined
-    # into <head> (svelte.config.js inlineStyleThreshold: Infinity). img-src
-    # blob:/data: is the AI/screenshot object-URL previews; connect-src is the
-    # same-origin /api/* calls plus blob:, which 'self' does not imply — a blob:
-    # URL matches by scheme, not by the origin baked into it — and which the
-    # picture report needs to read back the images it is reporting; fonts are
-    # the self-hosted Quicksand.
-    # frame-ancestors 'none' is the modern twin of the X-Frame-Options above.
-    # SCOPE: Netlify custom headers attach only to CDN/static responses — the
-    # prerendered pages (/, /privacy) get these headers from
-    # here. Function-served SSR responses (/admin) don't, so
-    # web/src/hooks.server.ts stamps the same set — sourced once from
-    # web/src/lib/server/securityHeaders.ts — onto them so /admin matches
-    # (issue #470). securityHeaders.test.ts parses this block and asserts the
-    # two copies agree, so keep the header values here in sync with that module.
+    # The enforcing platform subset. web/securityPolicy.ts owns its derivation;
+    # ADR-0073 records how it composes with SvelteKit's resource policies.
     Content-Security-Policy = """\
-      default-src 'self'; \
-      script-src 'self' 'unsafe-inline'; \
-      style-src 'self' 'unsafe-inline'; \
-      img-src 'self' blob: data:; \
-      font-src 'self'; \
-      connect-src 'self' blob:; \
-      worker-src 'self'; \
-      manifest-src 'self'; \
-      base-uri 'self'; \
-      form-action 'self'; \
       frame-ancestors 'none'; \
-      object-src 'none'; \
-      report-uri /api/csp-report; \
-      report-to csp\
+      report-uri /api/csp-report\
       """
 
 [[headers]]

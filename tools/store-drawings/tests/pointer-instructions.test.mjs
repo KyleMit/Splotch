@@ -8,7 +8,12 @@ import {
   generateStoreDrawings,
 } from '../gen-pointer-instructions.mjs';
 import { softColorMetrics } from '../evaluate-drawing-fidelity.mjs';
-import { fitInstructionScene, sceneStrokePoints } from '../lib/drawing-instructions.mjs';
+import {
+  fitInstructionScene,
+  sceneStrokeReplayPoints,
+  sceneStrokePoints,
+  strokeReplayPoints,
+} from '../lib/drawing-instructions.mjs';
 import { STORE_DRAWINGS, STORE_DRAWING_SCENES } from '../generated/store-drawings.mjs';
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..');
@@ -103,6 +108,36 @@ describe('instruction scene fitting', () => {
       { x: 0, y: 75 },
       { x: 300, y: 225 },
     ]);
+  });
+
+  it('expands the same six samples and endpoint hold as pointer replay', () => {
+    expect(
+      strokeReplayPoints([
+        { x: 0, y: 0 },
+        { x: 6, y: 12 },
+      ])
+    ).toEqual([
+      { x: 0, y: 0 },
+      { x: 1, y: 2 },
+      { x: 2, y: 4 },
+      { x: 3, y: 6 },
+      { x: 4, y: 8 },
+      { x: 5, y: 10 },
+      { x: 6, y: 12 },
+      { x: 6, y: 12 },
+    ]);
+  });
+
+  it('preserves an inset scene box in canvas-local engine coordinates', () => {
+    const replay = sceneStrokeReplayPoints(
+      scene,
+      { x: 50, y: 100, width: 300, height: 300 },
+      { x: 10, y: 20 },
+      scene.strokes[0]
+    );
+
+    expect(replay[0]).toEqual({ x: 40, y: 155 });
+    expect(replay.at(-1)).toEqual({ x: 340, y: 305 });
   });
 });
 

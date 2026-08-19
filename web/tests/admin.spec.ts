@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
+import { APP_TEMPLATE_SCRIPT_HASH } from '../securityPolicy';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
 
@@ -335,11 +336,33 @@ test('web /admin SSR response carries the site security headers', async ({ reque
   expect(res.ok()).toBe(true);
   const headers = res.headers();
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
+    if (name === 'Content-Security-Policy') continue;
     expect(headers[name.toLowerCase()]).toBe(value);
   }
+  const policy = headers['content-security-policy'];
+  expect(policy).toContain("script-src 'self'");
+  expect(policy).toContain(`'${APP_TEMPLATE_SCRIPT_HASH}'`);
+  expect(policy).toMatch(/'nonce-[^']+'/);
+  expect(policy).not.toContain("script-src 'self' 'unsafe-inline'");
+  expect(policy).toContain("style-src 'self' 'unsafe-inline'");
+  expect(policy).toContain("frame-ancestors 'none'");
+  expect(policy).toContain('report-uri /api/csp-report');
+  expect(policy).toContain('report-to csp');
 });
 
-test('web prerender keeps CSP delivery in the response header only', async ({ page }) => {
+test('web prerender emits a hash-based script policy that complements the platform header', async ({
+  page,
+}) => {
   await page.goto('/');
-  await expect(page.locator('meta[http-equiv="content-security-policy"]')).toHaveCount(0);
+  const meta = page.locator('meta[http-equiv="content-security-policy"]');
+  await expect(meta).toHaveCount(1);
+  const policy = await meta.getAttribute('content');
+  expect(policy).toContain("script-src 'self'");
+  expect(policy).toContain(`'${APP_TEMPLATE_SCRIPT_HASH}'`);
+  expect(policy).toMatch(/script-src[^;]*'sha256-[^']+'/);
+  expect(policy).not.toContain("script-src 'self' 'unsafe-inline'");
+  expect(policy).toContain("style-src 'self' 'unsafe-inline'");
+  expect(policy).not.toContain('frame-ancestors');
+  expect(policy).not.toContain('report-uri');
+  expect(policy).toContain('report-to csp');
 });

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -170,6 +171,46 @@ describe('native content security policy', () => {
     try {
       writeFileSync(join(root, 'index.html'), `<head>${meta}</head>`);
       writeFileSync(join(root, 'privacy.html'), `<head>${meta}</head>`);
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('requires the policy to authorize every generated inline script hash', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-script-'));
+    try {
+      const script = 'globalThis.__sveltekit_boot = true;';
+      const hash = `sha256-${createHash('sha256').update(script).digest('base64')}`;
+      const native = nativeMetaCspDirectives();
+      const policy = serializeCspDirectives({
+        ...native,
+        'script-src': [...native['script-src'], hash],
+      });
+      writeFileSync(
+        join(root, 'index.html'),
+        `<head><meta http-equiv="content-security-policy" content="${policy}"></head><script>${script}</script>`
+      );
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([]);
+
+      writeFileSync(join(root, 'index.html'), `<head>${meta}</head><script>${script}</script>`);
+      expect(nativeContentSecurityPolicyProblems(root)).toEqual([
+        expect.stringContaining('has the wrong CSP meta policy'),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does not require hashes for inline JSON data blocks', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-csp-data-'));
+    try {
+      writeFileSync(
+        join(root, 'index.html'),
+        `<head>${meta}</head>` +
+          '<script type="application/json" data-sveltekit-fetched>{"data":true}</script>' +
+          '<script type="application/ld+json">{"@type":"Thing"}</script>'
+      );
       expect(nativeContentSecurityPolicyProblems(root)).toEqual([]);
     } finally {
       rmSync(root, { recursive: true, force: true });

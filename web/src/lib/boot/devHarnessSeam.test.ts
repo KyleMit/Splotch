@@ -10,6 +10,7 @@ const ctrl = vi.hoisted(() => ({
   rasterizedOps: 5,
 }));
 const generateAiImage = vi.hoisted(() => vi.fn());
+const replayHarnessStroke = vi.hoisted(() => vi.fn());
 
 vi.mock('$app/environment', () => ({
   get dev() {
@@ -22,6 +23,7 @@ vi.mock('$lib/drawing/engine', () => ({
   getDrawingWorkDebug: () => ({ lastCommand: { rasterizedOps: ctrl.rasterizedOps } }),
   getUndoDebug: () => ({ snapshots: ctrl.snapshots }),
   getLiveSurfaceTopology: () => [{ width: 683, height: 458 }],
+  replayHarnessStroke,
 }));
 
 vi.mock('$lib/drawing/aiImage', () => ({ generateAiImage }));
@@ -41,6 +43,7 @@ beforeEach(() => {
   delete window.__committedBrushMode;
   delete window.__drawingDebug;
   delete window.__aiGenerate;
+  delete window.__replayStroke;
 });
 
 it('publishes the engine mode while the dev-harness gate is open', () => {
@@ -76,12 +79,27 @@ it('publishes the production AI generation function while the gate is open', () 
   expect(window.__aiGenerate).toBe(generateAiImage);
 });
 
+it('publishes the store drawing replay while the dev-harness gate is open', () => {
+  installDevHarnessSeam();
+  window.__replayStroke?.({
+    color: { kind: 'palette', label: 'Green' },
+    points: [{ x: 1, y: 2 }],
+    size: 3,
+  });
+  expect(replayHarnessStroke).toHaveBeenCalledWith({
+    color: '#8CC864',
+    points: [{ x: 1, y: 2 }],
+    size: 3,
+  });
+});
+
 it('installs nothing when the gate is closed, so the deploy has no seam', () => {
   ctrl.harnessEnabled = false;
   installDevHarnessSeam();
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
   expect(window.__aiGenerate).toBeUndefined();
+  expect(window.__replayStroke).toBeUndefined();
 });
 
 it('publishes the read-only profiling seams in an instrumented physical build', () => {
@@ -91,6 +109,7 @@ it('publishes the read-only profiling seams in an instrumented physical build', 
   expect(window.__committedBrushMode?.()).toBe('pen');
   expect(window.__drawingDebug?.getUndoDebug()).toEqual({ snapshots: 3 });
   expect(window.__aiGenerate).toBe(generateAiImage);
+  expect(window.__replayStroke).toBeUndefined();
 });
 
 it('removes every seam on teardown', () => {
@@ -98,4 +117,5 @@ it('removes every seam on teardown', () => {
   expect(window.__committedBrushMode).toBeUndefined();
   expect(window.__drawingDebug).toBeUndefined();
   expect(window.__aiGenerate).toBeUndefined();
+  expect(window.__replayStroke).toBeUndefined();
 });

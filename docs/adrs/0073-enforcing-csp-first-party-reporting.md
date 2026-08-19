@@ -111,3 +111,46 @@ the actual static export has exactly one expected policy per HTML document, incl
 omissions, while the web production E2E suite guards against gaining a meta policy. This constrains
 WebView resource and Fetch/WebSocket destinations; it does not change Android's broad `INTERNET`
 permission or restrict sockets opened by native plugin code.
+
+## Update (2026-08): script policy uses prerender hashes and SSR nonces
+
+Issue #471 removes `'unsafe-inline'` from `script-src`. SvelteKit now owns the complete resource
+policy for both web delivery modes through `kit.csp.mode = 'auto'`: prerendered documents receive a
+hash-bearing CSP meta tag, while dynamically rendered documents receive a nonce-bearing CSP response
+header. `style-src 'unsafe-inline'` is unchanged because the inlined component styles and Svelte
+transitions still require it; this tightening is deliberately script-only.
+
+The Netlify/SSR security-header policy is now the complementary
+`frame-ancestors 'none'; report-uri /api/csp-report` subset. It deliberately carries neither
+`default-src` nor `script-src`: browsers enforce multiple policies by intersection, so retaining
+either directive in that second policy would block the inline boot code that SvelteKit's hashes or
+nonces authorize. On SSR responses, `hooks.server.ts` preserves SvelteKit's existing full CSP
+instead of replacing it with the platform subset. On prerendered responses, Netlify supplies the
+subset that meta delivery cannot express, while SvelteKit's meta policy retains `report-to csp` and
+the response's `Reporting-Endpoints` header defines that group.
+
+Reporting coverage is not equivalent across the two delivery modes. Header-delivered SSR CSP keeps
+both reporting mechanisms. On prerendered pages, legacy `report-uri` covers only violations of the
+platform subset because browsers forbid it in a meta policy. The meta resource policy can generate
+`report-to` entries in Chromium and WebKit — verified against the deployed policy through each
+engine's `ReportingObserver` — but Reporting API network delivery is explicitly best-effort and the
+same probe did not reach the Netlify receiver. Firefox versions without Reporting API delivery, and
+users or privacy tools that disable it, have no fallback for meta resource-policy violations. This
+loss is accepted to preserve prerendering and SvelteKit's generated script hashes; enforcement is
+unchanged. Generating per-route Netlify policies from build output would restore a header reporting
+channel but add a second CSP generator, while disabling prerendering would change the site's
+delivery and performance model. Either remains a reversible follow-up if complete reporting becomes
+more important than those costs.
+
+The hand-authored pre-paint stamp in `app.html` cannot use `%sveltekit.nonce%`, because SvelteKit
+forbids that placeholder anywhere in a prerendered template. Its exact body is authorized by
+`APP_TEMPLATE_SCRIPT_HASH`, and `securityPolicy.test.ts` recomputes the SHA-256 from `app.html` so
+any edit must explicitly update the policy. `/beta`'s generated pre-paint platform stamp has the
+same guarded hash treatment. Externalizing either stamp was rejected because a new parser-blocking
+file read would move first-paint state behind an avoidable request; generating route-specific
+Netlify headers was rejected because SvelteKit already owns the correct per-page hash set and would
+create a second build-output parser to keep aligned.
+
+As a consequence, production Playwright builds carry the resource policy themselves instead of
+running almost entirely without CSP. The focused `enforceProductionCsp` helper only adds the Netlify
+half locally, reproducing the deployed two-policy composition.

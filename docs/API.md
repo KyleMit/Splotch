@@ -363,10 +363,18 @@ hours. See ADR-0104.
 ### `POST /api/csp-report`
 
 First-party receiver for browser CSP violation reports (issue #457) — the `report-uri` / `report-to`
-target of the site's `Content-Security-Policy` header (root `netlify.toml`, which also sends the
-matching `Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured
-`[csp-report]` lines in the Netlify function log — the app's only telemetry sink (no third-party
-reporting by design; same stance as `handleError` in `hooks.server.ts`).
+target of the site's composed Content Security Policy (SvelteKit's resource policy plus the
+meta-unsupported subset in root `netlify.toml`, which also sends the matching
+`Reporting-Endpoints: csp="/api/csp-report"` header). Violations land as structured `[csp-report]`
+lines in the Netlify function log — the app's only telemetry sink (no third-party reporting by
+design; same stance as `handleError` in `hooks.server.ts`).
+
+Delivery is browser-best-effort rather than complete telemetry. SSR policies are response headers
+and carry both `report-uri` and `report-to`. Prerendered resource policies are meta-delivered, where
+`report-uri` is forbidden; Chromium and WebKit generate observable `report-to` entries, but network
+delivery is not guaranteed, and Firefox versions without Reporting API delivery have no fallback.
+The complementary response policy's own violations still use `report-uri`. See ADR-0073 for the
+accepted prerendering tradeoff.
 
 Browsers post these unauthenticated, so there is no credential gate. Accepted `Content-Type`s:
 `application/csp-report` (the legacy `report-uri` batch, `{"csp-report": {…kebab-case…}}` — Firefox
@@ -442,7 +450,7 @@ mutations never need a follow-up fetch:
 
 `persistent` reports whether the list is durably backed by Netlify Blobs (`true`) or the in-memory
 env-seeded read fallback (`false` — local dev, or a deployed function without the Blobs context; see
-ADR-0025). `tools/api-smoke/check-deployed-blobs.mjs` asserts it is `true` against a real deploy.
+ADR-0025). `tools/api-smoke/check-deployed-contract.mjs` asserts it is `true` against a real deploy.
 
 | Method   | Body                  | Effect                                                                            |
 | -------- | --------------------- | --------------------------------------------------------------------------------- |
@@ -489,7 +497,7 @@ curl -s https://splotch.art/api/admin/tokens \
 
 ## Validating the API
 
-Run `npm run test:api:smoke` to check the live `/api/*` contract end-to-end. It's self-contained —
+Run `npm run test:api:smoke` to check the local `/api/*` contract end-to-end. It's self-contained —
 it boots a throwaway `vite dev` with a test `ADMIN_ACCESS_TOKEN`, exercises the admin auth flow
 (login success/failure, the bearer gate, and a token add/remove round-trip), the CORS contract
 (`OPTIONS /api/*` → 204 carrying the CORS set, a non-`OPTIONS` `/api/*` response carrying it too,
@@ -503,9 +511,25 @@ are out of scope. Use it to sanity-check the contract after changing any endpoin
 counterpart to the Playwright admin E2E in `tests/admin.spec.ts`. CI runs it in the `unit` job of
 `test.yml` on every push/PR, so a contract regression fails the PR instead of shipping.
 
-`test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs, so it can't catch the
-failure mode of ADR-0025 (a deployed function without the Blobs context). For that, run
-`npm run test:blobs:smoke` against a real deploy:
+`test:api:smoke` deliberately runs against `vite dev`, which has **no** Blobs or deployed CDN
+configuration. The normal real-deploy gate is `npm run test:deploy:smoke`:
+
+```bash
+DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
+ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
+```
+
+It checks the deployed `/`, `/privacy`, and SSR-rendered `/admin` routes, security and cache
+headers, exact ADR-0030 version freshness, both native CORS origins, representative canonical
+failures that cannot reach a model call, and an admin token persistence round-trip. The workflow
+probes production daily; manual dispatch accepts an optional preview or production URL and otherwise
+uses production. The unrelated GitHub Pages `deployment_status` event is not a trigger or target
+source. Checks with an explicit preview URL compare the deployed version to their selected ref
+exactly; production checks require the version shape and no-cache policy but allow the build to
+trail docs/tooling-only commits excluded by ADR-0070, including when its canonical URL is entered
+explicitly.
+
+To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 
 ```bash
 BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
@@ -513,9 +537,8 @@ ADMIN_ACCESS_TOKEN=… npm run test:blobs:smoke
 ```
 
 It logs in, asserts the snapshot's `persistent` is `true` (false ⇒ Blobs is dead on that deploy),
-round-trips a unique token through Blobs, and cleans it up. Run it against a PR's deploy preview
-before merging an adapter/Netlify-config change, and against `https://splotch.art` to confirm
-production.
+round-trips a unique token through Blobs, and cleans it up. The full hosted gate uses the same
+persistence contract.
 
 ## Local development
 

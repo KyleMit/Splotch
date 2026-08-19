@@ -22,10 +22,8 @@
 // the deploy's admin secret (it never travels except in the login POST body, over
 // https).
 
-import { randomUUID } from 'node:crypto';
-import { sleep } from '../lib/proc.mjs';
-import { check, fatal, summarize } from '../lib/smoke.mjs';
-import { adminClient } from './lib/admin-client.mjs';
+import { fatal, summarize } from '../lib/smoke.mjs';
+import { checkDeployedAdminContract } from './lib/deployed-admin-contract.mjs';
 
 const BASE = (process.argv[2] ?? process.env.BLOBS_SMOKE_URL ?? '').replace(/\/$/, '');
 const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
@@ -42,74 +40,8 @@ if (!BASE || !ADMIN_SECRET) {
   process.exit(2);
 }
 
-const admin = adminClient(BASE);
-
-// Exchange the admin secret for a bearer session, riding out the per-IP rate
-// limiter that guards the login oracle (a re-run within the window can 429).
-async function login() {
-  const { res, body } = await admin.login(ADMIN_SECRET, { retryOn429: true });
-  if (res.status !== 200) {
-    throw new Error(`login failed: ${res.status} (check ADMIN_ACCESS_TOKEN matches the deploy)`);
-  }
-  return body?.session;
-}
-
-let session;
-let probe;
-
 async function run() {
-  session = await login();
-  check('admin login → session', /^[a-f0-9]{64}$/.test(session ?? ''), `got ${session}`);
-  const auth = { Authorization: `Bearer ${session}` };
-  probe = `blobs-smoke-${randomUUID()}`;
-
-  // The core assertion: a deployed function with a working Blobs context reports
-  // persistent:true. V1-function regression (no NETLIFY_BLOBS_CONTEXT) → false.
-  const { res: list, body: listBody } = await admin.listTokens(auth);
-  check(
-    'GET tokens → 200 snapshot',
-    list.status === 200 && listBody?.ok === true,
-    `got ${list.status}`
-  );
-  check(
-    'Blobs is live on the deployed function (persistent:true)',
-    listBody?.persistent === true,
-    `persistent=${listBody?.persistent} — getStore() is failing on the deploy (ADR-0025)`
-  );
-
-  // Round-trip a real write through Blobs, then confirm it reads back (with a
-  // little patience for eventual consistency across replicas).
-  const { res: add, body: addBody } = await admin.addToken(auth, probe);
-  check(
-    'POST adds the probe token',
-    add.status === 200 && addBody?.tokens?.includes(probe),
-    `got ${add.status}`
-  );
-  check(
-    'POST snapshot still persistent:true',
-    addBody?.persistent === true,
-    `persistent=${addBody?.persistent}`
-  );
-
-  let readBack = false;
-  for (let attempt = 0; attempt < 6 && !readBack; attempt++) {
-    if (attempt) await sleep(1000);
-    const { body: after } = await admin.listTokens(auth);
-    readBack = Boolean(after?.tokens?.includes(probe));
-  }
-  check(
-    'probe token reads back from Blobs',
-    readBack,
-    'not visible after retries — write did not durably land'
-  );
-
-  // Cleanup: remove the probe so the shared site-wide store stays clean.
-  const { res: removed, body: removedBody } = await admin.delToken(auth, probe);
-  check(
-    'DELETE removes the probe token',
-    removed.status === 200 && !removedBody?.tokens?.includes(probe),
-    `got ${removed.status}`
-  );
+  await checkDeployedAdminContract(BASE, ADMIN_SECRET);
 }
 
 console.log(`[blobs-smoke] target: ${BASE}\n`);
@@ -117,12 +49,6 @@ try {
   await run();
 } catch (err) {
   fatal(err);
-} finally {
-  // Best-effort cleanup if we got far enough to add the probe (idempotent, so
-  // a re-delete after the in-run cleanup is harmless).
-  if (session && probe) {
-    await admin.delToken({ Authorization: `Bearer ${session}` }, probe).catch(() => {});
-  }
 }
 
 summarize();

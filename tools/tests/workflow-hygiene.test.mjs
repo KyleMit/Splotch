@@ -213,12 +213,31 @@ describe('workflow hygiene', () => {
       expect(runtimeMajor).toBe(floorMajor);
     });
 
-    it('keeps Node setup active when blobs-smoke skips dependencies', () => {
+    it('keeps Node setup active when the hosted deploy smoke skips dependencies', () => {
       const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
 
       expect(setupPnpmAction.lines.some((line) => /^\s+if:/.test(line))).toBe(false);
       expect(blobsSmoke.lines).toContain('      - uses: ./.github/actions/setup-pnpm');
       expect(blobsSmoke.lines).toContain("          install: 'false'");
+    });
+
+    it('runs the automatic hosted deploy smoke only on its production schedule', () => {
+      const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
+
+      expect(blobsSmoke.lines).not.toContain('  deployment_status:');
+      expect(blobsSmoke.lines).toContain(
+        "          DEPLOY_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}"
+      );
+      expect(blobsSmoke.lines).toContain('        required: false');
+      expect(blobsSmoke.lines).toContain('  group: hosted-deploy-smoke');
+      expect(blobsSmoke.lines).toContain('          fetch-depth: 0');
+      expect(blobsSmoke.lines).toContain(
+        "          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event.inputs.url && github.event.inputs.url != 'https://splotch.art' && github.event.inputs.url != 'https://splotch.art/' && 'true' || 'false' }}"
+      );
+      expect(blobsSmoke.lines).toContain(
+        '        run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs'
+      );
+      expect(blobsSmoke.lines.join('\n')).not.toContain('deployment_status.environment_url');
     });
 
     it('the Netlify build pins the engines floor major', () => {
@@ -262,6 +281,38 @@ describe('workflow hygiene', () => {
         .map((entry) => entry.trim());
 
       expect(new Set(matrix)).toEqual(new Set(callerBrowsers));
+    });
+  });
+
+  describe('Playwright e2e sharding', () => {
+    it('keeps the job total equal to the contiguous shard axis', () => {
+      const testsWorkflow = workflows.find(({ name }) => name === 'test.yml');
+      const testJob = jobs(testsWorkflow.lines).find(({ id }) => id === 'test');
+      const matrixStart = testJob.lines.findIndex((line) => line === '      matrix:');
+      expect(matrixStart).toBeGreaterThanOrEqual(0);
+
+      const matrixLines = [];
+      for (const line of testJob.lines.slice(matrixStart + 1)) {
+        if (/^ {8}/.test(line)) matrixLines.push(line);
+        else if (line.trim() !== '') break;
+      }
+      const axes = matrixLines
+        .map((line) => line.match(/^ {8}([\w-]+):/)?.[1])
+        .filter((axis) => axis !== undefined);
+      const shardLine = matrixLines.find((line) => /^ {8}shard: \[/.test(line));
+      expect(shardLine).toBeDefined();
+      const shardValues = shardLine
+        .match(/\[(.*)\]/)[1]
+        .split(',')
+        .map((value) => Number(value.trim()));
+      const jobText = testJob.lines.join('\n');
+
+      expect(axes).toEqual(['shard']);
+      expect(shardValues).toEqual(
+        Array.from({ length: shardValues.length }, (_, index) => index + 1)
+      );
+      expect(jobText).toContain('name: Tests (${{ matrix.shard }}/${{ strategy.job-total }})');
+      expect(jobText).toContain('--shard=${{ matrix.shard }}/${{ strategy.job-total }}');
     });
   });
 

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
@@ -14,7 +15,11 @@ import { STARTER_COLORING_BOOK_ID } from '../../web/src/lib/state/books.ts';
 import { FEEDBACK_URL } from '../../web/src/lib/siteUrl.ts';
 import { supportEmail } from '../../web/src/lib/supportEmail.ts';
 import { storePage } from '../../web/src/routes/dev/store-frames/lib/pages.ts';
-import { nativeMetaCspDirectives, serializeCspDirectives } from '../../web/securityPolicy.ts';
+import {
+  inlineExecutableScriptBodies,
+  nativeMetaCspDirectives,
+  serializeCspDirectives,
+} from '../../web/securityPolicy.ts';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
@@ -181,7 +186,6 @@ export function nativeContentSecurityPolicyProblems(dir) {
       .map((part) => part.trim().split(/\s+/))
       .map(([directive, ...sources]) => [directive, sources.sort()])
       .sort(([left], [right]) => left.localeCompare(right));
-  const expected = normalizePolicy(serializeCspDirectives(nativeMetaCspDirectives()));
   return htmlFiles.flatMap((path) => {
     const source = readFileSync(path, 'utf8');
     const policies = [
@@ -191,6 +195,16 @@ export function nativeContentSecurityPolicyProblems(dir) {
     if (policies.length !== 1) {
       return [`Native HTML ${file} has ${policies.length} CSP meta tags; expected exactly 1`];
     }
+    const inlineScriptHashes = inlineExecutableScriptBodies(source).map(
+      (script) => `sha256-${createHash('sha256').update(script).digest('base64')}`
+    );
+    const native = nativeMetaCspDirectives();
+    const expected = normalizePolicy(
+      serializeCspDirectives({
+        ...native,
+        'script-src': [...new Set([...(native['script-src'] ?? []), ...inlineScriptHashes])],
+      })
+    );
     return JSON.stringify(normalizePolicy(policies[0])) === JSON.stringify(expected)
       ? []
       : [`Native HTML ${file} has the wrong CSP meta policy: ${policies[0]}`];

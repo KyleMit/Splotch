@@ -35,6 +35,8 @@ const STROKE_COMPLETION_DELAY_MS = 40;
 const MENU_DISMISSAL_DELAY_MS = 200;
 const BRUSH_MENU_TRANSITION_DELAY_MS = 150;
 const BRUSH_COMMIT_TIMEOUT_MS = 10_000;
+/** @public */
+export const DRAW_STROKE_STEPS = 6;
 
 const isUp = async (url) => {
   try {
@@ -171,7 +173,7 @@ export async function drawStroke(page, box, pts, { finishEndpoint = false } = {}
   await page.mouse.move(abs[0].x, abs[0].y);
   await page.mouse.down();
   for (let i = 1; i < abs.length; i++) {
-    await page.mouse.move(abs[i].x, abs[i].y, { steps: 6 });
+    await page.mouse.move(abs[i].x, abs[i].y, { steps: DRAW_STROKE_STEPS });
   }
   // The engine's live curve ends at the midpoint before the last raw sample.
   // Holding that endpoint for one more sample lets authored pointer paths reach it.

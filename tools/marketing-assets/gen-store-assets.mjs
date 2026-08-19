@@ -165,8 +165,8 @@ async function sceneHero(browser, base, capture, orientation) {
   await expandDrawer(page);
   const box = await canvasBox(page);
   await (orientation === 'portrait'
-    ? drawIslandTall(page, insetHeroBox(box))
-    : drawDinosaurWide(page, box));
+    ? drawIslandTall(page, insetHeroBox(box), { replay: 'engine' })
+    : drawDinosaurWide(page, box, { replay: 'engine' }));
   await pickColor(page, C.green); // the spec's resting selection: green ring, pen brush
   await sleep(SCREENSHOT_SETTLE_MS);
   const shot = await page.screenshot();
