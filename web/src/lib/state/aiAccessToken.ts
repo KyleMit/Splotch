@@ -1,5 +1,6 @@
 import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 import { clearAccessCode, loadAccessCode, saveAccessCode } from '../secureStorage';
+import { requestPersistentStorage } from '../idb';
 import { readString, removeKey, STORAGE_KEYS } from '../storage';
 import { settings } from './settings.svelte';
 import { createSecureCredentialCoordinator } from './secureCredentialCoordinator';
@@ -16,6 +17,14 @@ const aiAccessTokenCoordinator = createSecureCredentialCoordinator(
 );
 
 export const setAiAccessToken = aiAccessTokenCoordinator.setCredential;
+
+export async function setUserSubmittedAiAccessToken(value: string, ownsRequest?: () => boolean) {
+  const persisted = await setAiAccessToken(value, ownsRequest);
+  // Best-effort, and only after a successful explicit save: invite-link capture
+  // is credential delivery, not the parent's opt-in action (ADR-0127/0128).
+  if (persisted && value) void requestPersistentStorage();
+  return persisted;
+}
 
 export function hydrateAiAccessToken() {
   return aiAccessTokenCoordinator.runHydration(async (ownsHydration) => {

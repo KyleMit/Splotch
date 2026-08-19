@@ -1,7 +1,7 @@
 import type { DBSchema } from 'idb';
 import { browser } from '$app/environment';
 import { STORAGE_KEYS, readBool, writeBool, removeKey } from '$lib/storage';
-import { idbKvStore } from '$lib/idb';
+import { idbKvStore, requestPersistentStorage } from '$lib/idb';
 
 // Silent folder save for the web target. On desktop Chromium (in-tab or
 // installed PWA) the File System Access API lets the parent optionally pick a
@@ -99,6 +99,10 @@ export async function chooseSaveFolder(): Promise<string | null> {
   writeBool(STORAGE_KEYS.saveFolderChosen, true);
   try {
     await storeHandle(handle);
+    // The Choose/Change-folder click is the opt-in boundary; hydration must not
+    // turn a remembered handle into a surprise browser permission prompt
+    // (ADR-0128).
+    void requestPersistentStorage();
   } catch (err) {
     // The pick itself succeeded and the cached handle covers this session; only
     // persistence across reloads is lost.
