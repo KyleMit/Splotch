@@ -4,6 +4,28 @@
 [0080](0080-committed-brush-mode-seam-and-paced-strokes.md) **Amended by:**
 [0123](0123-capture-mode-flag-for-store-screenshots.md)
 
+## Amendment (2026-08-19): a harness-only engine transition may compose production primitives
+
+ADR-0122's store-hero replay adds one second allowed invoke shape. A handle need not point to a
+function called by production UI when the owning production module itself implements a narrowly
+gated transition from user-reachable inputs by composing the exact renderer and state primitives the
+UI path uses. `engine.replayHarnessStroke` accepts a color, one of the production stroke-size
+levels, and canvas-local points; it creates the same dot/path operations and one history command the
+pointer lifecycle would. It does not paint a substitute canvas, import authored SVG, or create a
+state the child cannot reach.
+
+This exception requires all of the following in addition to the original compile-time gate and
+release scan:
+
+* the seam lives with the production state owner rather than in a parallel harness implementation;
+* its input vocabulary is no broader than production-reachable values;
+* it preserves the production operation and commit boundaries relevant to the resulting state; and
+* the adopting workflow empirically compares the seam output with the real interaction path.
+
+Direct setters and arbitrary internal-state hydration remain disallowed. The exception exists for a
+complete production transition whose input-delivery layer is the measured cost or flake source, not
+for making a difficult test state convenient.
+
 ## Context
 
 The AI result modal was exercised by a dedicated AI timer dev page that called `startAiGeneration`

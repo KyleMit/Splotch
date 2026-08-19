@@ -33,6 +33,7 @@ export const DEV_GATED_ENGINE_EXPORTS = [
   'getDrawingWorkDebug',
   'getUndoDebug',
   'setCrayonParams',
+  'replayHarnessStroke',
 ];
 
 export const RELEASE_ONLY_TOKENS = [

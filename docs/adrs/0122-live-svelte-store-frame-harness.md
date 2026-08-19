@@ -2,6 +2,66 @@
 
 **Status:** Active **Date:** 2026-08
 
+## Amendment (2026-08-19): hero drawings replay at the engine boundary
+
+The free-draw hero scene now feeds the compiled store-drawing instructions through a dev-gated
+engine API instead of reproducing them as Playwright pointer gestures. This changes only how the
+authored strokes enter the app. `engine.ts` still creates the same dot/path operations, renders them
+through the tiled renderer, and commits one history command per stroke; the screenshot still comes
+from the live `/` route beneath its real palette, drawer, clear button, and settings button.
+
+The seam lives in `web/src/lib/drawing/engine.ts`, not `/dev/engine`: the engine owns midpoint
+smoothing, brush state, tiled rendering, and history, while the capture must run on the real drawing
+route whose chrome is being photographed. `boot/devHarnessSeam.ts` publishes `window.__replayStroke`
+only in development or a `PUBLIC_ENABLE_DEV_HARNESS=true` build. The release-seam scanner derives
+that property name from the boot module and requires `replayHarnessStroke` to begin behind the
+compile-time gate, so neither invocation path remains in a release bundle.
+
+`tools/store-drawings/lib/drawing-instructions.mjs` remains the coordinate/replay owner. Its engine
+path converts a possibly inset page-space scene box to canvas-local coordinates, expands every
+segment to the same six samples Playwright's pointer path produces, holds the final endpoint once,
+then makes one engine call per compiled stroke. The engine emits one path operation per sample, so
+the renderer sees the same midpoint and anti-aliasing boundaries rather than one newly batched path.
+Color tokens and the five-level width remain the compiled inputs; the final green palette click in
+`sceneHero` still uses the real UI so the photographed selection ring is genuine.
+
+The production-build comparison used the actual portrait island and landscape dinosaur hero
+captures:
+
+| Hero      | Pointer draw | Engine draw | Draw speedup | Canvas soft-ink IoU | Pixels differing >8 RGB |
+| --------- | -----------: | ----------: | -----------: | ------------------: | ----------------------: |
+| Portrait  |     95.915 s |     0.186 s |       515.2× |          0.99997619 |  21 / 423,936 (0.0050%) |
+| Landscape |    109.083 s |     0.249 s |       438.7× |          0.99997373 |  34 / 530,012 (0.0064%) |
+
+Whole-scene wall time, including app boot, drawer expansion, the real final swatch click, settle,
+and screenshot, fell from 102.725 s to 6.761 s in portrait and from 115.732 s to 6.889 s in
+landscape. The full screenshots had zero portrait and one landscape pixel differing by more than 8
+RGB levels. Static flake-surface accounting removed 1,377/1,845 mouse-move calls, 93/78 color or
+size-control changes, and 342/414 fixed replay sleeps; the replacement performs 162/264 synchronous
+engine calls with no replay sleeps.
+
+Only `sceneHero` adopts this path. The books scene is a dialog/layout capture, the magic scene's
+subject is the in-progress reveal caused by genuine stroke interaction, and the parent scene is a
+settings-navigation capture. They remain app-driver flows because bypassing their gestures would
+skip the behavior each screenshot claims to show. The general fidelity evaluator and brush review
+also retain pointer replay: they exist to measure that boundary and review user-selectable brush
+input, rather than to optimize release capture time.
+
+Alternatives were rejected as follows:
+
+* **Expose the `/dev/engine` harness API.** It has pixel readers useful to tests but does not render
+  the real store chrome, so capturing there and compositing later would violate the honest-app-state
+  requirement.
+* **Replay the whole drawing in one batch call.** That would merge undo commands and path-operation
+  boundaries, creating a state and rasterization pattern unlike the pointer result.
+* **Keep hero pointer replay.** It was faithful, but the measured two-minute drawing cost and its
+  selector/menu/sleep surface bought no visible fidelity over the engine result.
+
+This amendment also narrows ADR-0109's invoke-handle rule: a harness-only engine transition is
+allowed when its owner composes the same production renderer/history primitives from
+production-reachable inputs, the resulting app state is user-reachable, and empirical comparison
+guards against a shortcut that merely resembles that state.
+
 ## Context
 
 The store screenshots (Google Play + App Store, five marketing pages × four device slots, plus the

@@ -156,6 +156,10 @@ Configured in `tools/store-drawings/vitest.config.mjs`. These run in Node agains
 samples and static instruction module. They cover the supported SVG subset, coordinate fitting,
 closed width/color vocabularies, and exact generator drift without launching a browser.
 
+`web/tests/store-drawing-replay.spec.ts` is the complementary browser contract for ADR-0122's hero
+capture seam: it invokes one stroke on the real drawing route and asserts that the engine commits a
+rendered history command without leaving synthetic pointer chrome behind.
+
 ## Repo-script unit tests — Vitest
 
 ```bash

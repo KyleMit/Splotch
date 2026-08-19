@@ -32,10 +32,12 @@ maps each source path to one of the five real app levels after scaling against t
 or landscape store canvases.
 
 `tools/store-drawings/lib/drawing-instructions.mjs` fits the static coordinates within the canvas
-and delegates every stroke to `tools/app-driver/lib/app-driver.mjs`. The driver changes colors and
-widths through visible controls and sends Playwright mouse down/move/up input to `#drawingCanvas`;
-it does not call the engine or paint a canvas directly. An extra held endpoint sample compensates
-for the engine's intentional midpoint smoothing so an authored path reaches its final coordinate.
+and owns two delivery paths. The default delegates every stroke to
+`tools/app-driver/lib/app-driver.mjs`: the driver changes colors and widths through visible controls
+and sends Playwright mouse down/move/up input to `#drawingCanvas`. The store hero selects
+`replay: 'engine'`, which expands the exact same six intermediate samples and held endpoint, then
+calls the dev-gated production engine once per stroke. Both paths therefore reach the same midpoint
+smoothing, tiled renderer, and history; neither paints a substitute canvas.
 
 Named drawing functions can select Pen, Crayon, or Magic through the production Brush Menu before
 replaying their shared pointer instructions. Magic skips stored color selections because the brush
@@ -49,8 +51,9 @@ workflow and overlay interpretation are documented in `tools/store-drawings/READ
 
 ## Tradeoffs
 
-* \+ Store screenshots exercise the production palette, width controls, pointer listeners, renderer,
-  and tiled canvas instead of presenting imported art as if it had been drawn.
+* \+ Store hero screenshots exercise the production renderer, history, and tiled canvas instead of
+  presenting imported art as if it had been drawn; the real final palette selection and app chrome
+  remain in the capture.
 * \+ Generated scenes remain usable after their SVG authoring inputs are removed; each named
   function contains everything required for replay.
 * \+ The converter makes another authored SVG reproducible, and the two-stage evaluator
@@ -59,8 +62,9 @@ workflow and overlay interpretation are documented in `tools/store-drawings/READ
   guesses.
 * − The generated module is large, machine-authored data and is excluded from Prettier; generator
   drift is enforced separately.
-* − Replaying hundreds of genuine strokes is slow. This is accepted for an offline workflow run only
-  a few times per year.
+* − Pointer-based fidelity evaluation and brush review remain slow by design. The release-capture
+  hero avoids that cost through its measured engine seam, while scenes whose subject is UI or
+  gesture behavior remain app-driver flows.
 * − SVGs outside the supported centerline subset must be simplified before conversion; failing on
   unsupported surface is preferable to silently producing a different drawing.
 * − Splotch has fixed widths and no pressure input, so continuously varying source widths can only
