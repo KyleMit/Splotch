@@ -33,7 +33,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   ROOT,
-  VARIANTS,
+  PRODUCTION_VARIANT,
   DEFAULT_PROMPT,
   SAFETY_SYSTEM_INSTRUCTION,
   assertProductionConfig,
@@ -77,12 +77,14 @@ const CALL_TIMEOUT_MS = 300_000;
 const REPORT_THUMB_LONG_SIDE_PX = 512;
 const REPORT_THUMB_JPEG_QUALITY = 82;
 
-// The default arm model is the cheapest candidate tier — it is the one that
-// drifts, and the one production picked (web/src/lib/server/ai/openai.ts). A
-// lab may override `variant` to pit another model+knob combo against the same
-// prompts; gpt-image-1.5 is the newest OpenAI model that still accepts
-// input_fidelity (gpt-image-2 rejects the parameter with a 400).
-const DEFAULT_VARIANT = VARIANTS.find((v) => v.key === 'gpt-image-2-low');
+// The default arm is whatever production renders with, resolved from the
+// IMAGE_MODEL/IMAGE_QUALITY pair the drift check pins to
+// web/src/lib/server/ai/openai.ts — a prompt round measured against a model the
+// app does not ship is worse than no measurement. A lab may override `variant`
+// to pit another model+knob combo against the same prompts; gpt-image-1.5 is the
+// newest OpenAI model that still accepts input_fidelity (gpt-image-2 rejects the
+// parameter with a 400).
+const DEFAULT_VARIANT = PRODUCTION_VARIANT;
 const GPT_IMAGE_1_5_LOW = {
   key: 'gpt-image-1-5-low',
   label: 'gpt-image-1.5 · low',
