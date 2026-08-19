@@ -1,6 +1,6 @@
 import { scheduleIdle } from '$lib/idle';
 import { requestPersistentStorage } from '$lib/idb';
-import type { ResolvedColoringPackBookManifest } from './manifest';
+import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 import { COLORING_PACK_RESOLUTIONS } from './resolution';
 import {
@@ -57,6 +57,19 @@ async function deleteOldCaches(currentName: string) {
   );
 }
 
+async function hasCompleteBook(
+  cache: Cache,
+  manifest: ResolvedColoringPackManifest,
+  book: ResolvedColoringPackBookManifest
+): Promise<boolean> {
+  const markerPath = coloringPackMarkerPath(manifest, book.id);
+  if (!(await cache.match(markerPath))) return false;
+  const cachedFiles = await Promise.all(book.files.map((file) => cache.match(file.path)));
+  const complete = cachedFiles.every((response) => !!response);
+  if (!complete) await cache.delete(markerPath);
+  return complete;
+}
+
 export function createWebColoringPackStore(): ColoringPackStore {
   return {
     async installed(manifest): Promise<InstalledColoringPack[]> {
@@ -67,7 +80,7 @@ export function createWebColoringPackStore(): ColoringPackStore {
         manifest.books
           .filter((book) => book.id !== manifest.starterBookId)
           .map(async (book) =>
-            (await cache.match(coloringPackMarkerPath(manifest, book.id))) ? { id: book.id } : null
+            (await hasCompleteBook(cache, manifest, book)) ? { id: book.id } : null
           )
       );
       return installed.filter((pack): pack is InstalledColoringPack => !!pack);
