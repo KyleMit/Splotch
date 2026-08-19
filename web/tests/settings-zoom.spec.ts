@@ -432,6 +432,7 @@ test('parent-facing inputs on the drawing route render ≥16px (no iOS focus-zoo
       .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
 
   await page.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  await page.locator('#aiImageToggle').click();
   await expect(page.locator('.access-code-input').first()).toBeVisible();
   expect(await fontPx('.access-code-input')).toBeGreaterThanOrEqual(16);
 

@@ -8,6 +8,7 @@
   import CompactShell from './settings/CompactShell.svelte';
   import WideShell from './settings/WideShell.svelte';
   import ToggleSwitch from './settings/ToggleSwitch.svelte';
+  import './SettingsModal.ai.css';
   import ScrollCue from './design/ScrollCue.svelte';
   import { SECTIONS, sectionHeading, sectionSubtitle, type SectionId } from './settings/sections';
   import { modalDialog } from '$lib/actions/modalDialog.svelte';
@@ -168,7 +169,7 @@
 </script>
 
 <dialog
-  class="settings-modal modal-dialog modal-fly-in modal-shell"
+  class="settings-modal modal-dialog modal-fly-in modal-shell {view === 'ai' ? 'ai-section' : ''}"
   class:resizing={ui.resizingActionButtons}
   class:wide={wide.current}
   class:compact={compact.current}

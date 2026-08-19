@@ -1,9 +1,14 @@
 <script lang="ts">
+  import { slide } from 'svelte/transition';
   import Icon from '../Icon.svelte';
   import Button from '../design/Button.svelte';
   import Disclosure from '../design/Disclosure.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import AiFeatureToggles from './AiFeatureToggles.svelte';
+  import AiValueProp from './AiValueProp.svelte';
+  import ToggleRow from './ToggleRow.svelte';
+  import { AI_CREATE_HELP, AI_CREATE_LABEL } from './aiSettingsCopy';
+  import { SECTION_SLIDE } from './sections';
   import { settings, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
   import { setAiAccessToken } from '$lib/state/aiAccessToken';
@@ -151,7 +156,8 @@
       }
       if (!persisted) return;
 
-      setAiImage(true); // turn the feature on the moment a valid credential lands
+      // A verified credential submitted here is the explicit opt-in boundary in ADR-0127.
+      setAiImage(true);
       keyInput = '';
       keyStatus = 'success';
       keyMessage = KEY_MESSAGES.accepted[result.kind];
@@ -176,139 +182,180 @@
   }
 </script>
 
-<section class="setting-group">
-  {#if aiLocked}
-    <div class="setting byok">
-      <p class="byok-intro">
-        {#if freeGenerations.loading}
-          <strong>Checking your free AI creations…</strong>
-        {:else if freeGenerations.available && freeGenerations.remaining > 0}
-          <strong
-            >{freeGenerations.remaining} free AI {freeGenerations.remaining === 1
-              ? 'creation'
-              : 'creations'} left.</strong
-          >
-          No setup is needed. After those are used, add your own OpenAI API key to keep creating.
-        {:else if freeGenerations.available}
-          <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your own OpenAI
-          API key to keep creating.
+<div class="ai-settings-stack">
+  <section class="setting-group ai-primary-toggle">
+    <div class="setting">
+      <ToggleRow
+        icon="wand-stars"
+        label={AI_CREATE_LABEL}
+        id="aiImageToggle"
+        checked={settings.aiImageEnabled}
+        onToggle={setAiImage}
+        help={settings.aiImageEnabled ? AI_CREATE_HELP.on : AI_CREATE_HELP.off}
+      />
+    </div>
+  </section>
+
+  {#if !settings.aiImageEnabled}
+    <div transition:slide={SECTION_SLIDE}>
+      <AiValueProp />
+    </div>
+  {/if}
+
+  {#if settings.aiImageEnabled}
+    <div class="ai-enabled-settings" transition:slide={SECTION_SLIDE}>
+      <section class="setting-group">
+        {#if aiLocked}
+          <div class="setting byok">
+            <p class="byok-intro">
+              {#if freeGenerations.loading}
+                <strong>Checking your free AI creations…</strong>
+              {:else if freeGenerations.available && freeGenerations.remaining > 0}
+                <strong
+                  >{freeGenerations.remaining} free AI {freeGenerations.remaining === 1
+                    ? 'creation'
+                    : 'creations'} left.</strong
+                >
+                No setup is needed. After those are used, add your own OpenAI API key to keep creating.
+              {:else if freeGenerations.available}
+                <strong>Your {FREE_GENERATION_LIMIT} free AI creations are used up.</strong> Add your
+                own OpenAI API key to keep creating.
+              {:else}
+                Add your own OpenAI API key to create AI art while the free allowance is
+                unavailable.
+              {/if}
+              Your key is saved only on this device, used only for pictures made here, and billed to your
+              OpenAI account. We never keep a copy of it.
+            </p>
+
+            <Disclosure class="byok-howto">
+              {#snippet summary()}How do I get an OpenAI API key?{/snippet}
+              <ol>
+                <li>
+                  Open <a
+                    href="https://platform.openai.com/api-keys"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    use:parentalGateLink>the OpenAI API keys page</a
+                  >.
+                </li>
+                <li>Sign in, or create an OpenAI account.</li>
+                <li>
+                  Under <strong>Settings → Organization</strong>, finish
+                  <strong>verification</strong>. OpenAI requires it before any key can make
+                  pictures. Do this <em>before</em> the next step — a key made without it saves here perfectly
+                  and then fails when the picture button is tapped.
+                </li>
+                <li>
+                  Click <strong>Create new secret key</strong>, then copy it (it starts with
+                  <code>sk-…</code>) and paste it below. You only get to see it once.
+                </li>
+              </ol>
+              <p class="byok-howto-note">
+                OpenAI bills picture-making usage to your account at its own rates, and requires the
+                account to have billing set up before a key can make pictures. Sent an access code
+                by us instead? Paste that in the same box — it works there too.
+              </p>
+            </Disclosure>
+
+            <label class="access-code-label" for="aiKeyInput">OpenAI API Key</label>
+            <div class="access-code-row">
+              <input
+                id="aiKeyInput"
+                class="access-code-input"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                autocapitalize="none"
+                spellcheck="false"
+                placeholder="Paste your OpenAI API key"
+                bind:value={keyInput}
+                onkeydown={(e) => e.key === 'Enter' && submitKey()}
+              />
+              <Button
+                variant="brand"
+                class="access-code-submit"
+                onclick={submitKey}
+                disabled={!keyInput.trim() || keyStatus === 'busy'}
+              >
+                {keyStatus === 'busy' ? 'Checking…' : 'Save'}
+              </Button>
+            </div>
+            <p class="byok-storage-note">
+              <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
+            </p>
+          </div>
         {:else}
-          Add your own OpenAI API key to create AI art while the free allowance is unavailable.
+          <div class="setting byok byok-active">
+            {#if hasApiKey}
+              <p class="byok-intro">
+                You're using <strong>your own OpenAI API key</strong>. Usage is billed to your
+                OpenAI account. Forget the key any time to switch it off.
+              </p>
+              <label class="access-code-label" for="aiKeyActive">OpenAI API Key</label>
+              <div class="access-code-row">
+                <input
+                  id="aiKeyActive"
+                  class="access-code-input"
+                  type="text"
+                  readonly
+                  aria-label="Saved OpenAI API key (masked)"
+                  value={maskedKey}
+                />
+                <Button variant="danger" class="access-code-submit" onclick={forgetKey}
+                  >Forget</Button
+                >
+              </div>
+              <p class="byok-storage-note">
+                <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
+              </p>
+            {:else}
+              <p class="byok-intro">
+                You have <strong>special access</strong> via an access code — AI art is on us, no API
+                key needed. Forget the code any time to remove it.
+              </p>
+              <label class="access-code-label" for="aiCodeActive">Access Code</label>
+              <div class="access-code-row">
+                <input
+                  id="aiCodeActive"
+                  class="access-code-input"
+                  type="text"
+                  readonly
+                  aria-label="Saved access code"
+                  value={settings.aiAccessToken}
+                />
+                <Button variant="danger" class="access-code-submit" onclick={forgetAccessCode}>
+                  Forget
+                </Button>
+              </div>
+            {/if}
+          </div>
         {/if}
-        Your key is saved only on this device, used only for your child's creations, and billed to your
-        OpenAI account. We never keep a copy of it.
-      </p>
 
-      <Disclosure class="byok-howto">
-        {#snippet summary()}How do I get an OpenAI API key?{/snippet}
-        <ol>
-          <li>
-            Open <a
-              href="https://platform.openai.com/api-keys"
-              target="_blank"
-              rel="noopener noreferrer"
-              use:parentalGateLink>the OpenAI API keys page</a
-            >.
-          </li>
-          <li>Sign in, or create an OpenAI account.</li>
-          <li>
-            Under <strong>Settings → Organization</strong>, finish
-            <strong>verification</strong>. OpenAI requires it before any key can make pictures. Do
-            this <em>before</em> the next step — a key made without it saves here perfectly and then fails
-            at the moment your child taps the button.
-          </li>
-          <li>
-            Click <strong>Create new secret key</strong>, then copy it (it starts with
-            <code>sk-…</code>) and paste it below. You only get to see it once.
-          </li>
-        </ol>
-        <p class="byok-howto-note">
-          OpenAI bills picture-making usage to your account at its own rates, and requires the
-          account to have billing set up before a key can make pictures.
-        </p>
-      </Disclosure>
+        {#if keyMessage}
+          <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}
+            >{keyMessage}</StatusMessage
+          >
+        {/if}
+      </section>
 
-      <label class="access-code-label" for="aiKeyInput">OpenAI API Key</label>
-      <div class="access-code-row">
-        <input
-          id="aiKeyInput"
-          class="access-code-input"
-          type="text"
-          inputmode="text"
-          autocomplete="off"
-          autocapitalize="none"
-          spellcheck="false"
-          placeholder="Paste your OpenAI API key"
-          bind:value={keyInput}
-          onkeydown={(e) => e.key === 'Enter' && submitKey()}
-        />
-        <Button
-          variant="brand"
-          class="access-code-submit"
-          onclick={submitKey}
-          disabled={!keyInput.trim() || keyStatus === 'busy'}
-        >
-          {keyStatus === 'busy' ? 'Checking…' : 'Save'}
-        </Button>
-      </div>
-      <p class="byok-storage-note">
-        <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
-      </p>
-      <p class="byok-secret-hint">Have an access code? You can enter it here too.</p>
-    </div>
-  {:else}
-    <div class="setting byok byok-active">
-      {#if hasApiKey}
-        <p class="byok-intro">
-          You're using <strong>your own OpenAI API key</strong>. Usage is billed to your OpenAI
-          account. Forget the key any time to switch it off.
-        </p>
-        <label class="access-code-label" for="aiKeyActive">OpenAI API Key</label>
-        <div class="access-code-row">
-          <input
-            id="aiKeyActive"
-            class="access-code-input"
-            type="text"
-            readonly
-            aria-label="Saved OpenAI API key (masked)"
-            value={maskedKey}
-          />
-          <Button variant="danger" class="access-code-submit" onclick={forgetKey}>Forget</Button>
-        </div>
-        <p class="byok-storage-note">
-          <Icon name="lock" class="byok-storage-icon" />{keyStorageNote}
-        </p>
-      {:else}
-        <p class="byok-intro">
-          You have <strong>special access</strong> via an access code — AI art is on us, no API key needed.
-          Forget the code any time to remove it.
-        </p>
-        <label class="access-code-label" for="aiCodeActive">Access Code</label>
-        <div class="access-code-row">
-          <input
-            id="aiCodeActive"
-            class="access-code-input"
-            type="text"
-            readonly
-            aria-label="Saved access code"
-            value={settings.aiAccessToken}
-          />
-          <Button variant="danger" class="access-code-submit" onclick={forgetAccessCode}>
-            Forget
-          </Button>
-        </div>
-      {/if}
+      <AiFeatureToggles />
     </div>
   {/if}
-
-  {#if keyMessage}
-    <StatusMessage status={keyStatus === 'error' ? 'error' : 'success'}>{keyMessage}</StatusMessage>
-  {/if}
-</section>
-
-<AiFeatureToggles />
+</div>
 
 <style>
+  .ai-settings-stack,
+  .ai-enabled-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+  }
+
+  .ai-settings-stack :global(.setting-group) {
+    margin-bottom: 0;
+  }
+
   /* AI access code entry */
   .access-code-label {
     display: block;
@@ -394,12 +441,6 @@
   .byok-howto-note {
     margin: 0;
     padding: 0 12px 12px;
-    font-size: var(--font-size-xs);
-    color: var(--text-soft);
-  }
-
-  .byok-secret-hint {
-    margin: 10px 0 0 0;
     font-size: var(--font-size-xs);
     color: var(--text-soft);
   }

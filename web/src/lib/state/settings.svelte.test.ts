@@ -27,6 +27,12 @@ beforeEach(() => {
   localStorage.clear();
 });
 
+describe('defaults', () => {
+  it('keeps AI image creation off until a parent opts in', () => {
+    expect(settings.aiImageEnabled).toBe(false);
+  });
+});
+
 describe('boolean setters', () => {
   it('updates the live store and persists to localStorage', () => {
     setSound(false);

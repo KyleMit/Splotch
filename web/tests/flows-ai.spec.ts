@@ -3,7 +3,14 @@ import { expect, test } from '@playwright/test';
 
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
 
-import { draw, gotoApp, headingOffsetFromPaneTop, SECTION_LANDED_MAX_PX } from './helpers';
+import {
+  draw,
+  gotoApp,
+  headingOffsetFromPaneTop,
+  openSettingsModal,
+  seedAiEnabled,
+  SECTION_LANDED_MAX_PX,
+} from './helpers';
 
 import { openDrawer } from './flows-harness';
 
@@ -12,21 +19,79 @@ import { openDrawer } from './flows-harness';
 const webp = readFileSync(new URL('../static/icons/handmade-paper.webp', import.meta.url));
 const AI_KEY_SEED_MARKER = 'splotch-test-ai-key-seeded';
 
-test('a fresh installation sees its server-authoritative free balance', async ({ page }) => {
+async function enableAiInSettings(page: import('@playwright/test').Page) {
+  const settings = await openSettingsModal(page);
+  await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  await page.locator('#aiImageToggle').click();
+  await settings.getByRole('button', { name: 'Close' }).click();
+}
+
+test('a fresh installation does not fetch an AI allowance or show the canvas action', async ({
+  page,
+}) => {
+  let grantStatusRequests = 0;
+  await page.route('**/api/free-generation-grant', async (route) => {
+    grantStatusRequests += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, limit: 10, remaining: 7, exhausted: false }),
+    });
+  });
+  await gotoApp(page);
+  await openDrawer(page);
+
+  await expect(page.locator('#aiImageButton')).toBeHidden();
+  expect(grantStatusRequests).toBe(0);
+});
+
+test('an access-code invite saves the credential without enabling AI', async ({ page }) => {
+  await gotoApp(page, '/?ai_access_token=test-token');
+  await expect.poll(() => page.url()).not.toContain('ai_access_token');
+  await openDrawer(page);
+  await expect(page.locator('#aiImageButton')).toBeHidden();
+
+  const settings = await openSettingsModal(page);
+  await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  const toggle = page.locator('#aiImageToggle');
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await expect(
+    page.getByText("Your access code is saved — turn this on whenever you're ready.")
+  ).toBeVisible();
+
+  await toggle.click();
+  await expect(page.locator('#aiCodeActive')).toHaveValue('test-token');
+});
+
+test('AI Settings explains the off feature without mounting its setup controls', async ({
+  page,
+}) => {
+  await gotoApp(page);
+
+  const settings = await openSettingsModal(page);
+  await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  await expect(page.getByText('What turning this on does')).toBeInViewport();
+  await expect(page.locator('#aiKeyInput')).toHaveCount(0);
+});
+
+test('the off explanation reuses a known exhausted allowance', async ({ page }) => {
   await page.route('**/api/free-generation-grant', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true, limit: 10, remaining: 7, exhausted: false }),
+      body: JSON.stringify({ ok: true, limit: 10, remaining: 0, exhausted: true }),
     })
   );
   await gotoApp(page);
-  await openDrawer(page);
 
-  const ai = page.locator('#aiImageButton');
-  await expect(ai).toBeVisible();
-  await expect(ai).toHaveAccessibleName('Create AI image, 7 free left');
-  await expect(ai.locator('.free-count')).toHaveText('7');
+  const settings = await openSettingsModal(page);
+  await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
+  const toggle = page.locator('#aiImageToggle');
+  await toggle.click();
+  await expect(page.getByText('Your 10 free AI creations are used up.')).toBeVisible();
+
+  await toggle.click();
+  await expect(page.getByText('Your 10 free pictures are used up.')).toBeVisible();
 });
 
 test('an exhausted free installation keeps the AI affordance and opens BYOK setup', async ({
@@ -40,6 +105,7 @@ test('an exhausted free installation keeps the AI affordance and opens BYOK setu
     })
   );
   await gotoApp(page);
+  await enableAiInSettings(page);
   await openDrawer(page);
   await draw(page, [
     { x: 120, y: 120 },
@@ -67,12 +133,17 @@ test('a migrated BYO key reveals the AI button on the next launch', async ({ pag
     return route.fulfill({ status: 500 });
   });
   await page.addInitScript(
-    ({ aiUserApiKey, seedMarker }) => {
+    ({ aiUserApiKey, aiImageEnabled, seedMarker }) => {
       if (sessionStorage.getItem(seedMarker)) return;
       localStorage.setItem(aiUserApiKey, 'test-byo-key');
+      localStorage.setItem(aiImageEnabled, 'true');
       sessionStorage.setItem(seedMarker, 'true');
     },
-    { aiUserApiKey: STORAGE_KEYS.legacyAiUserApiKey, seedMarker: AI_KEY_SEED_MARKER }
+    {
+      aiUserApiKey: STORAGE_KEYS.legacyAiUserApiKey,
+      aiImageEnabled: STORAGE_KEYS.aiImageEnabled,
+      seedMarker: AI_KEY_SEED_MARKER,
+    }
   );
   await gotoApp(page);
   await expect
@@ -112,7 +183,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
     await route.fulfill({ status: 200, contentType: 'image/webp', body: webp });
   });
 
-  // The access-code param unlocks the AI feature (captured + persisted on mount).
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token');
   await openDrawer(page);
   await draw(page, [
@@ -147,6 +218,7 @@ test('the AI button posts the drawing and reveals the generated result', async (
 // the sticker silhouette — a regression invisible in a diff and easy to
 // reintroduce by "tidying" the background back onto every thumb.
 test('a cutout style cover carries no plate of its own', async ({ page }) => {
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token');
   await openDrawer(page);
   await draw(page, [

@@ -15,6 +15,7 @@ export const REPO_ROOT = join(ASSET_GEN_DIR, '..', '..');
 export const WEB_STATIC = join(REPO_ROOT, 'web', 'static');
 export const COLORING_DIR = join(WEB_STATIC, 'coloring');
 export const STYLES_DIR = join(WEB_STATIC, 'styles');
+export const AI_VALUE_PROP_DIR = join(WEB_STATIC, 'ai-value-prop');
 export const STYLE_SOURCE_SVG = join(ASSET_GEN_DIR, 'style-covers', 'source.svg');
 
 // Committed source-of-truth for the colored fills WITH their outlines intact (the

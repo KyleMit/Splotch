@@ -19,7 +19,7 @@ export const SECTIONS = [
   { id: 'sound', label: 'Sound', icon: 'sound', contentStamp: '1' },
   { id: 'controls', label: 'Tool Drawer', icon: 'controls', contentStamp: '1' },
   { id: 'coloring', label: 'Coloring', icon: 'shapes', contentStamp: '1' },
-  { id: 'ai', label: 'AI Art', icon: 'wand-stars', contentStamp: '1' },
+  { id: 'ai', label: 'AI Art', icon: 'wand-stars', contentStamp: '2' },
   { id: 'saving', label: 'Saving', icon: 'save-picture', contentStamp: '1' },
   {
     id: 'parentCenter',
@@ -121,13 +121,13 @@ export function sectionSubtitle(id: SectionId): string {
       return `${hidden} ${hidden === 1 ? 'tool' : 'tools'} hidden`;
     }
     case 'ai': {
+      if (!settings.aiImageEnabled) return 'Turned off';
       const kind = aiCredentialKind();
       if (kind === 'none') {
         return freeGenerations.available
           ? `${freeGenerations.remaining} free ${freeGenerations.remaining === 1 ? 'creation' : 'creations'} left`
           : 'Free allowance unavailable';
       }
-      if (!settings.aiImageEnabled) return 'Turned off';
       return kind === 'apiKey' ? 'Your OpenAI key' : 'Access code';
     }
     case 'parentCenter':

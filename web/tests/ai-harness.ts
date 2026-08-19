@@ -1,6 +1,6 @@
 import { expect, type Page } from '@playwright/test';
 import { aiOutputFor } from './artifacts/ai-output-fixtures.ts';
-import { drawCommittedStroke, gotoApp } from './helpers';
+import { drawCommittedStroke, gotoApp, seedAiEnabled } from './helpers';
 
 // Shared harness for the AI generation flow, used by ai-result.spec.ts (the
 // result modal's presentation) and ai-report.spec.ts (the report flow). The
@@ -127,15 +127,15 @@ async function drawPreview(page: Page) {
   ]);
 }
 
-// `freeTier: true` leaves the access token unset, which is what selects the
-// no-setup credential the app defaults to — the mocked endpoint answers either
-// way, so the difference is purely which header the client chooses to send.
+// `freeTier: true` leaves the access token unset, which selects the no-setup
+// allowance; every harness scenario explicitly seeds the master preference.
 export interface AiGenerationOptions {
   freeTier?: boolean;
 }
 
 export async function prepareAiGeneration(page: Page, options: AiGenerationOptions = {}) {
   const endpoint = await mockAiEndpoint(page);
+  await seedAiEnabled(page);
   await gotoApp(page, options.freeTier ? '/' : '/?ai_access_token=test-token');
   await drawPreview(page);
   return endpoint;

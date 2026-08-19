@@ -2,7 +2,12 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { signInToAdmin } from './admin-helpers';
-import { gotoApp, openSettingsModal, seedCompletedSettingsActivitySessions } from './helpers';
+import {
+  gotoApp,
+  openSettingsModal,
+  seedAiEnabled,
+  seedCompletedSettingsActivitySessions,
+} from './helpers';
 import { openParentalGate } from './flows-harness';
 import { openAiResult } from './ai-harness';
 
@@ -155,7 +160,7 @@ test('the locked Parent Center card has no serious accessibility violations', as
 });
 
 test('the parental gate has no serious accessibility violations', async ({ page }) => {
-  // The access-code param reveals the AI button, the gate's opener.
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openParentalGate(page);
 
@@ -223,7 +228,7 @@ for (const colorScheme of ['light', 'dark'] as const) {
 // fills are unthemed crayon hues and the ink is fixed, so one theme covers
 // both.
 test('the parental gate operand digits hold WCAG AA large-text contrast', async ({ page }) => {
-  // The access-code param reveals the AI button, the gate's opener.
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openParentalGate(page);
 

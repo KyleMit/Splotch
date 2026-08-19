@@ -151,6 +151,13 @@ export async function seedParentalGatePolicies(page: Page, mode: 'never' | 'alwa
   }
 }
 
+export async function seedAiEnabled(page: Page) {
+  await page.addInitScript(
+    (aiImageEnabled) => localStorage.setItem(aiImageEnabled, 'true'),
+    STORAGE_KEYS.aiImageEnabled
+  );
+}
+
 export async function seedCompletedSettingsActivitySessions(page: Page, count: number) {
   await page.addInitScript(
     ({ key, count }) => {

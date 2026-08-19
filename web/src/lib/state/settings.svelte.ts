@@ -44,7 +44,7 @@ const BOOL_SETTINGS = {
   eraserEnabled: [STORAGE_KEYS.eraserEnabled, true],
   coloringBookEnabled: [STORAGE_KEYS.coloringBookEnabled, true],
   coloringPacksAllowMetered: [STORAGE_KEYS.coloringPacksAllowMetered, false],
-  aiImageEnabled: [STORAGE_KEYS.aiImageEnabled, true],
+  aiImageEnabled: [STORAGE_KEYS.aiImageEnabled, false],
   aiCustomizationEnabled: [STORAGE_KEYS.aiCustomizationEnabled, true],
   // When on, a finished AI image is dropped straight into the photo gallery
   // (a download on the web) along with the child's drawing — no Download button,

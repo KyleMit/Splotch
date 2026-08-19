@@ -190,6 +190,12 @@ e1d27938f027bf15f27b4434b98cf427c38c449d17031d233ce030bb80c3309e  tools/asset-ge
 32a7ba82d64b7e138cc7f50e449536d68c3c6b885c9e08fc5e58e07a67d90e79  tools/asset-gen/fill-src/vehicles/train-tall.night.raw.webp
 f06333a3bb2354ff3a01c0102f0e76550bb91e36d78e7c5a022946045ae0bca7  tools/asset-gen/fill-src/vehicles/train-wide.light.raw.webp
 66519a8cac87245dd446ec856fe48846098406b945c42d51f1537a811d2dd4bd  tools/asset-gen/fill-src/vehicles/train-wide.night.raw.webp
+4eb9d740223b70b2142f7e2c9699a030cabc846ac5d888ceb2f4d9beaf87d1ac  web/static/ai-value-prop/step-1.dark.webp
+17dbdbbe995ee2dc864fa1fdb62db50ad33bd460939ce48366fde178ebe03568  web/static/ai-value-prop/step-1.light.webp
+9d7b8963a45b81c9df6f068d87d11bacd23b059165789ba2ec18be9ddeae088a  web/static/ai-value-prop/step-2.dark.webp
+5b26ecfe1d35665822bbfab32b14416fdb2ee9f166c00dbcae9fa345945bcb41  web/static/ai-value-prop/step-2.light.webp
+9703484af765aa885d463ab179ffe35875f1911d4b86fba51e23653c4b78d819  web/static/ai-value-prop/step-3.dark.webp
+b8ea6dfae1dd266feb1c9d0caade9dc2d6924956b0cfd86c320166f74bfb1bbf  web/static/ai-value-prop/step-3.light.webp
 8019ec1c8a43e72bf43462a9568044403de0c5d21f6a0c5ba3e688bcee9a92db  web/static/coloring/creatures/cover.outline.webp
 a5059f9c86b411a95d21720c2e97b6f99897a32e90d34995cd61c03ecf2f0f0b  web/static/coloring/creatures/cover.thumb.webp
 ff9163d9c7a4f33c089a422689472a8e28023c06d7bbd7746bdf507896e75ae9  web/static/coloring/creatures/dragon-tall.chalk.thumb.webp

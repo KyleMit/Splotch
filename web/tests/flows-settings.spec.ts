@@ -36,7 +36,12 @@ async function openSettingsSection(page: Page, label: string, expectedField: str
 }
 
 async function openAiSettings(page: Page, expectedField = '#aiKeyInput') {
-  await openSettingsSection(page, 'AI Art', expectedField);
+  await openSettingsSection(page, 'AI Art', '#aiImageToggle');
+  const toggle = page.locator('#aiImageToggle');
+  if ((await toggle.getAttribute('aria-checked')) === 'false') await toggle.click();
+  const field = page.locator(expectedField);
+  await field.scrollIntoViewIfNeeded();
+  await expect(field).toBeInViewport();
 }
 
 async function submitAiKey(page: Page, value: string) {
@@ -326,13 +331,19 @@ test('setting groups space their cards without affecting the compact grid', asyn
   await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
 
   await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
-  await expect(page.locator('#aiCodeActive')).toBeInViewport();
-  const aiFeatureCards = page.locator(
+  const aiToggle = page.locator('#aiImageToggle');
+  await expect(aiToggle).toBeInViewport();
+  await aiToggle.click();
+  await expect(page.locator('#aiCodeActive')).toBeVisible();
+  const aiPrimaryCards = page.locator(
     '.settings-section[data-section="ai"] .setting-group:has(#aiImageToggle) > .setting'
   );
-  await expect(aiFeatureCards).toHaveCount(3);
+  await expect(aiPrimaryCards).toHaveCount(1);
+  const aiFeatureCards = page.locator(
+    '.settings-section[data-section="ai"] .setting-group:has(#aiCustomizationToggle) > .setting'
+  );
+  await expect(aiFeatureCards).toHaveCount(2);
   await expect(aiFeatureCards.nth(1)).toHaveCSS('margin-top', '6px');
-  await expect(aiFeatureCards.nth(2)).toHaveCSS('margin-top', '6px');
 
   await page.setViewportSize({ width: 852, height: 390 });
   await expect(modal).toHaveClass(/compact/);
