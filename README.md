@@ -22,7 +22,9 @@ the `lib/paths.mjs` and scratch-dir rules in `../CLAUDE.md` don't apply to these
    before/after image pairs and code for every idea. Regenerate it any time with
    `node build-review.mjs` (reads each `idea-N/meta.json`). It is committed for zero-friction
    viewing but is **generated output — never hand-edit it**; `npm run check:ideas-review` guards its
-   exact bytes in CI. If `build-review.mjs` or any `idea-N/meta.json` ever changes, re-run
+   generated markup, source-image digest, and declared thumbnail transform in CI. It ignores only
+   the embedded WebP payload bytes because libvips encodes those differently across CPU
+   architectures. If `build-review.mjs` or any `idea-N/meta.json` ever changes, re-run
    `node build-review.mjs` and commit the result.
 2. Per idea, read `idea-N/report.md` for full detail: what was tried, what worked, what didn't,
    limitations, and recommendations. `idea-N/meta.json` is the machine-readable summary; evidence
