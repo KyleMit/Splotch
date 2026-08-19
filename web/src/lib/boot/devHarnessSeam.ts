@@ -16,6 +16,7 @@ type StoreDrawingStrokeReplay = Omit<Parameters<typeof replayHarnessStroke>[0], 
   color: StoreDrawingColor;
 };
 
+/** @public */
 export function replayStoreDrawingStroke({ color, ...stroke }: StoreDrawingStrokeReplay): void {
   const hex =
     color.kind === 'picker'
