@@ -90,9 +90,9 @@ describe('things that are not skill references', () => {
   });
 
   it.each([
-    ['a regex literal argument', 'expect(() => parse()).toThrow(/release\\.mjs <semver>/);'],
-    ['a regex literal with a colon', 'expect(source).toMatch(/release:publish/);'],
-    ['a bare regex literal', 'const pattern = /release/;'],
+    ['a regex literal argument', 'expect(() => parse()).toThrow(/cut-release\\.mjs <semver>/);'],
+    ['a regex literal with a colon', 'expect(source).toMatch(/cut-release:publish/);'],
+    ['a bare regex literal', 'const pattern = /cut-release/;'],
     ['a regex whose body holds a quote', "const re = /don't-build/;\nfail('ok');"],
     ['a division', 'const perBuild = total / buildCount;'],
   ])('ignores %s in a script', (_label, source) => {

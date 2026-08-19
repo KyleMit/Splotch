@@ -1,6 +1,6 @@
 // Cuts a release from releases/<version>.md (which must already exist — the
 // cut-release skill writes it). This is the deterministic, scriptable half
-// of the workflow; the AI-drafting + review half lives in the cut-release skill.
+// of the workflow; the AI-drafting + review half lives in .ruler/skills/cut-release/SKILL.md.
 //
 //   node tools/release/cut-release.mjs 1.2.0              full: bump, generate, commit, tag, push, GitHub release
 //   node tools/release/cut-release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh
