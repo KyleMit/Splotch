@@ -8,7 +8,9 @@ be regenerated or re-checked; they read the same committed line art and raw fill
 and re-derive the correlation surface independently, so a figure that disagreed with
 `tools/asset-gen/lib/local-warp.mjs` would be visible as a mismatch rather than hidden.
 
-`WALKTHROUGH.md` beside this file is the walkthrough itself, rendered with the figures inline.
+`WALKTHROUGH.md` beside this file is the walkthrough itself. The rendered figures are hosted on the
+`pr-assets` branch under `local-warp-gate/` (ADR-0046), not duplicated here; the scripts below write
+fresh copies into a gitignored `out/`.
 
 ## Figures
 

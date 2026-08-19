@@ -24,7 +24,7 @@ In every figure the colour key is the same:
 
 ## 1 · What the gate separates, on shapes you can check by eye
 
-![controlled test shapes](./fig-synthetic.png)
+![controlled test shapes](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/local-warp-gate/fig-synthetic.png)
 
 These are the actual fixtures from the new `tools/asset-gen/tests/local-warp.test.mjs`, rendered so
 you can see them. Four shapes: a circle, a rounded box, a wave, and an X-in-a-box.
@@ -49,7 +49,7 @@ The contrast between B and C is the whole point: identical-looking pixel offsets
 
 ## 2 · Why the median is subtracted, on a real page
 
-![per-tile offset field](./fig-quiver.png)
+![per-tile offset field](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/local-warp-gate/fig-quiver.png)
 
 `space/astronaut-wide` light. The page is cut into 243 overlapping 128px tiles, and each tile votes
 on how far its paint sits from its line. Arrows are drawn 9× actual length so a 1px vote is visible.
@@ -67,7 +67,7 @@ would be buried in the noise.
 
 ## 3 · The bug round-one review caught, and how you can see it is a bug
 
-![excavator aperture ridge](./fig-aperture.png)
+![excavator aperture ridge](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/local-warp-gate/fig-aperture.png)
 
 This is `vehicles/excavator-wide`, tile 5,5 at (384, 384) — the excavator's boom, the crop the
 original issue pointed at. The first implementation (b857b11fad416fc10a92000635a9f0d64b6d1d94)
@@ -102,7 +102,7 @@ the PR is right that a registration number is the wrong tool for it.
 
 ## 4 · Before → after on that page, with nothing about the image changed
 
-![excavator before and after](./fig-excavator.png)
+![excavator before and after](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/local-warp-gate/fig-excavator.png)
 
 I ran the pre-review scorer and the current one over the same bytes:
 
@@ -128,7 +128,7 @@ reject it).
 
 ## 5 · Blast radius, part 1 — the six committed fills above the strict 4px default
 
-![six over-gate pages](./fig-overgate.png)
+![six over-gate pages](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/local-warp-gate/fig-overgate.png)
 
 These are the pages the PR grandfathers with a per-page `warp-max` in `notes.json`. Each row is:
 where on the page, the line art there, the paint there, the edge overlay, the correlation surface,
@@ -172,7 +172,7 @@ the six baselines are real numbers, and the corrected scorer is discriminating o
 
 ## 6 · Blast radius, part 2 — the twelve other pages that score above zero
 
-![contact sheet](./fig-contact.png)
+![contact sheet](https://raw.githubusercontent.com/KyleMit/Splotch/pr-assets/local-warp-gate/fig-contact.png)
 
 All well under the gate, and the overlays show why: magenta and cyan run as a tight pair one or two
 pixels apart, which is what a 1.41px score looks like. If the gate were mis-tuned you would expect
