@@ -183,6 +183,9 @@ change):
    this way. The regional ink diff above is the independent backstop; composite review remains
    required for art-direction calls.
 
+Book covers use the same pipeline and gates through an explicit `<book>/cover` target. They have no
+fill stages: after applying a cover chalk, regenerate its chalk thumbnail and responsive candidate.
+
 Candidates render to ink polarity through a **crisping S-curve** (`lib/crisp-ink.mjs`) instead of
 the pen tools' gentle contrast: on the dark board the invert + screen render and the binary night
 punch turn a soft antialias ramp or a faintly-grey ground into a ring of dark specks around every
@@ -194,9 +197,10 @@ ladybug's first take gave it white shell spots) are caught only by human review 
 [notes registry](#the-per-page-notes-registry) so the next regen starts from it (the ladybug's
 shell-spot note is seeded there).
 
-After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk), re-punch,
-and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker tile). Pen
-thumbs and light fills are untouched — they belong to the pen.
+After applying a page chalk, regenerate the page's **night fill** (it conditions on the chalk),
+re-punch, and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker
+tile). A cover chalk needs only the thumbnail and responsive stages. Pen thumbs and light fills are
+untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 

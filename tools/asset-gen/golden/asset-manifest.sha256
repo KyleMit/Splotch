@@ -196,6 +196,8 @@ f06333a3bb2354ff3a01c0102f0e76550bb91e36d78e7c5a022946045ae0bca7  tools/asset-ge
 5b26ecfe1d35665822bbfab32b14416fdb2ee9f166c00dbcae9fa345945bcb41  web/static/ai-value-prop/step-2.light.webp
 9703484af765aa885d463ab179ffe35875f1911d4b86fba51e23653c4b78d819  web/static/ai-value-prop/step-3.dark.webp
 b8ea6dfae1dd266feb1c9d0caade9dc2d6924956b0cfd86c320166f74bfb1bbf  web/static/ai-value-prop/step-3.light.webp
+44ef3f220ecc1d513fc2e5b9d2c9207baebc8b6b6b7b09df3066b8da1649d93f  web/static/coloring/creatures/cover.chalk.thumb.webp
+4284b9772c1156b182020504b3ce88500b4deb2ca6f1fa17266fae83233bd05d  web/static/coloring/creatures/cover.chalk.webp
 8019ec1c8a43e72bf43462a9568044403de0c5d21f6a0c5ba3e688bcee9a92db  web/static/coloring/creatures/cover.outline.webp
 a5059f9c86b411a95d21720c2e97b6f99897a32e90d34995cd61c03ecf2f0f0b  web/static/coloring/creatures/cover.thumb.webp
 ff9163d9c7a4f33c089a422689472a8e28023c06d7bbd7746bdf507896e75ae9  web/static/coloring/creatures/dragon-tall.chalk.thumb.webp
@@ -310,6 +312,8 @@ c0285be75dcbedb82db6efe2d0526d4c70578eb32b0eb39d44898dc85ec77f38  web/static/col
 e0e07937df29c98b60ab65e6cb4ab5e50050365bd2adf5ca04a20557dec20369  web/static/coloring/dinosaur/brachiosaurus-wide.outline.webp
 f7bcbcfe598d8b23462fcc125c28de5f45f5bb1fb1bbbc457feb5c80176beb50  web/static/coloring/dinosaur/brachiosaurus-wide.overlay.webp
 6f6a901a7d0e807e85056e1e0ce2bfd2a00ba9f2c2ea63c4ba0afd12df6d2b73  web/static/coloring/dinosaur/brachiosaurus-wide.thumb.webp
+3187c44e23eae78b71a28646903cd48b89ff4dbc5fe1598a1a4fe07168e43eb9  web/static/coloring/dinosaur/cover.chalk.thumb.webp
+4f2d859c53a22b6fe75b75fa2b8ffd565c2585a09d7bd731f802f4feef911813  web/static/coloring/dinosaur/cover.chalk.webp
 ca90a6ccf33537ae905db670b2c28d42afaf8e38c55bea6a666204a996bd2d10  web/static/coloring/dinosaur/cover.outline.webp
 0008fd6e38524db9cf052a405738936789eca80b344a34228d3162e853118a8e  web/static/coloring/dinosaur/cover.thumb.webp
 c05f5a8c1e060642f8d77e1a1a71776dfad8ae3df80bd15187128cb7b479c9e6  web/static/coloring/dinosaur/pterodactyl-tall.chalk.thumb.webp
@@ -408,6 +412,8 @@ a6dc0e03a0363be5add6ff87a8035c7cd0b77a374a6c3c4c6870fa5c8c2499f1  web/static/col
 90c40cbbdc2f4b09c7dd79e28ec4dead1feebc89d86d95c30ebb099ec22f876a  web/static/coloring/farm/cat-wide.outline.webp
 4caf4032472233d9286b5e66cf1e58ac8cd0309b1571b802889a7b8ebbb16d3b  web/static/coloring/farm/cat-wide.overlay.webp
 05858ca4fb4e8df955599b88a66156f10ee8439794f10420d2a005f93195235b  web/static/coloring/farm/cat-wide.thumb.webp
+4bf0d5c8ee282704b874aea2ccc62c24d9586dff06035b9352320667fef4bbf6  web/static/coloring/farm/cover.chalk.thumb.webp
+e4291c4d23ae09466a4aa8fa1a2f48a725674d58f7c15a94ad32a5d1bfd7c682  web/static/coloring/farm/cover.chalk.webp
 487230cc8b9278bc1b4e270db33d5f6687914978a6dfb518a490364655291439  web/static/coloring/farm/cover.outline.webp
 27e9dd4f0584255b53d320ff3285c6f2acc642d4d9a663f0a84cc4dcb4ef0ad4  web/static/coloring/farm/cover.thumb.webp
 949c4a935b615ba885fd53a3050396e6938deeaaed728fc4bc7994fd062ddca5  web/static/coloring/farm/cow-tall.chalk.thumb.webp
@@ -874,6 +880,7 @@ da39fe75de5782974dd3ec0f977d3823966417e10d975edba7c63b8ac7481888  web/static/col
 54a4698685c8f0c1a38764986c77fa977750545f8cf4578a2eda2ee9095857a4  web/static/coloring/max-1152px/vehicles/train-wide.light.webp
 dfd71d008e4c702f4e792ea558bb14b4ececabf77d02d0a55858f0f1f4657e65  web/static/coloring/max-1152px/vehicles/train-wide.night.webp
 9c622433e1cb049ca5a5f6f5552b0a8bccb6f932298a03a7a36842a460196946  web/static/coloring/max-1152px/vehicles/train-wide.overlay.webp
+bfc281bb302346f7ab9d757406979db6d287db11a21f953bc53940edf0d660ef  web/static/coloring/max-240px/creatures/cover.chalk.thumb.webp
 bf2fa88ab379c9baba0ad448ef5078cd963e3d7827e0242b09fb273ee195ebf3  web/static/coloring/max-240px/creatures/cover.thumb.webp
 c480aeda29db3647c7b567d8266a270052c45d006e851675bd58cb28bef62020  web/static/coloring/max-240px/creatures/dragon-tall.chalk.thumb.webp
 6d4bbb5121bc245a52f5680efcbcc91b2ba8522b2f3d8bf7cf0113e7df8363bb  web/static/coloring/max-240px/creatures/dragon-tall.thumb.webp
@@ -903,6 +910,7 @@ d80faef9fd212d6a76cbb1fa89ce2f034690c6a43f689aa0c48c1b6682e030ae  web/static/col
 6290e49ff566fa639c305941a8cadd1d254f08549e2507ef0fd24d8b9a4e2b75  web/static/coloring/max-240px/dinosaur/brachiosaurus-tall.thumb.webp
 3b57e336739c9cce9e167216af0c4f66879e66c85090cab911c4ce4e241601d6  web/static/coloring/max-240px/dinosaur/brachiosaurus-wide.chalk.thumb.webp
 854aba52c67c562dc03dab8fa6fa3a94d3624f39c4664836389751a836aab602  web/static/coloring/max-240px/dinosaur/brachiosaurus-wide.thumb.webp
+0a1d1216b05e73fd3734d3e6b7a65847e0c8fd11765116ccd3f2809ce993383c  web/static/coloring/max-240px/dinosaur/cover.chalk.thumb.webp
 66bbf93c050ba55c3070452cb07de091f291f876609ca80e494825bf302024e0  web/static/coloring/max-240px/dinosaur/cover.thumb.webp
 2695af5655a79c2a53b78bfbc14c6f30cbe24cf3e2b35010b7bb298b3fa4e976  web/static/coloring/max-240px/dinosaur/pterodactyl-tall.chalk.thumb.webp
 65c86b47eadce0ef8736a1e587faec98e2081623067e085a6a9b267ce20c8f0d  web/static/coloring/max-240px/dinosaur/pterodactyl-tall.thumb.webp
@@ -928,6 +936,7 @@ beaf0a722b7e9be1266774566a079c55a629966e7dedaa1a035cd21c89227803  web/static/col
 1529a398fae2756df73012b0557bc582bf9488da22f4969b10c4cd9b7e8b9ac4  web/static/coloring/max-240px/farm/cat-tall.thumb.webp
 5a6833582cfc662587e5e041d7b28505bddb7abdc07db0147228c2d00c07d9e0  web/static/coloring/max-240px/farm/cat-wide.chalk.thumb.webp
 16f12ccfe2b4865d48d8ec5abc935c79a5e89adb4f0a68a074ec22c0142475ab  web/static/coloring/max-240px/farm/cat-wide.thumb.webp
+f536387119776ab5b44d306ec2f71b59485012b6a71f72cbd89b59494cd12d10  web/static/coloring/max-240px/farm/cover.chalk.thumb.webp
 3d6ef10904057c61a8df3f15c591750fb76d32852c74cc0aa765736301cc5255  web/static/coloring/max-240px/farm/cover.thumb.webp
 5dd52dcfd37dc181624c9dd4fdad942734ee472f0ec250cedc3279a443abe5c6  web/static/coloring/max-240px/farm/cow-tall.chalk.thumb.webp
 14ec3d594e7eb2eb49049ab4f0a3efc1efe19d60852d4079ad473652d61838b7  web/static/coloring/max-240px/farm/cow-tall.thumb.webp
@@ -961,6 +970,7 @@ a28b1bae5574fb125b20c9db1b43b2ab4f4fff2cce3c1dfb491075e58a89fdfc  web/static/col
 a0af7d0fe94e752f030228905459515a52c00a7f55e557521cb09cfaf36f80c5  web/static/coloring/max-240px/nature/caterpillar-tall.thumb.webp
 270ed591f7c799253e68904712460a6b245650a2fc5fb569b02b154f1abb148a  web/static/coloring/max-240px/nature/caterpillar-wide.chalk.thumb.webp
 274948c702f559f5494cf23cb04578e55a8e322151c6dcf1190257bd875c2f53  web/static/coloring/max-240px/nature/caterpillar-wide.thumb.webp
+353bc59d41d20e7376744ad10e1a6ba9c8a18a36fe31a639a0640426b04b5d9b  web/static/coloring/max-240px/nature/cover.chalk.thumb.webp
 146f40e6c89f8f87f7bd4a9c8cdfff323eb57a98eac460140b52f1eaccae3873  web/static/coloring/max-240px/nature/cover.thumb.webp
 cb0f9e58b822d38af85680dec41937456c4a829e5302eb1aee13ad2dbd40da26  web/static/coloring/max-240px/nature/ladybug-tall.chalk.thumb.webp
 3a30c9fba7602493085c110327420592e96c481c315878dbc36c634bb36140a4  web/static/coloring/max-240px/nature/ladybug-tall.thumb.webp
@@ -982,6 +992,7 @@ dff9d6524d320a504ab6f07c959fe7f3779dde80dc8274f2325e7d374caa7b1e  web/static/col
 7fe91d893b1d80d08ed2f07817c443984a8317d3feda00ea844f062722feae75  web/static/coloring/max-240px/objects/balloon-tall.thumb.webp
 c5e3f855fb41f6933940b50bd9ee04a628a81ab8846dbbf3151827af46d0754f  web/static/coloring/max-240px/objects/balloon-wide.chalk.thumb.webp
 c41c0433f6872f2c6aa9a993ed9e5dcdf875cb880223e6505e22ff96f3122323  web/static/coloring/max-240px/objects/balloon-wide.thumb.webp
+a383e885ae1ab3188defaadbac524d0201d0910a35b0d5156ae62a05cc63b4c5  web/static/coloring/max-240px/objects/cover.chalk.thumb.webp
 b2ca022d4aead9a288fe91b130395c4e145b6f8d37dc10b47512a3f2406bf350  web/static/coloring/max-240px/objects/cover.thumb.webp
 25c3c8ef67f28ccb3876a5aa6b53d0f21938e713758a886aafefeba44356accf  web/static/coloring/max-240px/objects/flower-tall.chalk.thumb.webp
 b08d1aead81638a485719b06ce3f77ad58fc6bf9503fa19aa86dfba8e688fb2f  web/static/coloring/max-240px/objects/flower-tall.thumb.webp
@@ -1003,6 +1014,7 @@ c3f03f100d891639ffe40b55263a404cd460fa5b6b1a6f88137a30887ce77fdd  web/static/col
 c079f3ed27f77ff6442fccbe1158be5edd9e5f5fb105052aff4ad23db7e64d99  web/static/coloring/max-240px/shapes/circle-tall.thumb.webp
 5824c755d9e70971b3d88b0acebea0f760514774cbf77b1fa60eb3d226d1e176  web/static/coloring/max-240px/shapes/circle-wide.chalk.thumb.webp
 a75f2ec091e4976470c6f271b2a3fe43bbd0681266535e7bfdacadd68be532cf  web/static/coloring/max-240px/shapes/circle-wide.thumb.webp
+4fbd6b755d236a96733ceab96a8c7647ce301e9d1748085f4b80edc793898566  web/static/coloring/max-240px/shapes/cover.chalk.thumb.webp
 d1fa92ee8c99a1f92dc83c3246db168e84787deccb3768b247fdceddd2cd0746  web/static/coloring/max-240px/shapes/cover.thumb.webp
 d949c61700b7707dc985fe739449443a215b9cd3c3c99fb40ce36b83592ca961  web/static/coloring/max-240px/shapes/heart-tall.chalk.thumb.webp
 42f8cd66227f21b7332f770b9fb5e41bd097b818e0c07567faf9cf47e1dba31a  web/static/coloring/max-240px/shapes/heart-tall.thumb.webp
@@ -1028,6 +1040,7 @@ db54d5de7865add7b8e6d2a09dec7e56e3594134a23dc056cfc1f4b940a1d650  web/static/col
 887feed9ae216af14e3eff0ebc70baa690bb27ebe7d4bbe087d268542dfab747  web/static/coloring/max-240px/space/astronaut-tall.thumb.webp
 12ede52d7bb561cbd9e8ed5cd597a68e08f26088b25465156dc87e2ca26f62b5  web/static/coloring/max-240px/space/astronaut-wide.chalk.thumb.webp
 8086ced3e0caf34c18724a3c1192542171b4bbfbf3744462e67fdc424e754dba  web/static/coloring/max-240px/space/astronaut-wide.thumb.webp
+b4673e08bc2e675a087a6d0ef63338e4468f4467ae94b4caebc5c42736b0f90b  web/static/coloring/max-240px/space/cover.chalk.thumb.webp
 e5d3346081e90ba657e11920737a86358d6b32f01c09d231ecc1d46400413eff  web/static/coloring/max-240px/space/cover.thumb.webp
 14c3e6a9106fc7751d2feea66791bb4ead79ebfb6813d3b5675246b3fa2dc2d0  web/static/coloring/max-240px/space/meteor-tall.chalk.thumb.webp
 c2bcdfcb2914974310d80e9e465b8eb5b0403f9ce579c13cfd74ec8f125d4d7a  web/static/coloring/max-240px/space/meteor-tall.thumb.webp
@@ -1049,6 +1062,7 @@ e22aec1d5f813272f038b80d986e6efedde707ac8b478cefc45422df6f1f0366  web/static/col
 7258e1a53b712d6a428872294de03dade4a480f618622bf9ed18b331b851345f  web/static/coloring/max-240px/space/station-tall.thumb.webp
 500d381bb1473338268d905e0650383da74bc0312b8c53dff124bef2f630f134  web/static/coloring/max-240px/space/station-wide.chalk.thumb.webp
 7a2f23cffe84eba4118865442a006185fd4b6246705170f845cd46fb33927a5b  web/static/coloring/max-240px/space/station-wide.thumb.webp
+e978f19c1a62446303335602046b97828205f76aa2366ec21bbbfc17a31c78b4  web/static/coloring/max-240px/vehicles/cover.chalk.thumb.webp
 89ed40b5710c269fd2779e91f6b0753729a0591bfef2118cca27c594067f9d53  web/static/coloring/max-240px/vehicles/cover.thumb.webp
 aa2991bc07c1ce3f6ebb3933fb7300ad7466c7c265f52f9855dc58e337bd50fe  web/static/coloring/max-240px/vehicles/excavator-tall.chalk.thumb.webp
 422badfef2a36b7124407692586c4a3bb35e3d8efd498e866c4474ea75c23f5c  web/static/coloring/max-240px/vehicles/excavator-tall.thumb.webp
@@ -1122,6 +1136,8 @@ e5d277a093f67d23072861e7f9a11428ea727679e3687afe3b75d598a73da534  web/static/col
 db9085da48fbbb6a6e77e8423b74fe257e4098e17e3d11bc0e9ac376e616fbfa  web/static/coloring/nature/caterpillar-wide.outline.webp
 850471c64a2d048f0149ea569ab60cdc749ec10d292c6ef5b5f9a731d7917497  web/static/coloring/nature/caterpillar-wide.overlay.webp
 f3d7a0bd711892ff7efd73c2180cc967a6972949c0597683e6a5fc12c1c8c0d6  web/static/coloring/nature/caterpillar-wide.thumb.webp
+d285079133b012216f11973e882063e4f9ceb752ca6fa9877c34fd41c0527c77  web/static/coloring/nature/cover.chalk.thumb.webp
+c6c8441e82289724f769f1643a4ccaa5dd330ee34848484bab070800ed3a162a  web/static/coloring/nature/cover.chalk.webp
 2b4acc5f4c7108392d1e2cdc5332037772d4aec008ed8bab1ba8cba21f90ec93  web/static/coloring/nature/cover.outline.webp
 283cb36ad7d523960b61d0cb099c686d0fa185f707c789a2e413fda5fc89b7be  web/static/coloring/nature/cover.thumb.webp
 e07be9fa19c1d48f9ec4236d1aa53dcc848caace651c55ffaae38bc1aaef633f  web/static/coloring/nature/ladybug-tall.chalk.thumb.webp
@@ -1204,6 +1220,8 @@ ce89abe5fb19245f700481aaa3cbd9add5d432965150ca4a493da876a5f2c317  web/static/col
 15c6f98535c66ea6731ce555dba0920f03d8946bf5325f3794afc6766fd3e9f8  web/static/coloring/objects/balloon-wide.outline.webp
 1761bce6ae6ae05099aefaf1b546a29ee8526598774ee0da319db968124b56dc  web/static/coloring/objects/balloon-wide.overlay.webp
 0a5cc9a2163f19b366845bbfc6c68941bfdeb3155df2f916fa3ad1ab9a9df92b  web/static/coloring/objects/balloon-wide.thumb.webp
+de95562514cb87c350bc6813690aae91e241916125435067081393e0d24379aa  web/static/coloring/objects/cover.chalk.thumb.webp
+462f0d910b615f79b71cf028242e48c6479d255ab42004d33ce015039de7a948  web/static/coloring/objects/cover.chalk.webp
 75e9e3e7326731c0eb6aa492811b9c914ae64ff74ad8ba11fe073169f04d3880  web/static/coloring/objects/cover.outline.webp
 f34df31908185a90a63b6a1ba65024695b57aae3de6f63f6b965623ac85af75d  web/static/coloring/objects/cover.thumb.webp
 6a058590747d8872d2f1e00f479fefc4b46e024fc83db95d22a70d5953dfdc0a  web/static/coloring/objects/flower-tall.chalk.thumb.webp
@@ -1286,6 +1304,8 @@ b93f4efdfdb35797cf1ca1bd7caef1d70d3c49289b3612cad8275acb3a6569f1  web/static/col
 2685c47d60876ca63aa1edaf0af5f6a21d0ba9b60fad30c5f6644381ac2f5035  web/static/coloring/shapes/circle-wide.outline.webp
 dfe25678d27eaa012c9b89ee3e19d9d3decfe51951c4667a0d5e21137668fb4d  web/static/coloring/shapes/circle-wide.overlay.webp
 3ac382731a8b80a3521d8cccb32c6bd674730f63d9abd63b681eb4bbf7bb117b  web/static/coloring/shapes/circle-wide.thumb.webp
+de8ae1cc8b0b3e8d302812a573dc9c7b8cd8defd4d8b032ae3f5d442c30e0e4f  web/static/coloring/shapes/cover.chalk.thumb.webp
+820906151449cbe6e7d904568115d60b8324afb20ba7d9460b8c7f47bc3700e4  web/static/coloring/shapes/cover.chalk.webp
 47861e39cd993d6f9c32cd28e92953297a0bf3ab4cf924a3ea5644bf2d1373c4  web/static/coloring/shapes/cover.outline.webp
 dd8e713e0cd8afb59c21918f0b130971548e09b7023e3d7ebc09119f01ffa3e0  web/static/coloring/shapes/cover.thumb.webp
 85e171f4b8e52d41dff202eeeb8c0b15c72379f7b12ab6e938b422a2a4022122  web/static/coloring/shapes/heart-tall.chalk.thumb.webp
@@ -1384,6 +1404,8 @@ fe4bd0556368fb034d39ae26e2466e456b654e43985d092918231b89bd59b3c3  web/static/col
 59e2c2fe2c868c4578ad004444a44db4876d695bbc8713f20410343c0de7629d  web/static/coloring/space/astronaut-wide.outline.webp
 4aead6b3b20d384dfeb4dafc1593b7d6e23c1082911a954bb128cf042913fa25  web/static/coloring/space/astronaut-wide.overlay.webp
 26e7054e862d5bffde8d78122ce6db0a09536ac8daf78961d17520c5929b7f2a  web/static/coloring/space/astronaut-wide.thumb.webp
+06783a4a05ce671007eff50fc9c33cf4766509c2cb95055f51e93b6e90cd3b95  web/static/coloring/space/cover.chalk.thumb.webp
+d1b076915fcb7d83fd9c353e1b6f35a36d90ff99c10fc834cf7e563c2b5f5721  web/static/coloring/space/cover.chalk.webp
 2a1e43a92c654fe503a14c014ad7045f6733dce5947671c253ba4876547865c4  web/static/coloring/space/cover.outline.webp
 52d95ded9bc015401cb60430c2aedc7e4bdd8ef67b84dfea76dcc3610e1c5b2a  web/static/coloring/space/cover.thumb.webp
 6ef30da6ec6fafd41d9282974e34148f83cd71e0894dfb43b48f33e3cc4b7bb9  web/static/coloring/space/meteor-tall.chalk.thumb.webp
@@ -1466,6 +1488,8 @@ cea770c87f6cdfbb25bb1fc66ca81aec38e8b2eff3ec884731e3a18007642ff2  web/static/col
 6dd7d725358f16f6a073c12bdbce087f446bb6321984af354f7a2b93bce1c095  web/static/coloring/space/station-wide.outline.webp
 7fb2617b23e0533e8282d2e0ceb4de147ca0b4c6078d0a0d372651baba7ef77a  web/static/coloring/space/station-wide.overlay.webp
 faccc3d5fa73d115c43a24baea9f1c73515d3528bf8ed9e3a7b416a8d41328d7  web/static/coloring/space/station-wide.thumb.webp
+e054f5ec8dac7c9d8ab0110ae62cad9d5a9b9f0d0353fa090d0997a4592a6998  web/static/coloring/vehicles/cover.chalk.thumb.webp
+e85048bfc2b20b1178d3a3c554dec0b9b06bb55b13e73110332e63192b153f6a  web/static/coloring/vehicles/cover.chalk.webp
 b9c437bbb936dda9794ec9efe8d66bc82bf3fa329951faed340a70d93d23cddf  web/static/coloring/vehicles/cover.outline.webp
 c984840eddded2cadf7d7f18980ef27ecab3871a13825ad05d0d2e97e86903a7  web/static/coloring/vehicles/cover.thumb.webp
 52d7d4f8340ccf6d80887660d7e618a0790202af63940b944e5753c88ac9fac9  web/static/coloring/vehicles/excavator-tall.chalk.thumb.webp

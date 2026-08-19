@@ -33,9 +33,9 @@ prevents).
 Fork the line work per theme, with the dark variant *derived from* the light one under registration
 gates:
 
-* **Pen outline** (`{page}.outline.webp`) — black ink on white. The light-mode overlay and the
-  source of every derivation (thumbs, light fills, chalk).
-* **Chalk outline** (`{page}.chalk.webp`) — the dark-mode line art:
+* **Pen outline** (`{page-or-cover}.outline.webp`) — black ink on white. The light-mode overlay or
+  picker tile and the source of every derivation (thumbs, page fills, chalk).
+* **Chalk outline** (`{page-or-cover}.chalk.webp`) — the dark-mode line art:
   `tools/asset-gen/coloring/gen-chalk-outlines.mjs` has Gemini redraw the inverted pen as a chalk
   drawing, making the judgment calls a blind invert can't — eye sclera and catchlights become
   deliberate SOLID WHITE, pupils stay black. Gates: every pen stroke still traced
@@ -55,6 +55,8 @@ gates:
 * **Night fills condition on the chalk** (`gen-night-fills.mjs`): the model input is the chalk
   as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill + screened
   chalk over dark paper), since the chalk now owns the eye whites.
+* **Covers stop after the picker derivatives.** They use the same registered chalk redraw and
+  `.chalk.thumb.webp` naming, but have no fill, punch, or full-page overlay stages.
 * **Incremental migration:** `books.ts` lists chalk orientations per page (like `night`); absent a
   chalk, the dark alpha overlay is derived from the pen — visually matching the pre-fork inversion
   behavior, with light mode byte-identical throughout.

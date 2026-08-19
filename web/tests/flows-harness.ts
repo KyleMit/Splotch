@@ -9,7 +9,11 @@ import {
   settleFlyIn,
 } from './helpers';
 import { LAUNCH_ZONE_DURATION_MS } from '../src/lib/actions/launchGuard';
-import { coloringPackCacheName, coloringPackMarkerPath } from '../src/lib/coloringPacks/cacheKeys';
+import {
+  coloringPackCacheName,
+  coloringPackMarkerPath,
+  coloringPackMarkerValue,
+} from '../src/lib/coloringPacks/cacheKeys';
 import {
   resolveColoringPackManifest,
   type ColoringPackManifest,
@@ -50,14 +54,17 @@ async function gotoAppWithInstalledColoringBooks(
     sourceManifest,
     coloringPackResolutionForScreen(screen)
   );
-  const markers = installedBookIds(sourceManifest).map((id) => ({
-    id,
-    path: coloringPackMarkerPath(manifest, id),
-  }));
+  const installedIds = new Set(installedBookIds(sourceManifest));
+  const markers = manifest.books
+    .filter((book) => installedIds.has(book.id))
+    .map((book) => ({
+      path: coloringPackMarkerPath(manifest, book.id),
+      value: coloringPackMarkerValue(book),
+    }));
   await page.evaluate(
     async ({ cacheName, markers }) => {
       const cache = await caches.open(cacheName);
-      await Promise.all(markers.map(({ id, path }) => cache.put(path, new Response(id))));
+      await Promise.all(markers.map(({ path, value }) => cache.put(path, new Response(value))));
     },
     { cacheName: coloringPackCacheName(manifest), markers }
   );

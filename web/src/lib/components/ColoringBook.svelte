@@ -58,8 +58,8 @@
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
   const pageThumbnailSizes = $derived(COLORING_IMAGE_SIZES.pageThumbnail[orientation]);
 
-  // Warm the cover thumbnails once at idle so the very first open of the picker
-  // paints instantly instead of fetching every book's cover thumbnail on demand.
+  // Warm the resolved theme's cover thumbnails at idle so the first picker open
+  // and a later theme change both paint without fetching every cover on demand.
   function imageRequest(
     image: ResponsiveColoringImage,
     sizes: string
@@ -73,9 +73,10 @@
 
   $effect(() => {
     if (!hasBookPicker) return;
+    const theme = resolvedTheme();
     return scheduleIdle(() =>
       prefetchImages(
-        books.map((book) => imageRequest(coverThumbImageSource(book), coverThumbnailSizes))
+        books.map((book) => imageRequest(coverThumbImageSource(book, theme), coverThumbnailSizes))
       )
     );
   });
@@ -218,7 +219,7 @@
           use:cutTrailingRow
         >
           {#each books as book (book.id)}
-            {@const coverImage = coverThumbImageSource(book)}
+            {@const coverImage = coverThumbImageSource(book, resolvedTheme())}
             <button
               class="coloring-tile coloring-book-tile"
               type="button"

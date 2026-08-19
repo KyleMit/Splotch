@@ -9,6 +9,7 @@ import {
   chalkThumbPath,
   coloringBookGridLayout,
   coloringOverlayImageSize,
+  coverThumb,
   coverThumbImageSource,
   pageColorImage,
   pageCompositionKey,
@@ -80,6 +81,15 @@ describe('pageThumb', () => {
   });
 });
 
+describe('coverThumb', () => {
+  const farm = BOOKS.find((book) => book.id === 'farm')!;
+
+  it('uses the pen cover in light mode and the chalk cover in dark mode', () => {
+    expect(coverThumb(farm, 'light')).toBe('/coloring/farm/cover.thumb.webp');
+    expect(coverThumb(farm, 'dark')).toBe('/coloring/farm/cover.chalk.thumb.webp');
+  });
+});
+
 describe('pageOverlayImage', () => {
   const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
 
@@ -116,10 +126,15 @@ describe('responsive image sources', () => {
   });
 
   it('gives cover, pen, and chalk thumbnails responsive candidates', () => {
-    expect(coverThumbImageSource(farm)).toEqual({
+    expect(coverThumbImageSource(farm, 'light')).toEqual({
       src: '/coloring/farm/cover.thumb.webp',
       srcset:
         '/coloring/max-240px/farm/cover.thumb.webp 240w, /coloring/farm/cover.thumb.webp 400w',
+    });
+    expect(coverThumbImageSource(farm, 'dark')).toEqual({
+      src: '/coloring/farm/cover.chalk.thumb.webp',
+      srcset:
+        '/coloring/max-240px/farm/cover.chalk.thumb.webp 240w, /coloring/farm/cover.chalk.thumb.webp 400w',
     });
     expect(pageThumbImageSource(cat, 'portrait', 'light').srcset).toContain(
       '/coloring/max-240px/farm/cat-tall.thumb.webp 160w'
@@ -211,6 +226,8 @@ describe('bookAssetPaths', () => {
   it('lists the cover, both orientations of every page, and the colored fills', () => {
     const paths = bookAssetPaths(farm);
     expect(paths).toContain(farm.cover);
+    expect(paths).toContain(farm.chalkCover);
+    expect(paths).toContain(chalkThumbPath(farm.chalkCover));
     for (const page of farm.pages) {
       expect(paths).toContain(pageImage(page, 'portrait'));
       expect(paths).toContain(pageImage(page, 'landscape'));
@@ -255,21 +272,21 @@ describe('bookAssetPaths', () => {
     for (const page of farm.pages) {
       expect(thumbPath(pageColorImage(page, 'portrait'))).toBe(pageColorImage(page, 'portrait'));
     }
-    // Exactly the line art gets a thumb: pen (cover + 2 orientations/page) and
-    // chalk (2 orientations/page — no cover chalk yet).
+    // Exactly the line art gets a thumb: pen and chalk each cover the book tile
+    // plus both orientations of every page.
     const canonicalPaths = paths.filter((path) => !path.startsWith('/coloring/max-'));
     const penThumbs = canonicalPaths.filter(
       (p) => p.endsWith('.thumb.webp') && !p.endsWith('.chalk.thumb.webp')
     );
     const chalkThumbs = canonicalPaths.filter((p) => p.endsWith('.chalk.thumb.webp'));
     expect(penThumbs.length).toBe(1 + farm.pages.length * 2);
-    expect(chalkThumbs.length).toBe(farm.pages.length * 2);
+    expect(chalkThumbs.length).toBe(1 + farm.pages.length * 2);
   });
 
   it('lists every generated responsive candidate', () => {
     const paths = new Set(bookAssetPaths(farm));
     const responsive = responsiveColoringAssets(farm);
-    expect(responsive).toHaveLength(73);
+    expect(responsive).toHaveLength(74);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm)) {
       expect(
@@ -286,7 +303,7 @@ describe('downloadable coloring packs', () => {
 
   it('contains exactly the canonical runtime files for one complete book', () => {
     const paths = bookPackAssetPaths(farm);
-    expect(paths).toHaveLength(73);
+    expect(paths).toHaveLength(74);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
     expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);
@@ -300,7 +317,7 @@ describe('downloadable coloring packs', () => {
       expect(pageOverlayImage(page, 'portrait', 'light')).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.overlay.webp'
       );
-      expect(coverThumbImageSource(dinosaur).src).toBe(
+      expect(coverThumbImageSource(dinosaur, 'light').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'
       );
     } finally {

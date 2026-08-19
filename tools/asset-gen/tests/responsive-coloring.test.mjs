@@ -31,7 +31,8 @@ function srcsetWidths() {
   };
 
   for (const book of BOOKS) {
-    record(coverThumbImageSource(book));
+    record(coverThumbImageSource(book, 'light'));
+    record(coverThumbImageSource(book, 'dark'));
     for (const page of book.pages) {
       for (const orientation of ['portrait', 'landscape']) {
         for (const theme of ['light', 'dark']) {
@@ -59,7 +60,7 @@ describe('responsive coloring catalog', () => {
       let sourceBytes = 0;
       let targetBytes = 0;
 
-      expect(assets).toHaveLength(584);
+      expect(assets).toHaveLength(592);
       for (const asset of assets) {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
