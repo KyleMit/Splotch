@@ -67,8 +67,8 @@ load-bearing for storage, not just routing.
 **Two separate stores** (`web/src/lib/server/`):
 
 * `tokens.ts` — store `access-tokens`, single key `list` holding the token array.
-* `usage.ts` — store `ai-usage`, keyed by the raw access token, value
-  `{ count, firstUsed, lastUsed, lastStyle, lastPrompt }`.
+* `usage.ts` — store `ai-usage`, keyed by a dedicated-secret HMAC grant ID, value
+  `{ count, firstUsed, lastUsed, deleteAfter, lastStyle, lastOutcome }`.
 
 They are kept in distinct stores so audit writes (one per generation) never contend with allowlist
 mutations.
@@ -114,7 +114,8 @@ can surface the same warning after every successful snapshot.
 
 ## Consequences
 
-* **+** No managed database, no extra credentials: the store is provisioned with the Netlify site.
+* **+** No managed database: the store is provisioned with the Netlify site. Usage pseudonyms use
+  one dedicated HMAC secret, separate from the codes and every other signing/authentication key.
 * **+** Tokens are mutable at runtime (add/revoke from `/admin`) and usage is auditable, both
   without a redeploy.
 * **+** The store survives function cold starts and coordinates across concurrent instances (unlike
@@ -135,3 +136,27 @@ can surface the same warning after every successful snapshot.
 * **−** Deploy previews/branch deploys share the site-wide stores (they are not deploy-scoped), so a
   code added from a preview's `/admin` lands in the real `access-tokens` store. Useful for
   verification, but remember to clean up test entries.
+
+## Amendment (2026-08-19): Minimized, expiring usage records
+
+The original tally used the raw access code as its blob key and retained the latest fully resolved
+prompt indefinitely unless an admin revoked the code. Replace that shape with an opaque key:
+`grant-v1/HMAC-SHA256(key = USAGE_GRANT_ID_SECRET, "splotch-managed-usage-v1\0" + code)`. The
+dedicated secret is required for durable usage tracking and must not reuse `ADMIN_ACCESS_TOKEN`,
+`REPORT_TOKEN_SECRET`, a managed code, or any provider credential. Unset, generation remains
+available but the best-effort tally is disabled. Rotation deliberately starts fresh IDs; records
+under the previous secret are inaccessible from the current code and age out independently.
+
+The blob contains only the request count, first/latest timestamps, a fixed `deleteAfter`, the latest
+validated art-style category, and the latest outcome category (`accepted`, `succeeded`, `refused`,
+or `failed`). Prompt text and provider error/refusal details are absent from both blobs and
+operational logs. Logs carry only time, credential category, style category, and outcome category;
+Netlify's documented function-log availability is at least 24 hours and up to 7 days depending on
+plan.
+
+Each tally's `deleteAfter` is exactly 30 days after its first recorded request. Later requests
+increment the tally without moving that boundary; a request at or after the boundary overwrites it
+with a fresh window. Admin reads delete and omit an expired record. Revocation requests immediate
+best-effort deletion, while `netlify/functions/purge-usage-records.ts` scans the store daily so an
+inactive record is normally removed within 24 hours after expiry. The purge also deletes malformed
+records and every legacy non-HMAC key, dropping the old raw-code/prompt blobs without reading them.

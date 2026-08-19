@@ -1,90 +1,92 @@
+import { env } from '$env/dynamic/private';
 import { getStore } from '@netlify/blobs';
+import { createHmac } from 'node:crypto';
+import type { StyleName } from '../ai/styles';
+import { USAGE_RECORD_RETENTION_DAYS, type UsageOutcome } from '../usageRecord';
+import {
+  isExpiredUsage,
+  USAGE_GRANT_KEY_PREFIX,
+  USAGE_STORE_NAME,
+  validUsage,
+  type TokenUsage,
+} from './usageRecordStorage';
 
-// Per-token AI generation tally. The writer (recordTokenUsage) runs on every
-// managed /api/generate-image call; the reader (getUsage) backs the /admin
-// console. It lives in its own Netlify Blobs store ("ai-usage", dashboard →
-// Blobs), keyed by the raw access token, separate from the token allowlist
-// ("access-tokens") so audit writes never contend with allowlist mutations.
-const STORE_NAME = 'ai-usage';
+export type { TokenUsage };
 
-export interface TokenUsage {
-  count: number;
-  firstUsed: string;
-  lastUsed: string;
-  lastStyle: string | null;
-  lastPrompt: string;
-}
-
-// Show only the last 4 chars of a token in logs — the full secret should never
-// land in the function log or any downstream log drain.
-function maskToken(token: unknown) {
-  const t = String(token ?? '');
-  return t.length <= 4 ? '****' : `…${t.slice(-4)}`;
-}
-
+const GRANT_ID_LABEL = 'splotch-managed-usage-v1';
+const HMAC_ALGORITHM = 'sha256';
+const DAY_MS = 24 * 60 * 60 * 1000;
+const USAGE_RECORD_RETENTION_MS = USAGE_RECORD_RETENTION_DAYS * DAY_MS;
 const CAS_ATTEMPTS = 3;
-// A `modified: false` means the write landed on a replica this instance hasn't
-// caught up to yet, so rereading instantly just re-hits the same lag (same
-// pattern as tokens.ts's SEED_CONFIRMATION_BACKOFF_MS). Only retries (attempt > 1)
-// pace themselves — the first, uncontended attempt always fires immediately.
 const CAS_BACKOFF_MS = 50;
+
+function usageGrantKey(token: string): string | null {
+  const secret = env.USAGE_GRANT_ID_SECRET;
+  if (!secret) return null;
+  const grantId = createHmac(HMAC_ALGORITHM, secret)
+    .update(GRANT_ID_LABEL)
+    .update('\0')
+    .update(token)
+    .digest('hex');
+  return `${USAGE_GRANT_KEY_PREFIX}${grantId}`;
+}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function usageLogLine(
-  tokenLabel: string,
-  style: string | null,
-  prompt: string,
+  credential: 'byok' | 'managed',
+  style: StyleName | null,
+  outcome: UsageOutcome,
   at: string
 ): string {
-  return `[ai-usage] token=${tokenLabel} style=${style || 'none'} prompt=${JSON.stringify(prompt)} at=${at}`;
+  return `[ai-usage] credential=${credential} style=${style ?? 'none'} outcome=${outcome} at=${at}`;
 }
 
-export function recordByokUsage(style: string | null, prompt: string): void {
-  console.log(usageLogLine('byok', style, prompt, new Date().toISOString()));
+export function recordByokUsage(style: StyleName | null, outcome: UsageOutcome): void {
+  console.log(usageLogLine('byok', style, outcome, new Date().toISOString()));
 }
 
 /**
- * Record that a token generated an image, so we can spot a token going rogue.
- * Logs to the Netlify function log (real-time, synchronous) and keeps a durable
- * per-token tally in Blobs that the /admin console reads and we use to decide
- * which token to pull. Two devices sharing a token — exactly the abuse this
- * tally exists to detect — can generate concurrently, so a bare get → setJSON
- * would let both read N and write N+1, undercounting precisely under abuse.
- * The write is an etag compare-and-set (`onlyIfMatch` / `onlyIfNew`) with a
- * few retries so concurrent increments serialize instead of overwriting.
- * Best-effort: a Blobs failure (e.g. plain `vite dev` with no Blobs wired up)
- * or exhausted retries are logged, not thrown — usage tracking must never fail
- * the generation request.
+ * Usage tracking is best-effort and cannot fail an image request. The fixed
+ * deleteAfter value bounds every tally to one retention window; a request at
+ * the boundary starts a fresh tally instead of extending the old record.
  */
 export async function recordTokenUsage(
   token: string,
-  { style, prompt }: { style: string | null; prompt: string }
+  { style, outcome }: { style: StyleName | null; outcome: UsageOutcome }
 ) {
-  const now = new Date().toISOString();
-  console.log(usageLogLine(maskToken(token), style, prompt, now));
+  const nowMs = Date.now();
+  const now = new Date(nowMs).toISOString();
+  console.log(usageLogLine('managed', style, outcome, now));
+
+  const key = usageGrantKey(token);
+  if (!key) {
+    console.warn('[ai-usage] USAGE_GRANT_ID_SECRET is unset; durable usage tracking is disabled');
+    return;
+  }
 
   try {
-    const store = getStore(STORE_NAME);
+    const store = getStore(USAGE_STORE_NAME);
     for (let attempt = 1; attempt <= CAS_ATTEMPTS; attempt++) {
       if (attempt > 1) await sleep(CAS_BACKOFF_MS * attempt);
-      const existing = await store.getWithMetadata(token, { type: 'json' });
-      const existingData = existing?.data as Partial<TokenUsage> | null;
-      const prev = existingData && typeof existingData.count === 'number' ? existingData : {};
+      const existing = await store.getWithMetadata(key, { type: 'json' });
+      const existingData = existing?.data;
+      const previous =
+        validUsage(existingData) && !isExpiredUsage(existingData, nowMs) ? existingData : null;
       const next: TokenUsage = {
-        count: (prev.count || 0) + 1,
-        firstUsed: prev.firstUsed || now,
+        count: (previous?.count ?? 0) + 1,
+        firstUsed: previous?.firstUsed ?? now,
         lastUsed: now,
-        lastStyle: style || null,
-        lastPrompt: prompt,
+        deleteAfter:
+          previous?.deleteAfter ?? new Date(nowMs + USAGE_RECORD_RETENTION_MS).toISOString(),
+        lastStyle: style,
+        lastOutcome: outcome,
       };
       const condition = existing ? { onlyIfMatch: existing.etag } : { onlyIfNew: true };
-      const { modified } = await store.setJSON(token, next, condition);
+      const { modified } = await store.setJSON(key, next, condition);
       if (modified) return;
     }
-    console.warn(
-      `[ai-usage] token=${maskToken(token)} usage write conceded after ${CAS_ATTEMPTS} conflicting attempts`
-    );
+    console.warn(`[ai-usage] usage write conceded after ${CAS_ATTEMPTS} conflicting attempts`);
   } catch (err) {
     console.warn(
       '[ai-usage] failed to persist usage to Netlify Blobs:',
@@ -94,19 +96,20 @@ export async function recordTokenUsage(
 }
 
 /**
- * Delete a token's usage blob when the token is revoked. Without this the
- * tally — keyed by the raw secret — lingers forever, and re-adding the same
- * token would inherit the stale count. Best-effort: a Blobs failure is logged,
- * never thrown, so cleanup can never fail the token removal itself.
+ * Revocation cleanup is best-effort so a Blobs failure cannot undo the token
+ * removal. Any record missed here remains bounded by its fixed deleteAfter and
+ * the daily purge.
  */
 export async function deleteUsage(token: string) {
+  const key = usageGrantKey(token);
+  if (!key) {
+    console.warn('[ai-usage] USAGE_GRANT_ID_SECRET is unset; could not delete the usage record');
+    return;
+  }
   try {
-    await getStore(STORE_NAME).delete(token);
+    await getStore(USAGE_STORE_NAME).delete(key);
   } catch (err) {
-    console.warn(
-      `[ai-usage] token=${maskToken(token)} failed to delete usage:`,
-      err instanceof Error ? err.message : err
-    );
+    console.warn('[ai-usage] failed to delete usage:', err instanceof Error ? err.message : err);
   }
 }
 
@@ -119,9 +122,15 @@ export async function deleteUsage(token: string) {
  * than throwing, so a Blobs hiccup never 500s the admin page.
  */
 export async function getUsage(tokens: string[]): Promise<Record<string, TokenUsage>> {
+  const keyedTokens = tokens.map((token) => ({ token, key: usageGrantKey(token) }));
+  if (keyedTokens.some(({ key }) => key === null)) {
+    console.warn('[ai-usage] USAGE_GRANT_ID_SECRET is unset; no usage stats are available');
+    return {};
+  }
+
   let store: ReturnType<typeof getStore>;
   try {
-    store = getStore(STORE_NAME);
+    store = getStore(USAGE_STORE_NAME);
   } catch (err) {
     console.warn(
       '[ai-usage] Netlify Blobs unavailable, no usage stats:',
@@ -131,10 +140,15 @@ export async function getUsage(tokens: string[]): Promise<Record<string, TokenUs
   }
 
   const entries = await Promise.all(
-    tokens.map(async (token) => {
+    keyedTokens.map(async ({ token, key }) => {
       try {
-        const usage = (await store.get(token, { type: 'json' })) as TokenUsage | null;
-        return usage && typeof usage.count === 'number' ? ([token, usage] as const) : null;
+        const usage = await store.get(key!, { type: 'json' });
+        if (!validUsage(usage)) return null;
+        if (isExpiredUsage(usage, Date.now())) {
+          await store.delete(key!);
+          return null;
+        }
+        return [token, usage] as const;
       } catch (err) {
         console.warn(
           `[ai-usage] failed to read usage for a token:`,

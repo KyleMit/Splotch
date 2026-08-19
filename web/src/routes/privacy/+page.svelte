@@ -19,8 +19,9 @@
   import { FEEDBACK_URL } from '$lib/siteUrl';
   import type { Origin } from '$lib/state/modal.svelte';
   import { openParentCenterSettings, settingsModal } from '$lib/state/ui.svelte';
+  import { USAGE_RECORD_RETENTION_DAYS } from '$lib/usageRecord';
 
-  const LAST_UPDATED = 'August 17, 2026';
+  const LAST_UPDATED = 'August 19, 2026';
   const GENERATION_JOB_TTL_MINUTES = GENERATION_JOB_TTL_MS / 60_000;
 
   // The headline promises, each led by a crayon chip in the brand rainbow —
@@ -225,11 +226,19 @@
     </li>
     <li>
       For an access code, we keep an abuse-prevention tally with its count, first and latest use,
-      latest art style, and latest server-written image instruction. That tally is deleted when the
-      access code is retired. Access-code and own-key requests also write an operational server log
-      with the date, credential category, art style, and server-written instruction — never the
-      drawing or full key. These records are not used for advertising, tracking, or product
-      analytics.
+      latest art-style category, and latest outcome category. It is keyed by a one-way identifier,
+      not the access code, and it never contains the drawing or server-written image instruction. A
+      tally expires {USAGE_RECORD_RETENTION_DAYS} days after its first recorded request; later uses do
+      not extend that deadline, and a request at or after it starts a fresh tally. Daily cleanup removes
+      expired tallies, normally within 24 hours. Retiring an access code requests immediate deletion;
+      if that cleanup fails, the fixed expiry still applies.
+    </li>
+    <li>
+      Access-code and own-key requests also write an operational server log with the date,
+      credential category, art-style category, and outcome category — never the drawing, access
+      code, own key, or server-written image instruction. Netlify retains function logs for at least
+      24 hours and, depending on the hosting plan, makes up to 7 days available. These records are
+      not used for advertising, tracking, or product analytics.
     </li>
     <li>
       Drawings are not used to build profiles, are not sold, and are not used for advertising or

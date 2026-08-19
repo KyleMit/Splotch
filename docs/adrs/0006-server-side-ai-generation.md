@@ -30,9 +30,11 @@ and can be revoked by removing them from the list.
 A **rate limiter** (sliding window, in-memory per instance) caps managed tokens at 15 requests per
 minute to blunt a leaked token being hammered before it's noticed and revoked.
 
-**Usage is audited** to Netlify Blobs (`ai-usage` store): each generation records the token (masked
-in logs), style, prompt, and timestamp. This allows admins to detect rogue tokens and track quota
-consumption without a separate database.
+**Usage is audited** to Netlify Blobs (`ai-usage` store): each managed generation updates a 30-day,
+HMAC-keyed tally containing timestamps plus closed style/outcome categories. Operational logs carry
+the same categories for managed and BYOK requests. Neither surface stores the code, prompt, drawing,
+provider detail, or BYOK key. This allows admins to detect rogue codes and track short-window quota
+consumption without a separate database (storage and expiry details: ADR-0025).
 
 The model is `gemini-2.5-flash-image` (flash tier: lower cost and latency vs. Pro/Ultra, adequate
 quality for children's coloring-book style transformations).

@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { GENERATION_JOB_TTL_MS } from '../../../web/src/lib/ai/limits.ts';
 import { FREE_GENERATION_LIMIT } from '../../../web/src/lib/freeGenerations.ts';
 import { IMAGE_REPORT_RETENTION_DAYS } from '../../../web/src/lib/imageReport.ts';
+import { USAGE_RECORD_RETENTION_DAYS } from '../../../web/src/lib/usageRecord.ts';
 import { NATIVE_API_ORIGIN } from '../../../web/securityPolicy.ts';
 
 const read = (p) => readFileSync(new URL(`../../../${p}`, import.meta.url), 'utf8');
@@ -111,10 +112,12 @@ describe('privacy disclosure consistency', () => {
     const freeLimit = String(FREE_GENERATION_LIMIT);
     const reportDays = String(IMAGE_REPORT_RETENTION_DAYS);
     const jobMinutes = String(GENERATION_JOB_TTL_MS / 60_000);
+    const usageDays = String(USAGE_RECORD_RETENTION_DAYS);
 
     expect(privacyPage).toContain('FREE_GENERATION_LIMIT');
     expect(privacyPage).toContain('IMAGE_REPORT_RETENTION_DAYS');
     expect(privacyPage).toContain('GENERATION_JOB_TTL_MS');
+    expect(privacyPage).toContain('USAGE_RECORD_RETENTION_DAYS');
     expect(iosListing).toContain(`up to ${freeLimit} free creations`);
     expect(androidListing).toContain(`up to ${freeLimit} free creations`);
     expect(iosListing).toContain(`after ${reportDays} days`);
@@ -132,6 +135,9 @@ describe('privacy disclosure consistency', () => {
     expect(
       privacyInventory.retentionBoundaries.find(({ id }) => id === 'confirmed-ai-report').boundary
     ).toMatchObject({ value: Number(reportDays), unit: 'days', cleanupCadence: 'daily' });
+    expect(
+      privacyInventory.retentionBoundaries.find(({ id }) => id === 'access-code-usage').boundary
+    ).toMatchObject({ value: Number(usageDays), unit: 'days', cleanupCadence: 'daily' });
   });
 
   for (const retention of privacyInventory.retentionBoundaries) {

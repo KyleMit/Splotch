@@ -1,5 +1,17 @@
 // @vitest-environment node
+import { createHmac } from 'node:crypto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+const USAGE_SECRET = 'token-tests-usage-secret';
+
+function usageGrantKey(token: string): string {
+  const id = createHmac('sha256', USAGE_SECRET)
+    .update('splotch-managed-usage-v1')
+    .update('\0')
+    .update(token)
+    .digest('hex');
+  return `grant-v1/${id}`;
+}
 
 // Two backing modes per test: `blobsState.stores = null` makes getStore throw
 // (the in-memory fallback path, as in `vite dev`); a Map of fake stores
@@ -141,6 +153,7 @@ async function freshTokensWithEmptyBlobs(seed: string) {
 }
 
 beforeEach(() => {
+  envState.USAGE_GRANT_ID_SECRET = USAGE_SECRET;
   // Silence the expected "Blobs unavailable" warning from openStore.
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
@@ -432,17 +445,20 @@ describe('usage cleanup on remove', () => {
   it('deletes the revoked token’s usage blob', async () => {
     const { removeToken } = await freshTokensWithBlobs(['a', 'revoked']);
     const usage = storeFor('ai-usage');
-    await usage.setJSON('revoked', { count: 3 });
-    await usage.setJSON('a', { count: 1 });
+    const revokedKey = usageGrantKey('revoked');
+    const retainedKey = usageGrantKey('a');
+    await usage.setJSON(revokedKey, { count: 3 });
+    await usage.setJSON(retainedKey, { count: 1 });
     expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
+    expect(usage.blobs.has(revokedKey)).toBe(false);
+    expect(usage.blobs.has(retainedKey)).toBe(true);
     expect(usage.blobs.has('revoked')).toBe(false);
-    expect(usage.blobs.has('a')).toBe(true);
   });
 
   it('still removes the token when usage cleanup fails', async () => {
     const { removeToken, getTokensStatus } = await freshTokensWithBlobs(['a', 'revoked']);
     const usage = storeFor('ai-usage');
-    await usage.setJSON('revoked', { count: 3 });
+    await usage.setJSON(usageGrantKey('revoked'), { count: 3 });
     usage.delete = async () => {
       throw new Error('blobs outage');
     };

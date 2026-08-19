@@ -18,6 +18,7 @@ TUNNEL_AUTH=                                     # chisel shared secret (matches
 OPENAI_API_KEY=                                  # /api/generate-image model calls
 ADMIN_ACCESS_TOKEN=                              # /admin console + /api/admin/* auth
 ALLOWED_TOKENS_LIST=                             # seed access codes
+USAGE_GRANT_ID_SECRET=                           # HMAC key for opaque managed-code usage ids
 # Non-secret — safe to pin here. Lets plain `npm run dev` accept the tunnel host (vite
 # allowedHosts). `npm run dev:tunnel` injects this itself, so it's optional if you only
 # ever preview via that script.

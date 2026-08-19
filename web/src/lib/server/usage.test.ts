@@ -1,17 +1,38 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createHmac } from 'node:crypto';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getStoreMock } = vi.hoisted(() => ({ getStoreMock: vi.fn() }));
+const { envState, getStoreMock } = vi.hoisted(() => ({
+  envState: {} as Record<string, string | undefined>,
+  getStoreMock: vi.fn(),
+}));
+vi.mock('$env/dynamic/private', () => ({ env: envState }));
 vi.mock('@netlify/blobs', () => ({ getStore: getStoreMock }));
 
-import { recordByokUsage, recordTokenUsage, getUsage, type TokenUsage } from './usage';
+import { deleteUsage, getUsage, recordByokUsage, recordTokenUsage, type TokenUsage } from './usage';
+import { purgeExpiredUsageRecords } from './usageRecordStorage';
 
-const usageOf = (count: number): TokenUsage => ({
+const NOW = new Date('2026-08-19T12:00:00.000Z');
+const SECRET = 'unit-test-usage-secret';
+const TOKEN = 'super-secret-access-code';
+
+function grantKey(token = TOKEN, secret = SECRET): string {
+  const id = createHmac('sha256', secret)
+    .update('splotch-managed-usage-v1')
+    .update('\0')
+    .update(token)
+    .digest('hex');
+  return `grant-v1/${id}`;
+}
+
+const usageOf = (count: number, overrides: Partial<TokenUsage> = {}): TokenUsage => ({
   count,
-  firstUsed: '2026-01-01T00:00:00.000Z',
-  lastUsed: '2026-06-01T00:00:00.000Z',
-  lastStyle: 'crayon',
-  lastPrompt: 'a cat',
+  firstUsed: '2026-08-01T00:00:00.000Z',
+  lastUsed: '2026-08-10T00:00:00.000Z',
+  deleteAfter: '2026-08-31T00:00:00.000Z',
+  lastStyle: 'Crayon',
+  lastOutcome: 'succeeded',
+  ...overrides,
 });
 
 function makeStore() {
@@ -19,94 +40,139 @@ function makeStore() {
     get: vi.fn(),
     getWithMetadata: vi.fn(),
     setJSON: vi.fn().mockResolvedValue({ modified: true, etag: 'new' }),
+    delete: vi.fn().mockResolvedValue(undefined),
+    list: vi.fn(),
   };
 }
 
 beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
   vi.clearAllMocks();
+  envState.USAGE_GRANT_ID_SECRET = SECRET;
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
-describe('recordByokUsage', () => {
-  it('logs the structured usage fields without accessing Blobs', () => {
-    recordByokUsage('crayon', 'make it "bright"');
+afterEach(() => {
+  vi.useRealTimers();
+});
 
-    expect(console.log).toHaveBeenCalledTimes(1);
-    const message = vi.mocked(console.log).mock.calls[0][0];
-    expect(message).toMatch(
-      /^\[ai-usage\] token=byok style=crayon prompt="make it \\"bright\\"" at=/
+describe('usage logs', () => {
+  it('logs only credential, style, outcome, and time for BYOK', () => {
+    recordByokUsage('Crayon', 'refused');
+
+    expect(console.log).toHaveBeenCalledWith(
+      '[ai-usage] credential=byok style=Crayon outcome=refused at=2026-08-19T12:00:00.000Z'
     );
-    const timestamp = message.slice(message.lastIndexOf(' at=') + 4);
-    expect(new Date(timestamp).toISOString()).toBe(timestamp);
     expect(getStoreMock).not.toHaveBeenCalled();
+  });
+
+  it('does not disclose the raw code or prompt text in managed logs or blob operations', async () => {
+    const store = makeStore();
+    store.getWithMetadata.mockResolvedValue(null);
+    getStoreMock.mockReturnValue(store);
+
+    await recordTokenUsage(TOKEN, { style: 'Felt', outcome: 'succeeded' });
+
+    const serializedLogs = JSON.stringify([
+      ...vi.mocked(console.log).mock.calls,
+      ...vi.mocked(console.warn).mock.calls,
+    ]);
+    expect(serializedLogs).not.toContain(TOKEN);
+    expect(serializedLogs).not.toContain('prompt');
+    expect(console.log).toHaveBeenCalledWith(
+      '[ai-usage] credential=managed style=Felt outcome=succeeded at=2026-08-19T12:00:00.000Z'
+    );
+    expect(store.getWithMetadata).toHaveBeenCalledWith(grantKey(), { type: 'json' });
+    expect(store.setJSON.mock.calls.flat()).not.toContain(TOKEN);
   });
 });
 
 describe('recordTokenUsage', () => {
-  it('logs the same structured usage fields as recordByokUsage, masking the token', async () => {
+  it('creates a minimized tally with a fixed 30-day deletion boundary', async () => {
     const store = makeStore();
     store.getWithMetadata.mockResolvedValue(null);
     getStoreMock.mockReturnValue(store);
 
-    await recordTokenUsage('supersecrettok', { style: 'crayon', prompt: 'make it "bright"' });
+    await recordTokenUsage(TOKEN, { style: 'Crayon', outcome: 'accepted' });
 
-    expect(console.log).toHaveBeenCalledTimes(1);
-    const message = vi.mocked(console.log).mock.calls[0][0];
-    expect(message).toMatch(
-      /^\[ai-usage\] token=…ttok style=crayon prompt="make it \\"bright\\"" at=/
+    expect(store.setJSON).toHaveBeenCalledWith(
+      grantKey(),
+      {
+        count: 1,
+        firstUsed: '2026-08-19T12:00:00.000Z',
+        lastUsed: '2026-08-19T12:00:00.000Z',
+        deleteAfter: '2026-09-18T12:00:00.000Z',
+        lastStyle: 'Crayon',
+        lastOutcome: 'accepted',
+      },
+      { onlyIfNew: true }
     );
-    const timestamp = message.slice(message.lastIndexOf(' at=') + 4);
-    expect(new Date(timestamp).toISOString()).toBe(timestamp);
+    expect(JSON.stringify(store.setJSON.mock.calls)).not.toContain('lastPrompt');
   });
 
-  it('creates the first tally with onlyIfNew so a concurrent first write cannot be lost', async () => {
-    const store = makeStore();
-    store.getWithMetadata.mockResolvedValue(null);
-    getStoreMock.mockReturnValue(store);
-
-    await recordTokenUsage('tok', { style: 'crayon', prompt: 'a cat' });
-
-    expect(store.setJSON).toHaveBeenCalledTimes(1);
-    const [key, value, condition] = store.setJSON.mock.calls[0];
-    expect(key).toBe('tok');
-    expect(value).toMatchObject({ count: 1, lastStyle: 'crayon', lastPrompt: 'a cat' });
-    expect(value.firstUsed).toBe(value.lastUsed);
-    expect(condition).toEqual({ onlyIfNew: true });
-  });
-
-  it('increments an existing tally with onlyIfMatch on the etag it read', async () => {
+  it('increments within the same fixed window without extending its expiry', async () => {
     const store = makeStore();
     store.getWithMetadata.mockResolvedValue({ data: usageOf(4), etag: 'v4', metadata: {} });
     getStoreMock.mockReturnValue(store);
 
-    await recordTokenUsage('tok', { style: null, prompt: 'a dog' });
+    await recordTokenUsage(TOKEN, { style: null, outcome: 'failed' });
 
-    const [, value, condition] = store.setJSON.mock.calls[0];
-    expect(value).toMatchObject({
-      count: 5,
-      firstUsed: '2026-01-01T00:00:00.000Z',
-      lastStyle: null,
-      lastPrompt: 'a dog',
-    });
-    expect(condition).toEqual({ onlyIfMatch: 'v4' });
+    expect(store.setJSON).toHaveBeenCalledWith(
+      grantKey(),
+      {
+        count: 5,
+        firstUsed: '2026-08-01T00:00:00.000Z',
+        lastUsed: '2026-08-19T12:00:00.000Z',
+        deleteAfter: '2026-08-31T00:00:00.000Z',
+        lastStyle: null,
+        lastOutcome: 'failed',
+      },
+      { onlyIfMatch: 'v4' }
+    );
   });
 
-  it('restarts the tally when the stored count is malformed', async () => {
+  it('starts a fresh tally at the exact expiration boundary', async () => {
     const store = makeStore();
     store.getWithMetadata.mockResolvedValue({
-      data: { count: 'not-a-number', firstUsed: '2020-01-01T00:00:00.000Z' },
-      etag: 'v1',
+      data: usageOf(9, { deleteAfter: NOW.toISOString() }),
+      etag: 'expired',
       metadata: {},
     });
     getStoreMock.mockReturnValue(store);
 
-    await recordTokenUsage('tok', { style: 'crayon', prompt: 'a cat' });
+    await recordTokenUsage(TOKEN, { style: 'Paper', outcome: 'succeeded' });
 
-    const [, value, condition] = store.setJSON.mock.calls[0];
-    expect(value.count).toBe(1);
-    expect(value.firstUsed).toBe(value.lastUsed);
-    expect(condition).toEqual({ onlyIfMatch: 'v1' });
+    expect(store.setJSON.mock.calls[0][1]).toEqual({
+      count: 1,
+      firstUsed: NOW.toISOString(),
+      lastUsed: NOW.toISOString(),
+      deleteAfter: '2026-09-18T12:00:00.000Z',
+      lastStyle: 'Paper',
+      lastOutcome: 'succeeded',
+    });
+    expect(store.setJSON.mock.calls[0][2]).toEqual({ onlyIfMatch: 'expired' });
+  });
+
+  it('restarts malformed records instead of preserving legacy fields', async () => {
+    const store = makeStore();
+    store.getWithMetadata.mockResolvedValue({
+      data: { count: 3, lastPrompt: 'legacy prompt' },
+      etag: 'legacy',
+      metadata: {},
+    });
+    getStoreMock.mockReturnValue(store);
+
+    await recordTokenUsage(TOKEN, { style: null, outcome: 'refused' });
+
+    expect(store.setJSON.mock.calls[0][1]).toMatchObject({
+      count: 1,
+      firstUsed: NOW.toISOString(),
+      lastStyle: null,
+      lastOutcome: 'refused',
+    });
+    expect(JSON.stringify(store.setJSON.mock.calls[0][1])).not.toContain('prompt');
   });
 
   it('retries a conflicting write against the freshly read value', async () => {
@@ -119,12 +185,13 @@ describe('recordTokenUsage', () => {
       .mockResolvedValueOnce({ modified: true, etag: 'v6' });
     getStoreMock.mockReturnValue(store);
 
-    await recordTokenUsage('tok', { style: null, prompt: 'a dog' });
+    const recording = recordTokenUsage(TOKEN, { style: null, outcome: 'failed' });
+    await vi.runAllTimersAsync();
+    await recording;
 
     expect(store.setJSON).toHaveBeenCalledTimes(2);
-    const [, value, condition] = store.setJSON.mock.calls[1];
-    expect(value.count).toBe(6);
-    expect(condition).toEqual({ onlyIfMatch: 'v5' });
+    expect(store.setJSON.mock.calls[1][1].count).toBe(6);
+    expect(store.setJSON.mock.calls[1][2]).toEqual({ onlyIfMatch: 'v5' });
   });
 
   it('concedes after repeated conflicts without throwing', async () => {
@@ -133,9 +200,24 @@ describe('recordTokenUsage', () => {
     store.setJSON.mockResolvedValue({ modified: false });
     getStoreMock.mockReturnValue(store);
 
-    await expect(recordTokenUsage('tok', { style: null, prompt: 'p' })).resolves.toBeUndefined();
+    const recording = recordTokenUsage(TOKEN, { style: null, outcome: 'failed' });
+    await vi.runAllTimersAsync();
+
+    await expect(recording).resolves.toBeUndefined();
     expect(store.setJSON).toHaveBeenCalledTimes(3);
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('conceded'));
+  });
+
+  it('does not persist under any key when the HMAC secret is unset', async () => {
+    delete envState.USAGE_GRANT_ID_SECRET;
+    const store = makeStore();
+    getStoreMock.mockReturnValue(store);
+
+    await recordTokenUsage(TOKEN, { style: null, outcome: 'failed' });
+
+    expect(getStoreMock).not.toHaveBeenCalled();
+    expect(store.setJSON).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('disabled'));
   });
 
   it('never throws when Blobs is unavailable', async () => {
@@ -143,58 +225,105 @@ describe('recordTokenUsage', () => {
       throw new Error('MissingBlobsEnvironment');
     });
 
-    await expect(recordTokenUsage('tok', { style: null, prompt: 'p' })).resolves.toBeUndefined();
+    await expect(
+      recordTokenUsage(TOKEN, { style: null, outcome: 'failed' })
+    ).resolves.toBeUndefined();
     expect(console.warn).toHaveBeenCalled();
-  });
-
-  it('never throws when the write fails', async () => {
-    const store = makeStore();
-    store.getWithMetadata.mockResolvedValue(null);
-    store.setJSON.mockRejectedValue(new Error('boom'));
-    getStoreMock.mockReturnValue(store);
-
-    await expect(recordTokenUsage('tok', { style: null, prompt: 'p' })).resolves.toBeUndefined();
-    expect(console.warn).toHaveBeenCalledWith(
-      '[ai-usage] failed to persist usage to Netlify Blobs:',
-      'boom'
-    );
   });
 });
 
 describe('getUsage', () => {
-  it('maps tokens to their usage and omits tokens with none recorded', async () => {
+  it('maps raw admin codes to records read only through derived grant keys', async () => {
     const store = makeStore();
-    store.get.mockImplementation(async (key: string) => (key === 'used' ? usageOf(2) : null));
+    store.get.mockImplementation(async (key: string) => (key === grantKey() ? usageOf(2) : null));
     getStoreMock.mockReturnValue(store);
 
-    expect(await getUsage(['used', 'unused'])).toEqual({ used: usageOf(2) });
+    expect(await getUsage([TOKEN, 'unused'])).toEqual({ [TOKEN]: usageOf(2) });
+    expect(store.get.mock.calls.flat()).not.toContain(TOKEN);
   });
 
-  it('omits entries whose stored value is malformed', async () => {
+  it('deletes and omits a record at the exact expiration boundary', async () => {
     const store = makeStore();
-    store.get.mockResolvedValue({ count: 'not-a-number' });
+    store.get.mockResolvedValue(usageOf(2, { deleteAfter: NOW.toISOString() }));
     getStoreMock.mockReturnValue(store);
 
-    expect(await getUsage(['tok'])).toEqual({});
+    expect(await getUsage([TOKEN])).toEqual({});
+    expect(store.delete).toHaveBeenCalledWith(grantKey());
   });
 
-  it('returns an empty map when Blobs is unavailable', async () => {
+  it('does not probe the legacy raw-code key', async () => {
+    const store = makeStore();
+    store.get.mockResolvedValue(null);
+    getStoreMock.mockReturnValue(store);
+
+    await getUsage([TOKEN]);
+
+    expect(store.get).toHaveBeenCalledTimes(1);
+    expect(store.get).toHaveBeenCalledWith(grantKey(), { type: 'json' });
+  });
+
+  it('returns an empty map when the HMAC secret or Blobs is unavailable', async () => {
+    delete envState.USAGE_GRANT_ID_SECRET;
+    expect(await getUsage([TOKEN])).toEqual({});
+    expect(getStoreMock).not.toHaveBeenCalled();
+
+    envState.USAGE_GRANT_ID_SECRET = SECRET;
     getStoreMock.mockImplementation(() => {
       throw new Error('MissingBlobsEnvironment');
     });
+    expect(await getUsage([TOKEN])).toEqual({});
+  });
+});
 
-    expect(await getUsage(['tok'])).toEqual({});
-    expect(console.warn).toHaveBeenCalled();
+describe('deleteUsage', () => {
+  it('deletes only the HMAC-derived key when a code is revoked', async () => {
+    const store = makeStore();
+    getStoreMock.mockReturnValue(store);
+
+    await deleteUsage(TOKEN);
+
+    expect(store.delete).toHaveBeenCalledWith(grantKey());
+    expect(store.delete).not.toHaveBeenCalledWith(TOKEN);
   });
 
-  it('drops only the failing token when a single read rejects', async () => {
+  it('does not attempt a raw-key deletion when the secret is unset', async () => {
+    delete envState.USAGE_GRANT_ID_SECRET;
+
+    await deleteUsage(TOKEN);
+
+    expect(getStoreMock).not.toHaveBeenCalled();
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('could not delete'));
+  });
+});
+
+describe('purgeExpiredUsageRecords', () => {
+  it('deletes exact-boundary, malformed, and legacy raw-keyed records across pages', async () => {
     const store = makeStore();
+    const expiredKey = grantKey('expired');
+    const retainedKey = grantKey('retained');
+    const malformedKey = grantKey('malformed');
+    store.list.mockReturnValue(
+      (async function* () {
+        yield { blobs: [{ key: expiredKey }, { key: retainedKey }] };
+        yield { blobs: [{ key: malformedKey }, { key: TOKEN }] };
+      })()
+    );
     store.get.mockImplementation(async (key: string) => {
-      if (key === 'bad') throw new Error('read failed');
-      return usageOf(1);
+      if (key === expiredKey) return JSON.stringify(usageOf(1, { deleteAfter: NOW.toISOString() }));
+      if (key === retainedKey) {
+        return JSON.stringify(
+          usageOf(1, { deleteAfter: new Date(NOW.getTime() + 1).toISOString() })
+        );
+      }
+      return '{not-json';
     });
     getStoreMock.mockReturnValue(store);
 
-    expect(await getUsage(['good', 'bad'])).toEqual({ good: usageOf(1) });
+    await expect(purgeExpiredUsageRecords()).resolves.toEqual({
+      deletedRecords: 3,
+      retainedRecords: 1,
+    });
+    expect(store.delete.mock.calls.map(([key]) => key)).toEqual([expiredKey, malformedKey, TOKEN]);
+    expect(store.get).not.toHaveBeenCalledWith(TOKEN, expect.anything());
   });
 });

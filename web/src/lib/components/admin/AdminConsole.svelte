@@ -15,8 +15,9 @@
     count: number;
     firstUsed: string;
     lastUsed: string;
-    lastStyle: string | null;
-    lastPrompt: string;
+    deleteAfter: string;
+    lastStyle: import('$lib/ai/styles').StyleName | null;
+    lastOutcome: import('$lib/usageRecord').UsageOutcome;
   }
   export interface Invite {
     token: string;

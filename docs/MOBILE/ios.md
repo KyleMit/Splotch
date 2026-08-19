@@ -228,7 +228,9 @@ policy). The Apple Kids Category adds:
       as written in `store-assets/STORE-LISTING-IOS.md`. All five are app functionality, not linked,
       and not tracking. Confirmed AI reports retain image evidence until the daily purge after their
       30-day retention date. A refusal report retains the rejected drawing and provider refusal
-      reason, while a picture report also retains the generated output.
+      reason, while a picture report also retains the generated output. Managed-code usage tallies
+      contain only timestamps and closed style/outcome categories under a one-way identifier; each
+      has a fixed 30-day window plus daily and revocation cleanup.
 * [x] Privacy Policy URL (same one — `https://splotch.art/privacy`).
 * [x] AI-result reporting uses its own Parent Center gate policy at the send action. Ordinary
       generation includes ten free creations per installation while the project-funded service is

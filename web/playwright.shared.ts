@@ -186,6 +186,7 @@ export const commonWebServer = {
     // Non-blank on purpose: the free-tier report spec needs generate-image to
     // mint a token report-image will accept. Blank would close that path.
     REPORT_TOKEN_SECRET: 'test-report-token-secret',
+    USAGE_GRANT_ID_SECRET: 'test-usage-grant-id-secret',
   },
 } satisfies Partial<NonNullable<PlaywrightTestConfig['webServer']>> & {
   url: string;

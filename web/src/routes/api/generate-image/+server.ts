@@ -25,6 +25,7 @@ import {
   isAllowedImageType,
   MAX_IMAGE_BYTES,
   resolveGenerationPrompt,
+  resolveGenerationStyle,
 } from '$lib/server/generateImagePolicy';
 import { apiHandler, contentTypeOf, fail, readBodyWithinLimit } from '$lib/server/http';
 import {
@@ -136,14 +137,14 @@ async function readGenerationRequest(request: Request, url: URL): Promise<Genera
 
 function recordGenerationUsage(
   authorization: GenerationAuthorization,
-  style: string | null,
-  finalPrompt: string,
+  style: ReturnType<typeof resolveGenerationStyle>,
+  outcome: Parameters<typeof recordByokUsage>[1],
   platform?: App.Platform
 ): void {
   // Only the managed tokens are worth a per-token tally (to spot one going
   // rogue). BYOK requests run on the parent's own quota, so just log them.
   if (authorization.kind === 'byok') {
-    recordByokUsage(style, finalPrompt);
+    recordByokUsage(style, outcome);
   } else if (authorization.kind === 'managed') {
     // The synchronous audit log inside recordTokenUsage runs immediately; only
     // the Blobs write is async, and we don't make the image wait on it. waitUntil
@@ -151,7 +152,7 @@ function recordGenerationUsage(
     // (local dev) it's a fire-and-forget whose errors are caught internally.
     const usage = recordTokenUsage(authorization.managedToken, {
       style,
-      prompt: finalPrompt,
+      outcome,
     });
     platform?.context?.waitUntil?.(usage);
   }
@@ -230,9 +231,13 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
   if (!authorization.authorized) return authorization.response;
 
   let reservationId: string | undefined;
+  let usageAttempted = false;
+  let usageRecorded = false;
+  let usageStyle: ReturnType<typeof resolveGenerationStyle> = null;
   try {
     const { bytes: inputBytes, mimeType } = await source.readValidatedImage();
-    const style = source.style;
+    const style = resolveGenerationStyle(source.style);
+    usageStyle = style;
     const finalPrompt = resolveGenerationPrompt(style);
 
     if (authorization.kind === 'free') {
@@ -246,8 +251,6 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         return exhaustedDailyLimit();
       }
     }
-
-    recordGenerationUsage(authorization, style, finalPrompt, platform);
 
     const imageBase64 = inputBytes.toString('base64');
     const imageMimeType = mimeType || 'image/png';
@@ -272,6 +275,8 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
         { apiKey: authorization.effectiveKey, prompt: finalPrompt }
       );
       if (started) {
+        recordGenerationUsage(authorization, style, 'accepted', platform);
+        usageRecorded = true;
         // The reservation now belongs to the job; the catch below must not
         // release it on this request's way out.
         reservationId = undefined;
@@ -279,6 +284,7 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       }
     }
 
+    usageAttempted = true;
     const result = await aiProvider.generateImage({
       apiKey: authorization.effectiveKey,
       image: { base64: imageBase64, mimeType: imageMimeType },
@@ -286,12 +292,17 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
       deadlineMs: synchronousDeadlineMs(),
     });
     if (result.kind === 'refusal') {
+      recordGenerationUsage(authorization, style, 'refused', platform);
+      usageRecorded = true;
       if (authorization.kind === 'free') {
         await recordFreeGenerationFailure(authorization.installationId, 'safety', reservationId);
       }
       return safetyRefusal(result.reason, authorization);
     }
     if (result.kind === 'error') throw error(502, result.reason);
+
+    recordGenerationUsage(authorization, style, 'succeeded', platform);
+    usageRecorded = true;
 
     let freeRemaining: number | null = null;
     if (authorization.kind === 'free' && reservationId) {
@@ -316,6 +327,9 @@ const generateImage: RequestHandler = async ({ request, url, platform, getClient
     }
     return new Response(Buffer.from(result.data, 'base64'), { headers });
   } catch (cause) {
+    if (usageAttempted && !usageRecorded) {
+      recordGenerationUsage(authorization, usageStyle, 'failed', platform);
+    }
     if (authorization.kind === 'free') {
       await recordFreeGenerationFailure(
         authorization.installationId,
