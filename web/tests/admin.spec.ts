@@ -27,6 +27,17 @@ function tokenRow(page: Page, token: string) {
   });
 }
 
+async function expectVisibleActionsMeetTargetFloor(row: ReturnType<typeof tokenRow>) {
+  const actions = row.getByRole('button').filter({ visible: true });
+  const count = await actions.count();
+  expect(count).toBeGreaterThan(0);
+  for (let index = 0; index < count; index += 1) {
+    const box = await actions.nth(index).boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
+}
+
 test('web /admin rejects a wrong key', async ({ page }) => {
   await page.goto('/admin');
   await submitAdminKey(page, 'wrong-key');
@@ -93,17 +104,44 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
       .toBeLessThan(120);
   }
 
-  // Phone: Copy plus the disclosure chevron; the remaining actions expand in
-  // place inside the row — no centered modal covering the list.
-  await page.setViewportSize({ width: 390, height: 900 });
   const more = row.getByRole('button', { name: `More options for ${token}`, exact: true });
-  await expect(more).toBeVisible();
-  await expect
-    .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
-    .toBeLessThan(120);
+
+  // Both supported phone landscapes use Copy plus the disclosure chevron,
+  // including the 812px-wide iPhone 13 mini that sits above the stacked-grid
+  // width. Every visible control retains the design system's 44px floor.
+  for (const viewport of [
+    { width: 812, height: 375 },
+    { width: 956, height: 440 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(more).toBeVisible();
+    await expect(row.locator('.wide-actions')).toBeHidden();
+    await expect
+      .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
+      .toBeLessThan(120);
+    await expectVisibleActionsMeetTargetFloor(row);
+  }
+
+  // One pixel past the supported phone-landscape ceiling returns to the
+  // three-action row, and both iPad mini orientations keep it where it fits.
+  for (const viewport of [
+    { width: 957, height: 440 },
+    { width: 744, height: 1133 },
+    { width: 1133, height: 744 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(more).toBeHidden();
+    await expect(row.locator('.wide-actions')).toBeVisible();
+    await expectVisibleActionsMeetTargetFloor(row);
+  }
+
+  // The remaining actions expand in place inside the row — no centered modal
+  // covering the list.
+  await page.setViewportSize({ width: 812, height: 375 });
 
   await more.click();
   await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await expectVisibleActionsMeetTargetFloor(row);
   await row.getByRole('button', { name: `Remove ${token}` }).click();
   await expect(
     page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
