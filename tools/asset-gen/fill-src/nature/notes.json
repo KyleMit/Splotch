@@ -21,9 +21,11 @@
     "night": {
       "flags": {
         "notes": "THE EYES ARE THE STAR OF THIS PAGE. The spider's body is dark, but every eye must stay lively: light sclera, deep near-black pupil, bright white catchlight. Do NOT flood the eyes with the body color or navy.",
-        "max-attempts": 6
+        "max-attempts": 6,
+        "halo-score-max": 2.8
       },
-      "why": "Durable subject quirk: the dark-bodied spider tempts the model to flood the eyes — burned ~26 attempts before this note was discovered (commit d96ae6f; pipeline.md Stage 4 lever 4). Note text reconstructed from that prose. Re-validated on gemini-3.1: passed every gate FIRST take with this note auto-applied (ideas-exploration/idea-10)."
+      "review": "Issue #268 halo calibration: the shipped haloScore 2.776 / rawScore 4.166 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. Inspect its hotspot crops before accepting a replacement.",
+      "why": "Durable subject quirk: the dark-bodied spider tempts the model to flood the eyes — burned ~26 attempts before this note was discovered (commit d96ae6f; pipeline.md Stage 4 lever 4). Note text reconstructed from that prose. Re-validated on gemini-3.1: passed every gate FIRST take with this note auto-applied (ideas-exploration/idea-10). Issue #268 catalog calibration rounds the reviewed shipped halo ceiling to 2.8."
     }
   },
   "ladybug-tall": {

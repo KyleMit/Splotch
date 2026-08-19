@@ -59,6 +59,9 @@ function buildFills(fill, lineArt, w, h) {
     const px = mx.getImageData(0, 0, w, h),
       d = px.data;
     for (let i = 0; i < d.length; i += 4) {
+      // Bundle boundary: this self-contained browser runtime cannot import the Node
+      // image-stats module. image-stats.test.mjs guards this copy and its injected
+      // OUTLINE_LUMA threshold against the pipeline convention.
       const l = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
       d[i + 3] = l < OUTLINE_LUMA ? 255 : 0;
     }

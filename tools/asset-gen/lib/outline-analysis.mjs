@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import { luma } from './image-stats.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from './punch-fill.mjs';
 
 const outlineAnalysisPromises = new WeakMap();
@@ -10,7 +11,11 @@ async function decodeOutline(sourceBuf) {
     .raw()
     .toBuffer({ resolveWithObject: true });
   const { width: w, height: h, channels } = info;
-  const luma =
+  // chalk-ink-diff.mjs thresholds analysis.luma with OUTLINE_INK_CUTOFF calibrated
+  // against libvips greyscale weighting. Unifying this conversion with image-stats
+  // luma requires rebuilding the chalk-ink-diff fixtures and re-freezing the
+  // coloring golden scores.
+  const lumas =
     channels === 1
       ? data
       : (
@@ -21,11 +26,10 @@ async function decodeOutline(sourceBuf) {
         ).data;
   const ink = new Uint8Array(w * h);
   for (let p = 0, i = 0; p < ink.length; p++, i += channels) {
-    const inkLuma =
-      channels >= 3 ? 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2] : data[i];
+    const inkLuma = channels >= 3 ? luma(data[i], data[i + 1], data[i + 2]) : data[i];
     if (inkLuma < OUTLINE_LUMA_THRESHOLD) ink[p] = 1;
   }
-  const analysis = { luma, ink, w, h };
+  const analysis = { luma: lumas, ink, w, h };
   preparedOutlineAnalyses.add(analysis);
   return analysis;
 }

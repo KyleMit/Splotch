@@ -229,6 +229,33 @@ function matchScene(flowerCx, flowerCy) {
 export const matchSource = () => matchScene(200, 460);
 export const matchDrifted = () => matchScene(214, 474);
 
+// ================= CHALK INK DIFF (lib/chalk-ink-diff.mjs) =================
+function chalkDiffScene({ invented = false, filledPatch = false, retainSolid = false } = {}) {
+  const c = canvas(600, 600);
+  rectStroke(c, 60, 60, 540, 540, 4);
+  ring(c, 210, 300, 45, 4);
+  if (filledPatch) disc(c, 210, 300, 41);
+  if (retainSolid) disc(c, 400, 300, 28);
+  else ring(c, 400, 300, 28, 4);
+  if (invented) {
+    disc(c, 285, 210, 12);
+    disc(c, 330, 210, 12);
+  }
+  return encode(c);
+}
+
+export function chalkDiffPen() {
+  const c = canvas(600, 600);
+  rectStroke(c, 60, 60, 540, 540, 4);
+  ring(c, 210, 300, 45, 4);
+  disc(c, 400, 300, 28);
+  return encode(c);
+}
+export const chalkDiffClean = () => chalkDiffScene();
+export const chalkDiffInvented = () => chalkDiffScene({ invented: true });
+export const chalkDiffDeliberateWhite = () => chalkDiffScene({ filledPatch: true });
+export const chalkDiffRetainedSolid = () => chalkDiffScene({ retainSolid: true });
+
 // ---- color drawing primitives (the night gates score RGB, not just ink) ----
 function setRGB({ d, w }, x, y, r, g, b) {
   const i = (y * w + x) * 3;

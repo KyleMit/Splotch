@@ -1,13 +1,8 @@
-// Audit every committed RAW colored fill (`fill-src/**/*.light.raw.webp`) for
-// outline drift against its source line art, using the SAME scoring the generation
-// gate applies (lib/outline-match.mjs). It scores the raws — not the shipped
-// `*.light.webp` — because shipping punches the fill's own outlines out
-// (punch-fill-outlines.mjs), leaving nothing for outlineMatch to register; the raw
-// keeps the lines, and the shipped fill is a pure derivation of it, so a clean raw
-// means a clean reveal. It exists because the gate only ran at generation time and
-// only on a global average: fills generated before the worst-tile gate — most
-// notably nature/ant-wide — shipped with a badly drifted region (a flower) that the
-// child sees under the magic brush, while the global score stayed above the bar.
+// Audit every committed RAW colored fill (`fill-src/**/*.{light,night}.raw.webp`)
+// for registration against the line art it ships under. Light fills retain the
+// outlineMatch coverage gate; both themes run the local-warp scorer used by their
+// generators. The scorer reports residual rigid translation separately from a
+// feature that bent or moved on its own.
 //
 // This flags those already-committed fills so they can be regenerated
 // (`npm run gen:coloring-fills -- <page> --apply`; the bare command only writes a
@@ -19,21 +14,36 @@
 //   npm run check:coloring-fill-drift -- nature farm  only these categories
 //   npm run check:coloring-fill-drift -- nature/ant-wide
 //   npm run check:coloring-fill-drift -- --overlay    also write drift overlays
+//   npm run check:coloring-fill-drift -- --warp-max 5 reviewed override
 //
 // Exits non-zero if any fill fails, so it doubles as a check.
 import { parseArgs } from 'node:util';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { fail } from '../lib/asset-cli.mjs';
-import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR } from '../lib/asset-paths.mjs';
+import { fail, parseNonNegative } from '../lib/asset-cli.mjs';
+import {
+  REPO_ROOT,
+  COLORING_DIR,
+  FILL_SRC_DIR,
+  SAMPLES_DIR,
+  resolveNightLineArt,
+} from '../lib/asset-paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import {
+  LOCAL_WARP_BASELINE_MARGIN_PX,
+  LOCAL_WARP_MAX_PX,
+  LOCAL_WARP_WARN_PX,
+  localWarp,
+} from '../lib/local-warp.mjs';
+import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,
-  options: { overlay: { type: 'boolean' } },
+  options: { overlay: { type: 'boolean' }, 'warp-max': { type: 'string' } },
 });
+parseNonNegative(values['warp-max'], '--warp-max', LOCAL_WARP_MAX_PX);
 
 const pages = await resolveOutlineTargets(positionals, {
   includeCovers: false,
@@ -50,40 +60,93 @@ const rows = [];
 let errors = 0;
 for (const page of pages) {
   const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const fill = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
-  if (!existsSync(fill)) continue; // no fill generated for this page yet
-  try {
-    const [source, filled] = await Promise.all([readFile(page), readFile(fill)]);
-    const { keep, localKeep, worstTile } = await outlineMatch(source, filled);
-    const failed = keep < KEEP_THRESHOLD || localKeep < LOCAL_KEEP_THRESHOLD;
-    rows.push({ rel, keep, localKeep, worstTile, failed });
-    if (values.overlay && failed) {
-      const { overlay } = await outlineMatch(source, filled, { overlay: true });
-      const out = join(overlayDir, `${rel.replace(/\//g, '-')}.overlay.png`);
-      await writeFile(out, overlay);
+  const pen = await readFile(page);
+  for (const theme of ['light', 'night']) {
+    const fill = join(FILL_SRC_DIR, `${rel}.${theme}.raw.webp`);
+    if (!existsSync(fill)) continue;
+    try {
+      const filled = await readFile(fill);
+      const source = theme === 'night' ? (await resolveNightLineArt(page, pen)).source : pen;
+      const levers = pageLevers(rel, theme);
+      const { merged, fromRegistry } = mergeFlags(values, levers);
+      const warpMax = parseNonNegative(
+        merged['warp-max'],
+        '--warp-max',
+        LOCAL_WARP_MAX_PX,
+        `${rel} ${theme} via notes.json`
+      );
+      const warp = await localWarp(source, filled);
+      const match = theme === 'light' ? await outlineMatch(source, filled) : null;
+      const outlineFailed =
+        match !== null && (match.keep < KEEP_THRESHOLD || match.localKeep < LOCAL_KEEP_THRESHOLD);
+      const warpFailed = warp.localWarpMax > warpMax;
+      const notesBaseline = fromRegistry.includes('warp-max');
+      const baselineException =
+        notesBaseline && warp.localWarpMax > LOCAL_WARP_MAX_PX && !warpFailed;
+      const staleCeiling =
+        notesBaseline &&
+        Math.round((warpMax - warp.localWarpMax) * 100) / 100 > LOCAL_WARP_BASELINE_MARGIN_PX;
+      rows.push({
+        rel,
+        theme,
+        match,
+        warp,
+        outlineFailed,
+        warpFailed,
+        warpMax,
+        baselineException,
+        staleCeiling,
+        failed: outlineFailed || warpFailed,
+      });
+      if (values.overlay && outlineFailed) {
+        const { overlay } = await outlineMatch(source, filled, { overlay: true });
+        const out = join(overlayDir, `${rel.replace(/\//g, '-')}.overlay.png`);
+        await writeFile(out, overlay);
+      }
+    } catch (error) {
+      console.error(
+        `${rel} ${theme}  ERROR (${error instanceof Error ? error.message : String(error)})`
+      );
+      errors++;
     }
-  } catch (error) {
-    console.error(`${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`);
-    errors++;
   }
 }
 
 if (!rows.length && !errors) fail('No colored fills found for the given pages.');
 
-// Worst first, so drift is at the top.
-rows.sort((a, b) => a.localKeep - b.localKeep);
+// Failures stay above warnings regardless of which registration gate caught them.
+rows.sort(
+  (a, b) => Number(b.failed) - Number(a.failed) || b.warp.localWarpMax - a.warp.localWarpMax
+);
 const pct = (v) => `${(v * 100).toFixed(1)}%`.padStart(6);
-console.log(`${'page'.padEnd(28)} ${'keep'.padStart(6)} ${'worstTile'.padStart(9)}  where`);
+console.log(
+  `${'page'.padEnd(28)} ${'theme'.padEnd(5)} ${'keep'.padStart(6)} ${'worstTile'.padStart(9)} ${'warp'.padStart(7)} ${'residual'.padStart(9)}  where`
+);
 for (const r of rows) {
-  const where = r.worstTile ? `tile ${r.worstTile.x},${r.worstTile.y}` : '';
-  const flag = r.failed ? '  ⚠ DRIFT — regenerate' : '';
-  console.log(`${r.rel.padEnd(28)} ${pct(r.keep)} ${pct(r.localKeep)}  ${where}${flag}`);
+  const where = r.warp.worstTile
+    ? `tile ${r.warp.worstTile.x},${r.warp.worstTile.y} (${r.warp.worstTile.confidence})`
+    : '';
+  const keep = r.match ? pct(r.match.keep) : '     -';
+  const localKeep = r.match ? pct(r.match.localKeep) : '        -';
+  const residual = `${r.warp.globalDx},${r.warp.globalDy}`.padStart(9);
+  const flag = r.failed
+    ? `  ⚠ ${r.warpFailed ? 'LOCAL WARP' : 'DRIFT'} — regenerate`
+    : r.staleCeiling
+      ? `  ⚠ stale warp ceiling (notes.json ${r.warpMax}px)`
+      : r.baselineException
+        ? `  ⚠ baseline exception (notes.json ${r.warpMax}px)`
+        : r.warp.localWarpMax >= LOCAL_WARP_WARN_PX
+          ? '  ⚠ warp review'
+          : '';
+  console.log(
+    `${r.rel.padEnd(28)} ${r.theme.padEnd(5)} ${keep} ${localKeep} ${`${r.warp.localWarpMax.toFixed(1)}px`.padStart(7)} ${residual}  ${where}${flag}`
+  );
 }
 
 const bad = rows.filter((r) => r.failed);
 console.log(
   `\n${rows.length} fill(s) audited · ${bad.length} flagged` +
-    ` (keep < ${pct(KEEP_THRESHOLD).trim()} or worst tile < ${pct(LOCAL_KEEP_THRESHOLD).trim()}).`
+    ` (light keep < ${pct(KEEP_THRESHOLD).trim()}, light worst tile < ${pct(LOCAL_KEEP_THRESHOLD).trim()}, or local warp above its resolved ceiling; default ${LOCAL_WARP_MAX_PX}px).`
 );
 if (values.overlay && bad.length) {
   console.log(
@@ -91,9 +154,14 @@ if (values.overlay && bad.length) {
   );
 }
 if (bad.length) {
-  console.log(
-    `Regenerate: npm run gen:coloring-fills -- ${bad.map((r) => r.rel).join(' ')} --apply`
-  );
+  const lightPages = [...new Set(bad.filter((r) => r.theme === 'light').map((r) => r.rel))];
+  const nightPages = [...new Set(bad.filter((r) => r.theme === 'night').map((r) => r.rel))];
+  if (lightPages.length)
+    console.log(`npm run gen:coloring-fills -- ${lightPages.join(' ')} --apply`);
+  if (nightPages.length)
+    console.log(
+      `node --experimental-strip-types --disable-warning=ExperimentalWarning tools/asset-gen/coloring/gen-night-fills.mjs ${nightPages.join(' ')} --apply`
+    );
   process.exitCode = 1;
 }
 if (errors) process.exitCode = 1;

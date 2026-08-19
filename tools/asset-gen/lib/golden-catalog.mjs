@@ -5,27 +5,47 @@ import {
   DRIFT_THRESHOLD_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
   NIGHT_BG_LUMA_MAX_DEFAULT,
-  scoreDrift,
-  scoreLineColor,
-  scoreNightness,
+  scoreNightFillGates,
 } from './night-scores.mjs';
 import { prepareOutlineAnalysis } from './outline-analysis.mjs';
 import { scoreOutlineFrame } from './outline-frame.mjs';
 import { KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD, outlineMatch } from './outline-match.mjs';
 import { scoreSolidity } from './solid-regions.mjs';
+import {
+  CHALK_INK_BASELINE_GROWTH_FRACTION,
+  CHALK_INK_BASELINE_NOISE_PX,
+  prepareChalkInkDiff,
+  scoreChalkInkDiff,
+} from './chalk-ink-diff.mjs';
+import { LOCAL_WARP_MAX_PX, prepareLocalWarpSource, scoreLocalWarp } from './local-warp.mjs';
+import { parseNonNegative } from './asset-cli.mjs';
+import { mergeFlags, pageLevers } from './page-notes.mjs';
 
 const round = (v, digits) => {
   const f = 10 ** digits;
   return Math.round(v * f) / f;
 };
 
+function pageWarpMax(page, theme) {
+  const { merged } = mergeFlags({}, pageLevers(page, theme));
+  return parseNonNegative(
+    merged['warp-max'],
+    '--warp-max',
+    LOCAL_WARP_MAX_PX,
+    `${page} ${theme} via notes.json`
+  );
+}
+
 // Score one page's line art plus its committed raw fills (when present) into
 // the shape frozen in golden/golden-scores.json — the shape GOLDEN_METRICS
 // and GOLDEN_VERDICTS below address by path. `chalk` is the dark-mode line
 // art buffer when the page has forked (see docs/pen-chalk-fork.md), else
 // null; check-golden-scores.mjs resolves it from the real catalog layout.
-export async function scoreGoldenPage({ pen, lightRaw, nightRaw, chalk }) {
-  const analysis = await prepareOutlineAnalysis(pen);
+export async function scoreGoldenPage({ page, pen, lightRaw, nightRaw, chalk }) {
+  const [analysis, penWarpSource] = await Promise.all([
+    prepareOutlineAnalysis(pen),
+    prepareLocalWarpSource(pen),
+  ]);
   const [solidity, rings, frame] = await Promise.all([
     scoreSolidity(analysis),
     scoreEyeRings(analysis),
@@ -47,27 +67,46 @@ export async function scoreGoldenPage({ pen, lightRaw, nightRaw, chalk }) {
     },
   };
 
+  if (chalk) {
+    const ink = await scoreChalkInkDiff(chalk, await prepareChalkInkDiff(analysis));
+    entry.chalk = {
+      addedInkPx: ink.addedInkPx,
+      solidInkPx: ink.solidInkPx,
+      regionsFlagged: ink.absoluteFlaggedRegions.length,
+    };
+  }
+
   let lightEyes = null;
   if (lightRaw) {
-    const { keep, localKeep, worstTile } = await outlineMatch(pen, lightRaw);
-    lightEyes = await scoreEyeFill(lightRaw, pen);
+    const [match, warp, eyes] = await Promise.all([
+      outlineMatch(pen, lightRaw),
+      scoreLocalWarp(penWarpSource, lightRaw),
+      scoreEyeFill(lightRaw, pen),
+    ]);
+    const { keep, localKeep, worstTile } = match;
+    lightEyes = eyes;
+    const lightVerdict = judgeLightEyes(lightEyes, { page });
     entry.light = {
       keep: round(keep, 4),
       localKeep: round(localKeep, 4),
       worstTile: worstTile ? `${worstTile.x},${worstTile.y}` : null,
+      localWarpMax: round(warp.localWarpMax, 2),
+      warpTiles: warp.warnedTiles,
+      residualShift: round(Math.hypot(warp.globalDx, warp.globalDy), 2),
       eyeCores: lightEyes.cores.length,
       eyeLively: lightEyes.cores.filter((c) => c.lively).length,
       driftOk: keep >= KEEP_THRESHOLD && localKeep >= LOCAL_KEEP_THRESHOLD,
-      eyesOk: judgeLightEyes(lightEyes).passes,
+      warpOk: warp.localWarpMax <= pageWarpMax(page, 'light'),
+      eyesOk: lightVerdict.gated ? lightVerdict.passes : null,
     };
   }
 
   if (nightRaw) {
     const source = chalk ?? pen;
-    const [drift, night, line] = await Promise.all([
-      scoreDrift(nightRaw, source),
-      scoreNightness(nightRaw, source),
-      scoreLineColor(nightRaw, source),
+    const nightWarpSource = chalk ? await prepareLocalWarpSource(chalk) : penWarpSource;
+    const [{ drift, night, line }, warp] = await Promise.all([
+      scoreNightFillGates(nightRaw, source),
+      scoreLocalWarp(nightWarpSource, nightRaw),
     ]);
     let eyes = null;
     if (lightEyes) {
@@ -80,12 +119,16 @@ export async function scoreGoldenPage({ pen, lightRaw, nightRaw, chalk }) {
       drift: round(drift.ratio, 5),
       bgLuma: round(night.bgLuma, 1),
       lineWhite: round(line.lineWhite, 1),
+      localWarpMax: round(warp.localWarpMax, 2),
+      warpTiles: warp.warnedTiles,
+      residualShift: round(Math.hypot(warp.globalDx, warp.globalDy), 2),
       eyesFailed: eyes?.eyesFailed ?? null,
       orbFailed: eyes?.orbFailed ?? null,
       orbMinCoreDark: eyes?.orbMinCoreDark ?? null,
       driftOk: drift.ratio <= DRIFT_THRESHOLD_DEFAULT,
       moodOk: night.bgLuma <= NIGHT_BG_LUMA_MAX_DEFAULT,
       lineOk: line.lineWhite >= LINE_WHITE_MIN_DEFAULT,
+      warpOk: warp.localWarpMax <= pageWarpMax(page, 'night'),
       eyesOk: eyes?.eyesOk ?? null,
       orbOk: eyes?.orbOk ?? null,
     };
@@ -117,13 +160,30 @@ export const GOLDEN_METRICS = {
   'outline.ringDepth': { noise: 0, worse: 'up' },
   'outline.frameCoverage': { noise: 0.005, worse: 'up' },
   'outline.ghostCoverage': { noise: 0.005, worse: 'up' },
+  'chalk.addedInkPx': {
+    noise: CHALK_INK_BASELINE_NOISE_PX,
+    noiseFraction: CHALK_INK_BASELINE_GROWTH_FRACTION,
+    worse: 'up',
+  },
+  'chalk.solidInkPx': {
+    noise: CHALK_INK_BASELINE_NOISE_PX,
+    noiseFraction: CHALK_INK_BASELINE_GROWTH_FRACTION,
+    worse: 'up',
+  },
+  'chalk.regionsFlagged': { noise: 0, worse: 'up' },
   'light.keep': { noise: 0.005, worse: 'down' },
   'light.localKeep': { noise: 0.005, worse: 'down' },
+  'light.localWarpMax': { noise: 0.25, worse: 'up' },
+  'light.warpTiles': { noise: 0, worse: 'up' },
+  'light.residualShift': { noise: 0.25, worse: null },
   'light.eyeCores': { noise: 0, worse: null },
   'light.eyeLively': { noise: 0, worse: 'down' },
   'night.drift': { noise: 0.001, worse: 'up' },
   'night.bgLuma': { noise: 3, worse: 'up' },
   'night.lineWhite': { noise: 3, worse: 'down' },
+  'night.localWarpMax': { noise: 0.25, worse: 'up' },
+  'night.warpTiles': { noise: 0, worse: 'up' },
+  'night.residualShift': { noise: 0.25, worse: null },
   'night.eyesFailed': { noise: 0, worse: 'up' },
   'night.orbFailed': { noise: 0, worse: 'up' },
   // Supporting diagnostic, not a gate. A real blank orb is already caught by the
@@ -140,10 +200,12 @@ export const GOLDEN_VERDICTS = [
   'outline.ringsOk',
   'outline.frameOk',
   'light.driftOk',
+  'light.warpOk',
   'light.eyesOk',
   'night.driftOk',
   'night.moodOk',
   'night.lineOk',
+  'night.warpOk',
   'night.eyesOk',
   'night.orbOk',
 ];
@@ -209,7 +271,8 @@ export function diffGoldenPage(rel, golden, current, out) {
     }
     if (was == null || now == null || was === now) continue;
     const delta = now - was;
-    if (Math.abs(delta) <= spec.noise) continue;
+    const noise = Math.max(spec.noise, Math.ceil(Math.abs(was) * (spec.noiseFraction ?? 0)));
+    if (Math.abs(delta) <= noise) continue;
     const line = `${rel}  ${path} ${was} -> ${now}`;
     const worse = spec.worse === 'up' ? delta > 0 : spec.worse === 'down' ? delta < 0 : false;
     (worse ? out.regressions : out.info).push(line + (worse ? '' : ' (moved)'));

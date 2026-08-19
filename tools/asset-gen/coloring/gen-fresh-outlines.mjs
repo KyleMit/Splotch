@@ -32,6 +32,7 @@ import { scoreOutlineFrame } from '../lib/outline-frame.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { FRESH_STYLE_PROMPT } from '../lib/prompts.mjs';
 
+// This producer-local q90 is uncalibrated; measure outline ringing and bytes before changing it.
 const WEBP_QUALITY = 90;
 const BORDER_WHITE_LEVEL = 235;
 // Lightweight fraction gate, intentionally independent of the registration mask resolution.

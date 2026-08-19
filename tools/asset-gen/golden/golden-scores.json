@@ -1,8 +1,9 @@
 {
-  "version": 4,
+  "version": 5,
   "thresholds": {
     "keep": 0.92,
     "localKeep": 0.8,
+    "localWarpMax": 4,
     "nightDriftMax": 0.004,
     "bgLumaMax": 60,
     "lineWhiteMin": 150,
@@ -11,7 +12,8 @@
     "eyeRingDepthMax": 4,
     "frameSideCoverageMin": 0.7,
     "ghostLumaMax": 245,
-    "ghostSideCoverageMin": 0.9
+    "ghostSideCoverageMin": 0.9,
+    "chalkInkDiffMax": 360
   },
   "pages": {
     "creatures/cover": {
@@ -43,25 +45,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 96,
+        "solidInkPx": 120,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 0.9996,
         "localKeep": 0.9872,
         "worstTile": "3,5",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 5,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0.00007,
         "bgLuma": 40.5,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.23,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -80,25 +95,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 84,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 24.4,
         "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.27,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -117,25 +145,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 37,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00266,
         "bgLuma": 33.9,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -154,25 +195,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 0.999,
         "localKeep": 0.9704,
         "worstTile": "2,3",
+        "localWarpMax": 2,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00077,
         "bgLuma": 33.6,
         "lineWhite": 242,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -191,25 +245,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 6,
+        "solidInkPx": 36,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 8,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 35.1,
         "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.58,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -228,25 +295,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 5,
+        "solidInkPx": 9,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 3,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.4,
         "lineWhite": 246,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.51,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -265,25 +345,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 42,
+        "solidInkPx": 345,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 18.5,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.25,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -302,25 +395,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 143,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00362,
         "bgLuma": 24.4,
         "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.19,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -339,25 +445,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 124,
+        "solidInkPx": 10,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 38.4,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.66,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -376,25 +495,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 29.2,
         "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.37,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -413,25 +545,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 60,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 45.5,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.35,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -450,25 +595,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 203,
+        "solidInkPx": 58,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 42.9,
         "lineWhite": 246,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.18,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -487,25 +645,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 4,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 3,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.8,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -524,25 +695,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 8,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 39.4,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -576,25 +760,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 124,
+        "solidInkPx": 64,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.7,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -613,25 +810,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 25,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.3,
         "lineWhite": 251,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -650,25 +860,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 25,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 27.1,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.46,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -687,25 +910,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 33,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 47.9,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -724,25 +960,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 115,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 5,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.7,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.6,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -761,25 +1010,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 13,
+        "solidInkPx": 29,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 0.9998,
         "localKeep": 0.9934,
         "worstTile": "4,3",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 3,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 21,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -798,25 +1060,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 56,
+        "solidInkPx": 161,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 5,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.6,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.29,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -835,25 +1110,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 304,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 24.3,
         "lineWhite": 245,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -872,25 +1160,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 57,
+        "solidInkPx": 149,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 47.8,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.42,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -909,25 +1210,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 30.4,
         "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -946,25 +1260,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 3,
+        "solidInkPx": 123,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 41.9,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.21,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -983,25 +1310,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 22,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 26.7,
         "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1035,25 +1375,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 26,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.7,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.14,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1072,25 +1425,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 17,
+        "solidInkPx": 36,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 1,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.7,
         "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1109,25 +1475,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 4,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 9.06,
+        "warpTiles": 1,
+        "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 27.7,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1146,25 +1525,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 28,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00056,
         "bgLuma": 38.5,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1183,25 +1575,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 48,
+        "solidInkPx": 3,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 27.1,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.68,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1220,25 +1625,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 26,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00182,
         "bgLuma": 33.7,
         "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1257,25 +1675,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 2,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 4,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0.00033,
         "bgLuma": 32.8,
         "lineWhite": 252,
+        "localWarpMax": 6.08,
+        "warpTiles": 1,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.52,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1294,25 +1725,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 39,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00189,
         "bgLuma": 49.1,
         "lineWhite": 248,
+        "localWarpMax": 5.1,
+        "warpTiles": 1,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1331,25 +1775,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 140,
+        "solidInkPx": 48,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": false
       },
       "night": {
         "drift": 0,
         "bgLuma": 27.9,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1368,25 +1825,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 893,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 3,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 39.8,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1405,25 +1875,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 183,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0.00027,
         "bgLuma": 10.7,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1442,25 +1925,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 147,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.7,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1479,25 +1975,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 7,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 6,
         "eyeLively": 6,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 26.9,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1516,25 +2025,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 81,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 4,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0.00227,
         "bgLuma": 33.9,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1553,25 +2075,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 507,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 0.9998,
         "localKeep": 0.9939,
         "worstTile": "4,3",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 5,
         "eyeLively": 5,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 46.8,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1590,25 +2125,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 40,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 0.9942,
         "localKeep": 0.8638,
         "worstTile": "3,4",
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 40.7,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1642,25 +2190,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 120,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 11,
         "eyeLively": 6,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 39.7,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1679,25 +2240,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 36,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1716,25 +2290,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 95,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 17.4,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1753,25 +2340,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 507,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 33.8,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1790,25 +2390,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 150,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 4,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.6,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1827,25 +2440,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 25,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 6,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 41.7,
         "lineWhite": 247,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1864,25 +2490,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 2,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 27.9,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1901,25 +2540,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 2,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 41,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1938,25 +2590,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 703,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.8,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -1975,25 +2640,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 64,
+        "solidInkPx": 24,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 38.4,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2027,25 +2705,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 667,
+        "solidInkPx": 2,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 18.8,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2064,25 +2755,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 495,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 31.4,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2101,25 +2805,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 242,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 14,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00149,
         "bgLuma": 27,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2138,25 +2855,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 163,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 1,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 40.7,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2175,25 +2905,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 41,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 5,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 37.7,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2212,25 +2955,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 7,
+        "solidInkPx": 58,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 1,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 24.5,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2249,25 +3005,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 75,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.8,
         "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2286,25 +3055,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 288,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 26.9,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2323,25 +3105,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 268,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 4,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 42,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2360,25 +3155,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 33.8,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2412,25 +3220,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 5244,
+        "solidInkPx": 0,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 8.06,
+        "warpTiles": 1,
+        "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 31.2,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2449,25 +3270,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 24.5,
         "lineWhite": 240,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2486,25 +3320,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 226,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 35,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2523,25 +3370,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 598,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 4,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 31.1,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2560,25 +3420,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 178,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 23.5,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.24,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2597,25 +3470,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 149,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 25.7,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.23,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2634,25 +3520,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 160,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 22.2,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.27,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2671,25 +3570,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 44,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 17.7,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2708,25 +3620,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 124,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.9,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.24,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2745,25 +3670,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 181,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.5,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.42,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2782,25 +3720,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 61,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 6,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 28,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2819,25 +3770,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 0.999,
         "localKeep": 0.9737,
         "worstTile": "3,5",
+        "localWarpMax": 6.4,
+        "warpTiles": 1,
+        "residualShift": 1.41,
         "eyeCores": 6,
         "eyeLively": 0,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": false
       },
       "night": {
         "drift": 0,
         "bgLuma": 20.8,
         "lineWhite": 250,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2871,25 +3835,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 5,
+        "solidInkPx": 39,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.3,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2908,25 +3885,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 265,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 7,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 23.6,
         "lineWhite": 249,
+        "localWarpMax": 2.24,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2945,25 +3935,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 61,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 2,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00006,
         "bgLuma": 26.7,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.25,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -2982,25 +3985,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 360,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 20.1,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3019,25 +4035,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 198,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 5,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 23.2,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.76,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3056,25 +4085,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 18,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 1,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 10,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 21.4,
         "lineWhite": 250,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3093,25 +4135,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 8,
         "eyeLively": 8,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0.00027,
         "bgLuma": 30.2,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3130,25 +4185,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 1724,
+        "solidInkPx": 0,
+        "regionsFlagged": 2
+      },
       "light": {
         "keep": 0.9999,
         "localKeep": 0.9961,
         "worstTile": "2,6",
+        "localWarpMax": 1.41,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 34.9,
         "lineWhite": 254,
+        "localWarpMax": 6.08,
+        "warpTiles": 1,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3167,25 +4235,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 0,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0.00035,
         "bgLuma": 25.6,
         "lineWhite": 254,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3204,25 +4285,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 271,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 0,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": true
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 27.9,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3256,25 +4350,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 23,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 6,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 51.2,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.74,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3293,25 +4400,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 15,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 8,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 24.4,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.67,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3330,25 +4450,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 211,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 12,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 40.6,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.4,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3367,25 +4500,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 32,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 13,
         "eyeLively": 6,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 23.3,
         "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3404,25 +4550,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 37,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 3,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 17.3,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.68,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3441,25 +4600,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 56,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 11,
         "eyeLively": 0,
         "driftOk": true,
-        "eyesOk": false
+        "warpOk": true,
+        "eyesOk": null
       },
       "night": {
         "drift": 0,
         "bgLuma": 26.8,
         "lineWhite": 249,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.57,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3478,25 +4650,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 254,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyeCores": 8,
         "eyeLively": 4,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 31.5,
         "lineWhite": 252,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.48,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3515,25 +4700,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 1856,
+        "solidInkPx": 15,
+        "regionsFlagged": 1
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 6,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 31.4,
         "lineWhite": 246,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3552,25 +4750,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 73,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 13,
         "eyeLively": 7,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 26.4,
         "lineWhite": 253,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3589,25 +4800,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 123,
+        "solidInkPx": 0,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 7,
         "eyeLively": 2,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 26.7,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.57,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3626,25 +4850,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 58,
+        "solidInkPx": 7,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyeCores": 5,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0.00028,
         "bgLuma": 34.1,
         "lineWhite": 248,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": 0.71,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }
@@ -3663,25 +4900,38 @@
         "ringsOk": true,
         "frameOk": true
       },
+      "chalk": {
+        "addedInkPx": 10,
+        "solidInkPx": 4,
+        "regionsFlagged": 0
+      },
       "light": {
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyeCores": 2,
         "eyeLively": 1,
         "driftOk": true,
+        "warpOk": true,
         "eyesOk": true
       },
       "night": {
         "drift": 0,
         "bgLuma": 32.6,
         "lineWhite": 251,
+        "localWarpMax": 0,
+        "warpTiles": 0,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
+        "warpOk": true,
         "eyesOk": true,
         "orbOk": true
       }

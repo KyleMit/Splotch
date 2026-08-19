@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   parseNonNegative,
@@ -8,6 +9,9 @@ import {
   parseTemperature,
 } from '../lib/asset-cli.mjs';
 import { makeClient } from '../lib/gemini.mjs';
+import { FILL_SRC_DIR, SAMPLES_DARK_DIR } from '../lib/asset-paths.mjs';
+
+const NIGHT_RESCORE_WORKFLOW_TIMEOUT_MS = 10_000;
 
 let error;
 let exit;
@@ -218,9 +222,19 @@ const commandCases = [
     '--drift-threshold must be a non-negative number, got "invalid"',
   ],
   [
+    'gen-night-fills.mjs',
+    ['nature/ant-tall', '--dry-run', '--halo-score-max', 'invalid'],
+    '--halo-score-max must be a non-negative number, got "invalid"',
+  ],
+  [
     'gen-chalk-outlines.mjs',
     ['nature/ant-tall', '--dry-run', '--invented-max', 'invalid'],
     '--invented-max must be a non-negative number, got "invalid"',
+  ],
+  [
+    'gen-chalk-outlines.mjs',
+    ['nature/ant-tall', '--dry-run', '--ink-diff-max', 'invalid'],
+    '--ink-diff-max must be a non-negative number, got "invalid"',
   ],
 ];
 
@@ -248,6 +262,11 @@ it.each(commandCases)('%s uses the canonical numeric diagnostic', (script, args,
 
 const offlineCommandCases = [
   ['gen-night-fills.mjs', ['--dry-run'], 'give a category or page, e.g. "space"'],
+  [
+    'gen-night-fills.mjs',
+    ['nature/ant-tall', '--apply', '--samples', '2'],
+    '--apply cannot be combined with --samples greater than 1.',
+  ],
   [
     'gen-chalk-outlines.mjs',
     ['nature/ant-tall', '--dry-run', '--temperature', 'invalid'],
@@ -277,3 +296,86 @@ it.each(offlineCommandCases)('%s keeps its offline mode key-optional', (script, 
   expect(result.status).toBe(1);
   expect(result.stderr.trim()).toBe(expected);
 });
+
+it('night fill rescore runs without an API key and reports a missing saved candidate', () => {
+  const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+  delete env.GEMINI_API_KEY;
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--experimental-strip-types',
+      entryPath('gen-night-fills.mjs'),
+      'nature/ant-tall',
+      '--rescore',
+    ],
+    { encoding: 'utf8', env }
+  );
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain('(skip) no candidate to rescore');
+  expect(result.stderr).toBe('');
+});
+
+it('night fill rescore refuses apply when a requested saved candidate is missing', () => {
+  const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+  delete env.GEMINI_API_KEY;
+  const result = spawnSync(
+    process.execPath,
+    [
+      '--experimental-strip-types',
+      entryPath('gen-night-fills.mjs'),
+      'nature/ant-tall',
+      '--rescore',
+      '--apply',
+    ],
+    { encoding: 'utf8', env }
+  );
+
+  expect(result.status).toBe(1);
+  expect(result.stdout).toContain('(skip) no candidate to rescore');
+  expect(result.stderr.trim()).toBe('1 requested candidate(s) missing for apply.');
+});
+
+it(
+  'night fill rescore counts every rejected review sample as a gate failure',
+  () => {
+    const sampleDir = join(SAMPLES_DARK_DIR, 'space');
+    const samplePaths = [
+      join(sampleDir, 'station-tall.sample-1.webp'),
+      join(sampleDir, 'station-tall.sample-2.webp'),
+    ];
+    const previous = samplePaths.map((path) => (existsSync(path) ? readFileSync(path) : null));
+    const rejected = readFileSync(join(FILL_SRC_DIR, 'space', 'station-tall.night.raw.webp'));
+    mkdirSync(sampleDir, { recursive: true });
+
+    try {
+      for (const path of samplePaths) writeFileSync(path, rejected);
+      const env = { ...process.env, NODE_NO_WARNINGS: '1' };
+      delete env.GEMINI_API_KEY;
+      const result = spawnSync(
+        process.execPath,
+        [
+          '--experimental-strip-types',
+          entryPath('gen-night-fills.mjs'),
+          'space/station-tall',
+          '--rescore',
+          '--samples',
+          '2',
+          '--halo-score-max',
+          '2',
+        ],
+        { encoding: 'utf8', env }
+      );
+
+      expect(result.status).toBe(1);
+      expect(result.stdout.match(/halo-gate FAILED/g)).toHaveLength(2);
+      expect(result.stderr.trim()).toBe('2 candidate(s) failed gates.');
+    } finally {
+      for (let i = 0; i < samplePaths.length; i++) {
+        if (previous[i]) writeFileSync(samplePaths[i], previous[i]);
+        else rmSync(samplePaths[i], { force: true });
+      }
+    }
+  },
+  NIGHT_RESCORE_WORKFLOW_TIMEOUT_MS
+);

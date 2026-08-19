@@ -33,7 +33,10 @@
 //      thin annulus — thickness tests misread it); on the open background
 //      (flood-reachable from the border) it's an invented shape and fails.
 //   3. white budget — total whitened area stays a small share of the page.
-//   4. eye polarity — pen eye cores the light raw paints DARK (pupils) must
+//   4. regional ink diff — within each pen-bounded region, new chalk ink and
+//      chalk retained inside solid-pen cores may not exceed the reviewed
+//      shipped chalk's allowance (or the default on a new page).
+//   5. eye polarity — pen eye cores the light raw paints DARK (pupils) must
 //      stay non-ink (fillable); cores it paints BRIGHT (catchlights) should be
 //      chalk ink (warns only). Skipped when the page has no light raw.
 //
@@ -45,6 +48,7 @@
 //   npm run gen:coloring-chalk -- nature                    whole category
 //   npm run gen:coloring-chalk -- nature/ant-tall --apply   ship the passing candidate
 //   ... --max-attempts 6  -t 0.5  --notes "…"  --force      the usual levers
+//   ... --ink-diff-max 80                                   reviewed new-white allowance
 //   ... --dry-run                                           print resolved levers per page (no API)
 //
 // Per-page levers auto-load from the fill-src/<category>/notes.json registry
@@ -65,91 +69,30 @@ import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../l
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers } from '../lib/page-notes.mjs';
-import {
-  outlineMatch,
-  KEEP_THRESHOLD,
-  LOCAL_KEEP_THRESHOLD,
-  OUTLINE_MASK_SIZE,
-  OUTLINE_INK_CUTOFF,
-} from '../lib/outline-match.mjs';
+import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 import { crispInk } from '../lib/crisp-ink.mjs';
-import { dilateMask } from '../lib/morphology.mjs';
-import { floodFromBorder } from '../lib/regions.mjs';
 import { scoreEyeFill, EYE_DARK_MAX, EYE_LIGHT_MIN } from '../lib/eye-fill.mjs';
 import { scoreSolidity, whitenSolidRegions } from '../lib/solid-regions.mjs';
 import { CHALK_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/candidate-report.mjs';
+import {
+  CHALK_INK_DIFF_MAX_DEFAULT,
+  prepareChalkInkDiff,
+  scoreChalkInkDiff,
+} from '../lib/chalk-ink-diff.mjs';
+import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 
+// Hard black/white edges expose WebP ringing, and downstream stages re-consume this output.
 const WEBP_QUALITY = 92;
 const OUT_DIR = join(SAMPLES_DARK_DIR, 'chalk');
 
-// --- New-ink analysis ----------------------------------------------------------
-// Everything the chalk draws beyond the pen's strokes is "new ink", judged by
-// ENCLOSURE, not thickness: new ink inside a pen-bounded interior is a
-// deliberate whitening (a sclera — which is a thin annulus around the pupil —
-// a catchlight, a tooth), while new ink on the OPEN BACKGROUND (the region
-// flood-reachable from the page border) is an invented shape. A first draft
-// judged by thickness (opening) misread every whitened sclera as an "invented
-// thin stroke" and rejected 9 of nature's 12 perfectly-good chalks. Same
-// working scale and ink bar as lib/outline-match.mjs so the masks agree.
-const PEN_SLACK = 2; // px of registration slack around pen strokes (outline-match TOL)
-// Background-invention test uses a wider berth: local stroke thickening and the
-// residue of an align-corrected nudge hug the pen lines, while a genuinely
-// invented shape (a star in the open sky) sits far from any of them.
-const BG_SLACK = 4;
 // New ink on the open background beyond this share of the pen's ink mass = an
 // invented shape (a clean chalk reads ~0).
 const INVENTED_MAX_DEFAULT = 0.01;
 // Total whitened share of the page a chalk may claim (eyes/teeth/markings are
 // small; a whole white body is a review-worthy surprise).
 const WHITE_FRAC_MAX_DEFAULT = 0.1;
-
-async function inkMask(buf) {
-  const { data } = await sharp(buf)
-    .grayscale()
-    .resize(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, { fit: 'fill' })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const mask = new Uint8Array(OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE);
-  for (let i = 0; i < data.length; i++) mask[i] = data[i] < OUTLINE_INK_CUTOFF ? 1 : 0;
-  return mask;
-}
-
-// The open background of the pen page: every non-ink pixel reachable from the
-// border (same flood the night-fill mood scorer uses). A chalk must never
-// whiten it — chalk whites live in pen-bounded interiors.
-function openBackground(penMask) {
-  return floodFromBorder(OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, (i) => !penMask[i]);
-}
-
-// Split a candidate's new ink (beyond the pen's slack-dilated strokes) into
-// ENCLOSED whitening (inside pen-bounded interiors — deliberate, budgeted) and
-// OPEN-BACKGROUND ink (invented shapes — gated hard).
-async function scoreNewInk(penBuf, candidateBuf) {
-  const pen = await inkMask(penBuf);
-  const cand = await inkMask(candidateBuf);
-  const n = OUTLINE_MASK_SIZE * OUTLINE_MASK_SIZE;
-  const allowed = dilateMask(pen, OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, PEN_SLACK);
-  const bgSafe = dilateMask(pen, OUTLINE_MASK_SIZE, OUTLINE_MASK_SIZE, BG_SLACK);
-  const bg = openBackground(pen);
-  let penMass = 0;
-  let invented = 0;
-  let whitened = 0;
-  for (let i = 0; i < n; i++) {
-    if (pen[i]) penMass++;
-    if (!cand[i] || allowed[i]) continue;
-    if (bg[i]) {
-      if (!bgSafe[i]) invented++;
-    } else {
-      whitened++;
-    }
-  }
-  return {
-    inventedRatio: penMass ? invented / penMass : 0,
-    whiteFrac: whitened / n,
-  };
-}
 
 // Eye polarity: the chalk must whiten the eye's WHITES and leave its PUPILS
 // fillable. Which core is which comes from the committed light raw — a core
@@ -183,6 +126,7 @@ const { values, positionals } = parseArgs({
     'max-attempts': { type: 'string' },
     'invented-max': { type: 'string' },
     'white-frac-max': { type: 'string' },
+    'ink-diff-max': { type: 'string' },
     'dry-run': { type: 'boolean' },
   },
 });
@@ -210,6 +154,12 @@ function chalkSettings(v, source) {
       WHITE_FRAC_MAX_DEFAULT,
       source
     ),
+    'ink-diff-max': parseNonNegative(
+      v['ink-diff-max'],
+      '--ink-diff-max',
+      CHALK_INK_DIFF_MAX_DEFAULT,
+      source
+    ),
     notes: v.notes,
   };
   const instruction = leverSettings.notes
@@ -220,6 +170,8 @@ function chalkSettings(v, source) {
     maxAttempts: leverSettings['max-attempts'],
     inventedMax: leverSettings['invented-max'],
     whiteFracMax: leverSettings['white-frac-max'],
+    inkDiffMax: leverSettings['ink-diff-max'],
+    inkDiffMaxOverridden: v['ink-diff-max'] !== undefined,
     notes: leverSettings.notes,
     instruction,
     leverSettings,
@@ -258,11 +210,13 @@ const passes = (c, cfg) =>
   c.localKeep >= LOCAL_KEEP_THRESHOLD &&
   c.newInk.inventedRatio <= cfg.inventedMax &&
   c.newInk.whiteFrac <= cfg.whiteFracMax &&
+  c.newInk.passes &&
   c.eyes.passes;
 const rank = (c, cfg) =>
   (passes(c, cfg) ? 1000 : 0) +
   (c.eyes.passes ? 500 : 0) +
   (c.newInk.inventedRatio <= cfg.inventedMax ? 300 : 0) +
+  (c.newInk.passes ? 200 : 0) +
   c.localKeep * 200 +
   c.keep * 100 -
   c.eyes.whitesMissed * 10;
@@ -303,10 +257,11 @@ for (const page of pages) {
     continue;
   }
   const pen = await readFile(page);
+  const penAnalysis = await prepareOutlineAnalysis(pen);
   // Keep-gate reference: whiten the pen's solid interiors (keeping a boundary
   // rim) so the chalk's deliberate whitening of a solid pupil doesn't score as
   // lost ink. Enclosure/white-budget/eye gates still judge against the raw pen.
-  const penSolidity = await scoreSolidity(pen);
+  const penSolidity = await scoreSolidity(penAnalysis);
   const keepReference = penSolidity.solidPx ? await whitenSolidRegions(pen, penSolidity) : pen;
   const { width, height } = await sharp(pen).metadata();
   const displayInput = await sharp(pen)
@@ -320,13 +275,20 @@ for (const page of pages) {
   // dark (pupils — must stay fillable) vs bright (whites — should be chalked).
   const lightRawPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const lightEyes = existsSync(lightRawPath)
-    ? await scoreEyeFill(await readFile(lightRawPath), pen)
+    ? await scoreEyeFill(await readFile(lightRawPath), penAnalysis)
+    : null;
+  const inkAnalysis = await prepareChalkInkDiff(penAnalysis);
+  const approvedInk = existsSync(dest)
+    ? await scoreChalkInkDiff(await readFile(dest), inkAnalysis)
     : null;
   const score = async (candidate, shift, attempt) => {
     const fwd = await outlineMatch(keepReference, candidate);
-    const newInk = await scoreNewInk(pen, candidate);
+    const newInk = await scoreChalkInkDiff(candidate, inkAnalysis, {
+      baseline: approvedInk,
+      ...(cfg.inkDiffMaxOverridden ? { maxInkPx: cfg.inkDiffMax } : {}),
+    });
     const eyes = lightEyes
-      ? judgeChalkEyes(await scoreEyeFill(candidate, pen), lightEyes)
+      ? judgeChalkEyes(await scoreEyeFill(candidate, penAnalysis), lightEyes)
       : { passes: true, pupilsInked: 0, whitesMissed: 0 };
     return {
       candidate,
@@ -384,9 +346,11 @@ for (const page of pages) {
   if (best.localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
   if (best.newInk.inventedRatio > cfg.inventedMax) warn.push('invented shapes on the background');
   if (best.newInk.whiteFrac > cfg.whiteFracMax) warn.push('over-whitened');
+  if (!best.newInk.passes)
+    warn.push(`new interior ink (${best.newInk.flaggedRegions.length} regions)`);
   if (!best.eyes.passes) warn.push(`pupils whitened (${best.eyes.pupilsInked})`);
   if (best.eyes.whitesMissed) warn.push(`eye whites not chalked (${best.eyes.whitesMissed})`);
-  const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  invented ${best.newInk.inventedRatio.toFixed(4)}`;
+  const stats = `keep ${(best.keep * 100).toFixed(1)}%  local ${(best.localKeep * 100).toFixed(1)}%  white ${(best.newInk.whiteFrac * 100).toFixed(1)}%  ink ${best.newInk.addedInkPx}/${best.newInk.solidInkPx}px  invented ${best.newInk.inventedRatio.toFixed(4)}`;
   console.log(
     formatCandidateLine({
       stats,

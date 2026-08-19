@@ -10,6 +10,9 @@
 // source plus a lively dark-pupil fill and a flat navy flood. Each test first
 // asserts the finder detects a core, so a change that silently stops finding
 // eyes can't make these pass vacuously.
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import sharp from 'sharp';
 import { describe, it, expect } from 'vitest';
 import {
   scoreEyeFill,
@@ -17,7 +20,9 @@ import {
   judgeNightEyes,
   findEyeCores,
   EYE_CONTRAST_MIN,
+  BAND_BLIND_INK_FRAC,
 } from '../lib/eye-fill.mjs';
+import { COLORING_DIR, FILL_SRC_DIR } from '../lib/asset-paths.mjs';
 import { goodEyeSource, eyeLivelyFill, eyeFloodFill } from './fixtures/synthetic.mjs';
 
 async function scored() {
@@ -29,18 +34,100 @@ async function scored() {
   };
 }
 
+async function flatFill(source) {
+  const { width, height } = await sharp(source).metadata();
+  return sharp({
+    create: { width, height, channels: 3, background: '#18243c' },
+  })
+    .webp()
+    .toBuffer();
+}
+
 describe('scoreEyeFill + judgeLightEyes', () => {
   it('a painted eye reads lively and passes', async () => {
     const { lively } = await scored();
     expect(lively.eyes).toBeGreaterThan(0);
     expect(lively.cores.some((c) => c.lively)).toBe(true);
-    expect(judgeLightEyes(lively).passes).toBe(true);
+    expect(judgeLightEyes(lively)).toEqual({ passes: true, gated: true });
   });
 
   it('a flat-flooded eye reads dead and fails', async () => {
     const { flooded } = await scored();
     expect(flooded.cores.some((c) => c.lively)).toBe(false);
-    expect(judgeLightEyes(flooded).passes).toBe(false);
+    expect(judgeLightEyes(flooded)).toEqual({ passes: false, gated: true });
+  });
+
+  it('suppresses a band-blind side-profile eye without accepting a measurable dead eye', async () => {
+    const page = 'farm/duck-wide';
+    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
+    const duck = await scoreEyeFill(fill, source);
+    const flooded = await scoreEyeFill(await flatFill(source), source);
+
+    expect(duck.cores.length).toBeGreaterThan(0);
+    expect(duck.cores.every((core) => !core.lively)).toBe(true);
+    expect(duck.cores.every((core) => core.annulusInkFrac > BAND_BLIND_INK_FRAC)).toBe(true);
+    expect(judgeLightEyes(duck, { page })).toEqual({ passes: true, gated: false });
+    expect(judgeLightEyes(flooded, { page })).toEqual({ passes: true, gated: false });
+  });
+
+  it('rejects a flat flood through a page annotation with measurable eye cores', async () => {
+    const page = 'farm/pig-tall';
+    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const flooded = await scoreEyeFill(await flatFill(source), source);
+
+    expect(flooded.cores.length).toBeGreaterThan(0);
+    expect(flooded.cores.every((core) => !core.lively)).toBe(true);
+    expect(judgeLightEyes(flooded, { page })).toEqual({ passes: false, gated: true });
+  });
+
+  it('uses blessed page cores to ignore windows and hubs', async () => {
+    const cases = [
+      ['objects/house-tall', { passes: true, gated: false }],
+      ['vehicles/garbage-wide', { passes: true, gated: false }],
+    ];
+    for (const [page, expected] of cases) {
+      const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+      const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
+      const scoredPage = await scoreEyeFill(fill, source);
+
+      expect(scoredPage.cores.length).toBeGreaterThan(0);
+      expect(judgeLightEyes(scoredPage).passes).toBe(false);
+      expect(judgeLightEyes(scoredPage, { page })).toEqual(expected);
+    }
+  });
+
+  it('fails closed when a reviewed page gains or loses an outline core', async () => {
+    const page = 'objects/house-tall';
+    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
+    const scoredPage = await scoreEyeFill(fill, source);
+
+    expect(scoredPage.cores).toHaveLength(14);
+    expect(() =>
+      judgeLightEyes({ ...scoredPage, cores: scoredPage.cores.slice(1) }, { page })
+    ).toThrow('annotation expects 14 outline cores, found 13');
+  });
+
+  it('keeps positive evidence from a lively band-blind core', () => {
+    const livelyBandBlind = {
+      eyes: 1,
+      cores: [
+        {
+          regionId: 1,
+          x: 40,
+          y: 40,
+          coreLuma: 240,
+          bandDark: 20,
+          bandLight: 240,
+          contrast: 220,
+          lively: true,
+          annulusInkFrac: 0.9,
+        },
+      ],
+    };
+
+    expect(judgeLightEyes(livelyBandBlind)).toEqual({ passes: true, gated: false });
   });
 });
 

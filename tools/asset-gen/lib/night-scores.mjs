@@ -7,11 +7,17 @@
 //   scoreDrift()     — invented white outlines far from any source line.
 //   scoreNightness() — a bright/daytime background instead of a deep evening sky.
 //   scoreLineColor() — the model re-inked the white outlines DARK.
-import sharp from 'sharp';
 import { dilateMask, erodeMask } from './morphology.mjs';
 import { OUTLINE_INK_CUTOFF, OUTLINE_MASK_SIZE } from './outline-match.mjs';
 import { floodBackground } from './regions.mjs';
-import { median } from './image-stats.mjs';
+import { luma, median } from './image-stats.mjs';
+import {
+  fillLumaAt,
+  fillRgbAt,
+  isPreparedNightAnalysis,
+  prepareNightAnalysis,
+  sourceLumaAt,
+} from './night-analysis.mjs';
 
 // --- Drift detection ----------------------------------------------------------
 // A night fill's white pixels are outlines; the model has drifted when it draws a
@@ -40,25 +46,16 @@ const NIGHT_W = 384;
 export const NIGHT_BG_LUMA_MAX_DEFAULT = 60; // median background luma above this = too bright / daytime (3.1-migration bar; shipped catalog is 18-48)
 const NIGHT_MIN_BG_FRAC = 0.04; // skip the check if there's barely any open background
 
-export async function prepareSourceScore(sourceBuf) {
-  return sharp(sourceBuf)
-    .resize(OUTLINE_MASK_SIZE, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+function scaledHeight({ width, height }, targetWidth) {
+  return Math.max(1, Math.round((height * targetWidth) / width));
 }
 
-export async function scoreNightness(fillBuf, sourceBuf) {
-  const s = await sharp(sourceBuf)
-    .resize(NIGHT_W, null, { fit: 'inside' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  const t = await sharp(fillBuf)
-    .resize(s.info.width, s.info.height, { fit: 'fill' })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+async function scoreNightnessPrepared(analysis) {
+  const height = scaledHeight(analysis.source, NIGHT_W);
+  const [s, t] = await Promise.all([
+    sourceLumaAt(analysis, NIGHT_W, height),
+    fillRgbAt(analysis, NIGHT_W, height),
+  ]);
   const w = s.info.width;
   const h = s.info.height;
   const n = w * h;
@@ -69,20 +66,21 @@ export async function scoreNightness(fillBuf, sourceBuf) {
     const r = t.data[i * 3];
     const g = t.data[i * 3 + 1];
     const b = t.data[i * 3 + 2];
-    lumas.push(0.299 * r + 0.587 * g + 0.114 * b);
+    lumas.push(luma(r, g, b));
   }
   // Too little open background to judge (e.g. a full-bleed subject): treat as fine.
   if (lumas.length < n * NIGHT_MIN_BG_FRAC) return { bgLuma: 0, bgFrac: lumas.length / n };
   return { bgLuma: median(lumas), bgFrac: lumas.length / n };
 }
 
-export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
-  const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
-  const t = await sharp(fillBuf)
-    .resize(s.info.width, s.info.height, { fit: 'fill' })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+export async function scoreNightness(fillOrAnalysis, sourceBuf) {
+  const analysis = isPreparedNightAnalysis(fillOrAnalysis)
+    ? fillOrAnalysis
+    : await prepareNightAnalysis(fillOrAnalysis, sourceBuf);
+  return scoreNightnessPrepared(analysis);
+}
+
+function scoreDriftRasters(s, t) {
   const w = s.info.width;
   const h = s.info.height;
   const n = w * h;
@@ -107,9 +105,9 @@ export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
     const r = t.data[i * 3];
     const g = t.data[i * 3 + 1];
     const b = t.data[i * 3 + 2];
-    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    const pixelLuma = luma(r, g, b);
     const chroma = Math.max(r, g, b) - Math.min(r, g, b);
-    if (luma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
+    if (pixelLuma > DRIFT_LUMA_WHITE && chroma < DRIFT_CHROMA_MAX) white[i] = 1;
   }
   const blobs = dilateMask(erodeMask(white, w, h, DRIFT_THIN), w, h, DRIFT_THIN);
   let added = 0;
@@ -117,6 +115,20 @@ export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
     if (white[i] && !blobs[i] && !allowed[i]) added++; // thin white, far from a source line
   }
   return { ratio: srcCount ? added / srcCount : 0, added, srcCount };
+}
+
+async function scoreDriftPrepared(analysis) {
+  const height = scaledHeight(analysis.source, OUTLINE_MASK_SIZE);
+  const [s, t] = await Promise.all([
+    sourceLumaAt(analysis, OUTLINE_MASK_SIZE, height),
+    fillRgbAt(analysis, OUTLINE_MASK_SIZE, height),
+  ]);
+  return scoreDriftRasters(s, t);
+}
+
+export async function scoreDrift(fillOrAnalysis, sourceBuf) {
+  if (isPreparedNightAnalysis(fillOrAnalysis)) return scoreDriftPrepared(fillOrAnalysis);
+  return scoreDriftPrepared(await prepareNightAnalysis(fillOrAnalysis, sourceBuf));
 }
 
 // --- Line-color detection -----------------------------------------------------
@@ -135,13 +147,7 @@ export async function scoreDrift(fillBuf, sourceBuf, preparedSource) {
 // cleanly white; eyeball borderline pages in the coloring-book proof sheet.
 export const LINE_WHITE_MIN_DEFAULT = 150; // median outline brightness below this = dark outlines
 
-export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
-  const s = preparedSource ?? (await prepareSourceScore(sourceBuf));
-  const t = await sharp(fillBuf)
-    .resize(s.info.width, s.info.height, { fit: 'fill' })
-    .grayscale()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+function scoreLineColorRasters(s, t) {
   const w = s.info.width;
   const h = s.info.height;
   const maxes = [];
@@ -165,10 +171,30 @@ export async function scoreLineColor(fillBuf, sourceBuf, preparedSource) {
   return { lineWhite: median(maxes) };
 }
 
-export async function scoreNightFillGates(fillBuf, sourceBuf) {
-  const preparedSource = await prepareSourceScore(sourceBuf);
-  const drift = await scoreDrift(fillBuf, sourceBuf, preparedSource);
-  const night = await scoreNightness(fillBuf, sourceBuf);
-  const line = await scoreLineColor(fillBuf, sourceBuf, preparedSource);
+async function scoreLineColorPrepared(analysis) {
+  const height = scaledHeight(analysis.source, OUTLINE_MASK_SIZE);
+  const [s, t] = await Promise.all([
+    sourceLumaAt(analysis, OUTLINE_MASK_SIZE, height),
+    fillLumaAt(analysis, OUTLINE_MASK_SIZE, height),
+  ]);
+  return scoreLineColorRasters(s, t);
+}
+
+export async function scoreLineColor(fillOrAnalysis, sourceBuf) {
+  if (isPreparedNightAnalysis(fillOrAnalysis)) return scoreLineColorPrepared(fillOrAnalysis);
+  return scoreLineColorPrepared(await prepareNightAnalysis(fillOrAnalysis, sourceBuf));
+}
+
+export const prepareNightFillAnalysis = prepareNightAnalysis;
+
+export async function scoreNightFillGates(fillOrAnalysis, sourceBuf) {
+  const analysis = isPreparedNightAnalysis(fillOrAnalysis)
+    ? fillOrAnalysis
+    : await prepareNightAnalysis(fillOrAnalysis, sourceBuf);
+  const [drift, night, line] = await Promise.all([
+    scoreDriftPrepared(analysis),
+    scoreNightnessPrepared(analysis),
+    scoreLineColorPrepared(analysis),
+  ]);
   return { drift, night, line };
 }

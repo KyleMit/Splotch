@@ -12,7 +12,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
-import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt } from '../lib/asset-paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from '../lib/asset-paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
@@ -37,14 +37,14 @@ console.log(
   `${'page'.padEnd(28)} ${'cores'.padStart(5)} ${'lively'.padStart(6)}  light  ${'night'.padEnd(22)}  orb`
 );
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
+  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   if (!existsSync(lightPath)) continue;
   try {
     const source = await readFile(page);
     const lightBuf = await readFile(lightPath);
     const light = await scoreEyeFill(lightBuf, source);
-    const lightVerdict = judgeLightEyes(light);
+    const lightVerdict = judgeLightEyes(light, { page: rel });
     // With a chalk outline (pen/chalk fork, docs/pen-chalk-fork.md) the chalk owns the eye
     // whites and the punch enforces them, so the night raw is judged as the
     // simulated final composite; without one the raw IS what dark mode reveals.
@@ -71,7 +71,7 @@ for (const page of pages) {
         : `BLANK-ORB (${orb.failed}, coreDark ${orb.worst?.coreDarkFrac})`
       : '-';
     console.log(
-      `${rel.padEnd(28)} ${String(light.cores.length).padStart(5)} ${String(lively).padStart(6)}  ${(lightVerdict.passes ? 'ok' : 'FAIL').padEnd(5)}  ${nightCol.padEnd(22)}  ${orbCol}`
+      `${rel.padEnd(28)} ${String(light.cores.length).padStart(5)} ${String(lively).padStart(6)}  ${(!lightVerdict.gated ? 'n/a' : lightVerdict.passes ? 'ok' : 'FAIL').padEnd(5)}  ${nightCol.padEnd(22)}  ${orbCol}`
     );
   } catch (error) {
     console.error(`${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`);

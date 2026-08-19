@@ -10,7 +10,7 @@
 import sharp from 'sharp';
 import { describe, it, expect, vi } from 'vitest';
 import {
-  prepareSourceScore,
+  prepareNightFillAnalysis,
   scoreNightFillGates,
   scoreNightness,
   scoreDrift,
@@ -19,7 +19,7 @@ import {
   DRIFT_THRESHOLD_DEFAULT,
   LINE_WHITE_MIN_DEFAULT,
 } from '../lib/night-scores.mjs';
-import { OUTLINE_MASK_SIZE } from '../lib/outline-match.mjs';
+import { punchNightCandidate, scoreNightHalo } from '../lib/night-halo.mjs';
 import {
   nightSource,
   nightFillGood,
@@ -142,20 +142,24 @@ describe('a fill whose aspect ratio differs from the source is scored against th
   }
 });
 
-it('scores a candidate with one shared 512px source preparation', async () => {
+it('composes the night gates and halo from one shared source and fill decode', async () => {
   const source = await nightSource();
   const fill = await nightFillGood();
-  const preparedSource = await prepareSourceScore(source);
-  expect(preparedSource.info.width).toBe(OUTLINE_MASK_SIZE);
-  expect(preparedSource.info.height).toBe(OUTLINE_MASK_SIZE);
 
   vi.mocked(sharp).mockClear();
-  const { drift, night, line } = await scoreNightFillGates(fill, source);
+  const analysis = await prepareNightFillAnalysis(fill, source);
+  const [{ drift, night, line }, punched] = await Promise.all([
+    scoreNightFillGates(analysis),
+    punchNightCandidate(analysis),
+  ]);
+  const halo = await scoreNightHalo(analysis, punched);
 
-  expect(sharp.mock.calls.filter(([input]) => input === source)).toHaveLength(2);
+  expect(sharp.mock.calls.filter(([input]) => input === source)).toHaveLength(1);
+  expect(sharp.mock.calls.filter(([input]) => input === fill)).toHaveLength(1);
   expect(drift.ratio).toBeLessThanOrEqual(DRIFT_THRESHOLD_DEFAULT);
   expect(night.bgLuma).toBeLessThan(NIGHT_BG_LUMA_MAX_DEFAULT);
   expect(line.lineWhite).toBeGreaterThanOrEqual(LINE_WHITE_MIN_DEFAULT);
+  expect(halo.haloScore).toBe(0);
 });
 
 it('each night gate separates its two classes with margin', async () => {

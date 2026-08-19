@@ -15,6 +15,10 @@ export async function compositeNight(fillBuf, chalkBuf) {
     data: fill,
     info: { width, height },
   } = await sharp(fillBuf).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  // This reuses the Rec.601-calibrated OUTLINE_LUMA_THRESHOLD (punch-fill.mjs)
+  // against a libvips-grayscale ink channel; the composite-eye fixtures are
+  // frozen against that exact pairing. Unifying this conversion with image-stats
+  // luma requires rebuilding the fixtures and re-freezing the coloring goldens.
   const { data: ink } = await sharp(chalkBuf)
     .grayscale()
     .resize(width, height, { fit: 'fill' })

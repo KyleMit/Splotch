@@ -1,4 +1,20 @@
 {
+  "heart-tall": {
+    "light": {
+      "flags": {
+        "warp-max": 8.56
+      },
+      "review": "Issue #259 baseline exception: prefer a replacement under the strict 4px default and inspect the reported tile when it is not; this ceiling preserves only the reviewed committed treatment.",
+      "why": "Issue #259 calibration at base ae4129577aff7b84444b8feb8c844e0c07a56b70 measured 8.06px local warp; the durable ceiling adds a bounded 0.5px decoder margin."
+    },
+    "night": {
+      "flags": {
+        "halo-score-max": 3.2
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 3.175 / rawScore 7.949 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 3.2 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
+    }
+  },
   "heart-wide": {
     "chalk": {
       "flags": {
@@ -21,6 +37,15 @@
         "notes": "The rectangle character's body must clearly stand out against the deep navy night sky — give it a color distinct from the background, never indigo, navy, or anything close to it."
       },
       "why": "2026-07-13 fresh pen (fresh-outline-regen.md): the first night take rolled an indigo-on-navy body; a contrast --notes retry landed the ship. Note text reconstructed. The 3.1 wave's soap-bubble note (gemini-3.1-migration.md) applied to the OLD pen only — the fresh drawing has no bubbles; do not resurrect it."
+    }
+  },
+  "rectangle-tall": {
+    "night": {
+      "flags": {
+        "halo-score-max": 4.3
+      },
+      "review": "Issue #268 halo calibration: the shipped haloScore 4.269 / rawScore 28.397 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. The raw crop-review warning remains mandatory; inspect its hotspot crops before accepting a replacement.",
+      "why": "Issue #268 catalog calibration: the durable ceiling is rounded to 4.3 to preserve the reviewed shipped treatment while the default 2 bar continues to protect unreviewed candidates."
     }
   }
 }

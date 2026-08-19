@@ -9,6 +9,8 @@ import {
 } from '../lib/golden-catalog.mjs';
 import { loadTrio } from './fixtures/composite-eye/load.mjs';
 
+const REAL_IMAGE_CALIBRATION_TIMEOUT_MS = 10_000;
+
 const get = (obj, path) => path.split('.').reduce((value, key) => value?.[key], obj);
 
 async function scoreFixture(name) {
@@ -45,6 +47,27 @@ describe('golden catalog frame coverage direction', () => {
 
     expect(out.regressions).toEqual([]);
     expect(out.info).toEqual([]);
+  });
+});
+
+describe('golden catalog chalk ink direction', () => {
+  it('reports new bounded ink and newly flagged regions as regressions', () => {
+    const out = diff(
+      { chalk: { addedInkPx: 20, solidInkPx: 10, regionsFlagged: 0 } },
+      { chalk: { addedInkPx: 40, solidInkPx: 10, regionsFlagged: 1 } }
+    );
+
+    expect(out.regressions).toContain('fixture/page  chalk.addedInkPx 20 -> 40');
+    expect(out.regressions).toContain('fixture/page  chalk.regionsFlagged 0 -> 1');
+  });
+
+  it('scales the chalk ink noise band with the approved region', () => {
+    const withinNoise = diff({ chalk: { addedInkPx: 500 } }, { chalk: { addedInkPx: 550 } });
+    const beyondNoise = diff({ chalk: { addedInkPx: 500 } }, { chalk: { addedInkPx: 551 } });
+
+    expect(withinNoise.regressions).toEqual([]);
+    expect(withinNoise.info).toEqual([]);
+    expect(beyondNoise.regressions).toContain('fixture/page  chalk.addedInkPx 500 -> 551');
   });
 });
 
@@ -101,6 +124,13 @@ describe('golden catalog blank-orb verdict', () => {
 });
 
 describe('golden catalog missing-key detection', () => {
+  it('reports a light-eye scoreability change without calling it a regression', () => {
+    const out = diff({ light: { eyesOk: false } }, { light: { eyesOk: null } });
+
+    expect(out.regressions).toEqual([]);
+    expect(out.info).toContain('fixture/page  light.eyesOk false -> null (scoreability changed)');
+  });
+
   it('reports a key dropped from the current score shape as a loud regression', () => {
     const out = diff({ outline: { solidOk: true } }, { outline: {} });
 
@@ -155,12 +185,22 @@ describe('golden catalog missing-key detection', () => {
 });
 
 describe('golden catalog shape drift guard', () => {
-  it('scores a real fixture through the extracted producer and resolves every catalog path', async () => {
-    const { comp: nightRaw, light: lightRaw, pen } = await loadTrio('horse-tall');
-    const entry = await scoreGoldenPage({ pen, lightRaw, nightRaw, chalk: null });
+  it(
+    'scores a real fixture through the extracted producer and resolves every catalog path',
+    async () => {
+      const { comp: nightRaw, light: lightRaw, pen } = await loadTrio('horse-tall');
+      const entry = await scoreGoldenPage({
+        page: 'fixtures/horse-tall',
+        pen,
+        lightRaw,
+        nightRaw,
+        chalk: pen,
+      });
 
-    for (const path of GOLDEN_VERDICTS) expect(get(entry, path), path).not.toBeUndefined();
-    for (const path of Object.keys(GOLDEN_METRICS))
-      expect(get(entry, path), path).not.toBeUndefined();
-  });
+      for (const path of GOLDEN_VERDICTS) expect(get(entry, path), path).not.toBeUndefined();
+      for (const path of Object.keys(GOLDEN_METRICS))
+        expect(get(entry, path), path).not.toBeUndefined();
+    },
+    REAL_IMAGE_CALIBRATION_TIMEOUT_MS
+  );
 });

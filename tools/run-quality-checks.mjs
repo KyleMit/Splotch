@@ -15,6 +15,7 @@ export const QUALITY_COMMANDS = [
   'npm run lint',
   'npm run check:svg-assets',
   'npm run ruler:check',
+  'npm run check:ideas-review',
   'npm run gen:tokens:check',
   'npm run lint:tokens',
   'npm run lint:dead',
