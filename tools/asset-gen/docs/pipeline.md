@@ -141,9 +141,6 @@ with a `.display.webp` preview of what dark mode will show and a registration ov
 per candidate (`--rescore` re-runs them over saved candidates offline — no API — after a gate
 change):
 
-Book covers use the same pipeline and gates through an explicit `<book>/cover` target. They have no
-fill stages: after applying a cover chalk, regenerate its chalk thumbnail and responsive candidate.
-
 1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`) — every pen STROKE is still traced in
    place. The reference is the pen with its SOLID INTERIORS whitened out (rim kept — the same
    exemption the normalizer grants its redraws), so a chalk that correctly whitens a big solid pupil
@@ -185,6 +182,9 @@ fill stages: after applying a cover chalk, regenerate its chalk thumbnail and re
    this eye-specific gate passes vacuously — vehicles/police-tall's 3.1 chalk whitened both pupils
    this way. The regional ink diff above is the independent backstop; composite review remains
    required for art-direction calls.
+
+Book covers use the same pipeline and gates through an explicit `<book>/cover` target. They have no
+fill stages: after applying a cover chalk, regenerate its chalk thumbnail and responsive candidate.
 
 Candidates render to ink polarity through a **crisping S-curve** (`lib/crisp-ink.mjs`) instead of
 the pen tools' gentle contrast: on the dark board the invert + screen render and the binary night
