@@ -74,6 +74,15 @@ end-to-end — see the ADR's Verification table.
    `HTTP/1.1 200 Connection Established`, masking the real origin status so a 404'd URL still reads
    `200`.)
 
+   **Address the file by the `pr-assets` branch, never by a commit SHA.** A raw URL that pins a
+   40-character SHA is rewritten into a code span on the way into a comment — the posted body ends
+   up holding `` ![alt](`https://…png)` `` and the embed renders as literal text, while an ordinary
+   `[text](url)` link in the same body survives untouched. A serving URL is therefore not proof the
+   picture will appear. Verify what GitHub actually stored, not just what you sent: fetch the issue
+   or PR page and confirm the body has no `` ](` `` and that each figure came back as an `<img>`
+   tag. This cost PR #1137 two dead comments, neither of which the GitHub MCP toolset can edit or
+   delete — so the check is cheaper than the mistake.
+
 > Two escape hatches, neither better here: committing shots into the **feature branch**
 > (`docs/pr/…`) is simplest but drags binaries into `main` on merge — the thing the orphan branch
 > avoids. **Release assets** (`--prerelease` tagged by PR #) is the token-authenticated route that
