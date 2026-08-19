@@ -8,6 +8,7 @@ import {
   gotoApp,
   headingOffsetFromPaneTop,
   openSettingsModal,
+  seedAiEnabled,
   SECTION_LANDED_MAX_PX,
 } from './helpers';
 
@@ -23,13 +24,6 @@ async function enableAiInSettings(page: import('@playwright/test').Page) {
   await settings.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
   await page.locator('#aiImageToggle').click();
   await settings.getByRole('button', { name: 'Close' }).click();
-}
-
-async function seedAiEnabled(page: import('@playwright/test').Page) {
-  await page.addInitScript(
-    (aiImageEnabled) => localStorage.setItem(aiImageEnabled, 'true'),
-    STORAGE_KEYS.aiImageEnabled
-  );
 }
 
 test('a fresh installation does not fetch an AI allowance or show the canvas action', async ({

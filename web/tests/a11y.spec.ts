@@ -1,9 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { MANAGED_ACCESS_TOKEN } from '../playwright.shared';
-import { STORAGE_KEYS } from '../src/lib/storageKeys';
 import { signInToAdmin } from './admin-helpers';
-import { gotoApp, openSettingsModal, seedCompletedSettingsActivitySessions } from './helpers';
+import {
+  gotoApp,
+  openSettingsModal,
+  seedAiEnabled,
+  seedCompletedSettingsActivitySessions,
+} from './helpers';
 import { openParentalGate } from './flows-harness';
 import { openAiResult } from './ai-harness';
 
@@ -46,13 +50,6 @@ async function expectNoSeriousViolations(page: Page, include?: string) {
     serious.map((v) => v.id),
     `axe violations:\n${report}`
   ).toEqual([]);
-}
-
-async function seedAiEnabled(page: Page) {
-  await page.addInitScript(
-    (aiImageEnabled) => localStorage.setItem(aiImageEnabled, 'true'),
-    STORAGE_KEYS.aiImageEnabled
-  );
 }
 
 test('/privacy has no serious accessibility violations', async ({ page }) => {

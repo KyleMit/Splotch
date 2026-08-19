@@ -4,6 +4,7 @@ import {
   gotoApp,
   openSettingsModal,
   retryOpen,
+  seedAiEnabled,
   seedParentalGatePolicies,
   settleFlyIn,
   settleSettingsPane,
@@ -51,11 +52,12 @@ const MANAGE_SUBTITLE = 'Solve the problem to manage grown-up checks';
 // persistence spec below only has to get past the confirmation.
 const UNPROTECTED_CONFIRM = 'dialog.unprotected-confirm';
 
-// The access-code param reveals the AI button (it stays hidden with no
-// credential). `gates` is the seed to leave the policies at: 'default' for a
-// spec that seeded its own before navigating. openParentalGate owns the robust
-// non-empty-canvas precondition.
+// The access-code param supplies the credential, while the master preference
+// explicitly reveals the AI button. `gates` is the seed to leave the policies
+// at: 'default' for a spec that seeded its own before navigating.
+// openParentalGate owns the robust non-empty-canvas precondition.
 async function gotoGatedAiButton(page: Page, gates: 'always' | 'default' = 'always') {
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token', { gates });
 }
 
@@ -483,6 +485,7 @@ test('Parent Center reached from privacy hydrates its persisted settings', async
   await page.route('**/api/free-generation-grant', (route) =>
     route.fulfill({ status: 503, contentType: 'application/json', body: '{"ok":false}' })
   );
+  await seedAiEnabled(page);
   await seedParentalGatePolicies(page, 'always');
   await page.goto('/privacy');
 
@@ -580,6 +583,7 @@ test('reporting an AI picture waits for its own parental gate before confirming'
       body: JSON.stringify({ ok: true, reportId: 'test-report-id' }),
     });
   });
+  await seedAiEnabled(page);
   await gotoApp(page, '/?ai_access_token=test-token', { gates: 'always' });
   await openDrawer(page);
   await enableAiButtonWithStroke(page);
