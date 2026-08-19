@@ -9,10 +9,11 @@
 //
 // The decisive signal is the snapshot's `persistent` flag: true only when the
 // list is durably backed by Blobs, false on the env-seeded in-memory fallback. A
-// V1-function regression flips it to false and fails this test. We also round-trip
-// a unique token (add → read back → remove) so a write actually has to land in and
-// come back from Blobs, then clean it up so the shared site-wide store isn't left
-// holding smoke tokens.
+// V1-function regression flips it to false and fails this test. A deploy preview
+// also round-trips a unique token (add → read back → remove) so a write actually
+// has to land in and come back from Blobs. Production stops after the read-only
+// persistence assertion, so an interrupted automated check cannot strand a live
+// access token there.
 //
 //   BLOBS_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
 //   ADMIN_ACCESS_TOKEN=… \

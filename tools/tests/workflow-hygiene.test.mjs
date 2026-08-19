@@ -11,6 +11,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { shouldWriteBlobsProbe } from '../api-smoke/lib/deployed-admin-target.mjs';
 
 // Line-oriented on purpose: no YAML parser ships in this repo's dependency
 // tree, and these invariants (top-level keys, job-level keys, uses: refs) sit
@@ -238,6 +239,17 @@ describe('workflow hygiene', () => {
         '        run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs'
       );
       expect(blobsSmoke.lines.join('\n')).not.toContain('deployment_status.environment_url');
+    });
+
+    it('keeps automated production Blobs checks on the read-only contract', () => {
+      const blobsSmoke = workflows.find(({ name }) => name === 'blobs-smoke.yml');
+      const defaultTarget = blobsSmoke.lines
+        .find((line) => line.includes('DEPLOY_SMOKE_URL:'))
+        ?.match(/\|\| '([^']+)'/)?.[1];
+
+      expect(defaultTarget).toBeDefined();
+      expect(shouldWriteBlobsProbe(defaultTarget)).toBe(false);
+      expect(shouldWriteBlobsProbe('https://deploy-preview-1104--splotchy.netlify.app')).toBe(true);
     });
 
     it('the Netlify build pins the engines floor major', () => {

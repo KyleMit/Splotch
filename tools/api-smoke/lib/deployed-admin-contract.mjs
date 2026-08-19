@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { sleep } from '../../lib/proc.mjs';
 import { check } from '../../lib/smoke.mjs';
 import { adminClient } from './admin-client.mjs';
+import { shouldWriteBlobsProbe } from './deployed-admin-target.mjs';
 
 const READ_ATTEMPTS = 6;
 const READ_RETRY_MS = 1000;
 
 export async function checkDeployedAdminContract(base, adminSecret) {
   const admin = adminClient(base);
+  const writeProbe = shouldWriteBlobsProbe(base);
   let session;
   let probe;
 
@@ -22,7 +24,6 @@ export async function checkDeployedAdminContract(base, adminSecret) {
     if (!session) return;
 
     const auth = { Authorization: `Bearer ${session}` };
-    probe = `blobs-smoke-${randomUUID()}`;
     const { res: list, body: listBody } = await admin.listTokens(auth);
     check(
       'GET tokens → 200 snapshot',
@@ -38,6 +39,12 @@ export async function checkDeployedAdminContract(base, adminSecret) {
       `persistent=${listBody?.persistent} — getStore() is failing on the deploy (ADR-0025)`
     );
 
+    if (!writeProbe) {
+      console.log('[blobs-smoke] production persistence check is read-only');
+      return;
+    }
+
+    probe = `blobs-smoke-${randomUUID()}`;
     const { res: add, body: addBody } = await admin.addToken(auth, probe);
     check(
       'POST adds the probe token',
