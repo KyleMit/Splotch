@@ -4,6 +4,8 @@ import {
   looksLikeApiKey,
   looksLikeRetiredGeminiKey,
 } from '$lib/ai/keyFormat';
+import type { VerifyAccessCodeResponse } from '../routes/api/verify-access-code/+server';
+import type { VerifyKeyResponse } from '../routes/api/verify-key/+server';
 
 export { looksLikeApiKey };
 
@@ -19,11 +21,15 @@ export type CredentialKind =
   /** The check never reached OpenAI — nothing was learned about the key. */
   | 'checkUnavailable';
 
-type VerifyPayload = { ok?: boolean; error?: string; accessCode?: string; code?: string };
+type VerifyResponse = VerifyAccessCodeResponse | VerifyKeyResponse;
+type VerifyError = Extract<VerifyResponse, { ok: false }>['error'];
+type VerifiedAccessCode = Extract<VerifyAccessCodeResponse, { ok: true }>['accessCode'];
 
-export interface VerifyCredentialResult extends VerifyPayload {
+export interface VerifyCredentialResult {
   kind: CredentialKind;
-  ok: boolean; // narrowed from optional to required — verifyCredential always sets it
+  ok: boolean;
+  accessCode?: VerifiedAccessCode;
+  error?: VerifyError;
 }
 
 // Classifies the entered value, calls the matching verify endpoint, and reports
@@ -48,16 +54,23 @@ export async function verifyCredential(
     body: JSON.stringify(body),
     signal,
   });
-  const data: VerifyPayload = await res.json().catch(() => ({}));
+  const raw: unknown = await res.json().catch(() => null);
+  const data = (typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? raw : {}) as
+    | VerifyResponse
+    | Record<string, never>;
 
-  if (data.code === KEY_CHECK_UNAVAILABLE_CODE) {
-    return { kind: 'checkUnavailable', ok: false, error: data.error };
+  if ('code' in data && data.code === KEY_CHECK_UNAVAILABLE_CODE) {
+    return {
+      kind: 'checkUnavailable',
+      ok: false,
+      error: 'error' in data ? data.error : undefined,
+    };
   }
 
   return {
     kind,
     ok: res.ok && data.ok === true,
-    accessCode: data.accessCode,
-    error: data.error,
+    accessCode: 'accessCode' in data ? data.accessCode : undefined,
+    error: 'error' in data ? data.error : undefined,
   };
 }

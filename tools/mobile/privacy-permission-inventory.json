@@ -155,10 +155,34 @@
       "id": "access-code-usage",
       "owner": "Splotch",
       "boundary": {
-        "kind": "event",
-        "event": "access-code-retirement"
+        "kind": "duration",
+        "value": 30,
+        "unit": "days",
+        "anchor": "first-recorded-request",
+        "cleanupCadence": "daily",
+        "deleteOnRetirement": true
       },
-      "privacyPageFacts": ["That tally is deleted when the access code is retired."]
+      "privacyPageFacts": [
+        "later uses do not extend that deadline",
+        "Daily cleanup removes expired tallies",
+        "Retiring an access code requests immediate deletion"
+      ]
+    },
+    {
+      "id": "generation-operational-log",
+      "owner": "Netlify",
+      "boundary": {
+        "kind": "provider-window",
+        "minimumValue": 24,
+        "minimumUnit": "hours",
+        "maximumValue": 7,
+        "maximumUnit": "days",
+        "qualifier": "hosting-plan-dependent"
+      },
+      "privacyPageFacts": [
+        "Netlify retains function logs for at least 24 hours",
+        "makes up to 7 days available"
+      ]
     }
   ],
   "outboundHosts": [

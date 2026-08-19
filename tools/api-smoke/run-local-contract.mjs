@@ -607,6 +607,7 @@ try {
       // Non-blank so the free report path fails on the credential it is being
       // checked for, rather than on an unconfigured signing secret.
       REPORT_TOKEN_SECRET: 'smoke-report-token-secret',
+      USAGE_GRANT_ID_SECRET: 'smoke-usage-grant-id-secret',
     },
   }));
 

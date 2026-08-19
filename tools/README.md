@@ -44,6 +44,7 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 
 | Entry point                        | Public command or owner                   | Purpose                                                       |
 | ---------------------------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| `check-bundle-budgets.mjs`         | `postbuild`, `postbuild:cap`              | Enforce startup, lazy-chunk, and native-export byte budgets   |
 | `check-coloring-assets.mjs`        | `check:coloring-assets`                   | Validate the complete coloring-book asset catalog             |
 | `check-github-action-versions.mjs` | `check:github-actions`                    | Inventory workflow action pins and optionally query releases  |
 | `check-netlify-cli.mjs`            | `predev:netlify`                          | Require an authenticated, linked Netlify CLI                  |

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
 
 import {
@@ -13,14 +13,11 @@ import {
   setMagicBrush,
   setEraser,
   setDrawerOpen,
-  setAiAccessToken,
   setTheme,
   reloadSettings,
   aiCredentialKind,
-  captureAiAccessTokenFromUrl,
 } from './settings.svelte';
 import { selectBrush, toolState } from './tool.svelte';
-import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 
 beforeEach(() => {
   setCrayon(true);
@@ -123,14 +120,6 @@ describe('setActionButtonScale', () => {
   });
 });
 
-describe('setAiAccessToken', () => {
-  it('persists the token verbatim as a string', () => {
-    setAiAccessToken('abc123');
-    expect(settings.aiAccessToken).toBe('abc123');
-    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBe('abc123');
-  });
-});
-
 describe('setTheme', () => {
   it('persists the choice and stamps data-theme on <html>', () => {
     setTheme('dark');
@@ -161,7 +150,6 @@ describe('reloadSettings', () => {
     localStorage.setItem(STORAGE_KEYS.soundVolume, '35');
     localStorage.setItem(STORAGE_KEYS.actionButtonScale, '130');
     localStorage.setItem(STORAGE_KEYS.drawerOpen, 'true');
-    localStorage.setItem(STORAGE_KEYS.aiAccessToken, 'recovered-token');
     localStorage.setItem(STORAGE_KEYS.theme, 'dark');
 
     reloadSettings();
@@ -170,7 +158,6 @@ describe('reloadSettings', () => {
     expect(settings.soundVolume).toBe(35);
     expect(settings.actionButtonScale).toBe(130);
     expect(settings.drawerOpen).toBe(true);
-    expect(settings.aiAccessToken).toBe('recovered-token');
     expect(settings.theme).toBe('dark');
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
@@ -214,34 +201,5 @@ describe('aiCredentialKind', () => {
     settings.aiUserApiKey = 'user-key';
     settings.aiAccessToken = 'access-token';
     expect(aiCredentialKind()).toBe('apiKey');
-  });
-});
-
-describe('captureAiAccessTokenFromUrl', () => {
-  beforeEach(() => {
-    settings.aiAccessToken = '';
-    window.history.replaceState({}, '', '/');
-  });
-
-  afterEach(() => {
-    window.history.replaceState({}, '', '/');
-  });
-
-  it('captures the token and scrubs it from the URL', () => {
-    window.history.replaceState({}, '', `/?${AI_ACCESS_TOKEN_PARAM}=abc123`);
-
-    captureAiAccessTokenFromUrl();
-
-    expect(settings.aiAccessToken).toBe('abc123');
-    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBe('abc123');
-    expect(window.location.search).not.toContain(AI_ACCESS_TOKEN_PARAM);
-  });
-
-  it('is a no-op when the param is absent', () => {
-    window.history.replaceState({}, '', '/?other=1');
-
-    captureAiAccessTokenFromUrl();
-
-    expect(settings.aiAccessToken).toBe('');
   });
 });

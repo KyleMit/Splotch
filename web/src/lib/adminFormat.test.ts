@@ -48,16 +48,18 @@ describe('usageDetail', () => {
     count: 4,
     firstUsed: '2026-03-01T09:30:00Z',
     lastUsed: '2026-03-14T09:30:00Z',
-    lastStyle: 'watercolor',
-    lastPrompt: 'a happy dinosaur',
-  };
+    deleteAfter: '2026-03-31T09:30:00Z',
+    lastStyle: 'Watercolor' as const,
+    lastOutcome: 'succeeded' as const,
+  } satisfies Usage;
 
-  it('lists first use, style, and prompt on separate lines', () => {
+  it('lists the minimized style, outcome, and expiry fields', () => {
     expect(usageDetail(usage)).toBe(
       [
         `First used ${new Date(usage.firstUsed).toLocaleString()}`,
-        'Last style: watercolor',
-        'Last prompt: a happy dinosaur',
+        'Last style: Watercolor',
+        'Last outcome: succeeded',
+        `Record expires ${new Date(usage.deleteAfter).toLocaleString()}`,
       ].join('\n')
     );
   });
@@ -65,20 +67,8 @@ describe('usageDetail', () => {
   it('omits a missing style', () => {
     expect(usageDetail({ ...usage, lastStyle: null }).split('\n')).toEqual([
       `First used ${new Date(usage.firstUsed).toLocaleString()}`,
-      'Last prompt: a happy dinosaur',
+      'Last outcome: succeeded',
+      `Record expires ${new Date(usage.deleteAfter).toLocaleString()}`,
     ]);
-  });
-
-  it('omits an empty prompt', () => {
-    expect(usageDetail({ ...usage, lastPrompt: '' }).split('\n')).toEqual([
-      `First used ${new Date(usage.firstUsed).toLocaleString()}`,
-      'Last style: watercolor',
-    ]);
-  });
-
-  it('is just the first-used line when neither style nor prompt is recorded', () => {
-    expect(usageDetail({ ...usage, lastStyle: null, lastPrompt: '' })).toBe(
-      `First used ${new Date(usage.firstUsed).toLocaleString()}`
-    );
   });
 });

@@ -9,6 +9,10 @@ const mocks = vi.hoisted(() => ({
   completeGrant: vi.fn(),
   generateImage: vi.fn(),
   issueReportToken: vi.fn(),
+  recordByokUsage: vi.fn(),
+  recordTokenUsage: vi.fn(),
+  acceptsBackground: vi.fn(),
+  startBackground: vi.fn(),
 }));
 
 vi.mock('$lib/server/generationAuthorization', () => ({
@@ -24,18 +28,27 @@ vi.mock('$lib/server/ai/provider', () => ({
   aiProvider: { generateImage: mocks.generateImage },
 }));
 vi.mock('$lib/server/usage', () => ({
-  recordByokUsage: vi.fn(),
-  recordTokenUsage: vi.fn(),
+  recordByokUsage: mocks.recordByokUsage,
+  recordTokenUsage: mocks.recordTokenUsage,
+}));
+vi.mock('$lib/server/generationStart', () => ({
+  clientAcceptsBackgroundGeneration: mocks.acceptsBackground,
+  freeSettlement: vi.fn(),
+  startBackgroundGeneration: mocks.startBackground,
+  synchronousDeadlineMs: () => 1_000,
 }));
 vi.mock('$lib/server/reportToken', () => ({
   issueReportToken: mocks.issueReportToken,
 }));
 
 import { FREE_GENERATIONS_REMAINING_HEADER, REPORT_TOKEN_HEADER } from '$lib/apiHeaders';
+import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
 import { POST } from './+server';
 
-function post() {
-  const request = new Request('http://localhost/api/generate-image', {
+function post(style?: string) {
+  const url = new URL('http://localhost/api/generate-image');
+  if (style !== undefined) url.searchParams.set('style', style);
+  const request = new Request(url, {
     method: 'POST',
     headers: { 'Content-Type': 'image/png' },
     body: new Uint8Array([1]),
@@ -60,6 +73,9 @@ beforeEach(() => {
   mocks.reserveDaily.mockResolvedValue({ reserved: false, remaining: 0 });
   mocks.failGrant.mockResolvedValue(undefined);
   mocks.issueReportToken.mockReturnValue('signed-report-token');
+  mocks.acceptsBackground.mockReturnValue(false);
+  mocks.startBackground.mockResolvedValue(null);
+  mocks.recordTokenUsage.mockResolvedValue(undefined);
 });
 
 describe('POST /api/generate-image', () => {
@@ -101,7 +117,7 @@ describe('POST /api/generate-image', () => {
 
     const response = await post();
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(SAFETY_REFUSAL_STATUS);
     expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
     await expect(response.json()).resolves.toEqual({
       ok: false,
@@ -133,11 +149,80 @@ describe('POST /api/generate-image', () => {
 
     const response = await post();
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(SAFETY_REFUSAL_STATUS);
     expect(response.headers.get(REPORT_TOKEN_HEADER)).toBe('signed-report-token');
     expect(mocks.issueReportToken).toHaveBeenCalledWith(authorization.binding, {
       kind: 'false-positive-refusal',
       refusalReason: 'PROHIBITED_CONTENT',
+    });
+    expect(mocks.recordTokenUsage.mock.calls).toEqual(
+      authorization.kind === 'managed'
+        ? [['daycare-club', { style: null, outcome: 'refused' }]]
+        : []
+    );
+    expect(mocks.recordByokUsage.mock.calls).toEqual(
+      authorization.kind === 'byok' ? [[null, 'refused']] : []
+    );
+  });
+
+  it('records a managed success with only normalized style and outcome categories', async () => {
+    mocks.authorize.mockResolvedValue({
+      authorized: true,
+      kind: 'managed',
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+    });
+    mocks.generateImage.mockResolvedValue({
+      kind: 'image',
+      data: Buffer.from('generated').toString('base64'),
+      mimeType: 'image/png',
+    });
+
+    const response = await post('Felt');
+
+    expect(response.status).toBe(200);
+    expect(mocks.recordTokenUsage).toHaveBeenCalledWith('daycare-club', {
+      style: 'Felt',
+      outcome: 'succeeded',
+    });
+  });
+
+  it('records a provider error as failed without retaining its message', async () => {
+    mocks.authorize.mockResolvedValue({
+      authorized: true,
+      kind: 'managed',
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+    });
+    mocks.generateImage.mockResolvedValue({ kind: 'error', reason: 'provider detail' });
+
+    const response = await post('Crayon');
+
+    expect(response.status).toBe(502);
+    expect(mocks.recordTokenUsage).toHaveBeenCalledWith('daycare-club', {
+      style: 'Crayon',
+      outcome: 'failed',
+    });
+    expect(JSON.stringify(mocks.recordTokenUsage.mock.calls)).not.toContain('provider detail');
+  });
+
+  it('records a handed-off background generation as accepted', async () => {
+    mocks.authorize.mockResolvedValue({
+      authorized: true,
+      kind: 'managed',
+      effectiveKey: 'project-key',
+      managedToken: 'daycare-club',
+    });
+    mocks.acceptsBackground.mockReturnValue(true);
+    mocks.startBackground.mockResolvedValue({ jobId: 'job-1' });
+
+    const response = await post('Paper');
+
+    expect(response.status).toBe(202);
+    expect(mocks.generateImage).not.toHaveBeenCalled();
+    expect(mocks.recordTokenUsage).toHaveBeenCalledWith('daycare-club', {
+      style: 'Paper',
+      outcome: 'accepted',
     });
   });
 });

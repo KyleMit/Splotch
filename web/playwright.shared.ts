@@ -111,7 +111,7 @@ export const productionPreviewCommand = `npx vite build && ${previewOnlyCommand}
 const PRODUCTION_BUILD_AND_PREVIEW_BOOT_BUDGET_MS = 180_000;
 
 /** The managed access code tests/generate-image.spec.ts bursts against. */
-const MANAGED_ACCESS_TOKEN = 'daycare-club';
+export const MANAGED_ACCESS_TOKEN = 'daycare-club';
 
 /**
  * A distinct code per attempt. The throttle spec fills a 60s per-token window
@@ -123,9 +123,9 @@ export function managedAccessTokenForRetry(retry: number): string {
 }
 
 /**
- * A managed code no spec sends, so tests/global-setup.ts can ask the server
- * that answered the port whether it holds this env without spending the
- * per-code budget the throttle spec bursts through.
+ * A managed code no generation spec sends, so tests/global-setup.ts can ask
+ * the server that answered the port whether it holds this env without
+ * spending the per-code budget the throttle spec bursts through.
  */
 export const HARNESS_PROBE_CODE = 'e2e-harness-probe';
 
@@ -166,9 +166,9 @@ export const commonWebServer = {
   // depth for the credentials boundary.
   //
   // ADMIN_ACCESS_TOKEN is the known secret the shared admin test helper
-  // provides to tests/admin.spec.ts and tests/a11y.spec.ts. Token mutations
-  // land in the in-memory fallback (no Netlify Blobs here), so they reset with
-  // the server and never touch real data.
+  // provides to tests/admin.spec.ts and tests/a11y.spec.ts. The production
+  // preview has no Netlify Blobs, so env-seeded token reads remain available
+  // while mutations fail closed and never touch real data.
   //
   // Every name web/src reads from $env/dynamic/private belongs in this object;
   // tools/tests/e2e-server-env.test.mjs fails when one is missing.
@@ -186,6 +186,7 @@ export const commonWebServer = {
     // Non-blank on purpose: the free-tier report spec needs generate-image to
     // mint a token report-image will accept. Blank would close that path.
     REPORT_TOKEN_SECRET: 'test-report-token-secret',
+    USAGE_GRANT_ID_SECRET: 'test-usage-grant-id-secret',
   },
 } satisfies Partial<NonNullable<PlaywrightTestConfig['webServer']>> & {
   url: string;

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { HARNESS_PROBE_CODE, MANAGED_ACCESS_TOKEN } from '../playwright.shared';
 import { SECURITY_HEADERS } from '../src/lib/server/securityHeaders';
 import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from './admin-helpers';
 
@@ -8,23 +9,36 @@ import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from 
 // no admin route at all — an in-app door to a privileged console reads as
 // hidden functionality to a store reviewer. The JSON /api/admin/* endpoints
 // remain (tools/api-smoke/lib/admin-client.mjs drives them) and are covered here
-// too. Token names are unique per test because the preview server's in-memory list
-// is shared across the parallel workers.
+// too. The production preview has no Blobs, so its env-seeded rows are read-only;
+// writable in-memory coverage belongs to the Vite-dev API smoke.
 
-async function addsAndRemovesToken(page: Page, token: string) {
+async function expectTokenAddUnavailable(page: Page, token: string) {
   await adminConsole(page).fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
-  await expect(page.getByText(`Added “${token}”`)).toBeVisible();
-  // The invite row shows the raw token and exposes its prebuilt invite link
-  // behind a "Copy link" action (no longer rendered as a visible URL). The
-  // ledger carries explicit ARIA table semantics, so rows expose role="row".
-  const row = page.getByRole('row').filter({ hasText: token });
-  await expect(page.getByText(token, { exact: true })).toBeVisible();
-  await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
-
-  await page.getByRole('button', { name: `Remove ${token}` }).click();
-  await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
+  ).toBeVisible();
   await expect(page.getByText(token, { exact: true })).toBeHidden();
+}
+
+function tokenRow(page: Page, token: string) {
+  return page.getByRole('row').filter({
+    has: page.getByRole('button', { name: `Remove ${token}`, exact: true }),
+  });
+}
+
+async function expectVisibleActionsMeetTargetFloor(row: ReturnType<typeof tokenRow>) {
+  const compactActions = row.locator('.compact-actions');
+  const actions = (await compactActions.isVisible())
+    ? row.locator('.compact-actions button, .row-actions.open button')
+    : row.locator('.wide-actions button');
+  const count = await actions.count();
+  expect(count).toBeGreaterThan(0);
+  for (let index = 0; index < count; index += 1) {
+    const box = await actions.nth(index).boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.height).toBeGreaterThanOrEqual(44);
+  }
 }
 
 test('web /admin rejects a wrong key', async ({ page }) => {
@@ -33,15 +47,17 @@ test('web /admin rejects a wrong key', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('Incorrect access key');
 });
 
-test('web /admin signs in via cookie session, manages tokens, signs out', async ({ page }) => {
+test('web /admin signs in, fails closed without durable tokens, and signs out', async ({
+  page,
+}) => {
   await signInToAdmin(page);
-  // The preview server has no Netlify Blobs, so the token list is the in-memory
-  // env-seeded fallback — the console must warn that edits won't persist.
+  // Production preview has no Netlify Blobs: reads retain the env seed, but
+  // mutations must not claim an in-memory success that disappears on restart.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Free generation grants' })).toBeVisible();
   await expect(page.getByText('Free grant monitoring is using local memory')).toBeVisible();
   await expect(page.getByText('Sampled successes').locator('..')).toContainText('0');
-  await addsAndRemovesToken(page, `e2e-web-${Date.now()}`);
+  await expectTokenAddUnavailable(page, `e2e-web-${Date.now()}`);
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -60,15 +76,18 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
 // see the tally in admin-helpers.ts.
 test('web /admin ledger keeps its rows usable across viewport widths', async ({ page }) => {
   await signInToAdmin(page);
-  const token = `e2e-widths-${Date.now()}`;
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
-  const row = page.getByRole('row').filter({ hasText: token });
+  const token = MANAGED_ACCESS_TOKEN;
+  const row = tokenRow(page, token);
   await expect(row).toBeVisible();
 
   // Wide layouts: the full action set renders inside the ledger's box.
-  for (const width of [1280, 830]) {
-    await page.setViewportSize({ width, height: 900 });
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 830, height: 900 },
+    { width: 900, height: 600 },
+    { width: 830, height: 600 },
+  ]) {
+    await page.setViewportSize(viewport);
     await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
     const remove = await row.getByRole('button', { name: `Remove ${token}` }).boundingBox();
     const ledger = await page.getByRole('table').boundingBox();
@@ -84,8 +103,12 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   // instead of squeezing the code track to nothing and ballooning the row.
   // The ceiling allows this deliberately long token one wrap (~98px) while
   // staying far under the broken state's 206px rows.
-  for (const width of [700, 561]) {
-    await page.setViewportSize({ width, height: 900 });
+  for (const viewport of [
+    { width: 700, height: 900 },
+    { width: 561, height: 900 },
+    { width: 700, height: 500 },
+  ]) {
+    await page.setViewportSize(viewport);
     await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
     await expect(row.getByRole('button', { name: `Remove ${token}` })).toBeVisible();
     await expect
@@ -93,19 +116,50 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
       .toBeLessThan(120);
   }
 
-  // Phone: Copy plus the disclosure chevron; the remaining actions expand in
-  // place inside the row — no centered modal covering the list.
-  await page.setViewportSize({ width: 390, height: 900 });
-  const more = row.getByRole('button', { name: `More options for ${token}` });
-  await expect(more).toBeVisible();
-  await expect
-    .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
-    .toBeLessThan(120);
+  const more = row.getByRole('button', { name: `More options for ${token}`, exact: true });
+
+  // Narrow portrait and both supported phone landscapes use Copy plus the
+  // disclosure chevron. Every on-screen control retains the design system's
+  // 44px floor.
+  for (const viewport of [
+    { width: 390, height: 900 },
+    { width: 812, height: 375 },
+    { width: 956, height: 440 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(more).toBeVisible();
+    await expect(row.locator('.wide-actions')).toBeHidden();
+    await expect
+      .poll(async () => (await row.boundingBox())?.height ?? Number.POSITIVE_INFINITY)
+      .toBeLessThan(120);
+    await expectVisibleActionsMeetTargetFloor(row);
+  }
+
+  // One pixel past the supported phone-landscape ceiling returns to the
+  // three-action row, and both iPad mini orientations keep it where it fits.
+  for (const viewport of [
+    { width: 957, height: 440 },
+    { width: 744, height: 1133 },
+    { width: 1133, height: 744 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await expect(more).toBeHidden();
+    await expect(row.locator('.wide-actions')).toBeVisible();
+    await expectVisibleActionsMeetTargetFloor(row);
+  }
+
+  // The remaining actions expand in place inside the row — no centered modal
+  // covering the list.
+  await page.setViewportSize({ width: 812, height: 375 });
 
   await more.click();
   await expect(more).toHaveAttribute('aria-expanded', 'true');
+  await expectVisibleActionsMeetTargetFloor(row);
   await row.getByRole('button', { name: `Remove ${token}` }).click();
-  await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
+  ).toBeVisible();
+  await expect(row).toBeVisible();
 });
 
 // Resolve a design token to the same rgb() form getComputedStyle reports, by
@@ -134,14 +188,12 @@ test('web /admin chevron press feedback beats hover on a hover-capable pointer',
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
-  const token = `e2e-press-${Date.now()}`;
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
+  const token = MANAGED_ACCESS_TOKEN;
 
-  const more = page
-    .getByRole('row')
-    .filter({ hasText: token })
-    .getByRole('button', { name: `More options for ${token}` });
+  const more = tokenRow(page, token).getByRole('button', {
+    name: `More options for ${token}`,
+    exact: true,
+  });
   await expect(more).toBeVisible();
   await more.scrollIntoViewIfNeeded();
 
@@ -187,19 +239,17 @@ test('web /admin closing the reveal removes its actions from the tab order immed
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
-  // A second row after the probed one gives the forward Tab a landing spot
-  // inside the ledger — from the last row's chevron it would legitimately
-  // leave the document, which is indistinguishable from the focus dump.
-  const token = `e2e-inert-a-${Date.now()}`;
-  const nextToken = `e2e-inert-b-${Date.now()}`;
-  for (const t of [token, nextToken]) {
-    await adminConsole(page).fill(t);
-    await page.getByRole('button', { name: 'Add code' }).click();
-    await expect(page.getByText(t, { exact: true })).toBeVisible();
-  }
+  // allowedTokensList appends the harness probe after the managed codes, so a
+  // second row after the probed one gives the forward Tab a landing spot
+  // inside the ledger. From the last row's chevron it would legitimately leave
+  // the document, which is indistinguishable from the focus dump.
+  const token = MANAGED_ACCESS_TOKEN;
+  const nextToken = HARNESS_PROBE_CODE;
+  await expect(page.getByText(token, { exact: true })).toBeVisible();
+  await expect(page.getByText(nextToken, { exact: true })).toBeVisible();
 
-  const row = page.getByRole('row').filter({ hasText: token });
-  const more = row.getByRole('button', { name: `More options for ${token}` });
+  const row = tokenRow(page, token);
+  const more = row.getByRole('button', { name: `More options for ${token}`, exact: true });
   const reveal = row.locator('.row-actions');
   await expect(reveal).toHaveAttribute('inert', '');
   await more.click();
@@ -239,7 +289,9 @@ test('web /admin surfaces a network failure instead of failing silently', async 
   await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
 });
 
-test('admin API requires a valid bearer session', async ({ request }) => {
+test('admin API requires a valid bearer session and durable mutation storage', async ({
+  request,
+}) => {
   expect((await request.get('/api/admin/tokens')).status()).toBe(401);
   expect(
     (
@@ -260,17 +312,16 @@ test('admin API requires a valid bearer session', async ({ request }) => {
   const token = `e2e-api-${Date.now()}`;
 
   const added = await request.post('/api/admin/tokens', { headers, data: { token } });
-  expect(added.ok()).toBe(true);
+  expect(added.status()).toBe(503);
   const addedBody = await added.json();
-  expect(addedBody.tokens).toContain(token);
-  expect(addedBody.invites).toContainEqual({
-    token,
-    url: expect.stringContaining(`/?ai_access_token=${token}`),
-  });
+  expect(addedBody).toMatchObject({ ok: false, error: expect.any(String) });
 
-  const removed = await request.delete('/api/admin/tokens', { headers, data: { token } });
-  expect(removed.ok()).toBe(true);
-  expect((await removed.json()).tokens).not.toContain(token);
+  const removed = await request.delete('/api/admin/tokens', {
+    headers,
+    data: { token: MANAGED_ACCESS_TOKEN },
+  });
+  expect(removed.status()).toBe(503);
+  expect(await removed.json()).toMatchObject({ ok: false, error: expect.any(String) });
 });
 
 // /admin is function-served (prerender = false), so Netlify's static-only

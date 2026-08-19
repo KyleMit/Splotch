@@ -1,6 +1,6 @@
 ---
-name: release
-description: Draft release notes from the git log, then bump versions and publish a release
+name: cut-release
+description: Draft and review release notes, then bump versions, commit, tag, push, and create the GitHub Release
 ---
 
 You are cutting a new release of Splotch. The committed `releases/<version>.md` file is the single
@@ -67,7 +67,7 @@ Follow these steps:
 
    | Phase             | Skill               | Produces                                       |
    | ----------------- | ------------------- | ---------------------------------------------- |
-   | 1. Release (done) | `release`           | version bump, tag, notes, empty GitHub Release |
+   | 1. Release (done) | `cut-release`       | version bump, tag, notes, empty GitHub Release |
    | 2. Build          | `build`             | the signed `.aab` / `.ipa` for that version    |
    | 3. Publish        | `publish-artifacts` | those artifacts attached to the release        |
 

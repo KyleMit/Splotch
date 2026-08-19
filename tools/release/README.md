@@ -12,7 +12,7 @@ store artifacts. The committed release Markdown is the source of truth for every
 | `gen-release-notes.mjs`         | `npm run gen:releases`      | Regenerate app and store release notes        |
 | `publish-release-artifacts.mjs` | `npm run release:publish`   | Verify and attach built `.aab` / `.ipa` files |
 
-The public commands remain stable during the tools naming migration. The `release`, `build`, and
+The public commands remain stable during the tools naming migration. The `cut-release`, `build`, and
 `publish-artifacts` skills own the human approval and signed-build workflow around these scripts.
 
 ## Generate release notes

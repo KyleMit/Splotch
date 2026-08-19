@@ -6,14 +6,14 @@ import {
   scannedFiles,
 } from '../check-skill-reference-syntax.mjs';
 
-const NAMES = ['build', 'release', 'create-adr'];
+const NAMES = ['build', 'cut-release', 'create-adr'];
 const tokensIn = (violations) => violations.map((v) => v.token);
 
 describe('skill reference vocabulary', () => {
   const names = registeredSkillNames();
 
   it('covers authored skills and the direct provider packages', () => {
-    expect(names).toContain('release');
+    expect(names).toContain('cut-release');
     expect(names).toContain('run-claude');
     expect(names).toContain('burn-down-audits');
   });
@@ -26,10 +26,10 @@ describe('skill reference vocabulary', () => {
 
 describe('shared surfaces', () => {
   it('flags either runner sigil', () => {
-    const md = 'Run `/build`, then `$release`.';
+    const md = 'Run `/build`, then `$cut-release`.';
     expect(tokensIn(findFileViolations('.ruler/skills/x/SKILL.md', md, NAMES))).toEqual([
       '/build',
-      '$release',
+      '$cut-release',
     ]);
   });
 
@@ -43,9 +43,13 @@ describe('shared surfaces', () => {
   });
 
   it('reports the file and line of each hit', () => {
-    const violations = findFileViolations('docs/CONTRIBUTING.md', 'ok\nrun /release now', NAMES);
+    const violations = findFileViolations(
+      'docs/CONTRIBUTING.md',
+      'ok\nrun /cut-release now',
+      NAMES
+    );
     expect(violations).toMatchObject([
-      { file: 'docs/CONTRIBUTING.md', line: 2, token: '/release' },
+      { file: 'docs/CONTRIBUTING.md', line: 2, token: '/cut-release' },
     ]);
   });
 });
@@ -86,9 +90,9 @@ describe('things that are not skill references', () => {
   });
 
   it.each([
-    ['a regex literal argument', 'expect(() => parse()).toThrow(/release\\.mjs <semver>/);'],
-    ['a regex literal with a colon', 'expect(source).toMatch(/release:publish/);'],
-    ['a bare regex literal', 'const pattern = /release/;'],
+    ['a regex literal argument', 'expect(() => parse()).toThrow(/cut-release\\.mjs <semver>/);'],
+    ['a regex literal with a colon', 'expect(source).toMatch(/cut-release:publish/);'],
+    ['a bare regex literal', 'const pattern = /cut-release/;'],
     ['a regex whose body holds a quote', "const re = /don't-build/;\nfail('ok');"],
     ['a division', 'const perBuild = total / buildCount;'],
   ])('ignores %s in a script', (_label, source) => {
@@ -99,14 +103,14 @@ describe('things that are not skill references', () => {
 // Masking code rather than narrowing what counts as an opener is what keeps
 // these in scope: each is a punctuation-delimited string or comment that looks
 // exactly like a regex argument until you know the delimiter is inside a
-// string. Every one is a verbatim line the guard's own PR removed from the
-// release tooling, so re-adding any of them turns the suite red.
+// string. Each mirrors a line shape the guard's own PR removed from the release
+// tooling, so re-adding one with a registered skill name turns the suite red.
 describe('the user-facing shapes this guard exists to catch', () => {
   it.each([
     [
       'a parenthesized name inside a template literal',
-      "`Cut the release first (/release), then build, then publish.\\n${probe.stderr ?? ''}`",
-      '/release',
+      "`Cut the release first (/cut-release), then build, then publish.\\n${probe.stderr ?? ''}`",
+      '/cut-release',
     ],
     [
       'a name before an interpolation',
@@ -115,8 +119,8 @@ describe('the user-facing shapes this guard exists to catch', () => {
     ],
     [
       'a name after an interpolation',
-      '`Missing ${file}\\nThere is no release notes file for ${v} — run /release first.`',
-      '/release',
+      '`Missing ${file}\\nThere is no release notes file for ${v} — run /cut-release first.`',
+      '/cut-release',
     ],
     [
       'a name inside a single-quoted string',
@@ -125,8 +129,8 @@ describe('the user-facing shapes this guard exists to catch', () => {
     ],
     [
       'a name opening a line comment',
-      '// /release slash command writes it). This is the deterministic, scriptable half',
-      '/release',
+      '// /cut-release slash command writes it). This is the deterministic, scriptable half',
+      '/cut-release',
     ],
     [
       'a name ending a line comment',

@@ -8,12 +8,12 @@ stores. This is phase 2 of three, and the phases are ordered for a reason:
 
 | Phase      | Skill               | Produces                                                |
 | ---------- | ------------------- | ------------------------------------------------------- |
-| 1. Release | `release`           | version bump, tag, notes, GitHub Release (no artifacts) |
+| 1. Release | `cut-release`       | version bump, tag, notes, GitHub Release (no artifacts) |
 | 2. Build   | `build` (you)       | the signed `.aab` / `.ipa` for that version             |
 | 3. Publish | `publish-artifacts` | those artifacts attached to the GitHub Release          |
 
-`release` must come first because an artifact can only carry a version that is already committed —
-which is why `release` attaches nothing, and why the artifacts you build here are attached
+`cut-release` must come first because an artifact can only carry a version that is already committed
+— which is why `cut-release` attaches nothing, and why the artifacts you build here are attached
 afterwards by `publish-artifacts` (ADR-0077). `build` on its own is also fine any time you just want
 a fresh local build.
 
@@ -32,7 +32,7 @@ and skip iOS with a note if it doesn't).
 
 1. **Show what will be built.** Read the `version` in `package.json` and the `androidVersionCode`
    from the matching `releases/<version>.md`. Tell the user the version + versionCode this build
-   will carry, so they can confirm it's the one they expect (it reflects the last `release`).
+   will carry, so they can confirm it's the one they expect (it reflects the last `cut-release`).
 
 2. **Check signing is configured.** Confirm `android/keystore.properties` exists. If it does not,
    **stop** — without it the `.aab` builds unsigned and can't be uploaded. Tell the user to create
@@ -66,7 +66,7 @@ and skip iOS with a note if it doesn't).
 ## iOS
 
 1. **Show what will be built.** Same version check as Android — the iOS
-   `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` are bumped by `release` alongside Android, so
+   `MARKETING_VERSION`/`CURRENT_PROJECT_VERSION` are bumped by `cut-release` alongside Android, so
    report the same version + build number.
 
 2. **Check the toolchain + signing.** `xcodebuild -version` must work (full Xcode, not Command Line

@@ -15,7 +15,8 @@
   import { settingsModal } from '$lib/state/ui.svelte';
   import { canvasState, SETTLED_IN_STROKES } from '$lib/state/canvas.svelte';
   import { pwaUpdates } from '$lib/pwa/updates';
-  import { captureAiAccessTokenFromUrl, settings } from '$lib/state/settings.svelte';
+  import { settings } from '$lib/state/settings.svelte';
+  import { captureAiAccessTokenFromUrl } from '$lib/state/aiAccessToken';
   import { applyTheme } from '$lib/theme';
   import { applyDeviceOrientationPreference } from '$lib/platform/orientation';
   import { mountBootHiddenOverlays } from '$lib/boot/bootHiddenOverlays';
@@ -83,13 +84,15 @@
   });
 
   onMount(() => {
-    captureAiAccessTokenFromUrl();
+    const capturedAccessToken = captureAiAccessTokenFromUrl().catch((err) => {
+      console.warn('Access-code invitation could not be saved', err);
+    });
     // The app.html head script already stamped data-theme before first paint;
     // this re-stamps it as a fallback if that inline script was blocked. The
     // theme-color meta and OS-switch tracking now fall out of the single
     // reactive source in lib/state/appearance.svelte.ts.
     applyTheme(settings.theme);
-    const settingsReady = hydratePersistedState();
+    const settingsReady = capturedAccessToken.then(hydratePersistedState);
 
     const teardowns = [
       mountBootHiddenOverlays(

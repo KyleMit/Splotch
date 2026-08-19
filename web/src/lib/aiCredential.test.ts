@@ -13,6 +13,12 @@ function stubFetch(status: number, body: unknown) {
   return fetchMock;
 }
 
+function stubRawFetch(status: number, body: string) {
+  const fetchMock = vi.fn(async () => new Response(body, { status }));
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
 describe('looksLikeApiKey', () => {
   // One prefix covers project, service-account, and legacy user keys.
   it.each(['sk-proj-ExampleKey1234', 'sk-svcacct-ExampleKey1234', 'sk-ExampleKey1234'])(
@@ -95,6 +101,22 @@ describe('verifyCredential', () => {
 
     expect(result.ok).toBe(false);
   });
+
+  it.each(['not json', '"oops"', '123', 'true', 'null', '[]'])(
+    'treats malformed response body %s as a failed verification',
+    async (body) => {
+      stubRawFetch(200, body);
+
+      const result = await verifyCredential('wrong-code');
+
+      expect(result).toEqual({
+        kind: 'accessCode',
+        ok: false,
+        accessCode: undefined,
+        error: undefined,
+      });
+    }
+  );
 
   it('passes the abort signal through to fetch', async () => {
     const fetchMock = stubFetch(200, { ok: true });

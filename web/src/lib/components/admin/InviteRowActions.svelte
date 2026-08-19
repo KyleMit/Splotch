@@ -134,7 +134,7 @@
 <style>
   /* Sizing and type read the ledger's custom properties (--ledger-target-min,
      --ledger-meta-size), inherited from the ancestor .ledger block, and the
-     560px breakpoint below matches InviteLedger's compact-row breakpoint. */
+     compact media query below matches InviteLedger's compact-row query. */
   .wide-actions {
     display: flex;
     align-items: center;
@@ -335,11 +335,12 @@
     cursor: default;
   }
 
-  /* Below 560px three inline actions no longer fit beside a real token, so
-     the row keeps Copy plus the disclosure chevron and the remaining actions
-     expand in place — a second line inside the row that pushes the list down.
-     No overlay: nothing is covered and nothing needs dismissing. */
-  @media (max-width: 560px) {
+  /* Narrow portraits and supported phone landscapes keep Copy plus the
+     disclosure chevron; the remaining actions expand in place on a second
+     line that pushes the list down. No overlay: nothing is covered and
+     nothing needs dismissing. */
+  @media (max-width: 560px),
+    (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     .wide-actions {
       display: none;
     }

@@ -1,12 +1,24 @@
 // @vitest-environment node
+import { createHmac } from 'node:crypto';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+const USAGE_SECRET = 'token-tests-usage-secret';
+
+function usageGrantKey(token: string): string {
+  const id = createHmac('sha256', USAGE_SECRET)
+    .update('splotch-managed-usage-v1')
+    .update('\0')
+    .update(token)
+    .digest('hex');
+  return `grant-v1/${id}`;
+}
 
 // Two backing modes per test: `blobsState.stores = null` makes getStore throw
 // (the in-memory fallback path, as in `vite dev`); a Map of fake stores
 // emulates Netlify Blobs with real etag compare-and-set semantics so the
 // concurrent-mutation retry loop can be exercised. Modules are re-imported per
 // test so their module-level state starts fresh each time.
-const { envState, blobsState, storeFor } = vi.hoisted(() => {
+const { devState, envState, blobsState, storeFor } = vi.hoisted(() => {
   function fakeBlobStore() {
     const blobs = new Map<string, { json: string; etag: string }>();
     let etagCounter = 0;
@@ -52,6 +64,7 @@ const { envState, blobsState, storeFor } = vi.hoisted(() => {
     return store;
   }
   return {
+    devState: { value: true },
     envState: {} as Record<string, string | undefined>,
     blobsState,
     storeFor,
@@ -61,10 +74,24 @@ const { envState, blobsState, storeFor } = vi.hoisted(() => {
 vi.mock('@netlify/blobs', () => ({
   getStore: (name: string) => storeFor(name),
 }));
+vi.mock('$app/environment', () => ({
+  get dev() {
+    return devState.value;
+  },
+}));
 vi.mock('$env/dynamic/private', () => ({ env: envState }));
 
 async function freshTokens(seed = '') {
   vi.resetModules();
+  devState.value = true;
+  envState.ALLOWED_TOKENS_LIST = seed;
+  blobsState.stores = null;
+  return import('./tokens');
+}
+
+async function freshTokensOutsideDev(seed = '') {
+  vi.resetModules();
+  devState.value = false;
   envState.ALLOWED_TOKENS_LIST = seed;
   blobsState.stores = null;
   return import('./tokens');
@@ -72,6 +99,7 @@ async function freshTokens(seed = '') {
 
 async function freshTokensWithBlobs(list: string[]) {
   vi.resetModules();
+  devState.value = false;
   envState.ALLOWED_TOKENS_LIST = '';
   blobsState.stores = new Map();
   await storeFor('access-tokens').setJSON('list', list);
@@ -80,6 +108,7 @@ async function freshTokensWithBlobs(list: string[]) {
 
 async function freshTokensWithSeedRace(seed: string, list: string[], hiddenReads: number) {
   vi.resetModules();
+  devState.value = false;
   envState.ALLOWED_TOKENS_LIST = seed;
   blobsState.stores = new Map();
   const store = storeFor('access-tokens');
@@ -98,6 +127,7 @@ async function freshTokensWithSeedRace(seed: string, list: string[], hiddenReads
 // unconfigured-Blobs shape `freshTokens` sets up.
 async function freshTokensWithFailingBlobs(seed: string, list: string[]) {
   vi.resetModules();
+  devState.value = false;
   envState.ALLOWED_TOKENS_LIST = seed;
   blobsState.stores = new Map();
   const store = storeFor('access-tokens');
@@ -116,12 +146,14 @@ async function freshTokensWithFailingBlobs(seed: string, list: string[]) {
 
 async function freshTokensWithEmptyBlobs(seed: string) {
   vi.resetModules();
+  devState.value = false;
   envState.ALLOWED_TOKENS_LIST = seed;
   blobsState.stores = new Map(); // Blobs configured, key not yet written
   return import('./tokens');
 }
 
 beforeEach(() => {
+  envState.USAGE_GRANT_ID_SECRET = USAGE_SECRET;
   // Silence the expected "Blobs unavailable" warning from openStore.
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
@@ -142,6 +174,35 @@ describe('getTokensStatus', () => {
   it('reports persistent: false on the in-memory fallback', async () => {
     const { getTokensStatus } = await freshTokens('a');
     expect(await getTokensStatus()).toEqual({ tokens: ['a'], persistent: false });
+  });
+
+  it('still serves env-seeded reads outside Vite dev', async () => {
+    const { getTokensStatus, isAllowedToken } = await freshTokensOutsideDev('seeded');
+
+    expect(await getTokensStatus()).toEqual({ tokens: ['seeded'], persistent: false });
+    expect(await isAllowedToken('seeded')).toBe(true);
+  });
+});
+
+describe('mutations when getStore fails', () => {
+  it('keeps the in-memory token list writable in Vite dev', async () => {
+    const { addToken, removeToken } = await freshTokens('seeded');
+
+    expect(await addToken('local')).toEqual({ ok: true, tokens: ['seeded', 'local'] });
+    expect(await removeToken('seeded')).toEqual({ ok: true, tokens: ['local'] });
+  });
+
+  it('fails closed outside Vite dev', async () => {
+    const { addToken, removeToken, TOKEN_UNAVAILABLE_ERROR } =
+      await freshTokensOutsideDev('seeded');
+    const unavailable = {
+      ok: false,
+      error: TOKEN_UNAVAILABLE_ERROR,
+      reason: 'unavailable',
+    } as const;
+
+    expect(await addToken('false-success')).toEqual(unavailable);
+    expect(await removeToken('seeded')).toEqual(unavailable);
   });
 });
 
@@ -384,17 +445,20 @@ describe('usage cleanup on remove', () => {
   it('deletes the revoked token’s usage blob', async () => {
     const { removeToken } = await freshTokensWithBlobs(['a', 'revoked']);
     const usage = storeFor('ai-usage');
-    await usage.setJSON('revoked', { count: 3 });
-    await usage.setJSON('a', { count: 1 });
+    const revokedKey = usageGrantKey('revoked');
+    const retainedKey = usageGrantKey('a');
+    await usage.setJSON(revokedKey, { count: 3 });
+    await usage.setJSON(retainedKey, { count: 1 });
     expect(await removeToken('revoked')).toEqual({ ok: true, tokens: ['a'] });
+    expect(usage.blobs.has(revokedKey)).toBe(false);
+    expect(usage.blobs.has(retainedKey)).toBe(true);
     expect(usage.blobs.has('revoked')).toBe(false);
-    expect(usage.blobs.has('a')).toBe(true);
   });
 
   it('still removes the token when usage cleanup fails', async () => {
     const { removeToken, getTokensStatus } = await freshTokensWithBlobs(['a', 'revoked']);
     const usage = storeFor('ai-usage');
-    await usage.setJSON('revoked', { count: 3 });
+    await usage.setJSON(usageGrantKey('revoked'), { count: 3 });
     usage.delete = async () => {
       throw new Error('blobs outage');
     };

@@ -2,7 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const ctrl = vi.hoisted(() => ({ native: false }));
 const prefsStore = vi.hoisted(() => new Map<string, string>());
-const secureStore = vi.hoisted(() => ({ apiKey: null as string | null }));
+const secureStore = vi.hoisted(() => ({
+  apiKey: null as string | null,
+  accessCode: null as string | null,
+}));
 
 // Spread the real module so only the two platform *behaviours* are faked; the
 // constants it also exports stay real rather than being restated here.
@@ -30,6 +33,13 @@ vi.mock('../secureStorage', () => ({
   clearApiKey: vi.fn(async () => {
     secureStore.apiKey = null;
   }),
+  saveAccessCode: vi.fn(async (value: string) => {
+    secureStore.accessCode = value;
+  }),
+  loadAccessCode: vi.fn(async () => secureStore.accessCode),
+  clearAccessCode: vi.fn(async () => {
+    secureStore.accessCode = null;
+  }),
 }));
 
 vi.mock('../idb', () => ({
@@ -45,19 +55,29 @@ vi.mock('../platform/orientation', () => ({
 }));
 
 import { STORAGE_KEYS } from '../storage';
+import { saveAccessCode } from '../secureStorage';
 import { applyDeviceOrientationPreference } from '../platform/orientation';
 import { settings } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
+import { persistedStateStatus } from './persistedStateStatus.svelte';
 
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
   prefsStore.clear();
   secureStore.apiKey = null;
+  secureStore.accessCode = null;
   settings.aiUserApiKey = '';
+  settings.aiAccessToken = '';
   settings.lockRotationEnabled = true;
   settings.forceLandscapeOrientation = false;
   ctrl.native = false;
+  persistedStateStatus.hydrated = false;
+  vi.mocked(saveAccessCode)
+    .mockReset()
+    .mockImplementation(async (value: string) => {
+      secureStore.accessCode = value;
+    });
 });
 
 describe('hydratePersistedState', () => {
@@ -71,6 +91,37 @@ describe('hydratePersistedState', () => {
     expect(secureStore.apiKey).toBe('sk-durable-legacy-key');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiUserApiKey)).toBeNull();
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiUserApiKey)).toBe(false));
+  });
+
+  it('migrates a managed code restored from Preferences and scrubs both plaintext copies', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.legacyAiAccessToken, 'durable-managed-code');
+
+    await hydratePersistedState();
+
+    expect(settings.aiAccessToken).toBe('durable-managed-code');
+    expect(secureStore.accessCode).toBe('durable-managed-code');
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
+    await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiAccessToken)).toBe(false));
+  });
+
+  it('keeps both plaintext managed-code copies and settles boot when secure migration fails', async () => {
+    ctrl.native = true;
+    prefsStore.set(STORAGE_KEYS.legacyAiAccessToken, 'retryable-managed-code');
+    vi.mocked(saveAccessCode).mockRejectedValueOnce(new Error('secure storage unavailable'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await hydratePersistedState();
+
+    expect(settings.aiAccessToken).toBe('');
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
+    expect(prefsStore.get(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
+    expect(persistedStateStatus.hydrated).toBe(true);
+    expect(warn).toHaveBeenCalledWith(
+      'Secure credential hydration failed',
+      expect.objectContaining({ message: 'secure storage unavailable' })
+    );
+    warn.mockRestore();
   });
 
   it('applies the restored device orientation preference', async () => {

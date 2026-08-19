@@ -1,4 +1,5 @@
 import { hydrateApiKey } from '$lib/state/aiKey';
+import { hydrateAiAccessToken } from '$lib/state/aiAccessToken';
 import { hydrateSaveFolder } from '$lib/state/saveFolder.svelte';
 import { recordSession } from '$lib/state/sessionCounters.svelte';
 import { settings } from '$lib/state/settings.svelte';
@@ -30,9 +31,14 @@ export async function hydratePersistedState(): Promise<void> {
     );
   }
 
-  // Durable hydration must finish before the BYOK key migration so a
-  // legacy plaintext key that survived only in Preferences can move into secure
+  // Durable hydration must finish before the credential migrations so a legacy
+  // plaintext value that survived only in Preferences can move into secure
   // storage before both plaintext copies are scrubbed.
-  await hydrateApiKey();
+  const credentialHydrations = await Promise.allSettled([hydrateApiKey(), hydrateAiAccessToken()]);
+  for (const hydration of credentialHydrations) {
+    if (hydration.status === 'rejected') {
+      console.warn('Secure credential hydration failed', hydration.reason);
+    }
+  }
   persistedStateStatus.hydrated = true;
 }

@@ -15,15 +15,16 @@
     count: number;
     firstUsed: string;
     lastUsed: string;
-    lastStyle: string | null;
-    lastPrompt: string;
+    deleteAfter: string;
+    lastStyle: import('$lib/ai/styles').StyleName | null;
+    lastOutcome: import('$lib/usageRecord').UsageOutcome;
   }
   export interface Invite {
     token: string;
     url: string;
-    // `undefined` = usage tracking isn't wired up for this front door (native);
-    // `null` = tracked but never used; an object = the tally. The component
-    // renders the usage columns only when this is not `undefined`.
+    // `undefined` = usage tracking is unavailable or absent from this front
+    // door; `null` = tracked but never used; an object = the tally. The
+    // component renders the usage columns only when this is not `undefined`.
     usage?: Usage | null;
   }
   export interface Flash {

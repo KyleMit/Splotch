@@ -1,6 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vitest';
-import { readAiImageResponse, type AiImageResponse } from './aiImageResponse';
+import {
+  readAiImageResponse,
+  SAFETY_REFUSAL_STATUS,
+  THROTTLED_STATUS,
+  type AiImageResponse,
+} from './aiImageResponse';
 
 // Narrows the union so an assertion about the decoded image reads unconditionally. Branching on
 // `result.kind` instead would let that assertion be skipped rather than fail.
@@ -20,7 +25,7 @@ describe('readAiImageResponse', () => {
 
   it('classifies a safety refusal', async () => {
     await expect(
-      readAiImageResponse(new Response('Drawing was blocked', { status: 422 }))
+      readAiImageResponse(new Response('Drawing was blocked', { status: SAFETY_REFUSAL_STATUS }))
     ).resolves.toEqual({ kind: 'safety' });
   });
 
@@ -31,7 +36,7 @@ describe('readAiImageResponse', () => {
     const headers = header === undefined ? undefined : { 'Retry-After': header };
 
     await expect(
-      readAiImageResponse(new Response('Please wait', { status: 429, headers }))
+      readAiImageResponse(new Response('Please wait', { status: THROTTLED_STATUS, headers }))
     ).resolves.toEqual({ kind: 'throttled', retryAfter, detail: 'Please wait' });
   });
 

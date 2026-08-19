@@ -6,6 +6,7 @@ be imported by root tools and capability packages, but it never imports from a c
 | Module                     | Ownership                                                               |
 | -------------------------- | ----------------------------------------------------------------------- |
 | `coloring-book-assets.mjs` | Shared web/native coloring catalog partitions                           |
+| `filesystem.mjs`           | Recursive directory traversal for repository artifacts                  |
 | `html.mjs`                 | HTML escaping and report-rendering primitives                           |
 | `net.mjs`                  | Local port allocation and network helpers                               |
 | `playwright.mjs`           | Browser launch and executable-resolution helpers                        |

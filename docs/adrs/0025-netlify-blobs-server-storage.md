@@ -67,8 +67,8 @@ load-bearing for storage, not just routing.
 **Two separate stores** (`web/src/lib/server/`):
 
 * `tokens.ts` — store `access-tokens`, single key `list` holding the token array.
-* `usage.ts` — store `ai-usage`, keyed by the raw access token, value
-  `{ count, firstUsed, lastUsed, lastStyle, lastPrompt }`.
+* `usage.ts` — store `ai-usage`, keyed by a dedicated-secret HMAC grant ID, value
+  `{ count, firstUsed, lastUsed, deleteAfter, lastStyle, lastOutcome }`.
 
 They are kept in distinct stores so audit writes (one per generation) never contend with allowlist
 mutations.
@@ -92,16 +92,16 @@ already saved.
 **Degrade, never throw.** `getStore()` failure latches `blobsUnavailable` (a permanent property of
 the instance) and `tokens.ts` serves a per-instance in-memory list seeded from the env var; a
 *transient* operation error degrades for that one request only (it must not latch, or one blip
-silently drops every later write). **Degrading covers reads, not writes:** `tokens.ts` tells the two
-in-memory cases apart, and a token mutation on an instance whose Blobs *operation* failed is refused
-(`503`) rather than written to the fallback — banking it there would report an add or a revocation
-that the durable list never saw and that disappears on recovery. The refusal does **not** extend to
-the latched `getStore()` failure above, which covers both local dev and the V1-function production
-case: there a mutation is still accepted into the in-memory list and still reports success, with the
-`persistent: false` banner as its only mitigation. That residual hole is tracked in issue #798.
-`usage.ts` returns an empty map on any failure so a Blobs hiccup never 500s the admin page; usage
-writes are best-effort and fire from `generate-image` via `waitUntil` so the image response never
-waits on them.
+silently drops every later write). **Degrading covers reads, not writes:** outside Vite dev, a token
+mutation is refused (`503`) whenever `getStore()` or a Blobs operation fails rather than written to
+the fallback — banking it there would report an add or a revocation that the durable list never saw.
+`tokens.ts` uses SvelteKit's `$app/environment` `dev` flag to reserve writable memory for local Vite
+development; a deployed V1 function, production preview, or other unrecognized runtime fails closed.
+This inverse check is deliberate: the V1 failure is defined by missing Blobs context, and `NETLIFY`
+is a build-time signal rather than a reliable deployed-function runtime discriminator. `usage.ts`
+returns an empty map on any failure so a Blobs hiccup never 500s the admin page; usage writes are
+best-effort and fire from `generate-image` via `waitUntil` so the image response never waits on
+them.
 
 **Surface the fallback.** Because the degrade is silent by design, `/admin` must not pretend
 env-seeded data is live. `tokens.ts` exports `getTokensStatus()` returning `{ tokens, persistent }`
@@ -114,7 +114,8 @@ can surface the same warning after every successful snapshot.
 
 ## Consequences
 
-* **+** No managed database, no extra credentials: the store is provisioned with the Netlify site.
+* **+** No managed database: the store is provisioned with the Netlify site. Usage pseudonyms use
+  one dedicated HMAC secret, separate from the codes and every other signing/authentication key.
 * **+** Tokens are mutable at runtime (add/revoke from `/admin`) and usage is auditable, both
   without a redeploy.
 * **+** The store survives function cold starts and coordinates across concurrent instances (unlike
@@ -126,11 +127,38 @@ can surface the same warning after every successful snapshot.
   Netlify-config bump should re-verify Blobs on a deploy preview — run `npm run test:blobs:smoke`
   against the preview URL (it asserts `persistent:true` and round-trips a token), which is the
   automated guard against this regression.
-* **−** Local `vite dev` and the Playwright preview server have no Blobs, so token edits and usage
-  live in a per-instance in-memory list that resets on restart; the admin E2E
-  (`tests/admin.spec.ts`) asserts the fallback banner is shown there.
+* **−** Local `vite dev` has no Blobs, so token edits and usage live in a per-instance in-memory
+  list that resets on restart. A production preview without Blobs still serves env-seeded reads but
+  refuses token edits, matching a deployed function whose durable store is unavailable; the admin
+  E2E (`tests/admin.spec.ts`) covers that fail-closed contract.
 * **−** Eventual consistency means the admin can briefly see a slightly stale usage count or token
   list after a write. Acceptable for this data.
 * **−** Deploy previews/branch deploys share the site-wide stores (they are not deploy-scoped), so a
   code added from a preview's `/admin` lands in the real `access-tokens` store. Useful for
   verification, but remember to clean up test entries.
+
+## Amendment (2026-08-19): Minimized, expiring usage records
+
+The original tally used the raw access code as its blob key and retained the latest fully resolved
+prompt indefinitely unless an admin revoked the code. Replace that shape with an opaque key:
+`grant-v1/HMAC-SHA256(key = USAGE_GRANT_ID_SECRET, "splotch-managed-usage-v1\0" + code)`. The
+dedicated secret is required for durable usage tracking and must not reuse `ADMIN_ACCESS_TOKEN`,
+`REPORT_TOKEN_SECRET`, a managed code, or any provider credential. Unset, generation remains
+available but the best-effort tally is disabled. Rotation deliberately starts fresh IDs; records
+under the previous secret are inaccessible from the current code and age out independently.
+
+The blob contains only the request count, first/latest timestamps, a fixed `deleteAfter`, the latest
+validated art-style category, and the latest outcome category (`accepted`, `succeeded`, `refused`,
+or `failed`). Prompt text is absent from both the blob and the `[ai-usage]` log line, and neither
+carries provider error or refusal detail. That log line carries only time, credential category,
+style category, and outcome category. A failed upstream call separately logs the provider's message
+from `server/ai/openai.ts` or `netlify/functions/generate-image-background.ts`; this usage record
+does not control those operational logs. Netlify's documented function-log availability is at least
+24 hours and up to 7 days depending on plan.
+
+Each tally's `deleteAfter` is exactly 30 days after its first recorded request. Later requests
+increment the tally without moving that boundary; a request at or after the boundary overwrites it
+with a fresh window. Admin reads delete and omit an expired record. Revocation requests immediate
+best-effort deletion, while `netlify/functions/purge-usage-records.ts` scans the store daily so an
+inactive record is normally removed within 24 hours after expiry. The purge also deletes malformed
+records and every legacy non-HMAC key, dropping the old raw-code/prompt blobs without reading them.

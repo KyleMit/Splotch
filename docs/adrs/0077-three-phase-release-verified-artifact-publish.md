@@ -22,9 +22,9 @@ if (existsSync(RELEASE_AAB)) {
 N can only be built *after* the commit that sets the version to N — which is the very commit
 `release.mjs` creates. So at `gh release create` time, the only `.aab` that can possibly exist is
 one built for an **earlier** version. The `existsSync` branch treats "a file is at this path" as
-"the bundle for this release is ready", and the two are never the same thing. The `release` skill
-compounded it by telling the agent to build *before* releasing to get the attachment — producing a
-bundle for the previous version, which is exactly the file that then got attached.
+"the bundle for this release is ready", and the two are never the same thing. The then-named
+`release` skill compounded it by telling the agent to build *before* releasing to get the attachment
+— producing a bundle for the previous version, which is exactly the file that then got attached.
 
 This shipped. Cutting **v1.4.0** on 2026-07-28 attached an `app-release.aab` built on 2026-06-22 —
 `versionName 1.2.0`, `versionCode 4` — to the v1.4.0 GitHub Release. Two releases stale, published
@@ -45,13 +45,13 @@ Two independent defects, and fixing either alone leaves the failure reachable:
 
 | Phase      | Command                                         | Produces                                         |
 | ---------- | ----------------------------------------------- | ------------------------------------------------ |
-| 1. Release | `release` → `npm run release <version>`         | version bump, tag, notes, GitHub Release (empty) |
+| 1. Release | `cut-release` → `npm run release <version>`     | version bump, tag, notes, GitHub Release (empty) |
 | 2. Build   | `build` → `npm run android:bundle` / `ios:ipa`  | the signed `.aab` / `.ipa` for that version      |
 | 3. Publish | `publish-artifacts` → `npm run release:publish` | those artifacts attached to the release          |
 
 **`release.mjs` attaches nothing, unconditionally.** Not "attaches if fresh" — there is no fresh
 artifact to find, so the check itself is what had to go. An empty GitHub Release at the end of phase
-1 is the correct state, and both the script output and the `release` skill now say so, so the gap
+1 is the correct state, and both the script output and the `cut-release` skill say so, so the gap
 does not read as a failure someone should "fix" by reintroducing the attach.
 
 **`scripts/publish-artifacts.mjs` verifies every artifact against the release before uploading**,

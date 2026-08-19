@@ -3,9 +3,20 @@ import { webcrypto } from 'node:crypto';
 
 if (!globalThis.crypto?.subtle) vi.stubGlobal('crypto', webcrypto);
 
+const platform = vi.hoisted(() => ({ native: false }));
+const nativeRows = vi.hoisted(() => new Map<string, string>());
+
 vi.mock('$lib/platform', () => ({
-  isNative: () => false,
+  isNative: () => platform.native,
   getPlatform: () => 'web',
+}));
+
+vi.mock('@aparajita/capacitor-secure-storage', () => ({
+  SecureStorage: {
+    set: async (name: string, value: string) => void nativeRows.set(name, value),
+    get: async (name: string) => nativeRows.get(name),
+    remove: async (name: string) => void nativeRows.delete(name),
+  },
 }));
 
 // In-memory stand-in for the idb-backed secrets store. `txGetOverride` lets a
@@ -71,6 +82,7 @@ vi.mock('./idb', () => {
 
 const MASTER_KEY_ROW = 'master-key';
 const API_KEY_ROW = 'gemini-api-key';
+const ACCESS_CODE_ROW = 'managed-access-code';
 
 type SecureStorage = typeof import('./secureStorage');
 let secureStorage: SecureStorage;
@@ -79,6 +91,8 @@ let secureStorage: SecureStorage;
 // like a new tab.
 beforeEach(async () => {
   ctrl.reset();
+  nativeRows.clear();
+  platform.native = false;
   vi.restoreAllMocks();
   vi.resetModules();
   secureStorage = await import('./secureStorage');
@@ -146,6 +160,32 @@ describe('web save/load round trip', () => {
 
     expect(ctrl.rows.has(API_KEY_ROW)).toBe(false);
     await expect(secureStorage.loadApiKey()).resolves.toBeNull();
+  });
+
+  it('keeps the API key and managed access code in distinct encrypted rows', async () => {
+    await secureStorage.saveApiKey('secret-key-123');
+    await secureStorage.saveAccessCode('managed-code');
+
+    expect(ctrl.rows.has(API_KEY_ROW)).toBe(true);
+    expect(ctrl.rows.has(ACCESS_CODE_ROW)).toBe(true);
+    await expect(secureStorage.loadApiKey()).resolves.toBe('secret-key-123');
+    await expect(secureStorage.loadAccessCode()).resolves.toBe('managed-code');
+  });
+});
+
+describe('native save/load round trip', () => {
+  it('uses distinct named Keychain or Keystore slots for both credentials', async () => {
+    platform.native = true;
+
+    await secureStorage.saveApiKey('native-key');
+    await secureStorage.saveAccessCode('native-code');
+
+    expect(nativeRows.get(API_KEY_ROW)).toBe('native-key');
+    expect(nativeRows.get(ACCESS_CODE_ROW)).toBe('native-code');
+    expect(ctrl.rows.has(API_KEY_ROW)).toBe(false);
+    expect(ctrl.rows.has(ACCESS_CODE_ROW)).toBe(false);
+    await expect(secureStorage.loadApiKey()).resolves.toBe('native-key');
+    await expect(secureStorage.loadAccessCode()).resolves.toBe('native-code');
   });
 });
 

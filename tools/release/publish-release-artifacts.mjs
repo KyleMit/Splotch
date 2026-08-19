@@ -100,7 +100,7 @@ function readExpected(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
     fail(
-      `Missing ${file}\nThere is no release notes file for ${version} — run the release skill first.`
+      `Missing ${file}\nThere is no release notes file for ${version} — run the cut-release skill first.`
     );
   }
   const parsed = parseFrontmatter(readFileSync(file, 'utf8'));
@@ -117,7 +117,7 @@ function assertReleaseExists(version) {
   if (probe.status !== 0) {
     fail(
       `No GitHub Release found for v${version}.\n` +
-        `Cut the release first (the release skill), then build, then publish.\n${probe.stderr ?? ''}`
+        `Cut the release first (the cut-release skill), then build, then publish.\n${probe.stderr ?? ''}`
     );
   }
 }

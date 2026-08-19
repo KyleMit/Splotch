@@ -332,9 +332,10 @@ re-verify if that flow changes:
   report store. Both retain the input, server-resolved prompt, style, and timestamp; a refusal
   report also retains the provider's signed refusal reason, and a picture report retains the output.
   A daily purge deletes the bundle after its 30-day retention date. `lib/server/usage.ts` separately
-  stores a per-token tally, including the latest server-resolved instruction, and `deleteUsage`
-  drops that tally when the token is revoked. Allowance records retain the installation pseudonym
-  and attempt/success/failure accounting defined by ADR-0105.
+  stores a 30-day, HMAC-keyed access-code tally containing timestamps plus closed style/outcome
+  categories, never the instruction or raw code. Its deadline does not extend with later use; a
+  daily purge removes expired records, and revocation requests immediate deletion. Allowance records
+  retain the installation pseudonym and attempt/success/failure accounting defined by ADR-0105.
 * **Disclosure** — `/privacy` names OpenAI, states the ordinary request is ephemeral, and
   distinguishes the managed key from a parent's BYO key. Two things there are easy to get wrong and
   must stay right: BYOK changes the **billing and data controller, not the routing** (the drawing

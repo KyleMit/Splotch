@@ -19,6 +19,7 @@ import {
 } from '$lib/server/generationJobs';
 import { completeFreeGeneration, failFreeGeneration } from '$lib/server/freeGenerationGrants';
 import { issueReportToken, type ReportTokenBinding } from '$lib/server/reportToken';
+import { SAFETY_REFUSAL_STATUS } from '$lib/drawing/aiImageResponse';
 import type { RequestHandler } from './$types';
 
 // Collects a generation that /api/generate-image handed to the background worker
@@ -27,7 +28,6 @@ import type { RequestHandler } from './$types';
 // either — so no secret is ever written to the job store for a later request to
 // pick up.
 
-const SAFETY_STATUS = 422;
 const UNAVAILABLE_STATUS = 503;
 
 function unavailable(): Response {
@@ -118,7 +118,7 @@ const collect: RequestHandler = async ({ request, url, getClientAddress }) => {
       ? issueReportToken(binding, { kind: 'false-positive-refusal', refusalReason: job.reason })
       : null;
     if (reportToken) headers[REPORT_TOKEN_HEADER] = reportToken;
-    return fail(SAFETY_STATUS, `Drawing was blocked for safety: ${job.reason}`, headers);
+    return fail(SAFETY_REFUSAL_STATUS, `Drawing was blocked for safety: ${job.reason}`, headers);
   }
 
   if (job.status === 'error') {

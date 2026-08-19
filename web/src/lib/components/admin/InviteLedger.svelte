@@ -255,12 +255,15 @@
   }
 
   /* Where the column grid stops fitting, the header row drops and each row
-     collapses to code-over-usage beside the inline action set. 800px is where
-     the sheet's content width (viewport minus PageShell's page padding and
+     collapses to code-over-usage beside the action set. 800px is where the
+     sheet's content width (viewport minus PageShell's page padding and
      gutters, ~684px here) still clears the fixed usage/action tracks, gaps,
      and row padding (~524px) with a useful code column left over; below it
-     the code track gets squeezed toward zero. */
-  @media (max-width: 800px) {
+     the code track gets squeezed toward zero. The short-landscape clause
+     carries that collapse through the largest supported phone without also
+     treating tablet or desktop windows as a phone layout. */
+  @media (max-width: 800px),
+    (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     .ledger-head,
     .cell-gens,
     .cell-last {
@@ -283,12 +286,12 @@
     }
   }
 
-  /* Below 560px three inline actions no longer fit beside a real token, so
-     the row keeps Copy plus the disclosure chevron and the remaining actions
-     expand in place — a second line inside the row that pushes the list down
-     (the action cells themselves: InviteRowActions, which carries the same
-     560px breakpoint). */
-  @media (max-width: 560px) {
+  /* Narrow portraits and supported phone landscapes keep Copy plus the
+     disclosure chevron; the remaining actions expand in place on a second
+     line that pushes the list down (the action cells themselves:
+     InviteRowActions, which carries the same media query). */
+  @media (max-width: 560px),
+    (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     /* Row-gap stays 0: the collapsed reveal line is a zero-height flex item
        on its own wrap line and must not open a gap under the first line. */
     .invite {

@@ -58,6 +58,11 @@ a book only after its install marker is written.
   `UserDefaults`/`SharedPreferences`). On launch, `hydrateDurableStorage()` restores any settings
   the WebView may have evicted. The web is unaffected.
 
+Client-held AI credentials use `web/src/lib/secureStorage.ts` instead: separate Keychain/Keystore
+slots on native and AES-GCM-encrypted IndexedDB rows on web. Live credential state stays empty until
+boot hydration completes. Native hydration first recovers legacy plaintext values from Preferences,
+then migrates them into secure storage and removes both plaintext copies.
+
 ### Loading native plugins (read before adding one)
 
 Two rules, both load-bearing:

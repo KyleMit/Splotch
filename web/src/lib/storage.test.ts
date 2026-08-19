@@ -70,8 +70,8 @@ describe('readBool / writeBool', () => {
 
 describe('readString / writeString', () => {
   it('round-trips a string and falls back when absent', () => {
-    writeString(STORAGE_KEYS.aiAccessToken, 'hello');
-    expect(readString(STORAGE_KEYS.aiAccessToken, 'fallback')).toBe('hello');
+    writeString(STORAGE_KEYS.legacyAiAccessToken, 'hello');
+    expect(readString(STORAGE_KEYS.legacyAiAccessToken, 'fallback')).toBe('hello');
     expect(readString(STORAGE_KEYS.brushType, 'fallback')).toBe('fallback');
   });
 });
@@ -101,20 +101,20 @@ describe('readInt', () => {
 
 describe('removeKey', () => {
   it('removes the key from localStorage', () => {
-    writeString(STORAGE_KEYS.aiAccessToken, 'x');
-    removeKey(STORAGE_KEYS.aiAccessToken);
-    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBeNull();
+    writeString(STORAGE_KEYS.legacyAiAccessToken, 'x');
+    removeKey(STORAGE_KEYS.legacyAiAccessToken);
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
 
   it('removes the key from Preferences on native', async () => {
     ctrl.native = true;
-    localStorage.setItem(STORAGE_KEYS.aiAccessToken, 'x');
-    prefsStore.set(STORAGE_KEYS.aiAccessToken, 'x');
+    localStorage.setItem(STORAGE_KEYS.legacyAiAccessToken, 'x');
+    prefsStore.set(STORAGE_KEYS.legacyAiAccessToken, 'x');
 
-    removeKey(STORAGE_KEYS.aiAccessToken);
+    removeKey(STORAGE_KEYS.legacyAiAccessToken);
 
-    expect(localStorage.getItem(STORAGE_KEYS.aiAccessToken)).toBeNull();
-    await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.aiAccessToken)).toBe(false));
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
+    await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiAccessToken)).toBe(false));
   });
 });
 
@@ -147,7 +147,7 @@ describe('resilience to a throwing localStorage', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
       expect(() => writeBool(STORAGE_KEYS.soundEnabled, true)).not.toThrow();
-      expect(() => writeString(STORAGE_KEYS.aiAccessToken, 'v')).not.toThrow();
+      expect(() => writeString(STORAGE_KEYS.legacyAiAccessToken, 'v')).not.toThrow();
       expect(() => writeInt(STORAGE_KEYS.soundVolume, 1)).not.toThrow();
     } finally {
       spy.mockRestore();
@@ -163,8 +163,8 @@ describe('resilience to a throwing localStorage', () => {
     try {
       expect(readBool(STORAGE_KEYS.soundEnabled, true)).toBe(true);
       expect(readBool(STORAGE_KEYS.soundEnabled, false)).toBe(false);
-      expect(readString(STORAGE_KEYS.aiAccessToken, 'fallback')).toBe('fallback');
-      expect(readString(STORAGE_KEYS.aiAccessToken, null)).toBeNull();
+      expect(readString(STORAGE_KEYS.legacyAiAccessToken, 'fallback')).toBe('fallback');
+      expect(readString(STORAGE_KEYS.legacyAiAccessToken, null)).toBeNull();
       expect(readInt(STORAGE_KEYS.soundVolume, 7)).toBe(7);
       expect(readInt(STORAGE_KEYS.soundVolume, 3, [1, 2, 3])).toBe(3);
     } finally {

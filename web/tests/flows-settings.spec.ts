@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { TABLET_MIN_SIDE_PX } from '../src/lib/breakpoints';
-import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { AI_ACCESS_TOKEN_PARAM } from '../src/lib/inviteLink';
 
 import {
   activeNavRowInsideColumn,
@@ -313,11 +313,7 @@ test('About opens the bundled privacy policy without a parental gate', async ({ 
 });
 
 test('setting groups space their cards without affecting the compact grid', async ({ page }) => {
-  await page.addInitScript(
-    (aiAccessToken) => localStorage.setItem(aiAccessToken, 'test-access-code'),
-    STORAGE_KEYS.aiAccessToken
-  );
-  await gotoApp(page);
+  await gotoApp(page, `/?${AI_ACCESS_TOKEN_PARAM}=test-access-code`);
 
   const modal = await openSettingsModal(page);
   // Scoped to one section: the wide pane stacks every section at once, so an

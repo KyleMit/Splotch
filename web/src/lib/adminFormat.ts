@@ -27,6 +27,7 @@ export function timeAgo(iso: string) {
 export function usageDetail(usage: Usage) {
   const parts = [`First used ${new Date(usage.firstUsed).toLocaleString()}`];
   if (usage.lastStyle) parts.push(`Last style: ${usage.lastStyle}`);
-  if (usage.lastPrompt) parts.push(`Last prompt: ${usage.lastPrompt}`);
+  parts.push(`Last outcome: ${usage.lastOutcome}`);
+  parts.push(`Record expires ${new Date(usage.deleteAfter).toLocaleString()}`);
   return parts.join('\n');
 }
