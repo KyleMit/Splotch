@@ -1,4 +1,4 @@
-export interface GradientStop {
+interface GradientStop {
   offset: number;
   color: string;
 }
