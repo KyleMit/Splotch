@@ -61,9 +61,9 @@
           Your access code is saved — turn this on whenever you're ready.
         {:else if credentialKind === 'apiKey'}
           Your OpenAI key is saved and ready whenever you turn this on.
-        {:else if freeGenerations.available && freeGenerations.remaining === 0}
+        {:else if freeGenerations.remaining === 0}
           Your {FREE_GENERATION_LIMIT} free pictures are used up.
-        {:else if freeGenerations.available && freeGenerations.remaining < FREE_GENERATION_LIMIT}
+        {:else if freeGenerations.remaining < FREE_GENERATION_LIMIT}
           You have {freeGenerations.remaining} free pictures left — nothing to set up, no card.
         {:else}
           The first {FREE_GENERATION_LIMIT} pictures are free — nothing to set up, no card.

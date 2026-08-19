@@ -331,7 +331,10 @@ test('setting groups space their cards without affecting the compact grid', asyn
   await expect(directCards.nth(2)).toHaveCSS('margin-top', '6px');
 
   await modal.locator('.settings-nav').getByRole('button', { name: 'AI Art' }).click();
-  await expect(page.locator('#aiCodeActive')).toBeInViewport();
+  const aiToggle = page.locator('#aiImageToggle');
+  await expect(aiToggle).toBeInViewport();
+  await aiToggle.click();
+  await expect(page.locator('#aiCodeActive')).toBeVisible();
   const aiPrimaryCards = page.locator(
     '.settings-section[data-section="ai"] .setting-group:has(#aiImageToggle) > .setting'
   );
