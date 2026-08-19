@@ -73,7 +73,7 @@ export function missingStaticSecurityHeaders(response, hostname) {
 
 async function checkStaticRoutes(hostname) {
   let rootHtml = '';
-  for (const path of ['/', '/privacy']) {
+  for (const path of ['/', '/privacy', '/admin']) {
     const response = await fetch(`${BASE}${path}`);
     const body = await response.text();
     const missingSecurity = missingStaticSecurityHeaders(response, hostname);
@@ -91,7 +91,11 @@ async function checkStaticRoutes(hostname) {
   const assetPath = rootHtml.match(
     /(?:src|href)="([^"?]*\/_app\/immutable\/[^"?]+\.(?:css|js|woff2))[^"]*"/i
   )?.[1];
-  check('home page names a hashed immutable asset', Boolean(assetPath));
+  check(
+    'home page names a hashed immutable asset',
+    Boolean(assetPath),
+    `searched ${rootHtml.length} response bytes for /_app/immutable/*.{css,js,woff2}`
+  );
   if (assetPath) {
     const response = await fetch(new URL(assetPath, BASE));
     check(
@@ -204,12 +208,20 @@ async function checkUnauthenticatedApi() {
   );
 }
 
+async function runStage(name, stage) {
+  try {
+    await stage();
+  } catch (err) {
+    check(`${name} stage completed`, false, err instanceof Error ? err.message : String(err));
+  }
+}
+
 async function run(target) {
-  await checkStaticRoutes(target.hostname);
-  await checkVersion();
-  await checkCors();
-  await checkUnauthenticatedApi();
-  await checkDeployedAdminContract(BASE, ADMIN_SECRET);
+  await runStage('static routes', () => checkStaticRoutes(target.hostname));
+  await runStage('version', checkVersion);
+  await runStage('CORS preflight', checkCors);
+  await runStage('unauthenticated API', checkUnauthenticatedApi);
+  await runStage('admin persistence', () => checkDeployedAdminContract(BASE, ADMIN_SECRET));
 }
 
 export async function checkDeployedContract() {

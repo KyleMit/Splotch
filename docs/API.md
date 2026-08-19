@@ -511,13 +511,15 @@ DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
 ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
 ```
 
-It checks the deployed static routes, security and cache headers, exact ADR-0030 version freshness,
-both native CORS origins, representative canonical failures that cannot reach a model call, and an
-admin token persistence round-trip. The workflow probes production daily; manual dispatch accepts an
-optional preview or production URL and otherwise uses production. The unrelated GitHub Pages
-`deployment_status` event is not a trigger or target source. Checks with an explicit URL compare the
-deployed version to their selected ref exactly; default-production checks require the version shape
-and no-cache policy but allow the build to trail docs/tooling-only commits excluded by ADR-0070.
+It checks the deployed `/`, `/privacy`, and SSR-rendered `/admin` routes, security and cache
+headers, exact ADR-0030 version freshness, both native CORS origins, representative canonical
+failures that cannot reach a model call, and an admin token persistence round-trip. The workflow
+probes production daily; manual dispatch accepts an optional preview or production URL and otherwise
+uses production. The unrelated GitHub Pages `deployment_status` event is not a trigger or target
+source. Checks with an explicit preview URL compare the deployed version to their selected ref
+exactly; production checks require the version shape and no-cache policy but allow the build to
+trail docs/tooling-only commits excluded by ADR-0070, including when its canonical URL is entered
+explicitly.
 
 To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 

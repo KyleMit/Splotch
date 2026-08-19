@@ -51,9 +51,9 @@ jobs:
       - name: Check the hosted deploy contract
         env:
           DEPLOY_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}
-          # An explicit URL follows a concrete deploy/ref pair and compares exactly.
-          # Default production can intentionally trail docs-only commits skipped
-          # by ADR-0070's Netlify build filter.
-          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event.inputs.url && 'true' || 'false' }}
+          # A preview URL follows a concrete deploy/ref pair and compares exactly.
+          # Production can intentionally trail docs-only commits skipped by
+          # ADR-0070's Netlify build filter, even when typed explicitly.
+          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event.inputs.url && github.event.inputs.url != 'https://splotch.art' && github.event.inputs.url != 'https://splotch.art/' && 'true' || 'false' }}
           ADMIN_ACCESS_TOKEN: ${{ secrets.ADMIN_ACCESS_TOKEN }}
         run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs

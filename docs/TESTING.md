@@ -81,19 +81,20 @@ Three Node smoke entry points guard the server contract:
   apps depend on. No Blobs, so it asserts the snapshot's `persistent` is `false`. CI runs it in the
   browserless `unit` job on every push/PR; run it locally after any endpoint change (see the `api`
   skill).
-* **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/` and `/privacy`, security
-  and cache headers, the checked-out commit's exact `version.json`, both native-origin CORS
-  preflights, safe unauthenticated API failures, and the admin persistence round-trip. It never
-  makes a model call. Run it from the ref that produced the target deploy:
+* **`test:deploy:smoke`** is the normal **real deploy** gate. It checks `/`, `/privacy`, and the
+  SSR-rendered `/admin`, security and cache headers, the checked-out commit's exact `version.json`,
+  both native-origin CORS preflights, safe unauthenticated API failures, and the admin persistence
+  round-trip. It never makes a model call. Run it from the ref that produced the target deploy:
   ```bash
   DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
   ```
   The Hosted Deploy Smoke workflow probes production daily and accepts an optional preview or
   production URL on manual dispatch. It does not use the unrelated GitHub Pages `deployment_status`
-  event. Runs with an explicit URL require the deploy's version to match the selected ref exactly.
-  Default-production runs require a valid, non-cacheable version but allow production to trail
-  docs/tooling-only commits that ADR-0070 intentionally excludes from Netlify builds.
+  event. Runs with an explicit preview URL require the deploy's version to match the selected ref
+  exactly. Production runs require a valid, non-cacheable version but allow production to trail
+  docs/tooling-only commits that ADR-0070 intentionally excludes from Netlify builds, including when
+  its canonical URL is entered explicitly.
 * **`test:blobs:smoke`** is the narrower diagnostic that proves Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:

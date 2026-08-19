@@ -71,10 +71,11 @@ capability-prefixed filename rule is amended as follows:
   flags or npm commands. Naming does not justify splitting an implementation. The migration's
   `check-golden-scores.mjs` deliberately retains its `--diff` and `--freeze` modes, with the
   baseline-replacing mode exposed through `update:coloring-golden-scores`; this is a bounded
-  exception to the otherwise read-only `check` executable contract. `check-deployed-blobs.mjs` is
-  the second bounded exception: proving that a deployed Blobs store is persistent and writable
-  requires adding, reading back, and removing a uniquely named probe token. Its write is reversible,
-  cleanup is retried after failure, and the public command remains in the existing `test:*`
+  exception to the otherwise read-only `check` executable contract. The deployed-smoke entries
+  `check-deployed-blobs.mjs` and `check-deployed-contract.mjs` are bounded exceptions: proving that
+  a deployed Blobs store is persistent and writable requires adding, reading back, and removing a
+  uniquely named probe token. Both use the same round-trip contract; its write is reversible,
+  cleanup is retried after failure, and the public commands remain in the existing `test:*`
   namespace.
 
 Verb-object names preserve the useful part of ADR-0108's greppability without repetition:
