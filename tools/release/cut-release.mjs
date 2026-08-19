@@ -1,6 +1,6 @@
 // Cuts a release from releases/<version>.md (which must already exist — the
-// release skill writes it). This is the deterministic, scriptable half
-// of the workflow; the AI-drafting + review half lives in .claude/skills/release/SKILL.md.
+// cut-release skill writes it). This is the deterministic, scriptable half
+// of the workflow; the AI-drafting + review half lives in the cut-release skill.
 //
 //   node tools/release/cut-release.mjs 1.2.0              full: bump, generate, commit, tag, push, GitHub release
 //   node tools/release/cut-release.mjs 1.2.0 --no-publish bump, generate, commit, tag locally — no push, no gh
@@ -114,7 +114,7 @@ export const renderReleaseFile = (frontmatter, body) =>
 function releasePath(version) {
   const file = join(ROOT, 'releases', `${version}.md`);
   if (!existsSync(file)) {
-    fail(`Missing ${file}\nCreate the notes first (or run the release skill), then re-run.`);
+    fail(`Missing ${file}\nCreate the notes first (or run the cut-release skill), then re-run.`);
   }
   return file;
 }

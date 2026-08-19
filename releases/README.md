@@ -55,7 +55,7 @@ creates the GitHub Release with **no artifacts attached**, and they are attached
 
 | Phase      | Skill               | By hand                                                    |
 | ---------- | ------------------- | ---------------------------------------------------------- |
-| 1. Release | `release`           | write `releases/<version>.md`, `npm run release <version>` |
+| 1. Release | `cut-release`       | write `releases/<version>.md`, `npm run release <version>` |
 | 2. Build   | `build`             | `npm run android:bundle` / `npm run ios:ipa`               |
 | 3. Publish | `publish-artifacts` | `npm run release:publish`                                  |
 

@@ -98,11 +98,11 @@ const at = (stack) => stack.length - 1;
 
 // A skill reference in a script only ever lives in a string literal or a
 // comment, because that is where its user-facing text lives. Everything else a
-// `/` can open there is syntax — a regex literal (`toThrow(/release\.mjs/)`) or
+// `/` can open there is syntax — a regex literal (`toThrow(/cut-release\.mjs/)`) or
 // a division. So the matcher runs over a copy with every code region blanked to
 // spaces, preserving line and column positions. Masking rather than narrowing
 // what counts as an opener is what keeps punctuation-delimited output in scope:
-// `fail('Cut the release first (/release), then build.')` is prose the guard
+// `fail('Cut the release first (/cut-release), then build.')` is prose the guard
 // must catch, and it looks exactly like a regex argument until you know the
 // `(` is inside a string.
 export function maskCodeOutsideText(source) {

@@ -100,15 +100,15 @@ drives the bumps itself, this one triages PRs Dependabot has already opened.
 
 | Skill               | Use for                                                                      |
 | ------------------- | ---------------------------------------------------------------------------- |
-| `release`           | Draft release notes from the git log, bump versions, tag, create the release |
+| `cut-release`       | Draft and review notes, then bump, commit, tag, push, and create the release |
 | `build`             | Build the signed release artifacts (Android `.aab`, iOS `.ipa`)              |
 | `publish-artifacts` | Attach the built artifacts to the GitHub Release, verifying their versions   |
 
 These three run **in order, and the order is load-bearing**: an artifact can only carry a version
-that is already committed, so `release` creates the GitHub Release with nothing attached, `build`
-produces the binaries for the version it just tagged, and `publish-artifacts` attaches them —
-refusing any artifact whose embedded version does not match. Attaching at release time is how v1.4.0
-shipped a 1.2.0 bundle; see ADR-0077.
+that is already committed, so `cut-release` creates the GitHub Release with nothing attached,
+`build` produces the binaries for the version it just tagged, and `publish-artifacts` attaches them
+— refusing any artifact whose embedded version does not match. Attaching at release time is how
+v1.4.0 shipped a 1.2.0 bundle; see ADR-0077.
 
 ## External image services
 
