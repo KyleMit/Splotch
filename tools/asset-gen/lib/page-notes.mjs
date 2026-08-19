@@ -19,8 +19,8 @@
 // flags use the generator's exact long option names so the merge is mechanical.
 // Values may be numbers/booleans in JSON; they are normalized to the strings
 // parseArgs would have produced, so downstream Number() coercions are unchanged.
-// Light-fill flags currently cover its local-warp gate; other light entries remain
-// review/why/motif evidence until the corresponding generator lever exists.
+// Light-fill flags currently cover its local-warp gate and page-specific prompt notes;
+// other light entries remain review/why/motif evidence until their generator lever exists.
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { FILL_SRC_DIR, toPosix } from './asset-paths.mjs';

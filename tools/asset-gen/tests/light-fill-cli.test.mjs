@@ -15,6 +15,8 @@ const state = vi.hoisted(() => ({
   gateResults: [],
   overlayRequests: 0,
   eyeVerdict: { passes: true, gated: true },
+  levers: null,
+  prompts: [],
 }));
 
 vi.mock('../lib/asset-paths.mjs', () => ({
@@ -41,8 +43,11 @@ vi.mock('../lib/asset-cli.mjs', async (importOriginal) => ({
   },
 }));
 vi.mock('../lib/page-notes.mjs', () => ({
-  pageLevers: () => null,
-  mergeFlags: (values) => ({ merged: values, fromRegistry: [] }),
+  pageLevers: () => state.levers,
+  mergeFlags: (values, levers) => ({
+    merged: { ...levers?.flags, ...values },
+    fromRegistry: Object.keys(levers?.flags ?? {}).filter((key) => values[key] === undefined),
+  }),
   describeLevers: () => '',
 }));
 vi.mock('../lib/align-to-source.mjs', () => ({
@@ -85,7 +90,12 @@ vi.mock('../lib/punch-fill.mjs', () => ({
 }));
 vi.mock('@google/genai', () => ({
   GoogleGenAI: class {
-    models = { generateContent: async () => ({}) };
+    models = {
+      generateContent: async (request) => {
+        state.prompts.push(request.contents[0].parts.at(-1).text);
+        return {};
+      },
+    };
   },
 }));
 vi.mock('../lib/gemini-response.ts', () => ({
@@ -128,6 +138,8 @@ beforeEach(async () => {
   state.gateResults = [];
   state.overlayRequests = 0;
   state.eyeVerdict = { passes: true, gated: true };
+  state.levers = null;
+  state.prompts = [];
   process.env.GEMINI_API_KEY = 'test';
   vi.spyOn(console, 'log').mockImplementation(() => {});
   vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -184,6 +196,18 @@ it('does not ship a passing candidate without apply', async () => {
   expect(await readFile(join(state.roots.coloring, 'test/page-tall.light.webp'), 'utf8')).toBe(
     'known-shipped-page-tall'
   );
+});
+
+it('appends page-specific notes from the registry to the model prompt', async () => {
+  await addPage('page-tall');
+  state.gateResults = [true];
+  state.levers = { flags: { notes: 'Paint every pupil deep black.' } };
+
+  await run(['test/page-tall']);
+
+  expect(state.prompts).toEqual([
+    expect.stringContaining('PAGE-SPECIFIC NOTES:\nPaint every pupil deep black.'),
+  ]);
 });
 
 it('accepts an ungated eye verdict without ranking it as positive evidence', async () => {
@@ -254,4 +278,29 @@ it('ships both raw and punched outputs when a candidate passes with apply', asyn
   expect(raw.toString()).not.toBe('known-raw-page-tall');
   expect(shipped.toString()).not.toBe('known-shipped-page-tall');
   expect(shipped).toEqual(raw);
+});
+
+it('re-scores and applies the exact saved candidate without a model call', async () => {
+  await addPage('page-tall');
+  state.gateResults = [true];
+  await run(['test/page-tall']);
+  const reviewed = await readFile(join(state.roots.samples, 'test/page-tall/sample-1.webp'));
+
+  state.prompts = [];
+  state.gateResults = [true];
+  delete process.env.GEMINI_API_KEY;
+  state.candidate = await sharp({
+    create: { width: 8, height: 8, channels: 3, background: '#0000ff' },
+  })
+    .webp()
+    .toBuffer();
+
+  expect(await run(['test/page-tall', '--rescore', '--apply'])).toEqual({
+    failed: 0,
+    shipped: [{ rel: 'test/page-tall' }],
+  });
+  expect(state.prompts).toEqual([]);
+  await expect(
+    readFile(join(state.roots.fillSrc, 'test/page-tall.light.raw.webp'))
+  ).resolves.toEqual(reviewed);
 });

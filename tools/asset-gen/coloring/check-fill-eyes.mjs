@@ -83,7 +83,7 @@ if (!audited && !errors) fail('No raw fills found for the given pages.');
 console.log(`\n${audited} page(s) audited · ${flagged} flagged.`);
 if (flagged) {
   console.log(
-    'A flat LIGHT verdict usually means the outline itself needs normalizing (check:coloring-outline-quality); a flat NIGHT verdict means regenerating the night fill (gen-night-fills).'
+    'A flat LIGHT verdict means regenerating the light fill for a ringed pupil; source-solid pupils are rendered by the pen overlay and are not raw-fill gates. A flat NIGHT verdict means regenerating the night fill (gen-night-fills).'
   );
   process.exitCode = 1;
 }

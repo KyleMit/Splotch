@@ -32,11 +32,10 @@
 //   npm run check:coloring-night-halo -- --out scores.json   full per-page JSON
 import { parseArgs } from 'node:util';
 import { readFile, writeFile } from 'node:fs/promises';
-import { glob } from 'node:fs/promises';
-import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
 import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from '../lib/asset-paths.mjs';
+import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
 import { prepareNightFillAnalysis, scoreLineColor } from '../lib/night-scores.mjs';
 import {
   scoreNightHalo,
@@ -79,25 +78,15 @@ const { values, positionals } = parseArgs({
   options: { out: { type: 'string' } },
 });
 
-// Resolve args to night pages. An arg is a single page ("vehicles/train-wide")
-// or a category dir ("vehicles").
-async function pagesUnder(sub = '') {
-  const cwd = sub ? join(COLORING_DIR, sub) : COLORING_DIR;
-  const out = [];
-  for await (const entry of glob('**/*.night.webp', { cwd }))
-    out.push(toPosix(join(sub, entry)).replace(/\.night\.webp$/, ''));
-  return out;
-}
-async function resolveArg(arg) {
-  if (existsSync(join(COLORING_DIR, `${arg}.night.webp`))) return [arg];
-  const asDir = join(COLORING_DIR, arg);
-  if (existsSync(asDir) && statSync(asDir).isDirectory()) return pagesUnder(arg);
-  fail(`no night page or category "${arg}" under ${relative(process.cwd(), COLORING_DIR)}`);
-}
-
 const pages = (
-  positionals.length ? (await Promise.all(positionals.map(resolveArg))).flat() : await pagesUnder()
-).sort();
+  await resolveOutlineTargets(positionals, {
+    includeCovers: false,
+    explicitFiles: false,
+    sort: 'all',
+    defaultAll: true,
+    onMissing: (target) => fail(`no night page or category "${target}" under ${COLORING_DIR}`),
+  })
+).map((page) => toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '')));
 if (!pages.length) fail('No shipped night fills found for the given pages.');
 
 const results = [];

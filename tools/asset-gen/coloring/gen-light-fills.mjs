@@ -14,6 +14,8 @@
 //   npm run gen:coloring-fills                                 all pages to review scratch
 //   npm run gen:coloring-fills -- creatures dinosaur           whole categories to scratch
 //   npm run gen:coloring-fills -- farm/dog-wide --apply        ship a passing candidate
+//   npm run gen:coloring-fills -- farm/dog-wide --rescore --apply
+//                                                            ship the exact reviewed candidate
 //   npm run gen:coloring-fills -- farm/dog-wide --samples 5    5 candidates
 //   npm run gen:coloring-fills -- farm/dog-wide -t 1.2         hotter retry
 //   npm run gen:coloring-fills -- farm/dog-wide --warp-max 5   reviewed override
@@ -32,10 +34,11 @@
 //      areas would look uncolored under the child's brush, so they're rejected.
 // A candidate that fails any gate is retried (temperature nudged up). Every best
 // attempt is retained in review scratch, but only a passing candidate can ship,
-// and shipping requires --apply. (See lib/outline-match.mjs; the same scoring backs
+// and reviewed bytes ship through --rescore --apply. (See lib/outline-match.mjs; the same scoring backs
 // `npm run check:coloring-fill-drift`, which flags already-shipped fills.)
 import { parseArgs } from 'node:util';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join, dirname, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
@@ -85,8 +88,9 @@ export class RenderFailuresError extends Error {
 
 // Generate one flat-colored version of a coloring page. Returns raw image bytes
 // + mime type, or throws with the refusal/empty reason.
-async function generateColoredPage(ai, { imageBytes, mimeType, temperature }) {
-  return generateImage(ai, { imageBytes, mimeType, prompt: FILL_PROMPT, temperature });
+async function generateColoredPage(ai, { imageBytes, mimeType, temperature, notes }) {
+  const prompt = notes ? `${FILL_PROMPT}\n\nPAGE-SPECIFIC NOTES:\n${notes}` : FILL_PROMPT;
+  return generateImage(ai, { imageBytes, mimeType, prompt, temperature });
 }
 
 // Fraction of the image that is essentially pure white — a large value means big
@@ -145,9 +149,11 @@ export async function run(argv) {
     allowPositionals: true,
     options: {
       apply: { type: 'boolean' },
+      rescore: { type: 'boolean' },
       samples: { type: 'string', short: 'n' },
       temperature: { type: 'string', short: 't' },
       'warp-max': { type: 'string' },
+      notes: { type: 'string' },
     },
   });
 
@@ -155,7 +161,7 @@ export async function run(argv) {
   if (values.apply && samples > 1)
     fail('--apply cannot be combined with --samples greater than 1.');
   const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
-  const ai = makeClient();
+  const ai = values.rescore ? null : makeClient();
 
   const pages = await resolveOutlineTargets(positionals, {
     includeCovers: false,
@@ -177,7 +183,30 @@ export async function run(argv) {
   // Generate, size-match, re-register onto the source outline, and score one
   // candidate; retry until it passes both gates, keeping the best attempt if none
   // fully do. Returns the winning colored bytes, its scores, and its overlay.
-  async function renderClean(source, warpSource, width, height, slot, page, warpMax) {
+  async function scoreCandidate(source, warpSource, colored, page, shift, attempt) {
+    const [{ keep, drift, localKeep, worstTile }, warp, white, eyeScore] = await Promise.all([
+      outlineMatch(source, colored),
+      scoreLocalWarp(warpSource, colored),
+      whiteFraction(colored),
+      scoreEyeFill(colored, source),
+    ]);
+    const eyeVerdict = judgeLightEyes(eyeScore, { page });
+    return {
+      colored,
+      keep,
+      drift,
+      localKeep,
+      worstTile,
+      warp,
+      white,
+      eyesOk: eyeVerdict.passes,
+      eyesGated: eyeVerdict.gated,
+      shift,
+      attempt,
+    };
+  }
+
+  async function renderClean(source, warpSource, width, height, slot, page, warpMax, notes) {
     let best = null;
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const temperature = Math.min(2, baseTempForSlot(slot) + attempt * 0.15);
@@ -185,6 +214,7 @@ export async function run(argv) {
         imageBytes: source,
         mimeType: 'image/webp',
         temperature,
+        notes,
       });
       // Force the colored fill back to the source's exact pixel dimensions, then
       // undo any few-pixel nudge so it registers 1:1 against the outline page.
@@ -192,26 +222,7 @@ export async function run(argv) {
       const { buffer: aligned, dx, dy } = await alignToSource(resized, source, width, height);
       const colored = await sharp(aligned).webp({ quality: WEBP_QUALITY }).toBuffer();
 
-      const [{ keep, drift, localKeep, worstTile }, warp, white, eyeScore] = await Promise.all([
-        outlineMatch(source, colored),
-        scoreLocalWarp(warpSource, colored),
-        whiteFraction(colored),
-        scoreEyeFill(colored, source),
-      ]);
-      const eyeVerdict = judgeLightEyes(eyeScore, { page });
-      const cand = {
-        colored,
-        keep,
-        drift,
-        localKeep,
-        worstTile,
-        warp,
-        white,
-        eyesOk: eyeVerdict.passes,
-        eyesGated: eyeVerdict.gated,
-        shift: { dx, dy },
-        attempt,
-      };
+      const cand = await scoreCandidate(source, warpSource, colored, page, { dx, dy }, attempt);
       if (!best || rank(cand, warpMax) > rank(best, warpMax)) best = cand;
       if (passes(cand, warpMax)) break;
     }
@@ -231,6 +242,7 @@ export async function run(argv) {
       LOCAL_WARP_MAX_PX,
       `${rel} via notes.json`
     );
+    const notes = merged.notes;
     if (levers)
       console.log(
         describeLevers({
@@ -238,7 +250,7 @@ export async function run(argv) {
           levers,
           fromRegistry,
           cliValues: values,
-          settings: { 'warp-max': warpMax },
+          settings: { 'warp-max': warpMax, notes },
         })
       );
     const source = await readFile(page);
@@ -247,10 +259,21 @@ export async function run(argv) {
 
     for (let i = 0; i < samples; i++) {
       const label = sampleMode ? `${rel}  sample ${i + 1}/${samples}` : rel;
+      const dir = join(SAMPLES_DIR, rel);
+      const out = join(dir, `sample-${i + 1}.webp`);
+      if (values.rescore && !existsSync(out)) {
+        failures++;
+        console.log(`${label}  (skip) no candidate to rescore at ${relative(REPO_ROOT, out)}`);
+        continue;
+      }
       process.stdout.write(`${label} ... `);
       try {
-        const cand = await renderClean(source, warpSource, width, height, i, rel, warpMax);
-        const { colored, keep, localKeep, overlay, white, shift, attempt } = cand;
+        const cand = values.rescore
+          ? await scoreCandidate(source, warpSource, await readFile(out), rel, { dx: 0, dy: 0 }, 0)
+          : await renderClean(source, warpSource, width, height, i, rel, warpMax, notes);
+        const { colored, keep, localKeep, white, shift, attempt } = cand;
+        const overlay =
+          cand.overlay ?? (await outlineMatch(source, cand.colored, { overlay: true })).overlay;
         const warn = [];
         if (keep < KEEP_THRESHOLD) warn.push('drifting');
         if (localKeep < LOCAL_KEEP_THRESHOLD) warn.push('local drift');
@@ -261,10 +284,8 @@ export async function run(argv) {
         else if (!cand.eyesOk) warn.push('flat eyes');
         const score = `keep ${(keep * 100).toFixed(1)}%  local ${(localKeep * 100).toFixed(1)}%  warp ${cand.warp.localWarpMax.toFixed(1)}px  residual ${cand.warp.globalDx},${cand.warp.globalDy}  white ${(white * 100).toFixed(1)}%`;
 
-        const dir = join(SAMPLES_DIR, rel);
         await mkdir(dir, { recursive: true });
-        const out = join(dir, `sample-${i + 1}.webp`);
-        await writeFile(out, colored);
+        if (!values.rescore) await writeFile(out, colored);
         await sharp(overlay).toFile(join(dir, `sample-${i + 1}.overlay.png`));
         if (passes(cand, warpMax)) passingCandidates.push({ rel, colored });
         // Multi-sample runs are review-only (--apply is rejected above): individual
@@ -292,7 +313,7 @@ export async function run(argv) {
       shipped.push({ rel });
       console.log(`  ✓ applied -> ${relative(REPO_ROOT, out)}`);
     }
-  } else if (!sampleMode) {
+  } else if (!sampleMode && !values.rescore) {
     console.log('Review the candidate, then re-run with --apply to ship it.');
   }
   console.log('Done.');

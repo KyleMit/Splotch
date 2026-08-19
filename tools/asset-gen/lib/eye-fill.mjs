@@ -23,6 +23,7 @@ import sharp from 'sharp';
 import { prepareOutlineAnalysis, prepareOutlineRegions } from './outline-analysis.mjs';
 import { luma, quantile } from './image-stats.mjs';
 import { annotatedLightEyeCores } from './light-eye-annotations.mjs';
+import { scoreSolidity } from './solid-regions.mjs';
 
 // Pass bars, shared by the generation gates and the raw-fill auditor: of the
 // eye core and its surrounding band, the lighter side must be genuinely light,
@@ -38,6 +39,7 @@ const CORE_MIN_PX = 6;
 const CORE_MAX_FRAC = 0.005;
 const PARENT_MAX_FRAC = 0.05;
 const MIN_BAND_SAMPLES = 8;
+const SOLID_CORE_PROBE_PX = 2;
 
 async function analyzeEyePage(source) {
   return prepareOutlineRegions(await prepareOutlineAnalysis(source));
@@ -172,6 +174,21 @@ function coreLuma(lumas, w, core, label) {
   return median(coreVals);
 }
 
+function sourceSolidAroundCore(solid, w, h, core) {
+  for (
+    let y = Math.max(0, core.minY - SOLID_CORE_PROBE_PX);
+    y <= Math.min(h - 1, core.maxY + SOLID_CORE_PROBE_PX);
+    y++
+  )
+    for (
+      let x = Math.max(0, core.minX - SOLID_CORE_PROBE_PX);
+      x <= Math.min(w - 1, core.maxX + SOLID_CORE_PROBE_PX);
+      x++
+    )
+      if (solid[y * w + x]) return true;
+  return false;
+}
+
 function sampleAnnulus(lumas, ink, label, w, h, core, cx, cy, r) {
   // Neighborhood: a TIGHT geometric annulus just outside the core's ring —
   // wide enough to cross a double-stroked ring into the next region, narrow
@@ -260,6 +277,7 @@ function judgeLively(coreLuma, bandDark, bandLight) {
  * @property {number} contrast
  * @property {boolean} lively
  * @property {number} annulusInkFrac
+ * @property {boolean} sourceSolid
  */
 /**
  * @typedef {object} EyeFillScore
@@ -268,8 +286,12 @@ function judgeLively(coreLuma, bandDark, bandLight) {
  */
 /** @returns {Promise<EyeFillScore>} */
 export async function scoreEyeFill(fillBuf, sourceBuf) {
-  const { cores, label, ink, w, h } = await findEyeCores(sourceBuf);
+  const analysis = await analyzeEyePage(sourceBuf);
+  const { cores, label, ink, w, h } = findEyeCoresFromAnalysis(analysis);
   if (!cores.length) return { eyes: 0, cores: [] };
+  const {
+    masks: { solid },
+  } = await scoreSolidity(analysis);
   const { data } = await sharp(fillBuf)
     .removeAlpha()
     .resize(w, h, { fit: 'fill' })
@@ -304,6 +326,7 @@ export async function scoreEyeFill(fillBuf, sourceBuf) {
       contrast: Math.max(measuredCoreLuma - bandDark, bandLight - measuredCoreLuma),
       lively,
       annulusInkFrac,
+      sourceSolid: sourceSolidAroundCore(solid, w, h, core),
     });
   }
   return { eyes: measured.length, cores: measured };
@@ -329,12 +352,15 @@ export const STRONG_LIGHT_SIDE = 180;
 export const BAND_BLIND_INK_FRAC = 0.5;
 
 // A light fill's eyes are gated when at least one blessed eye core has a
-// measurable surrounding band. Solid-pen pupils are not measurable because
-// the pen ink hides their surrounding band; nested windows and hubs are
-// excluded by the reviewed per-page annotations rather than treated as anatomy.
+// measurable surrounding band. A source-solid pupil is owned by the pen overlay
+// in the final light composite, so requiring the raw fill to paint outside that
+// footprint makes the visible pupil larger. Nested windows and hubs are excluded
+// by the reviewed per-page annotations rather than treated as anatomy.
 export function judgeLightEyes(scored, { page } = {}) {
   const eyeCores = annotatedLightEyeCores(page, scored.cores);
-  const measurable = eyeCores.filter((core) => core.annulusInkFrac <= BAND_BLIND_INK_FRAC);
+  const measurable = eyeCores.filter(
+    (core) => !core.sourceSolid && core.annulusInkFrac <= BAND_BLIND_INK_FRAC
+  );
   const gated = measurable.length > 0;
   return { passes: !gated || eyeCores.some((core) => core.lively), gated };
 }

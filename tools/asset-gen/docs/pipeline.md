@@ -227,9 +227,9 @@ and verify outputs with `sharp(out).metadata()` → `hasAlpha: true`.
 
 ## Stage 3 — Light fills
 
-`npm run gen:coloring-fills -- <pages…> [--apply]` sends the pen outline to Gemini with
-`FILL_PROMPT` ("color it in neatly… keep every black outline exactly where it is… flat colors, no
-blank white, pupils solid black with a white catchlight"). Post-processing and gates,
+`npm run gen:coloring-fills -- <pages…> [--apply] [--notes "…"]` sends the pen outline to Gemini
+with `FILL_PROMPT` ("color it in neatly… keep every black outline exactly where it is… flat colors,
+no blank white, pupils solid black with a white catchlight"). Post-processing and gates,
 keep-best-of-5:
 
 * `alignToSource` (`lib/align-to-source.mjs`) — edge-map correlation undoes the few-pixel global
@@ -250,10 +250,15 @@ keep-best-of-5:
   eye cores are all band-blind, or whose reviewed nested regions are all non-face geometry, are
   accepted but reported as **ungated** instead of spending retries on an unmeasurable signal.
 
+Page-specific `notes.json` prompt guidance is appended after the shared prompt. Use it only for a
+named feature the global instruction repeatedly misses; an explicit `--notes` value overrides the
+registry for a bounded experiment.
+
 Each best candidate and its registration overlay land in `.coloring-samples/`, including the best
-failed take for diagnosis. Gate exhaustion exits nonzero. `--apply` writes the raws to `fill-src/`
-and punches their shipped fills only after every requested page passes, so one failed page cannot
-partially apply a batch. `--samples N` remains review-only and cannot be combined with `--apply`.
+failed take for diagnosis. Gate exhaustion exits nonzero. After review, `--rescore --apply` re-gates
+those exact saved bytes offline, writes passing raws to `fill-src/`, and punches their shipped
+fills; one failed page cannot partially apply a batch. `--samples N` remains review-only and cannot
+be combined with `--apply`.
 
 ## Stage 4 — Night fills
 
@@ -446,13 +451,15 @@ noisy:
   on pages where the chalk itself is wrong (whitened pupils, the police-tall class) the night judge
   is silent too — chalk review has to catch those (Stage 1.5 gate 4's blind-spot note).
 
-`judgeLightEyes` applies the same band-blind rule, because a solid-pen pupil makes the light band
-equally unmeasurable. A small reviewed annotation registry (`lib/light-eye-annotations.mjs`) names
-the real eye cores on pages where nested windows or hubs otherwise look anatomical; an outline
-change that moves a named core or changes the reviewed total core count fails closed until the
-annotation is reviewed again. The light-fill generator reports unmeasurable annotations as
-`eyes ungated`, the audit prints `n/a`, and the golden catalog records `light.eyesOk: null`; none of
-those representations claims that a dead fill was observed to be healthy.
+`judgeLightEyes` applies the same ownership rule to source-solid pupils: the pen owns that black
+pupil in the final light composite. The light raw must not be forced to paint black outside the
+source pupil merely to manufacture a scoreable annulus; that enlarges the visible eye once the pen
+is overlaid. A small reviewed annotation registry (`lib/light-eye-annotations.mjs`) names the real
+eye cores on pages where nested windows or hubs otherwise look anatomical; an outline change that
+moves a named core or changes the reviewed total core count fails closed until the annotation is
+reviewed again. The light-fill generator reports unmeasurable annotations as `eyes ungated`, the
+audit prints `n/a`, and the golden catalog records `light.eyesOk: null`; none of those
+representations claims that a dead fill was observed to be healthy.
 
 Debugging technique that keeps resolving disputes between scores and eyes: **ASCII luma maps**. When
 a crop and a score disagree, dump the region as characters — it's diffable, zoomable, and doesn't

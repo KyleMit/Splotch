@@ -54,7 +54,7 @@ d1a0c4f83e27b1f38befd069a12cb348f1b35d85fe14e9ecf49b80ca61f2ffdc  tools/asset-ge
 de6378128a9951d9828c331776197acb1e1b791afdd07a76ba6b7b9f68407d06  tools/asset-gen/fill-src/farm/cow-tall.night.raw.webp
 a6f23a674c2e253aa974de9ddd3d9f7bfcebdb1ac20537bf36157ca4c6f253a2  tools/asset-gen/fill-src/farm/cow-wide.light.raw.webp
 0de70affbb6b8ee32acb0cf840b329b0135e8bc59dc37d5478b2d1994a6713d7  tools/asset-gen/fill-src/farm/cow-wide.night.raw.webp
-48c6388c765b4cbc8f1c9f98f85915257099fd1f4a1ba49fa93abdbcbc398096  tools/asset-gen/fill-src/farm/dog-tall.light.raw.webp
+276969848e7dfd5b9a1b0802e4be0f91c321d15bdd327eff23841a433f4ae716  tools/asset-gen/fill-src/farm/dog-tall.light.raw.webp
 7cf068b490dc4740477b7de4772d5d37b9299eb0e0409a820dadb928662ebbb4  tools/asset-gen/fill-src/farm/dog-tall.night.raw.webp
 fcd258fd1ec04ee666780fa9e145af4a054429ff5ea95beecb9ebd95e6768424  tools/asset-gen/fill-src/farm/dog-wide.light.raw.webp
 19fdc86df0824d94d247eb94af3f61d8209a3f38ecef13b43e6dba286fe3783a  tools/asset-gen/fill-src/farm/dog-wide.night.raw.webp
@@ -66,7 +66,7 @@ c4a7ebf75a70cc7e1c0c59fa9c40d7cb88e8955407ebb1c5269878ce3e42ab1f  tools/asset-ge
 7806b81dff8c395a0ab1bb811772679d0bc54c92592bb9569eea562d7e8a710f  tools/asset-gen/fill-src/farm/horse-tall.night.raw.webp
 687610f69bf04f6c8f8bdbed6027bee313574b7a22e8346b4887bb566ff164d0  tools/asset-gen/fill-src/farm/horse-wide.light.raw.webp
 5798cf6f0575b0364271438d591e0c5b64dbc4143c5b09b39535d19194dcf2c6  tools/asset-gen/fill-src/farm/horse-wide.night.raw.webp
-bd161099f052fb51571ae298295e8db248964a20d478c2a0b4f386387c0be95d  tools/asset-gen/fill-src/farm/pig-tall.light.raw.webp
+f0d86872567e9a444c59eee0237133dfbd763595930ad1971ab55b991d7fb8fa  tools/asset-gen/fill-src/farm/pig-tall.light.raw.webp
 52454989e484068da87c945f572e37de24380925b334d8b0487dd199df340622  tools/asset-gen/fill-src/farm/pig-tall.night.raw.webp
 d72989c688b31567d874a7ca383828fb4f2512d39184978ba3acbf0360ea5aef  tools/asset-gen/fill-src/farm/pig-wide.light.raw.webp
 a6d33478571047c10caf823af54a536711f61f7724b69a5fb2dfbf8da6668e5d  tools/asset-gen/fill-src/farm/pig-wide.night.raw.webp
@@ -122,7 +122,7 @@ feccaf8f4b3c93b0cfdc1037d861db837269c3d1270518e108938bf232f1f3b6  tools/asset-ge
 2e5bf99849ef9572b3d4405d3f8dbf033076df0bdb8e491a8ccc9a9189197157  tools/asset-gen/fill-src/shapes/circle-tall.night.raw.webp
 ae0fd18703275b98fe8d3c42670f268ee9c5ade2ed265a555a2b4c82cb0a0aa1  tools/asset-gen/fill-src/shapes/circle-wide.light.raw.webp
 a174697d972b474ae0c66a2d9b9b3666aeb41df70995ece79f48298623d1ed52  tools/asset-gen/fill-src/shapes/circle-wide.night.raw.webp
-4e1f26dd4a0dbbaf0c8fc3c59962e7b6877c57de3e8dcb2865145ecb9e8fa4fb  tools/asset-gen/fill-src/shapes/heart-tall.light.raw.webp
+1af8449d372d415b6f9aec6f16d6705fa025ae5f34084fe780e17a14f2c10a5d  tools/asset-gen/fill-src/shapes/heart-tall.light.raw.webp
 5a629c62bdb76b11f8cacb8f33e0ab5544373f5fd85bb9233bc2238bad7179c5  tools/asset-gen/fill-src/shapes/heart-tall.night.raw.webp
 7ebb7099b85f3923329928bdbd0d640809138525f37d36e829bb8da126886cb7  tools/asset-gen/fill-src/shapes/heart-wide.light.raw.webp
 c0894124de3f2d6e0ff473432f32566c6fb84140fc22f4765c343b5c35d7e526  tools/asset-gen/fill-src/shapes/heart-wide.night.raw.webp
@@ -429,7 +429,7 @@ f3e5fc27d16be5c727070b9f99232e4651be4aa35cd572b782062ebc368d00e4  web/static/col
 9acb11f7f22ded23e553f771cb78336d7bb3bb929b5f5b869d6bbf552778c6fc  web/static/coloring/farm/dog-tall.chalk.thumb.webp
 def9b0bd2c940861098f66a892ed772e1bdb8e0170ddeea0d9d3688c22acfd69  web/static/coloring/farm/dog-tall.chalk.webp
 971c83aa2f346a6d1c30aaf7f4c3a9b81303c55c60b8d954ed2492eee1f967c9  web/static/coloring/farm/dog-tall.dark.overlay.webp
-0693825ddc21dc2e00ede14becdba7c4bfeb0c881300ec653e23fa91d32d98c8  web/static/coloring/farm/dog-tall.light.webp
+3fb05ccff3182682e8608fa50f740ff3a500923a7f6aa46b29699f06f57f47d3  web/static/coloring/farm/dog-tall.light.webp
 8f2a0f33ee2b52e35a849435ee92cbb788b7af0e83bd122880cef4bc91c106e4  web/static/coloring/farm/dog-tall.night.webp
 40b06e19756236f0dd8162b6b03be9865000cd755c1a4f49edb8ee7b215755eb  web/static/coloring/farm/dog-tall.outline.webp
 8b2addec7ac3a63047df62745d93e90ba431609969e0b66f18746a06811e562e  web/static/coloring/farm/dog-tall.overlay.webp
@@ -477,7 +477,7 @@ c62a52346c796b6b9c975aeeed58aaa15aac636cdcf90bad86b94c3ce2666d8d  web/static/col
 5206a94e72320304c68b985174afe67a89f74737f8458bda6866830c3aee36e0  web/static/coloring/farm/pig-tall.chalk.thumb.webp
 1129f11d4060565ca8cfcdca4dfe759392bef5a845dbe1b0fe447e697d7597d7  web/static/coloring/farm/pig-tall.chalk.webp
 c9d553968591d7e09bc50798750200b3b246008392b835ab87399b3d489d6b02  web/static/coloring/farm/pig-tall.dark.overlay.webp
-34b6c45274af9aea8b63e04899f4723001c6af0632ed5c3f9e671f5ef1aa683f  web/static/coloring/farm/pig-tall.light.webp
+5b24593e8efb904c275bc1c7540fdf313db7415c130465fdaa65b75ea4d2d89a  web/static/coloring/farm/pig-tall.light.webp
 a161c9a398e19b606309948075fcba6ddcf76d20c9e80ceb4ad4c27724ce0acf  web/static/coloring/farm/pig-tall.night.webp
 6fb46369712e0f6ba036daf4ff62d004bdc304a2a13beae5e26f94c905ec2592  web/static/coloring/farm/pig-tall.outline.webp
 3f339af7c0e1db655c3f25eaf348af85605df440516d7697dfb736d52908353a  web/static/coloring/farm/pig-tall.overlay.webp
@@ -603,7 +603,7 @@ af8a7a5b2fd32e0ce7d4555154a9b7c46edf6415d327cf8f69147f2ad4791b61  web/static/col
 84aa42a975bd7c0a41d02c2b3ed4d2eccdf0faf4541b5c18953de840d372238d  web/static/coloring/max-1152px/farm/cow-wide.night.webp
 3ffb00c843a8fb5db51f3a7d54a28fe771b0b7c9456606ae59df493ff0a4908b  web/static/coloring/max-1152px/farm/cow-wide.overlay.webp
 04cdbc6f61568e8ccb03453a91ea1aee07d3e4cc03dff97e28d24e551d80c384  web/static/coloring/max-1152px/farm/dog-tall.dark.overlay.webp
-f86c8c7e9770a79aa45dfae6918b03cb104690e873d3a2acccdcbc779381dc53  web/static/coloring/max-1152px/farm/dog-tall.light.webp
+062194e2d99e9735cb220dc8b44e9170fbb9518c58180d02a0f3743d50d63a76  web/static/coloring/max-1152px/farm/dog-tall.light.webp
 3a6522ab8e55b9e52a47ba58a66eda90fa55d1b6248b7764ee99d361cb829fb0  web/static/coloring/max-1152px/farm/dog-tall.night.webp
 4948af565966763f1aafa21e3ec14d08dbb8d8a0b5816c353ec2bcd6140e5f74  web/static/coloring/max-1152px/farm/dog-tall.overlay.webp
 238b9f911af8f34d20384b7c68a3ace705ce4f3cedabebe2dd8c52cd79fcf439  web/static/coloring/max-1152px/farm/dog-wide.dark.overlay.webp
@@ -627,7 +627,7 @@ dcd3a3070ed269ee6af3e65bc968020369a3ac1dc110ecb1a631987f96808550  web/static/col
 798fe422cf00a0ea312320e2a1e7b296de33f496e0990938ede05524b10a620d  web/static/coloring/max-1152px/farm/horse-wide.night.webp
 df3e5de8f7765433a609a2fe7a52c382b80f300a32afa7818cf8b99184f13d63  web/static/coloring/max-1152px/farm/horse-wide.overlay.webp
 6f7ba007dc141cf03af23550e2ea6b1f362b5e7207a9046a4d887887569c27e7  web/static/coloring/max-1152px/farm/pig-tall.dark.overlay.webp
-1a85676f7c2eee0347f17a682407eccc8d110c89e9f1bef91772a276400ff1a1  web/static/coloring/max-1152px/farm/pig-tall.light.webp
+0832bfefeccedc71b342e60d5512fc47a74f5fea41a97b1c4032b65213e21579  web/static/coloring/max-1152px/farm/pig-tall.light.webp
 947bcc8e4b84c4d4a3e350380b3fcdf40443b1e8bb0497c076248fb8f554ca1f  web/static/coloring/max-1152px/farm/pig-tall.night.webp
 91df16cd8ef409f51937c9a2d3a62a94ed90d06cc9aa8c2c574b192d7fef6557  web/static/coloring/max-1152px/farm/pig-tall.overlay.webp
 0ef6ffe3a271c182284ee5ec146cc723e5b0dec1c0f00bc4fc7a7ece1c8ed988  web/static/coloring/max-1152px/farm/pig-wide.dark.overlay.webp
@@ -739,7 +739,7 @@ e5e54ae9b8b43f1398b69bf64432b3d1e02c3bc6d2cb371854c48a859446ed68  web/static/col
 c993e0df349310049d7a240956bc3bcdf7ec0a87b63e769776530b5aa299422a  web/static/coloring/max-1152px/shapes/circle-wide.night.webp
 0a8310be94e87ec6141738174a35516ffeab1ea5b5bb838fb2096e255b3138ea  web/static/coloring/max-1152px/shapes/circle-wide.overlay.webp
 b40f5b39303fc3a5b907bf398154ec9b839e0578ce636566ec6440df717e42cd  web/static/coloring/max-1152px/shapes/heart-tall.dark.overlay.webp
-f7699cd4cb7d5623596bed1d2aa37df036b1c64673e2ad62671321f826add858  web/static/coloring/max-1152px/shapes/heart-tall.light.webp
+9577cf7c3ecf08e98466e677688a669fb7628eae21073c4ffcc4d518a804f396  web/static/coloring/max-1152px/shapes/heart-tall.light.webp
 ac81ea6b78993a0a455f70dd8621d8a2f0789aba69b74d0b2f1f564489178e87  web/static/coloring/max-1152px/shapes/heart-tall.night.webp
 67283838a1ea5f5ffa14da0cc5363999a3835dcfa5893d99fd89eac906ab4675  web/static/coloring/max-1152px/shapes/heart-tall.overlay.webp
 5e769b5cc6f8608eed5fa7eba07ccdc3a05b7754f6eeb099caae8c706b569322  web/static/coloring/max-1152px/shapes/heart-wide.dark.overlay.webp
@@ -1291,7 +1291,7 @@ dd8e713e0cd8afb59c21918f0b130971548e09b7023e3d7ebc09119f01ffa3e0  web/static/col
 85e171f4b8e52d41dff202eeeb8c0b15c72379f7b12ab6e938b422a2a4022122  web/static/coloring/shapes/heart-tall.chalk.thumb.webp
 7f93750f34509a437f6a5138c698bea5faa99f3da2cca7c1ec2a197a4bd46f58  web/static/coloring/shapes/heart-tall.chalk.webp
 bc573b9c92d26310c1ac887a45216e3b6e0d661cc5d030a7b21d37330a40573c  web/static/coloring/shapes/heart-tall.dark.overlay.webp
-90215c06fe267bfedf74d9f2896b556ccef2e07910d4989fa1d1c9461a130c0a  web/static/coloring/shapes/heart-tall.light.webp
+949bd66258f2bc4304b4bc544cac50f0a914beecb8b2f60f35b16115199d968b  web/static/coloring/shapes/heart-tall.light.webp
 cdee0f7f15a40f68272cb54f5c5e9628b0a03fe0633ddd8626536eacf73d328e  web/static/coloring/shapes/heart-tall.night.webp
 a1d9b2a51b8803dface7ad5b4b041909b336fb130c02959f887f73adf64de2dc  web/static/coloring/shapes/heart-tall.outline.webp
 d83478595015b8f8a0362ea884806bf6da7d40ecb2d6673332b7c1de1a6fbdad  web/static/coloring/shapes/heart-tall.overlay.webp
