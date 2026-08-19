@@ -339,7 +339,8 @@
      disclosure chevron; the remaining actions expand in place on a second
      line that pushes the list down. No overlay: nothing is covered and
      nothing needs dismissing. */
-  @media (max-width: 560px), (max-width: 956px) and (orientation: landscape) {
+  @media (max-width: 560px),
+    (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     .wide-actions {
       display: none;
     }

@@ -28,7 +28,10 @@ function tokenRow(page: Page, token: string) {
 }
 
 async function expectVisibleActionsMeetTargetFloor(row: ReturnType<typeof tokenRow>) {
-  const actions = row.getByRole('button').filter({ visible: true });
+  const compactActions = row.locator('.compact-actions');
+  const actions = (await compactActions.isVisible())
+    ? row.locator('.compact-actions button, .row-actions.open button')
+    : row.locator('.wide-actions button');
   const count = await actions.count();
   expect(count).toBeGreaterThan(0);
   for (let index = 0; index < count; index += 1) {
@@ -78,8 +81,13 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   await expect(row).toBeVisible();
 
   // Wide layouts: the full action set renders inside the ledger's box.
-  for (const width of [1280, 830]) {
-    await page.setViewportSize({ width, height: 900 });
+  for (const viewport of [
+    { width: 1280, height: 900 },
+    { width: 830, height: 900 },
+    { width: 900, height: 600 },
+    { width: 830, height: 600 },
+  ]) {
+    await page.setViewportSize(viewport);
     await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
     const remove = await row.getByRole('button', { name: `Remove ${token}` }).boundingBox();
     const ledger = await page.getByRole('table').boundingBox();
@@ -95,8 +103,12 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   // instead of squeezing the code track to nothing and ballooning the row.
   // The ceiling allows this deliberately long token one wrap (~98px) while
   // staying far under the broken state's 206px rows.
-  for (const width of [700, 561]) {
-    await page.setViewportSize({ width, height: 900 });
+  for (const viewport of [
+    { width: 700, height: 900 },
+    { width: 561, height: 900 },
+    { width: 700, height: 500 },
+  ]) {
+    await page.setViewportSize(viewport);
     await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
     await expect(row.getByRole('button', { name: `Remove ${token}` })).toBeVisible();
     await expect
@@ -106,10 +118,11 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
 
   const more = row.getByRole('button', { name: `More options for ${token}`, exact: true });
 
-  // Both supported phone landscapes use Copy plus the disclosure chevron,
-  // including the 812px-wide iPhone 13 mini that sits above the stacked-grid
-  // width. Every visible control retains the design system's 44px floor.
+  // Narrow portrait and both supported phone landscapes use Copy plus the
+  // disclosure chevron. Every on-screen control retains the design system's
+  // 44px floor.
   for (const viewport of [
+    { width: 390, height: 900 },
     { width: 812, height: 375 },
     { width: 956, height: 440 },
   ]) {

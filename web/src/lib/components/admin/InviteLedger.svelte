@@ -259,10 +259,11 @@
      sheet's content width (viewport minus PageShell's page padding and
      gutters, ~684px here) still clears the fixed usage/action tracks, gaps,
      and row padding (~524px) with a useful code column left over; below it
-     the code track gets squeezed toward zero. The landscape clause carries
-     that collapse through the largest supported phone without also treating
-     the narrower iPad mini portrait as a phone layout. */
-  @media (max-width: 800px), (max-width: 956px) and (orientation: landscape) {
+     the code track gets squeezed toward zero. The short-landscape clause
+     carries that collapse through the largest supported phone without also
+     treating tablet or desktop windows as a phone layout. */
+  @media (max-width: 800px),
+    (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     .ledger-head,
     .cell-gens,
     .cell-last {
@@ -289,7 +290,8 @@
      disclosure chevron; the remaining actions expand in place on a second
      line that pushes the list down (the action cells themselves:
      InviteRowActions, which carries the same media query). */
-  @media (max-width: 560px), (max-width: 956px) and (orientation: landscape) {
+  @media (max-width: 560px),
+    (max-width: 956px) and (max-height: 480px) and (orientation: landscape) {
     /* Row-gap stays 0: the collapsed reveal line is a zero-height flex item
        on its own wrap line and must not open a gap under the first line. */
     .invite {
