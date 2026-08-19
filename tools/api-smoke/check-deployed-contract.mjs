@@ -20,11 +20,14 @@ const ADMIN_SECRET = process.env.ADMIN_ACCESS_TOKEN ?? '';
 const CAPACITOR_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const VERSION_CACHE_CONTROL = ['no-cache', 'no-store', 'must-revalidate'];
 const IMMUTABLE_CACHE_CONTROL = ['public', 'max-age=31536000', 'immutable'];
+const NETLIFY_EDGE_SECURITY_HEADERS = new Set([
+  'Strict-Transport-Security',
+  'X-Content-Type-Options',
+]);
 const packageVersion = JSON.parse(
   readFileSync(new URL('../../package.json', import.meta.url), 'utf8')
 ).version;
 const EXPECTED_VERSION = buildMetadata({ isCapacitor: false, packageVersion }).appVersion;
-// The unit test's fake deploy is a loopback HTTP server; production callers remain HTTPS-only.
 const ALLOW_HTTP_FOR_TESTS = process.env.DEPLOY_SMOKE_ALLOW_HTTP_FOR_TESTS === '1';
 const REQUIRE_CURRENT_VERSION = process.env.DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION !== 'false';
 
@@ -107,8 +110,8 @@ async function checkCors() {
       },
     });
     const wrong = missingHeaders(response, CORS_HEADERS);
-    const leakedSecurity = Object.keys(SECURITY_HEADERS).filter((name) =>
-      response.headers.has(name)
+    const leakedSecurity = Object.keys(SECURITY_HEADERS).filter(
+      (name) => !NETLIFY_EDGE_SECURITY_HEADERS.has(name) && response.headers.has(name)
     );
     check(
       `OPTIONS /api/generate-image from ${origin} → 204 CORS contract`,
@@ -193,7 +196,11 @@ export async function checkDeployedContract() {
     parsedBase = null;
   }
 
-  if (!parsedBase || (parsedBase.protocol !== 'https:' && !ALLOW_HTTP_FOR_TESTS) || !ADMIN_SECRET) {
+  const allowedHttpHost =
+    ALLOW_HTTP_FOR_TESTS &&
+    parsedBase?.protocol === 'http:' &&
+    ['localhost', '127.0.0.1', '[::1]'].includes(parsedBase.hostname);
+  if (!parsedBase || (parsedBase.protocol !== 'https:' && !allowedHttpHost) || !ADMIN_SECRET) {
     console.error(
       [
         '[deploy-smoke] Missing or invalid config.',

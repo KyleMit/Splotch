@@ -18,8 +18,8 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: Deploy URL to smoke (preview or production)
-        required: true
+        description: Deploy URL to smoke (defaults to production)
+        required: false
 
 permissions:
   contents: read
@@ -51,9 +51,9 @@ jobs:
       - name: Check the hosted deploy contract
         env:
           DEPLOY_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}
-          # Manual runs follow a concrete deploy/ref pair and compare exactly.
-          # Scheduled production can intentionally trail docs-only commits
-          # skipped by ADR-0070's Netlify build filter.
-          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+          # An explicit URL follows a concrete deploy/ref pair and compares exactly.
+          # Default production can intentionally trail docs-only commits skipped
+          # by ADR-0070's Netlify build filter.
+          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event.inputs.url && 'true' || 'false' }}
           ADMIN_ACCESS_TOKEN: ${{ secrets.ADMIN_ACCESS_TOKEN }}
         run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs

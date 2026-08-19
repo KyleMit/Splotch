@@ -442,7 +442,7 @@ mutations never need a follow-up fetch:
 
 `persistent` reports whether the list is durably backed by Netlify Blobs (`true`) or the in-memory
 env-seeded read fallback (`false` — local dev, or a deployed function without the Blobs context; see
-ADR-0025). `tools/api-smoke/check-deployed-blobs.mjs` asserts it is `true` against a real deploy.
+ADR-0025). `tools/api-smoke/check-deployed-contract.mjs` asserts it is `true` against a real deploy.
 
 | Method   | Body                  | Effect                                                                            |
 | -------- | --------------------- | --------------------------------------------------------------------------------- |
@@ -513,11 +513,11 @@ ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
 
 It checks the deployed static routes, security and cache headers, exact ADR-0030 version freshness,
 both native CORS origins, representative canonical failures that cannot reach a model call, and an
-admin token persistence round-trip. The workflow probes production daily; manual dispatch keeps its
-explicit preview or production URL. The unrelated GitHub Pages `deployment_status` event is not a
-trigger or target source. Manual checks compare the deployed version to their selected ref exactly;
-scheduled checks require the version shape and no-cache policy but allow the production build to
-trail docs/tooling-only commits excluded by ADR-0070.
+admin token persistence round-trip. The workflow probes production daily; manual dispatch accepts an
+optional preview or production URL and otherwise uses production. The unrelated GitHub Pages
+`deployment_status` event is not a trigger or target source. Checks with an explicit URL compare the
+deployed version to their selected ref exactly; default-production checks require the version shape
+and no-cache policy but allow the build to trail docs/tooling-only commits excluded by ADR-0070.
 
 To isolate only the ADR-0025 Blobs failure mode, run `npm run test:blobs:smoke`:
 

@@ -89,11 +89,11 @@ Three Node smoke entry points guard the server contract:
   DEPLOY_SMOKE_URL=https://deploy-preview-11--splotchy.netlify.app \
   ADMIN_ACCESS_TOKEN=… npm run test:deploy:smoke
   ```
-  The Hosted Deploy Smoke workflow probes production daily and accepts an explicit preview or
+  The Hosted Deploy Smoke workflow probes production daily and accepts an optional preview or
   production URL on manual dispatch. It does not use the unrelated GitHub Pages `deployment_status`
-  event. Manual runs require the deploy's version to match the selected ref exactly. Scheduled runs
-  require a valid, non-cacheable version but allow production to trail docs/tooling-only commits
-  that ADR-0070 intentionally excludes from Netlify builds.
+  event. Runs with an explicit URL require the deploy's version to match the selected ref exactly.
+  Default-production runs require a valid, non-cacheable version but allow production to trail
+  docs/tooling-only commits that ADR-0070 intentionally excludes from Netlify builds.
 * **`test:blobs:smoke`** is the narrower diagnostic that proves Netlify Blobs is actually live on
   the deployed function — the failure mode of ADR-0025, which the local `vite dev` tests
   structurally cannot catch:

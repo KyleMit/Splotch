@@ -228,10 +228,11 @@ describe('workflow hygiene', () => {
       expect(blobsSmoke.lines).toContain(
         "          DEPLOY_SMOKE_URL: ${{ github.event.inputs.url || 'https://splotch.art' }}"
       );
+      expect(blobsSmoke.lines).toContain('        required: false');
       expect(blobsSmoke.lines).toContain('  group: hosted-deploy-smoke');
       expect(blobsSmoke.lines).toContain('          fetch-depth: 0');
       expect(blobsSmoke.lines).toContain(
-        "          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}"
+        "          DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: ${{ github.event.inputs.url && 'true' || 'false' }}"
       );
       expect(blobsSmoke.lines).toContain(
         '        run: node --experimental-strip-types --disable-warning=ExperimentalWarning tools/api-smoke/check-deployed-contract.mjs'

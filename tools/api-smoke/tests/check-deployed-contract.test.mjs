@@ -23,6 +23,10 @@ const corsHeaders = {
   'Access-Control-Expose-Headers': 'X-Free-Generations-Remaining, X-Report-Token',
   'Access-Control-Max-Age': '86400',
 };
+const netlifyEdgeSecurityHeaders = {
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+};
 const servers = [];
 const netlifyToml = readFileSync(join(repoRoot, 'netlify.toml'), 'utf8');
 const wildcardHeaders = netlifyToml
@@ -95,7 +99,7 @@ async function startDeploy({ omitSecurityHeader, version = expectedVersion } = {
       return;
     }
     if (request.method === 'OPTIONS' && url.pathname.startsWith('/api/')) {
-      send(response, 204, '', corsHeaders);
+      send(response, 204, '', { ...corsHeaders, ...netlifyEdgeSecurityHeaders });
       return;
     }
     if (url.pathname === '/api/admin/login') {
@@ -187,7 +191,7 @@ describe('hosted deploy contract smoke', () => {
     expect(result.stdout).toContain('Blobs is live on the deployed function (persistent:true)');
   });
 
-  it('allows scheduled production to trail an intentionally skipped commit', async () => {
+  it('allows default production to trail an intentionally skipped commit', async () => {
     const base = await startDeploy({ version: '1.5.1' });
     const exact = await runSmoke(base);
     const scheduled = await runSmoke(base, { DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION: 'false' });
@@ -196,6 +200,13 @@ describe('hosted deploy contract smoke', () => {
     expect(exact.stderr).toContain('version.json → 200 current checked-out web version');
     expect(scheduled.code, scheduled.stderr).toBe(0);
     expect(scheduled.stdout).toContain('version.json → 200 valid deployed web version');
+  });
+
+  it('limits the HTTP test escape hatch to explicitly allowed loopback hosts', async () => {
+    const result = await runSmoke('http://0.0.0.0:1');
+
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain('Missing or invalid config');
   });
 
   it('fails when a deployed static route loses a security header', async () => {

@@ -46,16 +46,16 @@ must exactly match the ADR-0030 version derived from the checker's current git c
 preview check from the same branch/ref that Netlify built; pointing a different ref at that preview
 is intentionally reported as stale.
 
-The dependency-free workflow checks production daily. Manual dispatch preserves its explicit URL so
-it can check either a production deploy or an intended Netlify preview. GitHub's repository-wide
+The dependency-free workflow checks production daily. Manual dispatch accepts an optional URL so it
+can check either production by default or an intended Netlify preview. GitHub's repository-wide
 `deployment_status` records belong to the static scrapbook on GitHub Pages, so they are not a valid
 Netlify trigger or target source.
 
-Scheduled production runs set `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=false`: they still require a
-valid version shape and the no-cache policy, but do not compare it to repository `HEAD`. ADR-0070
+Default-production runs set `DEPLOY_SMOKE_REQUIRE_CURRENT_VERSION=false`: they still require a valid
+version shape and the no-cache policy, but do not compare it to repository `HEAD`. ADR-0070
 deliberately skips Netlify builds for docs/tooling-only commits, so `HEAD` can correctly be newer
-than production. Direct CLI and manual workflow runs retain the exact comparison because they pair a
-specific ref with a specific deploy.
+than production. Direct CLI runs and workflow runs with an explicit URL retain the exact comparison
+because they pair a specific ref with a specific deploy.
 
 ## Deployed Blobs-only inputs and outputs
 
