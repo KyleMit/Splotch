@@ -1,12 +1,12 @@
 import { promiseWithResolvers } from '../promiseWithResolvers';
-import type { MagicSheetWorkerRequest, MagicSheetWorkerResponse } from './magicSheet.worker';
+import type { MagicSheetWorkerRequestPayload, MagicSheetWorkerResponse } from './magicSheet.worker';
 
 interface PendingWorkerRaster {
   resolve: (bitmap: ImageBitmap) => void;
   reject: (error: Error) => void;
   timeoutId: ReturnType<typeof setTimeout>;
   worker: Worker;
-  request: Omit<MagicSheetWorkerRequest, 'id'>;
+  request: MagicSheetWorkerRequestPayload;
 }
 
 const MAGIC_SHEET_WORKER_TIMEOUT_MS = 15_000;
@@ -99,7 +99,7 @@ function magicSheetRasterWorker() {
   return worker;
 }
 
-export function rasterizeMagicSheetInWorker(request: Omit<MagicSheetWorkerRequest, 'id'>) {
+export function rasterizeMagicSheetInWorker(request: MagicSheetWorkerRequestPayload) {
   const id = ++nextRasterRequestId;
   const { promise, resolve, reject } = promiseWithResolvers<ImageBitmap>();
   let worker: Worker;

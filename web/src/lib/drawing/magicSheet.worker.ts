@@ -4,12 +4,10 @@ import {
   type CanvasContextRecoveryErrorCode,
   runWithCanvasContextRecovery,
 } from './canvasContextRecovery';
+import { paintRainbowGradient, type RainbowGradient } from './magicSheetGradient';
 
-export interface MagicSheetWorkerRequest {
-  id: number;
+interface MagicSheetImageSource {
   imageUrl: string;
-  width: number;
-  height: number;
   fit: { x: number; y: number; width: number; height: number };
   edgeFills: Array<{
     sx: number;
@@ -22,6 +20,19 @@ export interface MagicSheetWorkerRequest {
     dh: number;
   }>;
 }
+
+interface MagicSheetGradientSource {
+  gradient: RainbowGradient;
+}
+
+export type MagicSheetWorkerRequestPayload = {
+  width: number;
+  height: number;
+} & (MagicSheetImageSource | MagicSheetGradientSource);
+
+export type MagicSheetWorkerRequest = MagicSheetWorkerRequestPayload & {
+  id: number;
+};
 
 export type MagicSheetWorkerResponse =
   | { id: number; bitmap: ImageBitmap }
@@ -37,10 +48,11 @@ const workerScope = self as unknown as MagicSheetWorkerScope;
 workerScope.onmessage = async ({ data }) => {
   let image: ImageBitmap | null = null;
   try {
-    const response = await fetch(data.imageUrl);
-    if (!response.ok) throw new Error(`Magic sheet worker could not load ${data.imageUrl}`);
-    image = await createImageBitmap(await response.blob());
-    const sheetImage = image;
+    if ('imageUrl' in data) {
+      const response = await fetch(data.imageUrl);
+      if (!response.ok) throw new Error(`Magic sheet worker could not load ${data.imageUrl}`);
+      image = await createImageBitmap(await response.blob());
+    }
     const bitmap = await runWithCanvasContextRecovery(
       () =>
         createOffscreenCanvas2dSurface(
@@ -49,19 +61,23 @@ workerScope.onmessage = async ({ data }) => {
           'Magic sheet worker could not allocate a 2D context'
         ),
       ({ canvas, context }) => {
-        context.drawImage(sheetImage, data.fit.x, data.fit.y, data.fit.width, data.fit.height);
-        for (const fill of data.edgeFills) {
-          context.drawImage(
-            sheetImage,
-            fill.sx,
-            fill.sy,
-            fill.sw,
-            fill.sh,
-            fill.dx,
-            fill.dy,
-            fill.dw,
-            fill.dh
-          );
+        if ('gradient' in data) {
+          paintRainbowGradient(context, data.width, data.height, data.gradient);
+        } else if (image) {
+          context.drawImage(image, data.fit.x, data.fit.y, data.fit.width, data.fit.height);
+          for (const fill of data.edgeFills) {
+            context.drawImage(
+              image,
+              fill.sx,
+              fill.sy,
+              fill.sw,
+              fill.sh,
+              fill.dx,
+              fill.dy,
+              fill.dw,
+              fill.dh
+            );
+          }
         }
         return canvas.transferToImageBitmap();
       },

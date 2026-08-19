@@ -76,11 +76,13 @@ composition:
 * Screenshot export draws the already-themed alpha overlay source-over on both the main-thread and
   worker compositors; it does not invert or blend the image again.
 
-Magic-fill preparation runs outside the UI thread when the platform supports the required APIs:
+Magic-sheet preparation runs outside the UI thread when the platform supports the required APIs:
 
-* `magicSheet.worker.ts` fetches and decodes the fill, rasterizes the contain-fitted image plus
-  direct-source edge extensions into `OffscreenCanvas`, and transfers an `ImageBitmap` back.
-* `magicBrush.ts` publishes a transferred bitmap only if both its image identity and active fill
+* `magicSheet.worker.ts` accepts either a coloring-page fill or a blank-page rainbow. It fetches and
+  decodes a fill before rasterizing the contain-fitted image plus direct-source edge extensions; a
+  rainbow is painted directly from its gradient specification. Both paths allocate `OffscreenCanvas`
+  in the worker and transfer an `ImageBitmap` back.
+* `magicBrush.ts` publishes a transferred bitmap only if its request identity and active source
   still match. A superseded bitmap is closed. A worker error rejects pending requests, tears down
   the worker, and uses the existing synchronous rasterizer so Safari 16.4-floor correctness does not
   depend on the optimization.
@@ -135,6 +137,24 @@ fade is not part of the page-selection contract: WebKit may turn its repeated al
 a delayed multi-frame stall even when the layer is pre-promoted. Re-attempting a reveal animation
 requires the same focused physical Safari and Capacitor comparison, with the final art and all
 coloring/Magic feature checks retained.
+
+## Amendment (2026-08): Rasterize Blank-Page Rainbows in the Worker
+
+A desktop cross-browser action sweep found that choosing the Magic brush on a blank page still
+allocated and painted its paper-sized rainbow canvas synchronously. At 1512×982 and 2× DPR, Chromium
+repeatedly produced a 25.4 ms post-action P95 while Firefox stayed near 9 ms. The page-fill path
+already used the worker established by this ADR; only the generated-rainbow source bypassed it.
+
+The same worker now accepts a discriminated image-fill or gradient request. Blank-page Magic
+selection holds the chosen gradient immediately, leaves the sheet unready, and publishes the
+transferred bitmap only if that exact request and gradient remain current. Clearing, resizing, or
+selecting a coloring page invalidates an in-flight gradient request, and a late bitmap is closed.
+Worker failure retains the synchronous gradient rasterizer as the compatibility fallback.
+
+The focused Chromium action sweep moved Magic-brush selection to 5.0 ms first-frame P95, 9.2 ms
+post-action P95, and 9.2 ms maximum. The matching Firefox sweep remained within the shared gates.
+This extends the existing worker-sheet decision to both Magic sources; it does not change pattern
+coordinates, source priority, retained-op recoding, or snapshot ownership.
 
 ## Re-attempting the Architectures
 
