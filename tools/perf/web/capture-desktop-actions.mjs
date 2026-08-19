@@ -1,4 +1,4 @@
-import { chromium, webkit } from '@playwright/test';
+import { chromium, firefox, webkit } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
@@ -26,6 +26,7 @@ const SESSION_ID = 'desktop';
 
 const ENGINES = {
   chromium,
+  firefox,
   webkit,
 };
 

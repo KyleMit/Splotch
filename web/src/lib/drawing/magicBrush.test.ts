@@ -283,7 +283,7 @@ describe('magic sheet worker raster', () => {
     messageListeners: Array<(event: MessageEvent) => void> = [];
     messageErrorListeners: Array<(event: MessageEvent) => void> = [];
     errorListeners: Array<(event: ErrorEvent) => void> = [];
-    posted: Array<{ id: number; imageUrl: string }> = [];
+    posted: Array<{ id: number; imageUrl?: string; gradient?: unknown }> = [];
     terminate = vi.fn();
     postError = workerPostError;
 
@@ -300,7 +300,7 @@ describe('magic sheet worker raster', () => {
       if (type === 'error') this.errorListeners.push(listener as (event: ErrorEvent) => void);
     }
 
-    postMessage(message: { id: number; imageUrl: string }) {
+    postMessage(message: { id: number; imageUrl?: string; gradient?: unknown }) {
       if (this.postError) throw this.postError;
       this.posted.push(message);
     }
@@ -369,6 +369,39 @@ describe('magic sheet worker raster', () => {
 
     expect(bitmap.close).not.toHaveBeenCalled();
     expect(repaint).toHaveBeenCalledOnce();
+  });
+
+  it('rasterizes a blank-page rainbow in the worker', async () => {
+    const { magic, repaint } = await mountedWorkerBrush();
+
+    magic.ensureMagicSheet();
+
+    expect(magic.captureMagicSheet()).toBeNull();
+    expect(workers[0].posted[0]).toMatchObject({
+      gradient: { angle: expect.any(Number), stops: expect.any(Array) },
+    });
+    const bitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[0].id, bitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(bitmap));
+
+    expect(repaint).toHaveBeenCalledOnce();
+  });
+
+  it('closes a superseded rainbow bitmap', async () => {
+    const { magic } = await mountedWorkerBrush();
+    magic.ensureMagicSheet();
+    const firstRequest = workers[0].posted[0];
+    magic.clearMagicGradient();
+    magic.ensureMagicSheet();
+
+    const staleBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: firstRequest.id, bitmap: staleBitmap });
+    await vi.waitFor(() => expect(staleBitmap.close).toHaveBeenCalledOnce());
+    expect(magic.captureMagicSheet()).toBeNull();
+
+    const currentBitmap = { close: vi.fn() } as unknown as ImageBitmap;
+    workers[0].respond({ id: workers[0].posted[1].id, bitmap: currentBitmap });
+    await vi.waitFor(() => expect(magic.captureMagicSheet()?.canvas).toBe(currentBitmap));
   });
 
   it('closes a superseded bitmap without replacing the current sheet', async () => {

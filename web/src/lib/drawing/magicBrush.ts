@@ -26,21 +26,18 @@
 // all three — see ADR-0043).
 
 import { magicSheetWorkerSupported, rasterizeMagicSheetInWorker } from './magicSheetRasterClient';
+import {
+  createRainbowGradient,
+  MAGIC_GRADIENT_COUNT,
+  paintRainbowGradient,
+  type RainbowGradient,
+} from './magicSheetGradient';
 
-export const MAGIC_GRADIENT_COUNT = 10;
-
-// Few enough hue stops that each is visually distinct, many enough that the ramp
-// between them reads as continuous rather than banded.
-const RAINBOW_STOPS_MIN = 5;
-const RAINBOW_STOPS_SPAN = 4;
-// A sweep past 360 lets the hue wrap; staying short of the full circle still leaves
-// some hues out of any one gradient, so pooled gradients read as distinct rainbows.
-const RAINBOW_HUE_SWEEP_MIN_DEG = 240;
-const RAINBOW_HUE_SWEEP_SPAN_DEG = 200;
-const RAINBOW_SATURATION_MIN_PCT = 70;
-const RAINBOW_SATURATION_SPAN_PCT = 25;
-const RAINBOW_LIGHTNESS_MIN_PCT = 55;
-const RAINBOW_LIGHTNESS_SPAN_PCT = 15;
+export {
+  createRainbowGradient,
+  MAGIC_GRADIENT_COUNT,
+  type RainbowGradient,
+} from './magicSheetGradient';
 // Give the line art first use of the connection, then recover independently if
 // its decode never settles and therefore never releases the deferred fill.
 const DEFERRED_FILL_FALLBACK_MS = 15_000;
@@ -48,17 +45,6 @@ const DEFERRED_FILL_FALLBACK_MS = 15_000;
 // Sample a hair inside the picture's border, not on it, so a coloring page's edge
 // outline doesn't smear across the extended margin.
 const EDGE_SAMPLE_INSET_FRACTION = 0.02;
-
-interface GradientStop {
-  offset: number;
-  color: string;
-}
-
-export interface RainbowGradient {
-  // Direction of the gradient line, in radians, measured from the +x axis.
-  angle: number;
-  stops: GradientStop[];
-}
 
 // The engine hands the module a live view of its paper — the coordinate space
 // ops (and therefore the sheet) live in, which a rotation may lock while the
@@ -98,6 +84,7 @@ let fillUrl: string | null = null;
 // sheet state; every other load is superseded, whatever URL it was for.
 let pendingLoad: HTMLImageElement | null = null;
 let pendingFillRaster: HTMLImageElement | null = null;
+let pendingGradientRaster: { gradient: RainbowGradient } | null = null;
 let deferredFillTimer: ReturnType<typeof setTimeout> | null = null;
 
 // Source 2: the generated rainbow. The pool is built lazily and reused; the active
@@ -204,6 +191,52 @@ function beginFillRaster(image: HTMLImageElement, imageUrl: string) {
   return true;
 }
 
+function beginGradientRaster(gradient: RainbowGradient) {
+  if (!magicSheetWorkerSupported()) return false;
+  const bounds = host?.sheetBounds();
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) return false;
+  const request = { gradient };
+  pendingGradientRaster = request;
+  invalidateSheet();
+  void rasterizeMagicSheetInWorker({
+    gradient,
+    width: bounds.width,
+    height: bounds.height,
+  })
+    .then((bitmap) => {
+      if (pendingGradientRaster !== request || activeGradient !== gradient || fillUrl) {
+        bitmap.close();
+        return;
+      }
+      pendingGradientRaster = null;
+      sheetCanvas = bitmap;
+      sheetOriginX = bounds.x;
+      sheetOriginY = bounds.y;
+      sheetReady = true;
+      sheetGeometryStale = false;
+      sheetSnapshot = {
+        canvas: sheetCanvas,
+        originX: sheetOriginX,
+        originY: sheetOriginY,
+        sourceUrl: null,
+      };
+      host?.repaint();
+    })
+    .catch(() => {
+      if (pendingGradientRaster !== request || activeGradient !== gradient || fillUrl) return;
+      pendingGradientRaster = null;
+      rasterizeSheet();
+      host?.repaint();
+    });
+  return true;
+}
+
+function rasterizeActiveSheet() {
+  const source = activeSource();
+  if (source?.kind === 'gradient' && beginGradientRaster(source.gradient)) return;
+  rasterizeSheet();
+}
+
 export function initMagicBrush(h: MagicBrushHost) {
   host = h;
 }
@@ -212,23 +245,6 @@ export function initMagicBrush(h: MagicBrushHost) {
 // random span, saturation, and lightness so the ten pooled gradients read as
 // distinct rainbows rather than the same ramp rotated. `rand` is injectable so the
 // pure generation stays unit-testable.
-export function createRainbowGradient(rand: () => number = Math.random): RainbowGradient {
-  const angle = rand() * Math.PI * 2;
-  const stopCount = RAINBOW_STOPS_MIN + Math.floor(rand() * RAINBOW_STOPS_SPAN);
-  const hueStart = rand() * 360;
-  const direction = rand() < 0.5 ? 1 : -1;
-  const hueSweep = RAINBOW_HUE_SWEEP_MIN_DEG + rand() * RAINBOW_HUE_SWEEP_SPAN_DEG;
-  const saturation = RAINBOW_SATURATION_MIN_PCT + rand() * RAINBOW_SATURATION_SPAN_PCT;
-  const lightness = RAINBOW_LIGHTNESS_MIN_PCT + rand() * RAINBOW_LIGHTNESS_SPAN_PCT;
-  const stops: GradientStop[] = [];
-  for (let s = 0; s < stopCount; s++) {
-    const t = s / (stopCount - 1);
-    const hue = (((hueStart + direction * hueSweep * t) % 360) + 360) % 360;
-    stops.push({ offset: t, color: `hsl(${hue}, ${saturation}%, ${lightness}%)` });
-  }
-  return { angle, stops };
-}
-
 function buildGradientPool(): RainbowGradient[] {
   return Array.from({ length: MAGIC_GRADIENT_COUNT }, () => createRainbowGradient());
 }
@@ -250,18 +266,6 @@ function activeSource(): SheetSource | null {
 
 // Fill the sheet with a gradient whose line spans the whole canvas at spec.angle,
 // so every stroke position on the canvas samples a colour along the rainbow.
-function paintGradient(g: CanvasRenderingContext2D, w: number, h: number, spec: RainbowGradient) {
-  const cx = w / 2;
-  const cy = h / 2;
-  const half = (Math.abs(Math.cos(spec.angle)) * w + Math.abs(Math.sin(spec.angle)) * h) / 2;
-  const dx = Math.cos(spec.angle) * half;
-  const dy = Math.sin(spec.angle) * half;
-  const grad = g.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy);
-  for (const s of spec.stops) grad.addColorStop(s.offset, s.color);
-  g.fillStyle = grad;
-  g.fillRect(0, 0, w, h);
-}
-
 // The picture (fill) is drawn at box (ox,oy,bw,bh) inside a W×H sheet and can leave
 // transparent letterbox margins on any side — top/bottom or left/right where the
 // fill is contain-fit in the paper, AND (under a rotation lock) the other axis where
@@ -457,7 +461,7 @@ function rasterizeSheet() {
     context.drawImage(source.image, ox, oy, dw, dh);
     extendSheetEdges(context, source.image, canvas.width, canvas.height, ox, oy, dw, dh);
   } else {
-    paintGradient(context, canvas.width, canvas.height, source.gradient);
+    paintRainbowGradient(context, canvas.width, canvas.height, source.gradient);
   }
   sheetReady = true;
   sheetGeometryStale = false;
@@ -473,7 +477,8 @@ function rasterizeSheet() {
 // backing stores until Magic can actually paint with the new geometry.
 export function resizeMagicSheet(eager: boolean) {
   pendingFillRaster = null;
-  if (eager) rasterizeSheet();
+  pendingGradientRaster = null;
+  if (eager) rasterizeActiveSheet();
   else sheetGeometryStale = true;
 }
 
@@ -567,7 +572,7 @@ function loadSheetImage(url: string) {
     fillUrl = null;
     fillImage = null;
     holdRandomGradient();
-    rasterizeSheet();
+    rasterizeActiveSheet();
     host?.repaint();
   };
   img.src = url;
@@ -589,11 +594,12 @@ export function setColorSheet(colorUrl: string | null) {
   // Whatever is still decoding is for the outgoing source — disown it.
   pendingLoad = null;
   pendingFillRaster = null;
+  pendingGradientRaster = null;
   fillUrl = colorUrl;
   fillImage = null;
   if (!colorUrl) {
     // Page removed — the sheet reverts to the gradient source if one exists.
-    rasterizeSheet();
+    rasterizeActiveSheet();
     host?.repaint();
     return;
   }
@@ -611,6 +617,7 @@ export function deferColorSheet(colorUrl: string) {
   cancelDeferredFill();
   pendingLoad = null;
   pendingFillRaster = null;
+  pendingGradientRaster = null;
   fillUrl = colorUrl;
   fillImage = null;
   invalidateSheet();
@@ -633,15 +640,16 @@ function holdRandomGradient() {
 // pen↔magic) neither re-rolls the rainbow nor re-rasterizes.
 export function ensureMagicSheet() {
   if (sheetReady && !sheetGeometryStale) return;
-  if (pendingFillRaster) return;
+  if (pendingFillRaster || pendingGradientRaster) return;
   if (!fillUrl) holdRandomGradient();
-  rasterizeSheet();
+  rasterizeActiveSheet();
 }
 
 // Drop the held gradient so the next brush use picks a fresh one. Called when the
 // canvas is cleared. The fill (if a page is applied) is untouched.
 export function clearMagicGradient() {
   activeGradient = null;
+  pendingGradientRaster = null;
   if (!fillUrl) {
     invalidateSheet();
   }

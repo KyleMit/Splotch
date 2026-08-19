@@ -192,6 +192,21 @@ export function coloringClearActivation() {
   return 'native-accessibility';
 }
 
+export function customColorSelectionEventTypes() {
+  return ['pointerdown'];
+}
+
+export function visibleInactiveSwatchColorExpression() {
+  return `
+    const swatch = [...document.querySelectorAll('.color-swatch:not(.active):not(.gradient-swatch)')]
+      .find((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      });
+    return swatch?.dataset.color;
+  `;
+}
+
 export function screenshotActivation(nativeApp) {
   return nativeApp ? 'native-accessibility-click' : 'native';
 }
@@ -763,9 +778,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   );
 
   if (actions.has('palette')) {
-    const color = await execute(
-      `return document.querySelector('.color-swatch:not(.active):not(.gradient-swatch)')?.dataset.color;`
-    );
+    const color = await execute(visibleInactiveSwatchColorExpression());
     const selector = `.color-swatch[data-color=${JSON.stringify(color)}]`;
     await record(
       measureClick({
@@ -801,6 +814,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         selector: `#color-picker .grid.${colorGrid} .hexagon:not(.selected)`,
         ready: `document.querySelector('#color-picker')?.open !== true && document.querySelector('.gradient-swatch')?.classList.contains('active') === true`,
         settleMs: ANIMATED_ACTION_SETTLE_MS,
+        eventTypes: customColorSelectionEventTypes(),
       })
     );
   }

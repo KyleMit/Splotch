@@ -15,6 +15,7 @@ import {
   canvasHasInk,
   coloringClearActivation,
   coloringSelectionSteps,
+  customColorSelectionEventTypes,
   largestNativeRect,
   nativeAccessibilityFallbackWarning,
   runScreenshotToggleAtAdvancedBaseline,
@@ -24,6 +25,7 @@ import {
   settingsSectionMeasurement,
   settingsSectionSetupReady,
   uiActivationLabel,
+  visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../web/capture-desktop-actions.mjs';
 
@@ -192,6 +194,18 @@ describe('action state planning', () => {
     expect(coloringSelectionSteps(false).map(({ label }) => label)).toEqual([
       'select coloring page',
     ]);
+  });
+
+  it('chooses a visible inactive palette swatch', () => {
+    const expression = visibleInactiveSwatchColorExpression();
+
+    expect(expression).toContain('.color-swatch:not(.active):not(.gradient-swatch)');
+    expect(expression).toContain('getBoundingClientRect()');
+    expect(expression).toContain('rect.width > 0 && rect.height > 0');
+  });
+
+  it('observes custom-color activation before pointer capture retargets the release', () => {
+    expect(customColorSelectionEventTypes()).toEqual(['pointerdown']);
   });
 
   it('uses native accessibility for coloring-page clearing with a WebDriver fallback', () => {
