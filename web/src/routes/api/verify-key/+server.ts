@@ -46,7 +46,7 @@ export const POST: RequestHandler = apiHandler(async ({ request, getClientAddres
           ok: false,
           code: KEY_CHECK_UNAVAILABLE_CODE,
           error: "We couldn't check that key just now. Please try again.",
-        } satisfies VerifyKeyResponse,
+        } satisfies KeyCheckUnavailable,
         { status: 503 }
       );
     }

@@ -102,18 +102,21 @@ describe('verifyCredential', () => {
     expect(result.ok).toBe(false);
   });
 
-  it('treats malformed response JSON as a failed verification', async () => {
-    stubRawFetch(200, 'not json');
+  it.each(['not json', '"oops"', '123', 'true', 'null', '[]'])(
+    'treats malformed response body %s as a failed verification',
+    async (body) => {
+      stubRawFetch(200, body);
 
-    const result = await verifyCredential('wrong-code');
+      const result = await verifyCredential('wrong-code');
 
-    expect(result).toEqual({
-      kind: 'accessCode',
-      ok: false,
-      accessCode: undefined,
-      error: undefined,
-    });
-  });
+      expect(result).toEqual({
+        kind: 'accessCode',
+        ok: false,
+        accessCode: undefined,
+        error: undefined,
+      });
+    }
+  );
 
   it('passes the abort signal through to fetch', async () => {
     const fetchMock = stubFetch(200, { ok: true });

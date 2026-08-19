@@ -54,7 +54,10 @@ export async function verifyCredential(
     body: JSON.stringify(body),
     signal,
   });
-  const data: VerifyResponse | Record<string, never> = await res.json().catch(() => ({}));
+  const raw: unknown = await res.json().catch(() => null);
+  const data = (typeof raw === 'object' && raw !== null && !Array.isArray(raw) ? raw : {}) as
+    | VerifyResponse
+    | Record<string, never>;
 
   if ('code' in data && data.code === KEY_CHECK_UNAVAILABLE_CODE) {
     return {

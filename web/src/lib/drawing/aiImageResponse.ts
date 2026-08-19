@@ -13,6 +13,8 @@ export type AiImageResponse =
   | { kind: 'free-unavailable' }
   | { kind: 'error'; status: number; detail: string };
 
+// A safety refusal tells the child to try a different drawing, unlike a retryable upstream failure.
+// The distinct status is part of the red-team safety contract in ADR-0023.
 export const SAFETY_REFUSAL_STATUS = 422;
 export const THROTTLED_STATUS = 429;
 const ACCEPTED_STATUS = 202;

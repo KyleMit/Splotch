@@ -42,10 +42,6 @@ import {
 } from '$lib/server/freeGenerationGrants';
 import type { RequestHandler } from './$types';
 
-// A safety refusal is the model declining the drawing on policy grounds — the
-// child should try a *different* drawing, not retry the same one. We surface it
-// as a distinct 422 (vs 502 for genuine upstream failures) so the client can
-// show the right guidance. See ADR-0023.
 function reportTokenBinding(authorization: GenerationAuthorization): ReportTokenBinding {
   switch (authorization.kind) {
     case 'byok':
