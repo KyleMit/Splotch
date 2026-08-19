@@ -5,8 +5,11 @@
 // variety. Written into tools/model-eval/inputs/ under four category prefixes —
 // `line` for stroke-only art with nothing filled in, `gen` for filled art,
 // `scribble` for areas coloured in with visible back-and-forth passes, and
-// `mess` for the sessions that are mostly noise — and left untouched by
-// model-eval:fixtures, which only clears the categories it generates itself.
+// `mess` for the sessions that are mostly noise. A run writes straight into
+// inputs/, which model-eval:fixtures otherwise regenerates in full: it leaves
+// anything it does not itself produce, so authored output survives there until
+// you promote it into samples/. Re-authoring an id that IS already a sample is
+// the exception — the committed source wins the next time fixtures runs.
 //
 // Every prompt carries a `review` line: the verdict from looking at the image it
 // produced, and what that sample is in the corpus to test. A sample that came

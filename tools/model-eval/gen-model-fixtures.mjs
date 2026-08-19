@@ -26,7 +26,7 @@ import { readFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:f
 import { join } from 'node:path';
 import { ROOT, PALETTE, PAPER } from './lib/model-eval.mjs';
 import { chromiumExecutablePath } from '../lib/playwright.mjs';
-import { fail } from '../lib/proc.mjs';
+import { fail, isMain } from '../lib/proc.mjs';
 
 const OUT = join(ROOT, 'tools/model-eval/inputs');
 // Both sample trees carry a zero-origin viewBox; the traced files quote their
@@ -412,9 +412,7 @@ const RENDERER = join(ROOT, 'tools/model-eval/lib/model-eval-fixture-renderer.js
 // at its own size with nothing to fit or letterbox.
 const SAMPLES = join(ROOT, 'tools/model-eval/samples');
 
-async function renderCommittedSamples() {
-  if (!existsSync(SAMPLES)) return 0;
-  const files = readdirSync(SAMPLES).filter((f) => f.endsWith('.svg') || f.endsWith('.png'));
+async function renderCommittedSamples(files) {
   for (const file of files) {
     const source = join(SAMPLES, file);
     const dest = join(OUT, file.replace(/\.svg$/, '.png'));
@@ -433,16 +431,48 @@ async function renderCommittedSamples() {
   return files.length;
 }
 
+// Everything this generator produces, by filename: one per fixture spec, one per
+// committed sample. Anything else in inputs/ belongs to someone else — most
+// importantly a fresh authoring run, since model-eval:gen-inputs (paid calls)
+// and model-eval:gen-crayon (live-app capture) both write here and their results
+// only reach samples/ after a human has looked at them. Clearing the directory
+// outright would spend real money and then delete the result.
+export function managedInputNames(fixtureSpecs, sampleFiles) {
+  return new Set([
+    ...fixtureSpecs.map((spec) => `${spec.id}__${spec.dim}.png`),
+    ...sampleFiles.map((file) => file.replace(/\.svg$/, '.png')),
+  ]);
+}
+
+// Of the PNGs already in inputs/: which this run owns and will rewrite, and
+// which it has no claim on. An unclaimed file is either authored output waiting
+// to be promoted into samples/ — keep it — or a leftover from a spec or sample
+// that has since been renamed, which no longer has anything to rewrite it and
+// would otherwise sit in the corpus unnoticed. Reporting both beats guessing.
+export function partitionInputs(existingFiles, managed) {
+  const pngs = existingFiles.filter((file) => file.endsWith('.png'));
+  return {
+    owned: pngs.filter((file) => managed.has(file)),
+    unclaimed: pngs.filter((file) => !managed.has(file)),
+  };
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
-  // Clear only the categories this generator owns, so a renamed spec cannot
-  // leave a stale fixture behind — and so the committed model-authored inputs
-  // survive whatever prefixes they are added under, which a denylist of the
-  // authored prefixes known today would not.
-  // inputs/ is generated in full now — both the synthesized fixtures and the
-  // committed samples are rewritten below, so clearing it outright is safe and
-  // leaves no stale file from a renamed spec or a deleted sample.
-  for (const f of readdirSync(OUT)) if (f.endsWith('.png')) rmSync(join(OUT, f));
+  const sampleFiles = existsSync(SAMPLES)
+    ? readdirSync(SAMPLES).filter((f) => f.endsWith('.svg') || f.endsWith('.png'))
+    : [];
+  const { owned, unclaimed } = partitionInputs(
+    readdirSync(OUT),
+    managedInputNames(specs, sampleFiles)
+  );
+  for (const f of owned) rmSync(join(OUT, f));
+  if (unclaimed.length) {
+    console.warn(
+      `Left ${unclaimed.length} input(s) this run does not produce — authored output awaiting ` +
+        `promotion into samples/, or stale after a rename:\n  ${unclaimed.join('\n  ')}`
+    );
+  }
 
   const browser = await chromium.launch({ executablePath: chromiumExecutablePath(chromium) });
   const page = await browser.newPage();
@@ -475,10 +505,10 @@ async function main() {
     else if (n % 8 === 0) console.log(`  …${n}/${list.length}`);
   }
   await browser.close();
-  const samples = await renderCommittedSamples();
+  const samples = await renderCommittedSamples(sampleFiles);
   console.log(
     `Generated ${n} local fixtures + ${samples} committed sample(s) → tools/model-eval/inputs/`
   );
 }
 
-await main();
+if (isMain(import.meta.url)) await main();
