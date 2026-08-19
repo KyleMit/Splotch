@@ -12,8 +12,8 @@
 // which put a 1.2.0 bundle on the v1.4.0 release. See ADR-0077.
 //
 // Every artifact is verified against the release it is being attached to by
-// reading the version out of the binary itself — a stale build is refused, not
-// uploaded.
+// reading the version and source commit out of the binary itself — a stale
+// build is refused, not uploaded.
 
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,6 +24,7 @@ import { parseFrontmatter, SEMVER } from './lib/release-frontmatter.mjs';
 import { RELEASE_AAB } from '../mobile/android/lib/android-toolchain.mjs';
 import { RELEASE_IPA } from '../mobile/ios/open-release-artifacts.mjs';
 import { readAabVersion, readIpaVersion } from './lib/artifact-version.mjs';
+import { isFullGitSha, NATIVE_BUILD_PROVENANCE_FILENAME } from './lib/native-build-provenance.mjs';
 
 const PLATFORMS = ['android', 'ios'];
 
@@ -88,7 +89,36 @@ export function compareArtifactVersion(expected, actual) {
   ) {
     problems.push(`versionCode is ${actual.versionCode}, expected ${expected.versionCode}`);
   }
+  if (actual.commitSha == null) {
+    problems.push(
+      `artifact commit is missing (no ${NATIVE_BUILD_PROVENANCE_FILENAME}); ` +
+        `release tag commit is ${expected.commitSha}`
+    );
+  } else if (actual.commitSha !== expected.commitSha) {
+    problems.push(
+      `artifact commit is ${actual.commitSha}; release tag commit is ${expected.commitSha}`
+    );
+  }
   return problems;
+}
+
+export function resolveReleaseTagCommit(version, resolve = defaultResolveReleaseTagCommit) {
+  const commitSha = resolve(version);
+  if (!isFullGitSha(commitSha)) {
+    throw new Error(
+      `Could not resolve release tag v${version} to a full commit SHA. ` +
+        'Fetch the release tag before publishing.'
+    );
+  }
+  return commitSha;
+}
+
+function defaultResolveReleaseTagCommit(version) {
+  const result = spawnSync('git', ['rev-parse', '--verify', `refs/tags/v${version}^{commit}`], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  return result.status === 0 ? result.stdout.trim() : undefined;
 }
 
 function resolveVersion(explicit) {
@@ -139,7 +169,14 @@ export function inspectArtifacts(expected, platforms) {
     try {
       actual = artifact.read(artifact.path);
     } catch (error) {
-      stale.push({ platform, ...artifact, problems: [`unreadable: ${error.message}`] });
+      stale.push({
+        platform,
+        ...artifact,
+        problems: [
+          `artifact commit is unavailable (${error.message}); ` +
+            `release tag commit is ${expected.commitSha}`,
+        ],
+      });
       continue;
     }
     const problems = compareArtifactVersion(expected, actual);
@@ -153,21 +190,27 @@ export function inspectArtifacts(expected, platforms) {
 export function main(args = process.argv.slice(2)) {
   const { version: explicit, only, dryRun } = parseOrFail(() => parsePublishArgs(args));
   const version = resolveVersion(explicit);
-  const expected = readExpected(version);
+  const expectedVersion = readExpected(version);
   const platforms = only ? [only] : PLATFORMS;
 
   console.log(
     `\nPublishing artifacts for v${version}` +
-      (expected.versionCode == null ? '' : ` (versionCode ${expected.versionCode})`) +
+      (expectedVersion.versionCode == null ? '' : ` (versionCode ${expectedVersion.versionCode})`) +
       '\n'
   );
 
   assertReleaseExists(version);
+  const expected = {
+    ...expectedVersion,
+    commitSha: parseOrFail(() => resolveReleaseTagCommit(version)),
+  };
+  console.log(`  Release tag commit: ${expected.commitSha}`);
   const { matched, stale, missing } = inspectArtifacts(expected, platforms);
 
   for (const artifact of matched) {
     console.log(
-      `  ✓ ${artifact.label}: ${artifact.actual.versionName} (${artifact.actual.versionCode})`
+      `  ✓ ${artifact.label}: ${artifact.actual.versionName} (${artifact.actual.versionCode}), ` +
+        `commit ${artifact.actual.commitSha}, built ${artifact.actual.buildTime}`
     );
   }
   for (const artifact of missing) {
@@ -182,7 +225,7 @@ export function main(args = process.argv.slice(2)) {
             (a) => `  ✗ ${a.label} (${a.path})\n${a.problems.map((p) => `      ${p}`).join('\n')}`
           )
           .join('\n') +
-        '\n\nThey are leftovers from an earlier version. Rebuild them for this release\n' +
+        '\n\nThey are stale or predate build provenance. Rebuild them from the release tag\n' +
         stale.map((a) => `  ${a.rebuild}`).join('\n') +
         '\nor delete the stale file, then re-run. Nothing was uploaded.'
     );
@@ -196,7 +239,7 @@ export function main(args = process.argv.slice(2)) {
   }
 
   if (dryRun) {
-    console.log('\n--dry-run: versions verified, nothing uploaded.');
+    console.log('\n--dry-run: versions and release-tag commits verified, nothing uploaded.');
     return;
   }
 

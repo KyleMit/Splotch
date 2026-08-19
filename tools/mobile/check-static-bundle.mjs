@@ -20,6 +20,10 @@ import {
   nativeMetaCspDirectives,
   serializeCspDirectives,
 } from '../../web/securityPolicy.ts';
+import {
+  NATIVE_BUILD_PROVENANCE_FILENAME,
+  parseNativeBuildProvenance,
+} from '../release/lib/native-build-provenance.mjs';
 
 // Proves the native static export really dropped the routes
 // web/nativeExcludedRoutes.ts blanks out. A route's `prerender` flag only drops
@@ -175,6 +179,19 @@ export function requiredNativePageProblems(dir) {
   );
 }
 
+export function nativeBuildProvenanceProblems(dir) {
+  const path = join(dir, NATIVE_BUILD_PROVENANCE_FILENAME);
+  if (!existsSync(path)) {
+    return [`Native build provenance is missing: ${NATIVE_BUILD_PROVENANCE_FILENAME}`];
+  }
+  try {
+    parseNativeBuildProvenance(readFileSync(path, 'utf8'));
+    return [];
+  } catch (error) {
+    return [`Native build provenance is invalid: ${error.message}`];
+  }
+}
+
 export function nativeContentSecurityPolicyProblems(dir) {
   if (!existsSync(dir)) return [];
   const htmlFiles = bundleFiles(dir).filter((path) => path.endsWith('.html'));
@@ -259,6 +276,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
     ...webOnlyMarkerSourceProblems(),
     ...nativeBundleProblems(dir, sentinels),
     ...requiredNativePageProblems(dir),
+    ...nativeBuildProvenanceProblems(dir),
     ...nativeContentSecurityPolicyProblems(dir),
     ...requiredNativePageLinkProblems(dir),
     ...nativePrivacyFeedbackProblems(dir),
@@ -271,6 +289,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
       `no web-only support email; ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
+      `${NATIVE_BUILD_PROVENANCE_FILENAME} is valid; ` +
       `every HTML document carries one native CSP; ` +
       `privacy links to the hosted feedback form; ` +
       `only ${STARTER_COLORING_BOOK_ID} is bundled`

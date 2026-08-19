@@ -2,50 +2,96 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from '../../lib/proc.mjs';
-import { compareArtifactVersion, parsePublishArgs } from '../publish-release-artifacts.mjs';
+import {
+  compareArtifactVersion,
+  parsePublishArgs,
+  resolveReleaseTagCommit,
+} from '../publish-release-artifacts.mjs';
+
+const RELEASE_COMMIT = '0123456789abcdef0123456789abcdef01234567';
+const STALE_COMMIT = '89abcdef0123456789abcdef0123456789abcdef';
+const expected = { version: '1.4.0', versionCode: 6, commitSha: RELEASE_COMMIT };
 
 describe('compareArtifactVersion', () => {
   it('accepts an artifact whose embedded version matches the release', () => {
     expect(
-      compareArtifactVersion(
-        { version: '1.4.0', versionCode: 6 },
-        { versionName: '1.4.0', versionCode: '6' }
-      )
+      compareArtifactVersion(expected, {
+        versionName: '1.4.0',
+        versionCode: '6',
+        commitSha: RELEASE_COMMIT,
+      })
     ).toEqual([]);
   });
 
   // The v1.4.0 regression: a bundle left in the output directory two releases back.
   it('rejects a stale artifact on both versionName and versionCode', () => {
     expect(
-      compareArtifactVersion(
-        { version: '1.4.0', versionCode: 6 },
-        { versionName: '1.2.0', versionCode: '4' }
-      )
+      compareArtifactVersion(expected, {
+        versionName: '1.2.0',
+        versionCode: '4',
+        commitSha: RELEASE_COMMIT,
+      })
     ).toEqual(['versionName is 1.2.0, expected 1.4.0', 'versionCode is 4, expected 6']);
   });
 
   it('still rejects when only the versionCode drifted', () => {
     expect(
-      compareArtifactVersion(
-        { version: '1.4.0', versionCode: 6 },
-        { versionName: '1.4.0', versionCode: '5' }
-      )
+      compareArtifactVersion(expected, {
+        versionName: '1.4.0',
+        versionCode: '5',
+        commitSha: RELEASE_COMMIT,
+      })
     ).toEqual(['versionCode is 5, expected 6']);
   });
 
   it('skips the versionCode check only when a side genuinely has none', () => {
     expect(
       compareArtifactVersion(
-        { version: '1.4.0', versionCode: null },
-        { versionName: '1.4.0', versionCode: '6' }
+        { ...expected, versionCode: null },
+        { versionName: '1.4.0', versionCode: '6', commitSha: RELEASE_COMMIT }
       )
     ).toEqual([]);
     expect(
-      compareArtifactVersion(
-        { version: '1.4.0', versionCode: 6 },
-        { versionName: '1.4.0', versionCode: null }
-      )
+      compareArtifactVersion(expected, {
+        versionName: '1.4.0',
+        versionCode: null,
+        commitSha: RELEASE_COMMIT,
+      })
     ).toEqual([]);
+  });
+
+  it('rejects same-version staleness and names both full commits', () => {
+    expect(
+      compareArtifactVersion(expected, {
+        versionName: '1.4.0',
+        versionCode: '6',
+        commitSha: STALE_COMMIT,
+      })
+    ).toEqual([`artifact commit is ${STALE_COMMIT}; release tag commit is ${RELEASE_COMMIT}`]);
+  });
+
+  it('rejects a pre-provenance artifact and names the expected tag commit', () => {
+    expect(
+      compareArtifactVersion(expected, {
+        versionName: '1.4.0',
+        versionCode: '6',
+        commitSha: null,
+      })
+    ).toEqual([
+      `artifact commit is missing (no build-provenance.json); release tag commit is ${RELEASE_COMMIT}`,
+    ]);
+  });
+});
+
+describe('resolveReleaseTagCommit', () => {
+  it('accepts a full commit resolved from the release tag', () => {
+    expect(resolveReleaseTagCommit('1.4.0', () => RELEASE_COMMIT)).toBe(RELEASE_COMMIT);
+  });
+
+  it.each([undefined, '0123456'])('rejects a missing or abbreviated tag commit', (commitSha) => {
+    expect(() => resolveReleaseTagCommit('1.4.0', () => commitSha)).toThrow(
+      /Could not resolve release tag v1\.4\.0/
+    );
   });
 });
 

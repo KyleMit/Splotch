@@ -64,8 +64,8 @@ tags `v<version>`, and publishes the GitHub Release. Pass `--no-publish` to stop
 commit/tag for a dry run. (`androidVersionCode` can be omitted from the frontmatter — the script
 assigns and pins it.)
 
-`npm run release:publish` then attaches the built binaries, reading the version out of each one and
-refusing any that does not match the release — the build output directories are not cleaned between
-releases, so a leftover from an older version is otherwise indistinguishable by path. Add
-`--dry-run` to verify without uploading, or `--only=android` / `--only=ios` when just one platform
-is built.
+`npm run release:publish` then attaches the built binaries, reading the version and source commit
+out of each one and refusing any that does not match the release document and tag — the build output
+directories are not cleaned between builds, so an older same-version artifact is otherwise
+indistinguishable by path. Add `--dry-run` to verify without uploading, or `--only=android` /
+`--only=ios` when just one platform is built.

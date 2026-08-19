@@ -52,10 +52,11 @@ new version must be committed before a correctly versioned binary can be built.
 
 ## Publish native artifacts
 
-`publish-release-artifacts.mjs` needs an existing GitHub Release, authenticated `gh`, and at least
-one built native artifact. It reads embedded versions from the Android bundle and iOS archive,
-compares them with `package.json` and the pinned Android version code in the release document, and
-refuses mismatches before uploading anything.
+`publish-release-artifacts.mjs` needs an existing GitHub Release, authenticated `gh`, the local
+release tag, and at least one built native artifact. It reads embedded versions and the packaged
+`build-provenance.json` from the Android bundle and iOS archive, compares them with `package.json`,
+the pinned Android version code in the release document, and the release tag commit, and refuses
+mismatches before uploading anything.
 
 ```sh
 npm run release:publish -- --dry-run
@@ -75,11 +76,11 @@ embedded native-artifact inspection. Keep version parsing and validation in thes
 rather than duplicating it in entry points.
 
 Malformed release Markdown, invalid flags, missing files, dirty unrelated paths, failed Git/GitHub
-commands, missing artifacts, and version mismatches produce diagnostics and nonzero exits. Release
-cutting is intentionally not transactional across filesystem, Git, and GitHub state: when a command
-fails, inspect `git status`, the tag, and the GitHub Release before retrying. Artifact publishing
-verifies every selected binary before the first upload, preventing a partial set caused by a later
-version mismatch.
+commands, missing artifacts/manifests, and version or commit mismatches produce diagnostics and
+nonzero exits. Release cutting is intentionally not transactional across filesystem, Git, and GitHub
+state: when a command fails, inspect `git status`, the tag, and the GitHub Release before retrying.
+Artifact publishing verifies every selected binary before the first upload, preventing a partial set
+caused by a later version mismatch.
 
 Run focused verification with:
 

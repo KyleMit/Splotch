@@ -5,10 +5,13 @@ import { tmpdir } from 'node:os';
 import { deflateRawSync } from 'node:zlib';
 import {
   listZipEntries,
+  readAabBuildProvenance,
   readAabVersion,
+  readIpaBuildProvenance,
   readManifestAttribute,
   readZipEntry,
 } from '../lib/artifact-version.mjs';
+import { NATIVE_BUILD_PROVENANCE_FILENAME } from '../lib/native-build-provenance.mjs';
 
 // Minimal zip writer, mirroring the reader under test. CRCs are left zero: the
 // reader locates entries through the central directory and inflates them, and
@@ -85,6 +88,9 @@ function attribute(name, value) {
 
 let dir;
 const aabPath = () => join(dir, 'app-release.aab');
+const COMMIT_SHA = '0123456789abcdef0123456789abcdef01234567';
+const BUILD_TIME = '2026-08-19 09:30';
+const provenance = Buffer.from(JSON.stringify({ commitSha: COMMIT_SHA, buildTime: BUILD_TIME }));
 
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'splotch-artifact-'));
@@ -105,10 +111,16 @@ describe('readAabVersion', () => {
       zip([
         { name: 'BUNDLE-METADATA/x.properties', data: Buffer.from('noise') },
         { name: 'base/manifest/AndroidManifest.xml', data: manifest },
+        { name: `base/assets/public/${NATIVE_BUILD_PROVENANCE_FILENAME}`, data: provenance },
       ])
     );
 
-    expect(readAabVersion(aabPath())).toEqual({ versionName: '1.4.0', versionCode: '6' });
+    expect(readAabVersion(aabPath())).toEqual({
+      versionName: '1.4.0',
+      versionCode: '6',
+      commitSha: COMMIT_SHA,
+      buildTime: BUILD_TIME,
+    });
   });
 
   it('throws rather than guessing when the manifest carries no versionName', () => {
@@ -116,6 +128,44 @@ describe('readAabVersion', () => {
     writeFileSync(aabPath(), zip([{ name: 'base/manifest/AndroidManifest.xml', data: manifest }]));
 
     expect(() => readAabVersion(aabPath())).toThrow(/no versionName/);
+  });
+});
+
+describe('native build provenance', () => {
+  it('reads the manifest from the Android and iOS packaged web-asset paths', () => {
+    const android = join(dir, 'provenance.aab');
+    const ios = join(dir, 'provenance.ipa');
+    writeFileSync(
+      android,
+      zip([{ name: `base/assets/public/${NATIVE_BUILD_PROVENANCE_FILENAME}`, data: provenance }])
+    );
+    writeFileSync(
+      ios,
+      zip([
+        { name: `Payload/App.app/public/${NATIVE_BUILD_PROVENANCE_FILENAME}`, data: provenance },
+      ])
+    );
+
+    const expected = { commitSha: COMMIT_SHA, buildTime: BUILD_TIME };
+    expect(readAabBuildProvenance(android)).toEqual(expected);
+    expect(readIpaBuildProvenance(ios)).toEqual(expected);
+  });
+
+  it('identifies pre-provenance archives without guessing a commit', () => {
+    const android = join(dir, 'old.aab');
+    const ios = join(dir, 'old.ipa');
+    writeFileSync(
+      android,
+      zip([{ name: 'base/assets/public/index.html', data: Buffer.from('old') }])
+    );
+    writeFileSync(
+      ios,
+      zip([{ name: 'Payload/App.app/public/index.html', data: Buffer.from('old') }])
+    );
+
+    const missing = { commitSha: null, buildTime: null };
+    expect(readAabBuildProvenance(android)).toEqual(missing);
+    expect(readIpaBuildProvenance(ios)).toEqual(missing);
   });
 });
 

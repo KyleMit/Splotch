@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { isFullGitSha } from '../tools/release/lib/native-build-provenance.mjs';
 
 // package.json (at the repo root, one dir up from web/) holds the canonical
 // major.minor, bumped by tools/release/cut-release.mjs. Native keeps that exact version —
@@ -67,9 +68,20 @@ export function buildMetadata({
   packageVersion?: string;
   buildTime?: string;
   runGit?: Git;
-}): { appVersion: string; buildTime: string } {
+}): { appVersion: string; buildTime: string; commitSha: string | null } {
+  let commitSha: string | null = null;
+  if (isCapacitor) {
+    const resolvedCommit = runGit('rev-parse HEAD');
+    if (!isFullGitSha(resolvedCommit)) {
+      throw new Error(
+        'Native builds require the full Git commit SHA for build provenance (`git rev-parse HEAD`).'
+      );
+    }
+    commitSha = resolvedCommit;
+  }
   return {
     appVersion: isCapacitor ? packageVersion : deriveWebVersion({ packageVersion, runGit }),
     buildTime,
+    commitSha,
   };
 }

@@ -370,7 +370,7 @@
     "audit:watch": "Live view of a running audit burndown: tail -f the run log, or -- --dash for a status summary refreshing every 10s",
     "prerelease": "check:coloring-assets + check:assets:manifest gates before release",
     "release": "Cut a release from releases/<version>.md: bump versions, commit, tag, push (use the cut-release skill to draft notes first). Attaches no store artifacts — they cannot exist until this bump is committed",
-    "release:publish": "Attach the built .aab/.ipa to an existing GitHub Release, refusing any artifact whose embedded version does not match (run after the cut-release then build skills)"
+    "release:publish": "Attach built .aab/.ipa to an existing GitHub Release, refusing any artifact whose embedded version or source commit does not match (run after cut-release then build)"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",

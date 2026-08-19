@@ -8,6 +8,7 @@ import { supportEmail } from '../../../web/src/lib/supportEmail.ts';
 import {
   adminConsoleSentinels,
   FORBIDDEN_NATIVE_HOSTS,
+  nativeBuildProvenanceProblems,
   nativeBundleProblems,
   nativeContentSecurityPolicyProblems,
   nativePrivacyFeedbackProblems,
@@ -17,6 +18,7 @@ import {
   WEB_ONLY_MODULE_MARKERS,
   webOnlyMarkerSourceProblems,
 } from '../check-static-bundle.mjs';
+import { NATIVE_BUILD_PROVENANCE_FILENAME } from '../../release/lib/native-build-provenance.mjs';
 import { nativeMetaCspDirectives, serializeCspDirectives } from '../../../web/securityPolicy.ts';
 
 // The guard's failure mode is silence: if its sentinels stop matching anything
@@ -104,6 +106,36 @@ describe('native bundle scan', () => {
       }
     }
   );
+});
+
+describe('native build provenance', () => {
+  it('requires a valid full commit and build time', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-native-provenance-'));
+    try {
+      expect(nativeBuildProvenanceProblems(root)).toEqual([
+        `Native build provenance is missing: ${NATIVE_BUILD_PROVENANCE_FILENAME}`,
+      ]);
+
+      writeFileSync(
+        join(root, NATIVE_BUILD_PROVENANCE_FILENAME),
+        JSON.stringify({
+          commitSha: '0123456789abcdef0123456789abcdef01234567',
+          buildTime: '2026-08-19 09:30',
+        })
+      );
+      expect(nativeBuildProvenanceProblems(root)).toEqual([]);
+
+      writeFileSync(
+        join(root, NATIVE_BUILD_PROVENANCE_FILENAME),
+        JSON.stringify({ commitSha: '0123456', buildTime: '2026-08-19 09:30' })
+      );
+      expect(nativeBuildProvenanceProblems(root)).toEqual([
+        expect.stringContaining('has no valid full commit SHA'),
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('required native pages', () => {

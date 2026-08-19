@@ -60,12 +60,13 @@ describe('buildMetadata', () => {
     ).toEqual({
       appVersion: '1.2.45',
       buildTime: '2026-07-27 14:30',
+      commitSha: null,
     });
     expect(runGit).toHaveBeenCalledWith('describe --tags --long --match "v*"');
   });
 
-  it('uses the exact package version for native builds without calling git', () => {
-    const runGit = vi.fn();
+  it('uses the exact package version and full HEAD SHA for tagless native builds', () => {
+    const runGit = vi.fn().mockReturnValue('0123456789abcdef0123456789abcdef01234567');
 
     expect(
       buildMetadata({
@@ -77,7 +78,20 @@ describe('buildMetadata', () => {
     ).toEqual({
       appVersion: '1.2.7',
       buildTime: '2026-07-27 14:30',
+      commitSha: '0123456789abcdef0123456789abcdef01234567',
     });
-    expect(runGit).not.toHaveBeenCalled();
+    expect(runGit).toHaveBeenCalledOnce();
+    expect(runGit).toHaveBeenCalledWith('rev-parse HEAD');
+  });
+
+  it('refuses a native build when the full commit SHA is unavailable', () => {
+    expect(() =>
+      buildMetadata({
+        isCapacitor: true,
+        packageVersion: '1.2.7',
+        buildTime: '2026-07-27 14:30',
+        runGit: () => undefined,
+      })
+    ).toThrow(/full Git commit SHA/);
   });
 });

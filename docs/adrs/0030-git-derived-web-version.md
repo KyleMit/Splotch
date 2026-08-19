@@ -34,7 +34,10 @@ existing `CAPACITOR` build flag (ADR-0001), the single web-vs-native signal:
 > unit-testable (`web/buildVersion.test.ts`). The version semantics are unchanged.
 
 * **Native** (`CAPACITOR=true`): use the `package.json` version verbatim. Store submissions need
-  deliberate numbers; `capacitor-set-version` keeps Android/iOS in sync from the same source.
+  deliberate numbers; `capacitor-set-version` keeps Android/iOS in sync from the same source. The
+  same build-metadata path resolves the full `HEAD` SHA for the packaged provenance manifest
+  required by ADR-0077; this works without tags or complete history and fails the native build if
+  even the checked-out commit cannot be identified.
 * **Web**: `major.minor.<commits-since-last-release-tag>`, e.g. `1.2.45`. `major.minor` comes from
   `package.json` (so a "big release" is a manual minor/ major bump); the patch is
   `git describe --tags --long --match "v*"`, whose `…-<n>-g<sha>` suffix is the commit count since
@@ -70,7 +73,7 @@ Tiered fallback, so the marker degrades informatively rather than silently:
 2. no reachable tag (genuinely shallow checkout / tagless tree) → `major.minor.0+<shortSha>` via
    `git rev-parse --short HEAD` (HEAD's commit object is present even in a shallow clone) — still
    unique per commit, still moves `/version.json`;
-3. no git at all → the bare `package.json` version, so the build never breaks.
+3. no git at all → the bare `package.json` version, so the web build never breaks.
 
 ## Consequences
 

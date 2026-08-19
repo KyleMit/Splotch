@@ -18,6 +18,10 @@ import { excludeNativeRoutes } from './nativeExcludedRoutes';
 import { buildColoringPackManifest } from './coloringPackManifest';
 import { nativeApiBaseFor } from './securityPolicy.ts';
 import {
+  NATIVE_BUILD_PROVENANCE_FILENAME,
+  serializeNativeBuildProvenance,
+} from '../tools/release/lib/native-build-provenance.mjs';
+import {
   COLORING_PACK_ASSET_URL_PATTERN,
   serveInstalledColoringPackAsset,
 } from './src/lib/pwa/coloringPackRoute';
@@ -40,7 +44,11 @@ const profilingEsbuildOptions: import('vite').ESBuildOptions & {
 } = { keepNames: true };
 
 // Version semantics: ADR-0030; derivation + fallbacks live in ./buildVersion.ts.
-const { appVersion: APP_VERSION, buildTime: BUILD_TIME } = buildMetadata({ isCapacitor });
+const {
+  appVersion: APP_VERSION,
+  buildTime: BUILD_TIME,
+  commitSha: BUILD_COMMIT_SHA,
+} = buildMetadata({ isCapacitor });
 
 // On a native device there is no local server, so the AI button must call the
 // hosted endpoint. On the web this stays empty and the relative path is used.
@@ -96,6 +104,17 @@ export default defineConfig({
           fileName: coloringPackManifest.fileName,
           source: coloringPackManifest.source,
         });
+        if (isCapacitor) {
+          if (!BUILD_COMMIT_SHA) throw new Error('Native build provenance commit is missing');
+          this.emitFile({
+            type: 'asset',
+            fileName: NATIVE_BUILD_PROVENANCE_FILENAME,
+            source: serializeNativeBuildProvenance({
+              commitSha: BUILD_COMMIT_SHA,
+              buildTime: BUILD_TIME,
+            }),
+          });
+        }
       },
     },
     ...(isCapacitor

@@ -9,6 +9,10 @@
 import { readFileSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
+import {
+  NATIVE_BUILD_PROVENANCE_FILENAME,
+  parseNativeBuildProvenance,
+} from './native-build-provenance.mjs';
 
 const EOCD_SIG = 0x06054b50;
 const CD_SIG = 0x02014b50;
@@ -17,6 +21,14 @@ const ZIP64_SENTINEL = 0xffffffff;
 
 const ANDROID_MANIFEST = 'base/manifest/AndroidManifest.xml';
 const IPA_INFO_PLIST = /^Payload\/[^/]+\.app\/Info\.plist$/;
+const ANDROID_BUILD_PROVENANCE = `base/assets/public/${NATIVE_BUILD_PROVENANCE_FILENAME}`;
+const ESCAPED_BUILD_PROVENANCE_FILENAME = NATIVE_BUILD_PROVENANCE_FILENAME.replace(
+  /[.*+?^${}()|[\]\\]/g,
+  '\\$&'
+);
+const IPA_BUILD_PROVENANCE = new RegExp(
+  `^Payload/[^/]+\\.app/public/${ESCAPED_BUILD_PROVENANCE_FILENAME}$`
+);
 
 function findEndOfCentralDirectory(buf) {
   // The EOCD is last but for a trailing comment of up to 0xffff bytes.
@@ -90,6 +102,34 @@ export function readZipEntry(zipPath, matches) {
   return inflateEntry(buf, found.localHeaderOffset, found.method, found.compressedSize, found.name);
 }
 
+function readOptionalZipEntry(zipPath, matches) {
+  const buf = readFileSync(zipPath);
+  const test =
+    typeof matches === 'string' ? (name) => name === matches : (name) => matches.test(name);
+  const found = eachCentralDirectoryEntry(buf, (entry) => (test(entry.name) ? entry : null));
+  return found
+    ? inflateEntry(buf, found.localHeaderOffset, found.method, found.compressedSize, found.name)
+    : null;
+}
+
+function readBuildProvenance(archivePath, entry) {
+  const source = readOptionalZipEntry(archivePath, entry);
+  if (!source) return { commitSha: null, buildTime: null };
+  try {
+    return parseNativeBuildProvenance(source.toString('utf8'));
+  } catch (error) {
+    throw new Error(`${archivePath}: ${error.message}`, { cause: error });
+  }
+}
+
+export function readAabBuildProvenance(aabPath) {
+  return readBuildProvenance(aabPath, ANDROID_BUILD_PROVENANCE);
+}
+
+export function readIpaBuildProvenance(ipaPath) {
+  return readBuildProvenance(ipaPath, IPA_BUILD_PROVENANCE);
+}
+
 function readVarint(buf, at) {
   let value = 0;
   let shift = 0;
@@ -125,7 +165,11 @@ export function readAabVersion(aabPath) {
   const versionName = readManifestAttribute(manifest, 'versionName');
   const versionCode = readManifestAttribute(manifest, 'versionCode');
   if (!versionName) throw new Error(`${aabPath}: no versionName in ${ANDROID_MANIFEST}`);
-  return { versionName, versionCode: versionCode ?? null };
+  return {
+    versionName,
+    versionCode: versionCode ?? null,
+    ...readAabBuildProvenance(aabPath),
+  };
 }
 
 export function readIpaVersion(ipaPath) {
@@ -147,5 +191,6 @@ export function readIpaVersion(ipaPath) {
   return {
     versionName,
     versionCode: info.CFBundleVersion == null ? null : String(info.CFBundleVersion),
+    ...readIpaBuildProvenance(ipaPath),
   };
 }

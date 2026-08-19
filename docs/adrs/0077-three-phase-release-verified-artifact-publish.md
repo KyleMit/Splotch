@@ -54,19 +54,26 @@ artifact to find, so the check itself is what had to go. An empty GitHub Release
 1 is the correct state, and both the script output and the `cut-release` skill say so, so the gap
 does not read as a failure someone should "fix" by reintroducing the attach.
 
-**`scripts/publish-artifacts.mjs` verifies every artifact against the release before uploading**,
-reading the version out of the binary itself rather than trusting the path:
+**`tools/release/publish-release-artifacts.mjs` verifies every artifact against the release before
+uploading**, reading the version and source provenance out of the binary itself rather than trusting
+the path:
 
 * `.aab` — inflates `base/manifest/AndroidManifest.xml` from the zip and reads the `versionName` and
   `versionCode` attributes out of the aapt2 protobuf.
 * `.ipa` — inflates `Payload/*.app/Info.plist` and reads `CFBundleShortVersionString` /
   `CFBundleVersion` via `plutil`.
+* both — read `build-provenance.json` from the packaged Capacitor web assets and compare its full
+  commit SHA with the commit named by the `v<version>` release tag. The native Vite build emits the
+  manifest from `buildMetadata()` alongside its build time; resolving `HEAD` does not depend on tags
+  or full history, so shallow and tagless build checkouts retain exact provenance.
 
-Both are checked against `releases/<version>.md`. Any mismatch **refuses the whole upload** and
-names the offending file, its version, and the rebuild command. Fail-closed: an unreadable artifact
-is refused too, and there is deliberately no override flag. `--only=android|ios` covers the
-legitimate case of one platform being unbuildable (iOS needs macOS + Xcode) without weakening the
-check.
+Both are checked against `releases/<version>.md` and the release tag. Any mismatch **refuses the
+whole upload** and names the offending file, the artifact and tag commits, and the rebuild command.
+A pre-provenance artifact with no manifest is refused even when its version and version code match.
+Fail-closed: an unreadable artifact is refused too, and there is deliberately no override flag.
+`--only=android|ios` covers the legitimate case of one platform being unbuildable (iOS needs macOS
+
+* Xcode) without weakening the check.
 
 Version reading is dependency-free — `scripts/lib/artifact-version.mjs` walks the zip central
 directory and inflates with `node:zlib`. An `.aab`/`.ipa` is a plain zip, and the repo carries no
@@ -85,6 +92,8 @@ and buys nothing over ~90 lines.
   verification for exactly this reason, rather than reporting success because a file exists.
 * `versionCode` is checked alongside `versionName`, catching a rebuild at the same semver with a
   bumped build number — which store uploads reject and a name-only check would miss.
+* The source commit is checked alongside both versions, catching an older same-version build left
+  behind after another commit changed release code without another version bump.
 * Re-publishing is safe and is the documented fix for a wrong asset (`gh release upload --clobber`).
 
 **Costs.**
