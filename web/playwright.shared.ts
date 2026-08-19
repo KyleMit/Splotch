@@ -166,9 +166,9 @@ export const commonWebServer = {
   // depth for the credentials boundary.
   //
   // ADMIN_ACCESS_TOKEN is the known secret the shared admin test helper
-  // provides to tests/admin.spec.ts and tests/a11y.spec.ts. Token mutations
-  // land in the in-memory fallback (no Netlify Blobs here), so they reset with
-  // the server and never touch real data.
+  // provides to tests/admin.spec.ts and tests/a11y.spec.ts. The production
+  // preview has no Netlify Blobs, so env-seeded token reads remain available
+  // while mutations fail closed and never touch real data.
   //
   // Every name web/src reads from $env/dynamic/private belongs in this object;
   // tools/tests/e2e-server-env.test.mjs fails when one is missing.

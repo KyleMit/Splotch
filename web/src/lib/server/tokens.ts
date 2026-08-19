@@ -1,4 +1,5 @@
 import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
 import { getStore } from '@netlify/blobs';
 import { deleteUsage } from './usage';
 
@@ -8,8 +9,8 @@ import { deleteUsage } from './usage';
 const STORE_NAME = 'access-tokens';
 const KEY = 'list';
 
-// In-memory fallback for environments where Netlify Blobs isn't wired up
-// (e.g. plain `vite dev`). Mutations there won't survive a restart.
+// In-memory fallback for reads when Netlify Blobs isn't wired up. Only Vite dev
+// may mutate it; every production-shaped runtime must fail closed.
 let memoryTokens: string[] | null = null;
 // Once Blobs fails once, skip retrying it for the lifetime of this instance.
 let blobsUnavailable = false;
@@ -51,17 +52,16 @@ function seedFromEnv(): string[] {
     .filter(Boolean);
 }
 
-// Open the Blobs store, or null when Blobs isn't configured at all (e.g. plain
-// `vite dev`, where getStore throws MissingBlobsEnvironmentError). That's a
-// permanent property of the instance, so we latch it to avoid retrying. A
-// transient *operation* failure must NOT latch — see readStore.
+// Open the Blobs store, or null when Blobs isn't configured. That's a permanent
+// property of the instance, so we latch it to avoid retrying. A transient
+// *operation* failure must NOT latch — see readStore.
 function openStore(): TokenStore | null {
   if (blobsUnavailable) return null;
   try {
     return getStore(STORE_NAME);
   } catch (err) {
     const detail = err instanceof Error ? err.message : err;
-    console.warn('[tokens] Netlify Blobs unavailable, using in-memory list:', detail);
+    console.warn('[tokens] Netlify Blobs unavailable, using in-memory reads:', detail);
     blobsUnavailable = true;
     return null;
   }
@@ -88,14 +88,9 @@ async function confirmSeedRaceWinner(store: TokenStore): Promise<StoreRead> {
 }
 
 // The in-memory list stands in for Blobs in two situations reads may treat
-// alike but writes may not. `memory` is an instance where `getStore()` itself
-// fails — local dev, or a deployed function without the Blobs context
-// (ADR-0025) — and mutating this list is the intended behavior only in the
-// former; the deployed case is a known residual false-success that the
-// `persistent: false` banner is the current mitigation for (issue #798).
-// `degraded` is an instance whose Blobs read failed on this request, where the
-// durable list still exists and holds values this one does not, so writing here
-// would report a success the blob never saw.
+// alike but writes may not. `memory` is the intentional writable Vite-dev mode.
+// `degraded` covers every production-shaped getStore failure and any Blobs read
+// failure, where accepting a mutation would report success without durability.
 function memoryRead(source: MemorySource): StoreRead {
   if (memoryTokens === null) memoryTokens = seedFromEnv();
   return { source, store: null, list: memoryTokens };
@@ -140,7 +135,7 @@ async function readStore(): Promise<StoreRead> {
       return memoryRead('degraded');
     }
   }
-  return memoryRead('memory');
+  return memoryRead(dev ? 'memory' : 'degraded');
 }
 
 // Compare-and-set write, same pattern as usage.ts's recordTokenUsage: two
@@ -163,10 +158,10 @@ async function persist(store: TokenStore | null, list: string[], etag: string | 
  * by Netlify Blobs (`persistent: true`) or came from the per-instance in-memory
  * fallback seeded from ALLOWED_TOKENS_LIST (`persistent: false`). A null store from
  * readStore is exactly the fallback case — `getStore()` failed, or this read
- * did. Edits behave differently across those two: the first accepts them into
- * the in-memory list, where they won't survive a cold start; the second refuses
- * them outright (see mutateList). The /admin page surfaces the shared signal as
- * a banner so an operator isn't fooled by env-seeded data that looks live.
+ * did. Edits are accepted only when SvelteKit identifies the runtime as Vite
+ * dev; every production-shaped fallback refuses them (see mutateList). The
+ * /admin page surfaces the shared signal as a banner so an operator isn't
+ * fooled by env-seeded data that looks live.
  */
 export async function getTokensStatus(): Promise<{ tokens: string[]; persistent: boolean }> {
   const read = await readStore();

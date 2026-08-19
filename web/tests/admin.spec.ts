@@ -8,22 +8,15 @@ import { adminConsole, ADMIN_ACCESS_TOKEN, signInToAdmin, submitAdminKey } from 
 // no admin route at all — an in-app door to a privileged console reads as
 // hidden functionality to a store reviewer. The JSON /api/admin/* endpoints
 // remain (tools/api-smoke/lib/admin-client.mjs drives them) and are covered here
-// too. Token names are unique per test because the preview server's in-memory list
-// is shared across the parallel workers.
+// too. The production preview has no Blobs, so its env-seeded rows are read-only;
+// writable in-memory coverage belongs to the Vite-dev API smoke.
 
-async function addsAndRemovesToken(page: Page, token: string) {
+async function expectTokenAddUnavailable(page: Page, token: string) {
   await adminConsole(page).fill(token);
   await page.getByRole('button', { name: 'Add code' }).click();
-  await expect(page.getByText(`Added “${token}”`)).toBeVisible();
-  // The invite row shows the raw token and exposes its prebuilt invite link
-  // behind a "Copy link" action (no longer rendered as a visible URL). The
-  // ledger carries explicit ARIA table semantics, so rows expose role="row".
-  const row = page.getByRole('row').filter({ hasText: token });
-  await expect(page.getByText(token, { exact: true })).toBeVisible();
-  await expect(row.getByRole('button', { name: 'Copy link' })).toBeVisible();
-
-  await page.getByRole('button', { name: `Remove ${token}` }).click();
-  await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
+  ).toBeVisible();
   await expect(page.getByText(token, { exact: true })).toBeHidden();
 }
 
@@ -33,15 +26,17 @@ test('web /admin rejects a wrong key', async ({ page }) => {
   await expect(page.getByRole('alert')).toContainText('Incorrect access key');
 });
 
-test('web /admin signs in via cookie session, manages tokens, signs out', async ({ page }) => {
+test('web /admin signs in, fails closed without durable tokens, and signs out', async ({
+  page,
+}) => {
   await signInToAdmin(page);
-  // The preview server has no Netlify Blobs, so the token list is the in-memory
-  // env-seeded fallback — the console must warn that edits won't persist.
+  // Production preview has no Netlify Blobs: reads retain the env seed, but
+  // mutations must not claim an in-memory success that disappears on restart.
   await expect(page.getByText('Netlify Blobs is unavailable')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Free generation grants' })).toBeVisible();
   await expect(page.getByText('Free grant monitoring is using local memory')).toBeVisible();
   await expect(page.getByText('Sampled successes').locator('..')).toContainText('0');
-  await addsAndRemovesToken(page, `e2e-web-${Date.now()}`);
+  await expectTokenAddUnavailable(page, `e2e-web-${Date.now()}`);
 
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -60,9 +55,7 @@ test('web /admin signs in via cookie session, manages tokens, signs out', async 
 // see the tally in admin-helpers.ts.
 test('web /admin ledger keeps its rows usable across viewport widths', async ({ page }) => {
   await signInToAdmin(page);
-  const token = `e2e-widths-${Date.now()}`;
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
+  const token = 'daycare-club';
   const row = page.getByRole('row').filter({ hasText: token });
   await expect(row).toBeVisible();
 
@@ -105,7 +98,10 @@ test('web /admin ledger keeps its rows usable across viewport widths', async ({ 
   await more.click();
   await expect(more).toHaveAttribute('aria-expanded', 'true');
   await row.getByRole('button', { name: `Remove ${token}` }).click();
-  await expect(page.getByText(`Removed “${token}”`)).toBeVisible();
+  await expect(
+    page.getByRole('alert').filter({ hasText: 'Token storage is unavailable' })
+  ).toBeVisible();
+  await expect(row).toBeVisible();
 });
 
 // Resolve a design token to the same rgb() form getComputedStyle reports, by
@@ -134,9 +130,7 @@ test('web /admin chevron press feedback beats hover on a hover-capable pointer',
 }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   await signInToAdmin(page);
-  const token = `e2e-press-${Date.now()}`;
-  await adminConsole(page).fill(token);
-  await page.getByRole('button', { name: 'Add code' }).click();
+  const token = 'daycare-club';
 
   const more = page
     .getByRole('row')
@@ -190,13 +184,10 @@ test('web /admin closing the reveal removes its actions from the tab order immed
   // A second row after the probed one gives the forward Tab a landing spot
   // inside the ledger — from the last row's chevron it would legitimately
   // leave the document, which is indistinguishable from the focus dump.
-  const token = `e2e-inert-a-${Date.now()}`;
-  const nextToken = `e2e-inert-b-${Date.now()}`;
-  for (const t of [token, nextToken]) {
-    await adminConsole(page).fill(t);
-    await page.getByRole('button', { name: 'Add code' }).click();
-    await expect(page.getByText(t, { exact: true })).toBeVisible();
-  }
+  const token = 'daycare-club';
+  const nextToken = 'e2e-harness-probe';
+  await expect(page.getByText(token, { exact: true })).toBeVisible();
+  await expect(page.getByText(nextToken, { exact: true })).toBeVisible();
 
   const row = page.getByRole('row').filter({ hasText: token });
   const more = row.getByRole('button', { name: `More options for ${token}` });
@@ -239,7 +230,9 @@ test('web /admin surfaces a network failure instead of failing silently', async 
   await expect(page.getByRole('alert').filter({ hasText: 'Something went wrong' })).toBeVisible();
 });
 
-test('admin API requires a valid bearer session', async ({ request }) => {
+test('admin API requires a valid bearer session and durable mutation storage', async ({
+  request,
+}) => {
   expect((await request.get('/api/admin/tokens')).status()).toBe(401);
   expect(
     (
@@ -260,17 +253,16 @@ test('admin API requires a valid bearer session', async ({ request }) => {
   const token = `e2e-api-${Date.now()}`;
 
   const added = await request.post('/api/admin/tokens', { headers, data: { token } });
-  expect(added.ok()).toBe(true);
+  expect(added.status()).toBe(503);
   const addedBody = await added.json();
-  expect(addedBody.tokens).toContain(token);
-  expect(addedBody.invites).toContainEqual({
-    token,
-    url: expect.stringContaining(`/?ai_access_token=${token}`),
-  });
+  expect(addedBody).toMatchObject({ ok: false, error: expect.any(String) });
 
-  const removed = await request.delete('/api/admin/tokens', { headers, data: { token } });
-  expect(removed.ok()).toBe(true);
-  expect((await removed.json()).tokens).not.toContain(token);
+  const removed = await request.delete('/api/admin/tokens', {
+    headers,
+    data: { token: 'daycare-club' },
+  });
+  expect(removed.status()).toBe(503);
+  expect(await removed.json()).toMatchObject({ ok: false, error: expect.any(String) });
 });
 
 // /admin is function-served (prerender = false), so Netlify's static-only
