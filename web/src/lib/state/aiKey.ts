@@ -23,16 +23,16 @@ const aiKeyWriteCoordinator = createSecureCredentialCoordinator(
   persistAiUserApiKey
 );
 
-export const setAiUserApiKey = aiKeyWriteCoordinator.setCredential;
+export function setAiUserApiKey(value: string, ownsRequest?: () => boolean) {
+  if (value) void requestPersistentStorage();
+  return aiKeyWriteCoordinator.setCredential(value, ownsRequest);
+}
 
 // Pull the saved API key out of secure storage into the live store on boot.
 // One-time migration: if an earlier build left a plaintext key in localStorage,
 // move it into secure storage and scrub the plaintext copy. A failed secure
 // write rejects without scrubbing so a later launch can retry.
 export function hydrateApiKey() {
-  // Best-effort: ask the browser not to evict our encrypted IndexedDB (web only).
-  void requestPersistentStorage();
-
   return aiKeyWriteCoordinator.runHydration(async (ownsHydration) => {
     let key = await loadApiKey();
     const legacy = readString(STORAGE_KEYS.legacyAiUserApiKey, '');

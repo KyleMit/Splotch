@@ -41,6 +41,24 @@ beforeEach(() => {
 });
 
 describe('setAiUserApiKey', () => {
+  it('requests persistent storage when a parent saves a key without waiting for permission', async () => {
+    vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
+
+    await setAiUserApiKey('sk-persisted');
+
+    expect(requestPersistentStorage).toHaveBeenCalledOnce();
+    expect(secureStore.apiKey).toBe('sk-persisted');
+  });
+
+  it('does not request persistent storage when a parent forgets a key', async () => {
+    secureStore.apiKey = 'sk-existing';
+
+    await setAiUserApiKey('');
+
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
+    expect(secureStore.apiKey).toBeNull();
+  });
+
   it('commits the live key only after secure persistence succeeds', async () => {
     let finishSave!: () => void;
     vi.mocked(saveApiKey).mockImplementationOnce(
@@ -118,12 +136,12 @@ describe('setAiUserApiKey', () => {
 });
 
 describe('hydrateApiKey', () => {
-  it('starts persistence without waiting for it', async () => {
-    vi.mocked(requestPersistentStorage).mockImplementationOnce(() => new Promise(() => {}));
+  it('does not request persistent storage during startup hydration', async () => {
+    secureStore.apiKey = 'sk-stored-key';
 
     await hydrateApiKey();
 
-    expect(requestPersistentStorage).toHaveBeenCalledOnce();
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
   });
 
   it('hydrates the live store from secure storage', async () => {
