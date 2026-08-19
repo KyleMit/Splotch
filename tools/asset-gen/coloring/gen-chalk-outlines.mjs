@@ -1,5 +1,5 @@
-// Generate a page's CHALK OUTLINE — the dedicated dark-mode line art that forks
-// from the single shared outline (the "pen outline", {page}.outline.webp).
+// Generate a page or cover's CHALK OUTLINE — the dedicated dark-mode line art
+// that forks from the single shared outline (the "pen outline", *.outline.webp).
 //
 // Terms: the PEN outline is black ink on white paper (light mode); the CHALK
 // outline is white ink on a black board (dark mode). The chalk is not a blind
@@ -47,6 +47,7 @@
 //
 //   npm run gen:coloring-chalk -- nature                    whole category
 //   npm run gen:coloring-chalk -- nature/ant-tall --apply   ship the passing candidate
+//   npm run gen:coloring-chalk -- nature/cover --apply      ship one book cover
 //   ... --max-attempts 6  -t 0.5  --notes "…"  --force      the usual levers
 //   ... --ink-diff-max 80                                   reviewed new-white allowance
 //   ... --dry-run                                           print resolved levers per page (no API)
@@ -230,6 +231,7 @@ const pages = await resolveOutlineTargets(positionals, {
 let failures = 0;
 for (const page of pages) {
   const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+  const isCover = rel.endsWith('/cover');
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
   const levers = pageLevers(rel, 'chalk');
   const { merged, fromRegistry } = mergeFlags(values, levers);
@@ -366,7 +368,7 @@ for (const page of pages) {
     } else {
       await writeFile(dest, best.candidate);
       console.log(
-        `  ✓ applied to ${relative(REPO_ROOT, dest)} — regenerate its night fill + re-punch`
+        `  ✓ applied to ${relative(REPO_ROOT, dest)} — ${isCover ? 'regenerate its thumbnail + responsive asset' : 'regenerate its night fill + re-punch'}`
       );
     }
   }

@@ -141,6 +141,9 @@ with a `.display.webp` preview of what dark mode will show and a registration ov
 per candidate (`--rescore` re-runs them over saved candidates offline — no API — after a gate
 change):
 
+Book covers use the same pipeline and gates through an explicit `<book>/cover` target. They have no
+fill stages: after applying a cover chalk, regenerate its chalk thumbnail and responsive candidate.
+
 1. **keep ≥ 92% / worst-tile ≥ 80%** (`lib/outline-match.mjs`) — every pen STROKE is still traced in
    place. The reference is the pen with its SOLID INTERIORS whitened out (rim kept — the same
    exemption the normalizer grants its redraws), so a chalk that correctly whitens a big solid pupil
@@ -194,9 +197,10 @@ ladybug's first take gave it white shell spots) are caught only by human review 
 [notes registry](#the-per-page-notes-registry) so the next regen starts from it (the ladybug's
 shell-spot note is seeded there).
 
-After applying a chalk, regenerate the page's **night fill** (it conditions on the chalk), re-punch,
-and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker tile). Pen
-thumbs and light fills are untouched — they belong to the pen.
+After applying a page chalk, regenerate the page's **night fill** (it conditions on the chalk),
+re-punch, and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker
+tile). A cover chalk needs only the thumbnail and responsive stages. Pen thumbs and light fills are
+untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 

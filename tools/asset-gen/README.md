@@ -67,7 +67,7 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails, both themes -> web/static/styles/{style}.{light,dark}.webp
                                 #   --theme dark / --style Crayon / --temperature 1.4 to narrow or re-roll
-npm run gen:coloring-chalk      # chalk outlines (dark-mode line art) -> web/static/coloring/**/*.chalk.webp
+npm run gen:coloring-chalk      # page/cover chalk line art -> web/static/coloring/**/*.chalk.webp
 npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
 npm run gen:coloring-fills      # light fill candidates -> .coloring-samples/ (--apply to ship)
 npm run check:coloring-fill-drift # drift-check the raw fills in fill-src/ (no key/network)
@@ -165,7 +165,8 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 ## Inputs & outputs
 
 * **Inputs** (committed): `tools/asset-gen/style-covers/source.svg`, the black-and-white
-  `web/static/coloring/**/*-{tall,wide}.outline.webp` PEN outlines (the source of every derivation).
+  `web/static/coloring/**/*.outline.webp` PEN page and cover outlines (the source of every
+  derivation).
 * **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
   fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
