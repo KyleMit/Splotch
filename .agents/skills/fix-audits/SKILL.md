@@ -78,6 +78,14 @@ comment (per the per-item loop), don't force a shaky fix.
 
 Process the issues in the sweep order chosen in Setup. For each issue:
 
+In a cloud session, launch exactly one implementer at a time: cloud subagents may run asynchronously
+while sharing one working tree, so await each implementer and commit its changes before launching
+the next. Genuine parallel implementation requires a separate worktree per subagent.
+
+For an issue that changes `.ruler/**`, run `npm run ruler:apply`, commit the regenerated output with
+the authored change, and then run `npm run ruler:check`. The check diffs generated results against
+`HEAD`, so running it before that commit reports the uncommitted generated output as drift.
+
 1. **Delegate to a fresh subagent.** Launch a `general-purpose` agent whose prompt contains the
    issue's full text verbatim (number, title, body, labels) plus repo conventions. A fresh agent per
    issue is what keeps each fix's context clean — do not implement issues in the orchestrator
