@@ -5,7 +5,10 @@ import { raw, encodeQ } from './lib.mjs';
 // source says are pure paper, and only those within a few px of ink.
 async function paperDirt(buf, mask) {
   const { data } = await raw(buf);
-  let sum = 0, worst = 0, dirty = 0, n = 0;
+  let sum = 0,
+    worst = 0,
+    dirty = 0,
+    n = 0;
   for (let i = 0; i < data.length; i++) {
     if (!mask[i]) continue;
     n++;
@@ -29,7 +32,10 @@ async function nearInkPaperMask(file) {
       let nearInk = false;
       for (let dy = -R; dy <= R && !nearInk; dy += 2)
         for (let dx = -R; dx <= R; dx += 2)
-          if (data[(y + dy) * w + x + dx] < 60) { nearInk = true; break; }
+          if (data[(y + dy) * w + x + dx] < 60) {
+            nearInk = true;
+            break;
+          }
       if (nearInk) mask[i] = 1;
     }
   }
@@ -53,5 +59,7 @@ for (const f of files) {
   console.log(`\n${f}  (paper-near-ink px: ${out[0].gens[0].n})`);
   for (const { q, gens } of out)
     for (const g of gens)
-      console.log(`  q${q} gen${g.g}: mean dirt ${g.mean.toFixed(2)}  worst ${g.worst}  dirty>6 ${g.dirtyPct.toFixed(1)}%  ${(g.bytes/1024).toFixed(0)}KB`);
+      console.log(
+        `  q${q} gen${g.g}: mean dirt ${g.mean.toFixed(2)}  worst ${g.worst}  dirty>6 ${g.dirtyPct.toFixed(1)}%  ${(g.bytes / 1024).toFixed(0)}KB`
+      );
 }

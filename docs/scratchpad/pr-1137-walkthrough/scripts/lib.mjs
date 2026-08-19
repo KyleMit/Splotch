@@ -1,6 +1,7 @@
 import sharp from 'sharp';
 
-export const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+export const esc = (s) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export async function raw(input) {
   return sharp(input).greyscale().raw().toBuffer({ resolveWithObject: true });
@@ -57,12 +58,14 @@ export function svgLabel(width, height, lines, opts = {}) {
 
 export async function stack(items, { gap = 0, bg = '#ffffff', dir = 'v' } = {}) {
   const metas = await Promise.all(items.map((b) => sharp(b).metadata()));
-  const w = dir === 'v'
-    ? Math.max(...metas.map((m) => m.width))
-    : metas.reduce((a, m) => a + m.width, 0) + gap * (items.length - 1);
-  const h = dir === 'v'
-    ? metas.reduce((a, m) => a + m.height, 0) + gap * (items.length - 1)
-    : Math.max(...metas.map((m) => m.height));
+  const w =
+    dir === 'v'
+      ? Math.max(...metas.map((m) => m.width))
+      : metas.reduce((a, m) => a + m.width, 0) + gap * (items.length - 1);
+  const h =
+    dir === 'v'
+      ? metas.reduce((a, m) => a + m.height, 0) + gap * (items.length - 1)
+      : Math.max(...metas.map((m) => m.height));
   let cursor = 0;
   const comps = items.map((b, i) => {
     const c = {
