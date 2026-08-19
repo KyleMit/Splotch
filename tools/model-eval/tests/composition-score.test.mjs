@@ -83,6 +83,14 @@ const regionWithStrokesOnTop = () =>
     <circle cx="250" cy="60" r="30" fill="#FFD84D"/>
   </svg>`);
 
+// The failure containment exists to catch: the region is coloured perfectly, and
+// so is everywhere else. Coverage alone cannot tell this from the bounded fill.
+const regionFloodedPastItsBanks = () =>
+  rasterize(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">
+    <rect width="320" height="320" fill="#3E92E8"/>
+    <circle cx="250" cy="60" r="30" fill="#FFD84D"/>
+  </svg>`);
+
 // Line work over the same span: one drawn wave, not a coloured-in area.
 const drawnLineInput = () =>
   rasterize(`<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320">
@@ -220,6 +228,22 @@ describe('scribbled-in fill regions', () => {
       outputBytes: await faithfulOutput(),
     });
     expect(solid.elements.every((el) => el.kind !== 'fill')).toBe(true);
+  });
+
+  it('charges a fill that floods the frame, and leaves a bounded one alone', async () => {
+    const inputBytes = await scribbleFilledInput();
+    const bounded = await scoreComposition({ inputBytes, outputBytes: await regionColouredIn() });
+    const flooded = await scoreComposition({
+      inputBytes,
+      outputBytes: await regionFloodedPastItsBanks(),
+    });
+    const fillOf = (s) => s.elements.find((el) => el.label === 'Blue');
+    // Both cover the region completely; only one keeps the child's composition.
+    expect(fillOf(bounded).coverage).toBeGreaterThan(0.85);
+    expect(fillOf(flooded).coverage).toBeGreaterThan(0.85);
+    expect(fillOf(bounded).spillRatio).toBeLessThan(0.1);
+    expect(fillOf(flooded).spillRatio).toBeGreaterThan(2);
+    expect(bounded.layoutScore).toBeGreaterThan(flooded.layoutScore + 15);
   });
 
   it('scores colouring the region in far above redrawing the strokes over it', async () => {

@@ -304,7 +304,7 @@ function elementRows(elements) {
         return `<div>${swatch}${esc(el.label)}: <em>${el.backgroundLike ? 'became background' : 'not found'}</em></div>`;
       }
       if (el.kind === 'fill') {
-        return `<div>${swatch}${esc(el.label)} (filled area): coloured ${(el.coverage * 100).toFixed(0)}% · stroke echo ${el.strokeEchoRatio.toFixed(2)}</div>`;
+        return `<div>${swatch}${esc(el.label)} (filled area): coloured ${(el.coverage * 100).toFixed(0)}% · spill ${el.spillRatio.toFixed(2)} · stroke echo ${el.strokeEchoRatio.toFixed(2)}</div>`;
       }
       return `<div>${swatch}${esc(el.label)}: shift ${el.centroidShiftPct.toFixed(1)}% · scale ${el.scaleFactor.toFixed(2)}×</div>`;
     })

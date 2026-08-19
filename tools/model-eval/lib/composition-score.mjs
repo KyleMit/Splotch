@@ -114,6 +114,27 @@ const FILL_COLOR_MATCH_DELTA_E = 34;
 // what separates "coloured this area in" from "drew this object", and only the
 // first is scored on coverage rather than on placement.
 const FILL_STROKE_GAP_MIN = 0.12;
+// Coverage asks whether the region came back coloured. On its own it cannot see
+// colour that arrived where the child never put any: flooding the whole frame
+// with the fill's hue covers the region perfectly, and because fill zones are
+// also held out of the global chamfer, nothing else was charging for it — a
+// bounded band and a full-frame flood both measured 99. Containment closes that
+// hole by counting the fill's own colour OUTSIDE its region, in units of the
+// region's own area, so a subject the child filled in cannot grow across the
+// canvas for free. The tolerance is one region's worth of the fill's paint
+// appearing elsewhere: a soft edge or a halo costs almost nothing, a second area
+// the size of the one the child coloured costs most of the term, and a flooded
+// frame zeroes it.
+const FILL_SPILL_TOLERANCE = 1;
+// Soft edges, ripples, and antialiasing put a little of the colour just past the
+// child's own strokes. A margin this wide is finishing, not spill.
+const FILL_SPILL_MARGIN_FRACTION = 0.05;
+// Spill is matched against the paint the output actually used inside the region,
+// not against the palette colour, and by Lab distance rather than by hue. The
+// loose hue match that makes coverage work — a pale sea is still the child's
+// blue — would otherwise read a pale sky as the sea flooding the frame. What
+// spill means is the same paint appearing outside the lines.
+const FILL_SPILL_MATCH_DELTA_E = 20;
 // How closely the output still draws along the child's own scribble strokes,
 // as a chamfer ratio against the region's chance level — the same normalization
 // the global term uses, so a region full of unrelated texture cannot read as
@@ -595,23 +616,44 @@ function matchFill(element, outputGrid, outputEdgeDistance) {
   const elementChroma = Math.hypot(element.lab[1], element.lab[2]);
   const elementHue = Math.atan2(element.lab[2], element.lab[1]);
   const byHue = elementChroma >= FILL_ACHROMATIC_ELEMENT_CHROMA;
+  const isElementColour = (i) => {
+    const lab = srgbToLab(data[i], data[i + 1], data[i + 2]);
+    if (!byHue) return labDistance(lab, element.lab) <= FILL_COLOR_MATCH_DELTA_E;
+    if (Math.hypot(lab[1], lab[2]) < FILL_MIN_CHROMA) return false;
+    const delta = Math.abs(((Math.atan2(lab[2], lab[1]) - elementHue) * 180) / Math.PI);
+    return Math.min(delta, 360 - delta) <= FILL_HUE_TOLERANCE_DEG;
+  };
+
+  const spillMargin = Math.max(1, Math.round(Math.max(width, height) * FILL_SPILL_MARGIN_FRACTION));
+  const allowed = dilateMask(element.region, width, height, spillMargin);
   let regionArea = 0;
   let covered = 0;
   let chanceDistance = 0;
+  const paint = [0, 0, 0];
   for (let p = 0, i = 0; p < element.region.length; p++, i += 3) {
     if (!element.region[p]) continue;
     regionArea++;
     chanceDistance += outputEdgeDistance[p];
+    if (!isElementColour(i)) continue;
+    covered++;
     const lab = srgbToLab(data[i], data[i + 1], data[i + 2]);
-    if (!byHue) {
-      if (labDistance(lab, element.lab) <= FILL_COLOR_MATCH_DELTA_E) covered++;
-      continue;
-    }
-    if (Math.hypot(lab[1], lab[2]) < FILL_MIN_CHROMA) continue;
-    const delta = Math.abs(((Math.atan2(lab[2], lab[1]) - elementHue) * 180) / Math.PI);
-    if (Math.min(delta, 360 - delta) <= FILL_HUE_TOLERANCE_DEG) covered++;
+    paint[0] += lab[0];
+    paint[1] += lab[1];
+    paint[2] += lab[2];
   }
   if (!regionArea) return { found: false, backgroundLike: false };
+
+  // With nothing of the child's colour in the region there is no paint to
+  // recognize elsewhere, and coverage is already scoring that as the failure.
+  let spilled = 0;
+  if (covered) {
+    const fillPaint = paint.map((sum) => sum / covered);
+    for (let p = 0, i = 0; p < element.region.length; p++, i += 3) {
+      if (element.region[p] || allowed[p]) continue;
+      const lab = srgbToLab(data[i], data[i + 1], data[i + 2]);
+      if (labDistance(lab, fillPaint) <= FILL_SPILL_MATCH_DELTA_E) spilled++;
+    }
+  }
 
   // Where the child's passes actually fell, and how far the output's nearest
   // edge is from each of them.
@@ -629,6 +671,7 @@ function matchFill(element, outputGrid, outputEdgeDistance) {
     backgroundLike: false,
     regionAreaFraction: regionArea / (width * height),
     coverage: covered / regionArea,
+    spillRatio: spilled / regionArea,
     strokeEchoRatio,
   };
 }
@@ -704,6 +747,7 @@ function compareElements(elements, outputGrid, outputEdgeDistance) {
         backgroundLike: false,
         regionAreaFraction: match.regionAreaFraction,
         coverage: match.coverage,
+        spillRatio: match.spillRatio,
         strokeEchoRatio: match.strokeEchoRatio,
       };
     }
@@ -767,11 +811,12 @@ export function compositeScore(global, elementComparisons) {
     }
     if (element.kind === 'fill') {
       const coverageTerm = clamp01(element.coverage / FILL_COVERAGE_TARGET);
+      const containmentTerm = Math.exp(-((element.spillRatio / FILL_SPILL_TOLERANCE) ** 2));
       // Inverted against the other terms on purpose: here a LOW ratio is the
       // failure, because it means the child's strokes are still being drawn.
       const filledNotDrawnTerm =
         1 - Math.exp(-((element.strokeEchoRatio / FILL_STROKE_ECHO_TOLERANCE) ** 2));
-      terms.push({ weight, value: coverageTerm * filledNotDrawnTerm });
+      terms.push({ weight, value: coverageTerm * containmentTerm * filledNotDrawnTerm });
       continue;
     }
     if (element.kind === 'wash') {

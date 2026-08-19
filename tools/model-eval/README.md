@@ -217,12 +217,14 @@ one production config, the lab holds the production model fixed (`gpt-image-2 ·
   artistic license; moving a compact subject is the failure.
 * **Per fill region**: a cluster dense enough to be a coloured-in *area* rather than line work — and
   showing the gaps between passes that a solid drawn shape never has — is scored on whether the area
-  came back coloured, not on where its strokes landed. Two numbers: **coverage** (how much of the
+  came back coloured, not on where its strokes landed. Three numbers: **coverage** (how much of the
   region the child's colour occupies in the output, matched by hue so a pale painted sea still
-  counts as the blue they chose) and **stroke echo** (a chance-normalized chamfer from the child's
-  own passes to the output's edges). A low echo is the failure it exists to catch — painting the sea
-  underneath and redrawing the squiggles on top of it, which lines every edge up perfectly while
-  never colouring anything in. Fill regions are excluded from the global chamfer for the same
+  counts as the blue they chose), **containment** (the same paint appearing outside the region, in
+  units of the region's own area — without it, flooding the frame with the fill's colour covers the
+  region perfectly and costs nothing), and **stroke echo** (a chance-normalized chamfer from the
+  child's own passes to the output's edges). A low echo is the failure it exists to catch — painting
+  the sea underneath and redrawing the squiggles on top of it, which lines every edge up perfectly
+  while never colouring anything in. Fill regions are excluded from the global chamfer for the same
   reason. The child's scribbled sea should come back as *sea*.
 * The 0-100 `layout` composite blends both. It is a **ranking instrument** calibrated so visibly
   faithful outputs land high and enlarged/recentered ones land low; absolute values on dense
