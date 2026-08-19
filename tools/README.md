@@ -48,6 +48,7 @@ Root executables coordinate repository-wide concerns that do not belong to one c
 | `check-github-action-versions.mjs` | `check:github-actions`                    | Inventory workflow action pins and optionally query releases  |
 | `check-netlify-cli.mjs`            | `predev:netlify`                          | Require an authenticated, linked Netlify CLI                  |
 | `check-pwa-precache.mjs`           | `postbuild`                               | Enforce offline-asset coverage and the precache budget        |
+| `check-bundle-budgets.mjs`         | `postbuild`, `postbuild:cap`              | Enforce startup, lazy-chunk, and native-export byte budgets   |
 | `check-release-seams.mjs`          | `postbuild`, `postbuild:cap`              | Reject profiling and development seams in release output      |
 | `fetch-image-reports.mjs`          | `fetch:image-reports`                     | Fetch retained production AI-report evidence for local review |
 | `optimize-svg-assets.mjs`          | `optimize:svg-assets`, `check:svg-assets` | Optimize shipped SVGs or detect optimization drift            |
