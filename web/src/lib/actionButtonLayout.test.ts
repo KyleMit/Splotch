@@ -5,7 +5,6 @@ import { freeGenerations } from './state/freeGenerations.svelte';
 import {
   settings,
   setAdvancedControls,
-  setAiAccessToken,
   setAiImage,
   setColoringBook,
   setCrayon,
@@ -70,7 +69,7 @@ function resetState() {
   setScreenshot(true);
   setUndoButton(true);
   setAiImage(true);
-  setAiAccessToken('');
+  settings.aiAccessToken = '';
   settings.aiUserApiKey = '';
   network.online = true;
   freeGenerations.available = true;
@@ -102,7 +101,7 @@ describe('visibleActionButtonCount', () => {
     'keeps layout counting in sync with visibility for $credentialState',
     ({ apiKey, accessCode }) => {
       settings.aiUserApiKey = apiKey;
-      setAiAccessToken(accessCode);
+      settings.aiAccessToken = accessCode;
 
       expect(isAiImageButtonVisible()).toBe(true);
       expect(visibleActionButtonCount()).toBe(6);
@@ -128,7 +127,7 @@ describe('visibleActionButtonCount', () => {
     expect(isAiImageButtonVisible()).toBe(false);
     expect(visibleActionButtonCount()).toBe(5);
 
-    setAiAccessToken('code');
+    settings.aiAccessToken = 'code';
     expect(isAiImageButtonVisible()).toBe(true);
     expect(visibleActionButtonCount()).toBe(6);
   });
@@ -165,7 +164,7 @@ describe('visibleActionButtonCount', () => {
   });
 
   it('all-on count equals MAX_ACTION_BUTTON_COUNT', () => {
-    setAiAccessToken('tok');
+    settings.aiAccessToken = 'tok';
     expect(visibleActionButtonCount()).toBe(MAX_ACTION_BUTTON_COUNT);
   });
 });

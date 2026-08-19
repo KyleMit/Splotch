@@ -4,13 +4,9 @@
   import Disclosure from '../design/Disclosure.svelte';
   import StatusMessage from '../design/StatusMessage.svelte';
   import AiFeatureToggles from './AiFeatureToggles.svelte';
-  import {
-    settings,
-    setAiImage,
-    setAiAccessToken,
-    aiCredentialKind,
-  } from '$lib/state/settings.svelte';
+  import { settings, setAiImage, aiCredentialKind } from '$lib/state/settings.svelte';
   import { setAiUserApiKey } from '$lib/state/aiKey';
+  import { setAiAccessToken } from '$lib/state/aiAccessToken';
   import {
     verifyCredential,
     type CredentialKind,
@@ -121,7 +117,7 @@
     if (result.kind === 'apiKey') {
       await setAiUserApiKey(value, () => latest.isCurrent(id));
     } else {
-      setAiAccessToken(result.accessCode || value);
+      await setAiAccessToken(result.accessCode || value, () => latest.isCurrent(id));
     }
     return latest.isCurrent(id);
   }
@@ -173,8 +169,8 @@
     resetKeyFeedback();
   }
 
-  function forgetAccessCode() {
-    setAiAccessToken('');
+  async function forgetAccessCode() {
+    await setAiAccessToken('');
     keyInput = '';
     resetKeyFeedback();
   }

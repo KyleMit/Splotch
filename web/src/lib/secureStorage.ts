@@ -5,7 +5,7 @@ import { lazyPluginModule } from './nativePlugin';
 import { idbKvStore, lazyIdbDatabase } from './idb';
 
 // Secure home for the app's client-held secrets — the parent's AI provider API
-// key (BYOK).
+// key (BYOK) and managed access code.
 //
 //  • Native (iOS/Android): secrets are handed to @aparajita/capacitor-secure-storage,
 //    which stores them in the iOS Keychain / Android Keystore — hardware-backed and
@@ -27,6 +27,7 @@ import { idbKvStore, lazyIdbDatabase } from './idb';
 // every device that has one and silently signs them out of AI. The vendor name
 // here is a historical string, not a claim about which provider runs today.
 const API_KEY = 'gemini-api-key';
+const MANAGED_ACCESS_CODE = 'managed-access-code';
 
 // IndexedDB layout for the web path.
 const DB_NAME = 'splotch-secure';
@@ -211,3 +212,8 @@ async function clearSecret(name: string) {
 export const saveApiKey = (value: string) => saveSecret(API_KEY, value);
 export const loadApiKey = () => loadSecret(API_KEY);
 export const clearApiKey = () => clearSecret(API_KEY);
+
+// The managed code that grants access to Splotch's server-funded AI quota.
+export const saveAccessCode = (value: string) => saveSecret(MANAGED_ACCESS_CODE, value);
+export const loadAccessCode = () => loadSecret(MANAGED_ACCESS_CODE);
+export const clearAccessCode = () => clearSecret(MANAGED_ACCESS_CODE);

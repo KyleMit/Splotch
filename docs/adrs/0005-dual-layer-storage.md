@@ -32,9 +32,10 @@ Implement **dual-layer storage** in `src/lib/storage.ts`:
   in localStorage but absent from Preferences is backed up. The hydration list is derived from the
   static `STORAGE_KEYS` registry, and all hydration keys are fetched from Preferences concurrently
   (not serially) to minimize cold-start latency.
-* Secure API-key hydration runs after durable reconciliation so the legacy plaintext migration key
-  can be recovered from Preferences, moved into secure storage, and then removed from both plaintext
-  layers.
+* Secure AI-credential hydration runs after durable reconciliation so legacy plaintext BYOK keys and
+  managed access codes can be recovered from Preferences, moved into separate secure-storage slots,
+  and then removed from both plaintext layers. The live credential state stays empty until secure
+  hydration completes.
 * `localStorage.setItem()` calls are wrapped in a try/catch (`safeStorageMutation`) to handle
   `QuotaExceededError` and `SecurityError` without interrupting the toggle that triggered the write.
 
@@ -53,5 +54,5 @@ On web, `isNative()` returns false and the Preferences layer is never touched.
   data.
 * **+** Durable recovery does not depend on a storage helper touching a key before hydration; adding
   a persisted key to `STORAGE_KEYS` includes it automatically.
-* **-** Native boot must keep durable reconciliation ahead of secure API-key hydration so migration
-  consumes a recovered legacy value before scrubbing it.
+* **-** Native boot must keep durable reconciliation ahead of secure AI-credential hydration so
+  migration consumes a recovered legacy value before scrubbing it.

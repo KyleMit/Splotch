@@ -10,7 +10,6 @@ import {
   type StorageKey,
 } from '../storage';
 import { applyTheme, isThemePreference, THEME_DEFAULT, type ThemePreference } from '../theme';
-import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 import { TABLET_MIN_SIDE_PX } from '$lib/breakpoints';
 import type { CredentialKind } from '$lib/aiCredential';
 import {
@@ -129,7 +128,8 @@ function readTheme(fallback: ThemePreference): ThemePreference {
 interface Settings extends Record<BoolSettingKey, boolean>, Record<IntSettingKey, number> {
   // Appearance: explicit light/dark, or 'system' to follow the OS setting.
   theme: ThemePreference;
-  // String setting (special case): the managed-access token, persisted verbatim.
+  // Managed-access token. Held in memory only; hydrated from secure storage on
+  // boot by hydrateAiAccessToken(). Empty until then / unless set.
   aiAccessToken: string;
   // Parent-supplied AI provider API key (BYOK). Held in memory only; hydrated from
   // secure storage on boot by hydrateApiKey(). Empty until then / unless set.
@@ -150,7 +150,7 @@ export const settings: Settings = $state({
     intSettingEntries().map(([prop, [key, def, clamp]]) => [prop, clamp(readInt(key, def))])
   ) as Record<IntSettingKey, number>),
   theme: readTheme(THEME_DEFAULT),
-  aiAccessToken: readString(STORAGE_KEYS.aiAccessToken, ''),
+  aiAccessToken: '',
   aiUserApiKey: '',
   saveFolderName: null,
 });
@@ -238,11 +238,6 @@ function makeIntSetter(prop: IntSettingKey) {
 export const setSoundVolume = makeIntSetter('soundVolume');
 export const setActionButtonScale = makeIntSetter('actionButtonScale');
 
-export function setAiAccessToken(v: string) {
-  settings.aiAccessToken = v;
-  writeString(STORAGE_KEYS.aiAccessToken, v);
-}
-
 // Extends the verification vocabulary rather than restating it, so a new
 // credential kind cannot compile in aiCredential.ts while being silently absent
 // from persisted-state classification. 'none' is this module's own addition:
@@ -267,7 +262,6 @@ export function reloadSettings() {
   for (const [prop, [key, , clamp]] of intSettingEntries()) {
     settings[prop] = clamp(readInt(key, settings[prop]));
   }
-  settings.aiAccessToken = readString(STORAGE_KEYS.aiAccessToken, settings.aiAccessToken);
   settings.theme = readTheme(settings.theme);
   applyTheme(settings.theme);
   normalizeDisabledBrushes();
@@ -276,14 +270,3 @@ export function reloadSettings() {
 normalizeDisabledBrushes();
 
 onDurableRestore(reloadSettings);
-
-export function captureAiAccessTokenFromUrl() {
-  if (typeof window === 'undefined') return;
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- one-shot parse of the current URL, not reactive state
-  const url = new URL(window.location.href);
-  const token = url.searchParams.get(AI_ACCESS_TOKEN_PARAM);
-  if (!token) return;
-  setAiAccessToken(token);
-  url.searchParams.delete(AI_ACCESS_TOKEN_PARAM);
-  window.history.replaceState({}, '', url);
-}
