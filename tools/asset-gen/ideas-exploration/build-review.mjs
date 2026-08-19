@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import sharp from 'sharp';
+import { isMain, runMain } from '../../lib/proc.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const IDEAS_DIR = ROOT;
@@ -40,7 +42,7 @@ const VERDICT_META = {
   BLOCKED: { label: 'Blocked', cls: 'v-blocked' },
 };
 
-async function build() {
+async function renderReviewPage() {
   const dirs = existsSync(IDEAS_DIR)
     ? readdirSync(IDEAS_DIR)
         .filter((d) => /^idea-\d+$/.test(d))
@@ -233,9 +235,41 @@ footer { color: var(--muted); font-size: .85rem; margin-top: 3rem; }
   <footer>Generated from per-idea reports in the session scratchpad. Repo state was reverted to baseline (8e471b8) after each attempt, before the next one began — so nothing from the experiments is live in the pipeline. This folder itself, including this page, is a committed frozen record.</footer>
 </main>`;
 
-  writeFileSync(OUT, html.replace(/[\uFFFD\uD800-\uDFFF]/g, ''));
-  const kb = Math.round(Buffer.byteLength(html) / 1024);
-  console.log(`wrote ${OUT} (${kb} KB, ${done} ideas)`);
+  return { html, done };
 }
 
-await build();
+export function compareGeneratedReview(generatedHtml, committedHtml) {
+  if (generatedHtml === committedHtml) {
+    return { status: 0, message: '[ideas-review] ideas-review.html is current.' };
+  }
+
+  return {
+    status: 1,
+    message:
+      '[ideas-review] ideas-review.html is stale. Run node tools/asset-gen/ideas-exploration/build-review.mjs and commit the result.',
+  };
+}
+
+async function buildReview(check) {
+  const rendered = await renderReviewPage();
+  const html = rendered.html.replace(/[\uFFFD\uD800-\uDFFF]/g, '');
+
+  if (check) {
+    const committedHtml = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';
+    const result = compareGeneratedReview(html, committedHtml);
+    console[result.status === 0 ? 'log' : 'error'](result.message);
+    return result.status;
+  }
+
+  writeFileSync(OUT, html);
+  const kb = Math.round(Buffer.byteLength(html) / 1024);
+  console.log(`wrote ${OUT} (${kb} KB, ${rendered.done} ideas)`);
+  return 0;
+}
+
+if (isMain(import.meta.url)) {
+  runMain(async () => {
+    const { values } = parseArgs({ options: { check: { type: 'boolean' } } });
+    process.exitCode = await buildReview(values.check);
+  });
+}

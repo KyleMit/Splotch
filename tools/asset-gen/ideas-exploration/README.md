@@ -21,8 +21,9 @@ the `lib/paths.mjs` and scratch-dir rules in `../CLAUDE.md` don't apply to these
 1. Open **`ideas-review.html`** in a browser (self-contained, ~5 MB) — the verdict dashboard with
    before/after image pairs and code for every idea. Regenerate it any time with
    `node build-review.mjs` (reads each `idea-N/meta.json`). It is committed for zero-friction
-   viewing but is **generated output — never hand-edit it**; if `build-review.mjs` or any
-   `idea-N/meta.json` ever changes, re-run `node build-review.mjs` and commit the result.
+   viewing but is **generated output — never hand-edit it**; `npm run check:ideas-review` guards its
+   exact bytes in CI. If `build-review.mjs` or any `idea-N/meta.json` ever changes, re-run
+   `node build-review.mjs` and commit the result.
 2. Per idea, read `idea-N/report.md` for full detail: what was tried, what worked, what didn't,
    limitations, and recommendations. `idea-N/meta.json` is the machine-readable summary; evidence
    images and working code (mostly re-appliable `git diff` patches against `8e471b8`) sit beside it.
