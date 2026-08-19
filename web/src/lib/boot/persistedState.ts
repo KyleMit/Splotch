@@ -34,6 +34,11 @@ export async function hydratePersistedState(): Promise<void> {
   // Durable hydration must finish before the credential migrations so a legacy
   // plaintext value that survived only in Preferences can move into secure
   // storage before both plaintext copies are scrubbed.
-  await Promise.all([hydrateApiKey(), hydrateAiAccessToken()]);
+  const credentialHydrations = await Promise.allSettled([hydrateApiKey(), hydrateAiAccessToken()]);
+  for (const hydration of credentialHydrations) {
+    if (hydration.status === 'rejected') {
+      console.warn('Secure credential hydration failed', hydration.reason);
+    }
+  }
   persistedStateStatus.hydrated = true;
 }

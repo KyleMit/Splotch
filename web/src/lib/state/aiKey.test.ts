@@ -20,7 +20,7 @@ vi.mock('../idb', () => ({
 }));
 
 import { settings } from './settings.svelte';
-import { createAiKeyWriteCoordinator, hydrateApiKey, setAiUserApiKey } from './aiKey';
+import { hydrateApiKey, setAiUserApiKey } from './aiKey';
 import { loadApiKey, saveApiKey } from '../secureStorage';
 import { requestPersistentStorage } from '../idb';
 import { STORAGE_KEYS } from '../storage';
@@ -41,30 +41,6 @@ beforeEach(() => {
 });
 
 describe('setAiUserApiKey', () => {
-  it('gives each coordinator an independent write queue', async () => {
-    let finishFirstWrite!: () => void;
-    const firstState = { aiUserApiKey: '' };
-    const secondState = { aiUserApiKey: '' };
-    const firstCoordinator = createAiKeyWriteCoordinator(
-      firstState,
-      () =>
-        new Promise<void>((resolve) => {
-          finishFirstWrite = resolve;
-        })
-    );
-    const secondCoordinator = createAiKeyWriteCoordinator(secondState, async () => {});
-
-    const firstWrite = firstCoordinator.setAiUserApiKey('first');
-    await vi.waitFor(() => expect(finishFirstWrite).toBeTypeOf('function'));
-
-    await expect(secondCoordinator.setAiUserApiKey('second')).resolves.toBe(true);
-    expect(secondState.aiUserApiKey).toBe('second');
-
-    finishFirstWrite();
-    await expect(firstWrite).resolves.toBe(true);
-    expect(firstState.aiUserApiKey).toBe('first');
-  });
-
   it('commits the live key only after secure persistence succeeds', async () => {
     let finishSave!: () => void;
     vi.mocked(saveApiKey).mockImplementationOnce(
@@ -180,9 +156,9 @@ describe('hydrateApiKey', () => {
     });
 
     const hydrating = hydrateApiKey();
-    await setAiUserApiKey('sk-just-saved');
+    const saving = setAiUserApiKey('sk-just-saved');
     releaseRead();
-    await hydrating;
+    await Promise.all([hydrating, saving]);
 
     expect(secureStore.apiKey).toBe('sk-just-saved');
     expect(settings.aiUserApiKey).toBe('sk-just-saved');

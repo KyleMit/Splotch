@@ -2,57 +2,20 @@ import { AI_ACCESS_TOKEN_PARAM } from '$lib/inviteLink';
 import { clearAccessCode, loadAccessCode, saveAccessCode } from '../secureStorage';
 import { readString, removeKey, STORAGE_KEYS } from '../storage';
 import { settings } from './settings.svelte';
+import { createSecureCredentialCoordinator } from './secureCredentialCoordinator';
 
 async function persistAiAccessToken(value: string) {
   if (value) await saveAccessCode(value);
   else await clearAccessCode();
 }
 
-export function createAiAccessTokenCoordinator(
-  tokenState: { aiAccessToken: string },
-  persistToken: (value: string) => Promise<void>
-) {
-  let writeVersion = 0;
-  let writeQueue = Promise.resolve();
+const aiAccessTokenCoordinator = createSecureCredentialCoordinator(
+  settings,
+  'aiAccessToken',
+  persistAiAccessToken
+);
 
-  function enqueue<T>(operation: () => Promise<T>): Promise<T> {
-    const result = writeQueue.then(operation);
-    writeQueue = result.then(
-      () => undefined,
-      () => undefined
-    );
-    return result;
-  }
-
-  function setAiAccessToken(value: string, ownsRequest: () => boolean = () => true) {
-    const version = ++writeVersion;
-    return enqueue(async () => {
-      if (version !== writeVersion || !ownsRequest()) return false;
-
-      await persistToken(value);
-
-      if (version !== writeVersion) return false;
-      if (!ownsRequest()) {
-        await persistToken(tokenState.aiAccessToken);
-        return false;
-      }
-
-      tokenState.aiAccessToken = value;
-      return true;
-    });
-  }
-
-  function runHydration(operation: (ownsHydration: () => boolean) => Promise<void>) {
-    const version = writeVersion;
-    return enqueue(() => operation(() => version === writeVersion));
-  }
-
-  return { setAiAccessToken, runHydration };
-}
-
-const aiAccessTokenCoordinator = createAiAccessTokenCoordinator(settings, persistAiAccessToken);
-
-export const { setAiAccessToken } = aiAccessTokenCoordinator;
+export const setAiAccessToken = aiAccessTokenCoordinator.setCredential;
 
 export function hydrateAiAccessToken() {
   return aiAccessTokenCoordinator.runHydration(async (ownsHydration) => {
@@ -60,12 +23,13 @@ export function hydrateAiAccessToken() {
     const legacy = readString(STORAGE_KEYS.legacyAiAccessToken, '');
     if (!ownsHydration()) return;
 
-    if (!token && legacy) {
+    if (!token && legacy && !settings.aiAccessToken) {
       await saveAccessCode(legacy);
       token = legacy;
     }
 
     if (legacy) removeKey(STORAGE_KEYS.legacyAiAccessToken);
+    if (settings.aiAccessToken) return;
     if (ownsHydration() && token) settings.aiAccessToken = token;
   });
 }

@@ -128,6 +128,19 @@ describe('hydrateAiAccessToken', () => {
     expect(secureStore.accessCode).toBe('secure-code');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
   });
+
+  it('keeps a URL-captured code when a later secure read reports no value', async () => {
+    localStorage.setItem(STORAGE_KEYS.legacyAiAccessToken, 'old-revoked-code');
+    window.history.replaceState({}, '', `/?${AI_ACCESS_TOKEN_PARAM}=fresh-invitation-code`);
+
+    await captureAiAccessTokenFromUrl();
+    vi.mocked(loadAccessCode).mockResolvedValueOnce(null);
+    await hydrateAiAccessToken();
+
+    expect(settings.aiAccessToken).toBe('fresh-invitation-code');
+    expect(secureStore.accessCode).toBe('fresh-invitation-code');
+    expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBeNull();
+  });
 });
 
 describe('captureAiAccessTokenFromUrl', () => {

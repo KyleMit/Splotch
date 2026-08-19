@@ -59,6 +59,7 @@ import { saveAccessCode } from '../secureStorage';
 import { applyDeviceOrientationPreference } from '../platform/orientation';
 import { settings } from '../state/settings.svelte';
 import { hydratePersistedState } from './persistedState';
+import { persistedStateStatus } from './persistedStateStatus.svelte';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -71,6 +72,7 @@ beforeEach(() => {
   settings.lockRotationEnabled = true;
   settings.forceLandscapeOrientation = false;
   ctrl.native = false;
+  persistedStateStatus.hydrated = false;
   vi.mocked(saveAccessCode)
     .mockReset()
     .mockImplementation(async (value: string) => {
@@ -103,16 +105,23 @@ describe('hydratePersistedState', () => {
     await vi.waitFor(() => expect(prefsStore.has(STORAGE_KEYS.legacyAiAccessToken)).toBe(false));
   });
 
-  it('keeps both plaintext managed-code copies when secure migration fails', async () => {
+  it('keeps both plaintext managed-code copies and settles boot when secure migration fails', async () => {
     ctrl.native = true;
     prefsStore.set(STORAGE_KEYS.legacyAiAccessToken, 'retryable-managed-code');
     vi.mocked(saveAccessCode).mockRejectedValueOnce(new Error('secure storage unavailable'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    await expect(hydratePersistedState()).rejects.toThrow('secure storage unavailable');
+    await hydratePersistedState();
 
     expect(settings.aiAccessToken).toBe('');
     expect(localStorage.getItem(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
     expect(prefsStore.get(STORAGE_KEYS.legacyAiAccessToken)).toBe('retryable-managed-code');
+    expect(persistedStateStatus.hydrated).toBe(true);
+    expect(warn).toHaveBeenCalledWith(
+      'Secure credential hydration failed',
+      expect.objectContaining({ message: 'secure storage unavailable' })
+    );
+    warn.mockRestore();
   });
 
   it('applies the restored device orientation preference', async () => {
