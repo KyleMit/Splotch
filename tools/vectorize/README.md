@@ -11,6 +11,7 @@ into both `.claude/` and `.agents/` and this material is far too large to trip.
 | --------------------------------- | ------------------------------------- | --------------------------------------------------------- |
 | `vectorize-image.mjs`             | `npm run vectorize --`                | Trace, download, delete, or inspect an account            |
 | `vectorize-coloring-overlays.mjs` | `npm run vectorize:coloring --`       | Plan or run bounded, restart-safe coloring-page batches   |
+| `analyze-coloring-overlays.mjs`   | `npm run vectorize:coloring:analyze`  | Gate fidelity and compare vector/raster payload sizes     |
 | `vectorize-coloring-overlays.mjs` | `npm run vectorize:coloring:check`    | Guard each outline-to-SVG derivation against drift        |
 | `postprocess-svg.mjs`             | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
 | `postprocess-svg.mjs`             | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
@@ -192,6 +193,7 @@ size, and cannot exceed 12 paid traces:
 ```bash
 npm run vectorize:coloring -- --book=creatures --batch-size=12
 npm run vectorize:coloring -- --book=creatures --batch-size=12 --production
+npm run vectorize:coloring:analyze -- --book=creatures
 ```
 
 The runner skips committed outputs and post-processes recoverable raw responses before making new

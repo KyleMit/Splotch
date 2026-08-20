@@ -2,11 +2,14 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  checkColoringOverlayLedger,
   coloringOverlayJob,
+  coloringOverlayJobs,
   jobState,
   parseColoringOverlayArgs,
   selectColoringOverlayJobs,
 } from '../vectorize-coloring-overlays.mjs';
+import { compareOverlayAlpha } from '../analyze-coloring-overlays.mjs';
 
 describe('coloring overlay campaign', () => {
   it('maps a page outline to the committed overlay and recoverable raw trace', () => {
@@ -53,5 +56,18 @@ describe('coloring overlay campaign', () => {
     expect(() => parseColoringOverlayArgs(['--force', '--book', 'farm'])).toThrow(
       '--force requires --production'
     );
+  });
+
+  it('keeps every committed light SVG tied to its exact authoring outline', () => {
+    expect(checkColoringOverlayLedger(coloringOverlayJobs())).toBe(96);
+  });
+
+  it('measures alpha fidelity independently from vector fill color', () => {
+    expect(compareOverlayAlpha(Uint8Array.from([0, 255]), Uint8Array.from([0, 255]))).toEqual({
+      meanAbsoluteError: 0,
+      binaryPrecision: 1,
+      binaryRecall: 1,
+      binaryIou: 1,
+    });
   });
 });

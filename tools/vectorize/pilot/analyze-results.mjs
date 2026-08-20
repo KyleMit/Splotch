@@ -43,6 +43,18 @@ const specs = [
     ink: 0,
   },
   {
+    name: 'fairy-wide-pen',
+    source: 'web/static/coloring/creatures/fairy-wide.outline.webp',
+    reference: 'web/static/coloring/creatures/fairy-wide.overlay.webp',
+    fill: 'web/static/coloring/creatures/fairy-wide.light.webp',
+    vector: 'web/static/coloring/creatures/fairy-wide.overlay.svg',
+    displayAssets: [
+      'web/static/coloring/creatures/fairy-wide.overlay.webp',
+      'web/static/coloring/max-1152px/creatures/fairy-wide.overlay.webp',
+    ],
+    ink: 0,
+  },
+  {
     name: 'owl-tall-chalk',
     source: 'web/static/coloring/creatures/owl-tall.chalk.webp',
     reference: 'web/static/coloring/creatures/owl-tall.dark.overlay.webp',
@@ -283,9 +295,16 @@ async function zoomComparisonSheet(spec, width, height) {
     .toFile(`${GENERATED}${spec.name}.zoom-2x.png`);
 }
 
-export async function analyzeVectorPilot() {
+export async function analyzeVectorPilot(onlyNames = []) {
+  const selectedSpecs =
+    onlyNames.length === 0 ? specs : specs.filter((spec) => onlyNames.includes(spec.name));
+  if (selectedSpecs.length !== (onlyNames.length || specs.length)) {
+    throw new Error(
+      `Unknown pilot sample; available samples: ${specs.map((spec) => spec.name).join(', ')}`
+    );
+  }
   const report = [];
-  for (const spec of specs) {
+  for (const spec of selectedSpecs) {
     const metadata = await sharp(path(spec.source)).metadata();
     const width = metadata.width;
     const height = metadata.height;
@@ -322,8 +341,10 @@ export async function analyzeVectorPilot() {
     });
   }
 
-  await writeFile(`${PILOT}report.json`, `${JSON.stringify(report, null, 2)}\n`);
+  const reportPath =
+    onlyNames.length === 0 ? `${PILOT}report.json` : `${GENERATED}campaign-gate-report.json`;
+  await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify(report, null, 2));
 }
 
-if (isMain(import.meta.url)) runMain(analyzeVectorPilot);
+if (isMain(import.meta.url)) runMain(() => analyzeVectorPilot(process.argv.slice(2)));
