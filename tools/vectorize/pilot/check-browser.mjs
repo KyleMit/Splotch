@@ -19,11 +19,25 @@ const samples = [
     webp: 'web/static/coloring/creatures/owl-tall.overlay.webp',
   },
   {
+    name: 'fairy-wide-pen',
+    width: 1536,
+    height: 1024,
+    svg: 'web/static/coloring/creatures/fairy-wide.overlay.svg',
+    webp: 'web/static/coloring/creatures/fairy-wide.overlay.webp',
+  },
+  {
     name: 'owl-chalk',
     width: 1024,
     height: 1536,
     svg: 'tools/vectorize/pilot/owl-tall-chalk.optimized.svg',
     webp: 'web/static/coloring/creatures/owl-tall.dark.overlay.webp',
+  },
+  {
+    name: 'fairy-wide-chalk',
+    width: 1536,
+    height: 1024,
+    svg: 'web/static/coloring/creatures/fairy-wide.dark.overlay.svg',
+    webp: 'web/static/coloring/creatures/fairy-wide.dark.overlay.webp',
   },
 ];
 
@@ -31,8 +45,15 @@ async function dataUrl(relative, mime) {
   return `data:${mime};base64,${(await readFile(`${root}${relative}`)).toString('base64')}`;
 }
 
-export async function checkVectorPilotBrowsers() {
-  for (const sample of samples) {
+export async function checkVectorPilotBrowsers(onlyNames = []) {
+  const selectedSamples =
+    onlyNames.length === 0 ? samples : samples.filter((sample) => onlyNames.includes(sample.name));
+  if (selectedSamples.length !== (onlyNames.length || samples.length)) {
+    throw new Error(
+      `Unknown browser sample; available samples: ${samples.map((sample) => sample.name).join(', ')}`
+    );
+  }
+  for (const sample of selectedSamples) {
     sample.svgUrl = await dataUrl(sample.svg, 'image/svg+xml');
     sample.webpUrl = await dataUrl(sample.webp, 'image/webp');
   }
@@ -48,7 +69,7 @@ export async function checkVectorPilotBrowsers() {
     }
     const page = await browser.newPage();
     await page.setContent('<!doctype html><html><body></body></html>');
-    for (const sample of samples) {
+    for (const sample of selectedSamples) {
       for (const format of ['svg', 'webp']) {
         const measurements = await page.evaluate(
           async ({ url, width, height }) => {
@@ -102,11 +123,11 @@ export async function checkVectorPilotBrowsers() {
     await browser.close();
   }
 
-  await writeFile(
-    `${root}tools/vectorize/pilot/browser-report.json`,
-    `${JSON.stringify(results, null, 2)}\n`
-  );
+  const reportPath = onlyNames.length
+    ? `${root}vectorized/pilot/campaign-gate-browser-report.json`
+    : `${root}tools/vectorize/pilot/browser-report.json`;
+  await writeFile(reportPath, `${JSON.stringify(results, null, 2)}\n`);
   console.log(JSON.stringify(results, null, 2));
 }
 
-if (isMain(import.meta.url)) runMain(checkVectorPilotBrowsers);
+if (isMain(import.meta.url)) runMain(() => checkVectorPilotBrowsers(process.argv.slice(2)));

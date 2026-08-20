@@ -5,12 +5,10 @@ import sharp from 'sharp';
 import {
   BOOKS,
   coverThumbImageSource,
-  pageOverlayImageSource,
   pageThumbImageSource,
   responsiveColoringAssets,
 } from '../../../web/src/lib/state/books.ts';
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
-import { maxOverlayAlphaError, OVERLAY_MAX_CHANNEL_ERROR } from '../lib/overlay-alpha.mjs';
 import {
   RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION,
   renderResponsiveColoringAsset,
@@ -20,6 +18,7 @@ import {
 // wall time tracks how many sibling files vitest decodes on the same cores, not its own work, so the
 // budget is several times the solo run — a margin under contention, not a performance assertion.
 const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 120_000;
+const EXPECTED_RESPONSIVE_ASSET_COUNT = 400;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -36,7 +35,6 @@ function srcsetWidths() {
     for (const page of book.pages) {
       for (const orientation of ['portrait', 'landscape']) {
         for (const theme of ['light', 'dark']) {
-          record(pageOverlayImageSource(page, orientation, theme));
           record(pageThumbImageSource(page, orientation, theme));
         }
       }
@@ -53,15 +51,14 @@ const expectedDescriptor = (asset, intrinsicWidth) =>
 
 describe('responsive coloring catalog', () => {
   it(
-    'regenerates every derivative exactly and keeps srcset descriptors intrinsic',
+    'regenerates every raster derivative exactly and keeps srcset descriptors intrinsic',
     async () => {
       const widths = srcsetWidths();
       const assets = BOOKS.flatMap(responsiveColoringAssets);
       let sourceBytes = 0;
       let targetBytes = 0;
 
-      // Invariant SVG overlays replace their canonical WebP and responsive derivative together.
-      expect(assets).toHaveLength(589);
+      expect(assets).toHaveLength(EXPECTED_RESPONSIVE_ASSET_COUNT);
       for (const asset of assets) {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();
@@ -90,33 +87,6 @@ describe('responsive coloring catalog', () => {
       expect((sourceBytes - targetBytes) / sourceBytes).toBeGreaterThanOrEqual(
         RESPONSIVE_MIN_TOTAL_SAVINGS_FRACTION
       );
-    },
-    RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
-  );
-
-  it(
-    'keeps every overlay within alpha tolerance of a direct resize',
-    async () => {
-      const overlays = BOOKS.flatMap(responsiveColoringAssets).filter(
-        (asset) => asset.encoding === 'overlay'
-      );
-
-      expect(overlays.length, 'the catalog exposes no overlay to check').toBeGreaterThan(0);
-      for (const asset of overlays) {
-        const expected = await sharp(join(WEB_STATIC, asset.source))
-          .resize(asset.maxEdgePx, asset.maxEdgePx, {
-            fit: 'inside',
-            kernel: 'lanczos3',
-            withoutEnlargement: true,
-          })
-          .ensureAlpha()
-          .raw()
-          .toBuffer();
-        const actual = await sharp(join(WEB_STATIC, asset.target)).ensureAlpha().raw().toBuffer();
-        expect(maxOverlayAlphaError(expected, actual), asset.target).toBeLessThanOrEqual(
-          OVERLAY_MAX_CHANNEL_ERROR
-        );
-      }
     },
     RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS
   );

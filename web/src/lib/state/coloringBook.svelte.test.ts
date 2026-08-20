@@ -6,7 +6,6 @@ import {
   overlayUrl,
   chalkUrl,
   themedOverlayUrl,
-  themedOverlayImageSource,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -99,26 +98,17 @@ describe('coloring book state', () => {
   it('picks matching full-resolution art for the resolved theme', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('light')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.overlay.webp')
+      spacePage.images.landscape.replace('.outline.webp', '.overlay.svg')
     );
     expect(themedOverlayUrl('dark')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.webp')
+      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.svg')
     );
-  });
-
-  it('pairs the active overlay with its responsive web candidate', () => {
-    setOverlayPage(spacePage, 'portrait');
-    expect(themedOverlayImageSource('dark')).toEqual({
-      src: spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.webp'),
-      srcset:
-        '/coloring/max-1152px/space/astronaut-tall.dark.overlay.webp 768w, /coloring/space/astronaut-tall.dark.overlay.webp 1024w',
-    });
   });
 
   it('can derive another orientation without changing the active orientation', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('dark', 'portrait')).toBe(
-      spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.webp')
+      spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.svg')
     );
     expect(coloringBookState.orientation).toBe('landscape');
   });

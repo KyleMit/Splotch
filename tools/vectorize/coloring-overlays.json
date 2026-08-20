@@ -1,0 +1,780 @@
+{
+  "formatVersion": 1,
+  "recipe": {
+    "processing.max_colors": "2",
+    "processing.palette": "#000000 ~ 0.05; #FFFFFF -> #00000000 ~ 0.05;",
+    "output.gap_filler.enabled": "false",
+    "output.shape_stacking": "stacked",
+    "output.group_by": "none"
+  },
+  "entries": [
+    {
+      "source": "web/static/coloring/creatures/dragon-tall.outline.webp",
+      "sourceSha256": "108951e41058560a95a9642ee93e9bb743a5f3158d2942307ea337968c496d75",
+      "sourceBytes": 131906,
+      "output": "web/static/coloring/creatures/dragon-tall.overlay.svg",
+      "outputSha256": "025e204c02030d1b58a564139f164abcfff59342b0e2914c49bfa0a79daa20d5",
+      "outputBytes": 51864
+    },
+    {
+      "source": "web/static/coloring/creatures/dragon-wide.outline.webp",
+      "sourceSha256": "c3f1d7097d7eea1679fce9c3a88d5792576de33ca4775a34b4b88c015b389dff",
+      "sourceBytes": 130364,
+      "output": "web/static/coloring/creatures/dragon-wide.overlay.svg",
+      "outputSha256": "ad97eebe83197bba2e51971e9b83cd9d8580fe686101512076766838b3f7c3c6",
+      "outputBytes": 61250
+    },
+    {
+      "source": "web/static/coloring/creatures/fairy-tall.outline.webp",
+      "sourceSha256": "68d7a42f48a905c9e2e3720aa333ac4bea256b3fa0560b0eab76672228463fb8",
+      "sourceBytes": 134000,
+      "output": "web/static/coloring/creatures/fairy-tall.overlay.svg",
+      "outputSha256": "61d455bead31983ae2646e14a302e99fa7443cd8b739f1db6eb078d1646746af",
+      "outputBytes": 52075
+    },
+    {
+      "source": "web/static/coloring/creatures/fairy-wide.outline.webp",
+      "sourceSha256": "0056a19ff1470bc83e833d2fe82cd56e351edf3b5fa5420bcb7d7d884b812e4e",
+      "sourceBytes": 181508,
+      "output": "web/static/coloring/creatures/fairy-wide.overlay.svg",
+      "outputSha256": "30b9c6390a600a380d191d98f1bf50983e1b94b3315a7791e9688b526bcf086c",
+      "outputBytes": 79105
+    },
+    {
+      "source": "web/static/coloring/creatures/mermaid-tall.outline.webp",
+      "sourceSha256": "8e0127918072a0db71fb805ce1fc8cc5d6e2a83b93dfa11cefcecabda9c7960f",
+      "sourceBytes": 85630,
+      "output": "web/static/coloring/creatures/mermaid-tall.overlay.svg",
+      "outputSha256": "c91cd6d2a3230abdc9864eecbfa797353d46eb815e47d43c75718592df10d2f2",
+      "outputBytes": 66102
+    },
+    {
+      "source": "web/static/coloring/creatures/mermaid-wide.outline.webp",
+      "sourceSha256": "ef5173c8a5189807cb2bc33bd4b9a703ebbcf7e62a555186c41f0a8390517e5d",
+      "sourceBytes": 91710,
+      "output": "web/static/coloring/creatures/mermaid-wide.overlay.svg",
+      "outputSha256": "6adffb6e67eeb186ceb8f4204dfff3a3624482857e76338325cd6815c98a54a7",
+      "outputBytes": 74229
+    },
+    {
+      "source": "web/static/coloring/creatures/owl-tall.outline.webp",
+      "sourceSha256": "bf01de29943199bfc56360b3ebc3792f04033ca4ce4c5345db0560f986529c3a",
+      "sourceBytes": 115342,
+      "output": "web/static/coloring/creatures/owl-tall.overlay.svg",
+      "outputSha256": "24f6a8580ffd0bbfcb1a39b80abf94d7757174c113f8ea86e7548783aa2ba8c5",
+      "outputBytes": 39738
+    },
+    {
+      "source": "web/static/coloring/creatures/owl-wide.outline.webp",
+      "sourceSha256": "e12511ad965f869776f0483f979bf4d88e9e79cfad3a19c02a5c1187641ba413",
+      "sourceBytes": 148852,
+      "output": "web/static/coloring/creatures/owl-wide.overlay.svg",
+      "outputSha256": "649fa44a740e24604a0e9241100709f4056e23ad120ee3430e34e4b9a09e6882",
+      "outputBytes": 54842
+    },
+    {
+      "source": "web/static/coloring/creatures/pegasus-tall.outline.webp",
+      "sourceSha256": "a67dc921cc31eea9fd2c548c1adb5cdd4d89b92c2a9e86c77d22f6a231140e47",
+      "sourceBytes": 119110,
+      "output": "web/static/coloring/creatures/pegasus-tall.overlay.svg",
+      "outputSha256": "df1cdbb7c516f6b6445cfe1aade0d51b33a6f35b8f8ddf49f52c4e7d5222b77f",
+      "outputBytes": 43523
+    },
+    {
+      "source": "web/static/coloring/creatures/pegasus-wide.outline.webp",
+      "sourceSha256": "94c4738500c54482172ee6cb66b211438de05fadc03a3c1cc484f5c1e88e2c52",
+      "sourceBytes": 120386,
+      "output": "web/static/coloring/creatures/pegasus-wide.overlay.svg",
+      "outputSha256": "03a640a1aeec3b857fe6f9af1b6e57a9c9d16de2f5b71e56a916659bc20fefdf",
+      "outputBytes": 48381
+    },
+    {
+      "source": "web/static/coloring/creatures/unicorn-tall.outline.webp",
+      "sourceSha256": "846941b86a774005ea543019ab1b9c1f6dff31f7cebc254d4b05ef4937a5cf44",
+      "sourceBytes": 130658,
+      "output": "web/static/coloring/creatures/unicorn-tall.overlay.svg",
+      "outputSha256": "c9c5456c9c61631ca05466abd6b402567022e3469e247a3f503860d4803d3b26",
+      "outputBytes": 47352
+    },
+    {
+      "source": "web/static/coloring/creatures/unicorn-wide.outline.webp",
+      "sourceSha256": "a3d6d27297ff31976e696c49b628644255b2a4a6fa5d0b7db3bcd74500809c77",
+      "sourceBytes": 139254,
+      "output": "web/static/coloring/creatures/unicorn-wide.overlay.svg",
+      "outputSha256": "dc536815b582ef461046b79608c5a20253d850146f04aa22c1f3b91d7860e5da",
+      "outputBytes": 61778
+    },
+    {
+      "source": "web/static/coloring/dinosaur/brachiosaurus-tall.outline.webp",
+      "sourceSha256": "4ea9834e87523003d59a16584c9e618fb7cb3bc611ecfc738832f990f2a6b846",
+      "sourceBytes": 121328,
+      "output": "web/static/coloring/dinosaur/brachiosaurus-tall.overlay.svg",
+      "outputSha256": "ec585de0bbefe06c75ff4f6e0c829bb36c863abfd3bbda983deed039ef0f7958",
+      "outputBytes": 41913
+    },
+    {
+      "source": "web/static/coloring/dinosaur/brachiosaurus-wide.outline.webp",
+      "sourceSha256": "e0e07937df29c98b60ab65e6cb4ab5e50050365bd2adf5ca04a20557dec20369",
+      "sourceBytes": 112206,
+      "output": "web/static/coloring/dinosaur/brachiosaurus-wide.overlay.svg",
+      "outputSha256": "cd9261cc47215eaa6914945347f2be49ce9ce9f5d59edb6b657ed1d33cb2b3e9",
+      "outputBytes": 38957
+    },
+    {
+      "source": "web/static/coloring/dinosaur/pterodactyl-tall.outline.webp",
+      "sourceSha256": "cbb6c8ec5277ee96117ed809c94830fb584b160094b9466376501a4877dacea6",
+      "sourceBytes": 96834,
+      "output": "web/static/coloring/dinosaur/pterodactyl-tall.overlay.svg",
+      "outputSha256": "8108074e589822325172964eadb08d14de08f282d91dcaaf75f3a3cfdd7595a4",
+      "outputBytes": 30601
+    },
+    {
+      "source": "web/static/coloring/dinosaur/pterodactyl-wide.outline.webp",
+      "sourceSha256": "1a23ca0fa549009552e8848fa7b779f86557317b54da5408603566180f5dbcd6",
+      "sourceBytes": 105380,
+      "output": "web/static/coloring/dinosaur/pterodactyl-wide.overlay.svg",
+      "outputSha256": "9d441157e0fc966b68c2fe4d8f56403fcc63f72e2399bab5321107a71553fe47",
+      "outputBytes": 31997
+    },
+    {
+      "source": "web/static/coloring/dinosaur/stegosaurus-tall.outline.webp",
+      "sourceSha256": "4e8f028748f1e3f30190400c1b02de8d021551ae0e09e1b87bbde093138462eb",
+      "sourceBytes": 127248,
+      "output": "web/static/coloring/dinosaur/stegosaurus-tall.overlay.svg",
+      "outputSha256": "555a505fe8c81e47ef072af8fa2caf5c0f01126fa3a7cc669f243e150aad78e1",
+      "outputBytes": 44416
+    },
+    {
+      "source": "web/static/coloring/dinosaur/stegosaurus-wide.outline.webp",
+      "sourceSha256": "9572bd52193fd261c077c45d635e433fbd020791bc94132c235fb11e7077c49b",
+      "sourceBytes": 128494,
+      "output": "web/static/coloring/dinosaur/stegosaurus-wide.overlay.svg",
+      "outputSha256": "cf58e91c6a3cac4b5fc83b918720b2f5e4afd14f37fcf94137daa68a0f42cc0c",
+      "outputBytes": 45444
+    },
+    {
+      "source": "web/static/coloring/dinosaur/trex-tall.outline.webp",
+      "sourceSha256": "f35b3b971bd796324b2db7b5bfcf30e9e1d6e70c04563be1572b9c2f1d144bfd",
+      "sourceBytes": 123990,
+      "output": "web/static/coloring/dinosaur/trex-tall.overlay.svg",
+      "outputSha256": "75947d111b305fe130b99b335f2570e61b378d15f5643d5e262ba063b0e51aa1",
+      "outputBytes": 43634
+    },
+    {
+      "source": "web/static/coloring/dinosaur/trex-wide.outline.webp",
+      "sourceSha256": "ce6d4443e48587d2bdcb9153573de4d05cba9053345c68708e96782eec87ec5c",
+      "sourceBytes": 114192,
+      "output": "web/static/coloring/dinosaur/trex-wide.overlay.svg",
+      "outputSha256": "4c20efc8f5a942bfcb4a57138052f41031e05d3f5105c4b58b17243e7da66e0d",
+      "outputBytes": 43235
+    },
+    {
+      "source": "web/static/coloring/dinosaur/triceratops-tall.outline.webp",
+      "sourceSha256": "64c75293a4a306d589c23f699b6bdd99dc164eed9e38364668c7d311600cf31c",
+      "sourceBytes": 114684,
+      "output": "web/static/coloring/dinosaur/triceratops-tall.overlay.svg",
+      "outputSha256": "382b630fea1613bf1b4702bd3f813755d4835e9182986e62f2c99edb9b7956ae",
+      "outputBytes": 38247
+    },
+    {
+      "source": "web/static/coloring/dinosaur/triceratops-wide.outline.webp",
+      "sourceSha256": "4751458358d706ae46a98e88a33a27877695442d79a034494f851a70d2021a81",
+      "sourceBytes": 117356,
+      "output": "web/static/coloring/dinosaur/triceratops-wide.overlay.svg",
+      "outputSha256": "b5c28141e29ed8f94cba509569b197d6f0ebecadeaaedf769c54f96fa870af1a",
+      "outputBytes": 50382
+    },
+    {
+      "source": "web/static/coloring/dinosaur/velociraptor-tall.outline.webp",
+      "sourceSha256": "8ef6f5aa179d3e5d62e08e494784d91d5d33f33e1229f33ff55f5ab828d0b3f1",
+      "sourceBytes": 126426,
+      "output": "web/static/coloring/dinosaur/velociraptor-tall.overlay.svg",
+      "outputSha256": "47cb39323538786d91242c4d19e3f92e9793e8846ec3357622605cfe481c443c",
+      "outputBytes": 45190
+    },
+    {
+      "source": "web/static/coloring/dinosaur/velociraptor-wide.outline.webp",
+      "sourceSha256": "55d043ee04e09a29c08ac13e47b1b867db58eee7397df307edebea85c53e6f3c",
+      "sourceBytes": 157664,
+      "output": "web/static/coloring/dinosaur/velociraptor-wide.overlay.svg",
+      "outputSha256": "3b4b9b2a85a84062eec5feb4d077924498da287f4bc84a2fc48ddeb1588ddb54",
+      "outputBytes": 66922
+    },
+    {
+      "source": "web/static/coloring/farm/cat-tall.outline.webp",
+      "sourceSha256": "7b9ddef483379550b6d4a2d7ab3188d6ed33f82f13e4081ffcc2238071afff4b",
+      "sourceBytes": 124870,
+      "output": "web/static/coloring/farm/cat-tall.overlay.svg",
+      "outputSha256": "e06d76f96c42b65a98357a1c65a83e479cfc24819e7d6333831c322d411b6c95",
+      "outputBytes": 47681
+    },
+    {
+      "source": "web/static/coloring/farm/cat-wide.outline.webp",
+      "sourceSha256": "90c40cbbdc2f4b09c7dd79e28ec4dead1feebc89d86d95c30ebb099ec22f876a",
+      "sourceBytes": 120696,
+      "output": "web/static/coloring/farm/cat-wide.overlay.svg",
+      "outputSha256": "5679d554d93d8ae4c82cf3be4fea2922040c6f00f7492c190dd6e5fa9988d36c",
+      "outputBytes": 52118
+    },
+    {
+      "source": "web/static/coloring/farm/cow-tall.outline.webp",
+      "sourceSha256": "9ad81924c8f0fa88ea75cab56877db2f3832ee1733ae37fbef8761e68c901503",
+      "sourceBytes": 119648,
+      "output": "web/static/coloring/farm/cow-tall.overlay.svg",
+      "outputSha256": "648e248bda13404138f5c0c5a1b5a2337f9627e3847ac77c33d9548ccc82ef70",
+      "outputBytes": 47329
+    },
+    {
+      "source": "web/static/coloring/farm/cow-wide.outline.webp",
+      "sourceSha256": "23619e11d7684576633c26a9ef54cce884a30fa87ea89e7162c7be3a55aab569",
+      "sourceBytes": 128996,
+      "output": "web/static/coloring/farm/cow-wide.overlay.svg",
+      "outputSha256": "3a96fe6e3ae0ed85b8d055c95fcd2356e86bf542673a67f4078f47c241cfa75b",
+      "outputBytes": 55938
+    },
+    {
+      "source": "web/static/coloring/farm/dog-tall.outline.webp",
+      "sourceSha256": "40b06e19756236f0dd8162b6b03be9865000cd755c1a4f49edb8ee7b215755eb",
+      "sourceBytes": 66638,
+      "output": "web/static/coloring/farm/dog-tall.overlay.svg",
+      "outputSha256": "ea9de10d502046c5567bdc934c16acb7b21dee909c152b35f83da035cbf09b56",
+      "outputBytes": 27402
+    },
+    {
+      "source": "web/static/coloring/farm/dog-wide.outline.webp",
+      "sourceSha256": "d3abc3971b40e5e08064b421c20e1322b87c2fce44cb87d0cfccc6501264a0d7",
+      "sourceBytes": 100820,
+      "output": "web/static/coloring/farm/dog-wide.overlay.svg",
+      "outputSha256": "11677daafeed2b08bc856293fc1e9b488fa35c140f1b0f9c7be1a13e7224551c",
+      "outputBytes": 37914
+    },
+    {
+      "source": "web/static/coloring/farm/duck-tall.outline.webp",
+      "sourceSha256": "b59efad37f7c5a7cf6b8a79024711ea3c5870f9fd00e1075f2b8f9a7cb5cfe52",
+      "sourceBytes": 120758,
+      "output": "web/static/coloring/farm/duck-tall.overlay.svg",
+      "outputSha256": "4a87514397bb4a440a91575da2acd9f65853f11eeaad43a75ca07bd2e5e52064",
+      "outputBytes": 38193
+    },
+    {
+      "source": "web/static/coloring/farm/duck-wide.outline.webp",
+      "sourceSha256": "643ef4be319bd09e2bab4c81ca448d67eb0ef46034888b4bd325e4bd04868a1e",
+      "sourceBytes": 114668,
+      "output": "web/static/coloring/farm/duck-wide.overlay.svg",
+      "outputSha256": "040255f812350965d5247856f99990880c03488c8fc314b50560ca6f1eae69ec",
+      "outputBytes": 44173
+    },
+    {
+      "source": "web/static/coloring/farm/horse-tall.outline.webp",
+      "sourceSha256": "a59363152cf17ab0bf95c63c79dd5fc0619eb44c4cddca5bae1b3d3e5730428d",
+      "sourceBytes": 113394,
+      "output": "web/static/coloring/farm/horse-tall.overlay.svg",
+      "outputSha256": "ded1a25f75f86bbee738491115d50918dfcac90851bcd90debabed79a367698f",
+      "outputBytes": 42984
+    },
+    {
+      "source": "web/static/coloring/farm/horse-wide.outline.webp",
+      "sourceSha256": "5efae8313240f057ecb55d82cdb8fd4085089c0a16bf3d83128550ddbf61d7eb",
+      "sourceBytes": 120492,
+      "output": "web/static/coloring/farm/horse-wide.overlay.svg",
+      "outputSha256": "4b2e59b99922b42202f482a027ddc87d9e3e47618171540a3ca4abd6358b8579",
+      "outputBytes": 55456
+    },
+    {
+      "source": "web/static/coloring/farm/pig-tall.outline.webp",
+      "sourceSha256": "6fb46369712e0f6ba036daf4ff62d004bdc304a2a13beae5e26f94c905ec2592",
+      "sourceBytes": 94858,
+      "output": "web/static/coloring/farm/pig-tall.overlay.svg",
+      "outputSha256": "a4cc03723f3957f3d682fa4bad9d2b8542989a1c3436ff3a0eaa4da9499e8a0c",
+      "outputBytes": 31230
+    },
+    {
+      "source": "web/static/coloring/farm/pig-wide.outline.webp",
+      "sourceSha256": "5c9c55fd6f304b734959df6820e4ae815f86ba17422676dcce0587db0e0cb6f1",
+      "sourceBytes": 119674,
+      "output": "web/static/coloring/farm/pig-wide.overlay.svg",
+      "outputSha256": "b1c9223c850dfb4818e2488fa9912ada8c6600c924e525221587121f90275bee",
+      "outputBytes": 49053
+    },
+    {
+      "source": "web/static/coloring/nature/ant-tall.outline.webp",
+      "sourceSha256": "ff5f2abcedb804965415a9d6265ef18dab9c2e527e98c64d03a3ba20362d4eed",
+      "sourceBytes": 81590,
+      "output": "web/static/coloring/nature/ant-tall.overlay.svg",
+      "outputSha256": "5027db53db94dd8564fe6f78cf8e36167b8436bcb82d19cfd2f988edfad8d0d1",
+      "outputBytes": 40802
+    },
+    {
+      "source": "web/static/coloring/nature/ant-wide.outline.webp",
+      "sourceSha256": "42ee3b176b24ad4d174852823ac873859ee17deb3030197fb39b527ee7a2633f",
+      "sourceBytes": 85634,
+      "output": "web/static/coloring/nature/ant-wide.overlay.svg",
+      "outputSha256": "17d0ece4762175063740bd3a628a8fdb49fe4dca4b3843c551a5cb00adefe43d",
+      "outputBytes": 44865
+    },
+    {
+      "source": "web/static/coloring/nature/bee-tall.outline.webp",
+      "sourceSha256": "8e0c6d5cc57a3dc975f8ebaaf8008013bc16b129278431567c074401bdc1d262",
+      "sourceBytes": 70848,
+      "output": "web/static/coloring/nature/bee-tall.overlay.svg",
+      "outputSha256": "9979b22846215e45842eb4e07fccc5d859df4485eccfbc932332f4372a40821d",
+      "outputBytes": 31212
+    },
+    {
+      "source": "web/static/coloring/nature/bee-wide.outline.webp",
+      "sourceSha256": "ab4f0814aa28b07c110d3a956fe3fdbd4302c7fe57b221171f2f499f065860ff",
+      "sourceBytes": 86430,
+      "output": "web/static/coloring/nature/bee-wide.overlay.svg",
+      "outputSha256": "9974a95cfbd7de6ccaf9f075a404e9fa5dc4b771ddc5efa0f567db95a19aecfc",
+      "outputBytes": 37319
+    },
+    {
+      "source": "web/static/coloring/nature/caterpillar-tall.outline.webp",
+      "sourceSha256": "eea0d2646bd9394ec7a0d1b5a2a541b20e7aa713d01840d8451517f0c84a7783",
+      "sourceBytes": 67218,
+      "output": "web/static/coloring/nature/caterpillar-tall.overlay.svg",
+      "outputSha256": "66a6ded2e124fed310b3c46d2ed792ac78664bb4e450cf56cde9d4e40dc638c7",
+      "outputBytes": 28847
+    },
+    {
+      "source": "web/static/coloring/nature/caterpillar-wide.outline.webp",
+      "sourceSha256": "db9085da48fbbb6a6e77e8423b74fe257e4098e17e3d11bc0e9ac376e616fbfa",
+      "sourceBytes": 64380,
+      "output": "web/static/coloring/nature/caterpillar-wide.overlay.svg",
+      "outputSha256": "aef6efb0021929d513f77d0a7bcc3bf53c9afe5cc22660923030f61d996f147b",
+      "outputBytes": 22685
+    },
+    {
+      "source": "web/static/coloring/nature/ladybug-tall.outline.webp",
+      "sourceSha256": "973aee3f6281f0bfb9641bf9198190f5b75b8d18db973c11f7ccec7d0496dde6",
+      "sourceBytes": 76542,
+      "output": "web/static/coloring/nature/ladybug-tall.overlay.svg",
+      "outputSha256": "545ca8319b634454835c45e1662341a9bfd38fa23b48a9dbb0579568777a5e31",
+      "outputBytes": 23976
+    },
+    {
+      "source": "web/static/coloring/nature/ladybug-wide.outline.webp",
+      "sourceSha256": "d7d59fc5f3b0bf4ee85aaa3e9c6701421110bebae5a55c5872263c9b47bd4377",
+      "sourceBytes": 78212,
+      "output": "web/static/coloring/nature/ladybug-wide.overlay.svg",
+      "outputSha256": "e6a2de1fb044da3cff31f763267b6782074bf24a1e40bcb7f2aafe183ed7516b",
+      "outputBytes": 26631
+    },
+    {
+      "source": "web/static/coloring/nature/snail-tall.outline.webp",
+      "sourceSha256": "885acd22480dbd9a2a2d40ce6ec1e9d2c540ff53b8dcaf4fd5dd90c28917e802",
+      "sourceBytes": 83950,
+      "output": "web/static/coloring/nature/snail-tall.overlay.svg",
+      "outputSha256": "4f7d1d07e7160d259e3bcacc20fcc4fe38676acd23bacf03d52f9a226929b25c",
+      "outputBytes": 33635
+    },
+    {
+      "source": "web/static/coloring/nature/snail-wide.outline.webp",
+      "sourceSha256": "5bb2787be701a37d68c79d2247ca1f209af4b062a62e414793b2daf85e803c73",
+      "sourceBytes": 63814,
+      "output": "web/static/coloring/nature/snail-wide.overlay.svg",
+      "outputSha256": "1456efa8546aa35f2e3a7b7198b9cce132d34eb808a12e5462b6413746c94ae1",
+      "outputBytes": 25406
+    },
+    {
+      "source": "web/static/coloring/nature/spider-tall.outline.webp",
+      "sourceSha256": "992b2fcec894332b3d7fccc65f90e921956f94964f52e0770cb686b42c1323ff",
+      "sourceBytes": 77580,
+      "output": "web/static/coloring/nature/spider-tall.overlay.svg",
+      "outputSha256": "331ca67984c8dab5e49529f660bb100e6fae69aad6b5a6639385c044cae805a5",
+      "outputBytes": 28764
+    },
+    {
+      "source": "web/static/coloring/nature/spider-wide.outline.webp",
+      "sourceSha256": "d5eb23c46f0fab45785295852a9ebcb3250a906fa74b322a3d08e0d619be5779",
+      "sourceBytes": 99448,
+      "output": "web/static/coloring/nature/spider-wide.overlay.svg",
+      "outputSha256": "0e705b9bff6d9b2da72a936863c37f0f565f5b92891fff5d572beb2450ef0fc2",
+      "outputBytes": 37957
+    },
+    {
+      "source": "web/static/coloring/objects/apple-tall.outline.webp",
+      "sourceSha256": "769383961e261173b581c1231b75bb0e030db979a132abb8422eea68b871e2dd",
+      "sourceBytes": 73024,
+      "output": "web/static/coloring/objects/apple-tall.overlay.svg",
+      "outputSha256": "58a09d718edfc2824553821b76da8ba703baace59578ff88b91af45ef4d12af8",
+      "outputBytes": 18178
+    },
+    {
+      "source": "web/static/coloring/objects/apple-wide.outline.webp",
+      "sourceSha256": "1d7173750587e2bc87cd6b6aaea31ac7fafca05ae59fbf5ca64c9b623a9018e0",
+      "sourceBytes": 98358,
+      "output": "web/static/coloring/objects/apple-wide.overlay.svg",
+      "outputSha256": "22a6258d131bae0c2231ef6ad5e98234e98ad3ad253304e011485fb773b8ebcd",
+      "outputBytes": 27111
+    },
+    {
+      "source": "web/static/coloring/objects/balloon-tall.outline.webp",
+      "sourceSha256": "01603b936f7a4af077132b0e6192a797e40b311ac1381ef1be2650f588e332dc",
+      "sourceBytes": 64872,
+      "output": "web/static/coloring/objects/balloon-tall.overlay.svg",
+      "outputSha256": "ae4e4e9f6450d44811743b2a7fab7db1fc41181c6bcef5b1eaf927438b225919",
+      "outputBytes": 21171
+    },
+    {
+      "source": "web/static/coloring/objects/balloon-wide.outline.webp",
+      "sourceSha256": "15c6f98535c66ea6731ce555dba0920f03d8946bf5325f3794afc6766fd3e9f8",
+      "sourceBytes": 83430,
+      "output": "web/static/coloring/objects/balloon-wide.overlay.svg",
+      "outputSha256": "e37524f1e1823f5ba068750cddbeb7560405c128fadb3f66db6d524d98a1cf1d",
+      "outputBytes": 23521
+    },
+    {
+      "source": "web/static/coloring/objects/flower-tall.outline.webp",
+      "sourceSha256": "62688793114a5c663b62b386d52ec6928b170b55251de77a56567f4df45f45cd",
+      "sourceBytes": 76122,
+      "output": "web/static/coloring/objects/flower-tall.overlay.svg",
+      "outputSha256": "46fd8f3307fc649230eba7f45ba0087dd2a14710f4849e5a484d17feed292447",
+      "outputBytes": 13901
+    },
+    {
+      "source": "web/static/coloring/objects/flower-wide.outline.webp",
+      "sourceSha256": "99b111c5ca25b3a8152df08df1e703f89ef2b0a3c93a71e228a984fe236e35c1",
+      "sourceBytes": 107220,
+      "output": "web/static/coloring/objects/flower-wide.overlay.svg",
+      "outputSha256": "1049389481f09feb1924ce206795351e02d2f2bd9e5209d0180d70b67ae9bf45",
+      "outputBytes": 32190
+    },
+    {
+      "source": "web/static/coloring/objects/house-tall.outline.webp",
+      "sourceSha256": "57994c341b6d1d7967f0d11250d12ef7924a91cf32c77cd95a1dd158fa54b585",
+      "sourceBytes": 105986,
+      "output": "web/static/coloring/objects/house-tall.overlay.svg",
+      "outputSha256": "3fb0eaeaef6e108cbf3539db6c567c21bd271979376a967d0db41022e4ba3e36",
+      "outputBytes": 35705
+    },
+    {
+      "source": "web/static/coloring/objects/house-wide.outline.webp",
+      "sourceSha256": "ce11c8203a4157d44ecb22870a2b8ec5dbb653cc1644a8f290cf0dda22a6472f",
+      "sourceBytes": 82096,
+      "output": "web/static/coloring/objects/house-wide.overlay.svg",
+      "outputSha256": "751fba197a188f3a065c47ae3988f9fb94b250720963e23e71857b232f29214e",
+      "outputBytes": 26239
+    },
+    {
+      "source": "web/static/coloring/objects/teddy-tall.outline.webp",
+      "sourceSha256": "187e98960a521bdd3cf8a8847db89fc8e87e604f348037b3d2be14dc551973bd",
+      "sourceBytes": 70734,
+      "output": "web/static/coloring/objects/teddy-tall.overlay.svg",
+      "outputSha256": "0ca97fe1cf9e295d033f9152ac4278ebabae07deb4045caa3d7e624b9f830bf7",
+      "outputBytes": 27742
+    },
+    {
+      "source": "web/static/coloring/objects/teddy-wide.outline.webp",
+      "sourceSha256": "9b753e334391e7aa31fe11e5b3774dd6141ea1a10ccbbabb1effc2b616cd2593",
+      "sourceBytes": 97006,
+      "output": "web/static/coloring/objects/teddy-wide.overlay.svg",
+      "outputSha256": "631f9461abfed329223d818aec2a58a7cf1244e253ca9ac2febba7fcd5765609",
+      "outputBytes": 28843
+    },
+    {
+      "source": "web/static/coloring/objects/umbrella-tall.outline.webp",
+      "sourceSha256": "9235a56eef023d82893628822e1a47d8a3ccc10c6920da6e57056167c84dafc8",
+      "sourceBytes": 49722,
+      "output": "web/static/coloring/objects/umbrella-tall.overlay.svg",
+      "outputSha256": "1bdb8b9e9270eefe5244a500cd3e6e863c02304f9f7ef38f365c2a2828d267f3",
+      "outputBytes": 26207
+    },
+    {
+      "source": "web/static/coloring/objects/umbrella-wide.outline.webp",
+      "sourceSha256": "a97065544e713902c6726c4ec162dc4a98c27cc7e467763a6fa1016f805e36d0",
+      "sourceBytes": 96246,
+      "output": "web/static/coloring/objects/umbrella-wide.overlay.svg",
+      "outputSha256": "cb6bf15cf98f376547451b75f1c5b82ec72108c427a0035e7720f8312d498415",
+      "outputBytes": 29257
+    },
+    {
+      "source": "web/static/coloring/shapes/circle-tall.outline.webp",
+      "sourceSha256": "b7dc176475730b2284cd1cecc3e007bf5193ddef0fcee860b2c2095b4d83ef7c",
+      "sourceBytes": 52338,
+      "output": "web/static/coloring/shapes/circle-tall.overlay.svg",
+      "outputSha256": "de70b0e553fbe609843796629e21953256b5bd5377326a28b9b1c4b99f525a53",
+      "outputBytes": 16462
+    },
+    {
+      "source": "web/static/coloring/shapes/circle-wide.outline.webp",
+      "sourceSha256": "2685c47d60876ca63aa1edaf0af5f6a21d0ba9b60fad30c5f6644381ac2f5035",
+      "sourceBytes": 81644,
+      "output": "web/static/coloring/shapes/circle-wide.overlay.svg",
+      "outputSha256": "f0c3738be1d65e17c863fa4ca9390ebfb5a02aee5af3827fc4fcd260b56ac63e",
+      "outputBytes": 21789
+    },
+    {
+      "source": "web/static/coloring/shapes/heart-tall.outline.webp",
+      "sourceSha256": "a1d9b2a51b8803dface7ad5b4b041909b336fb130c02959f887f73adf64de2dc",
+      "sourceBytes": 86148,
+      "output": "web/static/coloring/shapes/heart-tall.overlay.svg",
+      "outputSha256": "1fe2f115337d6520f8c0858b2d7f7b09b832c0fe624f73bd7e0381be917f368b",
+      "outputBytes": 19488
+    },
+    {
+      "source": "web/static/coloring/shapes/heart-wide.outline.webp",
+      "sourceSha256": "843a104eb6421f4976812dde296603a4976ba7fc81ea91c4fde933e88f83e454",
+      "sourceBytes": 55778,
+      "output": "web/static/coloring/shapes/heart-wide.overlay.svg",
+      "outputSha256": "d41795fd0897c61d9aef356a604a76d5adb497ab2f045ce6e02c75405bcb0738",
+      "outputBytes": 25780
+    },
+    {
+      "source": "web/static/coloring/shapes/rectangle-tall.outline.webp",
+      "sourceSha256": "383b13a869646c4a0529c2fa8ef7becea5f2d3bd9071d4b88063e4d3f4519141",
+      "sourceBytes": 49690,
+      "output": "web/static/coloring/shapes/rectangle-tall.overlay.svg",
+      "outputSha256": "63b1934290afaeefb4b9978e688fd7ea0b2fccf29b0df558f045c8eddaa8c204",
+      "outputBytes": 9528
+    },
+    {
+      "source": "web/static/coloring/shapes/rectangle-wide.outline.webp",
+      "sourceSha256": "3e3c296bfe55923cf76e1bd1359eb4c561b466f5fa9817aab39fb6620fd6103b",
+      "sourceBytes": 44676,
+      "output": "web/static/coloring/shapes/rectangle-wide.overlay.svg",
+      "outputSha256": "318ef517b1c2d77913388dce19a65e2eb90d498d0c31545be0cb31543ad79f4b",
+      "outputBytes": 17100
+    },
+    {
+      "source": "web/static/coloring/shapes/square-tall.outline.webp",
+      "sourceSha256": "56b8035d126c119e571c62a1d85adb336f74d37ca0dbf36af8854553d8442c7b",
+      "sourceBytes": 50874,
+      "output": "web/static/coloring/shapes/square-tall.overlay.svg",
+      "outputSha256": "43a88a9e66d926bb817954150408a66b7879259b13a5d26154e67a49c35d033e",
+      "outputBytes": 15615
+    },
+    {
+      "source": "web/static/coloring/shapes/square-wide.outline.webp",
+      "sourceSha256": "6338e84ae27c44e33366221826fb5a69283c8b1e42ecc4dbfca39dc7a77eedd6",
+      "sourceBytes": 70762,
+      "output": "web/static/coloring/shapes/square-wide.overlay.svg",
+      "outputSha256": "4900763b0a2941c75852824b8c3d870af61c530d9f2f2d60ab16224731bbc09e",
+      "outputBytes": 20480
+    },
+    {
+      "source": "web/static/coloring/shapes/star-tall.outline.webp",
+      "sourceSha256": "95972e51c0bdc6f448cf42be8603c4fd037d713db6579ac5ba027560984832f4",
+      "sourceBytes": 60272,
+      "output": "web/static/coloring/shapes/star-tall.overlay.svg",
+      "outputSha256": "5611553e8634254ffc8b0641262f37e05e5b2d4bd92868f4e7c0ec08cdd62513",
+      "outputBytes": 13483
+    },
+    {
+      "source": "web/static/coloring/shapes/star-wide.outline.webp",
+      "sourceSha256": "59adaa43f729c5bcf5d707a733af611a4e714ef1905e29da2d76620ef84251a0",
+      "sourceBytes": 58850,
+      "output": "web/static/coloring/shapes/star-wide.overlay.svg",
+      "outputSha256": "35b963a768ace7a201588913cd5533aea6a0fdb6c76d42a3ae4387bf07c24439",
+      "outputBytes": 12903
+    },
+    {
+      "source": "web/static/coloring/shapes/triangle-tall.outline.webp",
+      "sourceSha256": "0b266d68b66d959cbd1398e6dbc917b765be4013116dccffa0b6ac10d164f9ef",
+      "sourceBytes": 63468,
+      "output": "web/static/coloring/shapes/triangle-tall.overlay.svg",
+      "outputSha256": "ea38a8c6a8e9db0f1d235114a53e5c100853db8edc201fb6ab28a52162003709",
+      "outputBytes": 14937
+    },
+    {
+      "source": "web/static/coloring/shapes/triangle-wide.outline.webp",
+      "sourceSha256": "6d742e04a978566da37c4aa54faf9dd7891b145fe4609a6d866db66296873468",
+      "sourceBytes": 80200,
+      "output": "web/static/coloring/shapes/triangle-wide.overlay.svg",
+      "outputSha256": "3e0d5a06626c99e67501588da232dc8777d24f9e9f25acfd8401afc1c64cca61",
+      "outputBytes": 20532
+    },
+    {
+      "source": "web/static/coloring/space/astronaut-tall.outline.webp",
+      "sourceSha256": "5d8cd3ac82140b52d887d4a9211e892622c1c91213428851fe59bd6061ed29fc",
+      "sourceBytes": 106120,
+      "output": "web/static/coloring/space/astronaut-tall.overlay.svg",
+      "outputSha256": "4bce67112c5db7918d431539edd2372ddb6fc5408111853081e3612d1dc6bbf5",
+      "outputBytes": 32503
+    },
+    {
+      "source": "web/static/coloring/space/astronaut-wide.outline.webp",
+      "sourceSha256": "59e2c2fe2c868c4578ad004444a44db4876d695bbc8713f20410343c0de7629d",
+      "sourceBytes": 112256,
+      "output": "web/static/coloring/space/astronaut-wide.overlay.svg",
+      "outputSha256": "f39aeba6d35946c7a0d657885198e550b19d6adeba0a3b68c27a78c68b4251d4",
+      "outputBytes": 42438
+    },
+    {
+      "source": "web/static/coloring/space/meteor-tall.outline.webp",
+      "sourceSha256": "b81b0732215bde46b15fd5591f5df369fbf517a7dd32a5914e2e81027afc1fb8",
+      "sourceBytes": 99730,
+      "output": "web/static/coloring/space/meteor-tall.overlay.svg",
+      "outputSha256": "48028dbb885887649db431c007c04dbe47493c9a2bb249f6fabe49a1d5fffb70",
+      "outputBytes": 33071
+    },
+    {
+      "source": "web/static/coloring/space/meteor-wide.outline.webp",
+      "sourceSha256": "0445dc45fb74508dbdc085247754de35da417256795e590b126e0cb681fa6906",
+      "sourceBytes": 110098,
+      "output": "web/static/coloring/space/meteor-wide.overlay.svg",
+      "outputSha256": "15f13179e122af809e5ac89ab740b4957cfb3e070a7def55761c0850317f8622",
+      "outputBytes": 39223
+    },
+    {
+      "source": "web/static/coloring/space/moon-tall.outline.webp",
+      "sourceSha256": "0f3391839e9c6bcf14b1ad39d32a4d9c422978318949a54abce295aff93531f5",
+      "sourceBytes": 63574,
+      "output": "web/static/coloring/space/moon-tall.overlay.svg",
+      "outputSha256": "6a92415ac33141aba1869db6e9778e0874182a5662e94cb30ee48a7e1af00662",
+      "outputBytes": 15036
+    },
+    {
+      "source": "web/static/coloring/space/moon-wide.outline.webp",
+      "sourceSha256": "00ffe809f11dce5a33dc381b17315527f9957c71f9ac1ffe2332c91a5628c59b",
+      "sourceBytes": 68340,
+      "output": "web/static/coloring/space/moon-wide.overlay.svg",
+      "outputSha256": "65287bb0526a63ba5a7f11d8b31e0855b73d63a4b75f618e45a2cc273365e98e",
+      "outputBytes": 22682
+    },
+    {
+      "source": "web/static/coloring/space/rover-tall.outline.webp",
+      "sourceSha256": "1e6cb0d001eb71e6f6e69bb3624175af622538e4fb153b2349d9a0c122ef5d0c",
+      "sourceBytes": 114842,
+      "output": "web/static/coloring/space/rover-tall.overlay.svg",
+      "outputSha256": "5a2c82f7cda0a95cb2604d0a91c46fb5c4b218da57666559069ea0b15674dfbb",
+      "outputBytes": 48816
+    },
+    {
+      "source": "web/static/coloring/space/rover-wide.outline.webp",
+      "sourceSha256": "4730bd0cb17fd4ee778ad2daeab3a9dee8bc222e830e5bebf5d672a2605bd4e1",
+      "sourceBytes": 142030,
+      "output": "web/static/coloring/space/rover-wide.overlay.svg",
+      "outputSha256": "fc3dd5f316242530de07ca02f5c5115b899144aa6dd97aae85088fef52fe5c95",
+      "outputBytes": 66322
+    },
+    {
+      "source": "web/static/coloring/space/ship-tall.outline.webp",
+      "sourceSha256": "7e03565788c78a91ce2752cbdc1117be2688cdd726d46eecc4b4dd1cb427e5e6",
+      "sourceBytes": 79780,
+      "output": "web/static/coloring/space/ship-tall.overlay.svg",
+      "outputSha256": "ee2e584fa02480fef16aba1610941b4e9c7f396af1527f9c7a2e43fc9d48bc1f",
+      "outputBytes": 20079
+    },
+    {
+      "source": "web/static/coloring/space/ship-wide.outline.webp",
+      "sourceSha256": "c68b361357e2a8f3b903c90aac47252489ee5cf28f52b69c6c72b46ed7337db6",
+      "sourceBytes": 96454,
+      "output": "web/static/coloring/space/ship-wide.overlay.svg",
+      "outputSha256": "74c8701b9f6ce0118d93915a2244ad9d43fdeee31eb0404c3fef2ecf32f9b6b2",
+      "outputBytes": 24438
+    },
+    {
+      "source": "web/static/coloring/space/station-tall.outline.webp",
+      "sourceSha256": "73beda9f1d4469c8ef9c59bf6fd53d976ae59b5061241d904836eb1c05e62716",
+      "sourceBytes": 81588,
+      "output": "web/static/coloring/space/station-tall.overlay.svg",
+      "outputSha256": "9b28644ed729f8f520dd6db4a5a6143867d956ffc8c0a668286f2ef66b81f9fe",
+      "outputBytes": 28908
+    },
+    {
+      "source": "web/static/coloring/space/station-wide.outline.webp",
+      "sourceSha256": "6dd7d725358f16f6a073c12bdbce087f446bb6321984af354f7a2b93bce1c095",
+      "sourceBytes": 97370,
+      "output": "web/static/coloring/space/station-wide.overlay.svg",
+      "outputSha256": "89acef0dd9fb2e4397cf4e9ad0220ced7a894341dca673ce5c0b90e2aed8a3a6",
+      "outputBytes": 28094
+    },
+    {
+      "source": "web/static/coloring/vehicles/excavator-tall.outline.webp",
+      "sourceSha256": "0f8423cfcc7b45bf83ae4af2651e46d6247e5c462fa9a91132f01a4e60b1e51d",
+      "sourceBytes": 110730,
+      "output": "web/static/coloring/vehicles/excavator-tall.overlay.svg",
+      "outputSha256": "6a090c67f25387492718f3565354e51f631a1d4e0e3ce4e0a775bc5d9cd023b4",
+      "outputBytes": 42767
+    },
+    {
+      "source": "web/static/coloring/vehicles/excavator-wide.outline.webp",
+      "sourceSha256": "f5de906e4ffc52bf84afb788024cf58e1b943eb0a1a5cd8b8fc54afaf68efa26",
+      "sourceBytes": 125710,
+      "output": "web/static/coloring/vehicles/excavator-wide.overlay.svg",
+      "outputSha256": "8010caafcfca9858c9150e26d24ebca421072180daa652d2db2fbfbf8964c630",
+      "outputBytes": 44123
+    },
+    {
+      "source": "web/static/coloring/vehicles/fire-tall.outline.webp",
+      "sourceSha256": "79548159c24109ce3e2063ff48a46802f99c1935d99291605202cfe86c21aba8",
+      "sourceBytes": 124496,
+      "output": "web/static/coloring/vehicles/fire-tall.overlay.svg",
+      "outputSha256": "854ef17f061aa4fb280b7cbfa6715474bd2223d4acebc702a4bebb248fe91639",
+      "outputBytes": 37921
+    },
+    {
+      "source": "web/static/coloring/vehicles/fire-wide.outline.webp",
+      "sourceSha256": "5686e85ae3883ae59469d98804c9524d13c5f89da2206250399fb35110005279",
+      "sourceBytes": 139290,
+      "output": "web/static/coloring/vehicles/fire-wide.overlay.svg",
+      "outputSha256": "9e28927c86c7448a4bdcd6cdc4ee3abe3b2725293e23cb3a0afccb0cf305b084",
+      "outputBytes": 54620
+    },
+    {
+      "source": "web/static/coloring/vehicles/garbage-tall.outline.webp",
+      "sourceSha256": "a37d0383e53ab25ff32b3cb59822591725b06c40dfe92f54b44e7f41dab0a3da",
+      "sourceBytes": 108036,
+      "output": "web/static/coloring/vehicles/garbage-tall.overlay.svg",
+      "outputSha256": "2f105c5e5e15c139002b4a06508abffafb9d141e77c84fbc35db29afa3f9d747",
+      "outputBytes": 34505
+    },
+    {
+      "source": "web/static/coloring/vehicles/garbage-wide.outline.webp",
+      "sourceSha256": "4f4bf4d2eaf46bd29bd1b20b1407bd74c8a1be776d66f5f08e860f90d11137b6",
+      "sourceBytes": 140188,
+      "output": "web/static/coloring/vehicles/garbage-wide.overlay.svg",
+      "outputSha256": "4c13632fab059a84442daa1523eafbdaea1e9e958114bcb0bc27eed16b6253a5",
+      "outputBytes": 57941
+    },
+    {
+      "source": "web/static/coloring/vehicles/monster-tall.outline.webp",
+      "sourceSha256": "60566f9ea5b16c15f94f2599fb3ce0769c857e5c7725d44a0c8b90caf637b093",
+      "sourceBytes": 125756,
+      "output": "web/static/coloring/vehicles/monster-tall.overlay.svg",
+      "outputSha256": "e48a2546eab5e75d01ddb355874b2ebdd29f5f75c996a20f026edd6c42a876b8",
+      "outputBytes": 43821
+    },
+    {
+      "source": "web/static/coloring/vehicles/monster-wide.outline.webp",
+      "sourceSha256": "9c9a01ad02770ef334f793947983f677133f44922070916a8b9d373903ffa221",
+      "sourceBytes": 87902,
+      "output": "web/static/coloring/vehicles/monster-wide.overlay.svg",
+      "outputSha256": "f3187bc0c41acd5140ef7dc51f3bcc746f64fe4d31683b5866338a49f551dd36",
+      "outputBytes": 64826
+    },
+    {
+      "source": "web/static/coloring/vehicles/police-tall.outline.webp",
+      "sourceSha256": "9698405f60a69f173354e89a5e2d831d2cf63644bfe2f560422bfc40e3b78493",
+      "sourceBytes": 84888,
+      "output": "web/static/coloring/vehicles/police-tall.overlay.svg",
+      "outputSha256": "9cf5660286ea903ec3cd784f61568c1ebb3570588495152c69c71abf9e28656e",
+      "outputBytes": 39572
+    },
+    {
+      "source": "web/static/coloring/vehicles/police-wide.outline.webp",
+      "sourceSha256": "add34c8be90efbf37d171f5c2eaa22dc5d53667786092c0c3d356aa4c4aa0b78",
+      "sourceBytes": 108172,
+      "output": "web/static/coloring/vehicles/police-wide.overlay.svg",
+      "outputSha256": "61cac3235b3e0135bea21e1a33069171f4bfcb4a0525689e99359bf1ea67c6e5",
+      "outputBytes": 34352
+    },
+    {
+      "source": "web/static/coloring/vehicles/train-tall.outline.webp",
+      "sourceSha256": "30e51e701ef2ab2f6799186a4a00753c1a8882ecb308b4f77d0b85c204ddd03a",
+      "sourceBytes": 134114,
+      "output": "web/static/coloring/vehicles/train-tall.overlay.svg",
+      "outputSha256": "70ccf27f8d1d12bc3b6d0139af7e17333c98b7078d63eefe40c01714f11c6a95",
+      "outputBytes": 39007
+    },
+    {
+      "source": "web/static/coloring/vehicles/train-wide.outline.webp",
+      "sourceSha256": "5e808701b680db30c009319effb07d8140da0444944a37db22f27f1669d238c0",
+      "sourceBytes": 141650,
+      "output": "web/static/coloring/vehicles/train-wide.overlay.svg",
+      "outputSha256": "feeb40743d33c80dc910bbb37eaeec5fd24c361b4c43c4e61d4cb4ef49bf262a",
+      "outputBytes": 46269
+    }
+  ]
+}

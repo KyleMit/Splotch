@@ -8,14 +8,12 @@ import {
   bookPackAssetPaths,
   chalkThumbPath,
   coloringBookGridLayout,
-  coloringOverlayImageSize,
   coverThumb,
   coverThumbImageSource,
   pageColorImage,
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
-  pageOverlayImageSource,
   pageThumb,
   pageThumbImageSource,
   responsiveColoringAssets,
@@ -94,60 +92,42 @@ describe('pageOverlayImage', () => {
   const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
 
   it('uses transparent presentation overlays for both themes', () => {
-    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.webp');
+    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.svg');
     expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
-      '/coloring/farm/cat-tall.dark.overlay.webp'
+      '/coloring/farm/cat-tall.dark.overlay.svg'
     );
   });
 
   it('keeps the dark presentation path stable when its generator falls back to pen line art', () => {
     const unforked = { ...cat, chalkImages: {} };
     expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
-      '/coloring/farm/cat-wide.dark.overlay.webp'
+      '/coloring/farm/cat-wide.dark.overlay.svg'
     );
   });
 });
 
-describe('vector overlay slice', () => {
-  const circle = BOOKS.find((book) => book.id === 'shapes')!.pages.find(
-    (page) => page.id === 'circle'
-  )!;
-  const owl = BOOKS.find((book) => book.id === 'creatures')!.pages.find(
-    (page) => page.id === 'owl'
-  )!;
-
-  it('uses invariant SVGs only for the traced orientation and themes', () => {
-    expect(pageOverlayImage(circle, 'portrait', 'light')).toBe(
-      '/coloring/shapes/circle-tall.overlay.svg'
-    );
-    expect(pageOverlayImage(circle, 'portrait', 'dark')).toBe(
-      '/coloring/shapes/circle-tall.dark.overlay.webp'
-    );
-    expect(pageOverlayImage(owl, 'portrait', 'light')).toBe(
-      '/coloring/creatures/owl-tall.overlay.svg'
-    );
-    expect(pageOverlayImage(owl, 'portrait', 'dark')).toBe(
-      '/coloring/creatures/owl-tall.dark.overlay.svg'
-    );
-    expect(pageOverlayImage(owl, 'landscape', 'light')).toBe(
-      '/coloring/creatures/owl-wide.overlay.webp'
-    );
+describe('vector overlays', () => {
+  it('maps every catalog page, orientation, and theme to its canonical SVG', () => {
+    for (const book of BOOKS) {
+      for (const page of book.pages) {
+        for (const orientation of ['portrait', 'landscape'] as const) {
+          const stem = page.images[orientation].slice(0, -'.outline.webp'.length);
+          expect(pageOverlayImage(page, orientation, 'light')).toBe(`${stem}.overlay.svg`);
+          expect(pageOverlayImage(page, orientation, 'dark')).toBe(`${stem}.dark.overlay.svg`);
+        }
+      }
+    }
   });
 
-  it('offers no redundant responsive candidate for an invariant SVG', () => {
-    expect(pageOverlayImageSource(owl, 'portrait', 'dark')).toEqual({
-      src: '/coloring/creatures/owl-tall.dark.overlay.svg',
-      srcset: '/coloring/creatures/owl-tall.dark.overlay.svg',
-    });
-  });
-
-  it('resolves both invariant SVG source fields through an installed native book root', () => {
+  it('resolves a canonical SVG through an installed native book root', () => {
+    const owl = BOOKS.find((book) => book.id === 'creatures')!.pages.find(
+      (page) => page.id === 'owl'
+    )!;
     setLocalColoringBookRoot('creatures', 'https://localhost/_capacitor_file_/packs/creatures/');
     try {
-      expect(pageOverlayImageSource(owl, 'portrait', 'dark')).toEqual({
-        src: 'https://localhost/_capacitor_file_/packs/creatures/owl-tall.dark.overlay.svg',
-        srcset: 'https://localhost/_capacitor_file_/packs/creatures/owl-tall.dark.overlay.svg',
-      });
+      expect(pageOverlayImage(owl, 'portrait', 'dark')).toBe(
+        'https://localhost/_capacitor_file_/packs/creatures/owl-tall.dark.overlay.svg'
+      );
     } finally {
       clearLocalColoringBookRoots();
     }
@@ -157,19 +137,6 @@ describe('vector overlay slice', () => {
 describe('responsive image sources', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
   const cat = farm.pages.find((page) => page.id === 'cat')!;
-
-  it('keeps max-edge tiers in directories while width descriptors use intrinsic width', () => {
-    expect(pageOverlayImageSource(cat, 'portrait', 'light')).toEqual({
-      src: '/coloring/farm/cat-tall.overlay.webp',
-      srcset:
-        '/coloring/max-1152px/farm/cat-tall.overlay.webp 768w, /coloring/farm/cat-tall.overlay.webp 1024w',
-    });
-    expect(pageOverlayImageSource(cat, 'landscape', 'dark')).toEqual({
-      src: '/coloring/farm/cat-wide.dark.overlay.webp',
-      srcset:
-        '/coloring/max-1152px/farm/cat-wide.dark.overlay.webp 1152w, /coloring/farm/cat-wide.dark.overlay.webp 1536w',
-    });
-  });
 
   it('gives cover, pen, and chalk thumbnails responsive candidates', () => {
     expect(coverThumbImageSource(farm, 'light')).toEqual({
@@ -234,11 +201,6 @@ describe('responsive image sources', () => {
     expect(coloringBookComponent).toContain(`@media (min-width: ${floorPx}px) {`);
     expect(coloringBookComponent).toContain(`@media (max-width: ${floorPx - 1}px) {`);
   });
-
-  it('uses the adopted paper width for overlay selection', () => {
-    expect(coloringOverlayImageSize(390)).toBe('390px');
-    expect(coloringOverlayImageSize(0)).toBe(COLORING_IMAGE_SIZES.overlay);
-  });
 });
 
 describe('pageCompositionKey', () => {
@@ -250,8 +212,8 @@ describe('pageCompositionKey', () => {
       '/coloring/farm/cat-tall.chalk.webp',
       '/coloring/farm/cat-tall.thumb.webp',
       '/coloring/farm/cat-tall.chalk.thumb.webp',
-      '/coloring/farm/cat-tall.overlay.webp',
-      '/coloring/farm/cat-tall.dark.overlay.webp?version=1',
+      '/coloring/farm/cat-tall.overlay.svg',
+      '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
     ];
 
     expect(new Set(siblings.map(pageCompositionKey))).toEqual(new Set(['/coloring/farm/cat-tall']));
@@ -332,9 +294,10 @@ describe('bookAssetPaths', () => {
   it('lists every generated responsive candidate', () => {
     const paths = new Set(bookAssetPaths(farm));
     const responsive = responsiveColoringAssets(farm);
-    expect(responsive).toHaveLength(74);
+    expect(responsive).toHaveLength(50);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm)) {
+      if (canonical.endsWith('.svg')) continue;
       expect(
         responsive.some((asset) => asset.source === canonical),
         canonical
@@ -361,7 +324,7 @@ describe('downloadable coloring packs', () => {
     try {
       const page = dinosaur.pages[0];
       expect(pageOverlayImage(page, 'portrait', 'light')).toBe(
-        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.overlay.webp'
+        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.overlay.svg'
       );
       expect(coverThumbImageSource(dinosaur, 'light').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'

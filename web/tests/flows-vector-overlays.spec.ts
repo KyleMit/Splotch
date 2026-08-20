@@ -44,25 +44,25 @@ async function distinctOpaqueCanvasColors(page: Page): Promise<number> {
   }
 }
 
-test('a vector light overlay reveals with Magic and keeps its raster theme fallback', async ({
+test('a catalog vector overlay reveals with Magic and switches to its dark SVG', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'light' });
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await selectPageFromBook(page, 'Shapes', 'Circle');
+  await selectPageFromBook(page, 'Space', 'Station');
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/shapes\/circle-tall\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/space\/station-wide\.overlay\.svg$/);
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/shapes\/circle-tall\.overlay\.svg$/);
+    .toMatch(/\/coloring\/space\/station-wide\.overlay\.svg$/);
   await expect
     .poll(() =>
       overlay.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])
     )
-    .toEqual([1024, 1536]);
+    .toEqual([1536, 1024]);
 
   await pickBrush(page, '#magicBrushButton');
   await draw(page, [
@@ -77,29 +77,26 @@ test('a vector light overlay reveals with Magic and keeps its raster theme fallb
   await page.emulateMedia({ colorScheme: 'dark' });
   await expect(overlay).toHaveAttribute(
     'src',
-    /\/coloring\/shapes\/circle-tall\.dark\.overlay\.webp$/
+    /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
   );
-  await expect(overlay).toHaveAttribute(
-    'srcset',
-    /\/coloring\/max-1152px\/shapes\/circle-tall\.dark\.overlay\.webp/
-  );
+  await expect(overlay).not.toHaveAttribute('srcset');
 });
 
 test('a dark vector overlay decodes and exports through the live app', async ({ page }) => {
-  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'dark' });
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await selectPageFromBook(page, 'Creatures', 'Owl');
+  await selectPageFromBook(page, 'Vehicles', 'Train');
 
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toHaveAttribute(
     'src',
-    /\/coloring\/creatures\/owl-tall\.dark\.overlay\.svg$/
+    /\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/
   );
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/creatures\/owl-tall\.dark\.overlay\.svg$/);
+    .toMatch(/\/coloring\/vehicles\/train-wide\.dark\.overlay\.svg$/);
 
   await draw(page, [
     { x: 180, y: 260 },

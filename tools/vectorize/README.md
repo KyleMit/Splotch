@@ -7,11 +7,14 @@ into both `.claude/` and `.agents/` and this material is far too large to trip.
 
 ## Entry point
 
-| Entry point           | Public command                        | Purpose                                                   |
-| --------------------- | ------------------------------------- | --------------------------------------------------------- |
-| `vectorize-image.mjs` | `npm run vectorize --`                | Trace, download, delete, or inspect an account            |
-| `postprocess-svg.mjs` | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
-| `postprocess-svg.mjs` | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
+| Entry point                       | Public command                        | Purpose                                                   |
+| --------------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| `vectorize-image.mjs`             | `npm run vectorize --`                | Trace, download, delete, or inspect an account            |
+| `vectorize-coloring-overlays.mjs` | `npm run vectorize:coloring --`       | Plan or run bounded, restart-safe coloring-page batches   |
+| `analyze-coloring-overlays.mjs`   | `npm run vectorize:coloring:analyze`  | Gate fidelity and compare vector/raster payload sizes     |
+| `vectorize-coloring-overlays.mjs` | `npm run vectorize:coloring:check`    | Guard each outline-to-SVG derivation against drift        |
+| `postprocess-svg.mjs`             | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
+| `postprocess-svg.mjs`             | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
 
 The public npm command, CLI modes, flags, environment variables, default `vectorized/` output,
 credit safeguards, and exit behavior remain stable during the tools naming migration. Inputs and
@@ -69,7 +72,7 @@ Rules that follow from that:
 * **Every test response carries `X-Credits-Calculated`** — what the same call would have cost. Read
   it before committing to production.
 * **Never loop over a directory in production mode without saying the total cost first.** N images =
-  N credits, and the plan is 50.
+  N credits, and the current account balance is the hard ceiling.
 * **Want several formats of one image? Pay 1, not N.** Vectorize once with
   `policy.retention_days=1`, keep the `X-Image-Token` response header, then `/download` each extra
   format at 0.1. Same trick for re-running one image with different output options (`image.token` on
@@ -172,6 +175,100 @@ Vectorizer output at its 100×150 default intrinsic size. No-input mode normaliz
 checks every committed result so a new runtime SVG cannot bypass the invariant. `--fill` bakes a
 root ink color into a themed derivative; use `#fff` for a dark overlay so runtime presentation stays
 ordinary source-over composition without a CSS filter (ADR-0091).
+
+### Repeat a coloring-page overlay campaign
+
+`vectorize-coloring-overlays.mjs` owns the production recipe for transparent coloring overlays.
+Light mode enumerates non-cover `*.outline.webp` sources and writes black `.overlay.svg` files. Dark
+mode (`--theme=dark`) enumerates `*.chalk.webp` and bakes white ink into `.dark.overlay.svg`. Their
+paid raw responses stay in independent gitignored `vectorized/coloring-overlays/` and
+`vectorized/coloring-dark-overlays/` restart trees. When a raw response exists but the committed
+derivative does not, the next run performs only the free deterministic post-process.
+
+The recipe is fixed in the runner rather than copied into a shell loop, and the final derivation
+ledger records the exact parameters alongside every input/output hash.
+
+Start with a read-only plan. A production run must select a book or substring, must state its batch
+size, and cannot exceed 12 paid traces:
+
+```bash
+npm run vectorize:coloring -- --book=creatures --batch-size=12
+npm run vectorize:coloring -- --book=creatures --batch-size=12 --production
+npm run vectorize:coloring:analyze -- --book=creatures
+
+npm run vectorize:coloring -- --theme=dark --book=creatures --batch-size=12
+npm run vectorize:coloring -- --theme=dark --book=creatures --batch-size=12 --production
+npm run vectorize:coloring:analyze -- --theme=dark --book=creatures
+```
+
+The runner skips committed outputs and post-processes recoverable raw responses before making new
+API calls. Use `--force` only for an intentionally regenerated source, and narrow it with `--match`
+so already-approved pages are not charged again:
+
+```bash
+npm run vectorize:coloring -- \
+  --match=creatures/fairy-wide --batch-size=1 --production --force
+```
+
+After the complete catalog is present, freeze the exact input/output relationship and verify it:
+
+```bash
+npm run vectorize:coloring -- --write-ledger
+npm run vectorize:coloring -- --theme=dark --write-ledger
+npm run vectorize:coloring:check
+npm run vectorize:postprocess:check
+```
+
+The committed ledgers record the source and SVG SHA-256 plus byte counts. Both theme ledgers cover
+all 96 page orientations, and the check rejects any unrecorded SVG. If an outline is regenerated
+later, the check fails until its SVG is deliberately retraced and the ledger is rewritten. Raw
+service responses remain review/recovery artifacts, not sources of truth, and should not be
+committed.
+
+### Regenerate an overlay after a source edit
+
+Treat the raster presentation as a temporary comparison artifact, not a runtime fallback. For the
+affected category, regenerate the deterministic full-resolution WebP baseline, retrace only the
+changed theme/page, compare before deleting the WebP, then refresh the ledger and asset manifest:
+
+```bash
+npm run gen:coloring-overlays -- vehicles
+npm run vectorize:coloring -- \
+  --theme=dark --match=vehicles/train-wide --batch-size=1 --production --force
+npm run vectorize:coloring:analyze -- --theme=dark --book=vehicles
+npm run vectorize:coloring -- --theme=dark --write-ledger
+npm run vectorize:coloring:check
+npm run vectorize:postprocess:check
+npm run gen:assets:manifest
+```
+
+Inspect the changed source, rendered SVG, and representative composite before accepting the trace.
+Delete the category's generated `*.overlay.webp` and `*.dark.overlay.webp` files after comparison;
+`check:coloring-assets` rejects them as unreferenced once the all-vector catalog is restored.
+
+Run `vectorize:coloring:analyze` before deleting replaced WebPs when a campaign needs comparative
+payload totals. Its fidelity comparison uses the authoring outline and remains repeatable after the
+raster presentation files are removed, but the full/compact WebP byte fields then report `null`. The
+completed light catalog measured 3,572,243 raw SVG bytes and 1,558,331 gzip bytes versus 6,274,180
+compact or 9,080,706 full WebP bytes; all 96 pages passed at 96.34% minimum binary ink IoU and
+2.46/255 maximum alpha mean absolute error. The complete dark catalog measured 3,959,975 raw SVG
+bytes and 1,731,806 gzip bytes versus 4,479,786 compact or 5,361,446 full WebP bytes; all 96 pages
+passed at 95.67% minimum IoU and 1.83/255 maximum alpha error.
+
+The fidelity gate uses a 95.5% binary-IoU floor together with a 3/255 mean-alpha-error ceiling. The
+IoU floor includes the visually reviewed tall Umbrella trace (97.72% precision, 97.86% recall,
+0.78/255 mean alpha error), whose chalk-grain edge pixels make a 96% binary cutoff overly strict
+without indicating lost artwork. Do not relax either threshold from a summary number alone: inspect
+the failing source and rendered SVG, record precision/recall and alpha error, and keep a failed
+trace only when the difference is confined to antialiasing or chalk texture.
+
+Promote one book at a time. Before the first broad batch, use a dense landscape page as the size,
+fidelity, and WebKit gate. After each book: inspect representative simple and dense SVGs over the
+matching paper/fill, run the SVG and coloring-asset checks, rebuild the pack manifest, and exercise
+page selection, theme switching, Magic reveal, rotation, clearing, export, offline relaunch, and the
+compact/full pack paths on a physical iPad. Mobile Safari may report CSS-scaled intrinsic dimensions
+for a canonical 1024×1536 SVG; the durable requirements are the SVG's width, height, and viewBox
+plus exact rendered registration with the paper and fill.
 
 ## Endpoints
 

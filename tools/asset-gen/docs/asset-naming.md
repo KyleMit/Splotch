@@ -4,6 +4,11 @@
 asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
+> **Amendment (2026-08):** ADR-0129 replaces both runtime page-overlay WebPs with invariant SVGs.
+> The `.overlay` and `.dark.overlay` role suffixes remain; their shipped extension is `.svg`.
+> `gen:coloring-overlays` may materialize the former WebPs temporarily for a regeneration
+> comparison, but they are deleted before commit.
+
 ## Context
 
 Every coloring page ships as a family of derived images, and the family had grown one naming
@@ -36,8 +41,8 @@ web/static/coloring/{book}/{name}.outline.webp   PEN line art (light picker + ca
 web/static/coloring/{book}/{name}.chalk.webp     CHALK line art (dark canvas overlay, ink-on-white)
 web/static/coloring/{book}/{name}.thumb.webp     picker grid thumbnail (light, from the pen)
 web/static/coloring/{book}/{name}.chalk.thumb.webp  picker grid thumbnail (dark, from the chalk)
-web/static/coloring/{book}/{name}.overlay.webp   transparent black page overlay (light runtime)
-web/static/coloring/{book}/{name}.dark.overlay.webp  transparent white page overlay (dark runtime)
+web/static/coloring/{book}/{name}.overlay.svg   transparent black page overlay (light runtime)
+web/static/coloring/{book}/{name}.dark.overlay.svg  transparent white page overlay (dark runtime)
 web/static/coloring/{book}/{name}.light.webp     light magic-brush fill (fills-only)
 web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-only)
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
@@ -47,8 +52,9 @@ Resolution is a separate axis and therefore lives in a directory prefix, never a
 suffix:
 
 ```
-web/static/coloring/{book}/{name}.{variant}.webp                 canonical/master asset
-web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web page-overlay candidate
+web/static/coloring/{book}/{name}.{variant}.webp                 canonical raster asset
+web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant page overlay
+web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web fill candidate
 web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thumbnail candidate
 ```
 
@@ -57,17 +63,14 @@ web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thum
 pixels wide and is advertised as `1152w`. The catalog owns both paths and descriptor widths, and an
 asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
 
-Only the DOM-rendered presentation overlays and picker thumbnails have responsive derivatives.
-Light/night fills stay canonical because the canvas path caps its render scale and measured no
-visible benefit from fill tiering. Native also stays canonical: `build:cap` removes every
+Invariant SVG presentation overlays have no responsive derivatives. Raster fills and picker
+thumbnails retain their responsive tiers. Native also stays canonical: `build:cap` removes every
 `max-{edge}px` directory until downloadable native packs can select a tier (issue #200).
 
-The overlay tier is `max-1152px`, the largest measured downscale where every derivative is smaller
-than its source while retaining the overlay pipeline's step-8 alpha quantization and maximum 4/255
-composite-channel error. The initially considered 1366px tier was rejected: resampling increased
-alpha entropy, 95 of 192 lossless derivatives grew, and the aggregate saved only 1%. At 1152px all
-192 shrink and the aggregate overlay saving is about 26%. `gen:coloring-responsive` enforces both
-per-file savings and a catalog-level savings floor.
+The retired WebP overlay tier was `max-1152px`, the largest measured downscale where every
+derivative was smaller than its source while retaining the overlay pipeline's step-8 alpha
+quantization and maximum 4/255 composite-channel error. That result remains sizing evidence for the
+temporary comparison format; runtime overlays no longer live in the tier.
 
 The picker tier is `max-240px`. Its 160px-wide portrait candidate covers the approximately 152 CSS
 pixel portrait slot on a 390px-wide DPR 1 viewport; the initially considered `max-200px` tier was
@@ -79,15 +82,17 @@ Key implementation points:
 * `web/src/lib/state/books.ts` builds all catalog paths; `thumbPath()` swaps `.outline.webp` →
   `.thumb.webp`, `chalkThumbPath()` swaps `.chalk.webp` → `.chalk.thumb.webp`, and each is
   deliberately a **no-op on other paths** (only line art has thumbnails).
-* `responsiveColoringAssets()` derives the web-only tier paths from those canonical paths;
-  `bookAssetPaths()` includes them so `check:coloring-assets` rejects a partial tier.
+* `responsiveColoringAssets()` derives web-only tier paths for raster fills and thumbnails;
+  invariant SVG page overlays have no responsive candidate. `bookAssetPaths()` includes every
+  runtime path so `check:coloring-assets` rejects a partial inventory.
 * The asset-gen generators select line art positively by suffix (`gen-thumbnails.mjs` `isSource`
   matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
   `gen-light-fills.mjs` / `gen-night-fills.mjs` / `check-fill-drift.mjs`) — no exclusion lists.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`, and the mask
   path by swapping `.{light,night}` → `.outline`.
-* `gen-overlays.mjs` positively selects page `.outline.webp` sources and writes `.overlay.webp` plus
-  `.dark.overlay.webp`; the dark derivative uses the `.chalk.webp` sibling where present.
+* `gen-overlays.mjs` positively selects page `.outline.webp` sources and writes temporary
+  `.overlay.webp` plus `.dark.overlay.webp` comparison baselines; the dark derivative uses the
+  `.chalk.webp` sibling where present. The paid vector workflow writes the shipped SVG siblings.
 * CLI page arguments stay suffix-free (`farm/dog-wide`); each script appends `.outline.webp` when
   resolving them, and the dark generator's review samples in `.coloring-samples-dark/` stay bare
   (`dog-wide.webp`) — the `.night.raw` suffix is added at ship time (the night-fill runbook, now
@@ -103,8 +108,8 @@ Key implementation points:
 * **+** `light`/`night` name the fills by the theme they serve, matching `resolvedTheme()`'s pick in
   `DrawingCanvas` (ADR-0052).
 * **+** Dots carry variants, dashes carry orientation — the two axes can't collide in a filename.
-* **−** A 392-file rename with no runtime behavior change: history for the assets survives only via
-  git rename detection, and any external link to an old asset URL (previously shared previews,
-  cached PWA precache entries) breaks until the next service-worker update.
+* **−** The original 392-file rename had no runtime behavior change: history for the assets survives
+  only via git rename detection, and any external link to an old asset URL (previously shared
+  previews, cached PWA precache entries) breaks until the next service-worker update.
 * **−** `{name}.outline.webp` is longer than the bare name, and prose in older ADRs (0043/0045/0052
   — updated in place) now describes the new names with their original dates.
