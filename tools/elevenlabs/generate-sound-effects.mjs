@@ -2,12 +2,14 @@
 
 import {
   access,
+  chmod,
   constants as fsConstants,
   copyFile,
   link,
   mkdir,
   readFile,
   rename,
+  stat,
   unlink,
   writeFile,
 } from 'node:fs/promises';
@@ -16,14 +18,22 @@ import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path
 import { parseArgs } from 'node:util';
 import { isMain } from '../lib/proc.mjs';
 import {
+  DEFAULT_MAX_RETRIES,
   DEFAULT_OUTPUT_FORMAT,
+  DEFAULT_PROMPT_INFLUENCE,
   ElevenLabsSoundEffectsClient,
+  MAX_DURATION_SECONDS,
+  MAX_PROMPT_INFLUENCE,
+  MIN_DURATION_SECONDS,
+  MIN_PROMPT_INFLUENCE,
   normalizeSoundEffectRequest,
   outputExtension,
 } from './lib/sound-effects-client.mjs';
 
 const API_KEY_ENV_NAME = 'ELEVENLABS_API_KEY';
 const ENV_FILE_PATHS = ['.env.local', '.env', 'web/.env'];
+const PRIVATE_TEMP_FILE_MODE = 0o600;
+const DEFAULT_OUTPUT_FILE_MODE = 0o666;
 
 if (isMain(import.meta.url)) {
   runSoundEffectsCli(process.argv.slice(2)).catch((error) => {
@@ -32,37 +42,41 @@ if (isMain(import.meta.url)) {
   });
 }
 
+// Test seam: substitutes credentials, network, waits, and output so unit tests never spend credits.
 export async function runSoundEffectsCli(argv, effects = {}) {
   const args = parseSoundEffectArgs(argv);
+  const log = effects.log ?? console.log;
+  const warn = effects.warn ?? console.warn;
   if (args.help) {
-    printUsage();
+    printUsage(log);
     return;
   }
 
-  const plan = await buildGenerationPlan(args, effects);
-  printPlan(plan, args.dryRun);
+  const plan = await buildGenerationPlan(args);
+  printPlan(plan, args.dryRun, log);
   if (args.dryRun) return;
 
-  const client =
-    effects.client ??
-    new ElevenLabsSoundEffectsClient({
-      apiKey: effects.apiKey ?? (await resolveApiKey(effects)),
-      maxRetries: args.retries,
-      fetchImpl: effects.fetchImpl,
-      sleepImpl: effects.sleepImpl,
-      onRetry: ({ attempt, delayMs, error }) =>
-        console.warn(
-          `${error.message}; retry ${attempt}/${args.retries} in ${(delayMs / 1_000).toFixed(1)}s.`
-        ),
-    });
+  const client = new ElevenLabsSoundEffectsClient({
+    apiKey: await resolveApiKey(effects),
+    maxRetries: args.retries,
+    fetchImpl: effects.fetchImpl,
+    sleepImpl: effects.sleepImpl,
+    onRetry: ({ attempt, delayMs, error }) =>
+      warn(
+        `${error.message}; retry ${attempt}/${args.retries} in ${(delayMs / 1_000).toFixed(1)}s.`
+      ),
+  });
   const result = await runGenerationPlan(plan, {
     client,
     overwrite: args.overwrite,
-    log: effects.log ?? console.log,
+    log,
   });
 
-  console.log(`Complete: ${result.generated} generated, ${result.skipped} skipped.`);
-  console.log(`OUTPUT_DIR=${plan.outputDir}`);
+  log(
+    `Complete: ${result.generated} generated, ${result.skipped} skipped, ` +
+      `${result.discarded} discarded after generation.`
+  );
+  log(`OUTPUT_DIR=${plan.outputDir}`);
   if (result.failures.length > 0) {
     throw new Error(
       `${result.failures.length} generation(s) failed:\n${result.failures
@@ -90,7 +104,7 @@ export function parseSoundEffectArgs(argv) {
         loop: { type: 'boolean' },
         format: { type: 'string' },
         overwrite: { type: 'boolean' },
-        retries: { type: 'string', default: '3' },
+        retries: { type: 'string', default: String(DEFAULT_MAX_RETRIES) },
         'dry-run': { type: 'boolean' },
         help: { type: 'boolean', short: 'h' },
       },
@@ -118,8 +132,7 @@ export function parseSoundEffectArgs(argv) {
   };
 }
 
-export async function buildGenerationPlan(args, effects = {}) {
-  if (args.help) return null;
+export async function buildGenerationPlan(args) {
   if (Boolean(args.text) === Boolean(args.input)) {
     throw new Error('Pass exactly one of --text or --input.');
   }
@@ -135,10 +148,9 @@ export async function buildGenerationPlan(args, effects = {}) {
   rejectBatchOnlyFlags(args);
 
   const inputPath = resolve(args.input);
-  const read = effects.readFile ?? readFile;
   let document;
   try {
-    document = JSON.parse(await read(inputPath, 'utf8'));
+    document = JSON.parse(await readFile(inputPath, 'utf8'));
   } catch (error) {
     throw new Error(`${inputPath}: ${error.message}`, { cause: error });
   }
@@ -149,6 +161,7 @@ export async function runGenerationPlan(plan, { client, overwrite = false, log =
   const failures = [];
   let generated = 0;
   let skipped = 0;
+  let discarded = 0;
 
   for (const candidate of plan.candidates) {
     if (!overwrite && (await pathExists(candidate.out))) {
@@ -169,8 +182,10 @@ export async function runGenerationPlan(plan, { client, overwrite = false, log =
         );
         generated += 1;
       } else {
-        log(`Skip  ${candidate.out} (created by another process)`);
-        skipped += 1;
+        log(
+          `Discard ${candidate.out} (created by another process after this generation was paid for)`
+        );
+        discarded += 1;
       }
     } catch (error) {
       failures.push({ file: candidate.out, error });
@@ -178,7 +193,7 @@ export async function runGenerationPlan(plan, { client, overwrite = false, log =
     }
   }
 
-  return { failures, generated, skipped };
+  return { failures, generated, skipped, discarded };
 }
 
 function buildSinglePlan(args, outputDir) {
@@ -212,11 +227,12 @@ function validateSingleArgs(args) {
 
 function buildBatchPlan(document, outputDir, inputPath) {
   const candidates = Array.isArray(document) ? document : document?.candidates;
-  const defaults = Array.isArray(document) ? {} : (document?.defaults ?? {});
+  const defaults =
+    Array.isArray(document) || document?.defaults === undefined ? {} : document.defaults;
   if (!Array.isArray(candidates) || candidates.length === 0) {
     throw new Error(`${inputPath}: expected a non-empty candidates array.`);
   }
-  if (!defaults || typeof defaults !== 'object' || Array.isArray(defaults)) {
+  if (defaults === null || typeof defaults !== 'object' || Array.isArray(defaults)) {
     throw new Error(`${inputPath}: defaults must be an object.`);
   }
 
@@ -286,10 +302,7 @@ function resolveOutputPath(outputDir, file, label) {
   if (isAbsolute(file)) throw new Error(`${label}.file must be relative to --out-dir.`);
   const out = resolve(outputDir, file);
   const fromOutputDir = relative(outputDir, out);
-  if (
-    fromOutputDir === '..' ||
-    fromOutputDir.startsWith(`..${process.platform === 'win32' ? '\\' : '/'}`)
-  ) {
+  if (fromOutputDir === '..' || fromOutputDir.startsWith('../')) {
     throw new Error(`${label}.file must stay inside --out-dir.`);
   }
   return out;
@@ -305,8 +318,9 @@ function validateOutputExtension(path, outputFormat, label) {
 async function writeAudioFile(path, bytes, overwrite) {
   await mkdir(dirname(path), { recursive: true });
   const temporary = `${path}.tmp-${process.pid}-${crypto.randomUUID()}`;
-  await writeFile(temporary, bytes, { flag: 'wx', mode: 0o600 });
+  await writeFile(temporary, bytes, { flag: 'wx', mode: PRIVATE_TEMP_FILE_MODE });
   try {
+    await chmod(temporary, await outputFileMode(path, overwrite));
     if (overwrite) {
       await rename(temporary, path);
       return true;
@@ -330,15 +344,25 @@ async function writeAudioFile(path, bytes, overwrite) {
   }
 }
 
+async function outputFileMode(path, overwrite) {
+  if (overwrite) {
+    try {
+      return (await stat(path)).mode & 0o777;
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
+  return DEFAULT_OUTPUT_FILE_MODE & ~process.umask();
+}
+
 async function resolveApiKey(effects) {
   const env = effects.env ?? process.env;
   if (env[API_KEY_ENV_NAME]?.trim()) return env[API_KEY_ENV_NAME].trim();
-  const read = effects.readFile ?? readFile;
   const cwd = effects.cwd ?? process.cwd();
   for (const relativePath of ENV_FILE_PATHS) {
     const path = resolve(cwd, relativePath);
     try {
-      const value = parseEnvValue(await read(path, 'utf8'), API_KEY_ENV_NAME);
+      const value = parseEnvValue(await readFile(path, 'utf8'), API_KEY_ENV_NAME);
       if (value) return value;
     } catch (error) {
       if (error.code !== 'ENOENT') throw new Error(`${path}: ${error.message}`, { cause: error });
@@ -353,7 +377,8 @@ function parseEnvValue(source, name) {
   for (const line of source.split(/\r?\n/)) {
     const match = /^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
     if (!match || match[1] !== name) continue;
-    const value = match[2].replace(/^(['"])(.*)\1$/, '$2').trim();
+    const quoted = /^(['"])(.*)\1$/.exec(match[2]);
+    const value = quoted ? quoted[2] : match[2].replace(/\s+#.*$/, '').trim();
     return value || null;
   }
   return null;
@@ -381,19 +406,25 @@ function parseInteger(value, flag) {
   return number;
 }
 
-function printPlan(plan, dryRun) {
-  console.log(`${dryRun ? 'Validated' : 'Generating'} ${plan.candidates.length} sound effect(s):`);
+function printPlan(plan, dryRun, log) {
+  log(
+    `${dryRun ? 'Validated paid generation plan' : 'Paid generation plan'}: ` +
+      `${plan.candidates.length} sound effect(s):`
+  );
   for (const candidate of plan.candidates) {
     const duration =
       candidate.request.durationSeconds === null ? 'auto' : `${candidate.request.durationSeconds}s`;
-    console.log(
-      `- ${candidate.out} (${duration}, ${candidate.request.outputFormat}, loop=${candidate.request.loop ?? false})`
+    const influence = candidate.request.promptInfluence ?? DEFAULT_PROMPT_INFLUENCE;
+    log(
+      `- ${candidate.out} (${duration}, ${candidate.request.outputFormat}, ` +
+        `loop=${candidate.request.loop ?? false}, influence=${influence})\n` +
+        `    ${JSON.stringify(candidate.request.text.trim())}`
     );
   }
 }
 
-function printUsage() {
-  console.log(`Generate sound effects through ElevenLabs.
+function printUsage(log) {
+  log(`Generate sound effects through ElevenLabs.
 
 One effect:
   npm run gen:sound-effect -- --text "Soft cartoon bubble pop" --duration 0.5 --out /tmp/pop.mp3
@@ -407,13 +438,13 @@ Options:
   --input FILE         Generate a JSON batch (see tools/elevenlabs/README.md)
   --out FILE           Single-effect output (default: a new temporary directory)
   --out-dir DIR        Batch directory or single-effect directory
-  --duration SECONDS   Fixed duration from 0.5 to 30 seconds
+  --duration SECONDS   Fixed duration from ${MIN_DURATION_SECONDS} to ${MAX_DURATION_SECONDS} seconds
   --auto-duration      Let ElevenLabs choose the duration
-  --influence N        Prompt influence from 0 to 1 (default: 0.3)
+  --influence N        Prompt influence from ${MIN_PROMPT_INFLUENCE} to ${MAX_PROMPT_INFLUENCE} (default: ${DEFAULT_PROMPT_INFLUENCE})
   --loop               Ask for a seamless loop
-  --format FORMAT      ElevenLabs output format (default: mp3_44100_128)
+  --format FORMAT      ElevenLabs output format (default: ${DEFAULT_OUTPUT_FORMAT})
   --overwrite          Regenerate and atomically replace existing outputs
-  --retries N          Retries for HTTP 429/5xx (default: 3)
+  --retries N          Retries for network/timeout and HTTP 429/5xx failures (default: ${DEFAULT_MAX_RETRIES})
   --dry-run            Validate and print the plan without an API key or API call
   -h, --help           Show this help`);
 }

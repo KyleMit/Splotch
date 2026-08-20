@@ -114,6 +114,34 @@ describe('ElevenLabs sound-effects client', () => {
     expect(error.message).toContain('Sound Effects access is required');
   });
 
+  it('retries rejected network requests with the same backoff budget', async () => {
+    const networkError = new TypeError('fetch failed');
+    const fetchImpl = vi
+      .fn()
+      .mockRejectedValueOnce(networkError)
+      .mockResolvedValueOnce(new Response(Buffer.from('audio')));
+    const sleepImpl = vi.fn(async () => undefined);
+    const onRetry = vi.fn();
+    const client = new ElevenLabsSoundEffectsClient({
+      apiKey: 'secret',
+      fetchImpl,
+      sleepImpl,
+      onRetry,
+    });
+
+    await expect(
+      client.generateSoundEffect({ text: 'Pop', durationSeconds: 0.5 })
+    ).resolves.toMatchObject({ outputFormat: 'mp3_44100_128' });
+    expect(onRetry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        attempt: 1,
+        delayMs: 1_000,
+        error: expect.objectContaining({ cause: networkError }),
+      })
+    );
+    expect(sleepImpl).toHaveBeenCalledWith(1_000);
+  });
+
   it('validates every paid request before fetch can run', () => {
     expect(() => normalizeSoundEffectRequest({ text: 'Pop', durationSeconds: 0.49 })).toThrow(
       /between 0.5 and 30/

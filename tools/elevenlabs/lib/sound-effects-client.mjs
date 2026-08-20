@@ -1,11 +1,16 @@
 const DEFAULT_BASE_URL = 'https://api.elevenlabs.io';
 const SOUND_EFFECTS_PATH = '/v1/sound-generation';
 const DEFAULT_REQUEST_TIMEOUT_MS = 180_000;
-const DEFAULT_MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 1_000;
 const MAX_RETRY_DELAY_MS = 120_000;
 
 const SOUND_EFFECT_MODEL = 'eleven_text_to_sound_v2';
+export const MIN_DURATION_SECONDS = 0.5;
+export const MAX_DURATION_SECONDS = 30;
+export const MIN_PROMPT_INFLUENCE = 0;
+export const MAX_PROMPT_INFLUENCE = 1;
+export const DEFAULT_PROMPT_INFLUENCE = 0.3;
+export const DEFAULT_MAX_RETRIES = 3;
 export const DEFAULT_OUTPUT_FORMAT = 'mp3_44100_128';
 export const OUTPUT_FORMATS = Object.freeze([
   'mp3_22050_32',
@@ -32,8 +37,8 @@ export const OUTPUT_FORMATS = Object.freeze([
 ]);
 
 export class ElevenLabsApiError extends Error {
-  constructor(message, { status, code, type, param, requestId, retryAfterMs } = {}) {
-    super(message);
+  constructor(message, { status, code, type, param, requestId, retryAfterMs, cause } = {}) {
+    super(message, { cause });
     this.name = 'ElevenLabsApiError';
     this.status = status;
     this.code = code;
@@ -78,15 +83,25 @@ export class ElevenLabsSoundEffectsClient {
     url.searchParams.set('output_format', request.outputFormat);
 
     for (let attempt = 0; ; attempt += 1) {
-      const response = await this.fetchImpl(url, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'xi-api-key': this.apiKey,
-        },
-        body: JSON.stringify(request.body),
-        signal: AbortSignal.timeout(this.requestTimeoutMs),
-      });
+      let response;
+      try {
+        response = await this.fetchImpl(url, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'xi-api-key': this.apiKey,
+          },
+          body: JSON.stringify(request.body),
+          signal: AbortSignal.timeout(this.requestTimeoutMs),
+        });
+      } catch (cause) {
+        const error = new ElevenLabsApiError(
+          `ElevenLabs network request failed: ${cause.message}`,
+          { cause }
+        );
+        await this.waitToRetry(error, attempt);
+        continue;
+      }
 
       if (response.ok) {
         const bytes = Buffer.from(await response.arrayBuffer());
@@ -106,13 +121,17 @@ export class ElevenLabsSoundEffectsClient {
       }
 
       const error = await readApiError(response);
-      if (!isRetryable(response.status) || attempt >= this.maxRetries) throw error;
-
-      const retryDelayMs =
-        error.retryAfterMs ?? Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, MAX_RETRY_DELAY_MS);
-      this.onRetry({ attempt: attempt + 1, delayMs: retryDelayMs, error });
-      await this.sleepImpl(retryDelayMs);
+      if (!isRetryable(response.status)) throw error;
+      await this.waitToRetry(error, attempt);
     }
+  }
+
+  async waitToRetry(error, attempt) {
+    if (attempt >= this.maxRetries) throw error;
+    const retryDelayMs =
+      error.retryAfterMs ?? Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, MAX_RETRY_DELAY_MS);
+    this.onRetry({ attempt: attempt + 1, delayMs: retryDelayMs, error });
+    await this.sleepImpl(retryDelayMs);
   }
 }
 
@@ -126,14 +145,26 @@ export function normalizeSoundEffectRequest(options) {
 
   const durationSeconds = options.durationSeconds;
   if (durationSeconds !== null && durationSeconds !== undefined) {
-    if (!Number.isFinite(durationSeconds) || durationSeconds < 0.5 || durationSeconds > 30) {
-      throw new Error('durationSeconds must be null for automatic duration or between 0.5 and 30.');
+    if (
+      !Number.isFinite(durationSeconds) ||
+      durationSeconds < MIN_DURATION_SECONDS ||
+      durationSeconds > MAX_DURATION_SECONDS
+    ) {
+      throw new Error(
+        `durationSeconds must be null for automatic duration or between ${MIN_DURATION_SECONDS} and ${MAX_DURATION_SECONDS}.`
+      );
     }
   }
 
-  const promptInfluence = options.promptInfluence ?? 0.3;
-  if (!Number.isFinite(promptInfluence) || promptInfluence < 0 || promptInfluence > 1) {
-    throw new Error('promptInfluence must be between 0 and 1.');
+  const promptInfluence = options.promptInfluence ?? DEFAULT_PROMPT_INFLUENCE;
+  if (
+    !Number.isFinite(promptInfluence) ||
+    promptInfluence < MIN_PROMPT_INFLUENCE ||
+    promptInfluence > MAX_PROMPT_INFLUENCE
+  ) {
+    throw new Error(
+      `promptInfluence must be between ${MIN_PROMPT_INFLUENCE} and ${MAX_PROMPT_INFLUENCE}.`
+    );
   }
 
   const loop = options.loop ?? false;

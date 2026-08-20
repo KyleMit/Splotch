@@ -5,9 +5,9 @@ not call models, account, voice, history, or other endpoints, so it works with a
 to Sound Effects.
 
 The wrapper owns request validation, sound-effects-only model and format constraints, structured API
-errors, `Retry-After` plus exponential backoff for 429/5xx responses, and the binary response. The
-CLI adds restart-safe batch output and gitignored secret discovery. It never makes a live API call
-in the test suite.
+errors, `Retry-After` plus exponential backoff for network, timeout, 429, and 5xx failures, and the
+binary response. The CLI adds restart-safe batch output and gitignored secret discovery. It never
+makes a live API call in the test suite.
 
 ## Setup
 
@@ -42,7 +42,8 @@ npm run gen:sound-effect -- \
 ```
 
 Without `--out` or `--out-dir`, the CLI creates a new temporary directory and prints `OUTPUT_DIR`.
-Use `--dry-run` to validate and print the complete plan without reading a key or making a request.
+Use `--dry-run` to validate and print the complete paid-generation plan, including every prompt and
+prompt-influence value, without reading a key or making a request.
 
 ## Batch generation
 
@@ -119,7 +120,9 @@ to be explicit. Consult the current pricing page before a large batch.
 
 ## Maintenance
 
-When ElevenLabs changes the sound-generation schema, update the closed `SOUND_EFFECT_MODEL` and
-`OUTPUT_FORMATS` declarations in `lib/sound-effects-client.mjs`, the CLI extension mapping, and the
-mocked request tests together. The ElevenLabs OpenAPI document is the source of truth for endpoint
-enums; the overview is the source for prompting guidance.
+When ElevenLabs changes the sound-generation schema, update the closed `SOUND_EFFECT_MODEL`,
+`OUTPUT_FORMATS`, duration, prompt-influence, and retry-default declarations in
+`lib/sound-effects-client.mjs`; the CLI help derives from those values and the tests guard the
+README values. Update the CLI extension mapping and mocked request tests with any format change. The
+ElevenLabs OpenAPI document is the source of truth for endpoint enums; the overview is the source
+for prompting guidance.
