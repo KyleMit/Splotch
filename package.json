@@ -394,7 +394,7 @@
     "@axe-core/playwright": "^4.12.1",
     "@capacitor/android": "^8.4.1",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.4.2",
+    "@capacitor/cli": "^8.5.0",
     "@capacitor/ios": "^8.4.2",
     "@dprint/json": "^0.23.0",
     "@dprint/markdown": "^0.22.1",
