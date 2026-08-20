@@ -9,6 +9,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('coloring-pack service-worker route', () => {
   it('matches canonical assets without matching responsive assets or the manifest', () => {
     expect(COLORING_PACK_ASSET_URL_PATTERN.test('/coloring/farm/cat-tall.overlay.webp')).toBe(true);
+    expect(COLORING_PACK_ASSET_URL_PATTERN.test('/coloring/farm/cat-tall.overlay.svg')).toBe(true);
     expect(
       COLORING_PACK_ASSET_URL_PATTERN.test('/coloring/max-1152px/farm/cat-tall.overlay.webp')
     ).toBe(false);

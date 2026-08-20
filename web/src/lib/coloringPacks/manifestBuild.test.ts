@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { buildColoringPackManifest } from '../../../coloringPackManifest';
+import { parseColoringPackManifest } from './manifest';
 
 // Bounds verification-metadata overhead while retaining one-document cross-tier validation.
 const MAX_COLORING_PACK_MANIFEST_BYTES = 200_000;
@@ -25,8 +26,13 @@ describe('buildColoringPackManifest', () => {
       ).toBe(true);
       expect(
         compact.files
-          .filter((file) => !file.path.includes('.thumb.webp'))
+          .filter((file) => file.path.endsWith('.webp') && !file.path.includes('.thumb.webp'))
           .every((file) => file.downloadPath?.includes('/max-'))
+      ).toBe(true);
+      expect(
+        compact.files
+          .filter((file) => file.path.endsWith('.svg'))
+          .every((file) => file.downloadPath === undefined)
       ).toBe(true);
       expect(full.files.every((file) => file.downloadPath === undefined)).toBe(true);
       expect(compact.bytes).toBeLessThan(full.bytes);
@@ -36,5 +42,6 @@ describe('buildColoringPackManifest', () => {
 
     expect(compactBytes).toBeLessThan(fullBytes * 0.7);
     expect(Buffer.byteLength(source)).toBeLessThan(MAX_COLORING_PACK_MANIFEST_BYTES);
+    expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
   });
 });

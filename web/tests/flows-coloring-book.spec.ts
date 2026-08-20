@@ -6,7 +6,6 @@ import { COLORING_IMAGE_SIZES } from '../src/lib/state/books';
 
 import {
   applyFarmPage,
-  gotoAppWithAllColoringBooksInstalled,
   gotoAppWithInstalledColoringBook,
   opaqueCanvasPixelCount,
   openColoringBookGrid,

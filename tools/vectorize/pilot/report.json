@@ -8,9 +8,9 @@
         "web/static/coloring/farm/cover.thumb.webp": 19090,
         "web/static/coloring/max-240px/farm/cover.thumb.webp": 9856
       },
-      "svg": 49404,
-      "svgGzip": 20929,
-      "svgBrotli": 18216
+      "svg": 49376,
+      "svgGzip": 20884,
+      "svgBrotli": 18162
     },
     "shapes": 3,
     "alpha": {
@@ -38,9 +38,9 @@
         "web/static/coloring/shapes/circle-tall.overlay.webp": 61396,
         "web/static/coloring/max-1152px/shapes/circle-tall.overlay.webp": 41430
       },
-      "svg": 16474,
-      "svgGzip": 7330,
-      "svgBrotli": 6267
+      "svg": 16462,
+      "svgGzip": 7320,
+      "svgBrotli": 6261
     },
     "shapes": 4,
     "alpha": {
@@ -68,9 +68,9 @@
         "web/static/coloring/creatures/owl-tall.overlay.webp": 105042,
         "web/static/coloring/max-1152px/creatures/owl-tall.overlay.webp": 72514
       },
-      "svg": 39775,
-      "svgGzip": 17604,
-      "svgBrotli": 15319
+      "svg": 39738,
+      "svgGzip": 17570,
+      "svgBrotli": 15276
     },
     "shapes": 4,
     "alpha": {
@@ -98,9 +98,9 @@
         "web/static/coloring/creatures/owl-tall.dark.overlay.webp": 70652,
         "web/static/coloring/max-1152px/creatures/owl-tall.dark.overlay.webp": 55080
       },
-      "svg": 43506,
-      "svgGzip": 19205,
-      "svgBrotli": 16835
+      "svg": 43472,
+      "svgGzip": 19175,
+      "svgBrotli": 16780
     },
     "shapes": 7,
     "alpha": {

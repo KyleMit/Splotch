@@ -32,7 +32,7 @@ import { createColoringPackDownloader } from './manager';
 import { coloringPackState, resetDownloadedColoringBooks } from '$lib/state/coloringPacks.svelte';
 
 const manifest = {
-  formatVersion: 2,
+  formatVersion: 3,
   appVersion: '1.0.0-test',
   starterBookId: 'farm',
   books: ['farm', 'dinosaur', 'space'].map((id) => ({

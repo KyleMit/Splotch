@@ -108,6 +108,40 @@ describe('pageOverlayImage', () => {
   });
 });
 
+describe('vector overlay slice', () => {
+  const circle = BOOKS.find((book) => book.id === 'shapes')!.pages.find(
+    (page) => page.id === 'circle'
+  )!;
+  const owl = BOOKS.find((book) => book.id === 'creatures')!.pages.find(
+    (page) => page.id === 'owl'
+  )!;
+
+  it('uses invariant SVGs only for the traced orientation and themes', () => {
+    expect(pageOverlayImage(circle, 'portrait', 'light')).toBe(
+      '/coloring/shapes/circle-tall.overlay.svg'
+    );
+    expect(pageOverlayImage(circle, 'portrait', 'dark')).toBe(
+      '/coloring/shapes/circle-tall.dark.overlay.webp'
+    );
+    expect(pageOverlayImage(owl, 'portrait', 'light')).toBe(
+      '/coloring/creatures/owl-tall.overlay.svg'
+    );
+    expect(pageOverlayImage(owl, 'portrait', 'dark')).toBe(
+      '/coloring/creatures/owl-tall.dark.overlay.svg'
+    );
+    expect(pageOverlayImage(owl, 'landscape', 'light')).toBe(
+      '/coloring/creatures/owl-wide.overlay.webp'
+    );
+  });
+
+  it('offers no redundant responsive candidate for an invariant SVG', () => {
+    expect(pageOverlayImageSource(owl, 'portrait', 'dark')).toEqual({
+      src: '/coloring/creatures/owl-tall.dark.overlay.svg',
+      srcset: '/coloring/creatures/owl-tall.dark.overlay.svg',
+    });
+  });
+});
+
 describe('responsive image sources', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
   const cat = farm.pages.find((page) => page.id === 'cat')!;
