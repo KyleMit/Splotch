@@ -1,6 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { committedVectorizerSvgPaths, postprocessVectorizerSvg } from '../postprocess-svg.mjs';
+import {
+  committedVectorizerSvgPaths,
+  postprocessVectorizerSvg,
+  postprocessVectorizerSvgFiles,
+} from '../postprocess-svg.mjs';
 
 const RAW_SVG = `<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" viewBox="0.0 0.0 1024.0 1536.0"><path fill="#000000" d="M0 0h1v1z"/></svg>`;
 
@@ -25,6 +29,12 @@ describe('Vectorizer SVG post-processing', () => {
 
     expect(output).toMatch(/^<svg\b[^>]*\bfill="#fff"/);
     expect(postprocessVectorizerSvg(output)).toBe(output);
+  });
+
+  it('requires one explicit SVG when baking a fill color', () => {
+    expect(() => postprocessVectorizerSvgFiles(['--fill', '#fff'])).toThrow(
+      '--fill requires exactly one input SVG'
+    );
   });
 
   it.each([

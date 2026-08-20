@@ -11,6 +11,7 @@ import {
 import {
   COLORING_PACK_FORMAT_VERSION,
   coloringPackManifestPath,
+  isInvariantColoringPackAssetPath,
   type ColoringPackManifest,
 } from './src/lib/coloringPacks/manifest.ts';
 import type { ColoringPackResolution } from './src/lib/coloringPacks/resolution.ts';
@@ -43,7 +44,7 @@ export function buildColoringPackManifest(
         .filter((asset) => asset.encoding === 'thumbnail')
         .map((asset) => asset.source)
     );
-    const invariantPaths = new Set(canonicalPaths.filter((path) => path.endsWith('.svg')));
+    const invariantPaths = new Set(canonicalPaths.filter(isInvariantColoringPackAssetPath));
     if (
       compactPaths.size + canonicalThumbnailPaths.size + invariantPaths.size !==
       canonicalPaths.length

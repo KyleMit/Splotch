@@ -137,4 +137,30 @@ describe('web coloring-pack inventory', () => {
     expect(cachedResponses.get(book.files[0].path)).toBe('a');
     expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
   });
+
+  it('caches an SVG with its format content type when the server omits the header', async () => {
+    const vectorPath = '/coloring/dinosaur/first.overlay.svg';
+    const vectorManifest: ResolvedColoringPackManifest = {
+      ...manifest,
+      books: [
+        {
+          ...manifest.books[0],
+          bytes: 1,
+          files: [{ ...manifest.books[0].files[0], path: vectorPath, downloadPath: vectorPath }],
+        },
+      ],
+    };
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(new Uint8Array([97])));
+    const store = createWebColoringPackStore();
+
+    await store.install(
+      vectorManifest,
+      vectorManifest.books[0],
+      false,
+      new AbortController().signal
+    );
+
+    const cachedResponse = cache.put.mock.calls.find(([path]) => path === vectorPath)?.[1];
+    expect(cachedResponse?.headers.get('Content-Type')).toBe('image/svg+xml');
+  });
 });

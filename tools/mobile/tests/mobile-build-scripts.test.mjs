@@ -388,6 +388,27 @@ describe('mobile build script entry points', () => {
     expect(log).toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
   });
 
+  it('fails when the static tree contains an unreferenced coloring asset', () => {
+    const staticDir = join(state.root, 'orphan-static');
+    const mobileBook = fixtureBook('mobile-orphan', ['mobile']);
+    for (const assetPath of catalogAssetPaths(mobileBook)) {
+      writeFixture(join(staticDir, assetPath));
+    }
+    writeFixture(join(staticDir, 'coloring', mobileBook.id, 'orphan.overlay.webp'));
+    exit.mockClear();
+    error.mockClear();
+    log.mockClear();
+
+    expect(() => checkAssets(staticDir, [mobileBook], [mobileBook])).toThrow(
+      /^\[check-coloring-assets\] \d+ error\(s\) found/
+    );
+
+    expect(error).toHaveBeenCalledWith(
+      `[check-coloring-assets] UNREFERENCED: coloring/${mobileBook.id}/orphan.overlay.webp`
+    );
+    expect(log).not.toHaveBeenCalledWith('[check-coloring-assets] all checks passed.');
+  });
+
   it('fails when an authoring doc sits in the publicly served static tree', () => {
     const staticDir = join(state.root, 'doc-static');
     const mobileBook = fixtureBook('mobile-doc', ['mobile']);

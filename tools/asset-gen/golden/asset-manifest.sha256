@@ -250,11 +250,9 @@ ef5173c8a5189807cb2bc33bd4b9a703ebbcf7e62a555186c41f0a8390517e5d  web/static/col
 86f62a0ec45199fd5ee1ab91fa7d56e75731dff5b076e32a69975385cf689263  web/static/coloring/creatures/mermaid-wide.thumb.webp
 747e41c37179196eacfdae0ab7d635375c0c9216e356123ed953ed283901b660  web/static/coloring/creatures/owl-tall.chalk.thumb.webp
 cf25b01ceb6bfb22070af09ef24d6a1cb242c09e033ea7b41cb01c75925b9121  web/static/coloring/creatures/owl-tall.chalk.webp
-2d227a36a0172af43085827a9654873609c81739f1f5c3fd35420daf3f6a8304  web/static/coloring/creatures/owl-tall.dark.overlay.webp
 a46a3cb5748f63e5dd1d014fb8cf2b0f8ebd241d5076f897ec6cf12cc44b4c58  web/static/coloring/creatures/owl-tall.light.webp
 ff187426b8f78c1b0fb1d8f7f6c2911ac2783e8bfdac5f065d431fbc125cfddd  web/static/coloring/creatures/owl-tall.night.webp
 bf01de29943199bfc56360b3ebc3792f04033ca4ce4c5345db0560f986529c3a  web/static/coloring/creatures/owl-tall.outline.webp
-f915a4b1cb0009b6ea7e47c64814870a9ba442e980e03b487079329416dea038  web/static/coloring/creatures/owl-tall.overlay.webp
 9fe9555057bc68218526d43f3fd544328f8a40d6fcbac3ba8971e87376206984  web/static/coloring/creatures/owl-tall.thumb.webp
 d48cd79ffd96d6e4df96c989f8ed7740f037f30964588dd0e1708d6579238915  web/static/coloring/creatures/owl-wide.chalk.thumb.webp
 6d39e285f42520c9590e964f553f3d754595510ee852f4fa2a8e922586a671a2  web/static/coloring/creatures/owl-wide.chalk.webp
@@ -520,10 +518,8 @@ cf154e9ecee47b563cd7cdb4b6954699738fcf41749e7c16facc664e998002f5  web/static/col
 0c0d930e79092542e1f8298ad1130fb6001c5d2cfcc045b49c7cbd99bfdd2dd5  web/static/coloring/max-1152px/creatures/mermaid-wide.light.webp
 ffbd5f8a1481239f49a4f45687fbe73f0902263dfebb7b00ae4d4266e0d242fd  web/static/coloring/max-1152px/creatures/mermaid-wide.night.webp
 a97031c14c4b4ea130e3e6d9f23d3f4be1be80b98851e3dd84d12c843a7440b4  web/static/coloring/max-1152px/creatures/mermaid-wide.overlay.webp
-052bdcdafe27702417eb899347834f9b94868aebe54287ffe9d7591ca319bd34  web/static/coloring/max-1152px/creatures/owl-tall.dark.overlay.webp
 ece17d5f48707573d8a5fc6cba2f202bcf1f46f1bdb52e81a5c3433c927b79d0  web/static/coloring/max-1152px/creatures/owl-tall.light.webp
 39d9119bd42930cef09adb604d31adbae4b842dc62cdd3f621dc2057c452a6bf  web/static/coloring/max-1152px/creatures/owl-tall.night.webp
-f473b0a3e713becfbfc47293087497ab5b3a7d7a06f1b4a43c9a71aa31119efd  web/static/coloring/max-1152px/creatures/owl-tall.overlay.webp
 d6bc89754ccb06e040a61c104ea280ffd83f8527e2e270bb6a8039805697eacb  web/static/coloring/max-1152px/creatures/owl-wide.dark.overlay.webp
 53f49e9c6644a3b3b1a49d4a587a82ed71d3a0d809b759748cf53c79564b2d92  web/static/coloring/max-1152px/creatures/owl-wide.light.webp
 990a8f7dccf7744a5d2dccd7333a5810be1af946eb590fa481ad0545ed2bcc81  web/static/coloring/max-1152px/creatures/owl-wide.night.webp
@@ -739,7 +735,6 @@ c9c522ff96db44b547eb5459343a870ee4961cf6c8b8f65851a31a1b904e40d2  web/static/col
 91ff379107263407a5a820af06b0fa04e8b5d810269f190907fccba7f8e9a2f1  web/static/coloring/max-1152px/shapes/circle-tall.dark.overlay.webp
 74089628526dad1f0f55b65646a839adb0b3eb84f240b046892a406bd63562c5  web/static/coloring/max-1152px/shapes/circle-tall.light.webp
 3113b8b0e2fedf062c20c6a321c2b4141e6c7511729c149f4f106d4ffaee5ecf  web/static/coloring/max-1152px/shapes/circle-tall.night.webp
-f2dd461f47572196fbcb7be2b5b805467178d84b916ada9d8edeb068593280d3  web/static/coloring/max-1152px/shapes/circle-tall.overlay.webp
 683bfdb21a1c1559a8fc0dd7838e004f7e13f53c9fc26e2b45b273966fb62cae  web/static/coloring/max-1152px/shapes/circle-wide.dark.overlay.webp
 e5e54ae9b8b43f1398b69bf64432b3d1e02c3bc6d2cb371854c48a859446ed68  web/static/coloring/max-1152px/shapes/circle-wide.light.webp
 c993e0df349310049d7a240956bc3bcdf7ec0a87b63e769776530b5aa299422a  web/static/coloring/max-1152px/shapes/circle-wide.night.webp
@@ -1294,7 +1289,6 @@ bec73dfa9a22083e79200a27660108a3ece5830cdaa3ded8f2108bf42bf5b599  web/static/col
 798f1804267f26f01ae87a92042802652a2333e7b1f7be406c11d9748a15e0a5  web/static/coloring/shapes/circle-tall.light.webp
 b04b9e037cc7c0a58aa2df60c62d94476543abe9f46277af834ed2f0a1978bc8  web/static/coloring/shapes/circle-tall.night.webp
 b7dc176475730b2284cd1cecc3e007bf5193ddef0fcee860b2c2095b4d83ef7c  web/static/coloring/shapes/circle-tall.outline.webp
-3547d3cd9962bcb33742247c27da0a6fdfd4c36fbb79286a1d61ebac9b9c340d  web/static/coloring/shapes/circle-tall.overlay.webp
 a49f65e1053e0b900bf78f500ef4430ffd29a5edddb4f4414ef95a9799897621  web/static/coloring/shapes/circle-tall.thumb.webp
 24133a6b211327a335ba5063c170b84222d6436942e7979ced9014b7ad162d1a  web/static/coloring/shapes/circle-wide.chalk.thumb.webp
 a767d378b43c8f74ea22bba6888fa4b37929d8e412032e77f4836c7bb71bd99d  web/static/coloring/shapes/circle-wide.chalk.webp

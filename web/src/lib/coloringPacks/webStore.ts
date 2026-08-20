@@ -1,6 +1,10 @@
 import { scheduleIdle } from '$lib/idle';
 import { requestPersistentStorage } from '$lib/idb';
-import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
+import {
+  isInvariantColoringPackAssetPath,
+  type ResolvedColoringPackBookManifest,
+  type ResolvedColoringPackManifest,
+} from './manifest';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 import { COLORING_PACK_RESOLUTIONS } from './resolution';
 import {
@@ -30,6 +34,10 @@ async function digestHex(bytes: ArrayBuffer): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
+function coloringAssetContentType(path: string): string {
+  return isInvariantColoringPackAssetPath(path) ? 'image/svg+xml' : 'image/webp';
+}
+
 async function verifiedResponse(
   file: ResolvedColoringPackBookManifest['files'][number],
   signal: AbortSignal
@@ -45,7 +53,9 @@ async function verifiedResponse(
     throw new Error(`Coloring asset digest mismatch: ${file.path}`);
   }
   return new Response(bytes, {
-    headers: { 'Content-Type': response.headers.get('Content-Type') ?? 'image/webp' },
+    headers: {
+      'Content-Type': response.headers.get('Content-Type') ?? coloringAssetContentType(file.path),
+    },
   });
 }
 

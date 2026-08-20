@@ -76,11 +76,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+export function isInvariantColoringPackAssetPath(path: string): boolean {
+  return /(?:^|\/)[^/]+(?:\.dark)?\.overlay\.svg$/.test(path);
+}
+
 function isCanonicalColoringAssetPath(path: string, bookId: string): boolean {
   const prefix = `/coloring/${bookId}/`;
   if (!path.startsWith(prefix) || path.includes('..')) return false;
   const filename = path.slice(prefix.length);
-  return path.endsWith('.webp') || /^[^/]+(?:\.dark)?\.overlay\.svg$/.test(filename);
+  return path.endsWith('.webp') || isInvariantColoringPackAssetPath(filename);
 }
 
 function validDownloadPath(
@@ -89,7 +93,9 @@ function validDownloadPath(
   bookId: string,
   resolution: ColoringPackResolution
 ): boolean {
-  if (resolution === 'full' || path.endsWith('.svg')) return downloadPath === path;
+  if (resolution === 'full' || isInvariantColoringPackAssetPath(path)) {
+    return downloadPath === path;
+  }
   const compactMatch = /^\/coloring\/max-\d+px\/([^/]+)\/.+\.webp$/.exec(downloadPath);
   return downloadPath === path || compactMatch?.[1] === bookId;
 }
@@ -171,7 +177,7 @@ export function parseColoringPackManifest(
           const first = firstFiles.get(file.path);
           if (!first) return false;
           return (
-            !file.path.endsWith('.svg') ||
+            !isInvariantColoringPackAssetPath(file.path) ||
             (file.bytes === first.bytes &&
               file.sha256 === first.sha256 &&
               (file.downloadPath ?? file.path) === (first.downloadPath ?? first.path))

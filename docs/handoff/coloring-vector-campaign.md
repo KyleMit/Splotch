@@ -93,7 +93,7 @@ focused unit/E2E coverage. Use `git diff --name-status 77ce0900...318aff00` for 
 * `npm run lint` — passed.
 * `npm run format:check` — passed.
 * `npm run check:coloring-assets` — 1,389 assets checked.
-* `npm run check:assets:manifest` — 1,606 assets matched.
+* `npm run check:assets:manifest` — 1,600 assets matched.
 * `npm run check:adrs -- --base=origin/main` — 125 ADRs valid.
 * `npm run build` — PWA precache, release-seam, and bundle-budget checks passed.
 * `npm run build:cap` — native static build passed within the package budget.

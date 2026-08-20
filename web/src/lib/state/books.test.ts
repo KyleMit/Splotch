@@ -140,6 +140,18 @@ describe('vector overlay slice', () => {
       srcset: '/coloring/creatures/owl-tall.dark.overlay.svg',
     });
   });
+
+  it('resolves both invariant SVG source fields through an installed native book root', () => {
+    setLocalColoringBookRoot('creatures', 'https://localhost/_capacitor_file_/packs/creatures/');
+    try {
+      expect(pageOverlayImageSource(owl, 'portrait', 'dark')).toEqual({
+        src: 'https://localhost/_capacitor_file_/packs/creatures/owl-tall.dark.overlay.svg',
+        srcset: 'https://localhost/_capacitor_file_/packs/creatures/owl-tall.dark.overlay.svg',
+      });
+    } finally {
+      clearLocalColoringBookRoots();
+    }
+  });
 });
 
 describe('responsive image sources', () => {

@@ -255,16 +255,11 @@ function responsiveImage(
   };
 }
 
-// A page ships night fills + chalk outlines for BOTH orientations by default —
-// the norm once a category is fully processed. Pass the SUBTRACTIVE exceptions
-// only: `nightExcept`/`chalkExcept` list the orientations whose `.night.webp` /
-// `.chalk.webp` asset hasn't been generated yet, so those keys are omitted (dark
-// mode falls back — light fill for night, inverted pen for chalk). Forgetting an
-// exception makes bookAssetPaths() reference a missing file and check-assets
-// fails loudly at build. Empty exceptions (the default) => both orientations.
-interface PageExceptions {
+interface PageOverrides {
+  // Night fills and chalk outlines ship for both orientations unless their derivative is absent.
   nightExcept?: BookOrientation[];
   chalkExcept?: BookOrientation[];
+  // Only traced orientation/theme pairs replace their runtime WebP overlay with invariant SVG.
   vectorOverlayThemes?: Partial<Record<BookOrientation, ResolvedTheme[]>>;
 }
 
@@ -273,13 +268,13 @@ function book(
   name: string,
   platforms: BookPlatform[],
   buildPages: (
-    page: (id: string, name: string, exceptions?: PageExceptions) => ColoringPage
+    page: (id: string, name: string, overrides?: PageOverrides) => ColoringPage
   ) => ColoringPage[]
 ): Book {
   function page(
     id: string,
     name: string,
-    { nightExcept = [], chalkExcept = [], vectorOverlayThemes = {} }: PageExceptions = {}
+    { nightExcept = [], chalkExcept = [], vectorOverlayThemes = {} }: PageOverrides = {}
   ): ColoringPage {
     return {
       id,
@@ -438,7 +433,8 @@ export function pageOverlayImageSource(
 ): ResponsiveColoringImage {
   const source = pageOverlayAssetPath(page, orientation, theme);
   if (source.endsWith('.svg')) {
-    return { src: resolveColoringAssetUrl(source), srcset: source };
+    const url = resolveColoringAssetUrl(source);
+    return { src: url, srcset: url };
   }
   const tier = RESPONSIVE_COLORING_TIERS.overlay;
   const widths = tier.widths[orientation];

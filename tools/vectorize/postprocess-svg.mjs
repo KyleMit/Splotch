@@ -41,10 +41,7 @@ function normalizeFill(fill) {
 
 export function postprocessVectorizerSvg(source, filePath = 'vectorizer.svg', options = {}) {
   const fill = normalizeFill(options.fill);
-  const sourceWithoutDimensions = source.replace(/<svg\b[^>]*>/, (rootTag) =>
-    rootTag.replace(/\s+(?:width|height)=(?:"[^"]*"|'[^']*')/g, '')
-  );
-  const optimized = optimize(sourceWithoutDimensions, { ...SVGO_CONFIG, path: filePath }).data;
+  const optimized = optimize(source, { ...SVGO_CONFIG, path: filePath }).data;
   const rootMatch = /^<svg\b[^>]*>/.exec(optimized);
   if (!rootMatch) throw new Error(`${filePath}: optimized output has no root SVG element`);
 
@@ -90,6 +87,7 @@ export function postprocessVectorizerSvgFiles(argv) {
   });
   const inputs = inputPaths(positionals);
   if (inputs.length === 0) throw new Error('No committed Vectorizer SVGs found');
+  if (fill && inputs.length !== 1) throw new Error('--fill requires exactly one input SVG');
   if (out && inputs.length !== 1) throw new Error('--out requires exactly one input SVG');
   if (check && out) throw new Error('--out cannot be combined with --check');
 
