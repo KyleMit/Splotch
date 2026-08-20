@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest';
 import {
   checkColoringOverlayLedger,
   coloringOverlayJob,
-  coloringOverlayJobs,
   coloringOverlayLedger,
   jobState,
   parseColoringOverlayArgs,
@@ -17,7 +16,7 @@ import { compareOverlayAlpha, sumWhenComplete } from '../analyze-coloring-overla
 describe('coloring overlay campaign', () => {
   it('maps a page outline to the committed overlay and recoverable raw trace', () => {
     const job = coloringOverlayJob(
-      'web/static/coloring/creatures/fairy-wide.outline.webp',
+      'vectorized/coloring-overlays/creatures/fairy-wide.source.webp',
       '/repo'
     );
 
@@ -31,7 +30,7 @@ describe('coloring overlay campaign', () => {
 
   it('maps chalk art to a white dark-overlay derivative in an independent restart tree', () => {
     const job = coloringOverlayJob(
-      'web/static/coloring/creatures/fairy-wide.chalk.webp',
+      'vectorized/coloring-dark-overlays/creatures/fairy-wide.source.webp',
       '/repo',
       'dark'
     );
@@ -48,11 +47,11 @@ describe('coloring overlay campaign', () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-vectorize-coloring-'));
     try {
       const first = coloringOverlayJob(
-        'web/static/coloring/creatures/fairy-wide.outline.webp',
+        'vectorized/coloring-overlays/creatures/fairy-wide.source.webp',
         root
       );
       const second = coloringOverlayJob(
-        'web/static/coloring/creatures/owl-wide.outline.webp',
+        'vectorized/coloring-overlays/creatures/owl-wide.source.webp',
         root
       );
       mkdirSync(join(root, 'vectorized/coloring-overlays/creatures'), { recursive: true });
@@ -72,7 +71,7 @@ describe('coloring overlay campaign', () => {
     const root = mkdtempSync(join(tmpdir(), 'splotch-vectorize-coloring-'));
     try {
       const job = coloringOverlayJob(
-        'web/static/coloring/creatures/fairy-wide.chalk.webp',
+        'vectorized/coloring-dark-overlays/creatures/fairy-wide.source.webp',
         root,
         'dark'
       );
@@ -107,11 +106,11 @@ describe('coloring overlay campaign', () => {
   });
 
   it('keeps every committed light SVG tied to its exact authoring outline', () => {
-    expect(checkColoringOverlayLedger(coloringOverlayJobs())).toBe(96);
+    expect(checkColoringOverlayLedger('light')).toBe(96);
   });
 
   it('keeps every committed dark SVG tied to its exact chalk source', () => {
-    expect(checkColoringOverlayLedger(coloringOverlayJobs(undefined, 'dark'))).toBe(96);
+    expect(checkColoringOverlayLedger('dark')).toBe(96);
   });
 
   it('measures alpha fidelity independently from vector fill color', () => {

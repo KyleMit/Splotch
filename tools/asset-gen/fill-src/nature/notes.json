@@ -22,7 +22,7 @@
       "flags": {
         "notes": "THE EYES ARE THE STAR OF THIS PAGE. The spider's body is dark, but every eye must stay lively: light sclera, deep near-black pupil, bright white catchlight. Do NOT flood the eyes with the body color or navy.",
         "max-attempts": 6,
-        "halo-score-max": 2.8
+        "halo-score-max": 2.9
       },
       "review": "Issue #268 halo calibration: the shipped haloScore 2.776 / rawScore 4.166 treatment was reviewed as deliberate line-adjacent shading, not the excavator/ship re-inked-rim failure class. Inspect its hotspot crops before accepting a replacement.",
       "why": "Durable subject quirk: the dark-bodied spider tempts the model to flood the eyes — burned ~26 attempts before this note was discovered (commit d96ae6f; pipeline.md Stage 4 lever 4). Note text reconstructed from that prose. Re-validated on gemini-3.1: passed every gate FIRST take with this note auto-applied (ideas-exploration/idea-10). Issue #268 catalog calibration rounds the reviewed shipped halo ceiling to 2.8."
@@ -68,6 +68,13 @@
     }
   },
   "bee-wide": {
+    "night": {
+      "flags": {
+        "warp-max": 6.9
+      },
+      "review": "The canonical SVG raster measures the unchanged reviewed night fill at 6.4px local warp; retain it unless a visually stronger replacement clears the strict 4px default.",
+      "why": "Canonical SVG rasterization shifts the local-warp measurement without changing the approved composite; the ceiling adds the standard 0.5px decoder margin."
+    },
     "normalize": {
       "flags": {
         "notes": "The sky has THREE CLOUDS — keep all three exactly where they are."

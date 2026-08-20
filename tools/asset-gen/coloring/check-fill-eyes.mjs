@@ -12,17 +12,18 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
-import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from '../lib/asset-paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/asset-paths.mjs';
 import { scoreEyeFill, judgeLightEyes, judgeNightEyes } from '../lib/eye-fill.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { lineArtStem, rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 // Whole-eye legibility on the composite: catches the blank white orb (chalk
 // sclera + fill catchlight stacking over a solid-pen pupil) that judgeNightEyes
 // is band-blind to. lib/composite-eye.mjs.
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
 
 const args = process.argv.slice(2);
-const pages = await resolveOutlineTargets(args, {
+const pages = await resolveLineArtTargets(args, {
   includeCovers: false,
   explicitFiles: false,
   sort: 'all',
@@ -37,11 +38,11 @@ console.log(
   `${'page'.padEnd(28)} ${'cores'.padStart(5)} ${'lively'.padStart(6)}  light  ${'night'.padEnd(22)}  orb`
 );
 for (const page of pages) {
-  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+  const rel = toPosix(lineArtStem(relative(COLORING_DIR, page)));
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   if (!existsSync(lightPath)) continue;
   try {
-    const source = await readFile(page);
+    const source = await rasterizeLineArt(page);
     const lightBuf = await readFile(lightPath);
     const light = await scoreEyeFill(lightBuf, source);
     const lightVerdict = judgeLightEyes(light, { page: rel });

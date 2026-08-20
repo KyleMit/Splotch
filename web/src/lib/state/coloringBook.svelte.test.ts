@@ -56,10 +56,10 @@ describe('coloring book state', () => {
 
   it('the colored fill is derived from the line-art path', () => {
     expect(page.colorImages.portrait).toBe(
-      page.images.portrait.replace('.outline.webp', '.light.webp')
+      page.images.portrait.replace('.overlay.svg', '.light.webp')
     );
     expect(page.colorImages.landscape).toBe(
-      page.images.landscape.replace('.outline.webp', '.light.webp')
+      page.images.landscape.replace('.overlay.svg', '.light.webp')
     );
   });
 
@@ -68,12 +68,10 @@ describe('coloring book state', () => {
     // derived from the line-art path.
     setOverlayPage(spacePage, 'portrait');
     expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
-    expect(nightSheetUrl()).toBe(spacePage.images.portrait.replace('.outline.webp', '.night.webp'));
+    expect(nightSheetUrl()).toBe(spacePage.images.portrait.replace('.overlay.svg', '.night.webp'));
     setOverlayOrientation('landscape');
     expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
-    expect(nightSheetUrl()).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.night.webp')
-    );
+    expect(nightSheetUrl()).toBe(spacePage.images.landscape.replace('.overlay.svg', '.night.webp'));
   });
 
   it('pages without a night fill track a null night sheet', () => {
@@ -85,11 +83,11 @@ describe('coloring book state', () => {
   it('tracks the chalk outline where one exists, null otherwise', () => {
     const chalked = {
       ...page,
-      chalkImages: { portrait: '/coloring/farm/cat-tall.chalk.webp' },
+      chalkImages: { portrait: '/coloring/farm/cat-tall.dark.overlay.svg' },
     };
     setOverlayPage(chalked, 'portrait');
-    expect(chalkUrl()).toBe('/coloring/farm/cat-tall.chalk.webp');
-    expect(pageChalkImage(chalked, 'portrait')).toBe('/coloring/farm/cat-tall.chalk.webp');
+    expect(chalkUrl()).toBe('/coloring/farm/cat-tall.dark.overlay.svg');
+    expect(pageChalkImage(chalked, 'portrait')).toBe('/coloring/farm/cat-tall.dark.overlay.svg');
     setOverlayOrientation('landscape');
     expect(chalkUrl()).toBeNull();
     expect(pageChalkImage(chalked, 'landscape')).toBeNull();
@@ -97,18 +95,16 @@ describe('coloring book state', () => {
 
   it('picks matching full-resolution art for the resolved theme', () => {
     setOverlayPage(spacePage, 'landscape');
-    expect(themedOverlayUrl('light')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.overlay.svg')
-    );
+    expect(themedOverlayUrl('light')).toBe(spacePage.images.landscape);
     expect(themedOverlayUrl('dark')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.svg')
+      spacePage.images.landscape.replace('.overlay.svg', '.dark.overlay.svg')
     );
   });
 
   it('can derive another orientation without changing the active orientation', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('dark', 'portrait')).toBe(
-      spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.svg')
+      spacePage.images.portrait.replace('.overlay.svg', '.dark.overlay.svg')
     );
     expect(coloringBookState.orientation).toBe('landscape');
   });

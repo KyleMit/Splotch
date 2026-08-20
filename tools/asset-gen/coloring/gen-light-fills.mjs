@@ -59,7 +59,8 @@ import {
   parseTemperature,
 } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { lineArtStem, rasterizeLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers, withPageNotes } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -171,7 +172,7 @@ export async function run(argv) {
   const baseTemp = parseTemperature(values.temperature, '--temperature', undefined);
   const ai = values.rescore ? null : makeClient();
 
-  const pages = await resolveOutlineTargets(positionals, {
+  const pages = await resolveLineArtTargets(positionals, {
     includeCovers: false,
     explicitFiles: true,
     sort: 'per-target',
@@ -241,7 +242,7 @@ export async function run(argv) {
   let failures = 0;
   const passingCandidates = [];
   for (const page of pages) {
-    const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+    const rel = toPosix(lineArtStem(relative(COLORING_DIR, page)));
     const levers = pageLevers(rel, 'light');
     const { merged, fromRegistry } = mergeFlags(values, levers);
     const warpMax = parseNonNegative(
@@ -261,7 +262,7 @@ export async function run(argv) {
           settings: { 'warp-max': warpMax, notes },
         })
       );
-    const source = await readFile(page);
+    const source = await rasterizeLineArt(page);
     const { width, height } = await sharp(source).metadata();
     const warpSource = await prepareLocalWarpSource(source);
 

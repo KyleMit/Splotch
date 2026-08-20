@@ -72,7 +72,7 @@ describe('vector overlays', () => {
     for (const book of BOOKS) {
       for (const page of book.pages) {
         for (const orientation of ['portrait', 'landscape'] as const) {
-          const stem = page.images[orientation].slice(0, -'.outline.webp'.length);
+          const stem = page.images[orientation].slice(0, -'.overlay.svg'.length);
           expect(pageOverlayImage(page, orientation, 'light')).toBe(`${stem}.overlay.svg`);
           expect(pageOverlayImage(page, orientation, 'dark')).toBe(`${stem}.dark.overlay.svg`);
         }
@@ -158,10 +158,8 @@ describe('responsive image sources', () => {
 describe('pageCompositionKey', () => {
   it('groups every generated sibling for one page without hardcoded variants', () => {
     const siblings = [
-      '/coloring/farm/cat-tall.outline.webp',
       '/coloring/farm/cat-tall.light.webp',
       '/coloring/farm/cat-tall.night.webp',
-      '/coloring/farm/cat-tall.chalk.webp',
       '/coloring/farm/cat-tall.overlay.svg',
       '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
     ];

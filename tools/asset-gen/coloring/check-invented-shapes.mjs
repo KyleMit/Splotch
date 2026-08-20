@@ -24,13 +24,8 @@ import { glob } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import {
-  COLORING_DIR,
-  FILL_SRC_DIR,
-  SAMPLES_DIR,
-  resolveNightLineArt,
-  toPosix,
-} from '../lib/asset-paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR, toPosix } from '../lib/asset-paths.mjs';
+import { rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
 import { fail } from '../lib/asset-cli.mjs';
 import {
   detectInventedShapes,
@@ -128,10 +123,12 @@ let flaggedPages = 0;
 for (const { fillPath, page, theme } of targets) {
   // night fills score against the chalk when forked (as the dark generator
   // does); light fills always score against the pen
-  const penPath = join(COLORING_DIR, `${page}.outline.webp`);
+  const penPath = join(COLORING_DIR, `${page}.overlay.svg`);
   const fill = await readFile(fillPath);
   const source =
-    theme === 'night' ? (await resolveNightLineArt(penPath)).source : await readFile(penPath);
+    theme === 'night'
+      ? (await resolveNightLineArt(penPath)).source
+      : await rasterizeLineArt(penPath);
   const res = await detectInventedShapes(fill, source);
   const id = `${page}.${theme}`;
   if (res.skipped) {

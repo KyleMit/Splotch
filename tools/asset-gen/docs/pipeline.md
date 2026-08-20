@@ -19,53 +19,48 @@ live assets regenerate, these don't.
 
 ```mermaid
 flowchart LR
-    O["pen outline<br/>(.outline.webp)"] -->|vectorize:coloring| PO[".overlay.svg<br/>(picker + canvas, light)"]
-    O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
-    C -->|vectorize:coloring| CO[".dark.overlay.svg<br/>(picker + canvas, dark)"]
-    O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
+    P["canonical pen<br/>(.overlay.svg)"] -->|"gen:coloring-chalk<br/>(Gemini, gated)"| CS["dark trace source<br/>(uncommitted .source.webp)"]
+    CS -->|vectorize:coloring| C["canonical chalk<br/>(.dark.overlay.svg)"]
+    P -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
     C -->|"gen-night-fills<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punched-fills| LS["shipped .light.webp<br/>(fills-only)"]
     NR -->|gen:coloring-punched-fills| NS["shipped .night.webp<br/>(fills-only)"]
-    O -.->|"punch mask"| LS
+    P -.->|"alpha punch mask"| LS
     C -.->|"punch mask"| NS
 ```
 
 The line work is **forked per theme** (the pen/chalk split, [pen-chalk-fork.md](pen-chalk-fork.md)):
-the **pen outline** is black ink on white paper — the light-mode overlay and the source every other
-asset derives from. The **chalk outline** is white ink on a black board — the dark-mode overlay, a
-Gemini redraw of the inverted pen that makes the judgment calls a blind invert can't: eye sclera and
-catchlights become deliberate SOLID WHITE, pupils stay black, everything else stays thin strokes.
-The chalk is *stored* ink-on-white (`{page}.chalk.webp`, the negation of what dark mode displays) so
-the app's existing dark treatment (`invert(1)` + screen) renders it unchanged and every ink-on-white
-tool in this folder reads it unmodified. Orientations without a chalk fall back to inverting the
-pen, so categories migrate incrementally. (Why a single shared outline couldn't serve both themes —
-the white-blob problem and two earlier generations of fixes — is chronicled in
-[`legacy/README.md`](../legacy/README.md).)
+the **pen SVG** is transparent black ink — the light-mode overlay and the source every other asset
+derives from. The **chalk SVG** is transparent white ink — the dark-mode overlay, a Gemini redraw of
+the inverted pen that makes the judgment calls a blind invert can't: eye sclera and catchlights
+become deliberate SOLID WHITE, pupils stay black, everything else stays thin strokes. Every analysis
+tool deterministically rasterizes either SVG as black ink on white, keeping the pipeline's
+established scoring and Gemini contracts independent of runtime ink color. (Why a single shared
+outline couldn't serve both themes—the white-blob problem and two earlier generations of fixes—is
+chronicled in [`legacy/README.md`](../legacy/README.md).)
 
-| Asset                           | Lives in                           | Shipped?                                                                                                                               | Produced by                                    |
-| ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `{page}.outline.webp`           | `web/static/coloring/{book}/`      | yes — the PEN outline: light-mode overlay, source of all derivations                                                                   | hand-curated + `normalize-outline-strokes.mjs` |
-| `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-chalk-outlines.mjs` from the pen          |
-| `{page}.overlay.svg`            | `web/static/coloring/{book}/`      | yes — invariant transparent black pen for source-over light canvas presentation                                                        | `vectorize-coloring-overlays.mjs`              |
-| `{page}.dark.overlay.svg`       | `web/static/coloring/{book}/`      | yes — invariant transparent white chalk for source-over dark canvas presentation                                                       | `vectorize-coloring-overlays.mjs`              |
-| `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`  |
-| `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw         |
+| Asset                           | Lives in                                | Shipped?                                                                                                                               | Produced by                                          |
+| ------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `{page}.overlay.svg`            | `web/static/coloring/{book}/`           | yes — canonical transparent black pen, light canvas presentation, light punch and generation source                                    | reviewed trace via `vectorize-coloring-overlays.mjs` |
+| `{page}.dark.overlay.svg`       | `web/static/coloring/{book}/`           | yes — canonical transparent white chalk, dark canvas presentation, night punch and generation source                                   | reviewed trace via `vectorize-coloring-overlays.mjs` |
+| `{page}.source.webp`            | `vectorized/coloring-{,dark-}overlays/` | no — uncommitted raster trace source created when a pen or chalk candidate is applied                                                  | fresh/normalize/chalk generator                      |
+| `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/`      | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`        |
+| `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`           | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw               |
 
 Everything shipped is a **static, committed artifact** — no generation at build or run time, no
 server dependency, trivially cacheable. The renderer is deliberately dumb: vectorized transparent
 black pen or transparent white chalk overlays use ordinary source-over composition; the reveal
-layers the punched fill underneath. The opaque pen/chalk sources retain their pipeline storage
-polarity, while the `vectorize-image` workflow converts them for presentation (ADR-0129 and
-[`alpha-line-art-overlays.md`](alpha-line-art-overlays.md)). `gen:coloring-overlays` remains the
-deterministic temporary WebP baseline used before a paid retrace and is removed after comparison.
-All intelligence lives at generation time, behind gates, with a human review at the end.
+layers the punched fill underneath. The same SVG alpha drives authoring rasterization and the punch,
+while the `vectorize-image` workflow turns a reviewed raster candidate into that canonical form
+(ADR-0129 and [`alpha-line-art-overlays.md`](alpha-line-art-overlays.md)). All intelligence lives at
+generation time, behind gates, with a human review at the end.
 
 ## Stage 1 — Pen outlines
 
-The pen outline is the source of everything: the light overlay renders it, the light punch masks
-with it, the light-fill generator conditions on it, and the chalk redraws from it. **Every
-downstream regeneration flows from a pen change**, so a pen edit means regenerating the page's whole
-suite (vector overlays + chalk + light + night + punch).
+The pen SVG is the source of everything: the light overlay renders it, the light punch masks with
+its alpha, the light-fill generator conditions on a deterministic rasterization, and the chalk
+redraws from it. **Every downstream regeneration flows from a pen change**, so a pen edit means
+regenerating the page's whole suite (pen trace + chalk trace + light + night + punch).
 
 ### Outline quality, and the audit that measures it
 
@@ -83,8 +78,8 @@ Since the pen/chalk fork, a solid pen region is a **light-theme quality call**, 
 breaker: light mode covers punched holes with its own black ink, and the chalk redraw makes its own
 judgment from whatever pen it gets. Thin-stroke pens still read better as coloring pages (classic
 outlined pupils) and give the light-fill generator cleaner inputs, so the audit stays — as advice,
-not a prerequisite. Covers (`{book}/cover.webp`) appear in the audit but are picker-only, so their
-solid regions are harmless noise.
+not a prerequisite. Covers (`{book}/cover.outline.webp`) appear in the audit but are picker-only, so
+their solid regions are harmless noise.
 
 ### The normalizer
 

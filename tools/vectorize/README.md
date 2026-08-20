@@ -99,12 +99,12 @@ Rules that follow from that:
 
 ```bash
 # Free watermarked trace — prove the parameters before spending anything
-node tools/vectorize/vectorize-image.mjs web/static/coloring/creatures/owl-tall.outline.webp \
-  --out vectorized/owl.svg --param processing.max_colors=2
+node tools/vectorize/vectorize-image.mjs web/static/coloring/farm/cover.outline.webp \
+  --out vectorized/farm-cover.svg --param processing.max_colors=2
 
 # The keeper run (1 credit), retained for a day so extra formats cost 0.1 each
-node tools/vectorize/vectorize-image.mjs web/static/coloring/creatures/owl-tall.outline.webp \
-  --out vectorized/owl.svg --production --retain 1 --param processing.max_colors=2
+node tools/vectorize/vectorize-image.mjs web/static/coloring/farm/cover.outline.webp \
+  --out vectorized/farm-cover.svg --production --retain 1 --param processing.max_colors=2
 
 # Second format from that result (0.1 credit) — token printed by the run above
 node tools/vectorize/vectorize-image.mjs --download <image-token> --out vectorized/owl.png
@@ -183,12 +183,13 @@ ordinary source-over composition without a CSS filter (ADR-0091).
 
 ### Repeat a coloring-page overlay campaign
 
-`vectorize-coloring-overlays.mjs` owns the production recipe for transparent coloring overlays.
-Light mode enumerates non-cover `*.outline.webp` sources and writes black `.overlay.svg` files. Dark
-mode (`--theme=dark`) enumerates `*.chalk.webp` and bakes white ink into `.dark.overlay.svg`. Their
-paid raw responses stay in independent gitignored `vectorized/coloring-overlays/` and
-`vectorized/coloring-dark-overlays/` restart trees. When a raw response exists but the committed
-derivative does not, the next run performs only the free deterministic post-process.
+`vectorize-coloring-overlays.mjs` owns the production recipe for transparent coloring overlays. Page
+generators stage reviewed inputs as `{page}.source.webp` under the gitignored
+`vectorized/coloring-overlays/` or `vectorized/coloring-dark-overlays/` restart tree. Light mode
+writes black `.overlay.svg` files; dark mode (`--theme=dark`) bakes white ink into
+`.dark.overlay.svg`. Cover `.source.webp` inputs use the same path during the cover campaign. When a
+raw response exists but the committed derivative does not, the next run performs only the free
+deterministic post-process.
 
 The recipe is fixed in the runner rather than copied into a shell loop, and the final derivation
 ledger records the exact parameters alongside every input/output hash.
@@ -224,20 +225,18 @@ npm run vectorize:coloring:check
 npm run vectorize:postprocess:check
 ```
 
-The committed ledgers record the source and SVG SHA-256 plus byte counts. Both theme ledgers cover
-all 96 page orientations, and the check rejects any unrecorded SVG. If an outline is regenerated
-later, the check fails until its SVG is deliberately retraced and the ledger is rewritten. Raw
-service responses remain review/recovery artifacts, not sources of truth, and should not be
-committed.
+Format-2 ledgers record the paid trace-source and SVG SHA-256 plus byte counts. Both theme ledgers
+cover all 96 page orientations, and the check independently rejects a missing or unrecorded
+canonical SVG. Trace sources and raw service responses remain review/recovery artifacts, not sources
+of truth, and should not be committed.
 
-### Regenerate an overlay after a source edit
+### Regenerate canonical page line art
 
-Treat the raster presentation as a temporary comparison artifact, not a runtime fallback. For the
-affected category, regenerate the deterministic full-resolution WebP baseline, retrace only the
-changed theme/page, compare before deleting the WebP, then refresh the ledger and asset manifest:
+Run the fresh, normalize, or chalk generator and review its candidates. `--apply` stages the chosen
+`.source.webp`; it does not overwrite the canonical SVG. Retrace only that theme/page, compare the
+candidate to the rendered SVG, then refresh the ledger and asset manifest:
 
 ```bash
-npm run gen:coloring-overlays -- vehicles
 npm run vectorize:coloring -- \
   --theme=dark --match=vehicles/train-wide --batch-size=1 --production --force
 npm run vectorize:coloring:analyze -- --theme=dark --book=vehicles
@@ -247,13 +246,12 @@ npm run vectorize:postprocess:check
 npm run gen:assets:manifest
 ```
 
-Inspect the changed source, rendered SVG, and representative composite before accepting the trace.
-Delete the category's generated `*.overlay.webp` and `*.dark.overlay.webp` files after comparison;
-`check:coloring-assets` rejects them as unreferenced once the all-vector catalog is restored.
+Inspect the staged source, rendered SVG, and representative composite before accepting the trace.
+The staged source may be deleted after the ledger is written and every downstream fill/proof/device
+gate passes.
 
-Run `vectorize:coloring:analyze` before deleting replaced WebPs when a campaign needs comparative
-payload totals. Its fidelity comparison uses the authoring outline and remains repeatable after the
-raster presentation files are removed, but the full/compact WebP byte fields then report `null`. The
+Run `vectorize:coloring:analyze` while staged trace sources are available when a campaign needs
+source fidelity metrics. Historical full/compact WebP comparison fields otherwise report `null`. The
 completed light catalog measured 3,572,243 raw SVG bytes and 1,558,331 gzip bytes versus 6,274,180
 compact or 9,080,706 full WebP bytes; all 96 pages passed at 96.34% minimum binary ink IoU and
 2.46/255 maximum alpha mean absolute error. The complete dark catalog measured 3,959,975 raw SVG

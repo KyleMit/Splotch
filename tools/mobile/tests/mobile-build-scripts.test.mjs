@@ -86,15 +86,15 @@ function fixturePage(directory) {
     id: 'page',
     name: 'Page',
     images: {
-      portrait: `/${directory}/page-tall.outline.webp`,
-      landscape: `/${directory}/page-wide.outline.webp`,
+      portrait: `/${directory}/page-tall.overlay.svg`,
+      landscape: `/${directory}/page-wide.overlay.svg`,
     },
     colorImages: {
       portrait: `/${directory}/page-tall.light.webp`,
       landscape: `/${directory}/page-wide.light.webp`,
     },
     nightImages: {},
-    chalkImages: { portrait: `/${directory}/page-tall.chalk.webp` },
+    chalkImages: { portrait: `/${directory}/page-tall.dark.overlay.svg` },
   };
 }
 
@@ -277,8 +277,8 @@ describe('mobile build script entry points', () => {
     writeFixture(join(webBookDir, 'cover.outline.webp'));
     writeFixture(join(buildDir, 'favicon.ico'));
     writeFixture(join(mobileDir, 'cover.outline.webp'));
-    writeFixture(join(mobileDir, 'page-tall.outline.webp'));
-    writeFixture(join(mobileDir, 'page-tall.chalk.webp'));
+    writeFixture(join(mobileDir, 'page-tall.overlay.svg'));
+    writeFixture(join(mobileDir, 'page-tall.dark.overlay.svg'));
     writeFixture(join(downloadableDir, 'cover.outline.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-1152px', 'mobile', 'page-tall.overlay.webp'));
     writeFixture(join(buildDir, 'coloring', 'max-240px', 'mobile', 'page-tall.thumb.webp'));
@@ -294,8 +294,8 @@ describe('mobile build script entry points', () => {
     expect(existsSync(webBookDir)).toBe(false);
     expect(existsSync(join(buildDir, 'favicon.ico'))).toBe(false);
     expect(existsSync(join(mobileDir, 'cover.outline.webp'))).toBe(false);
-    expect(existsSync(join(mobileDir, 'page-tall.outline.webp'))).toBe(false);
-    expect(existsSync(join(mobileDir, 'page-tall.chalk.webp'))).toBe(false);
+    expect(existsSync(join(mobileDir, 'page-tall.overlay.svg'))).toBe(false);
+    expect(existsSync(join(mobileDir, 'page-tall.dark.overlay.svg'))).toBe(false);
     expect(existsSync(downloadableDir)).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-1152px'))).toBe(false);
     expect(existsSync(join(buildDir, 'coloring', 'max-240px'))).toBe(false);
@@ -306,7 +306,7 @@ describe('mobile build script entry points', () => {
       '[strip-static-assets] expected but not found: large-image.png'
     );
     expect(warn).toHaveBeenCalledWith(
-      '[strip-static-assets] expected but not found: /coloring/mobile/page-wide.outline.webp'
+      '[strip-static-assets] expected but not found: /coloring/mobile/page-wide.overlay.svg'
     );
     expect(log).toHaveBeenCalledWith('[strip-static-assets] removed /coloring/web-only');
     expect(log).toHaveBeenCalledWith(

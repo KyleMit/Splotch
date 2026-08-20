@@ -151,6 +151,21 @@ describe('web coloring-pack inventory', () => {
     expect(await store.installed(manifest)).toEqual([{ id: book.id }]);
   });
 
+  it('leaves no installed marker when a stale manifest requests a removed asset', async () => {
+    const book = manifest.books[0];
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response('a'))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
+    const store = createWebColoringPackStore();
+
+    await expect(
+      store.install(manifest, book, false, new AbortController().signal)
+    ).rejects.toThrow('Coloring asset download failed (404)');
+
+    expect(cachedResponses.has(coloringPackMarkerPath(manifest, book.id))).toBe(false);
+    expect(await store.installed(manifest)).toEqual([]);
+  });
+
   it('caches an SVG with its format content type when the server omits the header', async () => {
     const vectorPath = '/coloring/dinosaur/first.overlay.svg';
     const vectorManifest: ResolvedColoringPackManifest = {

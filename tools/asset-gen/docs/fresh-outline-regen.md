@@ -3,8 +3,8 @@
 **Decision (2026-07-13):** when a page's *pen anatomy* is the root cause of a persistent quality
 issue — solid-ink pupils the light fill can't enliven, or a motif the fill model keeps misreading —
 the fix of choice is a **brand-new drawing of the same subject**, generated text-to-image with no
-conditioning on the old image, followed by a full-suite regen (thumb → light → chalk → night →
-punch). The alternative (edit-style normalization of the existing pen,
+conditioning on the old image, followed by a full-suite regen (pen trace → light → chalk trace →
+night → punch). The alternative (edit-style normalization of the existing pen,
 `gen:coloring-outlines:normalize`) stays available but is now the second choice for the worst pages:
 3.1's faithfulness resists erase-style edits on solid ink (ISSUES #6 caveat), while a fresh
 composition simply never draws the bad anatomy in the first place.
@@ -15,7 +15,9 @@ chunky toddler-level shapes, closed colorable regions, outlined pupil ring + cat
 solid ink, no text) plus a 1–2 sentence per-page `--scene`. The scene deliberately does **not**
 describe the old composition — the point is a re-roll, not a reproduction; only the subject must
 match the catalog entry. Candidates land in `.coloring-samples/fresh/` and are gated offline before
-a human picks one:
+a human picks one. `--apply` stages that reviewed raster under
+`vectorized/coloring-overlays/{page}.source.webp`; `vectorize:coloring` must trace and validate it
+before the canonical `.overlay.svg` changes:
 
 | Gate        | Measure                                                  | Why                                                                                        |
 | ----------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |

@@ -22,6 +22,7 @@ import {
 } from '../lib/asset-paths.mjs';
 import { fail } from '../lib/asset-cli.mjs';
 import { OUTLINE_LUMA_THRESHOLD } from '../lib/punch-fill.mjs';
+import { rasterizeLineArt } from '../lib/line-art.mjs';
 import { BOOKS } from '../../../web/src/lib/state/books.ts';
 
 const { values, positionals } = parseArgs({
@@ -73,12 +74,12 @@ function nightPath(id, orient) {
     ? join(SAMPLES_DARK_DIR, catId, `${id}-${orient}.webp`)
     : join(COLORING_DIR, catId, `${id}-${orient}.night.webp`);
 }
-// The black-on-white line art and the light colored fill always come from
-// web/static — light fills ship straight from the fills generator's punch. The
-// chalk outline (dedicated dark-mode line art, ink-on-white) is optional; the
-// dark half falls back to inverting the pen outline where it's absent.
-const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.outline.webp`);
-const chalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.chalk.webp`);
+// Canonical SVG line art and the light colored fill always come from web/static.
+// Legacy raster paths are read only for historical git:<ref> proof cells.
+const lineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.overlay.svg`);
+const chalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.dark.overlay.svg`);
+const legacyLineArtPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.outline.webp`);
+const legacyChalkPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.chalk.webp`);
 const lightPath = (id, orient) => join(COLORING_DIR, catId, `${id}-${orient}.light.webp`);
 
 // The lined raw fills (fill-src/) — the git-mode before-cell fallback when an era
@@ -137,8 +138,8 @@ async function makeCell(p, orient, era) {
     nightRaw,
     lightRaw,
     night,
-    lineArt: read(lineArtPath(p.id, orient)),
-    chalk: read(chalkPath(p.id, orient)),
+    lineArt: read(lineArtPath(p.id, orient)) ?? read(legacyLineArtPath(p.id, orient)),
+    chalk: read(chalkPath(p.id, orient)) ?? read(legacyChalkPath(p.id, orient)),
     light,
     // The keep badge scores the lined raw at HEAD; skip it for a git-era cell.
     keep: era ? null : await lightKeep(p.id, orient),
@@ -154,7 +155,7 @@ async function lightKeep(id, orient) {
   const raw = join(FILL_SRC_DIR, catId, `${id}-${orient}.light.raw.webp`);
   const src = lineArtPath(id, orient);
   if (!existsSync(raw) || !existsSync(src)) return null;
-  const { keep } = await outlineMatch(readFileSync(src), readFileSync(raw));
+  const { keep } = await outlineMatch(await rasterizeLineArt(src), readFileSync(raw));
   return Math.round(keep * 1000) / 10;
 }
 

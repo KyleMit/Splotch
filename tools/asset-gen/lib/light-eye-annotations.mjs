@@ -33,7 +33,7 @@ const LIGHT_EYE_ANNOTATIONS = new Map([
       totalCores: 2,
       locations: [
         { x: 422, y: 791 },
-        { x: 492, y: 802 },
+        { x: 493, y: 802 },
       ],
     },
   ],
@@ -67,7 +67,7 @@ const LIGHT_EYE_ANNOTATIONS = new Map([
       totalCores: 3,
       locations: [
         { x: 109, y: 747 },
-        { x: 203, y: 751 },
+        { x: 202, y: 751 },
       ],
     },
   ],

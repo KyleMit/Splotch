@@ -59,10 +59,10 @@ describe('nativeUnusedLineArt', () => {
       pages: [
         {
           images: {
-            portrait: '/coloring/mobile/page-tall.outline.webp',
-            landscape: '/coloring/mobile/page-wide.outline.webp',
+            portrait: '/coloring/mobile/page-tall.overlay.svg',
+            landscape: '/coloring/mobile/page-wide.overlay.svg',
           },
-          chalkImages: { portrait: '/coloring/mobile/page-tall.chalk.webp' },
+          chalkImages: { portrait: '/coloring/mobile/page-tall.dark.overlay.svg' },
         },
       ],
     };
@@ -70,9 +70,9 @@ describe('nativeUnusedLineArt', () => {
 
     expect(nativeUnusedLineArt([mobile, web])).toEqual([
       '/coloring/mobile/cover.outline.webp',
-      '/coloring/mobile/page-tall.outline.webp',
-      '/coloring/mobile/page-wide.outline.webp',
-      '/coloring/mobile/page-tall.chalk.webp',
+      '/coloring/mobile/page-tall.overlay.svg',
+      '/coloring/mobile/page-wide.overlay.svg',
+      '/coloring/mobile/page-tall.dark.overlay.svg',
     ]);
   });
 });

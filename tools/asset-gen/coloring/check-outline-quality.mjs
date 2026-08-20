@@ -7,7 +7,6 @@
 //   npm run check:coloring-outline-quality                 whole catalog
 //   npm run check:coloring-outline-quality -- nature       one category
 //   npm run check:coloring-outline-quality -- nature/ant-tall
-import { readFile } from 'node:fs/promises';
 import { relative } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
 import { COLORING_DIR } from '../lib/asset-paths.mjs';
@@ -19,10 +18,11 @@ import {
   GHOST_SIDE_COVERAGE_MIN,
 } from '../lib/outline-frame.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { lineArtStem, rasterizeLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 
 const args = process.argv.slice(2);
-const pages = await resolveOutlineTargets(args, {
+const pages = await resolveLineArtTargets(args, {
   includeCovers: true,
   explicitFiles: false,
   sort: 'per-target',
@@ -33,9 +33,9 @@ const pages = await resolveOutlineTargets(args, {
 const rows = [];
 let errors = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
+  const rel = lineArtStem(relative(COLORING_DIR, page));
   try {
-    const buf = await readFile(page);
+    const buf = await rasterizeLineArt(page);
     const analysis = await prepareOutlineAnalysis(buf);
     const [solidity, rings, frame] = await Promise.all([
       scoreSolidity(analysis),

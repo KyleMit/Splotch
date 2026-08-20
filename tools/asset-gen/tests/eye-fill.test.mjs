@@ -23,6 +23,7 @@ import {
   BAND_BLIND_INK_FRAC,
 } from '../lib/eye-fill.mjs';
 import { COLORING_DIR, FILL_SRC_DIR } from '../lib/asset-paths.mjs';
+import { rasterizeLineArt } from '../lib/line-art.mjs';
 import { goodEyeSource, eyeLivelyFill, eyeFloodFill } from './fixtures/synthetic.mjs';
 
 async function scored() {
@@ -59,7 +60,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
 
   it('suppresses a band-blind side-profile eye without accepting a measurable dead eye', async () => {
     const page = 'farm/duck-wide';
-    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const source = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
     const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
     const duck = await scoreEyeFill(fill, source);
     const flooded = await scoreEyeFill(await flatFill(source), source);
@@ -74,7 +75,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
 
   it('rejects a flat flood through a page annotation with measurable eye cores', async () => {
     const page = 'farm/pig-tall';
-    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const source = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
     const flooded = await scoreEyeFill(await flatFill(source), source);
 
     expect(flooded.cores.length).toBeGreaterThan(0);
@@ -85,7 +86,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
 
   it('does not force light-fill paint outside the astronaut source-solid pupils', async () => {
     const page = 'space/astronaut-wide';
-    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const source = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
     const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
     const astronaut = await scoreEyeFill(fill, source);
     const childEyes = astronaut.cores.filter(
@@ -107,7 +108,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
       ['vehicles/garbage-wide', { passes: true, gated: false }],
     ];
     for (const [page, expected] of cases) {
-      const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+      const source = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
       const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
       const scoredPage = await scoreEyeFill(fill, source);
 
@@ -119,7 +120,7 @@ describe('scoreEyeFill + judgeLightEyes', () => {
 
   it('fails closed when a reviewed page gains or loses an outline core', async () => {
     const page = 'objects/house-tall';
-    const source = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
+    const source = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
     const fill = await readFile(join(FILL_SRC_DIR, `${page}.light.raw.webp`));
     const scoredPage = await scoreEyeFill(fill, source);
 

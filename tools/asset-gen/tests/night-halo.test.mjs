@@ -10,7 +10,8 @@ import { join } from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { NIGHT_HALO_SCORE_MAX, punchNightCandidate, scoreNightHalo } from '../lib/night-halo.mjs';
 import { prepareNightFillAnalysis } from '../lib/night-scores.mjs';
-import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt } from '../lib/asset-paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR } from '../lib/asset-paths.mjs';
+import { resolveNightLineArt } from '../lib/line-art.mjs';
 import { pageLevers } from '../lib/page-notes.mjs';
 import {
   haloRaw,
@@ -45,7 +46,7 @@ describe('scoreNightHalo — ranks a residual dark rim above a clean punch', () 
 
 async function scoreCatalogPage(page) {
   const raw = await readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`));
-  const penPath = join(COLORING_DIR, `${page}.outline.webp`);
+  const penPath = join(COLORING_DIR, `${page}.overlay.svg`);
   const { source } = await resolveNightLineArt(penPath);
   const shipped = await readFile(join(COLORING_DIR, `${page}.night.webp`));
   return scoreNightHalo(raw, source, shipped);
@@ -64,11 +65,11 @@ describe('night halo catalog calibration', () => {
   const reviewedExceptions = [
     ['shapes/rectangle-tall', 4.3],
     ['shapes/heart-tall', 3.2],
-    ['nature/spider-tall', 2.8],
+    ['nature/spider-tall', 2.9],
     ['objects/house-tall', 2.5],
     ['vehicles/fire-tall', 2.5],
     ['objects/house-wide', 2.3],
-    ['space/station-tall', 2.1],
+    ['space/station-tall', 2.3],
   ];
 
   it.each(reviewedExceptions)(

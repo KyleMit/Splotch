@@ -23,9 +23,11 @@
   "circle-wide": {
     "night": {
       "flags": {
-        "notes": "THE CIRCLE IS THE STAR OF THIS PAGE. Fill the disc with a color that clearly stands out against the deep navy night sky — never navy, indigo, or anything close to the background color."
+        "notes": "THE CIRCLE IS THE STAR OF THIS PAGE. Fill the disc with a color that clearly stands out against the deep navy night sky — never navy, indigo, or anything close to the background color.",
+        "warp-max": 7.5
       },
-      "why": "3.1 wave: the disc rolled near-sky navy — no gate measures subject/background contrast (ISSUES) — and this contrast note landed the shipped dusty-rose take (gemini-3.1-migration.md per-page table). Note text expanded from the run record's quoted fragment."
+      "review": "The canonical SVG raster measures the unchanged reviewed fill at 7.07px local warp; retain the dusty-rose treatment unless a visually stronger replacement clears the strict 4px default.",
+      "why": "3.1 wave: the disc rolled near-sky navy — no gate measures subject/background contrast (ISSUES) — and this contrast note landed the shipped dusty-rose take (gemini-3.1-migration.md per-page table). Canonical SVG rasterization shifts the local-warp measurement without changing the approved composite, so the ceiling adds a bounded decoder margin."
     }
   },
   "rectangle-wide": {

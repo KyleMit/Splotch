@@ -4,10 +4,9 @@
 // colors that read against the dark (a moonlit "night" coloring), so dark mode
 // shows a whole separate set of renders rather than forcing a light sheet.
 //
-// The line-art input is the page's CHALK outline ({page}.chalk.webp — the
-// dedicated dark-mode line art with deliberate solid whites, stored ink-on-white
-// and negated here) when the page has one; pages that haven't forked yet fall
-// back to inverting the PEN outline. With a chalk input, every registration and
+// The line-art input is the canonical CHALK SVG ({page}.dark.overlay.svg),
+// deterministically rasterized as ink-on-white and negated here for display.
+// Every registration and
 // color gate scores against the chalk (it is the line art the fill must sit
 // under), and the eye gate judges the SIMULATED FINAL COMPOSITE — the
 // chalk-punched fill under the screened chalk over dark paper — because the
@@ -61,12 +60,12 @@ import {
   COLORING_DIR,
   FILL_SRC_DIR,
   SAMPLES_DARK_DIR,
-  resolveNightLineArt,
   toPosix,
 } from '../lib/asset-paths.mjs';
 import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { lineArtStem, rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers, withPageNotes } from '../lib/page-notes.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
 // Drift / night-mood / line-color scoring is shared with check-golden-scores.mjs so the
@@ -286,7 +285,7 @@ async function generateCleanTake({
   });
 }
 
-let pages = await resolveOutlineTargets(positionals, {
+let pages = await resolveLineArtTargets(positionals, {
   includeCovers: false,
   explicitFiles: true,
   sort: 'per-target',
@@ -305,7 +304,7 @@ let gateFailures = 0;
 let missingCandidates = 0;
 const passingCandidates = [];
 for (const page of pages) {
-  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+  const rel = toPosix(lineArtStem(relative(COLORING_DIR, page)));
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
   const levers = pageLevers(rel, 'night');
   const { merged, fromRegistry } = mergeFlags(values, levers);
@@ -321,7 +320,7 @@ for (const page of pages) {
       })
     );
   if (values['dry-run']) continue;
-  const pen = await readFile(page);
+  const pen = await rasterizeLineArt(page);
   const { width, height } = await sharp(pen).metadata();
   // The page's chalk outline (ink-on-white), when the fork has happened — the
   // line art dark mode actually renders, so it is both the model's input and

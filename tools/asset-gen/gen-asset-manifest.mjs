@@ -2,7 +2,7 @@
 // any binary change shows up as a reviewable one-line text diff. The standing
 // invariant it guards: a night-only pass (night fills, chalk outlines, chalk
 // thumbs) must leave every light-side byte untouched (*.light.webp,
-// *.outline.webp, the pen *.thumb.webp, *.light.raw.webp, style covers) —
+// canonical page SVGs, cover masters/thumbs, *.light.raw.webp, style covers) —
 // previously discipline, not a check. The hashes also make score-invisible
 // asset swaps visible (two fills can score identically; their bytes can't
 // collide) — the content-hash column the golden score fixtures

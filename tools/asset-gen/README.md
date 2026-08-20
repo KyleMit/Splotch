@@ -67,7 +67,7 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails, both themes -> web/static/styles/{style}.{light,dark}.webp
                                 #   --theme dark / --style Crayon / --temperature 1.4 to narrow or re-roll
-npm run gen:coloring-chalk      # page/cover chalk line art -> web/static/coloring/**/*.chalk.webp
+npm run gen:coloring-chalk      # page/cover chalk candidates -> uncommitted dark SVG trace source
 npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
 npm run gen:coloring-fills      # light fill candidates -> .coloring-samples/ (--apply to ship)
 npm run check:coloring-fill-drift # drift-check the raw fills in fill-src/ (no key/network)
@@ -75,7 +75,6 @@ npm run check:coloring-invented-shapes # invented colored shapes on the open bac
 npm run check:coloring-night-halo # audit shipped night fills against the candidate halo bar + crop-review signal (no key/network)
 npm run gen:coloring-punched-fills      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # light/dark cover thumbnails -> web/static/coloring/**/cover*.thumb.webp
-npm run gen:coloring-overlays   # temporary full-resolution WebP comparison overlays for SVG regeneration
 npm run gen:coloring-responsive # web srcset tiers from canonical fills/cover thumbs -> web/static/coloring/max-*px/
 npm run check:coloring-golden-scores # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run update:coloring-golden-scores # adopt the current catalog scores as the new golden baseline
@@ -164,25 +163,21 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 
 ## Inputs & outputs
 
-* **Inputs** (committed): `tools/asset-gen/style-covers/source.svg`, the black-and-white
-  `web/static/coloring/**/*.outline.webp` PEN page and cover outlines (the source of every
-  derivation).
-* **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
-  dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
-  fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
-  `*.overlay.svg` / `*.dark.overlay.svg` invariant full-page presentation layers, and
+* **Inputs** (committed): `tools/asset-gen/style-covers/source.svg`, canonical page `*.overlay.svg`
+  / `*.dark.overlay.svg` line art, and transitional raster cover masters.
+* **Shipped outputs** (committed, read by the app): canonical page SVG line art, `*.light.webp` /
+  `*.night.webp` fills, cover `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails, and
   `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
   `web/static/coloring/max-{edge}px/`; `build:cap` strips those directories so native keeps one
-  canonical runtime width. `gen:coloring-overlays` writes temporary WebP baselines for the
-  vectorization comparison and fidelity workflow; remove them after analysis rather than shipping
-  them.
+  canonical runtime width. Page regeneration stages uncommitted `.source.webp` inputs under
+  `vectorized/coloring-{,dark-}overlays/` for the paid vector workflow.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/asset-paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`.
   (The gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the
   ad-hoc analysis-script drop spot is also ignored — that's a different directory; generator outputs
   land at the root.)
 
-Generate → review the scratch → copy the good outputs into `web/static/` → commit.
+Generate → review scratch → stage a trace source → vectorize and review → commit the canonical SVG.
 
 ### Viewing the coloring-book proof sheet
 

@@ -126,8 +126,8 @@ const ASSET_SUFFIXES = {
   chalk: '.chalk.webp',
   thumb: '.thumb.webp',
   chalkThumb: '.chalk.thumb.webp',
-  vectorOverlay: '.overlay.svg',
-  darkVectorOverlay: '.dark.overlay.svg',
+  overlay: '.overlay.svg',
+  darkOverlay: '.dark.overlay.svg',
 } as const;
 
 const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
@@ -139,7 +139,7 @@ const PAGE_ASSET_SUFFIX_PATTERN = new RegExp(
 
 const ALL_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
 
-type PageAssetVariant = 'outline' | 'light' | 'night' | 'chalk';
+type PageAssetVariant = 'overlay' | 'light' | 'night' | 'darkOverlay';
 
 function pageAssetPath(
   bookId: string,
@@ -154,7 +154,7 @@ function optionalPageAssetPaths(
   bookId: string,
   pageId: string,
   exceptions: BookOrientation[],
-  variant: Extract<PageAssetVariant, 'night' | 'chalk'>
+  variant: Extract<PageAssetVariant, 'night' | 'darkOverlay'>
 ): Partial<Record<BookOrientation, string>> {
   const paths: Partial<Record<BookOrientation, string>> = {};
   for (const orientation of ALL_ORIENTATIONS) {
@@ -165,10 +165,7 @@ function optionalPageAssetPaths(
   return paths;
 }
 
-function coverPath(
-  bookId: string,
-  variant: Extract<PageAssetVariant, 'outline' | 'chalk'>
-): string {
+function coverPath(bookId: string, variant: 'outline' | 'chalk'): string {
   return `${COLORING_ROOT}/${bookId}/cover${ASSET_SUFFIXES[variant]}`;
 }
 
@@ -209,15 +206,15 @@ function book(
       id,
       name,
       images: {
-        portrait: pageAssetPath(bookId, id, 'portrait', 'outline'),
-        landscape: pageAssetPath(bookId, id, 'landscape', 'outline'),
+        portrait: pageAssetPath(bookId, id, 'portrait', 'overlay'),
+        landscape: pageAssetPath(bookId, id, 'landscape', 'overlay'),
       },
       colorImages: {
         portrait: pageAssetPath(bookId, id, 'portrait', 'light'),
         landscape: pageAssetPath(bookId, id, 'landscape', 'light'),
       },
       nightImages: optionalPageAssetPaths(bookId, id, nightExcept, 'night'),
-      chalkImages: optionalPageAssetPaths(bookId, id, chalkExcept, 'chalk'),
+      chalkImages: optionalPageAssetPaths(bookId, id, chalkExcept, 'darkOverlay'),
     };
   }
 
@@ -269,9 +266,13 @@ function pageOverlayAssetPath(
   orientation: BookOrientation,
   theme: ResolvedTheme
 ): string {
-  const source = pageImage(page, orientation);
-  const suffix = theme === 'dark' ? ASSET_SUFFIXES.darkVectorOverlay : ASSET_SUFFIXES.vectorOverlay;
-  return source.slice(0, -ASSET_SUFFIXES.outline.length) + suffix;
+  if (theme === 'dark') {
+    return (
+      page.chalkImages[orientation] ??
+      `${pageImage(page, orientation).slice(0, -ASSET_SUFFIXES.overlay.length)}${ASSET_SUFFIXES.darkOverlay}`
+    );
+  }
+  return pageImage(page, orientation);
 }
 
 export function pageOverlayImage(
@@ -339,11 +340,7 @@ export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] 
 }
 
 export function bookAssetPaths(book: Book): string[] {
-  // Pen line art remains the raster authoring source for covers and page overlays.
-  const penLineArt = [
-    book.cover,
-    ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]),
-  ];
+  const lightLineArt = book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]);
   // Colored fills are revealed by the magic brush, never shown in the grid, so
   // they have no thumbnail.
   const lightFills = book.pages.flatMap((page) => [
@@ -355,27 +352,18 @@ export function bookAssetPaths(book: Book): string[] {
   const nightFills = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.map((o) => page.nightImages[o]).filter((p): p is string => !!p)
   );
-  // Chalk outlines remain the raster authoring source for dark vector overlays.
-  const chalkOutlines = [
-    book.chalkCover,
-    ...book.pages.flatMap((page) =>
-      ALL_ORIENTATIONS.map((o) => page.chalkImages[o]).filter((p): p is string => !!p)
-    ),
-  ];
-  const overlays = book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS.flatMap((orientation) => [
-      pageOverlayAssetPath(page, orientation, 'light'),
-      pageOverlayAssetPath(page, orientation, 'dark'),
-    ])
+  const darkLineArt = book.pages.flatMap((page) =>
+    ALL_ORIENTATIONS.map((o) => page.chalkImages[o]).filter((p): p is string => !!p)
   );
   return [
-    ...penLineArt,
+    book.cover,
+    book.chalkCover,
+    ...lightLineArt,
     ...lightFills,
     ...nightFills,
-    ...chalkOutlines,
+    ...darkLineArt,
     coverThumbPath(book.cover),
     chalkCoverThumbPath(book.chalkCover),
-    ...overlays,
     ...responsiveColoringAssets(book).map((asset) => asset.target),
   ];
 }

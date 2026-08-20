@@ -51,6 +51,7 @@ import { scoreEyeRings, scoreEyes } from '../lib/eye-fill.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
 import { NORMALIZE_INSTRUCTION } from '../lib/prompts.mjs';
 import { formatCandidateLine } from '../lib/candidate-report.mjs';
+import { rasterizeLineArt } from '../lib/line-art.mjs';
 
 // Hard black/white edges expose WebP ringing, and downstream stages re-consume this output.
 const WEBP_QUALITY = 92;
@@ -181,12 +182,12 @@ for (const arg of positionals) {
       })
     );
   if (values['dry-run']) continue;
-  const src = join(COLORING_DIR, `${arg}.outline.webp`);
+  const src = join(COLORING_DIR, `${arg}.overlay.svg`);
   if (!existsSync(src)) {
     console.warn(`(skip) no line art at ${src}`);
     continue;
   }
-  const source = await readFile(src);
+  const source = await rasterizeLineArt(src);
   const { width, height } = await sharp(source).metadata();
   const sourceAnalysis = await prepareOutlineAnalysis(source);
   const srcSolidity = await scoreSolidity(sourceAnalysis);
@@ -303,9 +304,16 @@ for (const arg of positionals) {
       failures++;
       console.log(`  ✗ NOT applied — gates unmet; review ${relative(REPO_ROOT, dest)} or retry`);
     } else {
-      await writeFile(src, best.candidate);
+      const authoringSource = join(
+        REPO_ROOT,
+        'vectorized',
+        'coloring-overlays',
+        `${arg}.source.webp`
+      );
+      await mkdir(dirname(authoringSource), { recursive: true });
+      await writeFile(authoringSource, best.candidate);
       console.log(
-        `  ✓ applied over ${relative(REPO_ROOT, src)} — regenerate its thumb + light/night fills`
+        `  ✓ staged ${relative(REPO_ROOT, authoringSource)} — vectorize it, then regenerate light/night fills`
       );
     }
   }

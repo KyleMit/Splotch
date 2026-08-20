@@ -25,13 +25,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { glob } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
-import {
-  ASSET_GEN_DIR,
-  COLORING_DIR,
-  FILL_SRC_DIR,
-  resolveNightLineArt,
-  toPosix,
-} from '../lib/asset-paths.mjs';
+import { ASSET_GEN_DIR, COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/asset-paths.mjs';
+import { lineArtStem, rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
 import { fail } from '../lib/asset-cli.mjs';
 import { KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { SOLID_BLOB_MAX, SOLID_INTERIOR_MAX } from '../lib/solid-regions.mjs';
@@ -54,9 +49,9 @@ export const GOLDEN_PATH = join(ASSET_GEN_DIR, 'golden', 'golden-scores.json');
 const CONCURRENCY = 4;
 
 // Score one page: the pen outline always, the raw fills when committed.
-async function scorePage(outlinePath) {
-  const rel = toPosix(relative(COLORING_DIR, outlinePath).replace(/\.outline\.webp$/, ''));
-  const pen = await readFile(outlinePath);
+async function scorePage(lineArtPath) {
+  const rel = toPosix(lineArtStem(relative(COLORING_DIR, lineArtPath)));
+  const pen = await rasterizeLineArt(lineArtPath);
 
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const lightRaw = existsSync(lightPath) ? await readFile(lightPath) : null;
@@ -68,7 +63,7 @@ async function scorePage(outlinePath) {
     nightRaw = await readFile(nightPath);
     // Score against the line art the fill must sit under: the chalk when the
     // page has forked, else the pen — mirroring gen-night-fills.mjs.
-    ({ chalk } = await resolveNightLineArt(outlinePath, pen));
+    ({ chalk } = await resolveNightLineArt(lineArtPath, pen));
   }
 
   const entry = await scoreGoldenPage({ page: rel, pen, lightRaw, nightRaw, chalk });
@@ -76,24 +71,24 @@ async function scorePage(outlinePath) {
 }
 
 async function scoreCatalog() {
-  const outlines = [];
-  for await (const entry of glob('**/*.outline.webp', { cwd: COLORING_DIR }))
-    outlines.push(join(COLORING_DIR, entry));
-  outlines.sort();
-  if (!outlines.length) fail(`no line art found under ${COLORING_DIR}`);
+  const lineArt = [];
+  for await (const entry of glob('**/*-{tall,wide}.overlay.svg', { cwd: COLORING_DIR }))
+    lineArt.push(join(COLORING_DIR, entry));
+  lineArt.sort();
+  if (!lineArt.length) fail(`no canonical page SVGs found under ${COLORING_DIR}`);
 
   const results = new Map();
   let next = 0;
   const erroredPages = new Set();
   await Promise.all(
-    Array.from({ length: Math.min(CONCURRENCY, outlines.length) }, async () => {
-      while (next < outlines.length) {
-        const path = outlines[next++];
+    Array.from({ length: Math.min(CONCURRENCY, lineArt.length) }, async () => {
+      while (next < lineArt.length) {
+        const path = lineArt[next++];
         try {
           const [rel, entry] = await scorePage(path);
           results.set(rel, entry);
         } catch (error) {
-          const rel = toPosix(relative(COLORING_DIR, path).replace(/\.outline\.webp$/, ''));
+          const rel = toPosix(lineArtStem(relative(COLORING_DIR, path)));
           console.error(
             `${rel}  ERROR (${error instanceof Error ? error.message : String(error)})`
           );
@@ -107,7 +102,7 @@ async function scoreCatalog() {
   for (const rel of [...results.keys()].sort()) pages[rel] = results.get(rel);
   return {
     catalog: {
-      version: 5,
+      version: 6,
       thresholds: {
         keep: KEEP_THRESHOLD,
         localKeep: LOCAL_KEEP_THRESHOLD,

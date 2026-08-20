@@ -23,7 +23,7 @@ import { parseArgs } from 'node:util';
 import { writeFile, mkdir, copyFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import sharp from 'sharp';
-import { REPO_ROOT, COLORING_DIR, SAMPLES_DIR } from '../lib/asset-paths.mjs';
+import { REPO_ROOT, SAMPLES_DIR } from '../lib/asset-paths.mjs';
 import { fail, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
 import { scoreSolidity } from '../lib/solid-regions.mjs';
@@ -227,10 +227,13 @@ if (!passes(best)) {
 
 console.log(`\nbest: attempt ${best.attempt + 1} -> ${relative(REPO_ROOT, best.file)}`);
 if (args.values.apply) {
-  const dest = join(COLORING_DIR, `${pageRel}.outline.webp`);
+  const dest = join(REPO_ROOT, 'vectorized', 'coloring-overlays', `${pageRel}.source.webp`);
+  await mkdir(dirname(dest), { recursive: true });
   await copyFile(best.file, dest);
-  console.log(`applied -> ${relative(REPO_ROOT, dest)}`);
-  console.log('now regenerate the suite: thumbs, chalk, light fill, night fill, punch.');
+  console.log(`staged -> ${relative(REPO_ROOT, dest)}`);
+  console.log(
+    'now vectorize the source, then regenerate chalk, light fill, night fill, and punch.'
+  );
 } else {
   console.log('review the candidate, then re-run with --apply to ship it.');
 }

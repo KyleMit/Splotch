@@ -44,10 +44,9 @@ tile: **Outline → Color → Combined**, defaulting to **Combined**. Tapping a 
 its own, in the same order. Each tile embeds the layers to reproduce what a child actually sees, not
 just the raw generated fill:
 
-* **outline** — the page line art rendered as the canvas renders it: the PEN outline as black lines
-  on light paper in the light half; in the night half the CHALK outline (`{page}.chalk.webp`, with
-  its deliberate solid whites) as white chalk on dark paper, falling back to inverting the pen for
-  un-forked pages (the dark caption notes "no chalk (inverted pen)" when it does).
+* **outline** — the canonical page SVG rendered as the canvas renders it: transparent black PEN on
+  light paper and transparent white CHALK on dark paper. The generator also rasterizes these SVGs
+  deterministically for scoring and self-contained embedding.
 * **color** — the generated colored fill alone (`.light.webp` in the light half, night fill in the
   dark half).
 * **combined** — the real canvas composite: the fills-only fill under the themed line-art layer,

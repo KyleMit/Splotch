@@ -118,7 +118,7 @@ async function addPage(name) {
   })
     .webp()
     .toBuffer();
-  await writeFile(join(dir, `${name}.outline.webp`), source);
+  await writeFile(join(dir, `${name}.overlay.svg`), source);
   await writeFile(join(state.roots.fillSrc, `test/${name}.light.raw.webp`), `known-raw-${name}`);
   await writeFile(join(dir, `${name}.light.webp`), `known-shipped-${name}`);
 }
