@@ -2,7 +2,6 @@ import { expect, test, type Page } from '@playwright/test';
 
 import { rotateViewportViaCdp } from './cdp';
 import { draw, gotoApp, openSettingsModal, settleFlyIn } from './helpers';
-import { COLORING_IMAGE_SIZES } from '../src/lib/state/books';
 
 import {
   applyFarmPage,
@@ -42,9 +41,12 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
     dialog.getByRole('button', { name: 'Cow coloring page', exact: true })
   ).toBeVisible();
   const pageImages = dialog.locator('.coloring-pages-grid img');
-  const pageThumb = pageTiles.first().locator('img');
-  await expect(pageThumb).toHaveAttribute('srcset', /\/coloring\/max-240px\/farm\/.+\.thumb\.webp/);
-  await expect(pageThumb).toHaveAttribute('sizes', COLORING_IMAGE_SIZES.pageThumbnail.landscape);
+  const pagePreview = pageTiles.first().locator('img');
+  await expect(pagePreview).toHaveAttribute('src', /\/coloring\/farm\/.+\.overlay\.svg/);
+  await expect(pagePreview).not.toHaveAttribute('srcset');
+  await expect(pagePreview).not.toHaveAttribute('sizes');
+  await expect(pagePreview).toHaveCSS('mix-blend-mode', 'normal');
+  await expect(pagePreview).toHaveCSS('filter', 'none');
   await pageTiles.first().click();
 
   await expect(dialog).toBeHidden();
@@ -52,12 +54,13 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
     .poll(() =>
       pageImages.evaluateAll((images) => ({
         count: images.length,
-        allCleared: images.every(
-          (image) => !image.hasAttribute('src') && !image.hasAttribute('srcset')
+        allReusable: images.every(
+          (image) =>
+            /\.overlay\.svg$/.test(image.getAttribute('src') ?? '') && !image.hasAttribute('srcset')
         ),
       }))
     )
-    .toEqual({ count: 6, allCleared: true });
+    .toEqual({ count: 6, allReusable: true });
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
@@ -69,7 +72,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
 test.describe('responsive coloring selection at DPR 1', () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
 
-  test('selects smaller raster thumbnails and one invariant overlay', async ({ page }) => {
+  test('selects a smaller raster cover and invariant page overlays', async ({ page }) => {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
     await openColoringBookGrid(page);
@@ -80,10 +83,10 @@ test.describe('responsive coloring selection at DPR 1', () => {
       .toMatch(/\/coloring\/max-240px\/farm\/cover\.thumb\.webp$/);
 
     const pageTiles = await openFarmPageGrid(page);
-    const pageThumb = pageTiles.first().locator('img');
+    const pagePreview = pageTiles.first().locator('img');
     await expect
-      .poll(() => pageThumb.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/max-240px\/farm\/cat-tall\.thumb\.webp$/);
+      .poll(() => pagePreview.evaluate((image: HTMLImageElement) => image.currentSrc))
+      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
     await pageTiles.first().click();
 
     const overlay = page.locator('#coloringOverlay');
@@ -176,10 +179,10 @@ test.describe('responsive coloring selection at DPR 3', () => {
       .toMatch(/\/coloring\/farm\/cover\.thumb\.webp$/);
 
     const pageTiles = await openFarmPageGrid(page);
-    const pageThumb = pageTiles.first().locator('img');
+    const pagePreview = pageTiles.first().locator('img');
     await expect
-      .poll(() => pageThumb.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/farm\/cat-tall\.thumb\.webp$/);
+      .poll(() => pagePreview.evaluate((image: HTMLImageElement) => image.currentSrc))
+      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
     await pageTiles.first().click();
 
     const overlay = page.locator('#coloringOverlay');
@@ -271,9 +274,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
     await openColoringBookGrid(page);
     const dialog = page.locator('#coloring-book-dialog');
     const cat = (await openFarmPageGrid(page)).first();
-    await expect
-      .poll(() => cat.locator('img').evaluate((img) => (img as HTMLImageElement).naturalWidth))
-      .toBeGreaterThan(0);
+    await expect(cat.locator('img')).toHaveJSProperty('naturalWidth', 0);
     await cat.click();
 
     await expect(dialog).toBeHidden();
@@ -530,7 +531,7 @@ test('a repeat tap where the launch button sat does not dismiss the just-opened 
 test('a repeat tap on a book cover does not pick the page that lands under it', async ({
   page,
 }) => {
-  await gotoAppWithInstalledColoringBook(page, 'dinosaur');
+  await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
   await openColoringBookGrid(page);
 

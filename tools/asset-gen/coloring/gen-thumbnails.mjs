@@ -1,13 +1,9 @@
-// Generates a small grid thumbnail for every coloring-book cover and page under
-// web/static/coloring/. The Coloring Book Picker shows these images in a grid at
-// ~140-300px, but the source art is 1024px+. Thumbnails come from the opaque
-// pen/chalk sources used by the picker.
+// Generates a small grid thumbnail for every coloring-book cover under
+// web/static/coloring/. Page tiles reuse their transparent SVG presentation overlays.
 //
-// The catalog (web/src/lib/state/books.ts) derives every thumb path from its
-// source via `thumbPath()`/`chalkThumbPath()`, and `bookAssetPaths()` lists both
-// — so check:coloring-assets validates the thumbs and strip-static-assets removes them
-// alongside their source. This script is the producer for those paths; keep the
-// naming in sync.
+// The catalog (web/src/lib/state/books.ts) derives both cover paths and lists them through
+// `bookAssetPaths()`, so check:coloring-assets validates the files and native asset stripping
+// follows the same inventory.
 //
 // Run via npm so it picks up the repo's sharp:
 //   npm run gen:coloring-thumbs               regenerate every thumbnail
@@ -22,14 +18,15 @@ import { COLORING_DIR } from '../lib/asset-paths.mjs';
 
 const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
 const THUMB_QUALITY = 80;
+const SOURCE_FILES = ['cover.outline.webp', 'cover.chalk.webp'];
 const SOURCE_SUFFIXES = ['.outline.webp', '.chalk.webp'];
 const THUMB_SUFFIXES = {
   '.outline.webp': '.thumb.webp',
   '.chalk.webp': '.chalk.thumb.webp',
 };
 
-function isSource(path) {
-  return SOURCE_SUFFIXES.some((suffix) => path.endsWith(suffix));
+function isCoverSource(path) {
+  return SOURCE_FILES.some((file) => path.endsWith(`/${file}`));
 }
 
 function thumbTarget(src) {
@@ -44,7 +41,9 @@ const dirs = filter.length
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
 
-const sources = dirs.flatMap((dir) => globSync(join(COLORING_DIR, dir, '*.webp')).filter(isSource));
+const sources = dirs.flatMap((dir) =>
+  globSync(join(COLORING_DIR, dir, '*.webp')).filter(isCoverSource)
+);
 
 if (sources.length === 0)
   fail(

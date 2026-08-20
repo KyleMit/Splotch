@@ -1,19 +1,15 @@
 <script lang="ts">
   import Icon from './Icon.svelte';
-  import {
-    COLORING_IMAGE_SIZES,
-    type ColoringPage,
-    type ResponsiveColoringImage,
-  } from '$lib/state/books';
+  import type { ColoringPage } from '$lib/state/books';
 
   interface Props {
     page: ColoringPage;
-    thumbnail: ResponsiveColoringImage;
+    preview: string;
     hoverArmed: boolean;
     onclear: () => void;
   }
 
-  let { page, thumbnail, hoverArmed, onclear }: Props = $props();
+  let { page, preview, hoverArmed, onclear }: Props = $props();
 </script>
 
 <button
@@ -23,13 +19,7 @@
   aria-label="Clear active coloring page: {page.name}"
   onclick={onclear}
 >
-  <img
-    class="active-page-thumbnail"
-    src={thumbnail.src}
-    srcset={__IS_CAPACITOR__ ? undefined : thumbnail.srcset}
-    sizes={__IS_CAPACITOR__ ? undefined : COLORING_IMAGE_SIZES.activePageThumbnail}
-    alt=""
-  />
+  <img class="active-page-thumbnail" src={preview} alt="" />
   <span class="active-page-name">{page.name}</span>
   <span class="active-page-clear" aria-hidden="true">
     <Icon name="close" class="active-page-clear-icon" />
@@ -71,8 +61,6 @@
     display: block;
     object-fit: contain;
     pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
-    filter: var(--lineart-filter);
   }
 
   .active-page-name {

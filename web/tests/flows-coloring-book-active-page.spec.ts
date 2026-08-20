@@ -1,10 +1,6 @@
 import { expect, test, type Locator } from '@playwright/test';
 
-import {
-  COLORING_IMAGE_SIZES,
-  booksForPlatform,
-  coloringBookGridLayout,
-} from '../src/lib/state/books';
+import { booksForPlatform, coloringBookGridLayout } from '../src/lib/state/books';
 import { gotoApp, settleFlyIn } from './helpers';
 import {
   applyFarmPage,
@@ -104,11 +100,11 @@ test('the active-page chip identifies the page in both picker views', async ({ p
   await expect(chip).toBeVisible();
   await expect(chip).toContainText('Cat');
   await expect(chip.locator('[data-icon="close"]')).toBeVisible();
-  await expect(chip.locator('img')).toHaveAttribute('src', /\/farm\/cat-wide\.thumb\.webp$/);
-  await expect(chip.locator('img')).toHaveAttribute(
-    'sizes',
-    COLORING_IMAGE_SIZES.activePageThumbnail
-  );
+  await expect(chip.locator('img')).toHaveAttribute('src', /\/farm\/cat-wide\.overlay\.svg$/);
+  await expect(chip.locator('img')).not.toHaveAttribute('srcset');
+  await expect(chip.locator('img')).not.toHaveAttribute('sizes');
+  await expect(chip.locator('img')).toHaveCSS('mix-blend-mode', 'normal');
+  await expect(chip.locator('img')).toHaveCSS('filter', 'none');
 
   await openFarmPageGrid(page);
   await expect(dialog.getByRole('heading', { name: 'Farm', exact: true })).toBeVisible();

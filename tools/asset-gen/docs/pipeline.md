@@ -19,11 +19,9 @@ live assets regenerate, these don't.
 
 ```mermaid
 flowchart LR
-    O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker, light)"]
-    O -->|vectorize:coloring| PO[".overlay.svg<br/>(canvas, light)"]
+    O["pen outline<br/>(.outline.webp)"] -->|vectorize:coloring| PO[".overlay.svg<br/>(picker + canvas, light)"]
     O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
-    C -->|gen:coloring-thumbs| CT[".chalk.thumb.webp<br/>(picker, dark)"]
-    C -->|vectorize:coloring| CO[".dark.overlay.svg<br/>(canvas, dark)"]
+    C -->|vectorize:coloring| CO[".dark.overlay.svg<br/>(picker + canvas, dark)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
     C -->|"gen-night-fills<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punched-fills| LS["shipped .light.webp<br/>(fills-only)"]
@@ -48,8 +46,6 @@ the white-blob problem and two earlier generations of fixes — is chronicled in
 | ------------------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `{page}.outline.webp`           | `web/static/coloring/{book}/`      | yes — the PEN outline: light-mode overlay, source of all derivations                                                                   | hand-curated + `normalize-outline-strokes.mjs` |
 | `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-chalk-outlines.mjs` from the pen          |
-| `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-thumbnails.mjs`                           |
-| `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-thumbnails.mjs`                           |
 | `{page}.overlay.svg`            | `web/static/coloring/{book}/`      | yes — invariant transparent black pen for source-over light canvas presentation                                                        | `vectorize-coloring-overlays.mjs`              |
 | `{page}.dark.overlay.svg`       | `web/static/coloring/{book}/`      | yes — invariant transparent white chalk for source-over dark canvas presentation                                                       | `vectorize-coloring-overlays.mjs`              |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`  |
@@ -67,10 +63,9 @@ All intelligence lives at generation time, behind gates, with a human review at 
 ## Stage 1 — Pen outlines
 
 The pen outline is the source of everything: the light overlay renders it, the light punch masks
-with it, the light-fill generator conditions on it, the chalk redraws from it, and the light picker
-thumbnail is a resize of it (the dark tile's `.chalk.thumb` resizes the chalk). **Every downstream
-regeneration flows from a pen change**, so a pen edit means regenerating the page's whole suite
-(thumbs + chalk + light + night + punch).
+with it, the light-fill generator conditions on it, and the chalk redraws from it. **Every
+downstream regeneration flows from a pen change**, so a pen edit means regenerating the page's whole
+suite (vector overlays + chalk + light + night + punch).
 
 ### Outline quality, and the audit that measures it
 
@@ -199,9 +194,8 @@ ladybug's first take gave it white shell spots) are caught only by human review 
 shell-spot note is seeded there).
 
 After applying a page chalk, regenerate the page's **night fill** (it conditions on the chalk),
-re-punch, and re-run `gen:coloring-thumbs` (the chalk's `.chalk.thumb.webp` is the dark-mode picker
-tile). A cover chalk needs only the thumbnail and responsive stages. Pen thumbs and light fills are
-untouched — they belong to the pen.
+re-punch, and regenerate its dark SVG overlay. A cover chalk needs only the thumbnail and responsive
+stages. Light fills are untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 
@@ -545,7 +539,7 @@ Hard-won process lessons:
 | `npm run check:coloring-fill-eyes -- [cat]`                 | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
 | `npm run check:coloring-invented-shapes -- [cat]`           | invented colored shapes floating on the open background of committed raws                       | no       |
 | `npm run check:coloring-night-halo -- [cat]`                | shipped halo audit: normalized candidate bar plus separate raw-score crop-review flag           | no       |
-| `npm run gen:coloring-thumbs -- [cat]`                      | picker thumbnails (pen `.thumb` + chalk `.chalk.thumb`)                                         | no       |
+| `npm run gen:coloring-thumbs -- [cat]`                      | light/dark cover thumbnails (`cover.thumb` + `cover.chalk.thumb`)                               | no       |
 | `npm run check:coloring-golden-scores`                      | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
 | `npm run update:coloring-golden-scores`                     | adopt the current scores as the new golden baseline                                             | no       |
 | `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                      | no       |

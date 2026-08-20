@@ -283,10 +283,11 @@ npm run perf:ios:xcuitest:actions --ignore-scripts -- --device-id=<UDID> \
 ```
 
 The default four-repeat suite retains one warmup and three scored samples across the action drawer,
-palette, brushes, stroke width, Settings and every section, themes, coloring-page selection/removal,
-screenshot, undo, drag-to-clear, and rotation. It writes `actions.json` and fails a grouped action
-when frame P95 exceeds 20 ms or the first/worst frame exceeds 33.5 ms. Use `--report-only` for a
-broad discovery sweep, then `--actions=` for one-change trials against the failing family.
+palette, brushes, stroke width, Settings and every section, themes, coloring-grid open/scroll plus
+page selection/removal, screenshot, undo, drag-to-clear, and rotation. It writes `actions.json` and
+fails a grouped action when frame P95 exceeds 20 ms or the first/worst frame exceeds 33.5 ms. Use
+`--report-only` for a broad discovery sweep, then `--actions=` for one-change trials against the
+failing family.
 
 The rAF recorder runs inside MobileSafari, so WebDriver's Mac/device round-trip is not part of the
 frame score. The reported first-observed readiness is only an upper bound: the driver must return

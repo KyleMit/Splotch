@@ -44,18 +44,17 @@ gates:
   is the "dedicated night line art" option *domesticated*: an edit, not a fresh generation, so
   registration is provable.
 * **Storage polarity:** the chalk ships **ink-on-white** (the negation of what dark mode displays).
-  Every ink-on-white analysis tool (outline-match, punch, audits) reads chalks unmodified; the
-  picker applies the original `invert(1)` + `screen` treatment. The full-page canvas uses the
-  generated transparent white `.dark.overlay.svg` sibling from
-  [`alpha-line-art-overlays.md`](alpha-line-art-overlays.md), so WebKit does not retain a full-page
-  blend/filter layer (ADR-0091).
+  Every ink-on-white analysis tool (outline-match, punch, audits) reads chalks unmodified. Page
+  previews and the full-page canvas use the generated transparent white `.dark.overlay.svg` sibling
+  from [`alpha-line-art-overlays.md`](alpha-line-art-overlays.md), so WebKit does not retain a
+  full-page blend/filter layer (ADR-0091).
 * **The punch is per-theme** (`lib/punch-fill.mjs`): light raws punch against the pen, night raws
   against the chalk. The generated white alpha overlay preserves the chalk's solid whites in the
   final combined image — the punch and renderer stay dumb; all judgment lives in the chalk.
 * **Night fills condition on the chalk** (`gen-night-fills.mjs`): the model input is the chalk
   as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill + screened
   chalk over dark paper), since the chalk now owns the eye whites.
-* **Covers stop after the picker derivatives.** They use the same registered chalk redraw and
+* **Covers stop after the picker derivatives.** They use the same chalk redraw and
   `.chalk.thumb.webp` naming, but have no fill, punch, or full-page overlay stages.
 * **Incremental migration:** `books.ts` lists chalk orientations per page (like `night`); absent a
   chalk, the dark alpha overlay is derived from the pen — visually matching the pre-fork inversion

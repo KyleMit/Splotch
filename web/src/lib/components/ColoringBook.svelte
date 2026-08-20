@@ -5,11 +5,9 @@
   import { coloringBookState, setOverlayOrientation } from '$lib/state/coloringBook.svelte';
   import { isNative } from '$lib/platform';
   import {
-    COLORING_IMAGE_SIZES,
     coloringBookGridLayout,
     coverThumbImageSource,
     pageOverlayImage,
-    pageThumbImageSource,
     type Book,
     type ColoringPage,
     type ResponsiveColoringImage,
@@ -23,7 +21,6 @@
   import { canvasState } from '$lib/state/canvas.svelte';
   import { availableColoringBooks } from '$lib/state/coloringPacks.svelte';
   import {
-    cancelImageRequest,
     cancelImagePrefetchesExcept,
     prefetchImages,
     type ResponsiveImageRequest,
@@ -40,7 +37,6 @@
 
   let activeBook = $state<Book | null>(null);
   let pagesGridToken = $state(0);
-  let dialogEl: HTMLDialogElement;
   // The tall/wide art variant follows the engine's PAPER, not the live viewport:
   // after a rotation with ink on the canvas the paper stays locked (ADR-0050),
   // so the variant the child colored on must stay applied — and any page picked
@@ -48,14 +44,11 @@
   // layout.orientation is only a fallback until the engine mounts.
   const orientation = $derived(canvasState.paperOrientation ?? layout.orientation);
   const activePage = $derived(coloringBookState.overlayPage);
-  const activePageThumbnail = $derived(
-    activePage
-      ? pageThumbImageSource(activePage, coloringBookState.orientation, resolvedTheme())
-      : null
+  const activePagePreview = $derived(
+    activePage ? pageOverlayImage(activePage, coloringBookState.orientation, resolvedTheme()) : null
   );
   const bookGridLayout = $derived(coloringBookGridLayout(books.length));
   const coverThumbnailSizes = $derived(bookGridLayout.imageSizes);
-  const pageThumbnailSizes = $derived(COLORING_IMAGE_SIZES.pageThumbnail[orientation]);
 
   // Warm the resolved theme's cover thumbnails at idle so the first picker open
   // and a later theme change both paint without fetching every cover on demand.
@@ -76,16 +69,10 @@
     );
   });
 
-  // Pressing/hovering a book tile warms that book's page thumbs before the
-  // sub-grid renders; hovering a page tile warms its selected overlay candidate
-  // so applying it to the canvas is immediate. Page thumbs are theme-aware (chalk in dark
-  // mode) — reading resolvedTheme() keeps the warmed set and the grid in sync.
+  // Pressing/hovering a book tile warms that book's theme-matched SVG overlays before the
+  // sub-grid renders. Hovering a page keeps that selected URL warm for applying it to the canvas.
   function prefetchBookPages(book: Book) {
-    prefetchImages(
-      book.pages.map((page) =>
-        imageRequest(pageThumbImageSource(page, orientation, resolvedTheme()), pageThumbnailSizes)
-      )
-    );
+    prefetchImages(book.pages.map((page) => pageOverlayImage(page, orientation, resolvedTheme())));
   }
   function prefetchPageOverlay(page: ColoringPage) {
     prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
@@ -101,9 +88,6 @@
   function pickPage(page: ColoringPage) {
     const selectedOverlayUrl = pageOverlayImage(page, orientation, resolvedTheme());
     cancelImagePrefetchesExcept(selectedOverlayUrl);
-    // Cancelling live thumbnail requests removes their source attributes, so the keyed page grid
-    // remounts them on every dialog open instead of relying on a book-picker branch transition.
-    for (const img of dialogEl.querySelectorAll('img')) cancelImageRequest(img);
     applyColoringPageWithMagicUndo(page, orientation, resolvedTheme());
     coloringBookModal.hide();
   }
@@ -164,10 +148,10 @@
 </script>
 
 {#snippet activePageChip()}
-  {#if activePage && activePageThumbnail}
+  {#if activePage && activePagePreview}
     <ActivePageChip
       page={activePage}
-      thumbnail={activePageThumbnail}
+      preview={activePagePreview}
       {hoverArmed}
       onclear={clearAndClose}
     />
@@ -185,7 +169,6 @@
 {/snippet}
 
 <dialog
-  bind:this={dialogEl}
   class="coloring-book-modal modal-dialog modal-fly-in modal-shell"
   id="coloring-book-dialog"
   use:modalDialog={() => ({
@@ -253,7 +236,7 @@
             use:cutTrailingRow
           >
             {#each activeBook.pages as page (page.id)}
-              {@const pageImage = pageThumbImageSource(page, orientation, resolvedTheme())}
+              {@const pageImage = pageOverlayImage(page, orientation, resolvedTheme())}
               <button
                 class="coloring-tile"
                 type="button"
@@ -262,13 +245,7 @@
                 onpointerenter={() => prefetchPageOverlay(page)}
                 onpointerdown={() => prefetchPageOverlay(page)}
               >
-                <img
-                  src={pageImage.src}
-                  srcset={__IS_CAPACITOR__ ? undefined : pageImage.srcset}
-                  sizes={__IS_CAPACITOR__ ? undefined : pageThumbnailSizes}
-                  alt=""
-                  loading="lazy"
-                />
+                <img src={pageImage} alt="" loading="lazy" />
               </button>
             {/each}
           </div>
@@ -439,17 +416,12 @@
     transform: scale(0.96);
   }
 
-  /* Same treatment as the canvas overlay (--lineart-*): black lines multiply over
-     the light tile; dark mode inverts them to white and screens them over the dark
-     tile, so the picker preview matches the chalkboard the page applies to. */
   .coloring-tile img {
     width: 100%;
     height: 100%;
     object-fit: contain;
     padding: var(--space-2);
     pointer-events: none;
-    mix-blend-mode: var(--lineart-blend);
-    filter: var(--lineart-filter);
   }
 
   /* The 28px bottom band reserves the overlaid .coloring-book-label's height:
@@ -457,6 +429,8 @@
      Functional, not scale drift. */
   .coloring-book-tile img {
     padding: var(--space-2) var(--space-2) 28px var(--space-2);
+    mix-blend-mode: var(--lineart-blend);
+    filter: var(--lineart-filter);
   }
 
   .coloring-pages-grid .coloring-tile {

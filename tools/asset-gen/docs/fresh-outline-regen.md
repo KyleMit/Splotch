@@ -46,9 +46,9 @@ regenerated face pages now score lively in both themes (`farm/dog-tall` 2/2, `ve
 line-color, and composite eye audits; light mode byte-stability does not apply (this pass
 intentionally replaces light assets).
 
-Each fresh page also ships a `{page}.chalk.thumb.webp` (a plain resize of its chalk) as the first
-batch toward IDEAS #19 — since landed catalog-wide: every chalk has a `.chalk.thumb.webp` and the
-picker shows it in dark mode (`pageThumb()` in `books.ts`).
+Each fresh page originally shipped a `{page}.chalk.thumb.webp` as part of the dark-picker rollout.
+Those raster page thumbnails were retired after the picker began reusing the shipped dark SVG
+overlay; only cover thumbnails remain.
 
 ## What did NOT get a fresh drawing, and why
 

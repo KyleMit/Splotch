@@ -76,10 +76,9 @@ the duplication is the accepted cost; keep the blocks in sync.
 * **Coloring pages stay on the DARK paper — white "chalk" line art + pre-colored NIGHT fills
   (direction B).** A coloring page keeps the same dark chalkboard paper as free-draw, not a light
   sheet. The full-page canvas uses generated transparent black/white presentation siblings with
-  ordinary source-over composition (ADR-0091). The coloring-book **picker tiles**
-  (`ColoringBook.svelte`) retain the `--lineart-*` token treatment on their small thumbnails, so
-  covers and page thumbnails preview as white-on-dark in dark mode, matching the chalkboard the page
-  applies to. The magic brush then reveals a whole PARALLEL SET of pre-colored **night fills**
+  ordinary source-over composition (ADR-0091). Coloring-book page tiles reuse those same
+  theme-matched SVGs; only raster cover thumbnails retain the `--lineart-*` token treatment. The
+  magic brush then reveals a whole PARALLEL SET of pre-colored **night fills**
   (`{page}-{orient}.night.webp`, `tools/asset-gen/bin/gen-coloring-fills-dark.mjs`): deep-navy
   backgrounds with glowing, cozy-night fills, registered to the original outline. `DrawingCanvas`
   picks the fill by `resolvedTheme()` — the light fill (`.light.webp`) in light mode, the night fill

@@ -35,11 +35,11 @@ async function selectFarmImages(page: Page) {
   await openDrawer(page);
   await openColoringDialog(page);
   const pages = await openFarmPageGrid(page);
-  const pageThumbnail = pages.first().locator('img');
+  const pagePreview = pages.first().locator('img');
   await expect
-    .poll(() => pageThumbnail.evaluate((image: HTMLImageElement) => image.naturalWidth))
+    .poll(() => pagePreview.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .not.toBe(0);
-  const pageThumbnailSource = await imageSourceAndDecodedWidth(pageThumbnail);
+  const pagePreviewSource = await imageSourceAndDecodedWidth(pagePreview);
   await pages.first().click();
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
@@ -47,7 +47,7 @@ async function selectFarmImages(page: Page) {
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.naturalWidth))
     .not.toBe(0);
   return {
-    pageThumbnail: pageThumbnailSource,
+    pagePreview: pagePreviewSource,
     overlay: await imageSourceAndDecodedWidth(overlay),
   };
 }
@@ -138,7 +138,7 @@ test('a repeat visit is controlled by the service worker with no stroke gate', a
 test.describe('responsive coloring offline fallback', () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
 
-  test('serves canonical precache bytes for offline DPR 1 and DPR 3 srcset choices', async ({
+  test('serves canonical precache bytes for offline DPR 1 and DPR 3 page previews', async ({
     page,
   }) => {
     test.setTimeout(120_000);
@@ -160,7 +160,6 @@ test.describe('responsive coloring offline fallback', () => {
     expect(cachedPaths).toEqual(
       expect.arrayContaining([
         '/coloring/farm/cover.thumb.webp',
-        '/coloring/farm/cat-tall.thumb.webp',
         '/coloring/farm/cat-tall.overlay.svg',
       ])
     );
@@ -173,9 +172,9 @@ test.describe('responsive coloring offline fallback', () => {
     await gotoApp(page);
 
     const dprOne = await selectFarmImages(page);
-    expect(dprOne.pageThumbnail).toEqual({
-      currentSrc: '/coloring/max-240px/farm/cat-tall.thumb.webp',
-      decodedWidth: 267,
+    expect(dprOne.pagePreview).toEqual({
+      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
+      decodedWidth: 1024,
     });
     expect(dprOne.overlay).toEqual({
       currentSrc: '/coloring/farm/cat-tall.overlay.svg',
@@ -190,9 +189,9 @@ test.describe('responsive coloring offline fallback', () => {
     });
     await gotoApp(page);
     const dprThree = await selectFarmImages(page);
-    expect(dprThree.pageThumbnail).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.thumb.webp',
-      decodedWidth: 267,
+    expect(dprThree.pagePreview).toEqual({
+      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
+      decodedWidth: 1024,
     });
     expect(dprThree.overlay).toEqual({
       currentSrc: '/coloring/farm/cat-tall.overlay.svg',

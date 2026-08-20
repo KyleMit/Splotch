@@ -5,7 +5,6 @@ import sharp from 'sharp';
 import {
   BOOKS,
   coverThumbImageSource,
-  pageThumbImageSource,
   responsiveColoringAssets,
 } from '../../../web/src/lib/state/books.ts';
 import { WEB_STATIC } from '../lib/asset-paths.mjs';
@@ -18,7 +17,7 @@ import {
 // wall time tracks how many sibling files vitest decodes on the same cores, not its own work, so the
 // budget is several times the solo run — a margin under contention, not a performance assertion.
 const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 120_000;
-const EXPECTED_RESPONSIVE_ASSET_COUNT = 400;
+const EXPECTED_RESPONSIVE_ASSET_COUNT = 208;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -32,13 +31,6 @@ function srcsetWidths() {
   for (const book of BOOKS) {
     record(coverThumbImageSource(book, 'light'));
     record(coverThumbImageSource(book, 'dark'));
-    for (const page of book.pages) {
-      for (const orientation of ['portrait', 'landscape']) {
-        for (const theme of ['light', 'dark']) {
-          record(pageThumbImageSource(page, orientation, theme));
-        }
-      }
-    }
   }
   return widths;
 }

@@ -63,7 +63,7 @@ web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thum
 pixels wide and is advertised as `1152w`. The catalog owns both paths and descriptor widths, and an
 asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
 
-Invariant SVG presentation overlays have no responsive derivatives. Raster fills and picker
+Invariant SVG presentation overlays have no responsive derivatives. Raster fills and picker cover
 thumbnails retain their responsive tiers. Native also stays canonical: `build:cap` removes every
 `max-{edge}px` directory until downloadable native packs can select a tier (issue #200).
 
@@ -72,21 +72,18 @@ derivative was smaller than its source while retaining the overlay pipeline's st
 quantization and maximum 4/255 composite-channel error. That result remains sizing evidence for the
 temporary comparison format; runtime overlays no longer live in the tier.
 
-The picker tier is `max-240px`. Its 160px-wide portrait candidate covers the approximately 152 CSS
-pixel portrait slot on a 390px-wide DPR 1 viewport; the initially considered `max-200px` tier was
-only 134px wide and therefore lost to the 267px canonical candidate in that common layout. The 240px
-tier is the smallest round max-edge tier that crosses that selection boundary.
+The picker tier is `max-240px`. It serves the 400 px square cover thumbnails without affecting page
+tiles, which reuse the invariant SVG presentation overlays directly.
 
 Key implementation points:
 
-* `web/src/lib/state/books.ts` builds all catalog paths; `thumbPath()` swaps `.outline.webp` →
-  `.thumb.webp`, `chalkThumbPath()` swaps `.chalk.webp` → `.chalk.thumb.webp`, and each is
-  deliberately a **no-op on other paths** (only line art has thumbnails).
-* `responsiveColoringAssets()` derives web-only tier paths for raster fills and thumbnails;
+* `web/src/lib/state/books.ts` builds all catalog paths and derives the light/dark cover-thumbnail
+  siblings. Page tiles use the same `pageOverlayImage()` URL as the canvas.
+* `responsiveColoringAssets()` derives web-only tier paths for raster fills and cover thumbnails;
   invariant SVG page overlays have no responsive candidate. `bookAssetPaths()` includes every
   runtime path so `check:coloring-assets` rejects a partial inventory.
-* The asset-gen generators select line art positively by suffix (`gen-thumbnails.mjs` `isSource`
-  matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
+* The asset-gen generators select line art positively (`gen-thumbnails.mjs` accepts only
+  `cover.outline.webp` + `cover.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
   `gen-light-fills.mjs` / `gen-night-fills.mjs` / `check-fill-drift.mjs`) — no exclusion lists.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`, and the mask
   path by swapping `.{light,night}` → `.outline`.

@@ -42,6 +42,7 @@ const IDLE_CONTROL_MS = 5_000;
 const REPEAT_SETTLE_MS = 500;
 const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
+const COLORING_SCROLL_MS = 450;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
@@ -405,6 +406,51 @@ async function measureClick({
   await sleep(settleMs);
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   return { ...sample, activation: activationMode };
+}
+
+async function measureColoringPageScroll(client, sessionId, execute) {
+  const selector = '#coloring-book-dialog';
+  const scrollable = await execute(`
+    const dialog = document.querySelector(${JSON.stringify(selector)});
+    return !!dialog && dialog.scrollHeight > dialog.clientHeight;
+  `);
+  if (!scrollable) return null;
+
+  const { bounds, webContext } = await nativeBoundsForSelector(
+    client,
+    sessionId,
+    execute,
+    selector
+  );
+  const x = Math.round(bounds.x + bounds.width / 2);
+  const startY = Math.round(bounds.y + bounds.height * 0.75);
+  const endY = Math.round(bounds.y + bounds.height * 0.3);
+  await ensureActionProbe(execute);
+  await execute(
+    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ['pointerdown']);`
+  );
+  await performNativeGesture(client, sessionId, webContext, [
+    { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
+    { type: 'pointerDown', button: 0 },
+    {
+      type: 'pointerMove',
+      duration: COLORING_SCROLL_MS,
+      origin: 'viewport',
+      x,
+      y: endY,
+    },
+    { type: 'pointerUp', button: 0 },
+  ]);
+  const readyAt = await waitForReady(
+    execute,
+    `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
+    'coloring pages to scroll'
+  );
+  await sleep(ACTION_SETTLE_MS);
+  const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
+  await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
+  await sleep(ACTION_SETTLE_MS);
+  return { ...sample, activation: 'native-touch' };
 }
 
 async function measureIdle(execute) {
@@ -1149,6 +1195,10 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
       `return document.querySelector('#coloring-book-dialog button[aria-label$="coloring book"]') !== null;`
     );
     for (const step of coloringSelectionSteps(hasBookChoice)) {
+      if (step.label === 'select coloring page') {
+        const scrollSample = await measureColoringPageScroll(client, sessionId, execute);
+        if (scrollSample) samples.push(scrollSample);
+      }
       await record(measureClick({ client, sessionId, execute, ...step }));
     }
     await clickSetupElement(execute, '#coloringBookButton');

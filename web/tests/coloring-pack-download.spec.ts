@@ -79,7 +79,7 @@ test('a fresh install opens the Farm pages directly before packs arrive', async 
   await expect(page.locator('#coloringOverlay')).toBeHidden();
 });
 
-test('removing downloaded books restores single-book page thumbnails', async ({ page }) => {
+test('removing downloaded books restores single-book page previews', async ({ page }) => {
   await gotoAppWithInstalledColoringBook(page, 'dinosaur');
   await openDrawer(page);
   await openColoringDialog(page);

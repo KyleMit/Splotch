@@ -196,6 +196,29 @@ describe('action state planning', () => {
     ]);
   });
 
+  it('measures a scrollable page grid before selecting a coloring page', () => {
+    const coloringStart = IPAD_ACTIONS.indexOf("if (actions.has('coloring'))");
+    const selectionStart = IPAD_ACTIONS.indexOf(
+      'coloringSelectionSteps(hasBookChoice)',
+      coloringStart
+    );
+    const selectPage = IPAD_ACTIONS.indexOf(
+      "step.label === 'select coloring page'",
+      selectionStart
+    );
+    const scroll = IPAD_ACTIONS.indexOf('measureColoringPageScroll', selectPage);
+    const click = IPAD_ACTIONS.indexOf(
+      'measureClick({ client, sessionId, execute, ...step })',
+      scroll
+    );
+
+    expect(coloringStart).toBeGreaterThan(-1);
+    expect(selectionStart).toBeGreaterThan(coloringStart);
+    expect(selectPage).toBeGreaterThan(selectionStart);
+    expect(scroll).toBeGreaterThan(selectPage);
+    expect(click).toBeGreaterThan(scroll);
+  });
+
   it('chooses a visible inactive palette swatch', () => {
     const expression = visibleInactiveSwatchColorExpression();
 

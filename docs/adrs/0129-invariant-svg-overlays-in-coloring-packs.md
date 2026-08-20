@@ -40,8 +40,9 @@ We considered three pack representations:
 Choose option 3 for every light- and dark-mode page overlay.
 
 Every light overlay uses `{page}.overlay.svg`, and every dark overlay uses
-`{page}.dark.overlay.svg`. Picker covers and thumbnails, Magic fills, and authoring outlines remain
-raster assets.
+`{page}.dark.overlay.svg`. Picker covers, Magic fills, and authoring outlines remain raster assets.
+The page picker and active-page chip use those exact theme- and orientation-matched SVG URLs without
+responsive candidates or CSS line-art filters. Only book covers retain raster thumbnails.
 
 Each committed Vectorizer SVG passes through `tools/vectorize/postprocess-svg.mjs`. The pinned,
 multipass SVGO transformation must reach a byte-stable fixed point, and it restores intrinsic

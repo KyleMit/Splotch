@@ -1,5 +1,5 @@
 // The rune-free catalog is shared by the app and Node build scripts. Pen and chalk source art,
-// theme-specific fills, picker thumbnails, presentation overlays, responsive derivatives, and
+// theme-specific fills, cover thumbnails, presentation overlays, responsive derivatives, and
 // pack membership follow ADR-0043, ADR-0045, ADR-0103, and ADR-0129. `bookAssetPaths()` is the
 // distribution authority used by validation, pack manifests, and native asset stripping.
 
@@ -101,16 +101,9 @@ const TALL_COVER_GRID_MEDIA = '(max-aspect-ratio: 4 / 5) and (min-width: 741px)'
  */
 const TALL_COVER_SIZE = `${TALL_COVER_GRID_MEDIA} 25vh`;
 export const COLORING_IMAGE_SIZES = {
-  activePageThumbnail: '36px',
   coverThumbnail: {
     standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
     orphan: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px`,
-  },
-  pageThumbnail: {
-    portrait:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 88px) / 3), 277px',
-    landscape:
-      '(max-width: 520px) calc((90vw - 48px) / 2), (max-width: 1022px) calc((90vw - 76px) / 2), 422px',
   },
 } as const;
 
@@ -289,36 +282,20 @@ export function pageOverlayImage(
   return resolveColoringAssetUrl(pageOverlayAssetPath(page, orientation, theme));
 }
 
-/** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */
-export function thumbPath(src: string): string {
+function coverThumbPath(src: string): string {
   return src.endsWith(ASSET_SUFFIXES.outline)
     ? `${src.slice(0, -ASSET_SUFFIXES.outline.length)}${ASSET_SUFFIXES.thumb}`
     : src;
 }
 
-/** Grid-thumbnail path for a chalk outline (`x.chalk.webp` -> `x.chalk.thumb.webp`). */
-export function chalkThumbPath(src: string): string {
+function chalkCoverThumbPath(src: string): string {
   return src.endsWith(ASSET_SUFFIXES.chalk)
     ? `${src.slice(0, -ASSET_SUFFIXES.chalk.length)}${ASSET_SUFFIXES.chalkThumb}`
     : src;
 }
 
-/** Picker-tile thumbnail for a page, theme-aware: dark mode shows the CHALK
-    thumbnail where the orientation has a chalk (stored ink-on-white like every
-    source line-art asset — the tile's --lineart-filter invert + screen renders
-    it as white chalk), falling back to the inverted pen thumbnail for un-forked
-    pages. */
-export function pageThumb(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): string {
-  const chalk = theme === 'dark' ? page.chalkImages[orientation] : undefined;
-  return chalk ? chalkThumbPath(chalk) : thumbPath(page.images[orientation]);
-}
-
 export function coverThumb(book: Book, theme: ResolvedTheme): string {
-  return theme === 'dark' ? chalkThumbPath(book.chalkCover) : thumbPath(book.cover);
+  return theme === 'dark' ? chalkCoverThumbPath(book.chalkCover) : coverThumbPath(book.cover);
 }
 
 export function coverThumbImageSource(book: Book, theme: ResolvedTheme): ResponsiveColoringImage {
@@ -329,45 +306,21 @@ export function coverThumbImageSource(book: Book, theme: ResolvedTheme): Respons
   return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
-export function pageThumbImageSource(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): ResponsiveColoringImage {
-  const source = pageThumb(page, orientation, theme);
-  const tier = RESPONSIVE_COLORING_TIERS.thumbnail;
-  const widths = tier.widths[orientation];
-  const image = responsiveImage(source, tier.directory, widths.candidate, widths.source);
-  return { ...image, src: resolveColoringAssetUrl(source) };
-}
-
 export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] {
   const overlayTier = RESPONSIVE_COLORING_TIERS.overlay;
   const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
-  const thumbnailSources: Array<{
-    source: string;
-    shape: BookOrientation | 'cover';
-  }> = [
-    { source: thumbPath(book.cover), shape: 'cover' },
-    { source: chalkThumbPath(book.chalkCover), shape: 'cover' },
-  ];
-  for (const page of book.pages) {
-    for (const orientation of ALL_ORIENTATIONS) {
-      thumbnailSources.push({ source: thumbPath(page.images[orientation]), shape: orientation });
-      const chalk = page.chalkImages[orientation];
-      if (chalk) thumbnailSources.push({ source: chalkThumbPath(chalk), shape: orientation });
+  const thumbnailAssets = [coverThumbPath(book.cover), chalkCoverThumbPath(book.chalkCover)].map(
+    (source) => {
+      const widths = thumbnailTier.widths.cover;
+      return {
+        source,
+        target: responsiveTierPath(source, thumbnailTier.directory),
+        maxEdgePx: thumbnailTier.maxEdgePx,
+        widthPx: widths.candidate,
+        encoding: 'thumbnail' as const,
+      };
     }
-  }
-  const thumbnailAssets = thumbnailSources.map(({ source, shape }) => {
-    const widths = thumbnailTier.widths[shape];
-    return {
-      source,
-      target: responsiveTierPath(source, thumbnailTier.directory),
-      maxEdgePx: thumbnailTier.maxEdgePx,
-      widthPx: widths.candidate,
-      encoding: 'thumbnail' as const,
-    };
-  });
+  );
   const fillAssets = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.flatMap((orientation) => {
       const widths = overlayTier.widths[orientation];
@@ -386,7 +339,7 @@ export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] 
 }
 
 export function bookAssetPaths(book: Book): string[] {
-  // Pen line art shown in the picker (cover + both orientations of each page).
+  // Pen line art remains the raster authoring source for covers and page overlays.
   const penLineArt = [
     book.cover,
     ...book.pages.flatMap((page) => [page.images.portrait, page.images.landscape]),
@@ -402,8 +355,7 @@ export function bookAssetPaths(book: Book): string[] {
   const nightFills = book.pages.flatMap((page) =>
     ALL_ORIENTATIONS.map((o) => page.nightImages[o]).filter((p): p is string => !!p)
   );
-  // Chalk outlines exist only for forked orientations — they produce the dark
-  // presentation overlay and the picker tile's .chalk.thumb sibling.
+  // Chalk outlines remain the raster authoring source for dark vector overlays.
   const chalkOutlines = [
     book.chalkCover,
     ...book.pages.flatMap((page) =>
@@ -421,28 +373,15 @@ export function bookAssetPaths(book: Book): string[] {
     ...lightFills,
     ...nightFills,
     ...chalkOutlines,
-    ...penLineArt.map(thumbPath),
-    ...chalkOutlines.map(chalkThumbPath),
+    coverThumbPath(book.cover),
+    chalkCoverThumbPath(book.chalkCover),
     ...overlays,
     ...responsiveColoringAssets(book).map((asset) => asset.target),
   ];
 }
 
 export function bookPackAssetPaths(book: Book): string[] {
-  const penThumbs = [
-    thumbPath(book.cover),
-    ...book.pages.flatMap((page) =>
-      ALL_ORIENTATIONS.map((orientation) => thumbPath(page.images[orientation]))
-    ),
-  ];
-  const chalkThumbs = [
-    chalkThumbPath(book.chalkCover),
-    ...book.pages.flatMap((page) =>
-      ALL_ORIENTATIONS.map((orientation) => page.chalkImages[orientation])
-        .filter((path): path is string => !!path)
-        .map(chalkThumbPath)
-    ),
-  ];
+  const coverThumbs = [coverThumbPath(book.cover), chalkCoverThumbPath(book.chalkCover)];
   const fills = book.pages.flatMap((page) => [
     ...ALL_ORIENTATIONS.map((orientation) => page.colorImages[orientation]),
     ...ALL_ORIENTATIONS.map((orientation) => page.nightImages[orientation]).filter(
@@ -455,5 +394,5 @@ export function bookPackAssetPaths(book: Book): string[] {
       pageOverlayAssetPath(page, orientation, 'dark'),
     ])
   );
-  return [...penThumbs, ...chalkThumbs, ...fills, ...overlays];
+  return [...coverThumbs, ...fills, ...overlays];
 }

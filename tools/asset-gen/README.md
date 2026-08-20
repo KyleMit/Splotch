@@ -1,7 +1,7 @@
 # asset-gen — Splotch asset-generation pipeline
 
 The AI (`@google/genai`) and image-processing (`sharp`) tooling that **produces** Splotch's
-committed art: AI style covers, the light/dark coloring-page fills, picker thumbnails, and
+committed art: AI style covers, the light/dark coloring-page fills, picker cover thumbnails, and
 format/line-art utilities. It lives in its own folder so you can iterate on it in a small footprint
 — the app never runs any of this at build time; it just reads the committed outputs from
 `web/static/`.
@@ -74,9 +74,9 @@ npm run check:coloring-fill-drift # drift-check the raw fills in fill-src/ (no k
 npm run check:coloring-invented-shapes # invented colored shapes on the open background of the raws (no key/network)
 npm run check:coloring-night-halo # audit shipped night fills against the candidate halo bar + crop-review signal (no key/network)
 npm run gen:coloring-punched-fills      # re-punch the shipped fills from fill-src/ raws (no key/network)
-npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
+npm run gen:coloring-thumbs     # light/dark cover thumbnails -> web/static/coloring/**/cover*.thumb.webp
 npm run gen:coloring-overlays   # temporary full-resolution WebP comparison overlays for SVG regeneration
-npm run gen:coloring-responsive # web srcset tiers from canonical fills/thumbs -> web/static/coloring/max-*px/
+npm run gen:coloring-responsive # web srcset tiers from canonical fills/cover thumbs -> web/static/coloring/max-*px/
 npm run check:coloring-golden-scores # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run update:coloring-golden-scores # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
