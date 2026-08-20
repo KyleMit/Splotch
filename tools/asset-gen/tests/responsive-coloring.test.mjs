@@ -5,7 +5,6 @@ import sharp from 'sharp';
 import {
   BOOKS,
   coverThumbImageSource,
-  pageOverlayImageSource,
   pageThumbImageSource,
   responsiveColoringAssets,
 } from '../../../web/src/lib/state/books.ts';
@@ -36,7 +35,6 @@ function srcsetWidths() {
     for (const page of book.pages) {
       for (const orientation of ['portrait', 'landscape']) {
         for (const theme of ['light', 'dark']) {
-          record(pageOverlayImageSource(page, orientation, theme));
           record(pageThumbImageSource(page, orientation, theme));
         }
       }
