@@ -1,5 +1,11 @@
 import { releaseAllPointers } from '$lib/drawing/engine';
-import { stopDrawSound } from '$lib/audio/drawingSound';
+import {
+  cancelClearSound,
+  commitClearSound,
+  startClearSound,
+  stopDrawSound,
+  updateClearSound,
+} from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
 
@@ -113,6 +119,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     document.documentElement.style.setProperty('--clear-progress', '0');
 
     releaseAllPointers();
+    startClearSound();
 
     const rect = node.getBoundingClientRect();
     const center = {
@@ -158,8 +165,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
     // Continuous 0→1 drag progress drives the radial paper wash that previews
     // the clear (see .clear-preview). Inherited from :root so any element can read it.
-    const progress = Math.min(distance / threshold, 1);
+    const normalizedDistance = distance / threshold;
+    const progress = Math.min(normalizedDistance, 1);
     document.documentElement.style.setProperty('--clear-progress', `${progress}`);
+    updateClearSound(normalizedDistance);
 
     if (distance >= threshold) {
       node.classList.add('delete-ready');
@@ -260,11 +269,13 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     finishDrag(o, e.pointerId);
 
     if (distance >= threshold) {
+      commitClearSound();
       o.onTutorialDismiss();
       o.onClear();
 
       playClearExit(o);
     } else {
+      cancelClearSound();
       resetDragVisuals(o);
     }
 
@@ -285,6 +296,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     // mid-fade until that exit's timers catch up.
     node.classList.remove('clearing', 'clearing-done', 'clearing-return');
     o.pageTurnOverlayEl.classList.remove('animating');
+    cancelClearSound();
     stopDrawSound();
     o.onDragEnd?.();
 
@@ -302,6 +314,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
       if (activePointerId !== null) {
         const o = getOptions();
         finishDrag(o, activePointerId);
+        cancelClearSound();
         resetDragVisuals(o);
         // finishDrag only hides the zone on a delayed timer, and the resetTimers
         // sweep below cancels it before it can fire.

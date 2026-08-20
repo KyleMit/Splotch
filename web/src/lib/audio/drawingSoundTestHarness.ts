@@ -8,6 +8,7 @@ interface AudioContextStubOptions {
   decodeAudioData?: unknown;
   createGain?: unknown;
   createBufferSource?: unknown;
+  createOscillator?: unknown;
 }
 
 export function stubAudioContext({
@@ -34,6 +35,7 @@ export function stubAudioContext({
     start: vi.fn(),
     stop: vi.fn(),
   })),
+  createOscillator = vi.fn(),
 }: AudioContextStubOptions = {}) {
   vi.stubGlobal(
     'AudioContext',
@@ -45,6 +47,7 @@ export function stubAudioContext({
       decodeAudioData = decodeAudioData;
       createGain = createGain;
       createBufferSource = createBufferSource;
+      createOscillator = createOscillator;
     }
   );
 }
