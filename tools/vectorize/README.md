@@ -16,6 +16,11 @@ into both `.claude/` and `.agents/` and this material is far too large to trip.
 | `postprocess-svg.mjs`             | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
 | `postprocess-svg.mjs`             | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
 
+Filled SVG artwork that needs to become replayable pen strokes continues through
+[centerline tracing](../centerline-tracing/README.md), then the
+[store-drawing compiler](../store-drawings/README.md). Vectorizer remains responsible only for the
+raster-to-filled-vector stage.
+
 The public npm command, CLI modes, flags, environment variables, default `vectorized/` output,
 credit safeguards, and exit behavior remain stable during the tools naming migration. Inputs and
 outputs are documented under [Driver flags](#driver-flags), credentials under
@@ -396,11 +401,12 @@ The repo's natural input is coloring-page line art (`web/static/coloring/**`) �
   and white, or `#FFFFFF00;` to drop the white background entirely (fully transparent palette colors
   are omitted from the result).
 
-**There is no centerline tracing.** Strokes come back as narrow *filled* shapes, not stroked paths —
-an outline traces to two paths hugging each side of the ink, not one path down its middle. If a task
-needs single-line geometry (plotters, cutters, stroke-width control), Vectorizer.AI is the wrong
-tool and no parameter changes that. `output.draw_style=stroke_edges` strokes the boundaries of those
-filled shapes once each; it is not a centerline.
+**Vectorizer.AI itself does no centerline tracing.** Strokes come back as narrow *filled* shapes,
+not stroked paths — an outline traces to two paths hugging each side of the ink, not one path down
+its middle. No API parameter changes that. `output.draw_style=stroke_edges` strokes the boundaries
+of those filled shapes once each; it is not a centerline. Feed accepted filled output to the
+[centerline-tracing capability](../centerline-tracing/README.md) when the next stage needs
+single-line geometry.
 
 ## Gotchas
 

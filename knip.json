@@ -17,6 +17,7 @@
     "netlify/**/*.ts",
     "tools/*.mjs",
     "tools/*/*.mjs",
+    "tools/centerline-tracing/*.mjs",
     "tools/mobile/{android,ios}/*.mjs",
     "tools/perf/{web,android,ios}/*.mjs",
     "!tools/lib/*.mjs",
@@ -34,7 +35,7 @@
     "web/*.ts",
     "netlify/**/*.ts",
     "tools/*.mjs",
-    "tools/{adrs,api-smoke,app-driver,audit-burndown,e2e-tuning,icons,lib,marketing-assets,mobile,model-eval,page-inventory,perf,redteam,release,ruler,scrapbook,tests,tokens}/**/*.mjs",
+    "tools/{adrs,api-smoke,app-driver,audit-burndown,centerline-tracing,e2e-tuning,icons,lib,marketing-assets,mobile,model-eval,page-inventory,perf,redteam,release,ruler,scrapbook,tests,tokens}/**/*.mjs",
     "tools/asset-gen/{coloring,style-covers,crayon-reference,lib}/**/*.{mjs,ts}",
     "tools/vectorize/**/*.mjs"
   ],

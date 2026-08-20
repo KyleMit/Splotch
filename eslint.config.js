@@ -84,6 +84,7 @@ export default tseslint.config(
       '**/build/',
       '**/.netlify/',
       '**/node_modules/',
+      '**/.venv/',
       // Locally-generated trees that are gitignored but must be named here too: flat config
       // never consults .gitignore, so `npm run lint` fails for anyone who has run the E2E
       // suite or a worktree-isolated agent — invisible on CI, which starts from a fresh

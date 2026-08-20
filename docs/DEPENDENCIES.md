@@ -6,9 +6,10 @@
 > it was checked. This file records analysis only — upgrades are applied by
 > `dependency-update-audit`, and replacements are tracked as GitHub issues.
 
-**Last refresh:** 2026-07-17 at `e2812b3` · 18 prod + 30 dev direct · 1167 total installed (lockfile
-entries) · plus dev-lifecycle deps outside `package.json` (GitHub Actions, runtime-fetched CLIs,
-system toolchains — see the final section)
+**Last refresh:** 2026-07-17 at `e2812b3`, amended 2026-08-19 for the centerline-tracing toolchain ·
+21 prod + 34 dev direct · 1107 total installed (lockfile snapshots) · plus dev-lifecycle deps
+outside `package.json` (GitHub Actions, runtime-fetched CLIs, system toolchains — see the final
+section)
 
 ## Verdict summary
 
@@ -19,6 +20,7 @@ Non-`keep` rows first.
 | capacitor-set-version               | dev      | **investigate replacement**        |
 | @capacitor/assets                   | dev      | **monitor** (dormant + vuln chain) |
 | idb                                 | prod     | **monitor** (single maintainer)    |
+| fit-curve                           | dev      | **monitor** (dormant)              |
 | scripts-info                        | dev      | **monitor** (bus factor)           |
 | @aparajita/capacitor-secure-storage | prod     | keep                               |
 | @capacitor-community/media          | prod     | keep                               |
@@ -42,6 +44,7 @@ Non-`keep` rows first.
 | @eslint/js                          | dev      | keep                               |
 | @intellectronica/ruler              | dev      | keep                               |
 | @playwright/test                    | dev      | keep                               |
+| @resvg/resvg-js                     | dev      | keep                               |
 | @sveltejs/adapter-netlify           | dev      | keep                               |
 | @sveltejs/kit                       | dev      | keep                               |
 | @sveltejs/vite-plugin-svelte        | dev      | keep                               |
@@ -469,6 +472,25 @@ Non-`keep` rows first.
 * **Alternatives:** none needed
 * **Verdict:** keep — E2E and tooling backbone; healthy
 
+### @resvg/resvg-js
+
+* **Version:** `^2.6.2` declared · 2.6.2 locked · dev
+* **Used for:** Rendering filled and centerline SVGs to deterministic RGBA pixels in the opt-in
+  `tools/centerline-tracing/` pipeline and its raster-agreement metrics.
+* **Source:** npm · [github.com/thx/resvg-js](https://github.com/thx/resvg-js) · powered by the Rust
+  `resvg` renderer and `napi-rs`
+* **License:** MPL-2.0
+* **Health** (checked 2026-08-19): latest 2.6.2; upstream remains active and publishes prebuilt
+  native packages for supported Node platforms
+* **Maintenance:** active — mature native binding with continuing upstream work
+* **Concerns:** brings platform-specific optional packages into the development install; it is
+  excluded from the Netlify production dependency set and runs only through the path-filtered tracer
+  workflow or explicit local commands
+* **Alternatives:** browser screenshot rasterization is much heavier and less deterministic; calling
+  a Python renderer would duplicate the bridge that already consumes Node-native resvg
+* **Verdict:** keep — deterministic SVG rasterization is a core boundary of the tracer's metric
+  contract
+
 ### @sveltejs/adapter-netlify
 
 * **Version:** `^6.0.4` declared · 6.0.4 locked · dev
@@ -597,6 +619,23 @@ Non-`keep` rows first.
 * **Concerns:** none
 * **Alternatives:** none needed
 * **Verdict:** keep — Svelte linting; healthy
+
+### fit-curve
+
+* **Version:** `^0.2.0` declared · 0.2.0 locked · dev
+* **Used for:** Fitting cubic Bézier paths to skeleton point sequences through the small
+  `tools/centerline-tracing/fit-curve-bridge.mjs` boundary.
+* **Source:** npm · [github.com/soswow/fit-curve](https://github.com/soswow/fit-curve) · Philip J.
+  Schneider's Graphics Gems algorithm
+* **License:** MIT
+* **Health** (checked 2026-08-19): latest 0.2.0, published 2022-06-18; no release in more than four
+  years
+* **Maintenance:** dormant — stable, narrow algorithm package with no current release cadence
+* **Concerns:** aging CommonJS implementation and inactive release line; risk is bounded because it
+  is dev-only, receives trusted numeric arrays, and sits behind one roughly 100-line bridge
+* **Alternatives:** vendor the compact Schneider implementation behind the same bridge or replace it
+  with a maintained curve fitter if compatibility or security ever changes
+* **Verdict:** monitor — retain the proven implementation while the boundary makes replacement cheap
 
 ### globals
 
@@ -909,6 +948,8 @@ not `pnpm-lock.yaml`.
 | ---------------------------------------- | ------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `actions/checkout`                       | v7.0.1  | GitHub (official)          | first-party, maintained                                                                                                                     | keep                                         |
 | `pnpm/setup`                             | v2.0.2  | pnpm                       | official pnpm action and the supported path for pnpm 11+ (checked 2026-08-16)                                                               | keep                                         |
+| `actions/setup-python`                   | v7.0.0  | GitHub (official)          | first-party; pins Python 3.11 for the isolated centerline-tracing workflow (checked 2026-08-19)                                             | keep                                         |
+| `astral-sh/setup-uv`                     | v10.0.1 | Astral                     | official uv action; lock-aware cache and immutable release pin (checked 2026-08-19)                                                         | keep                                         |
 | `actions/setup-java`                     | v5.7.0  | GitHub (official)          | first-party (used by `android-deploy.yml`, `distribution: temurin`, `java-version: 21`)                                                     | keep                                         |
 | `actions/cache`                          | v6.1.0  | GitHub (official)          | first-party, maintained                                                                                                                     | keep                                         |
 | `actions/configure-pages`                | v6.0.0  | GitHub (official)          | first-party (Pages deploy, `pages.yml`)                                                                                                     | keep                                         |
@@ -938,6 +979,8 @@ verifies (and `-- --check-latest` compares against upstream).
 | Toolchain                    | Where                                              | Provisioning / pin                                                                                                                                                       | Verdict                                                                                                                                                                                                                              |
 | ---------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Node.js                      | dependency-backed CI jobs, all local dev           | `pnpm/setup@v2` pins **runtime: node@22** in the shared CI composite                                                                                                     | keep — pinned to the `engines.node` floor major and drift-guarded                                                                                                                                                                    |
+| Python                       | `tools/centerline-tracing/` only                   | **3.11** pinned by the capability's `.python-version`, `pyproject.toml`, and dedicated workflow; uv may download it lazily for local use                                 | keep — the first Python toolchain remains isolated from the app and default npm lifecycle                                                                                                                                            |
+| uv                           | centerline-tracing commands and dedicated CI       | local system CLI; CI uses SHA-pinned `astral-sh/setup-uv@v10.0.1` to install **uv 0.12.5**; `uv.lock` fixes the complete Python graph                                    | keep — fast locked environments without a root requirements file or always-on virtualenv                                                                                                                                             |
 | JDK (Temurin)                | `android-deploy.yml`, Gradle builds                | `actions/setup-java@v5`, **temurin / java-version: 21**                                                                                                                  | keep — Android build requirement, pinned                                                                                                                                                                                             |
 | Gradle                       | `android:*` scripts, Android CI                    | the committed **Gradle wrapper** (`android/gradlew`), invoked via `tools/mobile/android/run-gradle.mjs` (ADR-0017); patched into `@capacitor/cli` for Windows (ADR-0011) | keep — wrapper-pinned; version lives in the native project                                                                                                                                                                           |
 | Android SDK / emulator / adb | `android:*`, `test:android`, `android-deploy.yml`  | `reactivecircus/android-emulator-runner@v2` (**current API 33 + declared API 24 floor, google_apis, x86_64**) in CI; local Android Studio SDK otherwise                  | keep — current and minimum-supported Android runtimes pinned in release CI                                                                                                                                                           |

@@ -295,6 +295,7 @@ export function convertSvg(source, filename) {
       throw new Error(`${filename}: groups may contain only self-closing paths`);
     }
     if (pathMatches.length === 0) throw new Error(`${filename}: group contains no paths`);
+    let previousGroupStroke;
     for (const pathMatch of pathMatches) {
       const path = parseAttributes(pathMatch[1], PATH_ATTRIBUTES, filename, 'path');
       if (!path.d || !path['stroke-width'])
@@ -305,11 +306,23 @@ export function convertSvg(source, filename) {
       }
       const points = quantizePoints(flattenSvgPath(path.d));
       if (points.length < 2) throw new Error(`${filename}: path produced no pointer coordinates`);
-      strokes.push({
+      const stroke = {
         color: colorIndexes.get(colorKey),
         size: closestStrokeSize(strokeWidth, scale),
         points,
-      });
+      };
+      const previousPoints = previousGroupStroke?.points;
+      const continuesPrevious =
+        previousGroupStroke?.color === stroke.color &&
+        previousGroupStroke.size === stroke.size &&
+        previousPoints.at(-2) === stroke.points[0] &&
+        previousPoints.at(-1) === stroke.points[1];
+      if (continuesPrevious) {
+        previousPoints.push(...stroke.points.slice(2));
+      } else {
+        strokes.push(stroke);
+        previousGroupStroke = stroke;
+      }
     }
   }
   if (strokes.length === 0) throw new Error(`${filename}: no strokes found`);
