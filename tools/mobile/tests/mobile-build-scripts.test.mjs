@@ -62,7 +62,7 @@ vi.mock('../../../web/src/lib/state/books.ts', () => ({
       ...Object.values(page.images),
       ...Object.values(page.colorImages),
       ...Object.values(page.nightImages),
-      ...Object.values(page.chalkImages),
+      ...Object.values(page.darkImages),
     ]),
     `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
     `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,
@@ -94,7 +94,7 @@ function fixturePage(directory) {
       landscape: `/${directory}/page-wide.light.webp`,
     },
     nightImages: {},
-    chalkImages: { portrait: `/${directory}/page-tall.dark.overlay.svg` },
+    darkImages: { portrait: `/${directory}/page-tall.dark.overlay.svg` },
   };
 }
 
@@ -105,7 +105,7 @@ function fixtureBook(id, platforms) {
     name: id,
     platforms,
     cover: `/${directory}/cover.overlay.svg`,
-    chalkCover: `/${directory}/cover.dark.overlay.svg`,
+    darkCover: `/${directory}/cover.dark.overlay.svg`,
     pages: [fixturePage(directory)],
   };
 }
@@ -117,7 +117,7 @@ function catalogAssetPaths(book) {
       ...Object.values(page.images),
       ...Object.values(page.colorImages),
       ...Object.values(page.nightImages),
-      ...Object.values(page.chalkImages),
+      ...Object.values(page.darkImages),
     ]),
     `/coloring/max-1152px/${book.id}/page-tall.overlay.webp`,
     `/coloring/max-240px/${book.id}/page-tall.thumb.webp`,

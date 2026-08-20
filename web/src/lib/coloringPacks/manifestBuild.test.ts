@@ -78,7 +78,7 @@ describe('buildColoringPackManifest', () => {
           )
         ).toBe(true);
         expect(filesByPath.has(book.cover)).toBe(false);
-        expect(filesByPath.has(book.chalkCover)).toBe(false);
+        expect(filesByPath.has(book.darkCover)).toBe(false);
         expect(filesByPath.has(`/coloring/${book.id}/cover.thumb.webp`)).toBe(true);
         expect(filesByPath.has(`/coloring/${book.id}/cover.chalk.thumb.webp`)).toBe(true);
       }

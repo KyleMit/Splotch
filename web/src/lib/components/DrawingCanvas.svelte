@@ -178,10 +178,9 @@
   // aware (ADR-0052 direction B): light mode reveals the light fill; dark mode
   // reveals the pre-colored NIGHT fill where one exists, falling back to the
   // light fill for pages/orientations whose night asset isn't generated yet.
-  // The overlay's line art is theme-aware: light mode uses generated transparent
-  // black pen ink and dark mode uses generated transparent white chalk, falling
-  // back to a white overlay derived from the pen for un-forked pages. Reading
-  // resolvedTheme() re-picks the art on a live theme switch.
+  // The overlay's line art is theme-aware: light mode uses transparent black ink,
+  // while dark mode uses its transparent white-ink SVG sibling (ADR-0129).
+  // Reading resolvedTheme() re-picks the art on a live theme switch.
   const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper

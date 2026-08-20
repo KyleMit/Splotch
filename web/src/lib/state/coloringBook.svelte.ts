@@ -3,7 +3,6 @@ import {
   pageImage,
   pageColorImage,
   pageNightImage,
-  pageChalkImage,
   pageOverlayImage,
   type BookOrientation,
   type ColoringPage,
@@ -32,11 +31,6 @@ export function setOverlayOrientation(orientation: BookOrientation) {
 export function overlayUrl(): string | null {
   const page = coloringBookState.overlayPage;
   return page ? pageImage(page, coloringBookState.orientation) : null;
-}
-
-export function chalkUrl(): string | null {
-  const page = coloringBookState.overlayPage;
-  return page ? pageChalkImage(page, coloringBookState.orientation) : null;
 }
 
 export function themedOverlayUrl(

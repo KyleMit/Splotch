@@ -30,11 +30,11 @@ const activePageChipComponent = readFileSync(
 );
 
 describe('page defaults', () => {
-  it('every page still ships night + chalk for both orientations', () => {
+  it('every page ships night fills and dark overlays for both orientations', () => {
     for (const book of BOOKS) {
       for (const page of book.pages) {
         expect(Object.keys(page.nightImages).sort()).toEqual(['landscape', 'portrait']);
-        expect(Object.keys(page.chalkImages).sort()).toEqual(['landscape', 'portrait']);
+        expect(Object.keys(page.darkImages).sort()).toEqual(['landscape', 'portrait']);
       }
     }
   });
@@ -43,11 +43,17 @@ describe('page defaults', () => {
 describe('coverThumb', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
 
-  it('uses the pen cover in light mode and the chalk cover in dark mode', () => {
+  it('uses the matching light or dark cover source', () => {
     expect(farm.cover).toBe('/coloring/farm/cover.overlay.svg');
-    expect(farm.chalkCover).toBe('/coloring/farm/cover.dark.overlay.svg');
+    expect(farm.darkCover).toBe('/coloring/farm/cover.dark.overlay.svg');
     expect(coverThumb(farm, 'light')).toBe('/coloring/farm/cover.thumb.webp');
     expect(coverThumb(farm, 'dark')).toBe('/coloring/farm/cover.chalk.thumb.webp');
+  });
+
+  it('rejects a theme/suffix mismatch instead of inventing a thumbnail path', () => {
+    expect(() => coverThumb({ ...farm, cover: farm.darkCover }, 'light')).toThrow(
+      'must end with .overlay.svg'
+    );
   });
 });
 
@@ -58,13 +64,6 @@ describe('pageOverlayImage', () => {
     expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.svg');
     expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
       '/coloring/farm/cat-tall.dark.overlay.svg'
-    );
-  });
-
-  it('keeps the dark presentation path stable when its generator falls back to pen line art', () => {
-    const unforked = { ...cat, chalkImages: {} };
-    expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
-      '/coloring/farm/cat-wide.dark.overlay.svg'
     );
   });
 });
@@ -184,7 +183,7 @@ describe('bookAssetPaths', () => {
   it('lists the cover, both orientations of every page, and the colored fills', () => {
     const paths = bookAssetPaths(farm);
     expect(paths).toContain(farm.cover);
-    expect(paths).toContain(farm.chalkCover);
+    expect(paths).toContain(farm.darkCover);
     expect(paths).toContain(coverThumb(farm, 'light'));
     expect(paths).toContain(coverThumb(farm, 'dark'));
     for (const page of farm.pages) {

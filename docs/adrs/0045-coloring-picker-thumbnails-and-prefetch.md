@@ -212,10 +212,14 @@ require a native resource bridge, and still not solve web delivery.
 ### 7. Reuse invariant SVG overlays in page selectors
 
 **Amendment (2026-08-20).** ADR-0129 shipped one transparent SVG per page orientation and theme.
-Those files are small enough to serve both the picker and the canvas, so page tiles and the
-active-page chip now use the exact `pageOverlayImage()` URL the canvas applies. They publish no
-`srcset` or `sizes`, and ordinary transparent source-over rendering replaces the raster picker's
-blend/filter treatment.
+Page tiles and the active-page chip now use the exact `pageOverlayImage()` URL the canvas applies.
+They publish no `srcset` or `sizes`, and ordinary transparent source-over rendering replaces the
+raster picker's blend/filter treatment. On Farm's portrait grid, a book press transfers 104,609 gzip
+bytes for the six light SVGs or 117,630 for the six dark SVGs; the retired responsive WebP thumbnail
+sets transferred 38,788 and 40,026 bytes respectively. Reusing the selected SVG avoids a second
+overlay transfer, but opening a book and backing out costs 65,821–77,604 additional bytes, and the
+eager warm front-loads the five pages the child does not select. If physical-device picker traces
+regress, narrow the warm set to near-viewport tiles rather than restoring a second page-art format.
 
 Book covers remain raster thumbnails even though their canonical line-art masters are SVG.
 `gen:coloring-thumbs` rasterizes `cover.overlay.svg` and `cover.dark.overlay.svg` into

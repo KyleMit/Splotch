@@ -408,10 +408,10 @@ generation.
 3. Wire the catalog in `web/src/lib/state/books.ts` —
    `book('nature', 'Nature', ['web', 'mobile'],
    (page) => [...])` binds every page to its book.
-   Inside that builder, `page()` defaults `night` and `chalk` to both orientations, so a
-   fully-generated page is just `page('ant', 'Ant')`. Only pass the `{ nightExcept, chalkExcept }`
-   options object to subtract an orientation whose asset isn't generated yet, e.g.
-   `page('ant', 'Ant', { nightExcept: ['portrait'] })`.
+   Inside that builder, `page()` binds both canonical light/dark SVG overlays and defaults `night`
+   fills to both orientations, so a fully-generated page is just `page('ant', 'Ant')`. Only pass the
+   `{ nightExcept }` options object to subtract an orientation whose night fill isn't generated yet,
+   e.g. `page('ant', 'Ant', { nightExcept: ['portrait'] })`.
 4. Refresh the committed regression fixtures: `npm run check:coloring-golden-scores` (review the
    report — the changed pages should be exactly the ones you shipped), then
    `npm run update:coloring-golden-scores` to adopt the new baseline and
