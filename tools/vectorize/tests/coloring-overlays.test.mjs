@@ -1,16 +1,18 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { describe, expect, it } from 'vitest';
 import {
   checkColoringOverlayLedger,
   coloringOverlayJob,
   coloringOverlayJobs,
+  coloringOverlayLedger,
   jobState,
   parseColoringOverlayArgs,
   postprocessArgs,
   selectColoringOverlayJobs,
 } from '../vectorize-coloring-overlays.mjs';
-import { compareOverlayAlpha } from '../analyze-coloring-overlays.mjs';
+import { compareOverlayAlpha, sumWhenComplete } from '../analyze-coloring-overlays.mjs';
 
 describe('coloring overlay campaign', () => {
   it('maps a page outline to the committed overlay and recoverable raw trace', () => {
@@ -43,17 +45,41 @@ describe('coloring overlay campaign', () => {
   });
 
   it('resumes a paid raw response through free post-processing before tracing more', () => {
-    const root = join('/tmp', `vectorize-coloring-${process.pid}-${Date.now()}`);
-    const first = coloringOverlayJob('web/static/coloring/creatures/fairy-wide.outline.webp', root);
-    const second = coloringOverlayJob('web/static/coloring/creatures/owl-wide.outline.webp', root);
-    mkdirSync(join(root, 'vectorized/coloring-overlays/creatures'), { recursive: true });
-    writeFileSync(first.rawPath, '<svg/>');
+    const root = mkdtempSync(join(tmpdir(), 'splotch-vectorize-coloring-'));
+    try {
+      const first = coloringOverlayJob(
+        'web/static/coloring/creatures/fairy-wide.outline.webp',
+        root
+      );
+      const second = coloringOverlayJob(
+        'web/static/coloring/creatures/owl-wide.outline.webp',
+        root
+      );
+      mkdirSync(join(root, 'vectorized/coloring-overlays/creatures'), { recursive: true });
+      writeFileSync(first.rawPath, '<svg/>');
 
-    expect(jobState(first)).toBe('postprocess');
-    expect(selectColoringOverlayJobs([first, second], { batchSize: 2 })).toMatchObject([
-      { stem: 'fairy-wide', state: 'postprocess' },
-      { stem: 'owl-wide', state: 'trace' },
-    ]);
+      expect(jobState(first)).toBe('postprocess');
+      expect(selectColoringOverlayJobs([first, second], { batchSize: 2 })).toMatchObject([
+        { stem: 'fairy-wide', state: 'postprocess' },
+        { stem: 'owl-wide', state: 'trace' },
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('refuses an incomplete dark ledger', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-vectorize-coloring-'));
+    try {
+      const job = coloringOverlayJob(
+        'web/static/coloring/creatures/fairy-wide.chalk.webp',
+        root,
+        'dark'
+      );
+      expect(() => coloringOverlayLedger([job])).toThrow('1 overlay(s) are missing');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('bounds every production run by payload and batch size', () => {
@@ -95,5 +121,10 @@ describe('coloring overlay campaign', () => {
       binaryRecall: 1,
       binaryIou: 1,
     });
+  });
+
+  it('reports unavailable raster comparison totals as null', () => {
+    expect(sumWhenComplete([{ bytes: 1 }, { bytes: null }], (row) => row.bytes)).toBeNull();
+    expect(sumWhenComplete([{ bytes: 1 }, { bytes: 2 }], (row) => row.bytes)).toBe(3);
   });
 });

@@ -6,7 +6,6 @@ import {
   overlayUrl,
   chalkUrl,
   themedOverlayUrl,
-  themedOverlayImageSource,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
@@ -16,7 +15,6 @@ import { BOOKS, bookAssetPaths, pageNightImage, pageChalkImage } from './books';
 const page = BOOKS[0].pages[0];
 const spaceBook = BOOKS.find((b) => b.id === 'space')!;
 const spacePage = spaceBook.pages[0];
-const stationPage = spaceBook.pages.find((candidate) => candidate.id === 'station')!;
 // A page with no night fill or chalk outline in any orientation. Synthetic
 // rather than a catalog page so the null-fallback tests stay valid as more
 // categories ship their assets (eventually every catalog page has them).
@@ -107,28 +105,12 @@ describe('coloring book state', () => {
     );
   });
 
-  it('pairs the active overlay with its responsive web candidate', () => {
-    setOverlayPage(spacePage, 'portrait');
-    expect(themedOverlayImageSource('dark')).toEqual({
-      src: spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.svg'),
-      srcset: '/coloring/space/astronaut-tall.dark.overlay.svg',
-    });
-  });
-
   it('can derive another orientation without changing the active orientation', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('dark', 'portrait')).toBe(
       spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.svg')
     );
     expect(coloringBookState.orientation).toBe('landscape');
-  });
-
-  it('uses the invariant dark SVG for Station landscape', () => {
-    setOverlayPage(stationPage, 'landscape');
-    expect(themedOverlayImageSource('dark')).toEqual({
-      src: '/coloring/space/station-wide.dark.overlay.svg',
-      srcset: '/coloring/space/station-wide.dark.overlay.svg',
-    });
   });
 });
 

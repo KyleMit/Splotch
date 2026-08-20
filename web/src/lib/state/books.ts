@@ -101,7 +101,6 @@ const TALL_COVER_GRID_MEDIA = '(max-aspect-ratio: 4 / 5) and (min-width: 741px)'
  */
 const TALL_COVER_SIZE = `${TALL_COVER_GRID_MEDIA} 25vh`;
 export const COLORING_IMAGE_SIZES = {
-  overlay: '100vw',
   activePageThumbnail: '36px',
   coverThumbnail: {
     standard: `${TALL_COVER_SIZE}, (max-width: 520px) calc((90vw - 48px) / 2), (max-width: 740px) calc((90vw - 88px) / 3), (max-width: 1022px) calc((90vw - 100px) / 4), 205px`,
@@ -123,9 +122,6 @@ export function coloringBookGridLayout(visibleTileCount: number): ColoringBookGr
   return { hasOrphan, imageSizes };
 }
 
-export function coloringOverlayImageSize(paperCssWidth: number): string {
-  return paperCssWidth ? `${paperCssWidth}px` : COLORING_IMAGE_SIZES.overlay;
-}
 const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
   portrait: 'tall',
   landscape: 'wide',
@@ -137,8 +133,6 @@ const ASSET_SUFFIXES = {
   chalk: '.chalk.webp',
   thumb: '.thumb.webp',
   chalkThumb: '.chalk.thumb.webp',
-  overlay: '.overlay.webp',
-  darkOverlay: '.dark.overlay.webp',
   vectorOverlay: '.overlay.svg',
   darkVectorOverlay: '.dark.overlay.svg',
 } as const;
@@ -293,22 +287,6 @@ export function pageOverlayImage(
   theme: ResolvedTheme
 ): string {
   return resolveColoringAssetUrl(pageOverlayAssetPath(page, orientation, theme));
-}
-
-export function pageOverlayImageSource(
-  page: ColoringPage,
-  orientation: BookOrientation,
-  theme: ResolvedTheme
-): ResponsiveColoringImage {
-  const source = pageOverlayAssetPath(page, orientation, theme);
-  if (source.endsWith('.svg')) {
-    const url = resolveColoringAssetUrl(source);
-    return { src: url, srcset: url };
-  }
-  const tier = RESPONSIVE_COLORING_TIERS.overlay;
-  const widths = tier.widths[orientation];
-  const image = responsiveImage(source, tier.directory, widths.candidate, widths.source);
-  return { ...image, src: resolveColoringAssetUrl(source) };
 }
 
 /** Grid-thumbnail path for a picker-facing line-art image (`x.outline.webp` -> `x.thumb.webp`). */

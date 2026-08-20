@@ -20,7 +20,6 @@ import {
 // A healthy Magic fill commits well within this window; holding the next overlay for the full
 // interval distinguishes no ink from an async paint that is merely late.
 const PENDING_FILL_SETTLE_MS = 500;
-const WHOLE_PIXEL_TOLERANCE_PX = 1;
 
 // ── coloring book overlay ───────────────────────────────────────────────────
 
@@ -63,16 +62,8 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
   await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.svg$/);
-  await expect(overlay).toHaveAttribute('srcset', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.svg/);
-  await expect
-    .poll(() =>
-      overlay.evaluate((image) => {
-        const sizesPx = Number.parseFloat(image.getAttribute('sizes') ?? '');
-        const paperWidth = image.parentElement?.getBoundingClientRect().width ?? 0;
-        return Math.abs(sizesPx - paperWidth);
-      })
-    )
-    .toBeLessThanOrEqual(WHOLE_PIXEL_TOLERANCE_PX);
+  await expect(overlay).not.toHaveAttribute('srcset');
+  await expect(overlay).not.toHaveAttribute('sizes');
 });
 
 test.describe('responsive coloring selection at DPR 1', () => {
@@ -130,7 +121,9 @@ test.describe('responsive coloring selection at DPR 1', () => {
     expect(exportOverlayRequests).toBe(0);
   });
 
-  test('prefetches against the locked paper width after rotation', async ({ page }) => {
+  test('prefetches the canonical SVG for the locked orientation after rotation', async ({
+    page,
+  }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await gotoApp(page);
     await openDrawer(page);
@@ -143,7 +136,9 @@ test.describe('responsive coloring selection at DPR 1', () => {
     await rotateViewportViaCdp(page, { width: 1000, height: 390, angle: 90 });
     const overlay = page.locator('#coloringOverlay');
     await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
-    await expect(overlay).toHaveAttribute('sizes', '390px');
+    await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.dark\.overlay\.svg$/);
+    await expect(overlay).not.toHaveAttribute('sizes');
+    await expect(overlay).not.toHaveAttribute('srcset');
     await expect
       .poll(() =>
         page.locator('#drawingCanvas').evaluate((canvas) => canvas.getBoundingClientRect().width)
@@ -450,7 +445,6 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.svg$/);
-  await expect(overlay).toHaveAttribute('srcset', /(?<!\.dark)\.overlay\.svg/);
   await expect(overlay).toHaveClass(/overlay-ready/);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThanOrEqual(pixelsBeforeTheme);
 
@@ -458,7 +452,6 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();
   });
   await expect(overlay).toHaveAttribute('src', /\.dark\.overlay\.svg$/);
-  await expect(overlay).toHaveAttribute('srcset', /\.dark\.overlay\.svg/);
 });
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide

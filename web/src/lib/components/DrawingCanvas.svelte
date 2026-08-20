@@ -20,16 +20,12 @@
   import {
     overlayUrl,
     coloringBookState,
-    themedOverlayImageSource as currentThemedOverlayImageSource,
+    themedOverlayUrl as currentThemedOverlayUrl,
     colorSheetUrl,
     nightSheetUrl,
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
-  import {
-    COLORING_IMAGE_SIZES,
-    coloringOverlayImageSize,
-    pageCompositionKey,
-  } from '$lib/state/books';
+  import { pageCompositionKey } from '$lib/state/books';
   import { settings } from '$lib/state/settings.svelte';
   import {
     playDrawSound,
@@ -79,8 +75,6 @@
   const paperCssHeight = $derived(
     paperView.paperCssHeight ? `${paperView.paperCssHeight}px` : '100%'
   );
-  const overlaySizes = $derived(coloringOverlayImageSize(paperView.paperCssWidth));
-
   onMount(() => {
     // Adopt, don't init (ADR-0072): earlyBoot.ts already started the engine on
     // this prerendered canvas at module-evaluation time, so drawing works
@@ -188,8 +182,7 @@
   // black pen ink and dark mode uses generated transparent white chalk, falling
   // back to a white overlay derived from the pen for un-forked pages. Reading
   // resolvedTheme() re-picks the art on a live theme switch.
-  const themedOverlayImage = $derived(currentThemedOverlayImageSource(resolvedTheme()));
-  const themedOverlayUrl = $derived(themedOverlayImage?.src ?? null);
+  const themedOverlayUrl = $derived(currentThemedOverlayUrl(resolvedTheme()));
 
   // Ready-gated overlay art swap. A blank-canvas rotation re-adopts the paper
   // and swaps the page art to the other tall/wide composition. Hide art when
@@ -197,14 +190,11 @@
   // it only once ready. A theme sibling has identical registration, so it
   // keeps the current art visible until the sibling is ready.
   let displayedOverlayUrl = $state<string | null>(null);
-  let displayedOverlaySrcset = $state<string | null>(null);
 
   $effect(() => {
     const url = themedOverlayUrl;
-    const image = themedOverlayImage;
     if (!url) {
       displayedOverlayUrl = null;
-      displayedOverlaySrcset = null;
       return;
     }
     const displayed = untrack(() => displayedOverlayUrl);
@@ -214,19 +204,12 @@
     let stale = false;
     const img = new Image();
     img.fetchPriority = 'high';
-    if (!__IS_CAPACITOR__ && image) {
-      // DOM selection follows live paper geometry; an in-flight decode must not
-      // restart merely because a resize reported a new width.
-      img.sizes = untrack(() => overlaySizes);
-      img.srcset = image.srcset;
-    }
     img.src = url;
     // Show on decode failure too — the <img> then surfaces the same broken
     // state a direct src assignment would have.
     const show = () => {
       if (!stale) {
         displayedOverlayUrl = url;
-        displayedOverlaySrcset = image?.srcset ?? null;
       }
     };
     img.decode().then(show, show);
@@ -252,14 +235,9 @@
     const nightUrl = theme === 'dark' ? nightSheetUrl() : null;
     setColorSheet(nightUrl ?? colorSheetUrl());
     const other = coloringBookState.orientation === 'portrait' ? 'landscape' : 'portrait';
-    const otherImage = currentThemedOverlayImageSource(theme, other);
-    if (!otherImage) return;
-    // The opposite orientation has no reliable paper width until it is adopted.
-    return scheduleIdle(() =>
-      prefetchImages([
-        __IS_CAPACITOR__ ? otherImage.src : { ...otherImage, sizes: COLORING_IMAGE_SIZES.overlay },
-      ])
-    );
+    const otherUrl = currentThemedOverlayUrl(theme, other);
+    if (!otherUrl) return;
+    return scheduleIdle(() => prefetchImages([otherUrl]));
   });
 </script>
 
@@ -291,10 +269,6 @@
       class:overlay-ready={!!displayedOverlayUrl}
       id={COLORING_OVERLAY_ID}
       src={displayedOverlayUrl ?? ''}
-      srcset={!__IS_CAPACITOR__ && displayedOverlayUrl
-        ? (displayedOverlaySrcset ?? undefined)
-        : undefined}
-      sizes={!__IS_CAPACITOR__ ? overlaySizes : undefined}
       alt=""
       hidden={!overlayUrl()}
     />

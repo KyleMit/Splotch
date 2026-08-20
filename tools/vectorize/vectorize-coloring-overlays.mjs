@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 
 const MAX_PRODUCTION_BATCH_SIZE = 12;
-const OVERLAY_THEMES = {
+export const OVERLAY_THEMES = {
   light: {
     sourceSuffix: 'outline',
     outputSuffix: 'overlay',
@@ -34,7 +34,7 @@ function sha256(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function overlayTheme(value = 'light') {
+export function overlayTheme(value = 'light') {
   if (!(value in OVERLAY_THEMES)) throw new Error('--theme must be light or dark');
   return value;
 }
@@ -176,9 +176,9 @@ function trace(job) {
   postprocess(job);
 }
 
-export function coloringOverlayLedger(jobs, { allowPartial = false } = {}) {
+export function coloringOverlayLedger(jobs) {
   const missing = jobs.filter((job) => !existsSync(job.outputPath));
-  if (!allowPartial && missing.length > 0) {
+  if (missing.length > 0) {
     throw new Error(
       `Cannot write a complete ledger; ${missing.length} overlay(s) are missing:\n${missing
         .slice(0, 12)
@@ -202,17 +202,13 @@ export function coloringOverlayLedger(jobs, { allowPartial = false } = {}) {
   };
 }
 
-export function checkColoringOverlayLedger(
-  jobs,
-  path = ledgerPath(jobs[0]?.theme ?? 'light'),
-  { allowPartial = jobs[0]?.theme === 'dark' } = {}
-) {
+export function checkColoringOverlayLedger(jobs, path = ledgerPath(jobs[0]?.theme ?? 'light')) {
   if (!existsSync(path)) throw new Error(`Missing coloring overlay ledger: ${path}`);
   const ledger = JSON.parse(readFileSync(path, 'utf8'));
   if (ledger.formatVersion !== 1 || !Array.isArray(ledger.entries)) {
     throw new Error('Invalid coloring overlay ledger');
   }
-  const expected = coloringOverlayLedger(jobs, { allowPartial });
+  const expected = coloringOverlayLedger(jobs);
   if (JSON.stringify(ledger) !== JSON.stringify(expected)) {
     throw new Error(
       'Coloring outline/SVG derivation drifted; regenerate the affected production trace and run --write-ledger'
@@ -244,7 +240,7 @@ export async function runColoringOverlayCampaign(argv = process.argv.slice(2)) {
     return;
   }
   if (options.writeLedger) {
-    const ledger = coloringOverlayLedger(jobs, { allowPartial: options.theme === 'dark' });
+    const ledger = coloringOverlayLedger(jobs);
     writeFileSync(ledgerPath(options.theme), `${JSON.stringify(ledger, null, 2)}\n`);
     console.log(
       `[vectorize:coloring] wrote ${ledger.entries.length} ${options.theme} derivation records.`

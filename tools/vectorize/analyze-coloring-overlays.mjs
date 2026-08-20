@@ -6,9 +6,12 @@ import { dirname, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
+import { OVERLAY_THEMES, overlayTheme } from './vectorize-coloring-overlays.mjs';
 
 const MIN_BINARY_IOU = 0.955;
 const MAX_ALPHA_MEAN_ABSOLUTE_ERROR = 3;
+// Higher SVG raster density preserves thin traced strokes before the comparison resize.
+const VECTOR_RASTER_DENSITY_DPI = 192;
 
 async function sourceAlpha(path, width, height) {
   const luma = await sharp(path)
@@ -20,7 +23,7 @@ async function sourceAlpha(path, width, height) {
 }
 
 async function vectorAlpha(path, width, height) {
-  const rgba = await sharp(path, { density: 192 })
+  const rgba = await sharp(path, { density: VECTOR_RASTER_DENSITY_DPI })
     .resize(width, height, { fit: 'fill' })
     .ensureAlpha()
     .raw()
@@ -52,9 +55,10 @@ export function compareOverlayAlpha(reference, candidate) {
 }
 
 function paths(svg, theme) {
-  const vectorSuffix = theme === 'dark' ? '.dark.overlay.svg' : '.overlay.svg';
-  const sourceSuffix = theme === 'dark' ? '.chalk.webp' : '.outline.webp';
-  const rasterSuffix = theme === 'dark' ? '.dark.overlay.webp' : '.overlay.webp';
+  const config = OVERLAY_THEMES[theme];
+  const vectorSuffix = `.${config.outputSuffix}.svg`;
+  const sourceSuffix = `.${config.sourceSuffix}.webp`;
+  const rasterSuffix = `.${config.outputSuffix}.webp`;
   const source = svg.replace(vectorSuffix, sourceSuffix);
   const full = svg.replace(vectorSuffix, rasterSuffix);
   const compact = full.replace('web/static/coloring/', 'web/static/coloring/max-1152px/');
@@ -92,8 +96,11 @@ async function analyze(svg, theme) {
   };
 }
 
-function sum(rows, select) {
-  return rows.reduce((total, row) => total + (select(row) ?? 0), 0);
+export function sumWhenComplete(rows, select) {
+  const values = rows.map(select);
+  return values.some((value) => value === null)
+    ? null
+    : values.reduce((total, value) => total + value, 0);
 }
 
 export async function analyzeColoringOverlays(argv = process.argv.slice(2)) {
@@ -101,9 +108,8 @@ export async function analyzeColoringOverlays(argv = process.argv.slice(2)) {
     args: argv,
     options: { book: { type: 'string' }, theme: { type: 'string' } },
   });
-  const theme = values.theme ?? 'light';
-  if (theme !== 'light' && theme !== 'dark') throw new Error('--theme must be light or dark');
-  const suffix = theme === 'dark' ? 'dark.overlay.svg' : 'overlay.svg';
+  const theme = overlayTheme(values.theme);
+  const suffix = `${OVERLAY_THEMES[theme].outputSuffix}.svg`;
   const pattern = values.book
     ? `web/static/coloring/${values.book}/*.${suffix}`
     : `web/static/coloring/**/*.${suffix}`;
@@ -122,10 +128,10 @@ export async function analyzeColoringOverlays(argv = process.argv.slice(2)) {
     summary: {
       count: rows.length,
       failed: failed.length,
-      svgBytes: sum(rows, (row) => row.bytes.svg),
-      svgGzipBytes: sum(rows, (row) => row.bytes.svgGzip),
-      webpFullBytes: sum(rows, (row) => row.bytes.webpFull),
-      webpCompactBytes: sum(rows, (row) => row.bytes.webpCompact),
+      svgBytes: sumWhenComplete(rows, (row) => row.bytes.svg),
+      svgGzipBytes: sumWhenComplete(rows, (row) => row.bytes.svgGzip),
+      webpFullBytes: sumWhenComplete(rows, (row) => row.bytes.webpFull),
+      webpCompactBytes: sumWhenComplete(rows, (row) => row.bytes.webpCompact),
       minimumBinaryIou: Math.min(...rows.map((row) => row.fidelity.binaryIou)),
       maximumAlphaMeanAbsoluteError: Math.max(...rows.map((row) => row.fidelity.meanAbsoluteError)),
     },

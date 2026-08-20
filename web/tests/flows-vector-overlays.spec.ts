@@ -79,7 +79,7 @@ test('a catalog vector overlay reveals with Magic and switches to its dark SVG',
     'src',
     /\/coloring\/space\/station-wide\.dark\.overlay\.svg$/
   );
-  await expect(overlay).toHaveAttribute('srcset', /station-wide\.dark\.overlay\.svg$/);
+  await expect(overlay).not.toHaveAttribute('srcset');
 });
 
 test('a dark vector overlay decodes and exports through the live app', async ({ page }) => {
