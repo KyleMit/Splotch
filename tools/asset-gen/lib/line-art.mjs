@@ -3,12 +3,8 @@ import { readFile } from 'node:fs/promises';
 import sharp from 'sharp';
 
 export const LIGHT_OVERLAY_SUFFIX = '.overlay.svg';
-export const DARK_OVERLAY_SUFFIX = '.dark.overlay.svg';
+const DARK_OVERLAY_SUFFIX = '.dark.overlay.svg';
 export const LINE_ART_ALPHA_THRESHOLD = 105;
-
-export function lightLineArtPath(path) {
-  return path.replace(DARK_OVERLAY_SUFFIX, LIGHT_OVERLAY_SUFFIX);
-}
 
 export function darkLineArtPath(path) {
   return path.slice(0, -LIGHT_OVERLAY_SUFFIX.length) + DARK_OVERLAY_SUFFIX;

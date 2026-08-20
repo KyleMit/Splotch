@@ -36,7 +36,7 @@
 // Per-page levers auto-load from the fill-src/<category>/notes.json registry
 // (lib/page-notes.mjs); explicit CLI flags always override the registry.
 import { parseArgs } from 'node:util';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative } from 'node:path';
 import { existsSync } from 'node:fs';
 import sharp from 'sharp';

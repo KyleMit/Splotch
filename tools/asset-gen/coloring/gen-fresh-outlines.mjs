@@ -21,7 +21,7 @@
 // the old chalk, fills, and thumb all belong to the dead drawing.
 import { parseArgs } from 'node:util';
 import { writeFile, mkdir, copyFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import sharp from 'sharp';
 import { REPO_ROOT, SAMPLES_DIR } from '../lib/asset-paths.mjs';
 import { fail, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
