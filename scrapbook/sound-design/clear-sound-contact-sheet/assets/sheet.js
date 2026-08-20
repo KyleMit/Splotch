@@ -23,6 +23,32 @@
   const ENERGY_BINS = 600;
   const SILENCE_GAIN = 0.0001;
 
+  // A ceiling on the way out. Several options stack voices — the shipped dots
+  // overlap five deep on a flick — and once those are level-matched the sum can
+  // pass unity and clip, which would decide the comparison on distortion.
+  // A shaping curve rather than a DynamicsCompressorNode: Chrome's compressor
+  // applies internal makeup gain (a 0.30 peak comes back out at 0.45), which
+  // would undo the level matching this whole sheet depends on. This curve is
+  // exactly linear below the threshold, so every option is untouched, and only
+  // the densest moments bend toward the ceiling.
+  const SOFT_CLIP_THRESHOLD = 0.7;
+  const SOFT_CLIP_CURVE_SAMPLES = 2048;
+
+  function softClipCurve() {
+    const curve = new Float32Array(SOFT_CLIP_CURVE_SAMPLES);
+    const range = 1 - SOFT_CLIP_THRESHOLD;
+    for (let i = 0; i < SOFT_CLIP_CURVE_SAMPLES; i += 1) {
+      const x = (i / (SOFT_CLIP_CURVE_SAMPLES - 1)) * 2 - 1;
+      const magnitude = Math.abs(x);
+      curve[i] =
+        magnitude <= SOFT_CLIP_THRESHOLD
+          ? x
+          : Math.sign(x) *
+            (SOFT_CLIP_THRESHOLD + range * Math.tanh((magnitude - SOFT_CLIP_THRESHOLD) / range));
+    }
+    return curve;
+  }
+
   const settings = { volume: 0.8, readyDing: true };
 
   let ctx = null;
@@ -45,9 +71,16 @@
       ctx = new AudioContext();
       master = ctx.createGain();
       master.gain.value = settings.volume;
+      const ceiling = ctx.createWaveShaper();
+      ceiling.curve = softClipCurve();
+      ceiling.oversample = '4x';
       analyser = ctx.createAnalyser();
       analyser.fftSize = 2048;
-      master.connect(analyser);
+      // The analyser sits after the ceiling so the audit measures what is
+      // actually heard, and its clipping guard still catches a curve that stops
+      // doing its job.
+      master.connect(ceiling);
+      ceiling.connect(analyser);
       analyser.connect(ctx.destination);
       loading = loadClips();
     }
@@ -60,14 +93,25 @@
     await Promise.all(
       manifest.map(async ({ name, url }) => {
         try {
-          const response = await fetch(url);
-          clips.set(name, describeClip(await ctx.decodeAudioData(await response.arrayBuffer())));
+          clips.set(name, describeClip(await ctx.decodeAudioData(await clipBytes(url))));
         } catch {
           clips.set(name, null);
         }
       })
     );
     return clips;
+  }
+
+  // The self-contained build carries its clips as data: URIs, and fetch() of a
+  // data: URI is governed by connect-src — a strict host CSP refuses it, which
+  // silently costs the page every recorded sound while the synthesized ones keep
+  // working. Decoding the base64 directly asks the network for nothing.
+  async function clipBytes(url) {
+    if (!url.startsWith('data:')) return (await fetch(url)).arrayBuffer();
+    const binary = atob(url.slice(url.indexOf(',') + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return bytes.buffer;
   }
 
   // Generated clips arrive at wildly different levels, so each is measured once on
@@ -173,15 +217,18 @@
     };
   }
 
+  // Returns the source purely so the audit's clip probe can cut a long recording
+  // short; production callers fire and forget.
   function playOneShot(name, out, level = 1) {
     const clip = clipFor(name);
-    if (!clip || level <= 0) return;
+    if (!clip || level <= 0) return null;
     const gain = gainNode(clip.oneShotGain * level, out);
     const source = ctx.createBufferSource();
     source.buffer = clip.buffer;
     source.connect(gain);
     disposeOnEnd(source, gain);
     source.start(ctx.currentTime, clip.onset);
+    return source;
   }
 
   function startLoop(name, out, level = 0) {
@@ -319,7 +366,12 @@
   const BASELINE_GAIN_EXPONENT = 1.2;
   const BASELINE_ATTACK_S = 0.004;
   const BASELINE_DURATION_S = 0.085;
-  const BASELINE_LEVEL_MATCH = APP_SCRATCH_GAIN / BASELINE_GAIN_MAX;
+  // A flick fires dots faster than their 85 ms envelope decays — about five of
+  // them overlap and sum — so matching the pencil gain outright would clip that
+  // stack. This backs the match off to keep the densest gesture under unity.
+  const BASELINE_OVERLAP_HEADROOM = 0.77;
+  const BASELINE_LEVEL_MATCH =
+    (APP_SCRATCH_GAIN / BASELINE_GAIN_MAX) * BASELINE_OVERLAP_HEADROOM;
 
   const BUBBLE_BASE_HZ = 330;
   const BUBBLE_NOTE_COUNT = 13;
@@ -386,8 +438,9 @@
       blurb:
         'A faithful port of what is on main after #1181 — sine bubble dots on a 0.055 progress gate, a 240 ms ready pulse, and clear-pop.mp3 on commit.',
       notes: [
-        'Level-matched to the other cards so the comparison is about character, not loudness.',
+        'Level-matched to the other cards so the comparison is about character, not loudness; the sheet masters through a soft ceiling, which only the densest flick on this card reaches.',
         'Pitch is a continuous exponential glide, so two adjacent dots can land a few cents apart.',
+        'On a fast flick the 0.055 progress gate still fires about fifteen dots inside 260 ms — five deep once the 85 ms envelopes overlap — so a quick clear reads as a buzz rather than as bubbles.',
         'Releasing short of the threshold is silent — nothing tells the child the drawing survived.',
         'Its commit clip plays at this sheet’s shared commit level rather than the shipped 0.3, so the commit picker compares clips instead of card mixes.',
       ],
@@ -463,7 +516,7 @@
         'Releasing short of the threshold plays three descending bubbles — the ladder unwinding.',
       ],
       commit: 'commit-pop-sparkle',
-      level: 0.82,
+      level: 0.97,
       create(out) {
         const base = engineBase(out, this.level);
         let lastStep = -1;
@@ -625,7 +678,7 @@
         'Cancel finally has an answer — the deflating squeak, which is exactly what a child expects when they pull back.',
       ],
       commit: 'commit-pop-sparkle',
-      level: 0.55,
+      level: 0.46,
       create(out) {
         const base = engineBase(out, this.level);
         const wobble = gainNode(1, base.bus);
@@ -781,7 +834,7 @@
         'The obvious cost: three decoded loops resident instead of one small pop — worth measuring against the startup budget before shipping it.',
       ],
       commit: 'commit-confetti-sparkle',
-      level: 0.4,
+      level: 0.23,
       create(out) {
         const base = engineBase(out, this.level);
         const cutoff = filterNode('lowpass', STEM_CUTOFF_MIN_HZ, 0.7, base.bus);
@@ -841,7 +894,7 @@
         'Riskiest for a two-year-old: it is the loudest, busiest idea on the sheet, and the countdown only pays off if the hold lasts about a second and a half.',
       ],
       commit: 'commit-rocket-liftoff',
-      level: 0.64,
+      level: 0.37,
       create(out) {
         const base = engineBase(out, this.level);
         const cutoff = filterNode('lowpass', ROCKET_CUTOFF_MIN_HZ, 0.8, base.bus);
@@ -982,6 +1035,9 @@
   const PAD_THRESHOLD_PX = 96;
   const PAD_SCRIPT_ANGLE_RAD = -0.35;
   const SEQUENCE_GAP_MS = 700;
+  const RELEASE_SETTLE_MS = 900;
+  const CLIP_PROBE_MS = 700;
+  const PROBE_GAP_MS = 150;
 
   const COMMIT_CHOICES = [
     { value: 'commit-pop-sparkle', label: 'Bubble pop + sparkle' },
@@ -1084,7 +1140,7 @@
     return frames[frames.length - 1][1];
   }
 
-  async function runPreset(card, preset) {
+  async function playGestureFrames(card, preset) {
     await ensureAudio();
     const gesture = startGesture(card);
     const duration = preset.frames[preset.frames.length - 1][0];
@@ -1100,6 +1156,11 @@
       };
       requestAnimationFrame(step);
     });
+    return gesture;
+  }
+
+  async function runPreset(card, preset) {
+    const gesture = await playGestureFrames(card, preset);
     gesture.finish(preset.outcome);
     card.renderPuck(0);
   }
@@ -1347,17 +1408,18 @@
       }
     });
 
-    // Test seam: tools/scrapbook/clear-sound-sheet/audit.mjs drives every option
-    // through every preset headlessly and fails if one of them renders silence.
-    window.__sheetAudit = async (optionId, presetId) => {
-      const card = cards.find((entry) => entry.option.id === optionId);
-      const preset = PRESETS.find((entry) => entry.id === presetId);
-      await ensureAudio();
+    // Test seam: tools/scrapbook/clear-sound-sheet/audit.mjs drives the sheet
+    // headlessly and fails on anything that renders silence. The drag and the
+    // release are metered separately because a bug that costs the page every
+    // recorded sound — a CSP that refuses data: URIs, a clip that decodes to
+    // nothing — still leaves the synthesized drag beds playing, and a single
+    // whole-gesture peak reads that as healthy.
+    const meter = () => {
       let peak = 0;
       let energy = 0;
       let windows = 0;
-      const sampler = setInterval(() => {
-        const data = new Float32Array(analyser.fftSize);
+      const data = new Float32Array(analyser.fftSize);
+      const timer = setInterval(() => {
         analyser.getFloatTimeDomainData(data);
         let sumSquares = 0;
         for (const sample of data) {
@@ -1367,14 +1429,53 @@
         energy += Math.sqrt(sumSquares / data.length);
         windows += 1;
       }, 16);
-      await runPreset(card, preset);
-      await new Promise((resolve) => setTimeout(resolve, 900));
-      clearInterval(sampler);
-      // Peak catches silence; loudness (mean window RMS) is what the cards are
-      // level-matched on, since a transient pop and a sustained bed at the same
-      // peak are nowhere near the same perceived level.
-      return { peak, loudness: energy / Math.max(1, windows) };
+      return {
+        take() {
+          const reading = { peak, loudness: energy / Math.max(1, windows) };
+          peak = 0;
+          energy = 0;
+          windows = 0;
+          return reading;
+        },
+        stop: () => clearInterval(timer),
+      };
     };
+
+    const settle = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    window.__sheetAudit = async (optionId, presetId) => {
+      const card = cards.find((entry) => entry.option.id === optionId);
+      const preset = PRESETS.find((entry) => entry.id === presetId);
+      await ensureAudio();
+      const scope = meter();
+      const gesture = await playGestureFrames(card, preset);
+      const drag = scope.take();
+      gesture.finish(preset.outcome);
+      card.renderPuck(0);
+      await settle(RELEASE_SETTLE_MS);
+      const release = scope.take();
+      scope.stop();
+      return { drag, release };
+    };
+
+    // Plays one clip on its own, which is the only check that separates "decoded"
+    // from "audible" — the sheet can hold a full clip table and still play none
+    // of it.
+    window.__sheetPlayClip = async (name) => {
+      await ensureAudio();
+      const scope = meter();
+      const source = playOneShot(name, master, 1);
+      await settle(CLIP_PROBE_MS);
+      const reading = scope.take();
+      scope.stop();
+      // The scrub sources run eight seconds. Left running, each probe would still
+      // be sounding under the next one and under the first options measured
+      // after them, which reads as those options being far louder than they are.
+      source?.stop();
+      await settle(PROBE_GAP_MS);
+      return reading;
+    };
+
     window.__sheetOptions = OPTIONS.map((option) => option.id);
     window.__sheetPresets = PRESETS.map((preset) => preset.id);
     window.__sheetClips = () =>
