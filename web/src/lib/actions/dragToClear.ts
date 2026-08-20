@@ -8,9 +8,9 @@ import {
 } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
+import { getAcceptRadius } from './dragToClearGeometry';
 
 // Drag-to-clear gesture constants.
-const ACCEPT_RADIUS_FACTOR = 0.4;
 const HOLD_DURATION_MS = 500;
 const MOVEMENT_THRESHOLD_PX = 50;
 const MULTI_CLICK_WINDOW_MS = 1000;
@@ -24,10 +24,6 @@ const EXIT_RETURN_DELAY_MS = PAGE_TURN_DURATION_MS + RETURN_HANDOFF_GAP_MS;
 function suppress(e: Event) {
   e.preventDefault();
   e.stopPropagation();
-}
-
-export function getAcceptRadius() {
-  return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
 }
 
 export interface DragToClearOptions {
@@ -52,7 +48,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   let acceptZoneFrame: number | null = null;
   let clickCount = 0;
   let lastClickTime = 0;
-  let clearExitActive = false;
 
   const resetTimers = new Set<ReturnType<typeof setTimeout>>();
 
@@ -104,10 +99,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
   function onPointerDown(e: PointerEvent) {
     if (activePointerId !== null) return;
-    if (clearExitActive) {
-      suppress(e);
-      return;
-    }
 
     const o = getOptions();
     if (registerTap(Date.now(), o)) return;
@@ -230,7 +221,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   // live in ClearButton.svelte's CSS; the delays below only hand the classes over
   // at each stage.
   function playClearExit(o: DragToClearOptions): void {
-    clearExitActive = true;
     node.classList.add('clearing');
     o.pageTurnOverlayEl.classList.add('animating');
 
@@ -246,7 +236,6 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     }, PAGE_TURN_DURATION_MS);
 
     scheduleReset(() => {
-      clearExitActive = false;
       o.containerEl.classList.remove('dragging-active');
       node.classList.remove('clearing', 'clearing-done');
       node.classList.add('clearing-return');
@@ -300,7 +289,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     resetDragVisuals(o);
     // A drag can start as soon as the button begins its return leg, so cancelling
     // must put it back on screen rather than leave it mid-fade.
-    node.classList.remove('clearing', 'clearing-done', 'clearing-return');
+    node.classList.remove('clearing-return');
     o.pageTurnOverlayEl.classList.remove('animating');
     cancelClearSound();
     stopDrawSound();

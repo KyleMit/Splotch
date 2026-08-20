@@ -9,6 +9,7 @@ import {
 } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { dragToClear, PAGE_TURN_DURATION_MS, type DragToClearOptions } from './dragToClear';
+import { ACCEPT_RADIUS_FACTOR } from './dragToClearGeometry';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
 vi.mock('$lib/audio/drawingSound', () => ({
@@ -36,7 +37,7 @@ function transitionEndEvent(propertyName: string) {
   return e;
 }
 
-const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * 0.4;
+const acceptRadius = () => Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
 const clearProgress = () => document.documentElement.style.getPropertyValue('--clear-progress');
 
 function setup() {
@@ -149,7 +150,7 @@ describe('dragToClear pointer identity', () => {
     expect(node.classList.contains('clearing-return')).toBe(false);
   });
 
-  it('ignores a new press while the cleared button is exiting', () => {
+  it('restores a button caught in its return leg when the next drag is cancelled', () => {
     vi.useFakeTimers();
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
@@ -161,16 +162,16 @@ describe('dragToClear pointer identity', () => {
 
     expect(node.classList.contains('clearing')).toBe(true);
 
-    vi.mocked(startClearSound).mockClear();
-    vi.mocked(options.onDragStart)?.mockClear();
-    node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(PAGE_TURN_DURATION_MS + 50);
 
-    expect(startClearSound).not.toHaveBeenCalled();
-    expect(options.onDragStart).not.toHaveBeenCalled();
-    expect(options.onTutorialShow).not.toHaveBeenCalled();
-    expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
-    expect(node.classList.contains('clearing')).toBe(true);
+    expect(node.classList.contains('clearing-return')).toBe(true);
+
+    node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
+    node.dispatchEvent(pointerEvent('pointercancel', 2, 100, 100));
+
+    expect(node.classList.contains('clearing-return')).toBe(false);
+    expect(node.classList.contains('dragging')).toBe(false);
+    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
   });
 
   it('ignores moves and releases from a different pointer', () => {
