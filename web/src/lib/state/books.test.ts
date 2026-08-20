@@ -101,9 +101,9 @@ describe('pageOverlayImage', () => {
   });
 
   it('keeps the dark presentation path stable when its generator falls back to pen line art', () => {
-    const unforked = { ...cat, chalkImages: {}, darkVectorOverlayOrientations: [] };
+    const unforked = { ...cat, chalkImages: {} };
     expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
-      '/coloring/farm/cat-wide.dark.overlay.webp'
+      '/coloring/farm/cat-wide.dark.overlay.svg'
     );
   });
 });
@@ -119,7 +119,7 @@ describe('vector overlays', () => {
     (page) => page.id === 'station'
   )!;
 
-  it('uses invariant SVGs for every light overlay and only approved dark overlays', () => {
+  it('uses invariant SVGs for every light and dark overlay', () => {
     expect(pageOverlayImage(circle, 'portrait', 'light')).toBe(
       '/coloring/shapes/circle-tall.overlay.svg'
     );
@@ -136,7 +136,7 @@ describe('vector overlays', () => {
       '/coloring/creatures/owl-wide.overlay.svg'
     );
     expect(pageOverlayImage(station, 'landscape', 'dark')).toBe(
-      '/coloring/space/station-wide.dark.overlay.webp'
+      '/coloring/space/station-wide.dark.overlay.svg'
     );
   });
 

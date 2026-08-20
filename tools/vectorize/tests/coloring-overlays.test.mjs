@@ -84,8 +84,8 @@ describe('coloring overlay campaign', () => {
     expect(checkColoringOverlayLedger(coloringOverlayJobs())).toBe(96);
   });
 
-  it('keeps the bounded dark SVG set tied to its exact chalk source', () => {
-    expect(checkColoringOverlayLedger(coloringOverlayJobs(undefined, 'dark'))).toBe(83);
+  it('keeps every committed dark SVG tied to its exact chalk source', () => {
+    expect(checkColoringOverlayLedger(coloringOverlayJobs(undefined, 'dark'))).toBe(96);
   });
 
   it('measures alpha fidelity independently from vector fill color', () => {

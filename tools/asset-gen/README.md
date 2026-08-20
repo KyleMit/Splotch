@@ -75,8 +75,8 @@ npm run check:coloring-invented-shapes # invented colored shapes on the open bac
 npm run check:coloring-night-halo # audit shipped night fills against the candidate halo bar + crop-review signal (no key/network)
 npm run gen:coloring-punched-fills      # re-punch the shipped fills from fill-src/ raws (no key/network)
 npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
-npm run gen:coloring-overlays   # transparent light/dark runtime overlays -> web/static/coloring/**/*.{overlay,dark.overlay}.webp
-npm run gen:coloring-responsive # web srcset tiers from canonical overlays/thumbs -> web/static/coloring/max-*px/
+npm run gen:coloring-overlays   # temporary full-resolution WebP comparison overlays for SVG regeneration
+npm run gen:coloring-responsive # web srcset tiers from canonical fills/thumbs -> web/static/coloring/max-*px/
 npm run check:coloring-golden-scores # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run update:coloring-golden-scores # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
@@ -170,10 +170,12 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 * **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
   dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
   fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
-  `*.overlay.webp` / `*.dark.overlay.webp` transparent full-page presentation layers, and
+  `*.overlay.svg` / `*.dark.overlay.svg` invariant full-page presentation layers, and
   `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
   `web/static/coloring/max-{edge}px/`; `build:cap` strips those directories so native keeps one
-  canonical runtime width.
+  canonical runtime width. `gen:coloring-overlays` writes temporary WebP baselines for the
+  vectorization comparison and fidelity workflow; remove them after analysis rather than shipping
+  them.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/asset-paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`.
   (The gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the

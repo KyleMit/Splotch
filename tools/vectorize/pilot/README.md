@@ -1,11 +1,11 @@
 # Coloring-outline vector pilot
 
 Run 2026-08-19 against four initial production Vectorizer.AI traces, followed by the 96-page pen and
-83-page chalk campaigns on 2026-08-20. This directory commits the raw and optimized keeper SVGs,
+96-page chalk campaigns on 2026-08-20. This directory commits the raw and optimized keeper SVGs,
 reproducible offline measurements, and browser compatibility results. The watermarked
 discovery/rehearsal traces and generated PNG comparison sheets remain under the gitignored
 `vectorized/pilot/` workspace. Circle and Owl seeded the completed light-overlay catalog; Owl also
-seeded the bounded dark-overlay catalog recorded by ADR-0129.
+seeded the completed dark-overlay catalog recorded by ADR-0129.
 
 ## Keeper recipe
 
@@ -69,8 +69,8 @@ and 1.08/255 composite mean error.
 
 The paid dense-wide chalk gate used `creatures/fairy-wide.chalk.webp`. Its keeper is 83.5 KB raw and
 35.8 KB gzip versus 76.9 KB compact or 84.0 KB full WebP, with 96.96% binary ink IoU and 1.83/255
-mean alpha error. It is 8.6% larger than compact for native, but the completed 83-page selection is
-12.3% smaller in aggregate raw bytes; web transfer is 61.6% smaller than compact after gzip.
+mean alpha error. It is 8.6% larger than compact for native, but the completed 96-page catalog is
+11.6% smaller in aggregate raw bytes; web transfer is 61.3% smaller than compact after gzip.
 
 ## Fidelity
 
@@ -110,24 +110,28 @@ integration. Regenerate it with:
 node tools/vectorize/pilot/check-browser.mjs
 ```
 
-The integrated dark selection's trusted physical-iPad action sweep passed both theme switches and
-the coloring-book open and page-selection gates. Opening measured 14 ms first-frame P95, 17 ms
-post-action frame P95, and 23 ms maximum; selection measured 18 ms, 19 ms, and 19 ms respectively.
+The final dense Train-wide chalk gate measured SVG/WebP decode at 0.8/3.3 ms in Chromium and 2/5 ms
+in WebKit; draw plus PNG export measured 7.1/7.9 ms and 14/13 ms. Both formats reported the expected
+1536×1024 intrinsic dimensions. Run this comparison before removing the redundant runtime WebPs;
+after removal, fidelity remains repeatable from the retained authoring sources while the committed
+browser report preserves the format comparison.
+
+The completed dark catalog's trusted physical-iPad action sweep passed both theme switches and the
+coloring-book open and page-selection gates. Opening measured 14 ms first-frame P95, 17 ms
+post-action frame P95, and 22 ms maximum; selection measured 18 ms, 20 ms, and 20 ms respectively.
 Screenshot export measured 1 ms and 17 ms at P95 and 34 ms maximum, missing the strict 33.5 ms
-report-only maximum by 0.5 ms. The broader clear/rotation sweep retained pre-existing global
-frame-gate failures, so those rows are not evidence of a vector regression or approval.
+report-only maximum by 0.5 ms. The broader Settings and clear rows retained their pre-existing
+global frame-gate failures, so those rows are not evidence of a vector regression or approval.
 
 ## Cost
 
 The initial pilot charged 4.0 credits. The completed pen campaign reused Circle and Owl and charged
-94 additional credits. The dark campaign reused Owl chalk and charged 82 credits for 83 selected
-outputs, ending at 0.9 credits. Per-response credit headers can lag the account balance; campaign
-planning and the final record use a fresh `npm run vectorize -- --account` query.
+94 additional credits. The dark campaign reused Owl chalk and charged 95 credits for 96 outputs. The
+final 13 traces consumed 13 credits from a 50-credit replenishment, leaving 37.9 credits.
+Per-response credit headers can lag the account balance; campaign planning and the final record use
+a fresh `npm run vectorize -- --account` query.
 
 ## Verdict
 
-The complete 96-page pen catalog and the approved 83-page chalk selection proceed as SVG. The dark
-selection covers both orientations in Farm, Dinosaurs, Creatures, Nature, Objects, and Shapes, plus
-both orientations for the first five Space pages and Station portrait. Station landscape and all 12
-Vehicles orientations remain responsive WebP fallbacks. Raster authoring sources, fills,
-picker/cover thumbnails, and those 13 non-selected dark overlays remain.
+The complete 96-page pen and 96-page chalk catalogs proceed as SVG. Raster authoring sources, fills,
+and picker/cover thumbnails remain; page-overlay WebPs do not.

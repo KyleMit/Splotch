@@ -12,7 +12,6 @@ import { createBookCatalog, type PageOverrides } from './bookCatalog.ts';
 // platform in $lib/platform (which also has 'ios'/'android').
 export type BookPlatform = 'web' | 'mobile';
 export type BookOrientation = Orientation;
-const BOTH_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
 
 export interface ResponsiveColoringImage {
   src: string;
@@ -24,7 +23,7 @@ export interface ResponsiveColoringAsset {
   target: string;
   maxEdgePx: number;
   widthPx: number;
-  encoding: 'fill' | 'overlay' | 'thumbnail';
+  encoding: 'fill' | 'thumbnail';
 }
 
 interface ColoringBookGridLayout {
@@ -47,8 +46,6 @@ export interface ColoringPage {
       present for orientations whose chalk has been generated; dark mode falls
       back to inverting the pen outline (`images`) where it's absent. */
   chalkImages: Partial<Record<BookOrientation, string>>;
-  /** Orientations whose dark presentation has a separately approved chalk SVG. */
-  darkVectorOverlayOrientations: BookOrientation[];
 }
 
 export interface Book {
@@ -214,17 +211,12 @@ function book(
   platforms: BookPlatform[],
   buildPages: (
     page: (id: string, name: string, overrides?: PageOverrides) => ColoringPage
-  ) => ColoringPage[],
-  bookDarkVectorOverlayOrientations: BookOrientation[] = []
+  ) => ColoringPage[]
 ): Book {
   function page(
     id: string,
     name: string,
-    {
-      nightExcept = [],
-      chalkExcept = [],
-      darkVectorOverlayOrientations = bookDarkVectorOverlayOrientations,
-    }: PageOverrides = {}
+    { nightExcept = [], chalkExcept = [] }: PageOverrides = {}
   ): ColoringPage {
     return {
       id,
@@ -239,7 +231,6 @@ function book(
       },
       nightImages: optionalPageAssetPaths(bookId, id, nightExcept, 'night'),
       chalkImages: optionalPageAssetPaths(bookId, id, chalkExcept, 'chalk'),
-      darkVectorOverlayOrientations,
     };
   }
 
@@ -253,7 +244,7 @@ function book(
   };
 }
 
-export const BOOKS: Book[] = createBookCatalog(book, BOTH_ORIENTATIONS);
+export const BOOKS: Book[] = createBookCatalog(book);
 
 export const STARTER_COLORING_BOOK_ID = 'farm';
 
@@ -292,14 +283,7 @@ function pageOverlayAssetPath(
   theme: ResolvedTheme
 ): string {
   const source = pageImage(page, orientation);
-  const vector = theme === 'light' || page.darkVectorOverlayOrientations.includes(orientation);
-  const suffix = vector
-    ? theme === 'dark'
-      ? ASSET_SUFFIXES.darkVectorOverlay
-      : ASSET_SUFFIXES.vectorOverlay
-    : theme === 'dark'
-      ? ASSET_SUFFIXES.darkOverlay
-      : ASSET_SUFFIXES.overlay;
+  const suffix = theme === 'dark' ? ASSET_SUFFIXES.darkVectorOverlay : ASSET_SUFFIXES.vectorOverlay;
   return source.slice(0, -ASSET_SUFFIXES.outline.length) + suffix;
 }
 
@@ -382,25 +366,6 @@ export function pageThumbImageSource(
 export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] {
   const overlayTier = RESPONSIVE_COLORING_TIERS.overlay;
   const thumbnailTier = RESPONSIVE_COLORING_TIERS.thumbnail;
-  const overlayAssets = book.pages.flatMap((page) =>
-    ALL_ORIENTATIONS.flatMap((orientation) => {
-      const widths = overlayTier.widths[orientation];
-      return (['light', 'dark'] as const).flatMap((theme) => {
-        const source = pageOverlayAssetPath(page, orientation, theme);
-        return source.endsWith('.svg')
-          ? []
-          : [
-              {
-                source,
-                target: responsiveTierPath(source, overlayTier.directory),
-                maxEdgePx: overlayTier.maxEdgePx,
-                widthPx: widths.candidate,
-                encoding: 'overlay' as const,
-              },
-            ];
-      });
-    })
-  );
   const thumbnailSources: Array<{
     source: string;
     shape: BookOrientation | 'cover';
@@ -439,7 +404,7 @@ export function responsiveColoringAssets(book: Book): ResponsiveColoringAsset[] 
         }));
     })
   );
-  return [...overlayAssets, ...thumbnailAssets, ...fillAssets];
+  return [...thumbnailAssets, ...fillAssets];
 }
 
 export function bookAssetPaths(book: Book): string[] {

@@ -219,20 +219,41 @@ npm run vectorize:coloring:check
 npm run vectorize:postprocess:check
 ```
 
-The committed ledgers record the source and SVG SHA-256 plus byte counts. The light ledger is
-complete; a bounded dark campaign records the exact committed subset and the check rejects an
-unrecorded dark SVG. If an outline is regenerated later, the check fails until its SVG is
-deliberately retraced and the ledger is rewritten. Raw service responses remain review/recovery
-artifacts, not sources of truth, and should not be committed.
+The committed ledgers record the source and SVG SHA-256 plus byte counts. Both theme ledgers cover
+all 96 page orientations, and the check rejects any unrecorded SVG. If an outline is regenerated
+later, the check fails until its SVG is deliberately retraced and the ledger is rewritten. Raw
+service responses remain review/recovery artifacts, not sources of truth, and should not be
+committed.
+
+### Regenerate an overlay after a source edit
+
+Treat the raster presentation as a temporary comparison artifact, not a runtime fallback. For the
+affected category, regenerate the deterministic full-resolution WebP baseline, retrace only the
+changed theme/page, compare before deleting the WebP, then refresh the ledger and asset manifest:
+
+```bash
+npm run gen:coloring-overlays -- vehicles
+npm run vectorize:coloring -- \
+  --theme=dark --match=vehicles/train-wide --batch-size=1 --production --force
+npm run vectorize:coloring:analyze -- --theme=dark --book=vehicles
+npm run vectorize:coloring -- --theme=dark --write-ledger
+npm run vectorize:coloring:check
+npm run vectorize:postprocess:check
+npm run gen:assets:manifest
+```
+
+Inspect the changed source, rendered SVG, and representative composite before accepting the trace.
+Delete the category's generated `*.overlay.webp` and `*.dark.overlay.webp` files after comparison;
+`check:coloring-assets` rejects them as unreferenced once the all-vector catalog is restored.
 
 Run `vectorize:coloring:analyze` before deleting replaced WebPs when a campaign needs comparative
 payload totals. Its fidelity comparison uses the authoring outline and remains repeatable after the
 raster presentation files are removed, but the full/compact WebP byte fields then report `null`. The
 completed light catalog measured 3,572,243 raw SVG bytes and 1,558,331 gzip bytes versus 6,274,180
 compact or 9,080,706 full WebP bytes; all 96 pages passed at 96.34% minimum binary ink IoU and
-2.46/255 maximum alpha mean absolute error. The bounded dark catalog measured 3,314,932 raw SVG
-bytes and 1,450,755 gzip bytes versus 3,780,176 compact or 4,521,752 full WebP bytes; all 83
-selected pages passed at 95.67% minimum IoU and 1.83/255 maximum alpha error.
+2.46/255 maximum alpha mean absolute error. The complete dark catalog measured 3,959,975 raw SVG
+bytes and 1,731,806 gzip bytes versus 4,479,786 compact or 5,361,446 full WebP bytes; all 96 pages
+passed at 95.67% minimum IoU and 1.83/255 maximum alpha error.
 
 The fidelity gate uses a 95.5% binary-IoU floor together with a 3/255 mean-alpha-error ceiling. The
 IoU floor includes the visually reviewed tall Umbrella trace (97.72% precision, 97.86% recall,

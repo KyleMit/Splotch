@@ -671,6 +671,110 @@
       "output": "web/static/coloring/space/station-tall.dark.overlay.svg",
       "outputSha256": "e679e8e6b418cc63f5f857d2de7cb61ffab57d9b13d2610dabe8dc1ea8c66c8c",
       "outputBytes": 32100
+    },
+    {
+      "source": "web/static/coloring/space/station-wide.chalk.webp",
+      "sourceSha256": "d6c070b5edd604928055e0e3b55db18531e126eba455ded8786b8d0341935579",
+      "sourceBytes": 80206,
+      "output": "web/static/coloring/space/station-wide.dark.overlay.svg",
+      "outputSha256": "f272dad7a199c382c957f0d3f7f321080cc08b959abcb02f97ff22819c51195d",
+      "outputBytes": 32644
+    },
+    {
+      "source": "web/static/coloring/vehicles/excavator-tall.chalk.webp",
+      "sourceSha256": "c940ce4f80ecaf64a953f6341aa269b26d752871f1ca2605de96dea7842b3add",
+      "sourceBytes": 90202,
+      "output": "web/static/coloring/vehicles/excavator-tall.dark.overlay.svg",
+      "outputSha256": "f6328cdda844e75259d5ff6ac3916df80f98b785ba427177f64d1044021ab06f",
+      "outputBytes": 46070
+    },
+    {
+      "source": "web/static/coloring/vehicles/excavator-wide.chalk.webp",
+      "sourceSha256": "c7b8a5cac08937bef873ad085698aeba718add13db21c140189d65563394a9f2",
+      "sourceBytes": 107868,
+      "output": "web/static/coloring/vehicles/excavator-wide.dark.overlay.svg",
+      "outputSha256": "6a5d820f7a1b22c2053a239c7db08505f8974e3fc1e2b56d2d0234368ad3c74a",
+      "outputBytes": 49111
+    },
+    {
+      "source": "web/static/coloring/vehicles/fire-tall.chalk.webp",
+      "sourceSha256": "341ecb3512b4400137d9a2452d10e74f4af2c615e4c81d4e4b481756c6668e32",
+      "sourceBytes": 101736,
+      "output": "web/static/coloring/vehicles/fire-tall.dark.overlay.svg",
+      "outputSha256": "d8b130dede18460528fb0a3dc5640ae10f9d86bbb2611c097b8c609aa5709941",
+      "outputBytes": 46891
+    },
+    {
+      "source": "web/static/coloring/vehicles/fire-wide.chalk.webp",
+      "sourceSha256": "ae2ae0b77b34cda76d8a862b465282102c6e3ce4b07c852a3ff214ee6726568f",
+      "sourceBytes": 118276,
+      "output": "web/static/coloring/vehicles/fire-wide.dark.overlay.svg",
+      "outputSha256": "4811c9b3aab0bbcdafd810a411852e1594b93cdd34c15f06bf80b4297f660498",
+      "outputBytes": 63128
+    },
+    {
+      "source": "web/static/coloring/vehicles/garbage-tall.chalk.webp",
+      "sourceSha256": "df67268c9dfeb20300e02bdbde711a0d32ae134b0a8364dc6effe81f190dacef",
+      "sourceBytes": 85008,
+      "output": "web/static/coloring/vehicles/garbage-tall.dark.overlay.svg",
+      "outputSha256": "8f29f5c08ba711922e97d130f0222b5b941d05b88374de2f45abde3b79771f8d",
+      "outputBytes": 44659
+    },
+    {
+      "source": "web/static/coloring/vehicles/garbage-wide.chalk.webp",
+      "sourceSha256": "ffde5c910db0b778ec878768abb714da748d89eb0de6cc02befa5bf18149e254",
+      "sourceBytes": 121160,
+      "output": "web/static/coloring/vehicles/garbage-wide.dark.overlay.svg",
+      "outputSha256": "095761c989c9c96edad3497a1219589f817667ea6d2ba9d745a778809bab9d46",
+      "outputBytes": 64711
+    },
+    {
+      "source": "web/static/coloring/vehicles/monster-tall.chalk.webp",
+      "sourceSha256": "94d345684b51842680186333bae0b0c52137c29f1467235b9c9fe0a64ee5810e",
+      "sourceBytes": 103740,
+      "output": "web/static/coloring/vehicles/monster-tall.dark.overlay.svg",
+      "outputSha256": "e8a112567fe46aa7e89de9d0b78ebd1013a124124e2b2532243f484f3a690b81",
+      "outputBytes": 48721
+    },
+    {
+      "source": "web/static/coloring/vehicles/monster-wide.chalk.webp",
+      "sourceSha256": "7e14c4d0ebd1dc0c71bca558f8fc20c95cd9c640dbf7d63866559ef488333676",
+      "sourceBytes": 113692,
+      "output": "web/static/coloring/vehicles/monster-wide.dark.overlay.svg",
+      "outputSha256": "fe9425f337c9feb09275e308d96f2cb68d0cd1ad3500a393d0d787c659d90230",
+      "outputBytes": 67546
+    },
+    {
+      "source": "web/static/coloring/vehicles/police-tall.chalk.webp",
+      "sourceSha256": "a0e79ef784aefb0ab9198db8c7345e23f76b62f2fcc296890bb3f8402ca98230",
+      "sourceBytes": 88724,
+      "output": "web/static/coloring/vehicles/police-tall.dark.overlay.svg",
+      "outputSha256": "58c79cb94d491c97eebd72034a05f09787965d3e98d8dc9d43aa5345aa7580b9",
+      "outputBytes": 45901
+    },
+    {
+      "source": "web/static/coloring/vehicles/police-wide.chalk.webp",
+      "sourceSha256": "9cbd1b86edbc238fbf1ad9b4dfb5b360ef3d7b4f7c5e73609d354c1dc8ec3591",
+      "sourceBytes": 93520,
+      "output": "web/static/coloring/vehicles/police-wide.dark.overlay.svg",
+      "outputSha256": "377799974cc866044644784b497d24930678b87d845ae3801ecf76f8c777e239",
+      "outputBytes": 38462
+    },
+    {
+      "source": "web/static/coloring/vehicles/train-tall.chalk.webp",
+      "sourceSha256": "b6040aff7e296fb46a1fa55478062fd2bdfc55b86b2e91f829d2dc22f2de03b1",
+      "sourceBytes": 111856,
+      "output": "web/static/coloring/vehicles/train-tall.dark.overlay.svg",
+      "outputSha256": "cd50a8199b932b0427503a38fffee04e711d7a55c7504a9aff126af40fb605be",
+      "outputBytes": 44935
+    },
+    {
+      "source": "web/static/coloring/vehicles/train-wide.chalk.webp",
+      "sourceSha256": "f44d90d6627748c87908e4d6282f1e742efaf2f5ecd5a984542c3da38ae90f61",
+      "sourceBytes": 125332,
+      "output": "web/static/coloring/vehicles/train-wide.dark.overlay.svg",
+      "outputSha256": "63f3568cdef67943a5bcce94b7978779fb2088ae9d60aacdfef969995b766a03",
+      "outputBytes": 52264
     }
   ]
 }

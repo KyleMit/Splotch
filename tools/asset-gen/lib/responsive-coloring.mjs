@@ -1,11 +1,6 @@
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
-import {
-  maxOverlayAlphaError,
-  OVERLAY_MAX_CHANNEL_ERROR,
-  quantizeOverlayRgba,
-} from './overlay-alpha.mjs';
 
 const WEBP_EFFORT = 6;
 const FILL_QUALITY = 85;
@@ -17,33 +12,6 @@ function staticAssetPath(staticDir, url) {
 }
 
 export async function renderResponsiveColoringAsset(sourcePath, asset) {
-  if (asset.encoding === 'overlay') {
-    const { data, info } = await sharp(sourcePath)
-      .resize(asset.maxEdgePx, asset.maxEdgePx, {
-        fit: 'inside',
-        kernel: 'lanczos3',
-        withoutEnlargement: true,
-      })
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-    const quantized = quantizeOverlayRgba(data);
-    const encoded = await sharp(quantized, {
-      raw: { width: info.width, height: info.height, channels: 4 },
-    })
-      .webp({ lossless: true, effort: WEBP_EFFORT })
-      .toBuffer();
-    const decoded = await sharp(encoded).ensureAlpha().raw().toBuffer();
-    const error = maxOverlayAlphaError(data, decoded);
-    if (error > OVERLAY_MAX_CHANNEL_ERROR) {
-      throw new Error(
-        `${asset.target} changed its resized source by ${error}/255 ` +
-          `(limit ${OVERLAY_MAX_CHANNEL_ERROR}/255).`
-      );
-    }
-    return encoded;
-  }
-
   return sharp(sourcePath)
     .resize(asset.maxEdgePx, asset.maxEdgePx, {
       fit: 'inside',

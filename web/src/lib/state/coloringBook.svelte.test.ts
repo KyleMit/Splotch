@@ -123,12 +123,11 @@ describe('coloring book state', () => {
     expect(coloringBookState.orientation).toBe('landscape');
   });
 
-  it('keeps the unselected dark orientation on its responsive raster fallback', () => {
+  it('uses the invariant dark SVG for Station landscape', () => {
     setOverlayPage(stationPage, 'landscape');
     expect(themedOverlayImageSource('dark')).toEqual({
-      src: '/coloring/space/station-wide.dark.overlay.webp',
-      srcset:
-        '/coloring/max-1152px/space/station-wide.dark.overlay.webp 1152w, /coloring/space/station-wide.dark.overlay.webp 1536w',
+      src: '/coloring/space/station-wide.dark.overlay.svg',
+      srcset: '/coloring/space/station-wide.dark.overlay.svg',
     });
   });
 });
