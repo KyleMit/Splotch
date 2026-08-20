@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getAcceptRadius } from '$lib/actions/dragToClear';
+  import { getAcceptRadius } from '$lib/actions/dragToClearGeometry';
   import Icon from './Icon.svelte';
 
   const COACHMARK_AUTO_DISMISS_MS = 6000;
