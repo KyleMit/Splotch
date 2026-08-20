@@ -79,9 +79,11 @@
   );
 
   const stageStyle = $derived(
-    (maskRadiusPx > 0
-      ? `--confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
-      : '') + (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
+    `--result-entry-blur: ${MIN_BLUR_PX}px;` +
+      (maskRadiusPx > 0
+        ? ` --confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
+        : '') +
+      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
   );
 </script>
 
@@ -148,7 +150,6 @@
      from .stage-sizer below, within the budget the card hands down as
      --result-stage-max-h/-w (AiImageResult). */
   .ai-stage {
-    --result-entry-blur: 2px;
     position: relative;
     display: block;
     line-height: 0; /* drop the inline-image baseline gap under the sizer */
@@ -191,10 +192,11 @@
        tall to project that way is held by the height alone and sits centered. */
     max-width: 100%;
     max-height: var(--result-stage-max-h);
-    /* The budget it sizes against changes once at the reveal, when the
-       keep-drawing pill leaves and gives its room back to the picture. Gliding
-       through that means the picture opens up as it lands instead of the
-       blurred preview stretching in the single frame the card swaps states. */
+    /* The budget it sizes against changes at the reveal, when the keep-drawing
+       pill leaves and gives its room back to the picture. A decoded image glides
+       through that change so the picture opens up as it lands. An undecoded
+       image follows the fallback box below directly: preserving its footprint
+       takes precedence over animating a resource that has no pixels yet. */
     transition: max-height var(--duration-slow) var(--ease-glide);
   }
 
