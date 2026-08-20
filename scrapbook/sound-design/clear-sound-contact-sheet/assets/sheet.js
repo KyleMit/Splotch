@@ -1202,6 +1202,15 @@
   const PAD_PUCK_MAX_RATIO = 1.55;
   const SEQUENCE_GAP_MS = 700;
   const RELEASE_SETTLE_MS = 900;
+  // The note the drag ended on is still decaying when the frames stop, so metering
+  // the release from that instant charges the drag's own tail to the release —
+  // which reads as cancellation audio on an option whose cancel is meant to be
+  // silent, and does so only when the last note happened to fire late enough. The
+  // window is spent entirely before the release is triggered, so it can never mask
+  // a real cancel or commit sound. Derived from the voices rather than guessed, so
+  // lengthening one keeps the window ahead of it.
+  const LONGEST_VOICE_TAIL_S = Math.max(XYLO_BODY_DECAY_S, BUBBLE_DURATION_S * SETTLE_SUSTAIN_SCALE);
+  const DRAG_TAIL_GUARD_MS = Math.ceil(LONGEST_VOICE_TAIL_S * 1_000) + 120;
   const CLIP_PROBE_MS = 700;
   const PROBE_GAP_MS = 150;
   const HOLD_PROBE_RAMP_MS = 700;
@@ -1657,6 +1666,8 @@
       const scope = meter();
       const gesture = await playGestureFrames(card, preset);
       const drag = scope.take();
+      await settle(DRAG_TAIL_GUARD_MS);
+      scope.take();
       gesture.finish(preset.outcome);
       card.renderPuck(0);
       await settle(RELEASE_SETTLE_MS);
