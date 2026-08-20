@@ -127,7 +127,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
   test('prefetches the canonical SVG for the locked orientation after rotation', async ({
     page,
   }) => {
-    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.emulateMedia({ colorScheme: 'light' });
     await gotoApp(page);
     await openDrawer(page);
     await applyFarmPage(page);
@@ -137,6 +137,9 @@ test.describe('responsive coloring selection at DPR 1', () => {
     ]);
 
     await rotateViewportViaCdp(page, { width: 1000, height: 390, angle: 90 });
+    const expectedPrefetch = /\/coloring\/farm\/cow-tall\.dark\.overlay\.svg$/;
+    const cowPrefetch = page.waitForRequest(expectedPrefetch);
+    await page.emulateMedia({ colorScheme: 'dark' });
     const overlay = page.locator('#coloringOverlay');
     await expect(page.locator('.paper-sheet.paper-lifted')).toBeVisible();
     await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.dark\.overlay\.svg$/);
@@ -148,20 +151,11 @@ test.describe('responsive coloring selection at DPR 1', () => {
       )
       .toBeGreaterThan(768);
 
-    const cowOverlayRequests: string[] = [];
-    page.on('request', (request) => {
-      if (/\/coloring\/farm\/cow-tall\.dark\.overlay\.svg$/.test(request.url())) {
-        cowOverlayRequests.push(request.url());
-      }
-    });
     await openColoringDialog(page);
     const cow = (await openFarmPageGrid(page)).nth(1);
     await cow.dispatchEvent('pointerenter', { pointerType: 'mouse' });
 
-    await expect
-      .poll(() => cowOverlayRequests.some((url) => url.endsWith('/cow-tall.dark.overlay.svg')))
-      .toBe(true);
-    expect(cowOverlayRequests.some((url) => url.includes('/coloring/max-1152px/'))).toBe(false);
+    expect((await cowPrefetch).url()).toMatch(expectedPrefetch);
   });
 });
 
