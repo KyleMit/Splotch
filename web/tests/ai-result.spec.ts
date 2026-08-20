@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { aiOutputFor } from './artifacts/ai-output-fixtures';
 import {
   invokeAiGeneration,
   keepDrawingBlockPx,
@@ -53,6 +54,59 @@ function resolveLengths(page: Page, host: string, expressions: string[]) {
       return resolved;
     },
     { host, expressions }
+  );
+}
+
+async function reservedStageSize(page: Page) {
+  const [width] = await resolveLengths(page, 'dialog.ai-result-modal', [
+    'min(var(--result-stage-max-w), calc(var(--result-stage-max-h) * var(--result-aspect)))',
+  ]);
+  const aspect = await page
+    .locator('dialog.ai-result-modal')
+    .evaluate((card) => parseFloat(getComputedStyle(card).getPropertyValue('--result-aspect')));
+  if (width === undefined || !Number.isFinite(aspect) || aspect <= 0) {
+    throw new Error('The reserved AI stage geometry was not measurable');
+  }
+  return { width, height: width / aspect };
+}
+
+interface DelayedImageSource {
+  path: string;
+  body: Buffer;
+}
+
+async function delayImageObjectUrls(page: Page, sources: DelayedImageSource[]) {
+  await page.addInitScript(
+    (paths) => {
+      const createObjectUrl = URL.createObjectURL.bind(URL);
+      const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
+      let nextImage = 0;
+      URL.createObjectURL = (blob) => {
+        if (nextImage < paths.length && blob instanceof Blob && blob.type.startsWith('image/')) {
+          return paths[nextImage++];
+        }
+        return createObjectUrl(blob);
+      };
+      URL.revokeObjectURL = (url) => {
+        if (!paths.some((path) => url.endsWith(path))) revokeObjectUrl(url);
+      };
+    },
+    sources.map(({ path }) => path)
+  );
+
+  return Promise.all(
+    sources.map(async ({ path, body }) => {
+      let release!: () => void;
+      let observeRequest!: () => void;
+      const canLoad = new Promise<void>((resolve) => (release = resolve));
+      const requested = new Promise<void>((resolve) => (observeRequest = resolve));
+      await page.route(`**${path}`, async (route) => {
+        observeRequest();
+        await canLoad;
+        await route.fulfill({ status: 200, contentType: 'image/jpeg', body });
+      });
+      return { requested, release };
+    })
   );
 }
 
@@ -112,6 +166,10 @@ test.describe('AI result modal', () => {
 
     await endpoint.succeed();
 
+    const resultImage = page.locator('.stage-img.result');
+    await expect(resultImage).toBeAttached();
+    expect(await resultImage.evaluate((image) => getComputedStyle(image).filter)).toBe('blur(2px)');
+
     // When the mocked image arrives the dial races to full, then the result
     // cross-fades in and the download button pops in.
     await expect(page.locator('.stage-img.result.shown')).toBeVisible({ timeout: 10_000 });
@@ -131,6 +189,67 @@ test.describe('AI result modal', () => {
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
     await expect(loadingCaption).toHaveCount(0);
+  });
+
+  test('reserves the picture area while the first preview image decodes', async ({ page }) => {
+    const [preview] = await delayImageObjectUrls(page, [
+      { path: '/delayed-ai-preview', body: aiOutputFor(page.viewportSize()) },
+    ]);
+
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
+    await preview.requested;
+
+    const loading = await loadingBoxes(page);
+    const reserved = await reservedStageSize(page);
+    expect(loading.stage.width).toBeCloseTo(reserved.width, 0);
+    expect(loading.stage.height).toBeCloseTo(reserved.height, 0);
+    await expect(page.locator('.stage-sizer:not(.loaded)')).toHaveCount(1);
+
+    preview.release();
+    await expect
+      .poll(() =>
+        page.locator('.stage-img.preview').evaluate((image) => {
+          const img = image as HTMLImageElement;
+          return img.complete && img.naturalWidth > 0;
+        })
+      )
+      .toBe(true);
+    await expect(page.locator('.stage-sizer.loaded')).toHaveCount(1);
+
+    await endpoint.fail();
+  });
+
+  test('reserves a minimized result while its image decodes', async ({ page }) => {
+    const [preview, result] = await delayImageObjectUrls(page, [
+      { path: '/delayed-ai-preview', body: aiOutputFor(page.viewportSize()) },
+      { path: '/delayed-ai-result', body: aiOutputFor({ width: 800, height: 800 }) },
+    ]);
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await preview.requested;
+    preview.release();
+    await expect(page.locator('.stage-sizer.loaded')).toHaveCount(1);
+
+    await page.getByLabel('Keep drawing while this is made').click();
+    await expect(page.locator('dialog.ai-result-modal')).toBeHidden();
+    await endpoint.succeed();
+    await result.requested;
+    await expect(page.locator('.ai-waiting-polaroid')).toContainText('Ready!');
+
+    await page.locator('.ai-waiting-polaroid').click();
+    await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
+    await expect(page.locator('.stage-sizer:not(.loaded)')).toHaveCount(1);
+    const revealed = await revealedBoxes(page);
+    const reserved = await reservedStageSize(page);
+    expect(revealed.stage.width).toBeCloseTo(reserved.width, 0);
+    expect(revealed.stage.height).toBeCloseTo(reserved.height, 0);
+    await expect(page.locator('.stage-img.result.shown')).toBeVisible();
+    await expect(page.locator('.dial')).toHaveCount(0);
+
+    result.release();
+    await expect(page.locator('.stage-sizer.loaded')).toHaveCount(1);
   });
 
   for (const viewport of [

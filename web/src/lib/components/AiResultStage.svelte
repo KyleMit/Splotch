@@ -17,8 +17,12 @@
 
   let stageEl = $state<HTMLDivElement | undefined>();
   let zoomLayerEl = $state<HTMLDivElement | undefined>();
+  // A URL exists before its image has intrinsic dimensions. Keep the fallback
+  // geometry until this exact resource has decoded, including on the result swap.
+  let loadedSizerSrc = $state<string | null>(null);
 
   const revealed = $derived(aiProgress.revealed);
+  const sizerSrc = $derived(aiResult.resultUrl || aiResult.previewUrl);
 
   const MIN_BLUR_PX = 2;
   const MAX_EXTRA_BLUR_PX = 16;
@@ -50,7 +54,10 @@
   function handleImgLoad(e: Event) {
     if (!(e.currentTarget instanceof HTMLImageElement)) return;
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-    if (w > 0 && h > 0) onaspect(w / h);
+    if (w > 0 && h > 0) {
+      loadedSizerSrc = sizerSrc;
+      onaspect(w / h);
+    }
   }
 
   // The drawing stays blurry to keep the suspense, sharpening as we progress.
@@ -72,9 +79,11 @@
   );
 
   const stageStyle = $derived(
-    (maskRadiusPx > 0
-      ? `--confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
-      : '') + (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
+    `--result-entry-blur: ${MIN_BLUR_PX}px;` +
+      (maskRadiusPx > 0
+        ? ` --confetti-rx: ${maskRadiusPx.toFixed(1)}px; --confetti-ry: ${maskRadiusPx.toFixed(1)}px;`
+        : '') +
+      (stageHeight > 0 ? ` --stage-h: ${stageHeight}px;` : '')
   );
 </script>
 
@@ -100,10 +109,11 @@
          aspect-ratio + max-width box, which WebKit collapses/distorts. The
          visible images below overlay it. Uses the result once it's here, or
          the preview while loading (same aspect, so no resize on reveal). -->
-    {#if aiResult.resultUrl || aiResult.previewUrl}
+    {#if sizerSrc}
       <img
         class="stage-sizer"
-        src={aiResult.resultUrl || aiResult.previewUrl}
+        class:loaded={loadedSizerSrc === sizerSrc}
+        src={sizerSrc}
         alt=""
         aria-hidden="true"
         onload={handleImgLoad}
@@ -182,10 +192,11 @@
        tall to project that way is held by the height alone and sits centered. */
     max-width: 100%;
     max-height: var(--result-stage-max-h);
-    /* The budget it sizes against changes once at the reveal, when the
-       keep-drawing pill leaves and gives its room back to the picture. Gliding
-       through that means the picture opens up as it lands instead of the
-       blurred preview stretching in the single frame the card swaps states. */
+    /* The budget it sizes against changes at the reveal, when the keep-drawing
+       pill leaves and gives its room back to the picture. A decoded image glides
+       through that change so the picture opens up as it lands. An undecoded
+       image follows the fallback box below directly: preserving its footprint
+       takes precedence over animating a resource that has no pixels yet. */
     transition: max-height var(--duration-slow) var(--ease-glide);
   }
 
@@ -195,13 +206,14 @@
     }
   }
 
-  /* No image yet (modal opened before the export finished): a box in the
-     drawing's shape and at the size the preview will take, so the dial has a
-     stable home and the card doesn't resize under it when the preview slots in.
-     Its width is spelled out rather than taken as a percentage of the stage:
-     the stage shrink-wraps this box, so a percentage would be resolving against
-     the width it is itself supposed to determine, and collapses. */
-  .placeholder-sizer {
+  /* Before the URL exists — and while its image is still decoding — use a box
+     in the drawing's shape and at the size the preview will take, so the dial
+     has a stable home and the card doesn't resize under it when the preview
+     slots in. Its width is spelled out rather than taken as a percentage of the
+     stage: the stage shrink-wraps this box, so a percentage would be resolving
+     against the width it is itself supposed to determine, and collapses. */
+  .placeholder-sizer,
+  .stage-sizer:not(.loaded) {
     width: min(var(--result-stage-max-w), calc(var(--result-stage-max-h) * var(--result-aspect)));
     aspect-ratio: var(--result-aspect);
   }
@@ -229,13 +241,16 @@
   .result {
     opacity: 0;
     transform: scale(1.08);
+    filter: blur(var(--result-entry-blur));
     transition:
       opacity 0.55s ease,
-      transform 0.6s var(--ease-glide);
+      transform 0.6s var(--ease-glide),
+      filter var(--duration-slow) var(--ease-glide);
   }
 
   .result.shown {
     opacity: 1;
     transform: scale(1);
+    filter: blur(0);
   }
 </style>
