@@ -102,33 +102,43 @@ for (const name of clipNames) {
 console.log(`clips: ${clipNames.length - mute.length}/${clipNames.length} audible when played`);
 failures.push(...mute.map((entry) => `clip plays silent: ${entry}`));
 
-// The armed state is the part being redesigned, so each treatment is held at the
-// threshold and listened to on its own: the ones that promise to sustain must
-// still be sounding a second in, and the one that promises silence must be
-// silent.
+// The armed state is the part being redesigned, so each treatment is exercised on
+// its own in the two ways it can fail: still pulling past the threshold, where
+// every treatment must say something, and holding still there, where each one
+// either sustains or is deliberately quiet.
 const treatments = await page.evaluate(() => window.__sheetTreatments);
 const TREATMENT_HOST = 'bubble-ladder';
 for (const { value, label, sustains } of treatments) {
-  const { peak } = await page.evaluate(
+  const climb = await page.evaluate(
+    ([option, treatment]) => window.__sheetClimbProbe(option, treatment),
+    [TREATMENT_HOST, value]
+  );
+  const hold = await page.evaluate(
     ([option, treatment]) => window.__sheetHoldProbe(option, treatment),
     [TREATMENT_HOST, value]
   );
-  const verdict = peak >= SILENCE_PEAK ? 'sounding' : 'silent';
-  console.log(`hold · ${label.padEnd(26)} ${peak.toFixed(3)} ${verdict}`);
-  if (sustains === true && peak < SILENCE_PEAK) {
-    failures.push(`treatment "${label}" promises to sustain but the hold is silent (${peak.toFixed(4)})`);
+  console.log(
+    `${label.padEnd(28)} climbing ${climb.peak.toFixed(3)}  holding still ${hold.peak.toFixed(3)} ` +
+      `${hold.peak >= SILENCE_PEAK ? 'sounding' : 'silent'}`
+  );
+  // Every treatment has to answer a hand that is still moving past the threshold.
+  if (climb.peak < SILENCE_PEAK) {
+    failures.push(`treatment "${label}" is silent while the drag continues past the threshold (${climb.peak.toFixed(4)})`);
   }
-  if (sustains === false && peak >= SILENCE_PEAK) {
-    failures.push(`treatment "${label}" promises silence but the hold sounds (${peak.toFixed(4)})`);
+  if (sustains === true && hold.peak < SILENCE_PEAK) {
+    failures.push(`treatment "${label}" promises to sustain but the hold is silent (${hold.peak.toFixed(4)})`);
+  }
+  if (sustains === false && hold.peak >= SILENCE_PEAK) {
+    failures.push(`treatment "${label}" promises silence when still but the hold sounds (${hold.peak.toFixed(4)})`);
   }
 }
-await page.evaluate((option) => window.__sheetHoldProbe(option, 'chord'), TREATMENT_HOST);
+await page.evaluate((option) => window.__sheetHoldProbe(option, 'climb'), TREATMENT_HOST);
 
 const options = await page.evaluate(() => window.__sheetOptions);
 const presets = await page.evaluate(() => window.__sheetPresets);
-for (const option of options) {
+for (const { id: option, silentCancel } of options) {
   const columns = [];
-  for (const preset of presets) {
+  for (const { id: preset, outcome } of presets) {
     const { drag, release } = await page.evaluate(
       ([o, p]) => window.__sheetAudit(o, p),
       [option, preset]
@@ -137,8 +147,16 @@ for (const option of options) {
     if (drag.peak < SILENCE_PEAK) {
       failures.push(`silent drag: ${option} / ${preset} (peak ${drag.peak.toFixed(4)})`);
     }
-    if (release.peak < SILENCE_PEAK) {
+    // The shipped port says nothing when a drag is abandoned. That is the gap the
+    // other voices exist to fill, so it is asserted rather than excused.
+    const expectSilentRelease = silentCancel && outcome === 'cancel';
+    if (!expectSilentRelease && release.peak < SILENCE_PEAK) {
       failures.push(`silent release: ${option} / ${preset} (peak ${release.peak.toFixed(4)})`);
+    }
+    if (expectSilentRelease && release.peak >= SILENCE_PEAK) {
+      failures.push(
+        `${option} / ${preset} should be silent on release but sounded (${release.peak.toFixed(4)})`
+      );
     }
     const loudest = Math.max(drag.peak, release.peak);
     if (loudest > CLIPPING_PEAK) {

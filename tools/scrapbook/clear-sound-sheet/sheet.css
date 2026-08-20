@@ -88,7 +88,7 @@ button:active{transform:translateY(1px)}
 .meter{position:relative; height:8px; border-radius:99px; background:var(--card-2); border:1px solid var(--hair); overflow:hidden}
 .meter i{display:block; height:100%; width:100%; transform-origin:left; transform:scaleX(0); background:var(--hue); transition:transform .05s linear}
 .meter .mark{position:absolute; top:0; bottom:0; width:2px; background:var(--hair-strong)}
-.meter .ready-mark{left:71.4%}
+.meter .ready-mark{left:38.5%}
 .meter .cap-mark{left:calc(100% - 2px)}
 
 .presets{display:flex; flex-wrap:wrap; gap:6px}

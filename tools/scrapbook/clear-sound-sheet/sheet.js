@@ -293,10 +293,6 @@
     return baseHz * Math.pow(2, (degree + 12 * octave) / 12);
   }
 
-  function ladderStep(progress, noteCount) {
-    return Math.round(clamp(progress / PITCH_CAP_PROGRESS, 0, 1) * (noteCount - 1));
-  }
-
   // Shared bookkeeping every engine needs: the ready-zone crossing (the moment of
   // no return, which today only speaks through haptics), a repeating pulse while
   // held there, and teardown that cannot leave a loop running.
@@ -349,7 +345,6 @@
   // baseline card audible next to the rest instead of losing on volume alone.
   const APP_SCRATCH_GAIN = 0.2;
   const BASELINE_DOT_PROGRESS_STEP = 0.055;
-  const BASELINE_PITCH_CAP = 1.4;
   const BASELINE_START_HZ = 420;
   const BASELINE_END_HZ = 1050;
   const BASELINE_PITCH_VARIATION = 0.06;
@@ -367,15 +362,13 @@
   const BASELINE_LEVEL_MATCH =
     (APP_SCRATCH_GAIN / BASELINE_GAIN_MAX) * BASELINE_OVERLAP_HEADROOM;
 
-  const BUBBLE_BASE_HZ = 330;
-  const BUBBLE_NOTE_COUNT = 13;
+  const BUBBLE_BASE_HZ = 262;
   const BUBBLE_DURATION_S = 0.11;
   const BUBBLE_RISE_START_RATIO = 0.86;
   const BUBBLE_RISE_END_RATIO = 1.08;
   const BUBBLE_DROPLET_RATIO = 3.2;
 
-  const XYLO_BASE_HZ = 392;
-  const XYLO_NOTE_COUNT = 15;
+  const XYLO_BASE_HZ = 294;
   const XYLO_BAR_PARTIAL_RATIO = 3.01;
   const XYLO_BODY_DECAY_S = 0.26;
   const XYLO_PARTIAL_DECAY_S = 0.09;
@@ -421,160 +414,63 @@
   const DETENT_TONE_MAX_HZ = 1420;
   const DETENT_READY_INTERVAL_MS = 900;
 
-  // ---- Past-threshold treatments -------------------------------------------
-  // Crossing the threshold is the moment of the gesture with the least to say
-  // for itself. What ships repeats one dot every 240 ms, which reads as a
-  // metronome rather than as a state, and silence there was rejected in
-  // ADR-0131 for reading as a dead app. Each treatment below answers "what does
-  // holding sound like" differently, and any of them drops onto any of the
-  // pitched voices below, so the two choices can be judged separately.
+  // ---- The ladder ----------------------------------------------------------
+  // Distance becomes a note. The first version spent ten of its thirteen notes
+  // before the threshold and stopped dead at 1.4× it, so continuing to pull past
+  // the point of no return produced almost nothing — which is why the treatment
+  // that relies on exactly that had nothing to be heard doing. The approach and
+  // the climb past it are now sized separately, out to a reach no thumb exceeds.
+  const LADDER_APPROACH_NOTES = 9;
+  const LADDER_CLIMB_NOTES = 9;
+  const LADDER_WIDE_CLIMB_NOTES = 5;
+  const LADDER_REACH_PROGRESS = 2.6;
+  // The top of a long pull lands near 2.8 kHz, where a small bubble belongs but a
+  // toddler's ear does not want it at full level. A gentle roll-off above the knee
+  // keeps the last notes present without making them the loudest thing in the run.
+  const LADDER_ROLLOFF_KNEE_HZ = 1400;
+  const LADDER_ROLLOFF_EXPONENT = 0.6;
 
-  const PAD_PARTIAL_RATIOS = [1, 1.5, 2];
-  const PAD_PARTIAL_LEVEL = 0.05;
-  const PAD_CUTOFF_HZ = 2400;
-  const PAD_FADE_IN_S = 0.38;
-  const PAD_FADE_OUT_S = 0.3;
-  const PAD_GLIDE_S = 0.18;
-  const PAD_TUNE_IMMEDIATE_S = 0.001;
-  const LOCK_NOTE_LEVEL = 0.45;
-  const BREATH_HZ = 0.22;
-  const BREATH_DEPTH = 0.55;
-  const BLOOM_RISE_S = 0.7;
-  const BLOOM_FALL_S = 2.3;
-  const BLOOM_INTERVAL_MS = 3400;
-  const RING_ENTER_SUSTAIN_S = 2.4;
-  const RING_STEP_SUSTAIN_S = 1.2;
+  function ladderStep(progress, climbNotes = LADDER_CLIMB_NOTES) {
+    if (progress <= COMMIT_PROGRESS) {
+      return Math.round(clamp(progress, 0, 1) * LADDER_APPROACH_NOTES);
+    }
+    const past = clamp(
+      (progress - COMMIT_PROGRESS) / (LADDER_REACH_PROGRESS - COMMIT_PROGRESS),
+      0,
+      1
+    );
+    return LADDER_APPROACH_NOTES + Math.round(past * climbNotes);
+  }
+
+  function rolloffFor(frequency) {
+    return Math.min(1, (LADDER_ROLLOFF_KNEE_HZ / frequency) ** LADDER_ROLLOFF_EXPONENT);
+  }
+
+  // ---- Past-threshold treatments -------------------------------------------
+  // Every option here refuses to start a new sound when the drag arms. A chime
+  // that fires at the threshold and then stops reads as "done" — the gesture is
+  // announcing a result it has not produced yet — and a sustained pad under the
+  // hold is simply too much noise for a drawing app aimed at two-year-olds. What
+  // is left is the honest model the app already uses for the pencil: the sound
+  // tracks the hand, and resting is quiet.
+
+  const OPEN_FIFTH_RATIO = 1.5;
+  const OPEN_FIFTH_LEVEL = 0.42;
+  const SETTLE_SUSTAIN_SCALE = 2.6;
+  // drawingSound.ts scales the pencil-scratch loop to silence below this pointer
+  // speed; the hand-speed treatment reuses the same curve for the clear ladder so
+  // the two feedbacks answer the hand the same way.
+  const SPEED_FULL_LEVEL_PER_S = 1.6;
+  const SPEED_FLOOR_LEVEL = 0.25;
   const TRILL_INTERVAL_MS = 250;
   const TRILL_DROP_RATIO = 2 ** (-3 / 12);
 
-  // Three sine partials a fifth and an octave apart, quiet enough to sit under a
-  // room rather than fill it. Built on arming and torn down on release, so a
-  // gesture that never arms never creates one.
-  function createPad(bus) {
-    const cutoff = filterNode('lowpass', PAD_CUTOFF_HZ, 0.7, bus);
-    const swell = gainNode(0, cutoff);
-    const partials = PAD_PARTIAL_RATIOS.map((ratio) => {
-      const gain = gainNode(PAD_PARTIAL_LEVEL, swell);
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.connect(gain);
-      osc.start();
-      return { osc, gain, ratio };
-    });
-    return {
-      swell,
-      tuneTo(frequency, seconds = PAD_GLIDE_S) {
-        for (const { osc, ratio } of partials) rampTo(osc.frequency, frequency * ratio, seconds);
-      },
-      stop(fadeS) {
-        rampTo(swell.gain, 0, fadeS);
-        for (const { osc, gain } of partials) {
-          osc.stop(ctx.currentTime + fadeS + 0.05);
-          disposeOnEnd(osc, gain);
-        }
-        setTimeout(() => {
-          swell.disconnect();
-          cutoff.disconnect();
-        }, (fadeS + 0.2) * 1000);
-      },
-    };
-  }
-
-  // Shared by the three treatments built on a sustained chord: arming plays the
-  // voice's own octave as the lock, then the pad takes over and tracks any
-  // further drag. `shape` decides what the pad's level does once it is up.
-  function chordTreatment(shape) {
-    return ({ bus, voice, pulse, stopPulses }) => {
-      let pad = null;
-      const release = (fadeS) => {
-        stopPulses();
-        pad?.stop(fadeS);
-        pad = null;
-      };
-      return {
-        enter(frequency) {
-          voice({ frequency: frequency * 2, level: LOCK_NOTE_LEVEL });
-          pad = createPad(bus);
-          pad.tuneTo(frequency, PAD_TUNE_IMMEDIATE_S);
-          shape.start(pad, pulse);
-        },
-        step(frequency) {
-          voice({ frequency });
-          pad?.tuneTo(frequency);
-        },
-        exit: () => release(PAD_FADE_OUT_S),
-        stop: (fadeS) => release(fadeS),
-      };
-    };
-  }
-
   const THRESHOLD_TREATMENTS = [
     {
-      value: 'chord',
-      label: 'Held chord',
-      sustains: true,
-      note: 'Arming lands on the octave, then a quiet root-fifth-octave chord holds underneath for as long as you do. Continuous, so there is no beat to count — and pulling further slides the whole chord up with you.',
-      create: chordTreatment({
-        start(pad) {
-          rampTo(pad.swell.gain, 1, PAD_FADE_IN_S);
-        },
-      }),
-    },
-    {
-      value: 'breathe',
-      label: 'Breathing chord',
-      sustains: true,
-      note: 'The held chord with a slow 0.22 Hz swell — about one breath every four and a half seconds. Alive rather than static, and far too slow to read as a pulse.',
-      create: chordTreatment({
-        start(pad) {
-          rampTo(pad.swell.gain, 1, PAD_FADE_IN_S);
-          const depth = gainNode(BREATH_DEPTH, pad.swell.gain);
-          const lfo = ctx.createOscillator();
-          lfo.frequency.value = BREATH_HZ;
-          lfo.connect(depth);
-          lfo.start();
-          disposeOnEnd(lfo, depth);
-          lfo.stop(ctx.currentTime + 60);
-        },
-      }),
-    },
-    {
-      value: 'bloom',
-      label: 'Slow bloom',
-      sustains: true,
-      note: 'The chord swells over 0.7 s and fades over 2.3 s, then does it again every 3.4 s. Technically a repeat, but slow enough to read as weather rather than as a metronome — the middle ground between holding a chord and going quiet.',
-      create: chordTreatment({
-        start(pad, pulse) {
-          const bloom = () => {
-            rampTo(pad.swell.gain, 1, BLOOM_RISE_S);
-            setTimeout(() => rampTo(pad.swell.gain, 0, BLOOM_FALL_S), BLOOM_RISE_S * 1000);
-          };
-          bloom();
-          pulse(BLOOM_INTERVAL_MS, bloom);
-        },
-      }),
-    },
-    {
-      value: 'ring',
-      label: 'Ring out',
-      sustains: true,
-      note: 'No new sound at all — the note you arrived on simply rings for 2.4 s instead of 0.1 s. The instrument does not change, its decay does, which is how a real struck bar tells you it was hit harder.',
-      create: ({ voice }) => ({
-        enter(frequency) {
-          voice({ frequency, level: 0.8, sustainS: RING_ENTER_SUSTAIN_S });
-        },
-        step(frequency) {
-          voice({ frequency, level: 0.85, sustainS: RING_STEP_SUSTAIN_S });
-        },
-        exit() {},
-        stop() {},
-      }),
-    },
-    {
       value: 'climb',
-      label: 'Just keep climbing',
+      label: 'Keep climbing',
       sustains: false,
-      note: 'No armed state whatsoever: notes keep coming while the hand keeps moving, and holding still is silent. The control for whether the armed state needs a sound at all — ADR-0131 says it does, on the grounds that silence reads as a dead app, and this is the way to test that claim.',
+      note: 'Nothing happens at the threshold at all. The ladder simply keeps going as long as the hand keeps pulling, and rests when the hand rests — the same bargain the pencil-scratch loop already makes. Nine more notes live past the point of no return, so there is plenty left to hear.',
       create: ({ voice }) => ({
         enter() {},
         step(frequency) {
@@ -585,15 +481,58 @@
       }),
     },
     {
-      value: 'bell',
-      label: 'Single bell',
-      note: 'One struck bell on arming and nothing after. Kept here as the thing to compare against, not as a recommendation — a foreign timbre over a tuned voice is exactly the intrusive option.',
-      create: ({ out, voice }) => ({
-        enter() {
-          playOneShot('ready-ding', out, 0.3);
-        },
+      value: 'widen',
+      label: 'Climb, then widen',
+      sustains: false,
+      climbNotes: LADDER_WIDE_CLIMB_NOTES,
+      note: 'The same climb, but past the threshold the notes are spread further apart in distance, so the melody decelerates as you keep pulling. Arriving rather than accelerating — the gesture tells you it is past the point of no return by slowing down, not by adding anything.',
+      create: ({ voice }) => ({
+        enter() {},
         step(frequency) {
           voice({ frequency });
+        },
+        exit() {},
+        stop() {},
+      }),
+    },
+    {
+      value: 'open',
+      label: 'Climb, opening up',
+      sustains: false,
+      note: 'Past the threshold every note gains a quiet fifth above it. Still one note per step of the hand, still silent when you stop — the run just gets wider, the way a held chord on an instrument does, without anything new starting.',
+      create: ({ voice }) => ({
+        enter() {},
+        step(frequency) {
+          voice({ frequency });
+          voice({ frequency: frequency * OPEN_FIFTH_RATIO, level: OPEN_FIFTH_LEVEL });
+        },
+        exit() {},
+        stop() {},
+      }),
+    },
+    {
+      value: 'settle',
+      label: 'Climb, longer notes',
+      sustains: false,
+      note: 'Past the threshold each note rings about two and a half times as long, so while the hand is moving the notes overlap into a shimmer. Stop and the last one fades out on its own — a tail rather than a pad.',
+      create: ({ voice }) => ({
+        enter() {},
+        step(frequency) {
+          voice({ frequency, sustainScale: SETTLE_SUSTAIN_SCALE });
+        },
+        exit() {},
+        stop() {},
+      }),
+    },
+    {
+      value: 'speed',
+      label: 'Hand-speed climb',
+      sustains: false,
+      note: 'Level follows how fast the hand is moving, on the same curve drawingSound.ts already uses for the pencil. A quick confident yank is loud, a slow careful pull is nearly a whisper, and the whole gesture answers the hand the way drawing does.',
+      create: ({ voice, speed }) => ({
+        enter() {},
+        step(frequency) {
+          voice({ frequency, level: speedLevel(speed()) });
         },
         exit() {},
         stop() {},
@@ -603,7 +542,7 @@
       value: 'trill',
       label: 'Repeating trill (shipped)',
       sustains: true,
-      note: 'What is on main: a dot every 240 ms for as long as you hold. Here so the alternatives have something to beat.',
+      note: 'What is on main: a dot every 240 ms for as long as you hold, whether or not the hand is moving. Here as the thing to beat.',
       create: ({ voice, pulse, stopPulses }) => {
         let frequency = 0;
         let high = true;
@@ -628,41 +567,55 @@
 
   const DEFAULT_TREATMENT = THRESHOLD_TREATMENTS[0].value;
 
+  function speedLevel(progressPerSecond) {
+    return SPEED_FLOOR_LEVEL + (1 - SPEED_FLOOR_LEVEL) * clamp(progressPerSecond / SPEED_FULL_LEVEL_PER_S, 0, 1);
+  }
+
   // The three pitched voices differ only in their timbre and in how drag distance
   // becomes a note, so they share one engine: `nextNote` reports the frequency the
   // hand is pointing at and whether that is a new note, and everything about the
   // armed state is delegated to the selected treatment.
   function pitchedEngine({ out, level, controls, buildVoice, buildNextNote, cancelTail }) {
     const base = engineBase(out, level);
-    const voice = buildVoice(base.bus);
-    const nextNote = buildNextNote();
+    const rawVoice = buildVoice(base.bus);
+    const voice = ({ frequency, level: noteLevel = 1, sustainScale = 1 }) =>
+      rawVoice({ frequency, level: noteLevel * rolloffFor(frequency), sustainScale });
     const treatment =
       THRESHOLD_TREATMENTS.find((entry) => entry.value === controls.threshold()) ??
       THRESHOLD_TREATMENTS[0];
+    const nextNote = buildNextNote(treatment.climbNotes ?? LADDER_CLIMB_NOTES);
+
+    let progressPerSecond = 0;
+    let lastProgress = 0;
+    let lastAt = 0;
+    let lastFrequency = 0;
+
     const held = treatment.create({
-      bus: base.bus,
       out,
       voice,
+      speed: () => progressPerSecond,
       pulse: (intervalMs, fn) => base.pulse(intervalMs, fn),
       stopPulses: () => base.stopPulses(),
     });
-    let lastFrequency = 0;
 
     return {
-      start() {},
+      start() {
+        lastAt = performance.now();
+      },
       update(progress) {
+        const now = performance.now();
+        const elapsed = Math.max(now - lastAt, 1) / 1000;
+        progressPerSecond = Math.abs(progress - lastProgress) / elapsed;
+        lastProgress = progress;
+        lastAt = now;
+
         const { frequency, changed } = nextNote(Math.max(progress, 0));
         lastFrequency = frequency;
-        let justArmed = false;
-        base.crossing(
-          progress,
-          () => {
-            held.enter(frequency);
-            justArmed = true;
-          },
-          () => held.exit()
-        );
-        if (!changed || justArmed) return;
+        // No treatment makes a sound in enter() any more — arming only sets up
+        // state — so the note that lands on the crossing is played normally
+        // instead of being swallowed by it.
+        base.crossing(progress, () => held.enter(frequency), () => held.exit());
+        if (!changed) return;
         if (base.isReady) held.step(frequency);
         else voice({ frequency });
       },
@@ -702,10 +655,11 @@
       notes: [
         'Snapping to a scale removes the microtonal wobble of a continuous glide — every dot is consonant with the one before it.',
         'A dot fires when the *note* changes rather than on a fixed distance gate, so the rhythm follows the hand instead of the sample rate.',
+        'Ten notes lead up to the threshold and nine more lie past it, out to 2.6× the commit distance — so continuing to pull keeps producing melody instead of running out at 1.4× the way the first cut did.',
         'The bubble chirps upward (0.86× → 1.08×) like real bubble resonance, with a droplet tick riding the attack.',
         'Releasing short of the threshold walks three bubbles back down the scale.',
       ],
-      commit: 'commit-paper-whoosh',
+      commit: 'commit-page-crisp',
       level: 0.97,
       threshold: true,
       create(out, controls) {
@@ -713,7 +667,8 @@
           out,
           level: this.level,
           controls,
-          buildVoice: (bus) => ({ frequency, level = 1, sustainS = BUBBLE_DURATION_S }) => {
+          buildVoice: (bus) => ({ frequency, level = 1, sustainScale = 1 }) => {
+            const sustainS = BUBBLE_DURATION_S * sustainScale;
             tone(bus, {
               frequency: frequency * BUBBLE_RISE_START_RATIO,
               endFrequency: frequency * BUBBLE_RISE_END_RATIO,
@@ -729,10 +684,10 @@
               q: 6,
             });
           },
-          buildNextNote: () => {
+          buildNextNote: (climbNotes) => {
             let lastStep = -1;
             return (progress) => {
-              const step = ladderStep(progress, BUBBLE_NOTE_COUNT);
+              const step = ladderStep(progress, climbNotes);
               const changed = step !== lastStep;
               lastStep = step;
               return { frequency: ladderFrequency(BUBBLE_BASE_HZ, step), changed };
@@ -759,9 +714,9 @@
       notes: [
         'A struck-bar timbre (fundamental plus an inharmonic 3.01× partial) reads as a physical object being played, not as a synthesizer.',
         'Fifteen bars across the full drag, so a long pull is a longer run — the gesture writes the melody.',
-        'Of the three voices this one takes the Ring out treatment most naturally: a bar that keeps ringing is what a real mallet leaves behind.',
+        'Of the three voices this one carries the longer notes treatment most naturally: a bar that keeps ringing is what a real mallet leaves behind.',
       ],
-      commit: 'commit-paper-whoosh',
+      commit: 'commit-page-crisp',
       level: 0.53,
       threshold: true,
       create(out, controls) {
@@ -769,7 +724,8 @@
           out,
           level: this.level,
           controls,
-          buildVoice: (bus) => ({ frequency, level = 1, sustainS = XYLO_BODY_DECAY_S }) => {
+          buildVoice: (bus) => ({ frequency, level = 1, sustainScale = 1 }) => {
+            const sustainS = XYLO_BODY_DECAY_S * sustainScale;
             tone(bus, { frequency, peak: 0.24 * level, attackS: 0.002, durationS: sustainS });
             tone(bus, {
               frequency: frequency * XYLO_BAR_PARTIAL_RATIO,
@@ -784,10 +740,10 @@
               q: 1,
             });
           },
-          buildNextNote: () => {
+          buildNextNote: (climbNotes) => {
             let lastStep = -1;
             return (progress) => {
-              const step = ladderStep(progress, XYLO_NOTE_COUNT);
+              const step = ladderStep(progress, climbNotes);
               const changed = step !== lastStep;
               lastStep = step;
               return { frequency: ladderFrequency(XYLO_BASE_HZ, step), changed };
@@ -815,10 +771,11 @@
         'Level-matched to the other cards so the comparison is about character, not loudness; the sheet masters through a soft ceiling, which only the densest flick on this card reaches.',
         'Pitch is a continuous exponential glide, so two adjacent dots can land a few cents apart.',
         'On a fast flick the 0.055 progress gate fires about fifteen dots inside 260 ms — five deep once the 85 ms envelopes overlap — so a quick clear reads as a buzz rather than as bubbles.',
-        'Cancel is silent here, unlike the two voices above. That is faithful: nothing in the shipped build tells a child the drawing survived.',
+        'Cancel is silent here, unlike the two voices above. That is faithful, and the audit asserts it rather than tolerating it: nothing in the shipped build tells a child the drawing survived.',
         'Its commit clip plays at this sheet’s shared commit level rather than the shipped 0.3, so the commit picker compares clips instead of card mixes.',
       ],
       commit: 'baseline-clear-pop',
+      silentCancel: true,
       level: BASELINE_LEVEL_MATCH,
       threshold: true,
       defaultThreshold: 'trill',
@@ -828,7 +785,8 @@
           out,
           level: this.level,
           controls,
-          buildVoice: (bus) => ({ frequency, level = 1, sustainS = BASELINE_DURATION_S }) => {
+          buildVoice: (bus) => ({ frequency, level = 1, sustainScale = 1 }) => {
+            const sustainS = BASELINE_DURATION_S * sustainScale;
             const variation = 1 + (Math.random() * 2 - 1) * BASELINE_PITCH_VARIATION;
             const peak =
               (BASELINE_GAIN_MIN +
@@ -847,7 +805,7 @@
           buildNextNote: () => {
             let lastProgress = 0;
             return (progress) => {
-              dotProgress = Math.min(progress / BASELINE_PITCH_CAP, 1);
+              dotProgress = Math.min(progress / LADDER_REACH_PROGRESS, 1);
               const changed =
                 Math.abs(dotProgress - lastProgress) >= BASELINE_DOT_PROGRESS_STEP;
               if (changed) lastProgress = dotProgress;
@@ -1168,7 +1126,7 @@
         'It leans hardest on the threshold bell, which is the one moment today has no sound for at all.',
         'The honest risk: it may read as "cheap" next to the richer options — worth checking whether a two-year-old still understands the pull without a rising bed.',
       ],
-      commit: 'commit-paper-whoosh',
+      commit: 'commit-page-crisp',
       level: 1,
       create(out) {
         const base = engineBase(out, this.level);
@@ -1229,6 +1187,7 @@
   const PRESETS = [
     { id: 'flick', label: 'Flick', hint: '0 → 1.15 in 260 ms', frames: [[0, 0], [260, 1.15]], outcome: 'commit' },
     { id: 'slow', label: 'Slow pull', hint: '0 → 1.35 over 1.9 s', frames: [[0, 0], [1900, 1.35]], outcome: 'commit' },
+    { id: 'pull', label: 'Keep pulling', hint: 'arrive at 1.05, pull on to 2.4', frames: [[0, 0], [900, 1.05], [3000, 2.4]], outcome: 'commit' },
     { id: 'hold', label: 'Hold at ready', hint: 'arrive at 1.05, hold 3.5 s', frames: [[0, 0], [700, 1.05], [4200, 1.09]], outcome: 'commit' },
     { id: 'waver', label: 'Second thoughts', hint: '0.85 → 0.35 → 1.2', frames: [[0, 0], [600, 0.85], [1100, 0.35], [1800, 1.2]], outcome: 'commit' },
     { id: 'abandon', label: 'Chicken out', hint: 'to 0.75, then release', frames: [[0, 0], [700, 0.75]], outcome: 'cancel' },
@@ -1236,6 +1195,10 @@
 
   const PAD_THRESHOLD_PX = 96;
   const PAD_SCRIPT_ANGLE_RAD = -0.35;
+  // The drag now reaches 2.6× the threshold, which is further than the pad is
+  // tall; the puck stops travelling before it leaves the card while the readout
+  // keeps counting the real distance.
+  const PAD_PUCK_MAX_RATIO = 1.55;
   const SEQUENCE_GAP_MS = 700;
   const RELEASE_SETTLE_MS = 900;
   const CLIP_PROBE_MS = 700;
@@ -1243,19 +1206,28 @@
   const HOLD_PROBE_RAMP_MS = 700;
   const HOLD_PROBE_LEAD_MS = 400;
   const HOLD_PROBE_WINDOW_MS = 1000;
+  const CLIMB_PROBE_APPROACH_MS = 900;
+  const CLIMB_PROBE_CLIMB_MS = 1500;
 
   const COMMIT_CHOICES = [
-    { value: 'commit-paper-whoosh', label: 'Page turn — original' },
     { value: 'commit-page-crisp', label: 'Page turn — crisp sheet' },
+    { value: 'commit-crumple-slow', label: 'Crumple — long scrunch' },
+    { value: 'baseline-clear-pop', label: 'clear-pop.mp3 (shipped)' },
+    { value: 'commit-page-crisp-thin', label: 'Page turn — thin sheet' },
+    { value: 'commit-page-crisp-heavy', label: 'Page turn — heavy cartridge' },
+    { value: 'commit-page-crisp-double', label: 'Page turn — two sheets' },
+    { value: 'commit-crumple-long-soft', label: 'Crumple — long, soft newsprint' },
+    { value: 'commit-crumple-long-tight', label: 'Crumple — long, squeezed tight' },
+    { value: 'commit-crumple-long-settle', label: 'Crumple — long, then settling' },
+    { value: 'commit-crumple-then-page', label: 'Crumple, then a fresh sheet' },
+    { value: 'commit-paper-whoosh', label: 'Page turn — original' },
     { value: 'commit-page-board-book', label: 'Page turn — board book' },
     { value: 'commit-page-flick', label: 'Page turn — fast flick' },
     { value: 'commit-page-slap', label: 'Page turn — flip and land' },
     { value: 'commit-page-slow', label: 'Page turn — big slow sheet' },
     { value: 'commit-crumple-quick', label: 'Crumple — quick scrunch' },
-    { value: 'commit-crumple-slow', label: 'Crumple — long scrunch' },
     { value: 'commit-crumple-toss', label: 'Crumple — scrunch and toss' },
     { value: 'commit-crumple-basket', label: 'Crumple — into the basket' },
-    { value: 'baseline-clear-pop', label: 'clear-pop.mp3 (shipped)' },
     { value: 'commit-pop-sparkle', label: 'Bubble pop + sparkle' },
     { value: 'commit-magic-poof', label: 'Magic poof + chime' },
     { value: 'commit-confetti-sparkle', label: 'Confetti burst' },
@@ -1354,9 +1326,9 @@
     return frames[frames.length - 1][1];
   }
 
-  async function playGestureFrames(card, preset) {
+  async function playGestureFrames(card, preset, existing) {
     await ensureAudio();
-    const gesture = startGesture(card);
+    const gesture = existing ?? startGesture(card);
     const duration = preset.frames[preset.frames.length - 1][0];
     const started = performance.now();
     await new Promise((resolve) => {
@@ -1440,7 +1412,7 @@
         threshold: () => thresholdSelect?.value ?? DEFAULT_TREATMENT,
       },
       render(progress) {
-        const capped = clamp(progress / PITCH_CAP_PROGRESS, 0, 1);
+        const capped = clamp(progress / LADDER_REACH_PROGRESS, 0, 1);
         meterFill.style.transform = `scaleX(${capped})`;
         root.classList.toggle('is-ready', progress >= COMMIT_PROGRESS);
         card.readout.textContent = progress.toFixed(2);
@@ -1451,7 +1423,8 @@
         thresholdSelect.dispatchEvent(new Event('change'));
       },
       renderPuck(progress) {
-        const distance = Math.min(progress, PITCH_CAP_PROGRESS) * PAD_THRESHOLD_PX;
+        const distance =
+          Math.min(progress, PAD_PUCK_MAX_RATIO) * PAD_THRESHOLD_PX;
         card.puck.style.transform =
           `translate(${Math.cos(PAD_SCRIPT_ANGLE_RAD) * distance}px, ${Math.sin(PAD_SCRIPT_ANGLE_RAD) * distance}px)`;
         card.puck.style.opacity = progress > 0.02 ? '1' : '0';
@@ -1732,13 +1705,50 @@
       return reading;
     };
 
+    // Keeps pulling *past* the threshold and meters only that leg. Every treatment
+    // has to say something while the hand is still moving out there — the first
+    // version of the ladder had nine of its thirteen notes used up before the
+    // threshold and stopped dead at 1.4×, so the treatment built on continuing to
+    // climb had nothing left to climb, and a hold-only probe called that correct.
+    window.__sheetClimbProbe = async (optionId, treatment) => {
+      const card = cards.find((entry) => entry.option.id === optionId);
+      card.setThreshold(treatment);
+      await ensureAudio();
+      const gesture = await playGestureFrames(card, {
+        frames: [
+          [0, 0],
+          [CLIMB_PROBE_APPROACH_MS, 1.05],
+        ],
+      });
+      const scope = meter();
+      await playGestureFrames(
+        card,
+        {
+          frames: [
+            [0, 1.05],
+            [CLIMB_PROBE_CLIMB_MS, LADDER_REACH_PROGRESS],
+          ],
+        },
+        gesture
+      );
+      const reading = scope.take();
+      scope.stop();
+      gesture.finish('cancel');
+      card.renderPuck(0);
+      await settle(RELEASE_SETTLE_MS);
+      return reading;
+    };
+
     window.__sheetTreatments = THRESHOLD_TREATMENTS.map(({ value, label, sustains }) => ({
       value,
       label,
       sustains: sustains ?? null,
     }));
-    window.__sheetOptions = OPTIONS.map((option) => option.id);
-    window.__sheetPresets = PRESETS.map((preset) => preset.id);
+    window.__sheetOptions = OPTIONS.map(({ id, silentCancel }) => ({
+      id,
+      silentCancel: silentCancel === true,
+    }));
+    window.__sheetPresets = PRESETS.map(({ id, outcome }) => ({ id, outcome }));
     window.__sheetClips = () =>
       Object.fromEntries(
         [...clips.entries()].map(([name, clip]) => [name, clip ? clip.peak : null])

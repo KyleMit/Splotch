@@ -43,6 +43,30 @@
       "prompt": "One-shot crumpled paper ball thrown into an empty wire wastebasket, short crackle then a hollow rattling landing, close and dry, no voice, no music."
     },
     {
+      "name": "commit-crumple-long-settle",
+      "role": "commit",
+      "durationSeconds": 1.8,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot sheet of paper crumpled slowly into a ball then relaxing open slightly, long crackle followed by a few soft ticks, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-crumple-long-soft",
+      "role": "commit",
+      "durationSeconds": 1.5,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot sheet of soft newsprint crumpled slowly and steadily into a ball, long gentle low crackling, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-crumple-long-tight",
+      "role": "commit",
+      "durationSeconds": 1.5,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot sheet of paper squeezed slowly into a tight dense ball, long compressing crackle building in density, close and dry, no voice, no music."
+    },
+    {
       "name": "commit-crumple-quick",
       "role": "commit",
       "durationSeconds": 0.9,
@@ -57,6 +81,14 @@
       "promptInfluence": 0.55,
       "loop": false,
       "prompt": "One-shot sheet of paper being slowly and thoroughly crumpled, long satisfying crackling, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-crumple-then-page",
+      "role": "commit",
+      "durationSeconds": 2,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot sequence of a sheet of paper being crumpled into a ball and then a fresh clean sheet of paper being laid down flat, crackle then a soft settling rustle, close and dry, no voice, no music."
     },
     {
       "name": "commit-crumple-toss",
@@ -89,6 +121,30 @@
       "promptInfluence": 0.55,
       "loop": false,
       "prompt": "One-shot single sheet of paper turning over quickly, crisp dry paper flick, close microphone, no voice, no music, no room reverb."
+    },
+    {
+      "name": "commit-page-crisp-double",
+      "role": "commit",
+      "durationSeconds": 0.8,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot two sheets of paper turning over together quickly, crisp overlapping paper snaps, close microphone, no voice, no music, no room reverb."
+    },
+    {
+      "name": "commit-page-crisp-heavy",
+      "role": "commit",
+      "durationSeconds": 0.8,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot single sheet of heavy cartridge drawing paper turned over, firm crisp rustle with body, close microphone, no voice, no music, no room reverb."
+    },
+    {
+      "name": "commit-page-crisp-thin",
+      "role": "commit",
+      "durationSeconds": 0.7,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot single thin sheet of writing paper turned over fast, light crisp dry snap, close microphone, no voice, no music, no room reverb."
     },
     {
       "name": "commit-page-flick",
