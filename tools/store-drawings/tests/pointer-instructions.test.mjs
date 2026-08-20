@@ -91,6 +91,15 @@ describe('store drawing conversion', () => {
         expect(stroke.color).toBeGreaterThanOrEqual(0);
         expect(stroke.color).toBeLessThan(drawing.colors.length);
       }
+      for (const [index, stroke] of drawing.strokes.slice(1).entries()) {
+        const previous = drawing.strokes[index];
+        const continues =
+          previous.color === stroke.color &&
+          previous.size === stroke.size &&
+          previous.points.at(-2) === stroke.points[0] &&
+          previous.points.at(-1) === stroke.points[1];
+        expect(continues, `${drawing.key}: stroke ${index + 2} should have merged`).toBe(false);
+      }
     }
   });
 
