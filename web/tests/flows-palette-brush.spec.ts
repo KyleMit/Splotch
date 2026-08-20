@@ -427,6 +427,9 @@ test('a keyboard pick closes the flyout and restores focus to its trigger', asyn
 // focus back itself. Focus can then be lost again before the trailing trusted
 // click, which is the ordering this synthetic sequence keeps.
 async function tapTriggerLikeSafari(page: Page, triggerId: string) {
+  const panel = page.locator('.actions-panel');
+  await expect(panel).toHaveAttribute('data-action-panel-live', '');
+  await expect(panel).not.toHaveAttribute('data-drawer-motion', '');
   await page.locator(triggerId).evaluate((node) => {
     const rect = node.getBoundingClientRect();
     const init = {

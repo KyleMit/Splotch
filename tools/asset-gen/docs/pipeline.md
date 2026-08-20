@@ -20,10 +20,10 @@ live assets regenerate, these don't.
 ```mermaid
 flowchart LR
     O["pen outline<br/>(.outline.webp)"] -->|gen:coloring-thumbs| T[".thumb.webp<br/>(picker, light)"]
-    O -->|gen:coloring-overlays| PO[".overlay.webp<br/>(canvas, light)"]
+    O -->|vectorize:coloring| PO[".overlay.svg<br/>(canvas, light)"]
     O -->|"gen:coloring-chalk<br/>(Gemini, gated)"| C["chalk outline<br/>(.chalk.webp)"]
     C -->|gen:coloring-thumbs| CT[".chalk.thumb.webp<br/>(picker, dark)"]
-    C -->|gen:coloring-overlays| CO[".dark.overlay.webp<br/>(canvas, dark)"]
+    C -->|vectorize:coloring| CO[".dark.overlay.svg<br/>(canvas, dark)"]
     O -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
     C -->|"gen-night-fills<br/>(Gemini, gated)"| NR["night raw<br/>(fill-src/…night.raw.webp)"]
     LR2 -->|gen:coloring-punched-fills| LS["shipped .light.webp<br/>(fills-only)"]
@@ -50,18 +50,19 @@ the white-blob problem and two earlier generations of fixes — is chronicled in
 | `{page}.chalk.webp`             | `web/static/coloring/{book}/`      | yes — the CHALK outline: dark-mode overlay + night punch mask, stored ink-on-white                                                     | `gen-chalk-outlines.mjs` from the pen          |
 | `{page}.thumb.webp`             | `web/static/coloring/{book}/`      | yes — light-mode picker grid (from the pen)                                                                                            | `gen-thumbnails.mjs`                           |
 | `{page}.chalk.thumb.webp`       | `web/static/coloring/{book}/`      | yes — dark-mode picker grid (from the chalk, ink-on-white; the tile's invert renders it as white chalk)                                | `gen-thumbnails.mjs`                           |
-| `{page}.overlay.webp`           | `web/static/coloring/{book}/`      | yes — transparent black pen for source-over light canvas presentation                                                                  | `gen-overlays.mjs`                             |
-| `{page}.dark.overlay.webp`      | `web/static/coloring/{book}/`      | yes — transparent white chalk for source-over dark canvas presentation                                                                 | `gen-overlays.mjs`                             |
+| `{page}.overlay.svg`            | `web/static/coloring/{book}/`      | yes — invariant transparent black pen for source-over light canvas presentation                                                        | `vectorize-coloring-overlays.mjs`              |
+| `{page}.dark.overlay.svg`       | `web/static/coloring/{book}/`      | yes — invariant transparent white chalk for source-over dark canvas presentation                                                       | `vectorize-coloring-overlays.mjs`              |
 | `{page}.{light,night}.raw.webp` | `tools/asset-gen/fill-src/{book}/` | no — committed source of truth for fills, keeps its own outlines so audits can score registration                                      | `gen-light-fills.mjs` / `gen-night-fills.mjs`  |
 | `{page}.{light,night}.webp`     | `web/static/coloring/{book}/`      | yes — magic-brush reveal, fills-only (outline pixels inpainted with bled fill color, opaque: pen mask for light, chalk mask for night) | `punch-fill-outlines.mjs` from the raw         |
 
 Everything shipped is a **static, committed artifact** — no generation at build or run time, no
-server dependency, trivially cacheable. The renderer is deliberately dumb: generated transparent
+server dependency, trivially cacheable. The renderer is deliberately dumb: vectorized transparent
 black pen or transparent white chalk overlays use ordinary source-over composition; the reveal
 layers the punched fill underneath. The opaque pen/chalk sources retain their pipeline storage
-polarity, while `gen:coloring-overlays` converts them for presentation (ADR-0091 and
-[`alpha-line-art-overlays.md`](alpha-line-art-overlays.md)). All intelligence lives at generation
-time, behind gates, with a human review at the end.
+polarity, while the `vectorize-image` workflow converts them for presentation (ADR-0129 and
+[`alpha-line-art-overlays.md`](alpha-line-art-overlays.md)). `gen:coloring-overlays` remains the
+deterministic temporary WebP baseline used before a paid retrace and is removed after comparison.
+All intelligence lives at generation time, behind gates, with a human review at the end.
 
 ## Stage 1 — Pen outlines
 

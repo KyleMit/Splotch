@@ -349,11 +349,22 @@
   .ai-enabled-settings {
     display: flex;
     flex-direction: column;
+  }
+
+  .ai-settings-stack {
+    gap: var(--space-4);
+  }
+
+  .ai-enabled-settings {
     gap: var(--space-5);
   }
 
-  .ai-settings-stack :global(.setting-group) {
+  .ai-settings-stack > section.ai-primary-toggle {
     margin-bottom: 0;
+  }
+
+  .ai-settings-stack > section.ai-primary-toggle > .setting {
+    padding-bottom: 0;
   }
 
   /* AI access code entry */

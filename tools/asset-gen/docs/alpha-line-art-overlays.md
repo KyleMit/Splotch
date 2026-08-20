@@ -2,6 +2,12 @@
 
 **Decision record — in force. Date:** 2026-07
 
+> **Amendment (2026-08):** ADR-0129 preserves this decision's alpha-native, ordinary source-over
+> presentation contract but changes the shipped format to invariant `.overlay.svg` and
+> `.dark.overlay.svg` files. The WebP generator and measurements below remain the deterministic
+> pre-vectorization comparison baseline; generated page-overlay WebPs are deleted after a retrace is
+> accepted.
+
 ## Context
 
 Pen and chalk line art is authored and stored ink-on-white. That representation is ideal for Gemini
@@ -27,13 +33,16 @@ strict, predictable error bound.
 
 ## Decision
 
-Every coloring-page orientation has two runtime presentation derivatives:
+Every coloring-page orientation has two runtime presentation derivatives. The deterministic WebP
+siblings are comparison artifacts for regeneration, not shipped fallbacks:
 
 ```text
 {page}-{tall,wide}.outline.webp      opaque black pen on white; pipeline source
 {page}-{tall,wide}.chalk.webp        opaque chalk stored ink-on-white; pipeline source
-{page}-{tall,wide}.overlay.webp      transparent black pen; light runtime overlay
-{page}-{tall,wide}.dark.overlay.webp transparent white chalk; dark runtime overlay
+{page}-{tall,wide}.overlay.svg       transparent black pen; light runtime overlay
+{page}-{tall,wide}.dark.overlay.svg  transparent white chalk; dark runtime overlay
+{page}-{tall,wide}.overlay.webp      temporary light comparison baseline
+{page}-{tall,wide}.dark.overlay.webp temporary dark comparison baseline
 ```
 
 `npm run gen:coloring-overlays` runs `tools/asset-gen/coloring/gen-overlays.mjs`. For each pen
@@ -51,29 +60,25 @@ The explicit RGBA buffer is load-bearing. Sharp's `joinChannel` tags a fourth ba
 extra channel and the WebP encoder can silently flatten it; `alphaOverlayRgba()` constructs the
 four-channel buffer directly.
 
-The presentation suffix describes runtime role rather than derivation source. `.overlay.webp` is the
-default light presentation, while `.dark.overlay.webp` is the resolved dark presentation even when
-it was derived from a fallback pen. This keeps `pageOverlayImage()` independent of the catalog's
-optional chalk bookkeeping.
+The presentation suffix describes role rather than derivation source. `.overlay.svg` is the light
+presentation, while `.dark.overlay.svg` is the dark presentation. This keeps `pageOverlayImage()`
+independent of the catalog's authoring-source bookkeeping.
 
-Opaque sources and alpha overlays are both committed under `web/static/coloring` and covered by
-`golden/asset-manifest.sha256`. Web deployments retain both sets so the in-repo pipeline can keep
-its source locations. `tools/mobile/strip-static-assets.mjs` removes the opaque full-resolution
-sources from the completed native static build because native runtime code uses only alpha overlays
-and picker thumbnails.
+Opaque sources and SVG alpha overlays are committed under `web/static/coloring`; the source/output
+hash ledgers and `golden/asset-manifest.sha256` guard them. Web deployments retain both sets so the
+in-repo pipeline can keep its source locations. `tools/mobile/strip-static-assets.mjs` removes the
+opaque full-resolution sources from the completed native static build because native runtime code
+uses only alpha overlays and picker thumbnails.
 
 ## Consequences
 
 * \+ Runtime line art uses normal source-over composition with no filter or blend-mode layer.
 * \+ The generator's 4/255 bound makes the visual tradeoff executable and deterministic rather than
   relying only on manual comparison.
-* \+ The full catalog's 192 presentation overlays total 14.0 MB; web precaching excludes the 18.19
-  MB of runtime-unused opaque sources, and native pruning removes them from static builds.
+* \+ The former WebP catalog's 14.0 MB total remains a reproducible comparison baseline; invariant
+  SVGs replace its canonical and responsive runtime files.
 * \+ Pen/chalk pipeline inputs, registration gates, fill punches, and picker thumbnails keep their
   established storage polarity and code paths.
-* − Any pen or chalk byte change invalidates its presentation derivative. Regenerate the affected
-  category, rebuild its proof sheet, and refresh the asset manifest in the same commit.
-* − Web deployments store both representations even though a browsing session precaches only alpha
-  presentation assets and downloads opaque sources only if their direct URL is requested.
-* − `.dark.overlay.webp` does not reveal whether chalk or fallback pen was its source; inspect the
-  catalog's `chalkImages` or rerun the generator to answer that provenance question.
+* − Any pen or chalk byte change invalidates its presentation derivative. Regenerate the temporary
+  WebP baseline, retrace the affected SVG, compare them, rebuild the proof sheet, and refresh both
+  derivation ledger and asset manifest in the same commit.

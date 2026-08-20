@@ -46,7 +46,7 @@ gates:
 * **Storage polarity:** the chalk ships **ink-on-white** (the negation of what dark mode displays).
   Every ink-on-white analysis tool (outline-match, punch, audits) reads chalks unmodified; the
   picker applies the original `invert(1)` + `screen` treatment. The full-page canvas uses the
-  generated transparent white `.dark.overlay.webp` sibling from
+  generated transparent white `.dark.overlay.svg` sibling from
   [`alpha-line-art-overlays.md`](alpha-line-art-overlays.md), so WebKit does not retain a full-page
   blend/filter layer (ADR-0091).
 * **The punch is per-theme** (`lib/punch-fill.mjs`): light raws punch against the pen, night raws

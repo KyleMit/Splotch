@@ -1,8 +1,11 @@
 # ADR-0129: Share Invariant SVG Overlays Across Coloring-Pack Resolution Tiers
 
 **Status:** Active — amends [ADR-0044](0044-svg-optimization-audit.md),
+[ADR-0045](0045-coloring-picker-thumbnails-and-prefetch.md),
 [ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md), and
-[ADR-0103](0103-progressive-coloring-book-packs.md) **Date:** 2026-08
+[ADR-0103](0103-progressive-coloring-book-packs.md)
+
+**Date:** 2026-08
 
 ## Context
 
@@ -12,11 +15,14 @@ line art could use ordinary source-over composition. ADR-0103 later gave each do
 overlays and fills download screen-sized WebP derivatives.
 
 A production Vectorizer.AI pilot found that one optimized SVG can replace both raster overlay tiers
-for suitable line art. Across a simple pen page, a dense pen page, and one chalk page, 99.7 KB of
-raw SVG replaced 169 KB of compact WebP or 237 KB of full WebP. Chromium and WebKit decoded every
-sample, reported the intended 1024×1536 intrinsic dimensions, and drew and exported it through
-Canvas successfully. The pilot also showed that picker covers remain smaller as raster thumbnails
-and that chalk needs a separate dense-page gate before a catalog-wide campaign.
+for suitable line art. The subsequent 96-page pen campaign produced 3,572,243 raw SVG bytes and
+1,558,331 gzip transfer bytes, replacing 6,274,180 compact or 9,080,706 full WebP bytes. Every trace
+passed the catalog fidelity gate: binary ink IoU remained at or above 96.34%, and alpha mean
+absolute error remained at or below 2.46/255. The completed 96-page chalk campaign then produced
+3,959,975 raw SVG bytes and 1,731,806 gzip bytes, replacing 4,479,786 compact or 5,361,446 full WebP
+bytes. Its minimum IoU was 95.67% and maximum alpha error was 1.83/255. Chromium and WebKit decoded,
+drew, and exported the simple, dense, and chalk pilot samples successfully. Picker covers remain
+smaller as raster thumbnails.
 
 We considered three pack representations:
 
@@ -31,13 +37,11 @@ We considered three pack representations:
 
 ## Decision
 
-Choose option 3 for catalog entries explicitly opted into vector presentation.
+Choose option 3 for every light- and dark-mode page overlay.
 
-`books.ts` records vector eligibility by page, orientation, and resolved theme. An eligible light
-overlay uses `{page}.overlay.svg`; an eligible dark overlay uses `{page}.dark.overlay.svg`. Pages
-without that entry retain the WebP paths from ADR-0091, so rollout can proceed as measured slices
-rather than an all-or-nothing format migration. Picker covers and thumbnails, Magic fills, authoring
-outlines, and non-selected overlays remain raster assets.
+Every light overlay uses `{page}.overlay.svg`, and every dark overlay uses
+`{page}.dark.overlay.svg`. Picker covers and thumbnails, Magic fills, and authoring outlines remain
+raster assets.
 
 Each committed Vectorizer SVG passes through `tools/vectorize/postprocess-svg.mjs`. The pinned,
 multipass SVGO transformation must reach a byte-stable fixed point, and it restores intrinsic
@@ -53,24 +57,38 @@ version-and-resolution scoped because the installed marker already fingerprints 
 including its bytes and digest; vector invariance does not introduce a separate migration or cache
 authority.
 
-The initial runtime slice is Circle portrait light and Owl portrait light/dark. Broader pen or chalk
-conversion remains gated by physical-iPad page selection, theme switching, Magic reveal, rotation,
-overlay/fill registration, offline installation, and export checks. A watermarked free test trace
-can rehearse dense-wide geometry, but its watermark becomes traced geometry and cannot approve
-production size or fidelity.
+The pen and chalk campaigns each passed a paid dense-landscape gate on Fairy wide before the
+remaining pages were processed in book-sized batches. The final 13 chalk traces used Train wide as a
+second dense gate before completing Vehicles and Station landscape. The final light catalog build
+passed physical-iPad page selection, theme switching, Magic reveal, rotation, overlay/fill
+registration, clearing, and export checks. The integrated dark selection then passed the
+physical-iPad theme and coloring interaction rows, loaded a dark SVG directly in Safari, and
+completed screenshot export. The completed 96-page dark catalog repeated that sweep after the final
+13 traces: theme switching, book opening, and page selection passed, with selection at 18 ms
+first-frame P95 and 20 ms post-action P95/max. The report-only screenshot maximum remained 0.5 ms
+above its strict gate while broader pre-existing Settings and clear failures remained. The invariant
+pack path had already passed a real offline install and relaunch with digest-matched SVG bytes. The
+deployed SVG responses used gzip; the production decision therefore uses measured gzip bytes for web
+and raw bytes for native. A watermarked free test trace can rehearse geometry, but its watermark
+becomes traced geometry and cannot approve production size or fidelity.
+
+The exact production recipe and every source/output digest live in
+`tools/vectorize/coloring-overlays.json` and `tools/vectorize/coloring-dark-overlays.json`.
+`npm run vectorize:coloring:check` is the derivation drift guard, while
+`npm run vectorize:coloring:analyze` re-rasterizes either SVG catalog against its authoring
+outlines. The size comparison fields are populated only while the replaced WebPs are available; the
+fidelity gate remains repeatable after those redundant runtime assets are removed.
 
 ## Consequences
 
 * \+ A qualifying overlay is resolution-independent and occupies one committed runtime file instead
   of compact and full raster derivatives.
 * \+ Compact and full packs retain one logical inventory and the existing atomic verification model.
-* \+ Vector rollout is explicit and reversible per page, orientation, and theme; unproven art keeps
-  its current WebP path.
+* \+ Both themes have one format and one invariant asset per orientation across the catalog.
 * \+ Dark SVGs preserve ADR-0091's source-over presentation contract without runtime recoloring.
 * − Manifest consumers must understand format 3 and enforce byte-identical SVG entries across tiers.
 * − Native packages receive raw SVG bytes without HTTP Brotli compression, so production approval
   must use raw size rather than web transfer size.
-* − Vector fidelity is close but not pixel-identical; every campaign stage still requires visual
-  registration and physical-device performance evidence.
-* − Theme-specific SVG files duplicate geometry when both pen and chalk are selected. Chalk remains
-  a separate cost and size decision rather than an automatic consequence of the pen campaign.
+* − Vector fidelity is close but not pixel-identical; future source regeneration still requires the
+  derivation, fidelity, visual-registration, and physical-device gates.
+* − Theme-specific SVG files duplicate geometry between pen and chalk presentation.

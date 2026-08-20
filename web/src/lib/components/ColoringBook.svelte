@@ -7,9 +7,8 @@
   import {
     COLORING_IMAGE_SIZES,
     coloringBookGridLayout,
-    coloringOverlayImageSize,
     coverThumbImageSource,
-    pageOverlayImageSource,
+    pageOverlayImage,
     pageThumbImageSource,
     type Book,
     type ColoringPage,
@@ -67,10 +66,6 @@
     return __IS_CAPACITOR__ ? image.src : { ...image, sizes };
   }
 
-  function currentPaperImageSize(): string {
-    return coloringOverlayImageSize(canvasState.paperCssWidth);
-  }
-
   $effect(() => {
     if (!hasBookPicker) return;
     const theme = resolvedTheme();
@@ -93,12 +88,7 @@
     );
   }
   function prefetchPageOverlay(page: ColoringPage) {
-    prefetchImages([
-      imageRequest(
-        pageOverlayImageSource(page, orientation, resolvedTheme()),
-        currentPaperImageSize()
-      ),
-    ]);
+    prefetchImages([pageOverlayImage(page, orientation, resolvedTheme())]);
   }
 
   // Swap the active overlay to the paper's portrait/landscape art when the
@@ -109,7 +99,7 @@
   });
 
   function pickPage(page: ColoringPage) {
-    const selectedOverlayUrl = pageOverlayImageSource(page, orientation, resolvedTheme()).src;
+    const selectedOverlayUrl = pageOverlayImage(page, orientation, resolvedTheme());
     cancelImagePrefetchesExcept(selectedOverlayUrl);
     // Cancelling live thumbnail requests removes their source attributes, so the keyed page grid
     // remounts them on every dialog open instead of relying on a book-picker branch transition.

@@ -5,27 +5,6 @@ function quantizeOverlayAlpha(alpha) {
   return Math.min(255, Math.round(alpha / OVERLAY_ALPHA_STEP) * OVERLAY_ALPHA_STEP);
 }
 
-export function quantizeOverlayRgba(rgba) {
-  const quantized = Buffer.from(rgba);
-  for (let offset = 3; offset < quantized.length; offset += 4) {
-    quantized[offset] = quantizeOverlayAlpha(quantized[offset]);
-  }
-  return quantized;
-}
-
-export function maxOverlayAlphaError(expectedRgba, actualRgba) {
-  if (expectedRgba.length !== actualRgba.length) {
-    throw new RangeError(
-      `Overlay buffers must have the same byte length (${expectedRgba.length} !== ${actualRgba.length}).`
-    );
-  }
-  let maxError = 0;
-  for (let offset = 3; offset < expectedRgba.length; offset += 4) {
-    maxError = Math.max(maxError, Math.abs(expectedRgba[offset] - actualRgba[offset]));
-  }
-  return maxError;
-}
-
 export function alphaOverlayRgba(luma, ink) {
   const rgba = Buffer.alloc(luma.length * 4);
   for (let pixel = 0; pixel < luma.length; pixel++) {
