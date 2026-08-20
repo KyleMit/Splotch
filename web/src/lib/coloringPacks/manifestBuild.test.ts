@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import { buildColoringPackManifest } from '../../../coloringPackManifest';
+import { booksForPlatform } from '../state/books';
 import { parseColoringPackManifest } from './manifest';
 
 // Bounds verification-metadata overhead while retaining one-document cross-tier validation.
@@ -50,5 +51,37 @@ describe('buildColoringPackManifest', () => {
     );
     expect(Buffer.byteLength(source)).toBeLessThan(MAX_COLORING_PACK_MANIFEST_BYTES);
     expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
+  });
+
+  it('ships every landscape vector overlay through both incremental variants', () => {
+    const { manifest } = buildColoringPackManifest('1.2.3-test', 'mobile');
+    const catalog = new Map(booksForPlatform('mobile').map((book) => [book.id, book]));
+
+    for (const manifestBook of manifest.books) {
+      const book = catalog.get(manifestBook.id);
+      if (!book) throw new Error(`Missing catalog book ${manifestBook.id}`);
+      const expectedLandscapePaths = book.pages.flatMap((page) => [
+        `/coloring/${book.id}/${page.id}-wide.overlay.svg`,
+        `/coloring/${book.id}/${page.id}-wide.dark.overlay.svg`,
+      ]);
+
+      for (const variant of Object.values(manifestBook.variants)) {
+        const filesByPath = new Map(variant.files.map((file) => [file.path, file]));
+        expect(
+          variant.files
+            .map((file) => file.path)
+            .filter((path) => /-wide(?:\.dark)?\.overlay\.svg$/.test(path))
+        ).toEqual(expectedLandscapePaths);
+        expect(
+          expectedLandscapePaths.every(
+            (path) => filesByPath.has(path) && filesByPath.get(path)?.downloadPath === undefined
+          )
+        ).toBe(true);
+        expect(filesByPath.has(book.cover)).toBe(false);
+        expect(filesByPath.has(book.chalkCover)).toBe(false);
+        expect(filesByPath.has(`/coloring/${book.id}/cover.thumb.webp`)).toBe(true);
+        expect(filesByPath.has(`/coloring/${book.id}/cover.chalk.thumb.webp`)).toBe(true);
+      }
+    }
   });
 });

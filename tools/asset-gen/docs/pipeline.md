@@ -19,6 +19,8 @@ live assets regenerate, these don't.
 
 ```mermaid
 flowchart LR
+    PC["reviewed pen candidate<br/>(fresh/normalize raster)"] -->|"--apply"| PS["light trace source<br/>(uncommitted .source.webp)"]
+    PS -->|vectorize:coloring| P
     P["canonical pen<br/>(.overlay.svg)"] -->|"gen:coloring-chalk<br/>(Gemini, gated)"| CS["dark trace source<br/>(uncommitted .source.webp)"]
     CS -->|vectorize:coloring| C["canonical chalk<br/>(.dark.overlay.svg)"]
     P -->|"gen:coloring-fills<br/>(Gemini, gated)"| LR2["light raw<br/>(fill-src/…light.raw.webp)"]
@@ -109,6 +111,10 @@ clouds. Those hard-won per-page levers (bee-wide's clouds, bee-tall's eye note, 
 low-temperature de-swirl) now auto-load from the [notes registry](#the-per-page-notes-registry) —
 `--dry-run` previews what a page will resolve to.
 
+`--apply` stages the reviewed raster under `vectorized/coloring-overlays/`; it does not overwrite
+the canonical pen. Run the light `vectorize:coloring` trace, inspect its rendered registration, and
+refresh the light ledger before regenerating anything downstream.
+
 ### The from-scratch alternative
 
 `npm run gen:coloring-outlines:fresh -- <page> --scene "…" [--eyes] [--apply]
@@ -118,9 +124,9 @@ misreading), don't edit the drawing — replace it. Text-to-image with a baselin
 matching the shipped catalog plus a 1–2 sentence scene (same subject, deliberately NOT the same
 composition), gated offline on solidity, ring depth, eye-core presence (`--eyes`), border whiteness,
 frame detection (four-sided ink and single-side ghost), and ink density; candidates land in
-`.coloring-samples/fresh/`. A fresh pen invalidates the page's entire suite — regenerate thumb →
-light → chalk → night → punch. Decision record + the 2026-07-13 five-page pass:
-[fresh-outline-regen.md](fresh-outline-regen.md).
+`.coloring-samples/fresh/`. Here too, `--apply` only stages a light trace source. A fresh pen
+invalidates the page's entire suite — regenerate pen SVG → chalk SVG → light → night → punch.
+Decision record + the 2026-07-13 five-page pass: [fresh-outline-regen.md](fresh-outline-regen.md).
 
 ## Stage 1.5 — Chalk outlines
 
@@ -175,7 +181,8 @@ change):
    required for art-direction calls.
 
 Book covers use the same pipeline and gates through an explicit `<book>/cover` target. They have no
-fill stages: after applying a cover chalk, regenerate its chalk thumbnail and responsive candidate.
+fill stages: after applying and vectorizing a cover chalk, regenerate its chalk thumbnail and
+responsive candidate.
 
 Candidates render to ink polarity through a **crisping S-curve** (`lib/crisp-ink.mjs`) instead of
 the pen tools' gentle contrast: on the dark board the invert + screen render and the binary night
@@ -188,9 +195,9 @@ ladybug's first take gave it white shell spots) are caught only by human review 
 [notes registry](#the-per-page-notes-registry) so the next regen starts from it (the ladybug's
 shell-spot note is seeded there).
 
-After applying a page chalk, regenerate the page's **night fill** (it conditions on the chalk),
-re-punch, and regenerate its dark SVG overlay. A cover chalk needs only the thumbnail and responsive
-stages. Light fills are untouched — they belong to the pen.
+After applying a page chalk, trace and review its canonical dark SVG first. Then regenerate the
+page's **night fill** (it conditions on that SVG) and re-punch. A cover chalk needs only its dark
+SVG trace, thumbnail, and responsive stages. Light fills are untouched — they belong to the pen.
 
 ## Stage 2 — The punch
 
@@ -350,6 +357,26 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
 
 ### Shipping (manual on purpose — the human gate)
 
+Line art has a mandatory promotion step before the fill workflow below. A fresh, normalized, or
+chalk `--apply` writes an uncommitted raster trace source—not a shippable master. Run the matching
+light or dark `vectorize:coloring` job with explicit production-credit authorization, inspect the
+SVG against the staged source and page composite, then refresh both derivation ledgers:
+
+```bash
+npm run vectorize:coloring -- --match=<book>/<page>-<orient> --batch-size=1 --production
+npm run vectorize:coloring -- --theme=dark --match=<book>/<page>-<orient> --batch-size=1 --production
+npm run vectorize:coloring:analyze -- --book=<book>
+npm run vectorize:coloring:analyze -- --theme=dark --book=<book>
+npm run vectorize:coloring -- --write-ledger
+npm run vectorize:coloring -- --theme=dark --write-ledger
+npm run vectorize:coloring:check
+npm run vectorize:postprocess:check
+```
+
+Run only the theme whose trace source changed. Never copy a raster candidate into `web/static/` as a
+fallback; the optimized SVG is the canonical pen/chalk asset and the input to all downstream
+generation.
+
 1. Review the samples on the coloring-book proof sheet (`--source samples`) — Combined view, both
    themes, zoom the eyes. A `rawHalo > 5` diagnostic specifically requests focused crop review; it
    does not override a passing normalized halo gate. A normalized halo failure also prints its worst
@@ -390,9 +417,12 @@ keep-blind-spot overrides fixed by IDEAS #11/#12) were dropped.
    `npm run update:coloring-golden-scores` to adopt the new baseline and
    `npm run gen:assets:manifest` to re-hash the changed bytes; commit both fixture updates with the
    assets (CI's `check:assets:manifest` fails otherwise).
-5. `npm run check:coloring-assets` + `npm run check` + `npm run test:unit`, rebuild the
-   coloring-book proof sheet `--source shipped`, optionally verify live with the `run-splotch` skill
-   (dark mode → apply page → magic-brush reveal), commit.
+5. `npm run check:coloring-assets` + `npm run check` + `npm run test:unit` + `npm run build`,
+   rebuild the coloring-book proof sheet `--source shipped`, optionally verify live with the
+   `run-splotch` skill (dark mode → apply page → magic-brush reveal), commit. The build regenerates
+   the versioned incremental-download manifest from `bookPackAssetPaths()`; its compact and full
+   variants both carry every portrait/landscape pen and chalk SVG unchanged, while cover SVG masters
+   stay out in favor of their picker thumbnails.
 
 Light mode must stay byte-identical throughout a night-fill pass — enforced by
 `golden/asset-manifest.sha256`: the manifest diff for a night pass must contain only
@@ -476,8 +506,10 @@ The loop that has worked, per category:
    frozen in `golden/golden-scores.json` (`update:coloring-golden-scores`), so there's no need for
    ad-hoc score snapshots in a scratchpad — the 3.1 wave's approach before the golden set landed.
 2. **Generate chalks** (`gen:coloring-chalk --apply`), eyeballing every `.display.webp` — gates have
-   been fooled, each time by something no existing gate measured.
-3. **Regenerate the suite** for changed pages: thumbs → light fills → night fills → punch.
+   been fooled, each time by something no existing gate measured. Then vectorize the staged dark
+   trace sources, inspect the SVGs, and refresh the derivation ledger.
+3. **Regenerate the suite** for changed pages: trace any changed pen first → chalk + dark trace →
+   light fills → night fills → punch. Covers stop after their SVG trace and picker derivatives.
 4. **Rebuild the coloring-book proof sheet and publish it as an Artifact** — judge on the Combined
    view in BOTH themes; zoom the eyes. The sheet is the review surface of record
    (`coloring-book-proof-sheet.md`):
@@ -521,24 +553,27 @@ Hard-won process lessons:
 
 ## Command reference
 
-| Command                                                     | Purpose                                                                                         | API key? |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------- |
-| `npm run check:coloring-outline-quality -- [cat]`           | solid regions + ring depth + page frames per pen outline                                        | no       |
-| `npm run gen:coloring-outlines:normalize -- <page…>`        | thin-stroke pen redraw, 6 gates, `--apply` to ship                                              | yes      |
-| `npm run gen:coloring-outlines:fresh -- <page> --scene "…"` | brand-new pen from a text scene (same subject, new drawing), 6 offline gates, `--apply` to ship | yes      |
-| `npm run gen:coloring-chalk -- <page-or-cat…>`              | chalk-outline redraw from the pen, 4 gates, `--apply` to ship, `--rescore` offline              | yes      |
-| `npm run gen:coloring-fills -- <pages…>`                    | gated light-fill candidates → scratch; `--apply` ships an all-passing batch                     | yes      |
-| `node … gen-night-fills.mjs <pages…>`                       | gated night candidates → samples; `--rescore` offline, `--apply` ships passing single takes     | yes/no   |
-| `npm run gen:coloring-punched-fills -- [pages…]`            | re-derive shipped fills from raws (pen/chalk masks)                                             | no       |
-| `npm run check:coloring-fill-drift -- [cat]`                | registration drift on committed raws                                                            | no       |
-| `npm run check:coloring-fill-eyes -- [cat]`                 | eye liveliness on committed raws (night judged as the chalk composite)                          | no       |
-| `npm run check:coloring-invented-shapes -- [cat]`           | invented colored shapes floating on the open background of committed raws                       | no       |
-| `npm run check:coloring-night-halo -- [cat]`                | shipped halo audit: normalized candidate bar plus separate raw-score crop-review flag           | no       |
-| `npm run gen:coloring-thumbs -- [cat]`                      | light/dark cover thumbnails (`cover.thumb` + `cover.chalk.thumb`)                               | no       |
-| `npm run check:coloring-golden-scores`                      | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                      | no       |
-| `npm run update:coloring-golden-scores`                     | adopt the current scores as the new golden baseline                                             | no       |
-| `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                      | no       |
-| `npm run gen:coloring-book-proof-sheet -- <cat>`            | the review sheet (publish as Artifact)                                                          | no       |
+| Command                                                     | Purpose                                                                                     | API key? |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------- |
+| `npm run check:coloring-outline-quality -- [cat]`           | solid regions + ring depth + page frames per pen outline                                    | no       |
+| `npm run gen:coloring-outlines:normalize -- <page…>`        | thin-stroke pen redraw, 6 gates, `--apply` stages a light SVG trace source                  | yes      |
+| `npm run gen:coloring-outlines:fresh -- <page> --scene "…"` | brand-new pen from a text scene, 6 offline gates, `--apply` stages a light SVG trace source | yes      |
+| `npm run gen:coloring-chalk -- <page-or-cat…>`              | chalk redraw from the pen, 5 gates, `--apply` stages a dark SVG trace source                | yes      |
+| `npm run vectorize:coloring -- [filters]`                   | trace staged raster line art into the canonical SVG; production costs one credit per trace  | yes      |
+| `npm run vectorize:coloring:check`                          | verify committed pen/chalk SVGs against their format-2 derivation ledgers                   | no       |
+| `npm run vectorize:postprocess:check`                       | verify canonical SVG optimization and intrinsic dimensions                                  | no       |
+| `npm run gen:coloring-fills -- <pages…>`                    | gated light-fill candidates → scratch; `--apply` ships an all-passing batch                 | yes      |
+| `node … gen-night-fills.mjs <pages…>`                       | gated night candidates → samples; `--rescore` offline, `--apply` ships passing single takes | yes/no   |
+| `npm run gen:coloring-punched-fills -- [pages…]`            | re-derive shipped fills from raws (pen/chalk masks)                                         | no       |
+| `npm run check:coloring-fill-drift -- [cat]`                | registration drift on committed raws                                                        | no       |
+| `npm run check:coloring-fill-eyes -- [cat]`                 | eye liveliness on committed raws (night judged as the chalk composite)                      | no       |
+| `npm run check:coloring-invented-shapes -- [cat]`           | invented colored shapes floating on the open background of committed raws                   | no       |
+| `npm run check:coloring-night-halo -- [cat]`                | shipped halo audit: normalized candidate bar plus separate raw-score crop-review flag       | no       |
+| `npm run gen:coloring-thumbs -- [cat]`                      | light/dark cover thumbnails (`cover.thumb` + `cover.chalk.thumb`)                           | no       |
+| `npm run check:coloring-golden-scores`                      | re-score the catalog vs `golden/golden-scores.json`; exit 1 on regressions                  | no       |
+| `npm run update:coloring-golden-scores`                     | adopt the current scores as the new golden baseline                                         | no       |
+| `npm run gen:assets:manifest`                               | re-hash the committed art into `golden/asset-manifest.sha256` (CI-checked)                  | no       |
+| `npm run gen:coloring-book-proof-sheet -- <cat>`            | the review sheet (publish as Artifact)                                                      | no       |
 
 ## Status and the next category
 
