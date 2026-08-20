@@ -8,9 +8,9 @@ import {
 } from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { capturePointer, releasePointer } from './pointerCapture';
+import { getAcceptRadius } from './dragToClearGeometry';
 
 // Drag-to-clear gesture constants.
-const ACCEPT_RADIUS_FACTOR = 0.4;
 const HOLD_DURATION_MS = 500;
 const MOVEMENT_THRESHOLD_PX = 50;
 const MULTI_CLICK_WINDOW_MS = 1000;
@@ -24,10 +24,6 @@ const EXIT_RETURN_DELAY_MS = PAGE_TURN_DURATION_MS + RETURN_HANDOFF_GAP_MS;
 function suppress(e: Event) {
   e.preventDefault();
   e.stopPropagation();
-}
-
-export function getAcceptRadius() {
-  return Math.min(window.innerWidth, window.innerHeight) * ACCEPT_RADIUS_FACTOR;
 }
 
 export interface DragToClearOptions {
@@ -291,10 +287,9 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     finishDrag(o, e.pointerId);
 
     resetDragVisuals(o);
-    // A fresh drag can start while a previous commit's exit is still playing,
-    // so cancelling has to put the button back on screen rather than leave it
-    // mid-fade until that exit's timers catch up.
-    node.classList.remove('clearing', 'clearing-done', 'clearing-return');
+    // A drag can start as soon as the button begins its return leg, so cancelling
+    // must put it back on screen rather than leave it mid-fade.
+    node.classList.remove('clearing-return');
     o.pageTurnOverlayEl.classList.remove('animating');
     cancelClearSound();
     stopDrawSound();

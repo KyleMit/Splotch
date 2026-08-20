@@ -175,6 +175,7 @@
   .clear-button:global(.clearing) {
     opacity: 0;
     transform: scale(0.8);
+    pointer-events: none;
     transition:
       opacity var(--duration-base) ease,
       transform var(--duration-base) ease;
