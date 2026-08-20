@@ -12,13 +12,17 @@ const FULL_VOLUME_SPEED = 0.45;
 const GAIN_RAMP_S = 0.06;
 const STOP_DECLICK_S = 0.005;
 const TEARDOWN_SLACK_MS = 20;
-const CLEAR_DOT_PROGRESS_INTERVAL = 0.055;
+// This gate keeps ordinary pointer sampling distinct enough to sound like dots instead of a buzz.
+const CLEAR_DOT_PROGRESS_STEP = 0.055;
 const CLEAR_COMMIT_PROGRESS = 1;
+// Pitch keeps climbing after commit so extra drag still speaks, then stabilizes at a finite ceiling.
 const CLEAR_DOT_PITCH_CAP_PROGRESS = 1.4;
 const CLEAR_DOT_SILENCE_GAIN = 0.0001;
+// A relaxed pulse avoids a silent ready state without turning a held gesture into a continuous tone.
 const CLEAR_READY_BUBBLE_INTERVAL_MS = 240;
 const CLEAR_READY_BUBBLE_GAIN_MULTIPLIER = 0.55;
 const CLEAR_POP_GAIN = 0.3;
+// This compact band reads as friendly water bubbles while staying clear of harsh high frequencies.
 const CLEAR_BUBBLE_START_HZ = 420;
 const CLEAR_BUBBLE_END_HZ = 1_050;
 const CLEAR_BUBBLE_PITCH_VARIATION = 0.06;
@@ -28,6 +32,7 @@ const CLEAR_BUBBLE_GAIN_MIN = 0.012;
 const CLEAR_BUBBLE_GAIN_MAX = 0.035;
 const CLEAR_BUBBLE_GAIN_EXPONENT = 1.2;
 const CLEAR_BUBBLE_ATTACK_S = 0.004;
+// Each resonance is long enough to feel rounded but short enough to remain a discrete drag sample.
 const CLEAR_BUBBLE_DURATION_S = 0.085;
 
 let audioContext: AudioContext | null = null;
@@ -162,13 +167,14 @@ export function updateClearSound(progress: number) {
     clearReadyBubbleProgress = bubbleProgress;
     startClearReadyBubbles(ctx);
   } else stopClearReadyBubbles();
-  if (Math.abs(bubbleProgress - lastClearBubbleProgress) < CLEAR_DOT_PROGRESS_INTERVAL) return;
+  if (Math.abs(bubbleProgress - lastClearBubbleProgress) < CLEAR_DOT_PROGRESS_STEP) return;
   lastClearBubbleProgress = bubbleProgress;
   playClearDot(ctx, bubbleProgress);
 }
 
 export function cancelClearSound() {
   clearGestureActive = false;
+  clearPopRequested = false;
   lastClearBubbleProgress = 0;
   clearReadyBubbleProgress = 0;
   stopClearReadyBubbles();
@@ -212,6 +218,7 @@ function playClearDot(ctx: AudioContext, progress: number, gainMultiplier = 1) {
         Math.pow(progress, CLEAR_BUBBLE_GAIN_EXPONENT)) *
     volumeMultiplier() *
     gainMultiplier;
+  if (peakGain <= CLEAR_DOT_SILENCE_GAIN) return;
   const now = ctx.currentTime;
 
   const gain = ctx.createGain();

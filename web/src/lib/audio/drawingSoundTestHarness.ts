@@ -30,27 +30,12 @@ export function stubAudioContext({
   createBufferSource = vi.fn(() => ({
     buffer: null,
     loop: false,
-    playbackRate: { value: 1 },
     connect: vi.fn(),
     disconnect: vi.fn(),
     start: vi.fn(),
     stop: vi.fn(),
-    onended: null,
   })),
-  createOscillator = vi.fn(() => ({
-    type: 'sine',
-    frequency: {
-      value: 0,
-      cancelScheduledValues: vi.fn(),
-      setValueAtTime: vi.fn(),
-      exponentialRampToValueAtTime: vi.fn(),
-    },
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    start: vi.fn(),
-    stop: vi.fn(),
-    onended: null,
-  })),
+  createOscillator = vi.fn(),
 }: AudioContextStubOptions = {}) {
   vi.stubGlobal(
     'AudioContext',

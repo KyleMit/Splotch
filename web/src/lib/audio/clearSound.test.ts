@@ -24,7 +24,6 @@ function bufferSource() {
   return {
     buffer: null as AudioBuffer | null,
     loop: false,
-    playbackRate: { value: 1 },
     connect: vi.fn(),
     disconnect: vi.fn(),
     start: vi.fn(),
@@ -57,7 +56,7 @@ describe('clear sound', () => {
     vi.resetModules();
   });
 
-  it('maps traveled distance and current progress onto short rising bubble resonances', async ({
+  it('maps forward and backward traveled distance onto short bubble resonances', async ({
     signal,
   }) => {
     vi.useFakeTimers();
@@ -125,6 +124,32 @@ describe('clear sound', () => {
       0.012 + (0.035 - 0.012) * Math.pow(0.25 / 1.4, 1.2),
       4.004
     );
+  });
+
+  it('does not schedule a bubble graph at zero volume', async ({ signal }) => {
+    vi.useFakeTimers();
+    const { setSound, setSoundVolume } = await import('$lib/state/settings.svelte');
+    signal.throwIfAborted();
+    const drawingSound = await import('./drawingSound');
+    signal.throwIfAborted();
+    cancelClearSound = drawingSound.cancelClearSound;
+
+    const gain = audioParam();
+    gain.exponentialRampToValueAtTime.mockImplementation((target: number) => {
+      if (target === 0) throw new RangeError('exponential ramps require a non-zero target');
+    });
+    const createGain = vi.fn(() => ({ gain, connect: vi.fn(), disconnect: vi.fn() }));
+    const createOscillator = vi.fn(oscillatorNode);
+    resolvedAudioFetch();
+    stubAudioContext({ state: 'running', createGain, createOscillator });
+
+    setSound(true);
+    setSoundVolume(0);
+    drawingSound.startClearSound();
+
+    expect(() => drawingSound.updateClearSound(0.5)).not.toThrow();
+    expect(createGain).not.toHaveBeenCalled();
+    expect(createOscillator).not.toHaveBeenCalled();
   });
 
   it('keeps rising past ready, holds at the pitch cap, and stops when backing out or committing', async ({
@@ -272,6 +297,49 @@ describe('clear sound', () => {
     popDecode.resolve({ duration: 0.5 } as AudioBuffer);
     await vi.waitFor(() => expect(sourceLoopsAtStart).toEqual([false]));
     signal.throwIfAborted();
+  });
+
+  it('drops a pending commit pop before a later gesture retries the failed load', async ({
+    signal,
+  }) => {
+    vi.useFakeTimers();
+    const { setSound } = await import('$lib/state/settings.svelte');
+    signal.throwIfAborted();
+    const drawingSound = await import('./drawingSound');
+    signal.throwIfAborted();
+    cancelClearSound = drawingSound.cancelClearSound;
+
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({ arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0)) });
+    const sourceNodes: ReturnType<typeof bufferSource>[] = [];
+    vi.stubGlobal('fetch', fetchMock);
+    stubAudioContext({
+      state: 'running',
+      decodeAudioData: vi.fn().mockResolvedValue({ duration: 0.5 } as AudioBuffer),
+      createBufferSource: vi.fn(() => {
+        const source = bufferSource();
+        sourceNodes.push(source);
+        return source;
+      }),
+    });
+
+    setSound(true);
+    drawingSound.startClearSound();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    signal.throwIfAborted();
+    await vi.runAllTimersAsync();
+    signal.throwIfAborted();
+    drawingSound.commitClearSound();
+
+    drawingSound.startClearSound();
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    signal.throwIfAborted();
+    await vi.runAllTimersAsync();
+    signal.throwIfAborted();
+
+    expect(sourceNodes).toHaveLength(0);
   });
 
   it('does not create or load clear audio while sounds are disabled', async () => {
