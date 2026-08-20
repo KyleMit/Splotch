@@ -121,6 +121,19 @@ const REGISTRY = {
     kind: 'Reference sheet',
     count: () => null,
   },
+  'sound-design': {
+    icon: 'sound',
+    hue: 'yellow',
+    title: 'Sound design — audition sheets',
+    blurb:
+      'Playable contact sheets for the app\u2019s sound effects: every candidate wired to the same gesture rig it will ship behind, so options can be compared by ear before one is chosen.',
+    entry: 'sound-design/clear-sound-contact-sheet/index.html',
+    kind: 'Audition sheet',
+    count: (files) => {
+      const n = files.filter((f) => f !== 'assets').length;
+      return n ? `${n} sheet${n === 1 ? '' : 's'}` : null;
+    },
+  },
   'page-inventory': {
     icon: 'appearance',
     hue: 'purple',

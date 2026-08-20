@@ -1,0 +1,174 @@
+{
+  "$comment": "Provenance for every clip in this contact sheet. Regenerate any of them with npm run gen:sound-effect -- --input <this file rewritten as a batch> ; the model is eleven_text_to_sound_v2 at mp3_44100_128.",
+  "model": "eleven_text_to_sound_v2",
+  "outputFormat": "mp3_44100_128",
+  "roles": {
+    "commit": "Plays once when the drag is released past the threshold.",
+    "cancel": "Plays once when the drag is released short of the threshold.",
+    "ready": "Plays once when the drag crosses the point of no return.",
+    "scrub": "Long source recording the Scrubbed Tape option moves a playhead through.",
+    "stem": "Seamless loop a layered option fades in and out by drag distance."
+  },
+  "clips": [
+    {
+      "name": "cancel-deflate",
+      "role": "cancel",
+      "durationSeconds": 0.7,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot small rubber balloon deflating with a short descending squeak, playful and soft, close and dry, no voice, no music."
+    },
+    {
+      "name": "cancel-soft-settle",
+      "role": "cancel",
+      "durationSeconds": 0.5,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot soft cushioned thud settling, muted and gentle, like a pillow landing, close and dry, no voice, no reverb."
+    },
+    {
+      "name": "commit-confetti-sparkle",
+      "role": "commit",
+      "durationSeconds": 1.2,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot soft confetti burst with light glittering sparkles falling, cheerful and gentle, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-magic-poof",
+      "role": "commit",
+      "durationSeconds": 1,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot gentle magic poof with a soft bright glockenspiel chime, whimsical children's cartoon, close and dry, no voice, no music bed."
+    },
+    {
+      "name": "commit-paper-whoosh",
+      "role": "commit",
+      "durationSeconds": 0.8,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot quick paper page turning whoosh, a single sheet flipping fast, crisp and dry, close mic, no voice, no music."
+    },
+    {
+      "name": "commit-pop-sparkle",
+      "role": "commit",
+      "durationSeconds": 0.9,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot soft round soap-bubble pop followed immediately by a tiny bright magic sparkle tail, warm and friendly, close and dry, no voice, no music, no reverb."
+    },
+    {
+      "name": "commit-rocket-liftoff",
+      "role": "commit",
+      "durationSeconds": 1.2,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot toy rocket lift-off whoosh, air rushing away and fading upward, playful and soft, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-toy-boing",
+      "role": "commit",
+      "durationSeconds": 0.7,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot cheerful cartoon toy boing plop, rubbery and bouncy, playful children's sound, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-whoomp-gulp",
+      "role": "commit",
+      "durationSeconds": 0.9,
+      "promptInfluence": 0.7,
+      "loop": false,
+      "prompt": "One-shot deep soft whoomp gulp, like something being swallowed up quickly, rounded low end, close and dry, no voice, no music."
+    },
+    {
+      "name": "ready-ding",
+      "role": "ready",
+      "durationSeconds": 0.7,
+      "promptInfluence": 0.4,
+      "loop": false,
+      "prompt": "Bright clear bell ding, a single struck glockenspiel note ringing out loudly then decaying, close and dry, no voice, no music."
+    },
+    {
+      "name": "scrub-bubble-cauldron",
+      "role": "scrub",
+      "durationSeconds": 8,
+      "promptInfluence": 0.5,
+      "loop": false,
+      "prompt": "Eight second continuous underwater bubbling, starting as slow sparse deep bubbles and gradually becoming faster higher and more energetic, smooth even build, no voice, no music, no impact."
+    },
+    {
+      "name": "scrub-magic-riser",
+      "role": "scrub",
+      "durationSeconds": 8,
+      "promptInfluence": 0.35,
+      "loop": false,
+      "prompt": "Continuous sustained magical sparkling texture lasting the entire eight seconds with no silence and no fade out, dense twinkling shimmer that slowly grows brighter and more excited from beginning to end, constant energy at every moment, no voice, no drums, no melody, no final impact."
+    },
+    {
+      "name": "scrub-slide-whistle",
+      "role": "scrub",
+      "durationSeconds": 8,
+      "promptInfluence": 0.5,
+      "loop": false,
+      "prompt": "One long slow continuous cartoon slide whistle glissando rising smoothly from low to high across the entire eight seconds, sustained without stopping or fading, playful, close and dry, no voice, no music."
+    },
+    {
+      "name": "scrub-zipper",
+      "role": "scrub",
+      "durationSeconds": 8,
+      "promptInfluence": 0.6,
+      "loop": false,
+      "prompt": "One long zipper being pulled slowly and steadily for the entire eight seconds, continuous even ratcheting zip texture with no pauses and no fade out, close and dry, no voice, no music."
+    },
+    {
+      "name": "stem-balloon-stretch",
+      "role": "stem",
+      "durationSeconds": 4,
+      "promptInfluence": 0.6,
+      "loop": true,
+      "prompt": "Seamless looping rubber balloon being stretched slowly, creaking squeaky rubber tension, close and dry, no voice, no music."
+    },
+    {
+      "name": "stem-high-shimmer",
+      "role": "stem",
+      "durationSeconds": 4,
+      "promptInfluence": 0.4,
+      "loop": true,
+      "prompt": "Seamless looping airy high shimmer, glassy bright sustained texture, smooth and even, no voice, no melody, no rhythm."
+    },
+    {
+      "name": "stem-low-hum",
+      "role": "stem",
+      "durationSeconds": 4,
+      "promptInfluence": 0.4,
+      "loop": true,
+      "prompt": "Seamless looping warm soft low hum, smooth and steady rounded low frequency bed, no voice, no melody, no rhythm."
+    },
+    {
+      "name": "stem-mid-sparkle",
+      "role": "stem",
+      "durationSeconds": 4,
+      "promptInfluence": 0.4,
+      "loop": true,
+      "prompt": "Seamless looping gentle twinkling music-box sparkles, light and airy, evenly spaced, no voice, no drums, no strong melody."
+    },
+    {
+      "name": "stem-rocket-rumble",
+      "role": "stem",
+      "durationSeconds": 4,
+      "promptInfluence": 0.5,
+      "loop": true,
+      "prompt": "Seamless looping soft toy rocket engine rumble, steady low roaring air, smooth and even, no voice, no music."
+    },
+    {
+      "name": "stem-water-fill",
+      "role": "stem",
+      "durationSeconds": 4,
+      "promptInfluence": 0.5,
+      "loop": true,
+      "prompt": "Seamless looping water bubbling and pouring into a container, lively gentle bubbles, close and dry, no voice, no music."
+    }
+  ]
+}
