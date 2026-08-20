@@ -15,6 +15,7 @@ vi.mock('$lib/idle', () => ({
 
 vi.mock('$lib/idb', () => ({ requestPersistentStorage: vi.fn() }));
 
+import { requestPersistentStorage } from '$lib/idb';
 import { createWebColoringPackStore } from './webStore';
 
 const manifest: ResolvedColoringPackManifest = {
@@ -59,6 +60,7 @@ beforeEach(() => {
   cache.match.mockClear();
   cache.put.mockClear();
   cache.delete.mockClear();
+  vi.mocked(requestPersistentStorage).mockClear();
   vi.stubGlobal('caches', {
     keys: vi.fn().mockResolvedValue([coloringPackCacheName(manifest)]),
     open: vi.fn().mockResolvedValue(cache),
@@ -73,6 +75,14 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('web coloring-pack inventory', () => {
+  it('does not request origin persistence for an automatic background install', async () => {
+    const store = createWebColoringPackStore();
+
+    await store.install(manifest, manifest.books[0], false, new AbortController().signal);
+
+    expect(requestPersistentStorage).not.toHaveBeenCalled();
+  });
+
   it('backfills a file added to a previously marked book', async () => {
     const book = manifest.books[0];
     cachedResponses.set(coloringPackMarkerPath(manifest, book.id), book.id);
