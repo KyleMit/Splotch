@@ -54,25 +54,32 @@ describe('stripWebOnlyHeadTags', () => {
 describe('nativeUnusedLineArt', () => {
   it('strips opaque sources only for books shipped on mobile', () => {
     const mobile = {
-      cover: '/coloring/mobile/cover.outline.webp',
+      cover: '/coloring/mobile/cover.overlay.svg',
+      darkCover: '/coloring/mobile/cover.dark.overlay.svg',
       platforms: ['mobile'],
       pages: [
         {
           images: {
-            portrait: '/coloring/mobile/page-tall.outline.webp',
-            landscape: '/coloring/mobile/page-wide.outline.webp',
+            portrait: '/coloring/mobile/page-tall.overlay.svg',
+            landscape: '/coloring/mobile/page-wide.overlay.svg',
           },
-          chalkImages: { portrait: '/coloring/mobile/page-tall.chalk.webp' },
+          darkImages: { portrait: '/coloring/mobile/page-tall.dark.overlay.svg' },
         },
       ],
     };
-    const web = { ...mobile, cover: '/coloring/web/cover.outline.webp', platforms: ['web'] };
+    const web = {
+      ...mobile,
+      cover: '/coloring/web/cover.overlay.svg',
+      darkCover: '/coloring/web/cover.dark.overlay.svg',
+      platforms: ['web'],
+    };
 
     expect(nativeUnusedLineArt([mobile, web])).toEqual([
-      '/coloring/mobile/cover.outline.webp',
-      '/coloring/mobile/page-tall.outline.webp',
-      '/coloring/mobile/page-wide.outline.webp',
-      '/coloring/mobile/page-tall.chalk.webp',
+      '/coloring/mobile/cover.overlay.svg',
+      '/coloring/mobile/cover.dark.overlay.svg',
+      '/coloring/mobile/page-tall.overlay.svg',
+      '/coloring/mobile/page-wide.overlay.svg',
+      '/coloring/mobile/page-tall.dark.overlay.svg',
     ]);
   });
 });

@@ -1,5 +1,5 @@
 {
-  "version": 5,
+  "version": 6,
   "thresholds": {
     "keep": 0.92,
     "localKeep": 0.8,
@@ -13,46 +13,31 @@
     "frameSideCoverageMin": 0.7,
     "ghostLumaMax": 245,
     "ghostSideCoverageMin": 0.9,
-    "chalkInkDiffMax": 360
+    "chalkInkDiffMax": 362
   },
   "pages": {
-    "creatures/cover": {
-      "outline": {
-        "darkPx": 80400,
-        "interiorPx": 549,
-        "solidPx": 2229,
-        "biggestBlob": 241,
-        "strokeWidth": 4,
-        "ringDepth": 3,
-        "frameCoverage": 0.1341,
-        "ghostCoverage": 0.0221,
-        "solidOk": false,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "creatures/dragon-tall": {
       "outline": {
-        "darkPx": 110072,
-        "interiorPx": 3068,
-        "solidPx": 6568,
+        "darkPx": 110237,
+        "interiorPx": 3073,
+        "solidPx": 6543,
         "biggestBlob": 1861,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1289,
-        "ghostCoverage": 0.0195,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 96,
-        "solidInkPx": 120,
+        "addedInkPx": 95,
+        "solidInkPx": 119,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 0.9996,
-        "localKeep": 0.9872,
+        "keep": 0.9984,
+        "localKeep": 0.9032,
         "worstTile": "3,5",
         "localWarpMax": 0,
         "warpTiles": 0,
@@ -83,21 +68,21 @@
     },
     "creatures/dragon-wide": {
       "outline": {
-        "darkPx": 103669,
-        "interiorPx": 1810,
+        "darkPx": 103774,
+        "interiorPx": 1802,
         "solidPx": 4066,
-        "biggestBlob": 1013,
+        "biggestBlob": 1003,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1276,
-        "ghostCoverage": 0.0169,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 32,
-        "solidInkPx": 84,
+        "solidInkPx": 83,
         "regionsFlagged": 0
       },
       "light": {
@@ -133,20 +118,20 @@
     },
     "creatures/fairy-tall": {
       "outline": {
-        "darkPx": 107058,
-        "interiorPx": 541,
-        "solidPx": 2181,
-        "biggestBlob": 254,
+        "darkPx": 107425,
+        "interiorPx": 535,
+        "solidPx": 2175,
+        "biggestBlob": 252,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1259,
-        "ghostCoverage": 0.026,
+        "frameCoverage": 0.1241,
+        "ghostCoverage": 0.0065,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 37,
+        "addedInkPx": 38,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -164,7 +149,7 @@
         "eyesOk": null
       },
       "night": {
-        "drift": 0.00266,
+        "drift": 0.00248,
         "bgLuma": 33.9,
         "lineWhite": 252,
         "localWarpMax": 0,
@@ -183,28 +168,28 @@
     },
     "creatures/fairy-wide": {
       "outline": {
-        "darkPx": 132350,
-        "interiorPx": 490,
-        "solidPx": 1600,
-        "biggestBlob": 250,
+        "darkPx": 132582,
+        "interiorPx": 476,
+        "solidPx": 1576,
+        "biggestBlob": 239,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.2552,
-        "ghostCoverage": 0.0356,
+        "frameCoverage": 0.2561,
+        "ghostCoverage": 0.0061,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 26,
+        "addedInkPx": 32,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 0.999,
-        "localKeep": 0.9704,
-        "worstTile": "2,3",
-        "localWarpMax": 2,
+        "keep": 0.9978,
+        "localKeep": 0.9698,
+        "worstTile": "4,4",
+        "localWarpMax": 1.41,
         "warpTiles": 0,
         "residualShift": 1.41,
         "eyeCores": 0,
@@ -233,21 +218,21 @@
     },
     "creatures/mermaid-tall": {
       "outline": {
-        "darkPx": 105562,
-        "interiorPx": 2004,
-        "solidPx": 4694,
-        "biggestBlob": 1004,
+        "darkPx": 103607,
+        "interiorPx": 1997,
+        "solidPx": 4667,
+        "biggestBlob": 1002,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.1133,
-        "ghostCoverage": 0.013,
+        "frameCoverage": 0.1107,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 6,
-        "solidInkPx": 36,
+        "addedInkPx": 3,
+        "solidInkPx": 33,
         "regionsFlagged": 0
       },
       "light": {
@@ -265,7 +250,7 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 35.1,
+        "bgLuma": 35.2,
         "lineWhite": 247,
         "localWarpMax": 0,
         "warpTiles": 0,
@@ -283,21 +268,21 @@
     },
     "creatures/mermaid-wide": {
       "outline": {
-        "darkPx": 121811,
-        "interiorPx": 1857,
-        "solidPx": 5237,
-        "biggestBlob": 963,
+        "darkPx": 118957,
+        "interiorPx": 1799,
+        "solidPx": 5169,
+        "biggestBlob": 956,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.1458,
-        "ghostCoverage": 0.0078,
+        "frameCoverage": 0.145,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 5,
-        "solidInkPx": 9,
+        "solidInkPx": 11,
         "regionsFlagged": 0
       },
       "light": {
@@ -322,7 +307,7 @@
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.51,
+        "orbMinCoreDark": 0.53,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -333,21 +318,21 @@
     },
     "creatures/owl-tall": {
       "outline": {
-        "darkPx": 103309,
-        "interiorPx": 5630,
-        "solidPx": 9490,
-        "biggestBlob": 2908,
+        "darkPx": 103610,
+        "interiorPx": 5640,
+        "solidPx": 9520,
+        "biggestBlob": 2915,
         "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.0964,
-        "ghostCoverage": 0.0156,
+        "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 42,
-        "solidInkPx": 345,
+        "addedInkPx": 28,
+        "solidInkPx": 343,
         "regionsFlagged": 0
       },
       "light": {
@@ -383,14 +368,14 @@
     },
     "creatures/owl-wide": {
       "outline": {
-        "darkPx": 132963,
-        "interiorPx": 2764,
-        "solidPx": 5475,
-        "biggestBlob": 1462,
+        "darkPx": 133339,
+        "interiorPx": 2761,
+        "solidPx": 5463,
+        "biggestBlob": 1461,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
-        "frameCoverage": 0.1519,
-        "ghostCoverage": 0.0208,
+        "frameCoverage": 0.1528,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -414,7 +399,7 @@
         "eyesOk": null
       },
       "night": {
-        "drift": 0.00362,
+        "drift": 0.00366,
         "bgLuma": 24.4,
         "lineWhite": 249,
         "localWarpMax": 0,
@@ -433,27 +418,27 @@
     },
     "creatures/pegasus-tall": {
       "outline": {
-        "darkPx": 101353,
-        "interiorPx": 1275,
-        "solidPx": 2745,
-        "biggestBlob": 1265,
+        "darkPx": 101613,
+        "interiorPx": 1277,
+        "solidPx": 2747,
+        "biggestBlob": 1267,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1918,
-        "ghostCoverage": 0.0148,
+        "ghostCoverage": 0.0035,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 124,
+        "addedInkPx": 128,
         "solidInkPx": 10,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 1,
-        "localKeep": 1,
-        "worstTile": null,
+        "keep": 0.9999,
+        "localKeep": 0.9971,
+        "worstTile": "1,2",
         "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 1,
@@ -472,7 +457,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.66,
+        "orbMinCoreDark": 0.67,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -483,14 +468,14 @@
     },
     "creatures/pegasus-wide": {
       "outline": {
-        "darkPx": 96975,
-        "interiorPx": 554,
-        "solidPx": 1334,
-        "biggestBlob": 554,
+        "darkPx": 97324,
+        "interiorPx": 556,
+        "solidPx": 1336,
+        "biggestBlob": 556,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1493,
-        "ghostCoverage": 0.0169,
+        "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -504,7 +489,7 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 1,
+        "localWarpMax": 1.41,
         "warpTiles": 0,
         "residualShift": 1.41,
         "eyeCores": 2,
@@ -522,7 +507,7 @@
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.37,
+        "orbMinCoreDark": 0.39,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -533,20 +518,20 @@
     },
     "creatures/unicorn-tall": {
       "outline": {
-        "darkPx": 116600,
-        "interiorPx": 1262,
+        "darkPx": 117076,
+        "interiorPx": 1260,
         "solidPx": 3003,
-        "biggestBlob": 1262,
+        "biggestBlob": 1260,
         "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.1658,
-        "ghostCoverage": 0.0273,
+        "frameCoverage": 0.1649,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 0,
+        "addedInkPx": 1,
         "solidInkPx": 60,
         "regionsFlagged": 0
       },
@@ -572,7 +557,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.35,
+        "orbMinCoreDark": 0.34,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -583,28 +568,28 @@
     },
     "creatures/unicorn-wide": {
       "outline": {
-        "darkPx": 107721,
-        "interiorPx": 814,
-        "solidPx": 1958,
-        "biggestBlob": 814,
+        "darkPx": 108065,
+        "interiorPx": 819,
+        "solidPx": 1974,
+        "biggestBlob": 819,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.0781,
-        "ghostCoverage": 0.0234,
+        "frameCoverage": 0.0764,
+        "ghostCoverage": 0.0065,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 203,
+        "addedInkPx": 204,
         "solidInkPx": 58,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 1,
-        "localKeep": 1,
-        "worstTile": null,
-        "localWarpMax": 1,
+        "keep": 0.9999,
+        "localKeep": 0.9979,
+        "worstTile": "6,6",
+        "localWarpMax": 1.41,
         "warpTiles": 0,
         "residualShift": 1.41,
         "eyeCores": 1,
@@ -633,20 +618,20 @@
     },
     "dinosaur/brachiosaurus-tall": {
       "outline": {
-        "darkPx": 97763,
+        "darkPx": 98204,
         "interiorPx": 92,
-        "solidPx": 517,
-        "biggestBlob": 92,
+        "solidPx": 532,
+        "biggestBlob": 91,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1493,
-        "ghostCoverage": 0.026,
+        "frameCoverage": 0.1467,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 4,
+        "addedInkPx": 2,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -683,14 +668,14 @@
     },
     "dinosaur/brachiosaurus-wide": {
       "outline": {
-        "darkPx": 98906,
-        "interiorPx": 132,
-        "solidPx": 738,
-        "biggestBlob": 130,
+        "darkPx": 99319,
+        "interiorPx": 126,
+        "solidPx": 732,
+        "biggestBlob": 124,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1549,
-        "ghostCoverage": 0.0143,
+        "frameCoverage": 0.1563,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -731,37 +716,22 @@
         "orbOk": true
       }
     },
-    "dinosaur/cover": {
-      "outline": {
-        "darkPx": 66857,
-        "interiorPx": 89,
-        "solidPx": 769,
-        "biggestBlob": 70,
-        "strokeWidth": 4,
-        "ringDepth": 0,
-        "frameCoverage": 0.1302,
-        "ghostCoverage": 0.0169,
-        "solidOk": false,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "dinosaur/pterodactyl-tall": {
       "outline": {
-        "darkPx": 74895,
-        "interiorPx": 713,
-        "solidPx": 1777,
-        "biggestBlob": 713,
+        "darkPx": 74982,
+        "interiorPx": 714,
+        "solidPx": 1769,
+        "biggestBlob": 714,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1042,
-        "ghostCoverage": 0.0169,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 124,
+        "addedInkPx": 123,
         "solidInkPx": 64,
         "regionsFlagged": 0
       },
@@ -798,20 +768,20 @@
     },
     "dinosaur/pterodactyl-wide": {
       "outline": {
-        "darkPx": 95784,
-        "interiorPx": 592,
-        "solidPx": 1752,
-        "biggestBlob": 540,
+        "darkPx": 96292,
+        "interiorPx": 597,
+        "solidPx": 1756,
+        "biggestBlob": 546,
         "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.1372,
-        "ghostCoverage": 0.0169,
+        "frameCoverage": 0.138,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 25,
+        "addedInkPx": 26,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -848,27 +818,27 @@
     },
     "dinosaur/stegosaurus-tall": {
       "outline": {
-        "darkPx": 101706,
+        "darkPx": 101882,
         "interiorPx": 210,
-        "solidPx": 1338,
+        "solidPx": 1342,
         "biggestBlob": 210,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1458,
-        "ghostCoverage": 0.0221,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 25,
+        "addedInkPx": 26,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 1,
-        "localKeep": 1,
-        "worstTile": null,
+        "keep": 0.9999,
+        "localKeep": 0.9964,
+        "worstTile": "6,7",
         "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 1,
@@ -880,7 +850,7 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 27.1,
+        "bgLuma": 27.2,
         "lineWhite": 251,
         "localWarpMax": 0,
         "warpTiles": 0,
@@ -898,20 +868,20 @@
     },
     "dinosaur/stegosaurus-wide": {
       "outline": {
-        "darkPx": 111032,
-        "interiorPx": 278,
-        "solidPx": 908,
-        "biggestBlob": 278,
-        "strokeWidth": 5.656000137329102,
+        "darkPx": 111348,
+        "interiorPx": 281,
+        "solidPx": 1041,
+        "biggestBlob": 280,
+        "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.0755,
-        "ghostCoverage": 0.0226,
+        "frameCoverage": 0.0764,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 33,
+        "addedInkPx": 32,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -934,7 +904,7 @@
         "lineWhite": 250,
         "localWarpMax": 0,
         "warpTiles": 0,
-        "residualShift": 1.41,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
@@ -948,20 +918,20 @@
     },
     "dinosaur/trex-tall": {
       "outline": {
-        "darkPx": 115351,
-        "interiorPx": 1483,
-        "solidPx": 3083,
+        "darkPx": 115779,
+        "interiorPx": 1484,
+        "solidPx": 3084,
         "biggestBlob": 1436,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1159,
-        "ghostCoverage": 0.0247,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 115,
+        "addedInkPx": 114,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -987,7 +957,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.6,
+        "orbMinCoreDark": 0.61,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -998,14 +968,14 @@
     },
     "dinosaur/trex-wide": {
       "outline": {
-        "darkPx": 100176,
-        "interiorPx": 522,
-        "solidPx": 1302,
-        "biggestBlob": 522,
-        "strokeWidth": 5.656000137329102,
+        "darkPx": 100548,
+        "interiorPx": 528,
+        "solidPx": 1308,
+        "biggestBlob": 528,
+        "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.1016,
-        "ghostCoverage": 0.0182,
+        "frameCoverage": 0.1024,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1030,7 +1000,7 @@
       },
       "night": {
         "drift": 0,
-        "bgLuma": 21,
+        "bgLuma": 20.9,
         "lineWhite": 251,
         "localWarpMax": 0,
         "warpTiles": 0,
@@ -1048,21 +1018,21 @@
     },
     "dinosaur/triceratops-tall": {
       "outline": {
-        "darkPx": 116445,
-        "interiorPx": 2577,
-        "solidPx": 5649,
-        "biggestBlob": 1312,
+        "darkPx": 116867,
+        "interiorPx": 2554,
+        "solidPx": 5626,
+        "biggestBlob": 1297,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.0972,
-        "ghostCoverage": 0.0313,
+        "frameCoverage": 0.0964,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 56,
-        "solidInkPx": 161,
+        "solidInkPx": 156,
         "regionsFlagged": 0
       },
       "light": {
@@ -1098,20 +1068,20 @@
     },
     "dinosaur/triceratops-wide": {
       "outline": {
-        "darkPx": 91407,
-        "interiorPx": 432,
-        "solidPx": 1701,
+        "darkPx": 91528,
+        "interiorPx": 433,
+        "solidPx": 1708,
         "biggestBlob": 396,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.0859,
-        "ghostCoverage": 0.0182,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 304,
+        "addedInkPx": 302,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -1148,20 +1118,20 @@
     },
     "dinosaur/velociraptor-tall": {
       "outline": {
-        "darkPx": 117441,
-        "interiorPx": 1446,
-        "solidPx": 2746,
-        "biggestBlob": 1445,
+        "darkPx": 117934,
+        "interiorPx": 1448,
+        "solidPx": 2748,
+        "biggestBlob": 1447,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1094,
-        "ghostCoverage": 0.0182,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 57,
+        "addedInkPx": 55,
         "solidInkPx": 149,
         "regionsFlagged": 0
       },
@@ -1187,7 +1157,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.42,
+        "orbMinCoreDark": 0.41,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -1198,20 +1168,20 @@
     },
     "dinosaur/velociraptor-wide": {
       "outline": {
-        "darkPx": 133650,
-        "interiorPx": 453,
-        "solidPx": 1329,
-        "biggestBlob": 453,
+        "darkPx": 134265,
+        "interiorPx": 452,
+        "solidPx": 1326,
+        "biggestBlob": 452,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1181,
-        "ghostCoverage": 0.0182,
+        "frameCoverage": 0.1198,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 41,
+        "addedInkPx": 40,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -1248,21 +1218,21 @@
     },
     "farm/cat-tall": {
       "outline": {
-        "darkPx": 113596,
-        "interiorPx": 2422,
-        "solidPx": 5162,
-        "biggestBlob": 1214,
+        "darkPx": 113936,
+        "interiorPx": 2409,
+        "solidPx": 5159,
+        "biggestBlob": 1205,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1658,
-        "ghostCoverage": 0.0234,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 3,
-        "solidInkPx": 123,
+        "addedInkPx": 2,
+        "solidInkPx": 124,
         "regionsFlagged": 0
       },
       "light": {
@@ -1298,20 +1268,20 @@
     },
     "farm/cat-wide": {
       "outline": {
-        "darkPx": 103234,
-        "interiorPx": 975,
-        "solidPx": 2544,
-        "biggestBlob": 522,
-        "strokeWidth": 5.656000137329102,
+        "darkPx": 103515,
+        "interiorPx": 973,
+        "solidPx": 2541,
+        "biggestBlob": 521,
+        "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.1102,
-        "ghostCoverage": 0.026,
+        "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0065,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 22,
+        "addedInkPx": 20,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -1346,38 +1316,23 @@
         "orbOk": true
       }
     },
-    "farm/cover": {
-      "outline": {
-        "darkPx": 96123,
-        "interiorPx": 3,
-        "solidPx": 363,
-        "biggestBlob": 1,
-        "strokeWidth": 6,
-        "ringDepth": 3,
-        "frameCoverage": 0.2096,
-        "ghostCoverage": 0.013,
-        "solidOk": true,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "farm/cow-tall": {
       "outline": {
-        "darkPx": 107558,
-        "interiorPx": 794,
-        "solidPx": 2352,
-        "biggestBlob": 444,
-        "strokeWidth": 5.656000137329102,
+        "darkPx": 107974,
+        "interiorPx": 785,
+        "solidPx": 2350,
+        "biggestBlob": 441,
+        "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1484,
-        "ghostCoverage": 0.0208,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 0,
-        "solidInkPx": 26,
+        "solidInkPx": 25,
         "regionsFlagged": 0
       },
       "light": {
@@ -1402,7 +1357,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.14,
+        "orbMinCoreDark": 0.15,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -1413,20 +1368,20 @@
     },
     "farm/cow-wide": {
       "outline": {
-        "darkPx": 109017,
-        "interiorPx": 908,
-        "solidPx": 2532,
-        "biggestBlob": 532,
+        "darkPx": 109148,
+        "interiorPx": 903,
+        "solidPx": 2526,
+        "biggestBlob": 527,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
-        "frameCoverage": 0.079,
-        "ghostCoverage": 0.0299,
+        "frameCoverage": 0.0781,
+        "ghostCoverage": 0.0065,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 17,
+        "addedInkPx": 11,
         "solidInkPx": 36,
         "regionsFlagged": 0
       },
@@ -1463,20 +1418,20 @@
     },
     "farm/dog-tall": {
       "outline": {
-        "darkPx": 111584,
-        "interiorPx": 2,
-        "solidPx": 182,
-        "biggestBlob": 2,
+        "darkPx": 110027,
+        "interiorPx": 0,
+        "solidPx": 0,
+        "biggestBlob": 0,
         "strokeWidth": 8,
         "ringDepth": 3,
         "frameCoverage": 0.1497,
-        "ghostCoverage": 0.0087,
+        "ghostCoverage": 0.0035,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 4,
+        "addedInkPx": 0,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -1487,8 +1442,8 @@
         "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 1,
-        "eyeCores": 2,
-        "eyeLively": 2,
+        "eyeCores": 3,
+        "eyeLively": 3,
         "driftOk": true,
         "warpOk": true,
         "eyesOk": true
@@ -1513,20 +1468,20 @@
     },
     "farm/dog-wide": {
       "outline": {
-        "darkPx": 99187,
-        "interiorPx": 1725,
-        "solidPx": 4737,
-        "biggestBlob": 1102,
+        "darkPx": 99523,
+        "interiorPx": 1721,
+        "solidPx": 4733,
+        "biggestBlob": 1101,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.1155,
-        "ghostCoverage": 0.0208,
+        "frameCoverage": 0.1146,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 28,
+        "addedInkPx": 27,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -1563,14 +1518,14 @@
     },
     "farm/duck-tall": {
       "outline": {
-        "darkPx": 111630,
-        "interiorPx": 1384,
-        "solidPx": 3374,
+        "darkPx": 112031,
+        "interiorPx": 1380,
+        "solidPx": 3370,
         "biggestBlob": 851,
         "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.1458,
-        "ghostCoverage": 0.0208,
+        "frameCoverage": 0.1445,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1613,14 +1568,14 @@
     },
     "farm/duck-wide": {
       "outline": {
-        "darkPx": 101744,
-        "interiorPx": 496,
-        "solidPx": 1366,
-        "biggestBlob": 496,
+        "darkPx": 101891,
+        "interiorPx": 498,
+        "solidPx": 1378,
+        "biggestBlob": 498,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.125,
-        "ghostCoverage": 0.0195,
+        "frameCoverage": 0.1241,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1663,14 +1618,14 @@
     },
     "farm/horse-tall": {
       "outline": {
-        "darkPx": 101513,
-        "interiorPx": 887,
-        "solidPx": 2609,
-        "biggestBlob": 697,
-        "strokeWidth": 5.656000137329102,
+        "darkPx": 101779,
+        "interiorPx": 865,
+        "solidPx": 2566,
+        "biggestBlob": 676,
+        "strokeWidth": 6,
         "ringDepth": 0,
-        "frameCoverage": 0.125,
-        "ghostCoverage": 0.0169,
+        "frameCoverage": 0.1263,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -1694,11 +1649,11 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00033,
+        "drift": 0.00028,
         "bgLuma": 32.8,
         "lineWhite": 252,
         "localWarpMax": 6.08,
-        "warpTiles": 1,
+        "warpTiles": 3,
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
@@ -1713,27 +1668,27 @@
     },
     "farm/horse-wide": {
       "outline": {
-        "darkPx": 102541,
-        "interiorPx": 370,
-        "solidPx": 1190,
-        "biggestBlob": 366,
+        "darkPx": 102818,
+        "interiorPx": 366,
+        "solidPx": 1186,
+        "biggestBlob": 363,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.0825,
-        "ghostCoverage": 0.0252,
+        "ghostCoverage": 0.0043,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 39,
+        "addedInkPx": 41,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 1,
-        "localKeep": 1,
-        "worstTile": null,
+        "keep": 0.9999,
+        "localKeep": 0.9979,
+        "worstTile": "2,4",
         "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 1.41,
@@ -1744,7 +1699,7 @@
         "eyesOk": null
       },
       "night": {
-        "drift": 0.00189,
+        "drift": 0.00188,
         "bgLuma": 49.1,
         "lineWhite": 248,
         "localWarpMax": 5.1,
@@ -1763,20 +1718,20 @@
     },
     "farm/pig-tall": {
       "outline": {
-        "darkPx": 81384,
-        "interiorPx": 1295,
-        "solidPx": 3335,
-        "biggestBlob": 714,
+        "darkPx": 81595,
+        "interiorPx": 1288,
+        "solidPx": 3308,
+        "biggestBlob": 711,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1285,
-        "ghostCoverage": 0.0143,
+        "ghostCoverage": 0.0017,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 140,
+        "addedInkPx": 139,
         "solidInkPx": 48,
         "regionsFlagged": 0
       },
@@ -1813,20 +1768,20 @@
     },
     "farm/pig-wide": {
       "outline": {
-        "darkPx": 103396,
+        "darkPx": 103704,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.0955,
-        "ghostCoverage": 0.0247,
+        "frameCoverage": 0.0964,
+        "ghostCoverage": 0.0065,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 893,
+        "addedInkPx": 892,
         "solidInkPx": 0,
         "regionsFlagged": 1
       },
@@ -1863,14 +1818,14 @@
     },
     "nature/ant-tall": {
       "outline": {
-        "darkPx": 101191,
+        "darkPx": 99686,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 3,
-        "frameCoverage": 0.1081,
-        "ghostCoverage": 0.0091,
+        "frameCoverage": 0.1068,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -1894,12 +1849,12 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00027,
+        "drift": 0.00026,
         "bgLuma": 10.7,
         "lineWhite": 251,
         "localWarpMax": 0,
         "warpTiles": 0,
-        "residualShift": 1,
+        "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
@@ -1913,20 +1868,20 @@
     },
     "nature/ant-wide": {
       "outline": {
-        "darkPx": 94331,
+        "darkPx": 92840,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.0729,
-        "ghostCoverage": 0.0156,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 147,
+        "addedInkPx": 143,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -1949,7 +1904,7 @@
         "lineWhite": 250,
         "localWarpMax": 0,
         "warpTiles": 0,
-        "residualShift": 1.41,
+        "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
@@ -1963,20 +1918,20 @@
     },
     "nature/bee-tall": {
       "outline": {
-        "darkPx": 81470,
+        "darkPx": 79921,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
-        "frameCoverage": 0.0564,
-        "ghostCoverage": 0.0195,
+        "frameCoverage": 0.0538,
+        "ghostCoverage": 0.0065,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 7,
+        "addedInkPx": 8,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2013,20 +1968,20 @@
     },
     "nature/bee-wide": {
       "outline": {
-        "darkPx": 110958,
+        "darkPx": 109603,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1337,
-        "ghostCoverage": 0.013,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 81,
+        "addedInkPx": 82,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2044,11 +1999,11 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00227,
+        "drift": 0.00232,
         "bgLuma": 33.9,
         "lineWhite": 252,
-        "localWarpMax": 0,
-        "warpTiles": 0,
+        "localWarpMax": 6.4,
+        "warpTiles": 1,
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
@@ -2063,26 +2018,26 @@
     },
     "nature/caterpillar-tall": {
       "outline": {
-        "darkPx": 86328,
+        "darkPx": 84690,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6.828000068664551,
-        "ringDepth": 4,
-        "frameCoverage": 0.0742,
-        "ghostCoverage": 0.0091,
+        "ringDepth": 5,
+        "frameCoverage": 0.0716,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
-        "ringsOk": true,
+        "ringsOk": false,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 507,
+        "addedInkPx": 481,
         "solidInkPx": 0,
         "regionsFlagged": 1
       },
       "light": {
         "keep": 0.9998,
-        "localKeep": 0.9939,
+        "localKeep": 0.9942,
         "worstTile": "4,3",
         "localWarpMax": 0,
         "warpTiles": 0,
@@ -2113,26 +2068,26 @@
     },
     "nature/caterpillar-wide": {
       "outline": {
-        "darkPx": 89603,
+        "darkPx": 88580,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 4,
         "frameCoverage": 0.0399,
-        "ghostCoverage": 0.013,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 40,
+        "addedInkPx": 37,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 0.9942,
-        "localKeep": 0.8638,
+        "keep": 0.9937,
+        "localKeep": 0.8465,
         "worstTile": "3,4",
         "localWarpMax": 0,
         "warpTiles": 0,
@@ -2161,37 +2116,22 @@
         "orbOk": true
       }
     },
-    "nature/cover": {
-      "outline": {
-        "darkPx": 91416,
-        "interiorPx": 46,
-        "solidPx": 936,
-        "biggestBlob": 21,
-        "strokeWidth": 5.656000137329102,
-        "ringDepth": 3,
-        "frameCoverage": 0.1094,
-        "ghostCoverage": 0.0117,
-        "solidOk": true,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "nature/ladybug-tall": {
       "outline": {
-        "darkPx": 111459,
+        "darkPx": 110246,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
-        "strokeWidth": 8,
+        "strokeWidth": 7.656000137329102,
         "ringDepth": 4,
-        "frameCoverage": 0.0703,
-        "ghostCoverage": 0.0104,
+        "frameCoverage": 0.069,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 120,
+        "addedInkPx": 118,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2228,20 +2168,20 @@
     },
     "nature/ladybug-wide": {
       "outline": {
-        "darkPx": 119373,
-        "interiorPx": 4,
-        "solidPx": 208,
-        "biggestBlob": 4,
+        "darkPx": 117991,
+        "interiorPx": 2,
+        "solidPx": 182,
+        "biggestBlob": 2,
         "strokeWidth": 7.656000137329102,
         "ringDepth": 4,
-        "frameCoverage": 0.1493,
-        "ghostCoverage": 0.0104,
+        "frameCoverage": 0.1484,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 41,
+        "addedInkPx": 39,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2249,7 +2189,7 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 0,
+        "localWarpMax": 1.41,
         "warpTiles": 0,
         "residualShift": 1.41,
         "eyeCores": 2,
@@ -2278,14 +2218,14 @@
     },
     "nature/snail-tall": {
       "outline": {
-        "darkPx": 102030,
+        "darkPx": 99558,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
-        "strokeWidth": 6,
+        "strokeWidth": 5.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1523,
-        "ghostCoverage": 0.0182,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2328,14 +2268,14 @@
     },
     "nature/snail-wide": {
       "outline": {
-        "darkPx": 87396,
+        "darkPx": 86352,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.1007,
-        "ghostCoverage": 0.0104,
+        "frameCoverage": 0.0998,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2378,20 +2318,20 @@
     },
     "nature/spider-tall": {
       "outline": {
-        "darkPx": 97255,
+        "darkPx": 95767,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 4,
-        "frameCoverage": 0.0208,
-        "ghostCoverage": 0.0061,
+        "frameCoverage": 0.0195,
+        "ghostCoverage": 0.0009,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 150,
+        "addedInkPx": 149,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2428,20 +2368,20 @@
     },
     "nature/spider-wide": {
       "outline": {
-        "darkPx": 108795,
+        "darkPx": 107099,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.0365,
-        "ghostCoverage": 0.0104,
+        "ghostCoverage": 0.0052,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 25,
+        "addedInkPx": 24,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2478,21 +2418,21 @@
     },
     "objects/apple-tall": {
       "outline": {
-        "darkPx": 90600,
-        "interiorPx": 9,
-        "solidPx": 303,
-        "biggestBlob": 9,
+        "darkPx": 90724,
+        "interiorPx": 11,
+        "solidPx": 319,
+        "biggestBlob": 11,
         "strokeWidth": 8.484000205993652,
         "ringDepth": 0,
         "frameCoverage": 0.0938,
-        "ghostCoverage": 0.0299,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 0,
-        "solidInkPx": 2,
+        "solidInkPx": 3,
         "regionsFlagged": 0
       },
       "light": {
@@ -2528,14 +2468,14 @@
     },
     "objects/apple-wide": {
       "outline": {
-        "darkPx": 92815,
-        "interiorPx": 34,
-        "solidPx": 749,
+        "darkPx": 93117,
+        "interiorPx": 36,
+        "solidPx": 770,
         "biggestBlob": 26,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1502,
-        "ghostCoverage": 0.0182,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2578,14 +2518,14 @@
     },
     "objects/balloon-tall": {
       "outline": {
-        "darkPx": 60961,
+        "darkPx": 61197,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.0486,
-        "ghostCoverage": 0.0117,
+        "ghostCoverage": 0.0078,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2628,20 +2568,20 @@
     },
     "objects/balloon-wide": {
       "outline": {
-        "darkPx": 98185,
-        "interiorPx": 542,
-        "solidPx": 2223,
-        "biggestBlob": 279,
+        "darkPx": 98347,
+        "interiorPx": 538,
+        "solidPx": 2221,
+        "biggestBlob": 274,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1241,
-        "ghostCoverage": 0.0208,
+        "ghostCoverage": 0.0065,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 64,
+        "addedInkPx": 63,
         "solidInkPx": 24,
         "regionsFlagged": 0
       },
@@ -2676,37 +2616,22 @@
         "orbOk": true
       }
     },
-    "objects/cover": {
-      "outline": {
-        "darkPx": 84833,
-        "interiorPx": 664,
-        "solidPx": 2104,
-        "biggestBlob": 603,
-        "strokeWidth": 6,
-        "ringDepth": 3,
-        "frameCoverage": 0.2161,
-        "ghostCoverage": 0.0182,
-        "solidOk": false,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "objects/flower-tall": {
       "outline": {
-        "darkPx": 104829,
-        "interiorPx": 667,
-        "solidPx": 3495,
-        "biggestBlob": 335,
+        "darkPx": 105002,
+        "interiorPx": 655,
+        "solidPx": 3567,
+        "biggestBlob": 332,
         "strokeWidth": 9.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1233,
-        "ghostCoverage": 0.0169,
+        "frameCoverage": 0.1224,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 667,
+        "addedInkPx": 668,
         "solidInkPx": 2,
         "regionsFlagged": 1
       },
@@ -2743,20 +2668,20 @@
     },
     "objects/flower-wide": {
       "outline": {
-        "darkPx": 106621,
-        "interiorPx": 585,
-        "solidPx": 1795,
-        "biggestBlob": 299,
+        "darkPx": 107005,
+        "interiorPx": 577,
+        "solidPx": 1807,
+        "biggestBlob": 295,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1016,
-        "ghostCoverage": 0.0295,
+        "ghostCoverage": 0.0061,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 495,
+        "addedInkPx": 498,
         "solidInkPx": 0,
         "regionsFlagged": 1
       },
@@ -2793,20 +2718,20 @@
     },
     "objects/house-tall": {
       "outline": {
-        "darkPx": 108569,
+        "darkPx": 108946,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 3,
-        "frameCoverage": 0.1319,
-        "ghostCoverage": 0.026,
+        "frameCoverage": 0.1311,
+        "ghostCoverage": 0.0052,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 242,
+        "addedInkPx": 239,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -2824,7 +2749,7 @@
         "eyesOk": null
       },
       "night": {
-        "drift": 0.00149,
+        "drift": 0.00147,
         "bgLuma": 27,
         "lineWhite": 253,
         "localWarpMax": 0,
@@ -2843,14 +2768,14 @@
     },
     "objects/house-wide": {
       "outline": {
-        "darkPx": 93605,
+        "darkPx": 93951,
         "interiorPx": 5,
         "solidPx": 265,
         "biggestBlob": 4,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.066,
-        "ghostCoverage": 0.0143,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2864,7 +2789,7 @@
         "keep": 1,
         "localKeep": 1,
         "worstTile": null,
-        "localWarpMax": 1,
+        "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 1.41,
         "eyeCores": 1,
@@ -2893,14 +2818,14 @@
     },
     "objects/teddy-tall": {
       "outline": {
-        "darkPx": 82763,
+        "darkPx": 81277,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 3,
-        "frameCoverage": 0.0938,
-        "ghostCoverage": 0.0091,
+        "frameCoverage": 0.0929,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -2917,7 +2842,7 @@
         "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 0,
-        "eyeCores": 5,
+        "eyeCores": 4,
         "eyeLively": 2,
         "driftOk": true,
         "warpOk": true,
@@ -2943,14 +2868,14 @@
     },
     "objects/teddy-wide": {
       "outline": {
-        "darkPx": 108489,
-        "interiorPx": 1223,
-        "solidPx": 3695,
-        "biggestBlob": 626,
+        "darkPx": 108809,
+        "interiorPx": 1256,
+        "solidPx": 3728,
+        "biggestBlob": 629,
         "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.2109,
-        "ghostCoverage": 0.0156,
+        "frameCoverage": 0.2127,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -2993,20 +2918,20 @@
     },
     "objects/umbrella-tall": {
       "outline": {
-        "darkPx": 47960,
+        "darkPx": 47582,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0,
-        "ghostCoverage": 0.0035,
+        "ghostCoverage": 0.0017,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 75,
+        "addedInkPx": 70,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -3043,20 +2968,20 @@
     },
     "objects/umbrella-wide": {
       "outline": {
-        "darkPx": 99932,
+        "darkPx": 100244,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1007,
-        "ghostCoverage": 0.0156,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 288,
+        "addedInkPx": 289,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -3093,20 +3018,20 @@
     },
     "shapes/circle-tall": {
       "outline": {
-        "darkPx": 77399,
+        "darkPx": 76455,
         "interiorPx": 0,
-        "solidPx": 275,
+        "solidPx": 272,
         "biggestBlob": 0,
         "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1276,
-        "ghostCoverage": 0.0065,
+        "frameCoverage": 0.1259,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 268,
+        "addedInkPx": 267,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -3143,14 +3068,14 @@
     },
     "shapes/circle-wide": {
       "outline": {
-        "darkPx": 72355,
+        "darkPx": 72681,
         "interiorPx": 0,
-        "solidPx": 48,
+        "solidPx": 49,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.1432,
-        "ghostCoverage": 0.0221,
+        "ghostCoverage": 0.0052,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3177,9 +3102,9 @@
         "drift": 0,
         "bgLuma": 33.8,
         "lineWhite": 251,
-        "localWarpMax": 0,
-        "warpTiles": 0,
-        "residualShift": 1,
+        "localWarpMax": 7.07,
+        "warpTiles": 1,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
@@ -3191,37 +3116,22 @@
         "orbOk": true
       }
     },
-    "shapes/cover": {
-      "outline": {
-        "darkPx": 62574,
-        "interiorPx": 699,
-        "solidPx": 5709,
-        "biggestBlob": 100,
-        "strokeWidth": 6,
-        "ringDepth": 0,
-        "frameCoverage": 0.2005,
-        "ghostCoverage": 0.0117,
-        "solidOk": false,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "shapes/heart-tall": {
       "outline": {
-        "darkPx": 86683,
+        "darkPx": 86997,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0.1224,
-        "ghostCoverage": 0.0247,
+        "ghostCoverage": 0.0052,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 5244,
+        "addedInkPx": 5241,
         "solidInkPx": 0,
         "regionsFlagged": 1
       },
@@ -3258,14 +3168,14 @@
     },
     "shapes/heart-wide": {
       "outline": {
-        "darkPx": 52859,
+        "darkPx": 52123,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 4.828000068664551,
         "ringDepth": 0,
         "frameCoverage": 0,
-        "ghostCoverage": 0.0113,
+        "ghostCoverage": 0.0052,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -3308,21 +3218,21 @@
     },
     "shapes/rectangle-tall": {
       "outline": {
-        "darkPx": 81033,
-        "interiorPx": 3505,
-        "solidPx": 7105,
+        "darkPx": 81161,
+        "interiorPx": 3501,
+        "solidPx": 7101,
         "biggestBlob": 1767,
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.1484,
-        "ghostCoverage": 0.013,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 0,
-        "solidInkPx": 226,
+        "solidInkPx": 225,
         "regionsFlagged": 0
       },
       "light": {
@@ -3358,20 +3268,20 @@
     },
     "shapes/rectangle-wide": {
       "outline": {
-        "darkPx": 53587,
+        "darkPx": 52564,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
-        "strokeWidth": 5.656000137329102,
+        "strokeWidth": 4.828000068664551,
         "ringDepth": 3,
-        "frameCoverage": 0.0247,
+        "frameCoverage": 0.0234,
         "ghostCoverage": 0,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 598,
+        "addedInkPx": 607,
         "solidInkPx": 0,
         "regionsFlagged": 2
       },
@@ -3408,21 +3318,21 @@
     },
     "shapes/square-tall": {
       "outline": {
-        "darkPx": 82251,
-        "interiorPx": 2791,
-        "solidPx": 6151,
-        "biggestBlob": 1388,
+        "darkPx": 82197,
+        "interiorPx": 2804,
+        "solidPx": 6176,
+        "biggestBlob": 1400,
         "strokeWidth": 8,
         "ringDepth": 0,
-        "frameCoverage": 0.0816,
-        "ghostCoverage": 0.0122,
+        "frameCoverage": 0.0825,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 0,
-        "solidInkPx": 178,
+        "solidInkPx": 179,
         "regionsFlagged": 0
       },
       "light": {
@@ -3447,7 +3357,7 @@
         "residualShift": 0,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.24,
+        "orbMinCoreDark": 0.25,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -3458,14 +3368,14 @@
     },
     "shapes/square-wide": {
       "outline": {
-        "darkPx": 83916,
-        "interiorPx": 2423,
-        "solidPx": 5424,
-        "biggestBlob": 1214,
+        "darkPx": 84142,
+        "interiorPx": 2402,
+        "solidPx": 5377,
+        "biggestBlob": 1202,
         "strokeWidth": 8,
         "ringDepth": 0,
-        "frameCoverage": 0.1345,
-        "ghostCoverage": 0.0148,
+        "frameCoverage": 0.1337,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3508,14 +3418,14 @@
     },
     "shapes/star-tall": {
       "outline": {
-        "darkPx": 68482,
-        "interiorPx": 2170,
-        "solidPx": 5278,
-        "biggestBlob": 1087,
+        "darkPx": 68580,
+        "interiorPx": 2133,
+        "solidPx": 5241,
+        "biggestBlob": 1072,
         "strokeWidth": 9.656000137329102,
         "ringDepth": 0,
         "frameCoverage": 0.1133,
-        "ghostCoverage": 0.0078,
+        "ghostCoverage": 0.0017,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3558,14 +3468,14 @@
     },
     "shapes/star-wide": {
       "outline": {
-        "darkPx": 59458,
-        "interiorPx": 1019,
-        "solidPx": 3311,
-        "biggestBlob": 525,
-        "strokeWidth": 8,
+        "darkPx": 59584,
+        "interiorPx": 713,
+        "solidPx": 3121,
+        "biggestBlob": 366,
+        "strokeWidth": 8.484000205993652,
         "ringDepth": 0,
         "frameCoverage": 0,
-        "ghostCoverage": 0.0078,
+        "ghostCoverage": 0.0013,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3594,7 +3504,7 @@
         "lineWhite": 253,
         "localWarpMax": 0,
         "warpTiles": 0,
-        "residualShift": 1,
+        "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
         "orbMinCoreDark": null,
@@ -3608,14 +3518,14 @@
     },
     "shapes/triangle-tall": {
       "outline": {
-        "darkPx": 72753,
-        "interiorPx": 1687,
-        "solidPx": 4835,
-        "biggestBlob": 850,
+        "darkPx": 72951,
+        "interiorPx": 1674,
+        "solidPx": 4829,
+        "biggestBlob": 838,
         "strokeWidth": 8.484000205993652,
         "ringDepth": 0,
-        "frameCoverage": 0.0981,
-        "ghostCoverage": 0.0156,
+        "frameCoverage": 0.0972,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3658,21 +3568,21 @@
     },
     "shapes/triangle-wide": {
       "outline": {
-        "darkPx": 88094,
-        "interiorPx": 2877,
-        "solidPx": 6161,
-        "biggestBlob": 1463,
+        "darkPx": 88365,
+        "interiorPx": 2868,
+        "solidPx": 6147,
+        "biggestBlob": 1462,
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.1155,
-        "ghostCoverage": 0.0221,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 0,
-        "solidInkPx": 181,
+        "solidInkPx": 182,
         "regionsFlagged": 0
       },
       "light": {
@@ -3708,14 +3618,14 @@
     },
     "space/astronaut-tall": {
       "outline": {
-        "darkPx": 101729,
-        "interiorPx": 942,
-        "solidPx": 2744,
-        "biggestBlob": 475,
+        "darkPx": 102132,
+        "interiorPx": 934,
+        "solidPx": 2734,
+        "biggestBlob": 472,
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0938,
-        "ghostCoverage": 0.0143,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3758,14 +3668,14 @@
     },
     "space/astronaut-wide": {
       "outline": {
-        "darkPx": 89419,
-        "interiorPx": 405,
-        "solidPx": 2175,
-        "biggestBlob": 113,
+        "darkPx": 89784,
+        "interiorPx": 400,
+        "solidPx": 2170,
+        "biggestBlob": 112,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
-        "frameCoverage": 0.1102,
-        "ghostCoverage": 0.0143,
+        "frameCoverage": 0.1094,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3776,10 +3686,10 @@
         "regionsFlagged": 0
       },
       "light": {
-        "keep": 0.999,
-        "localKeep": 0.9737,
+        "keep": 0.9989,
+        "localKeep": 0.9694,
         "worstTile": "3,5",
-        "localWarpMax": 6.4,
+        "localWarpMax": 7.21,
         "warpTiles": 1,
         "residualShift": 1.41,
         "eyeCores": 6,
@@ -3806,31 +3716,16 @@
         "orbOk": true
       }
     },
-    "space/cover": {
-      "outline": {
-        "darkPx": 60278,
-        "interiorPx": 911,
-        "solidPx": 3311,
-        "biggestBlob": 337,
-        "strokeWidth": 6,
-        "ringDepth": 3,
-        "frameCoverage": 0.1966,
-        "ghostCoverage": 0.0091,
-        "solidOk": false,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "space/meteor-tall": {
       "outline": {
-        "darkPx": 86695,
-        "interiorPx": 1438,
-        "solidPx": 4598,
-        "biggestBlob": 628,
-        "strokeWidth": 6,
+        "darkPx": 86980,
+        "interiorPx": 972,
+        "solidPx": 4104,
+        "biggestBlob": 466,
+        "strokeWidth": 6.828000068664551,
         "ringDepth": 0,
-        "frameCoverage": 0.1055,
-        "ghostCoverage": 0.0113,
+        "frameCoverage": 0.1068,
+        "ghostCoverage": 0.0017,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3873,14 +3768,14 @@
     },
     "space/meteor-wide": {
       "outline": {
-        "darkPx": 90005,
-        "interiorPx": 113,
-        "solidPx": 733,
-        "biggestBlob": 61,
+        "darkPx": 90426,
+        "interiorPx": 110,
+        "solidPx": 730,
+        "biggestBlob": 58,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 3,
         "frameCoverage": 0.1832,
-        "ghostCoverage": 0.0165,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -3923,21 +3818,21 @@
     },
     "space/moon-tall": {
       "outline": {
-        "darkPx": 64322,
-        "interiorPx": 1168,
-        "solidPx": 3724,
-        "biggestBlob": 646,
+        "darkPx": 64534,
+        "interiorPx": 1176,
+        "solidPx": 3732,
+        "biggestBlob": 649,
         "strokeWidth": 8,
         "ringDepth": 0,
         "frameCoverage": 0.0955,
-        "ghostCoverage": 0.0182,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
         "addedInkPx": 0,
-        "solidInkPx": 61,
+        "solidInkPx": 59,
         "regionsFlagged": 0
       },
       "light": {
@@ -3954,7 +3849,7 @@
         "eyesOk": null
       },
       "night": {
-        "drift": 0.00006,
+        "drift": 0,
         "bgLuma": 26.7,
         "lineWhite": 254,
         "localWarpMax": 0,
@@ -3962,7 +3857,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.25,
+        "orbMinCoreDark": 0.26,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -3973,20 +3868,20 @@
     },
     "space/moon-wide": {
       "outline": {
-        "darkPx": 65463,
+        "darkPx": 65613,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.0417,
-        "ghostCoverage": 0.0182,
+        "frameCoverage": 0.0408,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 360,
+        "addedInkPx": 362,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -4023,14 +3918,14 @@
     },
     "space/rover-tall": {
       "outline": {
-        "darkPx": 103546,
-        "interiorPx": 1170,
-        "solidPx": 2707,
-        "biggestBlob": 1169,
+        "darkPx": 103752,
+        "interiorPx": 1173,
+        "solidPx": 2705,
+        "biggestBlob": 1173,
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1918,
-        "ghostCoverage": 0.0139,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -4073,14 +3968,14 @@
     },
     "space/rover-wide": {
       "outline": {
-        "darkPx": 135705,
-        "interiorPx": 655,
-        "solidPx": 1963,
-        "biggestBlob": 349,
+        "darkPx": 136171,
+        "interiorPx": 638,
+        "solidPx": 1925,
+        "biggestBlob": 345,
         "strokeWidth": 6,
         "ringDepth": 4,
-        "frameCoverage": 0.1519,
-        "ghostCoverage": 0.0195,
+        "frameCoverage": 0.1545,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -4123,14 +4018,14 @@
     },
     "space/ship-tall": {
       "outline": {
-        "darkPx": 76635,
+        "darkPx": 76894,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 0,
         "frameCoverage": 0.0538,
-        "ghostCoverage": 0.0091,
+        "ghostCoverage": 0.0017,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -4154,7 +4049,7 @@
         "eyesOk": true
       },
       "night": {
-        "drift": 0.00027,
+        "drift": 0.00026,
         "bgLuma": 30.2,
         "lineWhite": 254,
         "localWarpMax": 0,
@@ -4173,20 +4068,20 @@
     },
     "space/ship-wide": {
       "outline": {
-        "darkPx": 96901,
+        "darkPx": 97239,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
-        "strokeWidth": 6.828000068664551,
+        "strokeWidth": 7.656000137329102,
         "ringDepth": 0,
-        "frameCoverage": 0.1502,
-        "ghostCoverage": 0.0143,
+        "frameCoverage": 0.151,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 1724,
+        "addedInkPx": 1722,
         "solidInkPx": 0,
         "regionsFlagged": 2
       },
@@ -4223,14 +4118,14 @@
     },
     "space/station-tall": {
       "outline": {
-        "darkPx": 109628,
+        "darkPx": 110084,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 3,
-        "frameCoverage": 0.1563,
-        "ghostCoverage": 0.0169,
+        "frameCoverage": 0.1576,
+        "ghostCoverage": 0.0069,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -4254,7 +4149,7 @@
         "eyesOk": null
       },
       "night": {
-        "drift": 0.00035,
+        "drift": 0.00034,
         "bgLuma": 25.6,
         "lineWhite": 254,
         "localWarpMax": 0,
@@ -4273,20 +4168,20 @@
     },
     "space/station-wide": {
       "outline": {
-        "darkPx": 100768,
+        "darkPx": 101100,
         "interiorPx": 0,
         "solidPx": 0,
         "biggestBlob": 0,
         "strokeWidth": 6,
         "ringDepth": 3,
-        "frameCoverage": 0.0946,
-        "ghostCoverage": 0.0195,
+        "frameCoverage": 0.0955,
+        "ghostCoverage": 0.0039,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 271,
+        "addedInkPx": 274,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -4321,31 +4216,16 @@
         "orbOk": true
       }
     },
-    "vehicles/cover": {
-      "outline": {
-        "darkPx": 100551,
-        "interiorPx": 0,
-        "solidPx": 0,
-        "biggestBlob": 0,
-        "strokeWidth": 4,
-        "ringDepth": 4,
-        "frameCoverage": 0.1953,
-        "ghostCoverage": 0.0378,
-        "solidOk": true,
-        "ringsOk": true,
-        "frameOk": true
-      }
-    },
     "vehicles/excavator-tall": {
       "outline": {
-        "darkPx": 119548,
-        "interiorPx": 371,
-        "solidPx": 1631,
-        "biggestBlob": 190,
+        "darkPx": 119934,
+        "interiorPx": 352,
+        "solidPx": 1624,
+        "biggestBlob": 187,
         "strokeWidth": 6.828000068664551,
         "ringDepth": 4,
-        "frameCoverage": 0.1571,
-        "ghostCoverage": 0.0165,
+        "frameCoverage": 0.1554,
+        "ghostCoverage": 0.0017,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -4377,7 +4257,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.74,
+        "orbMinCoreDark": 0.75,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -4388,14 +4268,14 @@
     },
     "vehicles/excavator-wide": {
       "outline": {
-        "darkPx": 130598,
-        "interiorPx": 758,
-        "solidPx": 2058,
-        "biggestBlob": 386,
+        "darkPx": 131103,
+        "interiorPx": 753,
+        "solidPx": 2053,
+        "biggestBlob": 383,
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.0868,
-        "ghostCoverage": 0.0221,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -4427,7 +4307,7 @@
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.67,
+        "orbMinCoreDark": 0.69,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -4438,20 +4318,20 @@
     },
     "vehicles/fire-tall": {
       "outline": {
-        "darkPx": 147079,
-        "interiorPx": 1278,
-        "solidPx": 3528,
-        "biggestBlob": 710,
+        "darkPx": 147551,
+        "interiorPx": 1293,
+        "solidPx": 3563,
+        "biggestBlob": 720,
         "strokeWidth": 6,
         "ringDepth": 3,
-        "frameCoverage": 0.1276,
-        "ghostCoverage": 0.0191,
+        "frameCoverage": 0.125,
+        "ghostCoverage": 0.0039,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 211,
+        "addedInkPx": 210,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -4488,14 +4368,14 @@
     },
     "vehicles/fire-wide": {
       "outline": {
-        "darkPx": 138424,
-        "interiorPx": 767,
-        "solidPx": 2146,
-        "biggestBlob": 409,
+        "darkPx": 138887,
+        "interiorPx": 762,
+        "solidPx": 2151,
+        "biggestBlob": 408,
         "strokeWidth": 5.656000137329102,
-        "ringDepth": 3,
-        "frameCoverage": 0.1189,
-        "ghostCoverage": 0.0326,
+        "ringDepth": 4,
+        "frameCoverage": 0.1181,
+        "ghostCoverage": 0.0091,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -4512,8 +4392,8 @@
         "localWarpMax": 0,
         "warpTiles": 0,
         "residualShift": 1.41,
-        "eyeCores": 13,
-        "eyeLively": 6,
+        "eyeCores": 14,
+        "eyeLively": 7,
         "driftOk": true,
         "warpOk": true,
         "eyesOk": true
@@ -4538,20 +4418,20 @@
     },
     "vehicles/garbage-tall": {
       "outline": {
-        "darkPx": 114618,
-        "interiorPx": 947,
-        "solidPx": 2577,
-        "biggestBlob": 537,
+        "darkPx": 114880,
+        "interiorPx": 958,
+        "solidPx": 2488,
+        "biggestBlob": 552,
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.1185,
-        "ghostCoverage": 0.0208,
+        "ghostCoverage": 0.0017,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 37,
+        "addedInkPx": 36,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -4577,7 +4457,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.68,
+        "orbMinCoreDark": 0.69,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -4588,14 +4468,14 @@
     },
     "vehicles/garbage-wide": {
       "outline": {
-        "darkPx": 135440,
-        "interiorPx": 904,
-        "solidPx": 2778,
+        "darkPx": 135679,
+        "interiorPx": 901,
+        "solidPx": 2769,
         "biggestBlob": 529,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
-        "frameCoverage": 0.1285,
-        "ghostCoverage": 0.0482,
+        "frameCoverage": 0.1293,
+        "ghostCoverage": 0.0091,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
@@ -4627,7 +4507,7 @@
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.57,
+        "orbMinCoreDark": 0.55,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -4638,20 +4518,20 @@
     },
     "vehicles/monster-tall": {
       "outline": {
-        "darkPx": 127662,
-        "interiorPx": 1546,
-        "solidPx": 3506,
-        "biggestBlob": 777,
+        "darkPx": 127997,
+        "interiorPx": 1548,
+        "solidPx": 3508,
+        "biggestBlob": 778,
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1237,
-        "ghostCoverage": 0.0139,
+        "ghostCoverage": 0.0017,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 254,
+        "addedInkPx": 253,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -4677,7 +4557,7 @@
         "residualShift": 1,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.48,
+        "orbMinCoreDark": 0.49,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -4688,20 +4568,20 @@
     },
     "vehicles/monster-wide": {
       "outline": {
-        "darkPx": 115980,
-        "interiorPx": 1088,
-        "solidPx": 3398,
-        "biggestBlob": 709,
+        "darkPx": 116379,
+        "interiorPx": 1073,
+        "solidPx": 3503,
+        "biggestBlob": 707,
         "strokeWidth": 5.656000137329102,
         "ringDepth": 4,
         "frameCoverage": 0.1102,
-        "ghostCoverage": 0.026,
+        "ghostCoverage": 0.0065,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 1856,
+        "addedInkPx": 1844,
         "solidInkPx": 15,
         "regionsFlagged": 1
       },
@@ -4738,14 +4618,14 @@
     },
     "vehicles/police-tall": {
       "outline": {
-        "darkPx": 107543,
-        "interiorPx": 39,
-        "solidPx": 645,
-        "biggestBlob": 29,
+        "darkPx": 105471,
+        "interiorPx": 23,
+        "solidPx": 446,
+        "biggestBlob": 23,
         "strokeWidth": 6,
         "ringDepth": 4,
-        "frameCoverage": 0.0938,
-        "ghostCoverage": 0.0052,
+        "frameCoverage": 0.0924,
+        "ghostCoverage": 0.0026,
         "solidOk": true,
         "ringsOk": true,
         "frameOk": true
@@ -4788,20 +4668,20 @@
     },
     "vehicles/police-wide": {
       "outline": {
-        "darkPx": 105371,
-        "interiorPx": 1445,
-        "solidPx": 3335,
-        "biggestBlob": 763,
+        "darkPx": 105652,
+        "interiorPx": 1447,
+        "solidPx": 3477,
+        "biggestBlob": 765,
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0903,
-        "ghostCoverage": 0.0182,
+        "ghostCoverage": 0.0052,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 123,
+        "addedInkPx": 124,
         "solidInkPx": 0,
         "regionsFlagged": 0
       },
@@ -4827,7 +4707,7 @@
         "residualShift": 1.41,
         "eyesFailed": 0,
         "orbFailed": 0,
-        "orbMinCoreDark": 0.57,
+        "orbMinCoreDark": 0.56,
         "driftOk": true,
         "moodOk": true,
         "lineOk": true,
@@ -4838,20 +4718,20 @@
     },
     "vehicles/train-tall": {
       "outline": {
-        "darkPx": 130899,
-        "interiorPx": 1452,
-        "solidPx": 4737,
-        "biggestBlob": 498,
+        "darkPx": 131343,
+        "interiorPx": 1450,
+        "solidPx": 4731,
+        "biggestBlob": 505,
         "strokeWidth": 6,
         "ringDepth": 4,
         "frameCoverage": 0.1081,
-        "ghostCoverage": 0.0143,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true
       },
       "chalk": {
-        "addedInkPx": 58,
+        "addedInkPx": 59,
         "solidInkPx": 7,
         "regionsFlagged": 0
       },
@@ -4888,14 +4768,14 @@
     },
     "vehicles/train-wide": {
       "outline": {
-        "darkPx": 145773,
+        "darkPx": 146393,
         "interiorPx": 700,
         "solidPx": 2630,
-        "biggestBlob": 280,
+        "biggestBlob": 279,
         "strokeWidth": 6,
         "ringDepth": 3,
         "frameCoverage": 0.0616,
-        "ghostCoverage": 0.0234,
+        "ghostCoverage": 0.0026,
         "solidOk": false,
         "ringsOk": true,
         "frameOk": true

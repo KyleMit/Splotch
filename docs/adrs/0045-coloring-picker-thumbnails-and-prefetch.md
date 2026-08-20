@@ -1,8 +1,9 @@
 # ADR-0045: Coloring-Picker Thumbnails + Prefetch (Two Resolutions per Page)
 
 **Status:** Active — the 2026-07-31 thumbnail decode bridge is superseded by the 2026-08-01
-amendment, the 2026-08-02 issue #621 amendment adds responsive web presentation, and the 2026-08-08
-amendment reuses the derivatives for screen-sized web/native packs. **Date:** 2026-07
+amendment, the 2026-08-02 issue #621 amendment adds responsive web presentation, the 2026-08-08
+amendment reuses derivatives for screen-sized web/native packs, and the 2026-08-20 amendment retires
+raster page thumbnails after vector overlays shipped. **Date:** 2026-07
 
 ## Context
 
@@ -178,12 +179,11 @@ URL, whether that URL is in Farm's Workbox precache or a downloaded pack cache.
 ### 6. Screen-sized downloaded packs on web, Android, and iOS
 
 **Amendment (2026-08-08).** The responsive generator also derives every light/night Magic fill at
-the 1,152 px tier. A book therefore has a complete compact runtime inventory: canonical 400 px
-picker thumbnails plus 1,152 px overlays and fills, all mapped to the same logical canonical paths
-as the full tier. Keeping thumbnails canonical avoids softening 2× and 3× picker tiles; they account
-for little of the pack saving. The fidelity test regenerates every derivative byte-for-byte, so
-changing a master without rerunning `gen:coloring-responsive` fails rather than leaving a stale
-rendition.
+the 1,152 px tier. A book therefore has a complete compact runtime inventory: canonical 400 px cover
+thumbnails plus 1,152 px overlays and fills, all mapped to the same logical canonical paths as the
+full tier. Keeping thumbnails canonical avoids softening 2× and 3× picker tiles; they account for
+little of the pack saving. The fidelity test regenerates every derivative byte-for-byte, so changing
+a master without rerunning `gen:coloring-responsive` fails rather than leaving a stale rendition.
 
 The pack manifest carries `compact` and `full` variants. Selection uses the device's full screen in
 CSS pixels, the true device pixel ratio, and the contained 3:2 paper geometry. Compact is selected
@@ -209,10 +209,33 @@ catalog: they select compiled native UI resources, while these files are WebView
 post-install background downloads. Moving them into native resources would duplicate the catalog,
 require a native resource bridge, and still not solve web delivery.
 
+### 7. Reuse invariant SVG overlays in page selectors
+
+**Amendment (2026-08-20).** ADR-0129 shipped one transparent SVG per page orientation and theme.
+Page tiles and the active-page chip now use the exact `pageOverlayImage()` URL the canvas applies.
+They publish no `srcset` or `sizes`, and ordinary transparent source-over rendering replaces the
+raster picker's blend/filter treatment. On Farm's portrait grid, a book press transfers 104,609 gzip
+bytes for the six light SVGs or 117,630 for the six dark SVGs; the retired responsive WebP thumbnail
+sets transferred 38,788 and 40,026 bytes respectively. Reusing the selected SVG avoids a second
+overlay transfer, but opening a book and backing out costs 65,821–77,604 additional bytes, and the
+eager warm front-loads the five pages the child does not select. If physical-device picker traces
+regress, narrow the warm set to near-viewport tiles rather than restoring a second page-art format.
+
+Book covers remain raster thumbnails even though their canonical line-art masters are SVG.
+`gen:coloring-thumbs` rasterizes `cover.overlay.svg` and `cover.dark.overlay.svg` into
+`cover.thumb.webp` and `cover.chalk.thumb.webp`; `responsiveColoringAssets()` retains only those
+cover candidates and the compact fill tier. The 192 canonical page thumbnails and their 192
+`max-240px` derivatives are removed from the app, PWA precache, and downloadable packs. Book hover
+now prefetches the six SVGs the page grid will render, while page hover warms the same URL for
+selection; the existing dedupe keeps that from creating a second request. Selection cancels detached
+prefetches for other pages but leaves the decoded grid images intact: they are no longer
+lower-resolution transfers competing with the selected overlay, and preserving the selected SVG lets
+WebKit reuse its decoded resource.
+
 ## Consequences
 
-* **+** Grid downloads drop ~85% (thumbnails ~15 KB vs. 84–120 KB); the picker paints fast even on a
-  cold visit, and decode cost per tile falls with the pixel count.
+* **+** Page grids reuse the already-shipped SVG presentation files; 384 redundant raster page
+  thumbnails and responsive derivatives leave the repository and runtime inventories.
 * **+** The steady-state web overlay uses the browser-selected resolution appropriate for the locked
   paper width, and its decode window preserves the paper texture instead of displaying an opaque
   substitute. Export still resolves the canonical logical source; a compact downloaded pack may
@@ -225,14 +248,10 @@ require a native resource bridge, and still not solve web delivery.
 * **−** A Magic stroke made during that gate is recorded as an undoable command but stays invisible
   until the selected fill raster is ready; the ready repaint reveals it against the new page. This
   preserves the child's gesture and Undo entry instead of dropping input based on network timing.
-* **+** One derivation point (`thumbPath` + `bookAssetPaths`) keeps the catalog, the asset check,
-  and the native strip in agreement automatically.
-* **−** ~100 picker-thumbnail binary files and roughly a doubling of the picker-facing coloring
-  precache entry count (still small — thumbs are tiny). Regenerate with
-  `npm run gen:coloring-thumbs` whenever a source page changes; `check:assets` fails loudly if a
-  thumb is missing.
-* **−** Two files per page to keep in sync. The generator is the source of truth and is idempotent,
-  so the sync step is "re-run the script," not hand-editing.
+* **+** `pageOverlayImage()` and `bookAssetPaths()` keep picker, canvas, packs, asset checks, and
+  native stripping on one page-preview inventory.
+* **−** Page-grid decode cost now follows the SVG complexity rather than a fixed raster dimension;
+  physical-device picker opening and scrolling are release gates for future traces.
 * **−** A cold constrained connection shows textured blank paper until the full-resolution alpha
   overlay decodes. This is deliberate: the retired bridge remained blank for its own transfer and
   then substituted visibly soft art for the rest of the window.
@@ -243,8 +262,8 @@ require a native resource bridge, and still not solve web delivery.
 
 * **+** A compact seven-book background install transfers about 19.3 MiB instead of 28.3 MiB, a
   31.6% reduction, while denser phones and tablets retain the full tier.
-* **−** The web catalog carries 584 deterministic derivatives. They are committed and drift-guarded,
-  but excluded from the PWA precache so installs do not store both resolutions.
+* **−** The web catalog carries 208 deterministic raster derivatives. They are committed and
+  drift-guarded, but excluded from the PWA precache so installs do not store both resolutions.
 
 ### Superseded escalation threshold
 

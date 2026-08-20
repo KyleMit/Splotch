@@ -4,10 +4,8 @@
 asset-generation pipeline's decisions live beside the pipeline (the ADR index notes the move).
 **Date:** 2026-07
 
-> **Amendment (2026-08):** ADR-0129 replaces both runtime page-overlay WebPs with invariant SVGs.
-> The `.overlay` and `.dark.overlay` role suffixes remain; their shipped extension is `.svg`.
-> `gen:coloring-overlays` may materialize the former WebPs temporarily for a regeneration
-> comparison, but they are deleted before commit.
+> **Amendment (2026-08):** ADR-0129 makes invariant `.overlay.svg` and `.dark.overlay.svg` files
+> canonical for page and cover line art. Cover thumbnails remain raster derivatives.
 
 ## Context
 
@@ -37,15 +35,16 @@ Every shipped coloring asset carries an explicit dot-separated variant suffix �
 `{name}.{variant}.webp`, where `{name}` is `cover` or `{page}-{tall,wide}`:
 
 ```
-web/static/coloring/{book}/{name}.outline.webp   PEN line art (light picker + canvas overlay)
-web/static/coloring/{book}/{name}.chalk.webp     CHALK line art (dark canvas overlay, ink-on-white)
-web/static/coloring/{book}/{name}.thumb.webp     picker grid thumbnail (light, from the pen)
-web/static/coloring/{book}/{name}.chalk.thumb.webp  picker grid thumbnail (dark, from the chalk)
-web/static/coloring/{book}/{name}.overlay.svg   transparent black page overlay (light runtime)
-web/static/coloring/{book}/{name}.dark.overlay.svg  transparent white page overlay (dark runtime)
+web/static/coloring/{book}/{page}.overlay.svg   canonical transparent black page pen
+web/static/coloring/{book}/{page}.dark.overlay.svg  canonical transparent white page chalk
+web/static/coloring/{book}/cover.overlay.svg    canonical transparent black cover pen
+web/static/coloring/{book}/cover.dark.overlay.svg  canonical transparent white cover chalk
+web/static/coloring/{book}/cover.thumb.webp     picker cover thumbnail (light)
+web/static/coloring/{book}/cover.chalk.thumb.webp  picker cover thumbnail (dark)
 web/static/coloring/{book}/{name}.light.webp     light magic-brush fill (fills-only)
 web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-only)
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
+vectorized/coloring-{,dark-}overlays/{stem}.source.webp        uncommitted trace source
 ```
 
 Resolution is a separate axis and therefore lives in a directory prefix, never another filename
@@ -53,7 +52,7 @@ suffix:
 
 ```
 web/static/coloring/{book}/{name}.{variant}.webp                 canonical raster asset
-web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant page overlay
+web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant line-art overlay
 web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web fill candidate
 web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thumbnail candidate
 ```
@@ -63,7 +62,7 @@ web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thum
 pixels wide and is advertised as `1152w`. The catalog owns both paths and descriptor widths, and an
 asset-pipeline test reads every committed file's metadata so the declarations cannot drift.
 
-Invariant SVG presentation overlays have no responsive derivatives. Raster fills and picker
+Invariant SVG presentation overlays have no responsive derivatives. Raster fills and picker cover
 thumbnails retain their responsive tiers. Native also stays canonical: `build:cap` removes every
 `max-{edge}px` directory until downloadable native packs can select a tier (issue #200).
 
@@ -72,44 +71,37 @@ derivative was smaller than its source while retaining the overlay pipeline's st
 quantization and maximum 4/255 composite-channel error. That result remains sizing evidence for the
 temporary comparison format; runtime overlays no longer live in the tier.
 
-The picker tier is `max-240px`. Its 160px-wide portrait candidate covers the approximately 152 CSS
-pixel portrait slot on a 390px-wide DPR 1 viewport; the initially considered `max-200px` tier was
-only 134px wide and therefore lost to the 267px canonical candidate in that common layout. The 240px
-tier is the smallest round max-edge tier that crosses that selection boundary.
+The picker tier is `max-240px`. It serves the 400 px square cover thumbnails without affecting page
+tiles, which reuse the invariant SVG presentation overlays directly.
 
 Key implementation points:
 
-* `web/src/lib/state/books.ts` builds all catalog paths; `thumbPath()` swaps `.outline.webp` →
-  `.thumb.webp`, `chalkThumbPath()` swaps `.chalk.webp` → `.chalk.thumb.webp`, and each is
-  deliberately a **no-op on other paths** (only line art has thumbnails).
-* `responsiveColoringAssets()` derives web-only tier paths for raster fills and thumbnails;
+* `web/src/lib/state/books.ts` builds all catalog paths and derives the light/dark cover-thumbnail
+  siblings. Page tiles use the same `pageOverlayImage()` URL as the canvas.
+* `responsiveColoringAssets()` derives web-only tier paths for raster fills and cover thumbnails;
   invariant SVG page overlays have no responsive candidate. `bookAssetPaths()` includes every
   runtime path so `check:coloring-assets` rejects a partial inventory.
-* The asset-gen generators select line art positively by suffix (`gen-thumbnails.mjs` `isSource`
-  matches `.outline.webp` + `.chalk.webp`; the `*-{tall,wide}.outline.webp` globs in
-  `gen-light-fills.mjs` / `gen-night-fills.mjs` / `check-fill-drift.mjs`) — no exclusion lists.
-* `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`, and the mask
-  path by swapping `.{light,night}` → `.outline`.
-* `gen-overlays.mjs` positively selects page `.outline.webp` sources and writes temporary
-  `.overlay.webp` plus `.dark.overlay.webp` comparison baselines; the dark derivative uses the
-  `.chalk.webp` sibling where present. The paid vector workflow writes the shipped SVG siblings.
-* CLI page arguments stay suffix-free (`farm/dog-wide`); each script appends `.outline.webp` when
-  resolving them, and the dark generator's review samples in `.coloring-samples-dark/` stay bare
-  (`dog-wide.webp`) — the `.night.raw` suffix is added at ship time (the night-fill runbook, now
+* `lib/line-art-targets.mjs` positively selects canonical `*-{tall,wide}.overlay.svg` pages and adds
+  `cover.overlay.svg` when callers request covers.
+* `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`; light and night
+  mask against the canonical light or dark SVG alpha.
+* CLI page arguments stay suffix-free (`farm/dog-wide`); each script resolves the canonical SVG, and
+  the dark generator's review samples in `.coloring-samples-dark/` stay bare (`dog-wide.webp`) — the
+  `.night.raw` suffix is added at ship time (the night-fill runbook, now
   `../legacy/night-fills.md`).
-* The E2E overlay assertions (`web/tests/flows-coloring-book.spec.ts`) pin the overlay `src` to
-  `-{tall,wide}.outline.webp`.
+* The E2E overlay assertions (`web/tests/flows-coloring-book.spec.ts`) pin the overlay `src` to the
+  theme-matched SVG.
 
 ## Consequences
 
 * **+** Every role is an explicit dot-separated suffix. Multi-part roles such as `.chalk.thumb` and
-  `.dark.overlay` remain recognizable without exclusion lists; source line art is matched positively
-  by `.outline.webp`.
+  `.dark.overlay` remain recognizable without exclusion lists; canonical page line art is matched
+  positively by `.overlay.svg`.
 * **+** `light`/`night` name the fills by the theme they serve, matching `resolvedTheme()`'s pick in
   `DrawingCanvas` (ADR-0052).
 * **+** Dots carry variants, dashes carry orientation — the two axes can't collide in a filename.
 * **−** The original 392-file rename had no runtime behavior change: history for the assets survives
   only via git rename detection, and any external link to an old asset URL (previously shared
   previews, cached PWA precache entries) breaks until the next service-worker update.
-* **−** `{name}.outline.webp` is longer than the bare name, and prose in older ADRs (0043/0045/0052
-  — updated in place) now describes the new names with their original dates.
+* **−** Prose in older ADRs (0043/0045/0052 — updated in place) describes the explicit-suffix era
+  with its original dates.

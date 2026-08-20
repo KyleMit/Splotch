@@ -18,7 +18,13 @@ import { fail } from '../lib/asset-cli.mjs';
 import { COLORING_DIR, FILL_SRC_DIR, REPO_ROOT, toPosix } from '../lib/asset-paths.mjs';
 import { compositeNight } from '../lib/night-composite.mjs';
 import { scoreCompositeEyes } from '../lib/composite-eye.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import {
+  darkLineArtPath,
+  lineArtStem,
+  rasterizeLineArt,
+  resolveNightLineArt,
+} from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 import { bytesToDataUri } from '../lib/data-uri.mjs';
 
 const { values, positionals } = parseArgs({
@@ -27,7 +33,7 @@ const { values, positionals } = parseArgs({
 });
 const OUT = values.out ?? join(REPO_ROOT, 'orb-review.html');
 
-const pages = await resolveOutlineTargets(positionals, {
+const pages = await resolveLineArtTargets(positionals, {
   includeCovers: false,
   explicitFiles: false,
   sort: 'all',
@@ -37,13 +43,15 @@ const pages = await resolveOutlineTargets(positionals, {
 
 const cards = [];
 for (const page of pages) {
-  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+  const rel = toPosix(lineArtStem(relative(COLORING_DIR, page)));
   const lightPath = join(FILL_SRC_DIR, `${rel}.light.raw.webp`);
   const nightPath = join(FILL_SRC_DIR, `${rel}.night.raw.webp`);
-  const chalkPath = page.replace(/\.outline\.webp$/, '.chalk.webp');
+  const chalkPath = darkLineArtPath(page);
   if (!existsSync(lightPath) || !existsSync(nightPath) || !existsSync(chalkPath)) continue;
-  const comp = await compositeNight(await readFile(nightPath), await readFile(chalkPath));
-  const r = await scoreCompositeEyes(comp, await readFile(lightPath), await readFile(page));
+  const { chalk } = await resolveNightLineArt(page);
+  const pen = await rasterizeLineArt(page);
+  const comp = await compositeNight(await readFile(nightPath), chalk);
+  const r = await scoreCompositeEyes(comp, await readFile(lightPath), pen);
   if (r.passes) continue;
   const meta = await sharp(comp).metadata();
   const full = bytesToDataUri(await sharp(comp).resize(320).png().toBuffer(), 'image/png');

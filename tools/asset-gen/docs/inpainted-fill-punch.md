@@ -27,8 +27,14 @@ quality.
 
 Punch by **inpainting**: every outline-masked pixel's color is replaced by the surrounding fill
 color, bled inward ring by ring (`bleedUnderMask` in `lib/punch-fill.mjs`), and the shipped fill is
-**fully opaque** — no alpha plane at all. The mask math (line-art luma < 150, pen for light / chalk
-for night) is unchanged.
+**fully opaque** — no alpha plane at all. The mask comes directly from canonical page SVG alpha:
+greater than 105, equivalent to the retired ink-on-white rule `luma < 150`; light uses the pen SVG
+and night uses the chalk SVG.
+
+The SVG-canonical migration did not repunch existing fills. The new and retired masks measured at
+least 96.24% IoU light and 95.63% dark, and the already-shipped composites had been approved under
+the SVG overlays. Rewriting 192 fills for traced edge pixels would add binary churn without visual
+gain. Future punches always use canonical SVG alpha.
 
 ADR-0043's "reveal fills only" contract still holds — the fill carries no copy of the outlines, so
 nothing can ghost — but the pixels under a line now hold plausible fill color instead of a hole.

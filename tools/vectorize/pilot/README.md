@@ -133,5 +133,5 @@ a fresh `npm run vectorize -- --account` query.
 
 ## Verdict
 
-The complete 96-page pen and 96-page chalk catalogs proceed as SVG. Raster authoring sources, fills,
-and picker/cover thumbnails remain; page-overlay WebPs do not.
+The complete 96-page pen and 96-page chalk catalogs proceed as canonical SVG. Raster fills and cover
+masters/thumbnails remain; page raster authoring masters and page-overlay WebPs do not.

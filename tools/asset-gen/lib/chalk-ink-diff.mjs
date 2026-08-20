@@ -16,7 +16,7 @@ const SOLID_CORE_ERODE_PX = 3;
 export const CHALK_INK_BASELINE_GROWTH_FRACTION = 0.1;
 export const CHALK_INK_BASELINE_NOISE_PX = 8;
 
-export const CHALK_INK_DIFF_MAX_DEFAULT = 360;
+export const CHALK_INK_DIFF_MAX_DEFAULT = 362;
 
 const preparedAnalyses = new WeakSet();
 const preparationPromises = new WeakMap();

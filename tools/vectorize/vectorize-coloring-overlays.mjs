@@ -9,13 +9,11 @@ import { ROOT, isMain, run, runMain } from '../lib/proc.mjs';
 const MAX_PRODUCTION_BATCH_SIZE = 12;
 export const OVERLAY_THEMES = {
   light: {
-    sourceSuffix: 'outline',
     outputSuffix: 'overlay',
     rawDirectory: 'coloring-overlays',
     ledger: 'coloring-overlays.json',
   },
   dark: {
-    sourceSuffix: 'chalk',
     outputSuffix: 'dark.overlay',
     rawDirectory: 'coloring-dark-overlays',
     ledger: 'coloring-dark-overlays.json',
@@ -48,11 +46,11 @@ export function coloringOverlayJob(source, root = ROOT, theme = 'light') {
   const config = OVERLAY_THEMES[normalizedTheme];
   const sourcePath = resolve(root, source);
   const sourceRelative = relative(root, sourcePath);
-  const match = new RegExp(
-    `^web/static/coloring/([^/]+)/(.+)\\.${config.sourceSuffix}\\.webp$`
-  ).exec(sourceRelative);
-  if (!match || match[2] === 'cover') {
-    throw new Error(`Not a ${normalizedTheme} coloring-page outline: ${sourceRelative}`);
+  const match = new RegExp(`^vectorized/${config.rawDirectory}/([^/]+)/(.+)\\.source\\.webp$`).exec(
+    sourceRelative
+  );
+  if (!match) {
+    throw new Error(`Not a ${normalizedTheme} coloring authoring source: ${sourceRelative}`);
   }
   const [, book, stem] = match;
   return {
@@ -71,11 +69,18 @@ export function coloringOverlayJob(source, root = ROOT, theme = 'light') {
 
 export function coloringOverlayJobs(root = ROOT, theme = 'light') {
   const normalizedTheme = overlayTheme(theme);
-  const sourceSuffix = OVERLAY_THEMES[normalizedTheme].sourceSuffix;
-  return globSync(`web/static/coloring/**/*.${sourceSuffix}.webp`, { cwd: root })
-    .filter((path) => !path.endsWith(`/cover.${sourceSuffix}.webp`))
+  const rawDirectory = OVERLAY_THEMES[normalizedTheme].rawDirectory;
+  return globSync(`vectorized/${rawDirectory}/**/*.source.webp`, { cwd: root })
     .map((path) => coloringOverlayJob(path, root, normalizedTheme))
     .sort((a, b) => a.source.localeCompare(b.source));
+}
+
+export function canonicalOverlayPaths(root = ROOT, theme = 'light') {
+  const normalizedTheme = overlayTheme(theme);
+  const suffix = OVERLAY_THEMES[normalizedTheme].outputSuffix;
+  return globSync(`web/static/coloring/**/*.${suffix}.svg`, { cwd: root })
+    .filter((path) => normalizedTheme === 'dark' || !path.endsWith('.dark.overlay.svg'))
+    .sort();
 }
 
 export function jobState(job, force = false) {
@@ -176,7 +181,7 @@ function trace(job) {
   postprocess(job);
 }
 
-export function coloringOverlayLedger(jobs) {
+export function coloringOverlayLedger(jobs, prior = null, root = ROOT) {
   const missing = jobs.filter((job) => !existsSync(job.outputPath));
   if (missing.length > 0) {
     throw new Error(
@@ -186,32 +191,40 @@ export function coloringOverlayLedger(jobs) {
         .join('\n')}`
     );
   }
+  const theme = jobs[0]?.theme ?? prior?.theme ?? 'light';
+  const priorEntries = new Map((prior?.entries ?? []).map((entry) => [entry.output, entry]));
+  const jobsByOutput = new Map(jobs.map((job) => [job.output, job]));
   return {
-    formatVersion: 1,
+    formatVersion: 2,
+    theme,
     recipe: Object.fromEntries(KEEPER_PARAMS),
-    entries: jobs
-      .filter((job) => existsSync(job.outputPath))
-      .map((job) => ({
-        source: job.source,
-        sourceSha256: sha256(job.sourcePath),
-        sourceBytes: readFileSync(job.sourcePath).byteLength,
-        output: job.output,
-        outputSha256: sha256(job.outputPath),
-        outputBytes: readFileSync(job.outputPath).byteLength,
-      })),
+    entries: canonicalOverlayPaths(root, theme).map((output) => {
+      const job = jobsByOutput.get(output);
+      const old = priorEntries.get(output);
+      if (!job && !old) throw new Error(`Missing trace provenance for canonical SVG: ${output}`);
+      const outputPath = resolve(root, output);
+      return {
+        traceSourceSha256: job ? sha256(job.sourcePath) : old.traceSourceSha256,
+        traceSourceBytes: job ? readFileSync(job.sourcePath).byteLength : old.traceSourceBytes,
+        output,
+        outputSha256: sha256(outputPath),
+        outputBytes: readFileSync(outputPath).byteLength,
+      };
+    }),
   };
 }
 
-export function checkColoringOverlayLedger(jobs, path = ledgerPath(jobs[0]?.theme ?? 'light')) {
+export function checkColoringOverlayLedger(theme = 'light', root = ROOT) {
+  const path = ledgerPath(theme, root);
   if (!existsSync(path)) throw new Error(`Missing coloring overlay ledger: ${path}`);
   const ledger = JSON.parse(readFileSync(path, 'utf8'));
-  if (ledger.formatVersion !== 1 || !Array.isArray(ledger.entries)) {
+  if (ledger.formatVersion !== 2 || ledger.theme !== theme || !Array.isArray(ledger.entries)) {
     throw new Error('Invalid coloring overlay ledger');
   }
-  const expected = coloringOverlayLedger(jobs);
+  const expected = coloringOverlayLedger(coloringOverlayJobs(root, theme), ledger, root);
   if (JSON.stringify(ledger) !== JSON.stringify(expected)) {
     throw new Error(
-      'Coloring outline/SVG derivation drifted; regenerate the affected production trace and run --write-ledger'
+      'Canonical coloring SVG inventory or bytes drifted; regenerate the affected trace and run --write-ledger'
     );
   }
   return expected.entries.length;
@@ -234,14 +247,16 @@ export async function runColoringOverlayCampaign(argv = process.argv.slice(2)) {
       ? [options.theme]
       : Object.keys(OVERLAY_THEMES).filter((theme) => existsSync(ledgerPath(theme)));
     for (const theme of themes) {
-      const count = checkColoringOverlayLedger(coloringOverlayJobs(ROOT, theme));
-      console.log(`[vectorize:coloring] checked ${count} ${theme} source/SVG derivation records.`);
+      const count = checkColoringOverlayLedger(theme);
+      console.log(`[vectorize:coloring] checked ${count} canonical ${theme} SVG records.`);
     }
     return;
   }
   if (options.writeLedger) {
-    const ledger = coloringOverlayLedger(jobs);
-    writeFileSync(ledgerPath(options.theme), `${JSON.stringify(ledger, null, 2)}\n`);
+    const path = ledgerPath(options.theme);
+    const prior = existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null;
+    const ledger = coloringOverlayLedger(jobs, prior);
+    writeFileSync(path, `${JSON.stringify(ledger, null, 2)}\n`);
     console.log(
       `[vectorize:coloring] wrote ${ledger.entries.length} ${options.theme} derivation records.`
     );

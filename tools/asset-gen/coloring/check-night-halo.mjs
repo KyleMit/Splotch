@@ -35,8 +35,9 @@ import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { fail } from '../lib/asset-cli.mjs';
-import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt, toPosix } from '../lib/asset-paths.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { COLORING_DIR, FILL_SRC_DIR, toPosix } from '../lib/asset-paths.mjs';
+import { lineArtStem, resolveNightLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 import { prepareNightFillAnalysis, scoreLineColor } from '../lib/night-scores.mjs';
 import {
   scoreNightHalo,
@@ -49,7 +50,7 @@ import {
 
 async function auditPage(page) {
   const rawBuf = await readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`));
-  const penPath = join(COLORING_DIR, `${page}.outline.webp`);
+  const penPath = join(COLORING_DIR, `${page}.overlay.svg`);
   // the line art the shipped fill was punched against (as lib/punch-fill.mjs)
   const { source: lineArtBuf } = await resolveNightLineArt(penPath);
   const shippedBuf = await readFile(join(COLORING_DIR, `${page}.night.webp`));
@@ -81,7 +82,7 @@ const { values, positionals } = parseArgs({
 
 const nightTargetError = (target, root = COLORING_DIR) =>
   fail(`no night page or category "${target}" under ${relative(process.cwd(), root)}`);
-const hasShippedNightFill = (page) => existsSync(page.replace(/\.outline\.webp$/, '.night.webp'));
+const hasShippedNightFill = (page) => existsSync(`${lineArtStem(page)}.night.webp`);
 const resolveOptions = {
   includeCovers: false,
   explicitFiles: false,
@@ -92,12 +93,12 @@ const resolveOptions = {
 
 async function resolveNightTargets(targets) {
   if (!targets.length) {
-    const outlines = await resolveOutlineTargets([], resolveOptions);
+    const outlines = await resolveLineArtTargets([], resolveOptions);
     return outlines.filter(hasShippedNightFill);
   }
   const groups = await Promise.all(
     targets.map(async (target) => {
-      const outlines = await resolveOutlineTargets([target], {
+      const outlines = await resolveLineArtTargets([target], {
         ...resolveOptions,
         defaultAll: false,
       });
@@ -110,7 +111,7 @@ async function resolveNightTargets(targets) {
 }
 
 const pages = (await resolveNightTargets(positionals)).map((page) =>
-  toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''))
+  toPosix(lineArtStem(relative(COLORING_DIR, page)))
 );
 if (!pages.length) fail('No shipped night fills found for the given pages.');
 

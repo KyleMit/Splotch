@@ -2,7 +2,6 @@ import type { Book, BookOrientation, BookPlatform, ColoringPage } from './books'
 
 export interface PageOverrides {
   nightExcept?: BookOrientation[];
-  chalkExcept?: BookOrientation[];
 }
 
 type PageFactory = (id: string, name: string, overrides?: PageOverrides) => ColoringPage;

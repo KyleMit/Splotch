@@ -6,7 +6,6 @@ import {
   COLORING_IMAGE_SIZES,
   bookAssetPaths,
   bookPackAssetPaths,
-  chalkThumbPath,
   coloringBookGridLayout,
   coverThumb,
   coverThumbImageSource,
@@ -14,10 +13,7 @@ import {
   pageCompositionKey,
   pageImage,
   pageOverlayImage,
-  pageThumb,
-  pageThumbImageSource,
   responsiveColoringAssets,
-  thumbPath,
 } from './books';
 import {
   clearLocalColoringBookRoots,
@@ -34,57 +30,30 @@ const activePageChipComponent = readFileSync(
 );
 
 describe('page defaults', () => {
-  it('every page still ships night + chalk for both orientations', () => {
+  it('every page ships night fills and dark overlays for both orientations', () => {
     for (const book of BOOKS) {
       for (const page of book.pages) {
         expect(Object.keys(page.nightImages).sort()).toEqual(['landscape', 'portrait']);
-        expect(Object.keys(page.chalkImages).sort()).toEqual(['landscape', 'portrait']);
+        expect(Object.keys(page.darkImages).sort()).toEqual(['landscape', 'portrait']);
       }
     }
-  });
-});
-
-describe('thumbPath', () => {
-  it('swaps the .outline variant suffix for .thumb', () => {
-    expect(thumbPath('/coloring/farm/cover.outline.webp')).toBe('/coloring/farm/cover.thumb.webp');
-    expect(thumbPath('/coloring/farm/cat-tall.outline.webp')).toBe(
-      '/coloring/farm/cat-tall.thumb.webp'
-    );
-  });
-});
-
-describe('chalkThumbPath', () => {
-  it('swaps the .chalk variant suffix for .chalk.thumb', () => {
-    expect(chalkThumbPath('/coloring/farm/cat-tall.chalk.webp')).toBe(
-      '/coloring/farm/cat-tall.chalk.thumb.webp'
-    );
-  });
-});
-
-describe('pageThumb', () => {
-  const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
-
-  it('light mode shows the pen thumbnail', () => {
-    expect(pageThumb(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.thumb.webp');
-  });
-
-  it('dark mode shows the chalk thumbnail where the orientation has a chalk', () => {
-    expect(pageThumb(cat, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.chalk.thumb.webp');
-    expect(pageThumb(cat, 'landscape', 'dark')).toBe('/coloring/farm/cat-wide.chalk.thumb.webp');
-  });
-
-  it('dark mode falls back to the pen thumbnail for un-forked orientations', () => {
-    const unforked = { ...cat, chalkImages: {} };
-    expect(pageThumb(unforked, 'portrait', 'dark')).toBe('/coloring/farm/cat-tall.thumb.webp');
   });
 });
 
 describe('coverThumb', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
 
-  it('uses the pen cover in light mode and the chalk cover in dark mode', () => {
+  it('uses the matching light or dark cover source', () => {
+    expect(farm.cover).toBe('/coloring/farm/cover.overlay.svg');
+    expect(farm.darkCover).toBe('/coloring/farm/cover.dark.overlay.svg');
     expect(coverThumb(farm, 'light')).toBe('/coloring/farm/cover.thumb.webp');
     expect(coverThumb(farm, 'dark')).toBe('/coloring/farm/cover.chalk.thumb.webp');
+  });
+
+  it('rejects a theme/suffix mismatch instead of inventing a thumbnail path', () => {
+    expect(() => coverThumb({ ...farm, cover: farm.darkCover }, 'light')).toThrow(
+      'must end with .overlay.svg'
+    );
   });
 });
 
@@ -97,13 +66,6 @@ describe('pageOverlayImage', () => {
       '/coloring/farm/cat-tall.dark.overlay.svg'
     );
   });
-
-  it('keeps the dark presentation path stable when its generator falls back to pen line art', () => {
-    const unforked = { ...cat, chalkImages: {} };
-    expect(pageOverlayImage(unforked, 'landscape', 'dark')).toBe(
-      '/coloring/farm/cat-wide.dark.overlay.svg'
-    );
-  });
 });
 
 describe('vector overlays', () => {
@@ -111,7 +73,7 @@ describe('vector overlays', () => {
     for (const book of BOOKS) {
       for (const page of book.pages) {
         for (const orientation of ['portrait', 'landscape'] as const) {
-          const stem = page.images[orientation].slice(0, -'.outline.webp'.length);
+          const stem = page.images[orientation].slice(0, -'.overlay.svg'.length);
           expect(pageOverlayImage(page, orientation, 'light')).toBe(`${stem}.overlay.svg`);
           expect(pageOverlayImage(page, orientation, 'dark')).toBe(`${stem}.dark.overlay.svg`);
         }
@@ -136,9 +98,8 @@ describe('vector overlays', () => {
 
 describe('responsive image sources', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
-  const cat = farm.pages.find((page) => page.id === 'cat')!;
 
-  it('gives cover, pen, and chalk thumbnails responsive candidates', () => {
+  it('gives light and dark cover thumbnails responsive candidates', () => {
     expect(coverThumbImageSource(farm, 'light')).toEqual({
       src: '/coloring/farm/cover.thumb.webp',
       srcset:
@@ -149,12 +110,6 @@ describe('responsive image sources', () => {
       srcset:
         '/coloring/max-240px/farm/cover.chalk.thumb.webp 240w, /coloring/farm/cover.chalk.thumb.webp 400w',
     });
-    expect(pageThumbImageSource(cat, 'portrait', 'light').srcset).toContain(
-      '/coloring/max-240px/farm/cat-tall.thumb.webp 160w'
-    );
-    expect(pageThumbImageSource(cat, 'portrait', 'dark').srcset).toContain(
-      '/coloring/max-240px/farm/cat-tall.chalk.thumb.webp 160w'
-    );
   });
 
   it('keeps picker sizes aligned with the modal grid geometry', () => {
@@ -176,11 +131,9 @@ describe('responsive image sources', () => {
     });
     expect(COLORING_IMAGE_SIZES.coverThumbnail.standard).toContain('(90vw - 100px) / 4');
     expect(COLORING_IMAGE_SIZES.coverThumbnail.orphan).toContain('(90vw - 88px) / 3');
-    expect(COLORING_IMAGE_SIZES.pageThumbnail.portrait).toContain('(90vw - 88px) / 3');
-    expect(COLORING_IMAGE_SIZES.pageThumbnail.landscape).toContain('(90vw - 76px) / 2');
-    expect(activePageChipComponent).toContain(
-      `--active-page-thumbnail-size: ${COLORING_IMAGE_SIZES.activePageThumbnail}`
-    );
+    expect(coloringBookComponent).toContain('pageOverlayImage(page, orientation, resolvedTheme())');
+    expect(activePageChipComponent).not.toContain('srcset=');
+    expect(activePageChipComponent).not.toContain('sizes=');
   });
 
   // The `sizes` hint's leading clause and the CSS that changes the grid under it
@@ -206,12 +159,8 @@ describe('responsive image sources', () => {
 describe('pageCompositionKey', () => {
   it('groups every generated sibling for one page without hardcoded variants', () => {
     const siblings = [
-      '/coloring/farm/cat-tall.outline.webp',
       '/coloring/farm/cat-tall.light.webp',
       '/coloring/farm/cat-tall.night.webp',
-      '/coloring/farm/cat-tall.chalk.webp',
-      '/coloring/farm/cat-tall.thumb.webp',
-      '/coloring/farm/cat-tall.chalk.thumb.webp',
       '/coloring/farm/cat-tall.overlay.svg',
       '/coloring/farm/cat-tall.dark.overlay.svg?version=1',
     ];
@@ -234,8 +183,9 @@ describe('bookAssetPaths', () => {
   it('lists the cover, both orientations of every page, and the colored fills', () => {
     const paths = bookAssetPaths(farm);
     expect(paths).toContain(farm.cover);
-    expect(paths).toContain(farm.chalkCover);
-    expect(paths).toContain(chalkThumbPath(farm.chalkCover));
+    expect(paths).toContain(farm.darkCover);
+    expect(paths).toContain(coverThumb(farm, 'light'));
+    expect(paths).toContain(coverThumb(farm, 'dark'));
     for (const page of farm.pages) {
       expect(paths).toContain(pageImage(page, 'portrait'));
       expect(paths).toContain(pageImage(page, 'landscape'));
@@ -244,24 +194,12 @@ describe('bookAssetPaths', () => {
     }
   });
 
-  it('gives every picker-facing line-art image a thumbnail sibling', () => {
+  it('lists thumbnails only for the light and dark covers', () => {
     const paths = bookAssetPaths(farm);
-    const lineArt = [
-      farm.cover,
-      ...farm.pages.flatMap((page) => [pageImage(page, 'portrait'), pageImage(page, 'landscape')]),
-    ];
-    for (const src of lineArt) {
-      expect(paths).toContain(thumbPath(src));
-    }
-  });
-
-  it('gives every chalk outline a thumbnail sibling (the dark-mode picker tile)', () => {
-    const paths = bookAssetPaths(farm);
-    for (const page of farm.pages) {
-      for (const chalk of Object.values(page.chalkImages)) {
-        expect(paths).toContain(chalkThumbPath(chalk));
-      }
-    }
+    const thumbnails = paths.filter(
+      (path) => path.endsWith('.thumb.webp') && !path.startsWith('/coloring/max-')
+    );
+    expect(thumbnails).toEqual([coverThumb(farm, 'light'), coverThumb(farm, 'dark')]);
   });
 
   it('lists light and dark presentation overlays for every page orientation', () => {
@@ -274,27 +212,19 @@ describe('bookAssetPaths', () => {
     }
   });
 
-  it('does not thumbnail the colored fills (they never appear in the grid)', () => {
+  it('does not thumbnail page art or colored fills', () => {
     const paths = bookAssetPaths(farm);
-    // thumbPath derives only from `.outline.webp` line art — a fill path is a no-op.
-    for (const page of farm.pages) {
-      expect(thumbPath(pageColorImage(page, 'portrait'))).toBe(pageColorImage(page, 'portrait'));
-    }
-    // Exactly the line art gets a thumb: pen and chalk each cover the book tile
-    // plus both orientations of every page.
     const canonicalPaths = paths.filter((path) => !path.startsWith('/coloring/max-'));
-    const penThumbs = canonicalPaths.filter(
-      (p) => p.endsWith('.thumb.webp') && !p.endsWith('.chalk.thumb.webp')
-    );
-    const chalkThumbs = canonicalPaths.filter((p) => p.endsWith('.chalk.thumb.webp'));
-    expect(penThumbs.length).toBe(1 + farm.pages.length * 2);
-    expect(chalkThumbs.length).toBe(1 + farm.pages.length * 2);
+    expect(canonicalPaths.filter((path) => path.endsWith('.thumb.webp'))).toHaveLength(2);
+    expect(
+      canonicalPaths.some((path) => /\/(?:cat|cow|dog|duck|horse|pig)-.+\.thumb\.webp$/.test(path))
+    ).toBe(false);
   });
 
   it('lists every generated responsive candidate', () => {
     const paths = new Set(bookAssetPaths(farm));
     const responsive = responsiveColoringAssets(farm);
-    expect(responsive).toHaveLength(50);
+    expect(responsive).toHaveLength(26);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm)) {
       if (canonical.endsWith('.svg')) continue;
@@ -312,7 +242,7 @@ describe('downloadable coloring packs', () => {
 
   it('contains exactly the canonical runtime files for one complete book', () => {
     const paths = bookPackAssetPaths(farm);
-    expect(paths).toHaveLength(74);
+    expect(paths).toHaveLength(50);
     expect(new Set(paths).size).toBe(paths.length);
     expect(paths.every((path) => path.startsWith('/coloring/farm/'))).toBe(true);
     expect(paths.some((path) => /\.(?:outline|chalk)\.webp$/.test(path))).toBe(false);

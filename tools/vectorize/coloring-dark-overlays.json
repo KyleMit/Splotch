@@ -1,5 +1,6 @@
 {
-  "formatVersion": 1,
+  "formatVersion": 2,
+  "theme": "dark",
   "recipe": {
     "processing.max_colors": "2",
     "processing.palette": "#000000 ~ 0.05; #FFFFFF -> #00000000 ~ 0.05;",
@@ -9,769 +10,729 @@
   },
   "entries": [
     {
-      "source": "web/static/coloring/creatures/dragon-tall.chalk.webp",
-      "sourceSha256": "b8eefbd784236b51e08450bcbba5ad9a33109b0243fb7b49d788876b9612d8b8",
-      "sourceBytes": 115378,
+      "traceSourceSha256": "4284b9772c1156b182020504b3ce88500b4deb2ca6f1fa17266fae83233bd05d",
+      "traceSourceBytes": 112836,
+      "output": "web/static/coloring/creatures/cover.dark.overlay.svg",
+      "outputSha256": "e5e6b054a96f74af5fc06739f065a28a5f6c88cc73b64a48e03f6c78799bae86",
+      "outputBytes": 76104
+    },
+    {
+      "traceSourceSha256": "b8eefbd784236b51e08450bcbba5ad9a33109b0243fb7b49d788876b9612d8b8",
+      "traceSourceBytes": 115378,
       "output": "web/static/coloring/creatures/dragon-tall.dark.overlay.svg",
       "outputSha256": "5a7333159366430cd801e38472f227a58a4f8d6ce5482dca52261f38b23fddfe",
       "outputBytes": 58106
     },
     {
-      "source": "web/static/coloring/creatures/dragon-wide.chalk.webp",
-      "sourceSha256": "82302547126f35e00c3b267a7b0816ce1ae66ada03a31cccf2966172a74f9d1e",
-      "sourceBytes": 119968,
+      "traceSourceSha256": "82302547126f35e00c3b267a7b0816ce1ae66ada03a31cccf2966172a74f9d1e",
+      "traceSourceBytes": 119968,
       "output": "web/static/coloring/creatures/dragon-wide.dark.overlay.svg",
       "outputSha256": "4c7fa17245c3101d71e112a18567200995c1950946f0f2da25d252f8dfacbfe4",
       "outputBytes": 65758
     },
     {
-      "source": "web/static/coloring/creatures/fairy-tall.chalk.webp",
-      "sourceSha256": "923a9ec2ebd05b8c1139faeea28f629f94df4d1bd090a45bcfaac59833e9a5e7",
-      "sourceBytes": 115528,
+      "traceSourceSha256": "923a9ec2ebd05b8c1139faeea28f629f94df4d1bd090a45bcfaac59833e9a5e7",
+      "traceSourceBytes": 115528,
       "output": "web/static/coloring/creatures/fairy-tall.dark.overlay.svg",
       "outputSha256": "4350921f5533c52685f7f02b3ec734641db02109fce2ccdb395dee09b1f79aae",
       "outputBytes": 57253
     },
     {
-      "source": "web/static/coloring/creatures/fairy-wide.chalk.webp",
-      "sourceSha256": "de492fa2a51214fce0f60dc25100c4c3c604125ccadf210220c7eb2546921d10",
-      "sourceBytes": 165744,
+      "traceSourceSha256": "de492fa2a51214fce0f60dc25100c4c3c604125ccadf210220c7eb2546921d10",
+      "traceSourceBytes": 165744,
       "output": "web/static/coloring/creatures/fairy-wide.dark.overlay.svg",
       "outputSha256": "9e4dc97e8d972ecffa86d14f4e0c5637561e5fcf762cb0004bdcecc5ae51c806",
       "outputBytes": 83457
     },
     {
-      "source": "web/static/coloring/creatures/mermaid-tall.chalk.webp",
-      "sourceSha256": "1d43f0e1ff627786ecde52847526df0212cc51a6962eaf8467879bebe05c383f",
-      "sourceBytes": 126082,
+      "traceSourceSha256": "1d43f0e1ff627786ecde52847526df0212cc51a6962eaf8467879bebe05c383f",
+      "traceSourceBytes": 126082,
       "output": "web/static/coloring/creatures/mermaid-tall.dark.overlay.svg",
       "outputSha256": "a45c2ce1cd5850ee04bb78bbd1720a96bc9b440550b314215cee2975653c458d",
       "outputBytes": 67482
     },
     {
-      "source": "web/static/coloring/creatures/mermaid-wide.chalk.webp",
-      "sourceSha256": "ca7b2597de0f6b809393c2d4237b8a6bb247c3a00f48f95440e4d3fa556a3f8e",
-      "sourceBytes": 142080,
+      "traceSourceSha256": "ca7b2597de0f6b809393c2d4237b8a6bb247c3a00f48f95440e4d3fa556a3f8e",
+      "traceSourceBytes": 142080,
       "output": "web/static/coloring/creatures/mermaid-wide.dark.overlay.svg",
       "outputSha256": "2f4a40d157dff8db82c2b9fe28067f44e55e3d515350bf13ceeb57fa78bf7085",
       "outputBytes": 78065
     },
     {
-      "source": "web/static/coloring/creatures/owl-tall.chalk.webp",
-      "sourceSha256": "cf25b01ceb6bfb22070af09ef24d6a1cb242c09e033ea7b41cb01c75925b9121",
-      "sourceBytes": 96660,
+      "traceSourceSha256": "cf25b01ceb6bfb22070af09ef24d6a1cb242c09e033ea7b41cb01c75925b9121",
+      "traceSourceBytes": 96660,
       "output": "web/static/coloring/creatures/owl-tall.dark.overlay.svg",
       "outputSha256": "1b73a278d78ac2835fa33ad086d8d300e5d749275f275d97686029fe71accb7c",
       "outputBytes": 43484
     },
     {
-      "source": "web/static/coloring/creatures/owl-wide.chalk.webp",
-      "sourceSha256": "6d39e285f42520c9590e964f553f3d754595510ee852f4fa2a8e922586a671a2",
-      "sourceBytes": 132462,
+      "traceSourceSha256": "6d39e285f42520c9590e964f553f3d754595510ee852f4fa2a8e922586a671a2",
+      "traceSourceBytes": 132462,
       "output": "web/static/coloring/creatures/owl-wide.dark.overlay.svg",
       "outputSha256": "147d6376d6c52fcdf8cde85a1be7e74994d8d973c008058a6d2bcfc3cd4435d3",
       "outputBytes": 59972
     },
     {
-      "source": "web/static/coloring/creatures/pegasus-tall.chalk.webp",
-      "sourceSha256": "a3b55851acdc5fa7e9ce5c7ba20d4a5a60b461f02362daecc9174a866d65aecb",
-      "sourceBytes": 101422,
+      "traceSourceSha256": "a3b55851acdc5fa7e9ce5c7ba20d4a5a60b461f02362daecc9174a866d65aecb",
+      "traceSourceBytes": 101422,
       "output": "web/static/coloring/creatures/pegasus-tall.dark.overlay.svg",
       "outputSha256": "945bd46ef8866be7c117204a27627bed91a31b3f79786f1cedd5c136e463c937",
       "outputBytes": 48520
     },
     {
-      "source": "web/static/coloring/creatures/pegasus-wide.chalk.webp",
-      "sourceSha256": "5f1b7b5cef5410b6a5162f07ab045e2bc47c8c7f0bd1ee88bbd24c0083a303ed",
-      "sourceBytes": 107568,
+      "traceSourceSha256": "5f1b7b5cef5410b6a5162f07ab045e2bc47c8c7f0bd1ee88bbd24c0083a303ed",
+      "traceSourceBytes": 107568,
       "output": "web/static/coloring/creatures/pegasus-wide.dark.overlay.svg",
       "outputSha256": "7764b9822a97123ef2ad94d77d631141b68a007477b5088efd83c9f574098d7b",
       "outputBytes": 51973
     },
     {
-      "source": "web/static/coloring/creatures/unicorn-tall.chalk.webp",
-      "sourceSha256": "8a467263b83e1d8f98136d6bc854827e410548a35d3beb048ae4dbaacf91de1b",
-      "sourceBytes": 110426,
+      "traceSourceSha256": "8a467263b83e1d8f98136d6bc854827e410548a35d3beb048ae4dbaacf91de1b",
+      "traceSourceBytes": 110426,
       "output": "web/static/coloring/creatures/unicorn-tall.dark.overlay.svg",
       "outputSha256": "68ab1f2666cf6f5c4ae25f648bb9b5f1191c1a8d2aefe8cba6d4d40a8bd254d9",
       "outputBytes": 52702
     },
     {
-      "source": "web/static/coloring/creatures/unicorn-wide.chalk.webp",
-      "sourceSha256": "62dc45d815d7cb01cb017b7a11ace4b3f40343e917bbec582e8337f3a2d5cad5",
-      "sourceBytes": 125284,
+      "traceSourceSha256": "62dc45d815d7cb01cb017b7a11ace4b3f40343e917bbec582e8337f3a2d5cad5",
+      "traceSourceBytes": 125284,
       "output": "web/static/coloring/creatures/unicorn-wide.dark.overlay.svg",
       "outputSha256": "84017bd25df5b199138954594f3764560fb32c3225644915370cb44fdee4ce72",
       "outputBytes": 64146
     },
     {
-      "source": "web/static/coloring/dinosaur/brachiosaurus-tall.chalk.webp",
-      "sourceSha256": "6ec0cb06fbe2cfb7eb38963b9aab8738dd6ef0c1fd0a6f2aca2638a0fecffe70",
-      "sourceBytes": 103260,
+      "traceSourceSha256": "6ec0cb06fbe2cfb7eb38963b9aab8738dd6ef0c1fd0a6f2aca2638a0fecffe70",
+      "traceSourceBytes": 103260,
       "output": "web/static/coloring/dinosaur/brachiosaurus-tall.dark.overlay.svg",
       "outputSha256": "f99c5ff3d803dd31babf9919c02db6bfb8d053508dd7c44920ef546e6a2aaec1",
       "outputBytes": 46813
     },
     {
-      "source": "web/static/coloring/dinosaur/brachiosaurus-wide.chalk.webp",
-      "sourceSha256": "5def2dd0b58da94b6430acbd849dda9746c0a826832d6ec72ef539055f48abee",
-      "sourceBytes": 96070,
+      "traceSourceSha256": "5def2dd0b58da94b6430acbd849dda9746c0a826832d6ec72ef539055f48abee",
+      "traceSourceBytes": 96070,
       "output": "web/static/coloring/dinosaur/brachiosaurus-wide.dark.overlay.svg",
       "outputSha256": "9175df17eadb970a741ca545d239f6dee132e4abd71af9a9b320d23870ec2064",
       "outputBytes": 43170
     },
     {
-      "source": "web/static/coloring/dinosaur/pterodactyl-tall.chalk.webp",
-      "sourceSha256": "ab498bfe134ff0f1470322d2293a6ad92ffdc6d56bf5b07196371b6eb443606b",
-      "sourceBytes": 81494,
+      "traceSourceSha256": "4f2d859c53a22b6fe75b75fa2b8ffd565c2585a09d7bd731f802f4feef911813",
+      "traceSourceBytes": 96176,
+      "output": "web/static/coloring/dinosaur/cover.dark.overlay.svg",
+      "outputSha256": "413c5b974e896ba01997d8dcd3901ed4a701739df857a35ffed05c4b221d3cd8",
+      "outputBytes": 59993
+    },
+    {
+      "traceSourceSha256": "ab498bfe134ff0f1470322d2293a6ad92ffdc6d56bf5b07196371b6eb443606b",
+      "traceSourceBytes": 81494,
       "output": "web/static/coloring/dinosaur/pterodactyl-tall.dark.overlay.svg",
       "outputSha256": "726adff1af0e28f7a22c0c4476f9b18ccf9d7da77eb0c5b28a6f9fe145e3d1db",
       "outputBytes": 35596
     },
     {
-      "source": "web/static/coloring/dinosaur/pterodactyl-wide.chalk.webp",
-      "sourceSha256": "2375bf4673a2014b0cf9861701e50f5564d367f937c37124b1ea80423f25c936",
-      "sourceBytes": 91088,
+      "traceSourceSha256": "2375bf4673a2014b0cf9861701e50f5564d367f937c37124b1ea80423f25c936",
+      "traceSourceBytes": 91088,
       "output": "web/static/coloring/dinosaur/pterodactyl-wide.dark.overlay.svg",
       "outputSha256": "bd1d7c8f0a65d1b552dab1c68d43394853da0c1197e8d1a3d07d32a5d6d28d5d",
       "outputBytes": 35143
     },
     {
-      "source": "web/static/coloring/dinosaur/stegosaurus-tall.chalk.webp",
-      "sourceSha256": "405327177effafc760faaaa84afd216e84e8697b537b836770515af139d73d10",
-      "sourceBytes": 109194,
+      "traceSourceSha256": "405327177effafc760faaaa84afd216e84e8697b537b836770515af139d73d10",
+      "traceSourceBytes": 109194,
       "output": "web/static/coloring/dinosaur/stegosaurus-tall.dark.overlay.svg",
       "outputSha256": "4e60d7d83f3b50da7e98d3dbaf1725198e25ee8da97519316afc5a906776c875",
       "outputBytes": 48630
     },
     {
-      "source": "web/static/coloring/dinosaur/stegosaurus-wide.chalk.webp",
-      "sourceSha256": "e525adb3b311950388336e231062a0babacf1599f9dd3af03c7645fabe7957c3",
-      "sourceBytes": 114592,
+      "traceSourceSha256": "e525adb3b311950388336e231062a0babacf1599f9dd3af03c7645fabe7957c3",
+      "traceSourceBytes": 114592,
       "output": "web/static/coloring/dinosaur/stegosaurus-wide.dark.overlay.svg",
       "outputSha256": "c1f607857e0df68d71e93629317e3aa74309e6d5f35b3ffb243eb6745dde86ed",
       "outputBytes": 49750
     },
     {
-      "source": "web/static/coloring/dinosaur/trex-tall.chalk.webp",
-      "sourceSha256": "b9bd9e820c9492c431ea237798dc5f84aafa0c89d7cb9613ee01c37fc1668dfb",
-      "sourceBytes": 103940,
+      "traceSourceSha256": "b9bd9e820c9492c431ea237798dc5f84aafa0c89d7cb9613ee01c37fc1668dfb",
+      "traceSourceBytes": 103940,
       "output": "web/static/coloring/dinosaur/trex-tall.dark.overlay.svg",
       "outputSha256": "5f35145e439f100c0369a860d70ab98578d6a0fa382e4042e350185a578030f4",
       "outputBytes": 45913
     },
     {
-      "source": "web/static/coloring/dinosaur/trex-wide.chalk.webp",
-      "sourceSha256": "cbf1ad1fbd9c91f16cce2e0621e5cffb4108b007f03a7064602acbd50daaec3e",
-      "sourceBytes": 97388,
+      "traceSourceSha256": "cbf1ad1fbd9c91f16cce2e0621e5cffb4108b007f03a7064602acbd50daaec3e",
+      "traceSourceBytes": 97388,
       "output": "web/static/coloring/dinosaur/trex-wide.dark.overlay.svg",
       "outputSha256": "42f5a5c2de31724ce5067c427dc2fd31eded21421f90268fcb0795fd5b11bbe7",
       "outputBytes": 46653
     },
     {
-      "source": "web/static/coloring/dinosaur/triceratops-tall.chalk.webp",
-      "sourceSha256": "ecd7c22452ccfc9546f54836716b7ac85215093aeab220a476fb778fdec1a47a",
-      "sourceBytes": 94762,
+      "traceSourceSha256": "ecd7c22452ccfc9546f54836716b7ac85215093aeab220a476fb778fdec1a47a",
+      "traceSourceBytes": 94762,
       "output": "web/static/coloring/dinosaur/triceratops-tall.dark.overlay.svg",
       "outputSha256": "3920837ca08ac303e0c2e2b791aa3e6dd2a807153e9ba5307f2a91301ea044d3",
       "outputBytes": 41497
     },
     {
-      "source": "web/static/coloring/dinosaur/triceratops-wide.chalk.webp",
-      "sourceSha256": "b9d57bd02303e93966cb6e4dddb2a6d63642d62b46ca782a4ed32cb00531c251",
-      "sourceBytes": 102776,
+      "traceSourceSha256": "b9d57bd02303e93966cb6e4dddb2a6d63642d62b46ca782a4ed32cb00531c251",
+      "traceSourceBytes": 102776,
       "output": "web/static/coloring/dinosaur/triceratops-wide.dark.overlay.svg",
       "outputSha256": "06de8f648a38c9a5a139535e3d7679568766a495fe4e33de872af2b30bc29121",
       "outputBytes": 52084
     },
     {
-      "source": "web/static/coloring/dinosaur/velociraptor-tall.chalk.webp",
-      "sourceSha256": "47921fddb291308a2cf226017c0f26f7a069546c8a1aaa1730a359d5ddeb24a8",
-      "sourceBytes": 109694,
+      "traceSourceSha256": "47921fddb291308a2cf226017c0f26f7a069546c8a1aaa1730a359d5ddeb24a8",
+      "traceSourceBytes": 109694,
       "output": "web/static/coloring/dinosaur/velociraptor-tall.dark.overlay.svg",
       "outputSha256": "a254617a348eab86c335554c062dd49febdeb25623dd043256e2c4033a1c0eab",
       "outputBytes": 50238
     },
     {
-      "source": "web/static/coloring/dinosaur/velociraptor-wide.chalk.webp",
-      "sourceSha256": "aaa831b1a1358b05108d4baec79c042e188eee70114a695153c5f61c7920ad71",
-      "sourceBytes": 142578,
+      "traceSourceSha256": "aaa831b1a1358b05108d4baec79c042e188eee70114a695153c5f61c7920ad71",
+      "traceSourceBytes": 142578,
       "output": "web/static/coloring/dinosaur/velociraptor-wide.dark.overlay.svg",
       "outputSha256": "cf2c2dfa637480ba96bc6ded9200eabd047da1ce4feaebfb20b762d604ab3413",
       "outputBytes": 71652
     },
     {
-      "source": "web/static/coloring/farm/cat-tall.chalk.webp",
-      "sourceSha256": "343479dad48b26e9131d3699bb1735cab844bd942252cd78d328c675e2a23fff",
-      "sourceBytes": 107240,
+      "traceSourceSha256": "343479dad48b26e9131d3699bb1735cab844bd942252cd78d328c675e2a23fff",
+      "traceSourceBytes": 107240,
       "output": "web/static/coloring/farm/cat-tall.dark.overlay.svg",
       "outputSha256": "ec344eca8f20451f09594e764c48f374f84781184bbc6b1108bd549963b24c0b",
       "outputBytes": 52808
     },
     {
-      "source": "web/static/coloring/farm/cat-wide.chalk.webp",
-      "sourceSha256": "609333cfc108437c91b7ba7a41e32be9312d41b7559f49a3acb17091ee680bc3",
-      "sourceBytes": 104926,
+      "traceSourceSha256": "609333cfc108437c91b7ba7a41e32be9312d41b7559f49a3acb17091ee680bc3",
+      "traceSourceBytes": 104926,
       "output": "web/static/coloring/farm/cat-wide.dark.overlay.svg",
       "outputSha256": "ac6916764fd3bed49b74d58beb6991c340095d31df7282449d8d4a143cf31272",
       "outputBytes": 57117
     },
     {
-      "source": "web/static/coloring/farm/cow-tall.chalk.webp",
-      "sourceSha256": "866d16a870bc1bf775e39bb8ccfdfbbb0a4fc81e50e7a8a89ce2f36e00346369",
-      "sourceBytes": 101132,
+      "traceSourceSha256": "e4291c4d23ae09466a4aa8fa1a2f48a725674d58f7c15a94ad32a5d1bfd7c682",
+      "traceSourceBytes": 81542,
+      "output": "web/static/coloring/farm/cover.dark.overlay.svg",
+      "outputSha256": "cf0608f04c408006094d06eb4ca7d9f754cb9b39eb98abdf7449b0fc0c3f8592",
+      "outputBytes": 51600
+    },
+    {
+      "traceSourceSha256": "866d16a870bc1bf775e39bb8ccfdfbbb0a4fc81e50e7a8a89ce2f36e00346369",
+      "traceSourceBytes": 101132,
       "output": "web/static/coloring/farm/cow-tall.dark.overlay.svg",
       "outputSha256": "f3c997a008a0827108e2a99156d389e2aa7053fd2f38a3e0841d865d52ea44cf",
       "outputBytes": 51822
     },
     {
-      "source": "web/static/coloring/farm/cow-wide.chalk.webp",
-      "sourceSha256": "49f63a1426b0c5cc24e1dfd04a014439b16bdaa34d0c0521366c40a83c228977",
-      "sourceBytes": 114046,
+      "traceSourceSha256": "49f63a1426b0c5cc24e1dfd04a014439b16bdaa34d0c0521366c40a83c228977",
+      "traceSourceBytes": 114046,
       "output": "web/static/coloring/farm/cow-wide.dark.overlay.svg",
       "outputSha256": "52aa9a1504b0d87d630db8f8d3e1f8990417b26280573814bcbffec5bc12aebf",
       "outputBytes": 61956
     },
     {
-      "source": "web/static/coloring/farm/dog-tall.chalk.webp",
-      "sourceSha256": "def9b0bd2c940861098f66a892ed772e1bdb8e0170ddeea0d9d3688c22acfd69",
-      "sourceBytes": 67820,
+      "traceSourceSha256": "def9b0bd2c940861098f66a892ed772e1bdb8e0170ddeea0d9d3688c22acfd69",
+      "traceSourceBytes": 67820,
       "output": "web/static/coloring/farm/dog-tall.dark.overlay.svg",
       "outputSha256": "a368cf3ef1538f43a1a34b34cac7ed170ba742201246fd47db274d3e131f47a5",
       "outputBytes": 33025
     },
     {
-      "source": "web/static/coloring/farm/dog-wide.chalk.webp",
-      "sourceSha256": "b2ea8f8ca4541379c0a6f32b0e946506e85fb605361f392a91312626f8fadc8b",
-      "sourceBytes": 85562,
+      "traceSourceSha256": "b2ea8f8ca4541379c0a6f32b0e946506e85fb605361f392a91312626f8fadc8b",
+      "traceSourceBytes": 85562,
       "output": "web/static/coloring/farm/dog-wide.dark.overlay.svg",
       "outputSha256": "771b55ad79a2c029220ef64fc3a95d10160ffacf6f309d80b006d6b1e0adcaef",
       "outputBytes": 43171
     },
     {
-      "source": "web/static/coloring/farm/duck-tall.chalk.webp",
-      "sourceSha256": "31a6e76900cb6a63b8338cd021556356d66b00811a7031f6533863e40b5f323d",
-      "sourceBytes": 100968,
+      "traceSourceSha256": "31a6e76900cb6a63b8338cd021556356d66b00811a7031f6533863e40b5f323d",
+      "traceSourceBytes": 100968,
       "output": "web/static/coloring/farm/duck-tall.dark.overlay.svg",
       "outputSha256": "33c59a98575a5f734ee450fab06048b41aa8a7a1f4145aca9493322596419b3f",
       "outputBytes": 43190
     },
     {
-      "source": "web/static/coloring/farm/duck-wide.chalk.webp",
-      "sourceSha256": "2fe42056491611111879c5ebabcf8adf88bc8289fffb5440e8fd850c33a9e892",
-      "sourceBytes": 100806,
+      "traceSourceSha256": "2fe42056491611111879c5ebabcf8adf88bc8289fffb5440e8fd850c33a9e892",
+      "traceSourceBytes": 100806,
       "output": "web/static/coloring/farm/duck-wide.dark.overlay.svg",
       "outputSha256": "47e2c7a1cb8a30a50064ae195ca38ebdc31324290b51348eba420f01f2634e6d",
       "outputBytes": 50251
     },
     {
-      "source": "web/static/coloring/farm/horse-tall.chalk.webp",
-      "sourceSha256": "7dba76923a04fc5b73cf0a23de40c352cce75120bd9c87adec93daefd4d74dc1",
-      "sourceBytes": 94818,
+      "traceSourceSha256": "7dba76923a04fc5b73cf0a23de40c352cce75120bd9c87adec93daefd4d74dc1",
+      "traceSourceBytes": 94818,
       "output": "web/static/coloring/farm/horse-tall.dark.overlay.svg",
       "outputSha256": "172760c829071e23858879d8f12d497abf28b81b365559e7025151f9a8701881",
       "outputBytes": 49235
     },
     {
-      "source": "web/static/coloring/farm/horse-wide.chalk.webp",
-      "sourceSha256": "c62a52346c796b6b9c975aeeed58aaa15aac636cdcf90bad86b94c3ce2666d8d",
-      "sourceBytes": 104284,
+      "traceSourceSha256": "c62a52346c796b6b9c975aeeed58aaa15aac636cdcf90bad86b94c3ce2666d8d",
+      "traceSourceBytes": 104284,
       "output": "web/static/coloring/farm/horse-wide.dark.overlay.svg",
       "outputSha256": "e53c0f819de19185e13cb9ed22147f6beecfb629fff10ebad0ec4d326e89b213",
       "outputBytes": 62584
     },
     {
-      "source": "web/static/coloring/farm/pig-tall.chalk.webp",
-      "sourceSha256": "1129f11d4060565ca8cfcdca4dfe759392bef5a845dbe1b0fe447e697d7597d7",
-      "sourceBytes": 78328,
+      "traceSourceSha256": "1129f11d4060565ca8cfcdca4dfe759392bef5a845dbe1b0fe447e697d7597d7",
+      "traceSourceBytes": 78328,
       "output": "web/static/coloring/farm/pig-tall.dark.overlay.svg",
       "outputSha256": "a41097e7d5346bc65df196526f4cb838edc74f4be71e05570fcb5c94841bc870",
       "outputBytes": 34225
     },
     {
-      "source": "web/static/coloring/farm/pig-wide.chalk.webp",
-      "sourceSha256": "6ad2256f6a8d76a30a6cbac86442000fe03ded1b7bbbc8e7c0bbd8c4fca5cf6a",
-      "sourceBytes": 102242,
+      "traceSourceSha256": "6ad2256f6a8d76a30a6cbac86442000fe03ded1b7bbbc8e7c0bbd8c4fca5cf6a",
+      "traceSourceBytes": 102242,
       "output": "web/static/coloring/farm/pig-wide.dark.overlay.svg",
       "outputSha256": "1fd505e090dc6e77937a957dfcf5787191e75c3b4cc0944194c49492ab9e13e7",
       "outputBytes": 54731
     },
     {
-      "source": "web/static/coloring/nature/ant-tall.chalk.webp",
-      "sourceSha256": "940ba745e7f6861f08f41026016c912ac4e37b2f8e7c8aefff8fc7ee960a3221",
-      "sourceBytes": 89698,
+      "traceSourceSha256": "940ba745e7f6861f08f41026016c912ac4e37b2f8e7c8aefff8fc7ee960a3221",
+      "traceSourceBytes": 89698,
       "output": "web/static/coloring/nature/ant-tall.dark.overlay.svg",
       "outputSha256": "e74b45123ab1820e61c63a0d5fb6426cc490c378e61e141205c053a644b8f3b8",
       "outputBytes": 41914
     },
     {
-      "source": "web/static/coloring/nature/ant-wide.chalk.webp",
-      "sourceSha256": "7799d0f0127db1936a02e074f6f2f3cc85651603c5b3f3bd5a40eb1be6c6693c",
-      "sourceBytes": 99960,
+      "traceSourceSha256": "7799d0f0127db1936a02e074f6f2f3cc85651603c5b3f3bd5a40eb1be6c6693c",
+      "traceSourceBytes": 99960,
       "output": "web/static/coloring/nature/ant-wide.dark.overlay.svg",
       "outputSha256": "fd9079eea8be1ad82b583504e6582cd05369c8ae1490f595131306be6711c197",
       "outputBytes": 44616
     },
     {
-      "source": "web/static/coloring/nature/bee-tall.chalk.webp",
-      "sourceSha256": "92d08a1488df97369fec4f7df4b694fb8a51f7f91d589be787cd8da17e0e52fe",
-      "sourceBytes": 80366,
+      "traceSourceSha256": "92d08a1488df97369fec4f7df4b694fb8a51f7f91d589be787cd8da17e0e52fe",
+      "traceSourceBytes": 80366,
       "output": "web/static/coloring/nature/bee-tall.dark.overlay.svg",
       "outputSha256": "474122dd0648239d59d8fa16209182f26871d647d8f1979b8dae4c5cff1971c9",
       "outputBytes": 33624
     },
     {
-      "source": "web/static/coloring/nature/bee-wide.chalk.webp",
-      "sourceSha256": "fce90d0566efa742b82d3c7e8099be6d1b1e2da906586212a9b7e045210a75e5",
-      "sourceBytes": 98208,
+      "traceSourceSha256": "fce90d0566efa742b82d3c7e8099be6d1b1e2da906586212a9b7e045210a75e5",
+      "traceSourceBytes": 98208,
       "output": "web/static/coloring/nature/bee-wide.dark.overlay.svg",
       "outputSha256": "6caebb48b74bfc031e7201651800f5e7d05fa0f18213a49f4e149580b497570b",
       "outputBytes": 41116
     },
     {
-      "source": "web/static/coloring/nature/caterpillar-tall.chalk.webp",
-      "sourceSha256": "ac288c9d0830abe28e9ba1e55e5780625e509db0806f1266b7e381a27d44c5b8",
-      "sourceBytes": 75532,
+      "traceSourceSha256": "ac288c9d0830abe28e9ba1e55e5780625e509db0806f1266b7e381a27d44c5b8",
+      "traceSourceBytes": 75532,
       "output": "web/static/coloring/nature/caterpillar-tall.dark.overlay.svg",
       "outputSha256": "29a3a4db2d982256d8e9b3a8186f6a0d247ee148fdbb7a1b3b4043d419e87b00",
       "outputBytes": 29472
     },
     {
-      "source": "web/static/coloring/nature/caterpillar-wide.chalk.webp",
-      "sourceSha256": "b69e71d9bf7835ba52ddf4e657f0e42f54533b4ae7a7ee47d49bc29b493a63bb",
-      "sourceBytes": 71944,
+      "traceSourceSha256": "b69e71d9bf7835ba52ddf4e657f0e42f54533b4ae7a7ee47d49bc29b493a63bb",
+      "traceSourceBytes": 71944,
       "output": "web/static/coloring/nature/caterpillar-wide.dark.overlay.svg",
       "outputSha256": "94faf3bc14cc5d7bdf9fbbf099c740577d6e87fa934888eba7d0ba82de54cd8d",
       "outputBytes": 25738
     },
     {
-      "source": "web/static/coloring/nature/ladybug-tall.chalk.webp",
-      "sourceSha256": "4273b57d2be772ea3008d6553418c89223b625b1412753aef224c067607a2212",
-      "sourceBytes": 83938,
+      "traceSourceSha256": "c6c8441e82289724f769f1643a4ccaa5dd330ee34848484bab070800ed3a162a",
+      "traceSourceBytes": 98764,
+      "output": "web/static/coloring/nature/cover.dark.overlay.svg",
+      "outputSha256": "efdbbe00b3acd2ab7a808390dc6ff24e507ccaf0bb66e5ad10ede20d476899c9",
+      "outputBytes": 41288
+    },
+    {
+      "traceSourceSha256": "4273b57d2be772ea3008d6553418c89223b625b1412753aef224c067607a2212",
+      "traceSourceBytes": 83938,
       "output": "web/static/coloring/nature/ladybug-tall.dark.overlay.svg",
       "outputSha256": "1acde6011bf5afeee3a5007f319204335149b1f2289e64ec032dee53a1035344",
       "outputBytes": 25348
     },
     {
-      "source": "web/static/coloring/nature/ladybug-wide.chalk.webp",
-      "sourceSha256": "4ed91983063b835c441b0aa49ef4f0ae7b41c05df7c9b57afed18c7d62e212fd",
-      "sourceBytes": 91704,
+      "traceSourceSha256": "4ed91983063b835c441b0aa49ef4f0ae7b41c05df7c9b57afed18c7d62e212fd",
+      "traceSourceBytes": 91704,
       "output": "web/static/coloring/nature/ladybug-wide.dark.overlay.svg",
       "outputSha256": "d30ceebfb6db76e18af316fc2fccd7c42ae8bed33b510793792f49c8a27c4164",
       "outputBytes": 29356
     },
     {
-      "source": "web/static/coloring/nature/snail-tall.chalk.webp",
-      "sourceSha256": "4e8fe1665a5c62a08586750e8fd33eab9606ba7eb0d6267486e658b032e3117a",
-      "sourceBytes": 95652,
+      "traceSourceSha256": "4e8fe1665a5c62a08586750e8fd33eab9606ba7eb0d6267486e658b032e3117a",
+      "traceSourceBytes": 95652,
       "output": "web/static/coloring/nature/snail-tall.dark.overlay.svg",
       "outputSha256": "d32291c3fbe3285b25ead65dd02a4a5aeb5497c0d2a15320ff891cf598add310",
       "outputBytes": 37683
     },
     {
-      "source": "web/static/coloring/nature/snail-wide.chalk.webp",
-      "sourceSha256": "03050b5d7b83bc395bebcc3bf3faf3f8b0904156af091f56a3ef241e0194c33b",
-      "sourceBytes": 73098,
+      "traceSourceSha256": "03050b5d7b83bc395bebcc3bf3faf3f8b0904156af091f56a3ef241e0194c33b",
+      "traceSourceBytes": 73098,
       "output": "web/static/coloring/nature/snail-wide.dark.overlay.svg",
       "outputSha256": "455e790ef4785f02a3f8ca45e5dad9dd8de3ddd9f7269aff7095f9ae3b26a184",
       "outputBytes": 27288
     },
     {
-      "source": "web/static/coloring/nature/spider-tall.chalk.webp",
-      "sourceSha256": "8ffa03bcdea5505149a709232d890cc08e91fdf06e17557e03d8fff7e0d1cb2b",
-      "sourceBytes": 84930,
+      "traceSourceSha256": "8ffa03bcdea5505149a709232d890cc08e91fdf06e17557e03d8fff7e0d1cb2b",
+      "traceSourceBytes": 84930,
       "output": "web/static/coloring/nature/spider-tall.dark.overlay.svg",
       "outputSha256": "cd8178fd54141e9c88011a53adda1769dbbf07160c266d744832f1d7d2b6fbe0",
       "outputBytes": 31393
     },
     {
-      "source": "web/static/coloring/nature/spider-wide.chalk.webp",
-      "sourceSha256": "942ce142b7b86365c44ec3fa6d7ac045e0e12764c2acc574a52f40ed7c3fde97",
-      "sourceBytes": 115676,
+      "traceSourceSha256": "942ce142b7b86365c44ec3fa6d7ac045e0e12764c2acc574a52f40ed7c3fde97",
+      "traceSourceBytes": 115676,
       "output": "web/static/coloring/nature/spider-wide.dark.overlay.svg",
       "outputSha256": "c4960c262913db0d872bc41df6692098963d1f3564c7abf9042a2814f2d87bae",
       "outputBytes": 42197
     },
     {
-      "source": "web/static/coloring/objects/apple-tall.chalk.webp",
-      "sourceSha256": "3306a336935df85c45423fc38fc87029d6e00bed0f600a1fe4e124abb23bf8a0",
-      "sourceBytes": 59462,
+      "traceSourceSha256": "3306a336935df85c45423fc38fc87029d6e00bed0f600a1fe4e124abb23bf8a0",
+      "traceSourceBytes": 59462,
       "output": "web/static/coloring/objects/apple-tall.dark.overlay.svg",
       "outputSha256": "acdca33128bbaaa5942967d6dc6f36dc6ec361557a4730f7302e230806cb00a2",
       "outputBytes": 21113
     },
     {
-      "source": "web/static/coloring/objects/apple-wide.chalk.webp",
-      "sourceSha256": "f8551a2750c7c0111c3fbbd9ff2065ae6ab0ccc55e5a7081e432245115869292",
-      "sourceBytes": 86294,
+      "traceSourceSha256": "f8551a2750c7c0111c3fbbd9ff2065ae6ab0ccc55e5a7081e432245115869292",
+      "traceSourceBytes": 86294,
       "output": "web/static/coloring/objects/apple-wide.dark.overlay.svg",
       "outputSha256": "512e7087cb2b569b55914138af3cb6beec3b56b49558a0c0531461f0715efaaa",
       "outputBytes": 29699
     },
     {
-      "source": "web/static/coloring/objects/balloon-tall.chalk.webp",
-      "sourceSha256": "964a4c4355942d423d4e818517d05735f94125158f21faa0660b812ef6c96fbb",
-      "sourceBytes": 42726,
+      "traceSourceSha256": "964a4c4355942d423d4e818517d05735f94125158f21faa0660b812ef6c96fbb",
+      "traceSourceBytes": 42726,
       "output": "web/static/coloring/objects/balloon-tall.dark.overlay.svg",
       "outputSha256": "6c056376319576e2b07bfcbd8bbf9a02541e658b5aee073c980aede7c444c829",
       "outputBytes": 18109
     },
     {
-      "source": "web/static/coloring/objects/balloon-wide.chalk.webp",
-      "sourceSha256": "4af2968e5918ccce68ea622a27a2007c4b72b34875afbd7cbcb4dcf509ee592c",
-      "sourceBytes": 70212,
+      "traceSourceSha256": "4af2968e5918ccce68ea622a27a2007c4b72b34875afbd7cbcb4dcf509ee592c",
+      "traceSourceBytes": 70212,
       "output": "web/static/coloring/objects/balloon-wide.dark.overlay.svg",
       "outputSha256": "bc7c682c594acb90cdc830fc3b19a87b2aaf24214e031eb1715fb00e1d1dc05a",
       "outputBytes": 25801
     },
     {
-      "source": "web/static/coloring/objects/flower-tall.chalk.webp",
-      "sourceSha256": "754d30825dd4c0054b11c9e8af0c1fa6be25198b87d9f00450ac7f2eed6e4e52",
-      "sourceBytes": 62772,
+      "traceSourceSha256": "462f0d910b615f79b71cf028242e48c6479d255ab42004d33ce015039de7a948",
+      "traceSourceBytes": 69246,
+      "output": "web/static/coloring/objects/cover.dark.overlay.svg",
+      "outputSha256": "c92a5f477eb6b5689eda1691f630f33e927b9aa478b1786de60cd29f071d8643",
+      "outputBytes": 24192
+    },
+    {
+      "traceSourceSha256": "754d30825dd4c0054b11c9e8af0c1fa6be25198b87d9f00450ac7f2eed6e4e52",
+      "traceSourceBytes": 62772,
       "output": "web/static/coloring/objects/flower-tall.dark.overlay.svg",
       "outputSha256": "cf613ee252046749df72350947816863f67d40bb7ac618f8cdfdf5cd7bf90a68",
       "outputBytes": 17268
     },
     {
-      "source": "web/static/coloring/objects/flower-wide.chalk.webp",
-      "sourceSha256": "3fa9dc4cc91f846d7841a15c2e6e1b6af6722990519bdbf7ac4d2b17a2a2c592",
-      "sourceBytes": 92902,
+      "traceSourceSha256": "3fa9dc4cc91f846d7841a15c2e6e1b6af6722990519bdbf7ac4d2b17a2a2c592",
+      "traceSourceBytes": 92902,
       "output": "web/static/coloring/objects/flower-wide.dark.overlay.svg",
       "outputSha256": "1e56c1147474494b55dcc61cec6ed155735adea10e1fc596600edc3201530d14",
       "outputBytes": 36175
     },
     {
-      "source": "web/static/coloring/objects/house-tall.chalk.webp",
-      "sourceSha256": "666487bd22cbb2455041d7c841f7d9051628701691bdd51e33a6dd59e4a71bdd",
-      "sourceBytes": 85434,
+      "traceSourceSha256": "666487bd22cbb2455041d7c841f7d9051628701691bdd51e33a6dd59e4a71bdd",
+      "traceSourceBytes": 85434,
       "output": "web/static/coloring/objects/house-tall.dark.overlay.svg",
       "outputSha256": "19718bd5df24919124eebdfa22912a7c9e8bb81910c80e1b7fcf5c46d0515d6d",
       "outputBytes": 38551
     },
     {
-      "source": "web/static/coloring/objects/house-wide.chalk.webp",
-      "sourceSha256": "d577d8fda10c9418097571212bf067e1f85dfdb3d95a834b9e18271cedf3ef3b",
-      "sourceBytes": 66632,
+      "traceSourceSha256": "d577d8fda10c9418097571212bf067e1f85dfdb3d95a834b9e18271cedf3ef3b",
+      "traceSourceBytes": 66632,
       "output": "web/static/coloring/objects/house-wide.dark.overlay.svg",
       "outputSha256": "d8dd5c00c632da600a9e4ed35bda00a3a2837002bb826cbfb168f65f3dabe62d",
       "outputBytes": 28662
     },
     {
-      "source": "web/static/coloring/objects/teddy-tall.chalk.webp",
-      "sourceSha256": "f994e0e59fa47d91663e5f1b73c809a33e9ec5a2687e003decb65535be9d2bd2",
-      "sourceBytes": 77664,
+      "traceSourceSha256": "f994e0e59fa47d91663e5f1b73c809a33e9ec5a2687e003decb65535be9d2bd2",
+      "traceSourceBytes": 77664,
       "output": "web/static/coloring/objects/teddy-tall.dark.overlay.svg",
       "outputSha256": "d453850f366976e5df235a44b2e55ef26dc077fcf1239b5153076723f93beac0",
       "outputBytes": 31272
     },
     {
-      "source": "web/static/coloring/objects/teddy-wide.chalk.webp",
-      "sourceSha256": "ae941b0e8e8a90e3af81003bfa211026c248acd37eb2602d7a88636616b67ae8",
-      "sourceBytes": 81998,
+      "traceSourceSha256": "ae941b0e8e8a90e3af81003bfa211026c248acd37eb2602d7a88636616b67ae8",
+      "traceSourceBytes": 81998,
       "output": "web/static/coloring/objects/teddy-wide.dark.overlay.svg",
       "outputSha256": "005587cf004e374cb38b0305b5b4470565e17dd173ba660369b749b0e45c3882",
       "outputBytes": 31828
     },
     {
-      "source": "web/static/coloring/objects/umbrella-tall.chalk.webp",
-      "sourceSha256": "8b732597bb9db035d8701bdb568fc462981d6560491e234680cc1c70cc3556aa",
-      "sourceBytes": 60304,
+      "traceSourceSha256": "8b732597bb9db035d8701bdb568fc462981d6560491e234680cc1c70cc3556aa",
+      "traceSourceBytes": 60304,
       "output": "web/static/coloring/objects/umbrella-tall.dark.overlay.svg",
       "outputSha256": "10e441dcf1b16b434e2814c28cd81fac4ac2cc00ad5bdcc40e093b960cf5e51f",
       "outputBytes": 52540
     },
     {
-      "source": "web/static/coloring/objects/umbrella-wide.chalk.webp",
-      "sourceSha256": "8eaeb14524ecf4dbaa23e0ff01f48987e3909f43f14cc1f6118b9aa14ae5ef5b",
-      "sourceBytes": 88084,
+      "traceSourceSha256": "8eaeb14524ecf4dbaa23e0ff01f48987e3909f43f14cc1f6118b9aa14ae5ef5b",
+      "traceSourceBytes": 88084,
       "output": "web/static/coloring/objects/umbrella-wide.dark.overlay.svg",
       "outputSha256": "a0b063689f47465ec6532b6f7ce4878dd51c6a34c42807f1bfc89017e22347f5",
       "outputBytes": 38306
     },
     {
-      "source": "web/static/coloring/shapes/circle-tall.chalk.webp",
-      "sourceSha256": "bec73dfa9a22083e79200a27660108a3ece5830cdaa3ded8f2108bf42bf5b599",
-      "sourceBytes": 52612,
+      "traceSourceSha256": "bec73dfa9a22083e79200a27660108a3ece5830cdaa3ded8f2108bf42bf5b599",
+      "traceSourceBytes": 52612,
       "output": "web/static/coloring/shapes/circle-tall.dark.overlay.svg",
       "outputSha256": "3f0f6c3161203c3064dd2f8f89bb85a1d5b2e969745ee0ff2a25d2eb5ead5281",
       "outputBytes": 18896
     },
     {
-      "source": "web/static/coloring/shapes/circle-wide.chalk.webp",
-      "sourceSha256": "a767d378b43c8f74ea22bba6888fa4b37929d8e412032e77f4836c7bb71bd99d",
-      "sourceBytes": 68592,
+      "traceSourceSha256": "a767d378b43c8f74ea22bba6888fa4b37929d8e412032e77f4836c7bb71bd99d",
+      "traceSourceBytes": 68592,
       "output": "web/static/coloring/shapes/circle-wide.dark.overlay.svg",
       "outputSha256": "acdb1935b57b86dc3cfeada7848ca6919a02e4b2971189d13eb89f3eb5cb6e70",
       "outputBytes": 25520
     },
     {
-      "source": "web/static/coloring/shapes/heart-tall.chalk.webp",
-      "sourceSha256": "7f93750f34509a437f6a5138c698bea5faa99f3da2cca7c1ec2a197a4bd46f58",
-      "sourceBytes": 72590,
+      "traceSourceSha256": "820906151449cbe6e7d904568115d60b8324afb20ba7d9460b8c7f47bc3700e4",
+      "traceSourceBytes": 46490,
+      "output": "web/static/coloring/shapes/cover.dark.overlay.svg",
+      "outputSha256": "f610c1e383cf28bdcc2ac8da383be3429cd70aedf90bc381b92d8acd7adc882e",
+      "outputBytes": 19415
+    },
+    {
+      "traceSourceSha256": "7f93750f34509a437f6a5138c698bea5faa99f3da2cca7c1ec2a197a4bd46f58",
+      "traceSourceBytes": 72590,
       "output": "web/static/coloring/shapes/heart-tall.dark.overlay.svg",
       "outputSha256": "1f1be6e6b799b6ae42b284d46509a8297b700484d4d29040d6e016d16ef66b45",
       "outputBytes": 23508
     },
     {
-      "source": "web/static/coloring/shapes/heart-wide.chalk.webp",
-      "sourceSha256": "5824e4c2102c9da4b70ff946e7159dac8f28465af3d9fa6a620efcba7c56faab",
-      "sourceBytes": 62370,
+      "traceSourceSha256": "5824e4c2102c9da4b70ff946e7159dac8f28465af3d9fa6a620efcba7c56faab",
+      "traceSourceBytes": 62370,
       "output": "web/static/coloring/shapes/heart-wide.dark.overlay.svg",
       "outputSha256": "06abda17236670eb06c32a548dbac7094fe4cf9fa7bdfe9ad95d487f55f6d674",
       "outputBytes": 29041
     },
     {
-      "source": "web/static/coloring/shapes/rectangle-tall.chalk.webp",
-      "sourceSha256": "8ff6d36dde117e60672ae6c661b1038527dc5386716568077821b08709b433fc",
-      "sourceBytes": 37164,
+      "traceSourceSha256": "8ff6d36dde117e60672ae6c661b1038527dc5386716568077821b08709b433fc",
+      "traceSourceBytes": 37164,
       "output": "web/static/coloring/shapes/rectangle-tall.dark.overlay.svg",
       "outputSha256": "a74ea9e62c5cdc5ac4b1172b0b8370c53fc6e88b9080cf947683c35f0fad0b8b",
       "outputBytes": 11845
     },
     {
-      "source": "web/static/coloring/shapes/rectangle-wide.chalk.webp",
-      "sourceSha256": "c289e60bdb113dbf87f7f30afe414e75b28a6ecc507d5e95420b89969ae24a9b",
-      "sourceBytes": 46190,
+      "traceSourceSha256": "c289e60bdb113dbf87f7f30afe414e75b28a6ecc507d5e95420b89969ae24a9b",
+      "traceSourceBytes": 46190,
       "output": "web/static/coloring/shapes/rectangle-wide.dark.overlay.svg",
       "outputSha256": "47de77cea38c45c49a9cdd44d8821870a9e0504211706472c314121ae4344b88",
       "outputBytes": 22621
     },
     {
-      "source": "web/static/coloring/shapes/square-tall.chalk.webp",
-      "sourceSha256": "55181ce1b1e2e34e67630943d4c8fd2be6524a3a94bfd5a9fbc1fa16a5755119",
-      "sourceBytes": 38070,
+      "traceSourceSha256": "55181ce1b1e2e34e67630943d4c8fd2be6524a3a94bfd5a9fbc1fa16a5755119",
+      "traceSourceBytes": 38070,
       "output": "web/static/coloring/shapes/square-tall.dark.overlay.svg",
       "outputSha256": "deaa2d287e10af9d44b4b035694c51723deaaf08db07e998fd2802c869ae47b0",
       "outputBytes": 17377
     },
     {
-      "source": "web/static/coloring/shapes/square-wide.chalk.webp",
-      "sourceSha256": "0ec125dddba6fa68aed167ba1516a1fd6f654c96f7f331c5f4c422f9689487cf",
-      "sourceBytes": 55662,
+      "traceSourceSha256": "0ec125dddba6fa68aed167ba1516a1fd6f654c96f7f331c5f4c422f9689487cf",
+      "traceSourceBytes": 55662,
       "output": "web/static/coloring/shapes/square-wide.dark.overlay.svg",
       "outputSha256": "13be9444121cd3cab09d4396c282853e93f083c59d0dfe193e2a0c179c98739b",
       "outputBytes": 22764
     },
     {
-      "source": "web/static/coloring/shapes/star-tall.chalk.webp",
-      "sourceSha256": "52925fe0e16db3c17eb99984358de1d03a5197bd7e4b3824ddb657853e64e695",
-      "sourceBytes": 44452,
+      "traceSourceSha256": "52925fe0e16db3c17eb99984358de1d03a5197bd7e4b3824ddb657853e64e695",
+      "traceSourceBytes": 44452,
       "output": "web/static/coloring/shapes/star-tall.dark.overlay.svg",
       "outputSha256": "4382e6f2f39cd2c21785ec2ef85ff05bc5c04fc99c66d6c21218a746edcde448",
       "outputBytes": 14560
     },
     {
-      "source": "web/static/coloring/shapes/star-wide.chalk.webp",
-      "sourceSha256": "15b4a56735faa008784faae1b5a53b48b346e34bb24a0602de55f27f7114587d",
-      "sourceBytes": 46128,
+      "traceSourceSha256": "15b4a56735faa008784faae1b5a53b48b346e34bb24a0602de55f27f7114587d",
+      "traceSourceBytes": 46128,
       "output": "web/static/coloring/shapes/star-wide.dark.overlay.svg",
       "outputSha256": "43e972bc05657beaaef50e74830ce10d43c10bd2453f2c67c0f30ec82f66e14c",
       "outputBytes": 14026
     },
     {
-      "source": "web/static/coloring/shapes/triangle-tall.chalk.webp",
-      "sourceSha256": "0c8d932886c2e890cf954c4e865f90cabda8f9e1daeedd6e58e540c570d2f8a0",
-      "sourceBytes": 46802,
+      "traceSourceSha256": "0c8d932886c2e890cf954c4e865f90cabda8f9e1daeedd6e58e540c570d2f8a0",
+      "traceSourceBytes": 46802,
       "output": "web/static/coloring/shapes/triangle-tall.dark.overlay.svg",
       "outputSha256": "8685695abba267d1976a7e26d7c8236eb76c34252de025bfdbcc5a2b9859688f",
       "outputBytes": 16321
     },
     {
-      "source": "web/static/coloring/shapes/triangle-wide.chalk.webp",
-      "sourceSha256": "0ff3d4b00c888f43831addc039dd82673161d80d6c041ecff2c2d6cc3578560e",
-      "sourceBytes": 66630,
+      "traceSourceSha256": "0ff3d4b00c888f43831addc039dd82673161d80d6c041ecff2c2d6cc3578560e",
+      "traceSourceBytes": 66630,
       "output": "web/static/coloring/shapes/triangle-wide.dark.overlay.svg",
       "outputSha256": "e61db6a276888aad9c5fbbffbdc402ec738877d499dc0b10b88c0bebb56ce411",
       "outputBytes": 24198
     },
     {
-      "source": "web/static/coloring/space/astronaut-tall.chalk.webp",
-      "sourceSha256": "7bf641dbd15d69388d288d41637de2a2c9932d8283148eb836f988cac3f5df99",
-      "sourceBytes": 86634,
+      "traceSourceSha256": "7bf641dbd15d69388d288d41637de2a2c9932d8283148eb836f988cac3f5df99",
+      "traceSourceBytes": 86634,
       "output": "web/static/coloring/space/astronaut-tall.dark.overlay.svg",
       "outputSha256": "0f2989ca8f0c24e981cddef3b49ddabd430b06cb6990abc660052c4d08bfa7d2",
       "outputBytes": 35463
     },
     {
-      "source": "web/static/coloring/space/astronaut-wide.chalk.webp",
-      "sourceSha256": "c45f4eba150f42e50f30f4e5a2422251b7d79351d4a8301ecf757871192f5807",
-      "sourceBytes": 97578,
+      "traceSourceSha256": "c45f4eba150f42e50f30f4e5a2422251b7d79351d4a8301ecf757871192f5807",
+      "traceSourceBytes": 97578,
       "output": "web/static/coloring/space/astronaut-wide.dark.overlay.svg",
       "outputSha256": "def4ff0bce643d4a34d007daf308cbde2f472b5276e36f7e223d23a5beb3f1d9",
       "outputBytes": 44572
     },
     {
-      "source": "web/static/coloring/space/meteor-tall.chalk.webp",
-      "sourceSha256": "4b788e48bf145256ed0dc854a1cfb40be71b9d6389a411c736ad6f32af02f9c1",
-      "sourceBytes": 82156,
+      "traceSourceSha256": "d1b076915fcb7d83fd9c353e1b6f35a36d90ff99c10fc834cf7e563c2b5f5721",
+      "traceSourceBytes": 61712,
+      "output": "web/static/coloring/space/cover.dark.overlay.svg",
+      "outputSha256": "c7be863e314e9c8bdde2e000783aaf5d8fba45250acb1cf5a92f26bcf7119255",
+      "outputBytes": 20352
+    },
+    {
+      "traceSourceSha256": "4b788e48bf145256ed0dc854a1cfb40be71b9d6389a411c736ad6f32af02f9c1",
+      "traceSourceBytes": 82156,
       "output": "web/static/coloring/space/meteor-tall.dark.overlay.svg",
       "outputSha256": "d59e458c76d896dab18a4b0421872d72ad60b1dcb3abff4490c0473212d2771f",
       "outputBytes": 34629
     },
     {
-      "source": "web/static/coloring/space/meteor-wide.chalk.webp",
-      "sourceSha256": "4e41d18819c8a0e4bc26c2494ce1819bac52554ea955db4da059b6098c37c042",
-      "sourceBytes": 99180,
+      "traceSourceSha256": "4e41d18819c8a0e4bc26c2494ce1819bac52554ea955db4da059b6098c37c042",
+      "traceSourceBytes": 99180,
       "output": "web/static/coloring/space/meteor-wide.dark.overlay.svg",
       "outputSha256": "781aa7dae0a496d714bd543f664424d5ab5e95416e4eb583f374691b310deab0",
       "outputBytes": 43734
     },
     {
-      "source": "web/static/coloring/space/moon-tall.chalk.webp",
-      "sourceSha256": "3e69f7bbea7553fd3088e4d9d3d8ad68f13f6ee41b2be8d041278f55ee067b3e",
-      "sourceBytes": 46702,
+      "traceSourceSha256": "3e69f7bbea7553fd3088e4d9d3d8ad68f13f6ee41b2be8d041278f55ee067b3e",
+      "traceSourceBytes": 46702,
       "output": "web/static/coloring/space/moon-tall.dark.overlay.svg",
       "outputSha256": "f9e7f44162e7491e7bdb7572368478dd9feb74a7d58f76cfb984c901bca1dbfa",
       "outputBytes": 16745
     },
     {
-      "source": "web/static/coloring/space/moon-wide.chalk.webp",
-      "sourceSha256": "0ed6529734c309d421b4a5251b8bb89a9fb5ba47844f7bda5b2e73b5affc3be0",
-      "sourceBytes": 56876,
+      "traceSourceSha256": "0ed6529734c309d421b4a5251b8bb89a9fb5ba47844f7bda5b2e73b5affc3be0",
+      "traceSourceBytes": 56876,
       "output": "web/static/coloring/space/moon-wide.dark.overlay.svg",
       "outputSha256": "1a06b0916ebf443c553c9bb92a97404c5278f5d7ce67b4779394bf326da3a649",
       "outputBytes": 24072
     },
     {
-      "source": "web/static/coloring/space/rover-tall.chalk.webp",
-      "sourceSha256": "57268fd225accd13a322094f18e338ee81c5cabe8dfb99144fe0e887df598baa",
-      "sourceBytes": 95338,
+      "traceSourceSha256": "57268fd225accd13a322094f18e338ee81c5cabe8dfb99144fe0e887df598baa",
+      "traceSourceBytes": 95338,
       "output": "web/static/coloring/space/rover-tall.dark.overlay.svg",
       "outputSha256": "383ae97228ece2a7b9f87e48f2547658080673cc88fa9704d277f412747aaf6b",
       "outputBytes": 51419
     },
     {
-      "source": "web/static/coloring/space/rover-wide.chalk.webp",
-      "sourceSha256": "6fc596c57f79752b3b79e90890909d5cfd6e0eaa8f4b412f4814458d9aff2485",
-      "sourceBytes": 123642,
+      "traceSourceSha256": "6fc596c57f79752b3b79e90890909d5cfd6e0eaa8f4b412f4814458d9aff2485",
+      "traceSourceBytes": 123642,
       "output": "web/static/coloring/space/rover-wide.dark.overlay.svg",
       "outputSha256": "a87a1ba63d63ab935fdd8367f5c99be53b02ebf129e930f1676b77ac44bf97cc",
       "outputBytes": 72318
     },
     {
-      "source": "web/static/coloring/space/ship-tall.chalk.webp",
-      "sourceSha256": "db4a77d8d77927ea624bf693a1f5e44221cf5df56d22b91c5e4c21a54b2f5541",
-      "sourceBytes": 63326,
+      "traceSourceSha256": "db4a77d8d77927ea624bf693a1f5e44221cf5df56d22b91c5e4c21a54b2f5541",
+      "traceSourceBytes": 63326,
       "output": "web/static/coloring/space/ship-tall.dark.overlay.svg",
       "outputSha256": "50e020907f468cb6e99f17fc77b87311ee8f3906e6d6c28ec89bea2b8b05a749",
       "outputBytes": 23299
     },
     {
-      "source": "web/static/coloring/space/ship-wide.chalk.webp",
-      "sourceSha256": "bbba2795243747811b0fe8dc31af9b11085caa34ca8dfa59c260d57ae7ea9cc2",
-      "sourceBytes": 74000,
+      "traceSourceSha256": "bbba2795243747811b0fe8dc31af9b11085caa34ca8dfa59c260d57ae7ea9cc2",
+      "traceSourceBytes": 74000,
       "output": "web/static/coloring/space/ship-wide.dark.overlay.svg",
       "outputSha256": "c893ecfea32569b1f0a680d36842a4a7662fabea2121b183cdf16a821b202af9",
       "outputBytes": 24663
     },
     {
-      "source": "web/static/coloring/space/station-tall.chalk.webp",
-      "sourceSha256": "c3c613a3c78ea1e4b4144ae6e6c63c464a850664ddfbd56b0a7463a8d84ff35e",
-      "sourceBytes": 63118,
+      "traceSourceSha256": "c3c613a3c78ea1e4b4144ae6e6c63c464a850664ddfbd56b0a7463a8d84ff35e",
+      "traceSourceBytes": 63118,
       "output": "web/static/coloring/space/station-tall.dark.overlay.svg",
       "outputSha256": "e679e8e6b418cc63f5f857d2de7cb61ffab57d9b13d2610dabe8dc1ea8c66c8c",
       "outputBytes": 32100
     },
     {
-      "source": "web/static/coloring/space/station-wide.chalk.webp",
-      "sourceSha256": "d6c070b5edd604928055e0e3b55db18531e126eba455ded8786b8d0341935579",
-      "sourceBytes": 80206,
+      "traceSourceSha256": "d6c070b5edd604928055e0e3b55db18531e126eba455ded8786b8d0341935579",
+      "traceSourceBytes": 80206,
       "output": "web/static/coloring/space/station-wide.dark.overlay.svg",
       "outputSha256": "f272dad7a199c382c957f0d3f7f321080cc08b959abcb02f97ff22819c51195d",
       "outputBytes": 32644
     },
     {
-      "source": "web/static/coloring/vehicles/excavator-tall.chalk.webp",
-      "sourceSha256": "c940ce4f80ecaf64a953f6341aa269b26d752871f1ca2605de96dea7842b3add",
-      "sourceBytes": 90202,
+      "traceSourceSha256": "e85048bfc2b20b1178d3a3c554dec0b9b06bb55b13e73110332e63192b153f6a",
+      "traceSourceBytes": 120176,
+      "output": "web/static/coloring/vehicles/cover.dark.overlay.svg",
+      "outputSha256": "6cdb71d313e442b941d1a4e72e9eff0ff1ac272a58da3af2b598668c3d1a78cc",
+      "outputBytes": 71670
+    },
+    {
+      "traceSourceSha256": "c940ce4f80ecaf64a953f6341aa269b26d752871f1ca2605de96dea7842b3add",
+      "traceSourceBytes": 90202,
       "output": "web/static/coloring/vehicles/excavator-tall.dark.overlay.svg",
       "outputSha256": "f6328cdda844e75259d5ff6ac3916df80f98b785ba427177f64d1044021ab06f",
       "outputBytes": 46070
     },
     {
-      "source": "web/static/coloring/vehicles/excavator-wide.chalk.webp",
-      "sourceSha256": "c7b8a5cac08937bef873ad085698aeba718add13db21c140189d65563394a9f2",
-      "sourceBytes": 107868,
+      "traceSourceSha256": "c7b8a5cac08937bef873ad085698aeba718add13db21c140189d65563394a9f2",
+      "traceSourceBytes": 107868,
       "output": "web/static/coloring/vehicles/excavator-wide.dark.overlay.svg",
       "outputSha256": "6a5d820f7a1b22c2053a239c7db08505f8974e3fc1e2b56d2d0234368ad3c74a",
       "outputBytes": 49111
     },
     {
-      "source": "web/static/coloring/vehicles/fire-tall.chalk.webp",
-      "sourceSha256": "341ecb3512b4400137d9a2452d10e74f4af2c615e4c81d4e4b481756c6668e32",
-      "sourceBytes": 101736,
+      "traceSourceSha256": "341ecb3512b4400137d9a2452d10e74f4af2c615e4c81d4e4b481756c6668e32",
+      "traceSourceBytes": 101736,
       "output": "web/static/coloring/vehicles/fire-tall.dark.overlay.svg",
       "outputSha256": "d8b130dede18460528fb0a3dc5640ae10f9d86bbb2611c097b8c609aa5709941",
       "outputBytes": 46891
     },
     {
-      "source": "web/static/coloring/vehicles/fire-wide.chalk.webp",
-      "sourceSha256": "ae2ae0b77b34cda76d8a862b465282102c6e3ce4b07c852a3ff214ee6726568f",
-      "sourceBytes": 118276,
+      "traceSourceSha256": "ae2ae0b77b34cda76d8a862b465282102c6e3ce4b07c852a3ff214ee6726568f",
+      "traceSourceBytes": 118276,
       "output": "web/static/coloring/vehicles/fire-wide.dark.overlay.svg",
       "outputSha256": "4811c9b3aab0bbcdafd810a411852e1594b93cdd34c15f06bf80b4297f660498",
       "outputBytes": 63128
     },
     {
-      "source": "web/static/coloring/vehicles/garbage-tall.chalk.webp",
-      "sourceSha256": "df67268c9dfeb20300e02bdbde711a0d32ae134b0a8364dc6effe81f190dacef",
-      "sourceBytes": 85008,
+      "traceSourceSha256": "df67268c9dfeb20300e02bdbde711a0d32ae134b0a8364dc6effe81f190dacef",
+      "traceSourceBytes": 85008,
       "output": "web/static/coloring/vehicles/garbage-tall.dark.overlay.svg",
       "outputSha256": "8f29f5c08ba711922e97d130f0222b5b941d05b88374de2f45abde3b79771f8d",
       "outputBytes": 44659
     },
     {
-      "source": "web/static/coloring/vehicles/garbage-wide.chalk.webp",
-      "sourceSha256": "ffde5c910db0b778ec878768abb714da748d89eb0de6cc02befa5bf18149e254",
-      "sourceBytes": 121160,
+      "traceSourceSha256": "ffde5c910db0b778ec878768abb714da748d89eb0de6cc02befa5bf18149e254",
+      "traceSourceBytes": 121160,
       "output": "web/static/coloring/vehicles/garbage-wide.dark.overlay.svg",
       "outputSha256": "095761c989c9c96edad3497a1219589f817667ea6d2ba9d745a778809bab9d46",
       "outputBytes": 64711
     },
     {
-      "source": "web/static/coloring/vehicles/monster-tall.chalk.webp",
-      "sourceSha256": "94d345684b51842680186333bae0b0c52137c29f1467235b9c9fe0a64ee5810e",
-      "sourceBytes": 103740,
+      "traceSourceSha256": "94d345684b51842680186333bae0b0c52137c29f1467235b9c9fe0a64ee5810e",
+      "traceSourceBytes": 103740,
       "output": "web/static/coloring/vehicles/monster-tall.dark.overlay.svg",
       "outputSha256": "e8a112567fe46aa7e89de9d0b78ebd1013a124124e2b2532243f484f3a690b81",
       "outputBytes": 48721
     },
     {
-      "source": "web/static/coloring/vehicles/monster-wide.chalk.webp",
-      "sourceSha256": "7e14c4d0ebd1dc0c71bca558f8fc20c95cd9c640dbf7d63866559ef488333676",
-      "sourceBytes": 113692,
+      "traceSourceSha256": "7e14c4d0ebd1dc0c71bca558f8fc20c95cd9c640dbf7d63866559ef488333676",
+      "traceSourceBytes": 113692,
       "output": "web/static/coloring/vehicles/monster-wide.dark.overlay.svg",
       "outputSha256": "fe9425f337c9feb09275e308d96f2cb68d0cd1ad3500a393d0d787c659d90230",
       "outputBytes": 67546
     },
     {
-      "source": "web/static/coloring/vehicles/police-tall.chalk.webp",
-      "sourceSha256": "a0e79ef784aefb0ab9198db8c7345e23f76b62f2fcc296890bb3f8402ca98230",
-      "sourceBytes": 88724,
+      "traceSourceSha256": "a0e79ef784aefb0ab9198db8c7345e23f76b62f2fcc296890bb3f8402ca98230",
+      "traceSourceBytes": 88724,
       "output": "web/static/coloring/vehicles/police-tall.dark.overlay.svg",
       "outputSha256": "58c79cb94d491c97eebd72034a05f09787965d3e98d8dc9d43aa5345aa7580b9",
       "outputBytes": 45901
     },
     {
-      "source": "web/static/coloring/vehicles/police-wide.chalk.webp",
-      "sourceSha256": "9cbd1b86edbc238fbf1ad9b4dfb5b360ef3d7b4f7c5e73609d354c1dc8ec3591",
-      "sourceBytes": 93520,
+      "traceSourceSha256": "9cbd1b86edbc238fbf1ad9b4dfb5b360ef3d7b4f7c5e73609d354c1dc8ec3591",
+      "traceSourceBytes": 93520,
       "output": "web/static/coloring/vehicles/police-wide.dark.overlay.svg",
       "outputSha256": "377799974cc866044644784b497d24930678b87d845ae3801ecf76f8c777e239",
       "outputBytes": 38462
     },
     {
-      "source": "web/static/coloring/vehicles/train-tall.chalk.webp",
-      "sourceSha256": "b6040aff7e296fb46a1fa55478062fd2bdfc55b86b2e91f829d2dc22f2de03b1",
-      "sourceBytes": 111856,
+      "traceSourceSha256": "b6040aff7e296fb46a1fa55478062fd2bdfc55b86b2e91f829d2dc22f2de03b1",
+      "traceSourceBytes": 111856,
       "output": "web/static/coloring/vehicles/train-tall.dark.overlay.svg",
       "outputSha256": "cd50a8199b932b0427503a38fffee04e711d7a55c7504a9aff126af40fb605be",
       "outputBytes": 44935
     },
     {
-      "source": "web/static/coloring/vehicles/train-wide.chalk.webp",
-      "sourceSha256": "f44d90d6627748c87908e4d6282f1e742efaf2f5ecd5a984542c3da38ae90f61",
-      "sourceBytes": 125332,
+      "traceSourceSha256": "f44d90d6627748c87908e4d6282f1e742efaf2f5ecd5a984542c3da38ae90f61",
+      "traceSourceBytes": 125332,
       "output": "web/static/coloring/vehicles/train-wide.dark.overlay.svg",
       "outputSha256": "63f3568cdef67943a5bcce94b7978779fb2088ae9d60aacdfef969995b766a03",
       "outputBytes": 52264

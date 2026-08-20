@@ -22,15 +22,10 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fail, parseNonNegative } from '../lib/asset-cli.mjs';
-import {
-  REPO_ROOT,
-  COLORING_DIR,
-  FILL_SRC_DIR,
-  SAMPLES_DIR,
-  resolveNightLineArt,
-} from '../lib/asset-paths.mjs';
+import { REPO_ROOT, COLORING_DIR, FILL_SRC_DIR, SAMPLES_DIR } from '../lib/asset-paths.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { lineArtStem, rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 import {
   LOCAL_WARP_BASELINE_MARGIN_PX,
   LOCAL_WARP_MAX_PX,
@@ -45,7 +40,7 @@ const { values, positionals } = parseArgs({
 });
 parseNonNegative(values['warp-max'], '--warp-max', LOCAL_WARP_MAX_PX);
 
-const pages = await resolveOutlineTargets(positionals, {
+const pages = await resolveLineArtTargets(positionals, {
   includeCovers: false,
   explicitFiles: true,
   sort: 'all',
@@ -59,8 +54,8 @@ if (values.overlay) await mkdir(overlayDir, { recursive: true });
 const rows = [];
 let errors = 0;
 for (const page of pages) {
-  const rel = relative(COLORING_DIR, page).replace(/\.outline\.webp$/, '');
-  const pen = await readFile(page);
+  const rel = lineArtStem(relative(COLORING_DIR, page));
+  const pen = await rasterizeLineArt(page);
   for (const theme of ['light', 'night']) {
     const fill = join(FILL_SRC_DIR, `${rel}.${theme}.raw.webp`);
     if (!existsSync(fill)) continue;

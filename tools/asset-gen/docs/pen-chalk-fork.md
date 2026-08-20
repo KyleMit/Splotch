@@ -33,33 +33,31 @@ prevents).
 Fork the line work per theme, with the dark variant *derived from* the light one under registration
 gates:
 
-* **Pen outline** (`{page-or-cover}.outline.webp`) — black ink on white. The light-mode overlay or
-  picker tile and the source of every derivation (thumbs, page fills, chalk).
-* **Chalk outline** (`{page-or-cover}.chalk.webp`) — the dark-mode line art:
-  `tools/asset-gen/coloring/gen-chalk-outlines.mjs` has Gemini redraw the inverted pen as a chalk
-  drawing, making the judgment calls a blind invert can't — eye sclera and catchlights become
-  deliberate SOLID WHITE, pupils stay black. Gates: every pen stroke still traced
+* **Pen line art** (`{page}.overlay.svg`; cover: `cover.overlay.svg`) — transparent black page or
+  cover ink. It is the light-mode presentation and source of every derivation.
+* **Chalk line art** (`{page}.dark.overlay.svg`; cover: `cover.dark.overlay.svg`) — the dark-mode
+  line art: `tools/asset-gen/coloring/gen-chalk-outlines.mjs` has Gemini redraw the inverted pen as
+  a chalk drawing, making the judgment calls a blind invert can't — eye sclera and catchlights
+  become deliberate SOLID WHITE, pupils stay black. Gates: every pen stroke still traced
   (`lib/outline-match.mjs` keep ≥ 92%, worst tile ≥ 80%), new ink only inside pen-enclosed interiors
   (judged by enclosure, not thickness — a sclera is a thin annulus), and a white-area budget. This
   is the "dedicated night line art" option *domesticated*: an edit, not a fresh generation, so
   registration is provable.
-* **Storage polarity:** the chalk ships **ink-on-white** (the negation of what dark mode displays).
-  Every ink-on-white analysis tool (outline-match, punch, audits) reads chalks unmodified; the
-  picker applies the original `invert(1)` + `screen` treatment. The full-page canvas uses the
-  generated transparent white `.dark.overlay.svg` sibling from
-  [`alpha-line-art-overlays.md`](alpha-line-art-overlays.md), so WebKit does not retain a full-page
-  blend/filter layer (ADR-0091).
+* **Storage polarity:** page chalk ships as transparent white SVG ink. Every analysis tool
+  deterministically rasterizes its alpha as black ink on white, so runtime polarity cannot alter
+  scores. Page previews and the full-page canvas use that same `.dark.overlay.svg`, so WebKit does
+  not retain a full-page blend/filter layer (ADR-0091).
 * **The punch is per-theme** (`lib/punch-fill.mjs`): light raws punch against the pen, night raws
   against the chalk. The generated white alpha overlay preserves the chalk's solid whites in the
   final combined image — the punch and renderer stay dumb; all judgment lives in the chalk.
 * **Night fills condition on the chalk** (`gen-night-fills.mjs`): the model input is the chalk
   as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill + screened
   chalk over dark paper), since the chalk now owns the eye whites.
-* **Covers stop after the picker derivatives.** They use the same registered chalk redraw and
-  `.chalk.thumb.webp` naming, but have no fill, punch, or full-page overlay stages.
-* **Incremental migration:** `books.ts` lists chalk orientations per page (like `night`); absent a
-  chalk, the dark alpha overlay is derived from the pen — visually matching the pre-fork inversion
-  behavior, with light mode byte-identical throughout.
+* **Covers stop after the picker derivatives.** Their canonical SVGs generate the
+  `.thumb.webp`/`.chalk.thumb.webp` picker assets, but have no fill, punch, or full-page canvas
+  stages.
+* **Canonicalization:** a reviewed chalk candidate is staged as an uncommitted `.source.webp`, then
+  vectorized into the canonical dark SVG. There is no page or cover raster-master fallback.
 
 Nature (12 cells) is the pilot. Consequent loosening: pen thin-stroke normalization (PR #122's
 machinery) is now a *light-theme quality* call — a solid pen pupil no longer breaks dark mode,
@@ -76,8 +74,7 @@ because the chalk redraw makes its own judgment from whatever pen it gets.
   — the chalk carries the whites, the fill paints a pupil.
 * \+ Un-migrated categories keep working unchanged (white alpha derived from the pen), so the fork
   rolls out category by category behind human review.
-* \- One more shipped asset per page-orientation (~60–90 KB each, ~0.9 MB per fully-migrated 6-page
-  book) on web and native installs.
+* \- Theme-specific SVGs duplicate page geometry between the pen and chalk forks.
 * \- A page edit now fans out further: a pen change invalidates the chalk too (chalk → night fill →
   punch), and the chalk is a second Gemini artifact to review per cell.
 * \- The chalk's whites are final — a night fill cannot overrule them (the punch wins). A wrong

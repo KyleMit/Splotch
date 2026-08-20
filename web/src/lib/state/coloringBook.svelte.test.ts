@@ -4,21 +4,17 @@ import {
   setOverlayPage,
   setOverlayOrientation,
   overlayUrl,
-  chalkUrl,
   themedOverlayUrl,
   colorSheetUrl,
   nightSheetUrl,
   clearOverlay,
 } from './coloringBook.svelte';
-import { BOOKS, bookAssetPaths, pageNightImage, pageChalkImage } from './books';
+import { BOOKS, bookAssetPaths, pageNightImage } from './books';
 
 const page = BOOKS[0].pages[0];
 const spaceBook = BOOKS.find((b) => b.id === 'space')!;
 const spacePage = spaceBook.pages[0];
-// A page with no night fill or chalk outline in any orientation. Synthetic
-// rather than a catalog page so the null-fallback tests stay valid as more
-// categories ship their assets (eventually every catalog page has them).
-const pageWithoutNight = { ...page, nightImages: {}, chalkImages: {} };
+const pageWithoutNight = { ...page, nightImages: {} };
 
 describe('coloring book state', () => {
   beforeEach(() => clearOverlay());
@@ -33,22 +29,19 @@ describe('coloring book state', () => {
   it('updates every asset accessor when only the orientation changes', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(overlayUrl()).toBe(spacePage.images.landscape);
-    expect(chalkUrl()).toBe(spacePage.chalkImages.landscape);
     expect(colorSheetUrl()).toBe(spacePage.colorImages.landscape);
     expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
 
     setOverlayOrientation('portrait');
     expect(overlayUrl()).toBe(spacePage.images.portrait);
-    expect(chalkUrl()).toBe(spacePage.chalkImages.portrait);
     expect(colorSheetUrl()).toBe(spacePage.colorImages.portrait);
     expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
   });
 
-  it('clearOverlay drops the line art, the chalk, the color sheet, and the night sheet', () => {
+  it('clearOverlay drops the line art, color sheet, and night sheet', () => {
     setOverlayPage(spacePage, 'portrait');
     clearOverlay();
     expect(overlayUrl()).toBeNull();
-    expect(chalkUrl()).toBeNull();
     expect(colorSheetUrl()).toBeNull();
     expect(nightSheetUrl()).toBeNull();
     expect(coloringBookState.overlayPage).toBeNull();
@@ -56,10 +49,10 @@ describe('coloring book state', () => {
 
   it('the colored fill is derived from the line-art path', () => {
     expect(page.colorImages.portrait).toBe(
-      page.images.portrait.replace('.outline.webp', '.light.webp')
+      page.images.portrait.replace('.overlay.svg', '.light.webp')
     );
     expect(page.colorImages.landscape).toBe(
-      page.images.landscape.replace('.outline.webp', '.light.webp')
+      page.images.landscape.replace('.overlay.svg', '.light.webp')
     );
   });
 
@@ -68,12 +61,10 @@ describe('coloring book state', () => {
     // derived from the line-art path.
     setOverlayPage(spacePage, 'portrait');
     expect(nightSheetUrl()).toBe(spacePage.nightImages.portrait);
-    expect(nightSheetUrl()).toBe(spacePage.images.portrait.replace('.outline.webp', '.night.webp'));
+    expect(nightSheetUrl()).toBe(spacePage.images.portrait.replace('.overlay.svg', '.night.webp'));
     setOverlayOrientation('landscape');
     expect(nightSheetUrl()).toBe(spacePage.nightImages.landscape);
-    expect(nightSheetUrl()).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.night.webp')
-    );
+    expect(nightSheetUrl()).toBe(spacePage.images.landscape.replace('.overlay.svg', '.night.webp'));
   });
 
   it('pages without a night fill track a null night sheet', () => {
@@ -82,33 +73,18 @@ describe('coloring book state', () => {
     expect(pageNightImage(pageWithoutNight, 'portrait')).toBeNull();
   });
 
-  it('tracks the chalk outline where one exists, null otherwise', () => {
-    const chalked = {
-      ...page,
-      chalkImages: { portrait: '/coloring/farm/cat-tall.chalk.webp' },
-    };
-    setOverlayPage(chalked, 'portrait');
-    expect(chalkUrl()).toBe('/coloring/farm/cat-tall.chalk.webp');
-    expect(pageChalkImage(chalked, 'portrait')).toBe('/coloring/farm/cat-tall.chalk.webp');
-    setOverlayOrientation('landscape');
-    expect(chalkUrl()).toBeNull();
-    expect(pageChalkImage(chalked, 'landscape')).toBeNull();
-  });
-
   it('picks matching full-resolution art for the resolved theme', () => {
     setOverlayPage(spacePage, 'landscape');
-    expect(themedOverlayUrl('light')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.overlay.svg')
-    );
+    expect(themedOverlayUrl('light')).toBe(spacePage.images.landscape);
     expect(themedOverlayUrl('dark')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.svg')
+      spacePage.images.landscape.replace('.overlay.svg', '.dark.overlay.svg')
     );
   });
 
   it('can derive another orientation without changing the active orientation', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('dark', 'portrait')).toBe(
-      spacePage.images.portrait.replace('.outline.webp', '.dark.overlay.svg')
+      spacePage.images.portrait.replace('.overlay.svg', '.dark.overlay.svg')
     );
     expect(coloringBookState.orientation).toBe('landscape');
   });
@@ -123,9 +99,8 @@ describe('book asset manifest', () => {
         expect(paths).toContain(p.images.landscape);
         expect(paths).toContain(p.colorImages.portrait);
         expect(paths).toContain(p.colorImages.landscape);
-        // Night fills and chalk outlines are listed only where they exist, so
-        // check-assets guards them too.
-        for (const url of [...Object.values(p.nightImages), ...Object.values(p.chalkImages)]) {
+        // Night fills are listed only where they exist; dark overlays are invariant.
+        for (const url of [...Object.values(p.nightImages), ...Object.values(p.darkImages)]) {
           expect(paths).toContain(url);
         }
       }

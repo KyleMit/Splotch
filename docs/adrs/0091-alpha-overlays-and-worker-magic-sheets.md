@@ -111,10 +111,10 @@ coloring asset directory therefore shrinks from about 53 MB to 34 MB despite add
 * \+ The worker path has unit coverage for successful transfer, superseded-result disposal, and
   synchronous fallback. Asset conversion has an executable per-channel equivalence bound.
 * \+ macOS WebKit and native iPad simulator selection remain inside the shared action gates.
-* − Every page orientation now has two additional committed presentation assets. A pen or chalk
-  change must rerun `npm run gen:coloring-overlays` and refresh the asset manifest.
-* − The web deployment retains both opaque pipeline sources and transparent presentation assets;
-  only native builds strip the unused sources.
+* − Every page orientation has a theme-specific alpha presentation asset. ADR-0129 later makes those
+  SVGs canonical, so a pen or chalk change requires a reviewed retrace and manifest refresh.
+* − The original WebP architecture retained opaque pipeline sources; ADR-0129's canonical-SVG
+  amendment removes the redundant page masters from both web and native inventories.
 * − Magic fill availability becomes asynchronous across a worker boundary. New code must preserve
   request identity, bitmap ownership, and the synchronous failure path.
 * − An `ImageBitmap` can now be the immutable `MagicSheetSnapshot.canvas`; callers must treat the
@@ -196,15 +196,15 @@ Exercise three races before retaining a worker change:
 
 ### Asset and Export Equivalence
 
-Run `npm run gen:coloring-overlays -- <category>`. The generator must decode each output with
-`hasAlpha: true` and enforce the 4/255 maximum reconstructed-channel error. Run
+The canonical `.overlay.svg` and `.dark.overlay.svg` files must pass
+`npm run vectorize:coloring:check` and `npm run vectorize:postprocess:check`. Run
 `npm run check:assets`, the asset-gen unit suite, export tests, and the coloring proof sheet for
 every affected category. Verify a light and dark screenshot/export; source-over must be the only
 overlay composition in both export paths.
 
 ### Native-Export Pruning
 
-Run an instrumented `npm run build:cap`. `web/build/coloring` must contain `.overlay.webp`,
-`.dark.overlay.webp`, and thumbnail/fill assets but no full-resolution `.outline.webp` or
-`.chalk.webp`. Do not move the opaque sources out of `web/static`: the deterministic generators,
-audits, and proof sheet still consume them there.
+Run an instrumented `npm run build:cap`. `web/build/coloring` must contain the canonical page SVGs,
+cover thumbnails, and fill assets. Page `.outline.webp` and `.chalk.webp` masters no longer exist;
+the asset pipeline rasterizes the SVGs deterministically. Raster cover masters remain until the
+cover vector campaign is approved.

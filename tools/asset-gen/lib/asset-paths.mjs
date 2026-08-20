@@ -5,8 +5,6 @@
 // .coloring-samples*/.
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { existsSync } from 'node:fs';
-import { readFile } from 'node:fs/promises';
 
 // tools/asset-gen/lib/ -> the asset-gen dir is one level up, the repo root three.
 export const ASSET_GEN_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -30,15 +28,6 @@ export const FILL_SRC_DIR = join(ASSET_GEN_DIR, 'fill-src');
 // Gitignored review scratch — candidates, overlays, review sheets. Never shipped.
 export const SAMPLES_DIR = join(REPO_ROOT, '.coloring-samples');
 export const SAMPLES_DARK_DIR = join(REPO_ROOT, '.coloring-samples-dark');
-
-export async function resolveNightLineArt(penPath, pen = null) {
-  const chalkPath = penPath.replace(/\.outline\.webp$/, '.chalk.webp');
-  const chalked = existsSync(chalkPath);
-  const sourcePath = chalked ? chalkPath : penPath;
-  if (!existsSync(sourcePath)) return { sourcePath, source: null, chalk: null };
-  const source = chalked ? await readFile(sourcePath) : (pen ?? (await readFile(sourcePath)));
-  return { sourcePath, source, chalk: chalked ? source : null };
-}
 
 export function toPosix(rel) {
   return rel.replaceAll('\\', '/');

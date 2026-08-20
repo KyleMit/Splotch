@@ -9,6 +9,7 @@ import {
   scoreChalkInkDiff,
 } from '../lib/chalk-ink-diff.mjs';
 import { prepareOutlineAnalysis } from '../lib/outline-analysis.mjs';
+import { rasterizeLineArt } from '../lib/line-art.mjs';
 import {
   chalkDiffClean,
   chalkDiffDeliberateWhite,
@@ -89,24 +90,26 @@ describe('chalk ink diff', () => {
     'flags a shipped ringed-pupil regression while the repaired invented-face page is a negative control',
     async () => {
       async function scorePage(page) {
-        const pen = await readFile(join(COLORING_DIR, `${page}.outline.webp`));
-        const chalk = await readFile(join(COLORING_DIR, `${page}.chalk.webp`));
+        const pen = await rasterizeLineArt(join(COLORING_DIR, `${page}.overlay.svg`));
+        const chalk = await rasterizeLineArt(join(COLORING_DIR, `${page}.dark.overlay.svg`));
         return scoreChalkInkDiff(chalk, await prepareChalkInkDiff(pen));
       }
 
       const broken = await scorePage('nature/caterpillar-wide');
       const repaired = await scorePage('space/ship-tall');
       const pen = await prepareChalkInkDiff(
-        await readFile(join(COLORING_DIR, 'nature/caterpillar-wide.outline.webp'))
+        await rasterizeLineArt(join(COLORING_DIR, 'nature/caterpillar-wide.overlay.svg'))
       );
-      const shipped = await readFile(join(COLORING_DIR, 'nature/caterpillar-wide.chalk.webp'));
+      const shipped = await rasterizeLineArt(
+        join(COLORING_DIR, 'nature/caterpillar-wide.dark.overlay.svg')
+      );
       const regenerated = await scoreChalkInkDiff(shipped, pen, { baseline: broken });
       const tightened = await scoreChalkInkDiff(shipped, pen, {
         baseline: broken,
         maxInkPx: 0,
       });
 
-      expect(broken.addedInkPx).toBe(40);
+      expect(broken.addedInkPx).toBe(37);
       expect(regenerated.passes).toBe(true);
       expect(tightened.passes).toBe(false);
       expect(tightened.absolutePasses).toBe(false);

@@ -4,7 +4,7 @@
 // lib/punch-fill.mjs, shared with gen-light-fills.mjs.
 //
 // Inputs (committed, never shipped):  tools/asset-gen/fill-src/{book}/{page}-{orient}.{light,night}.raw.webp
-// Mask:                               web/static/coloring/{book}/{page}-{orient}.outline.webp (the line art)
+// Mask:                               canonical {page}.overlay.svg / .dark.overlay.svg alpha
 // Outputs (committed, shipped):       web/static/coloring/{book}/{page}-{orient}.{light,night}.webp
 //
 // Offline + deterministic: pure sharp, no network, no GEMINI_API_KEY. Safe to

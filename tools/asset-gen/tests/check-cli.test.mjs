@@ -38,7 +38,6 @@ vi.mock('../lib/asset-paths.mjs', () => ({
   get SAMPLES_DIR() {
     return state.roots.samples;
   },
-  resolveNightLineArt: async (_path, pen) => ({ source: pen, chalk: null }),
   toPosix(rel) {
     return rel.replaceAll('\\', '/');
   },
@@ -50,8 +49,14 @@ vi.mock('../lib/asset-cli.mjs', async (importOriginal) => ({
   },
 }));
 
-vi.mock('../lib/outline-targets.mjs', () => ({
-  resolveOutlineTargets: async () => state.pages,
+vi.mock('../lib/line-art.mjs', () => ({
+  lineArtStem: (path) => path.replace('.overlay.svg', ''),
+  rasterizeLineArt: async (path) => readFile(path),
+  resolveNightLineArt: async (_path, pen) => ({ source: pen, chalk: null }),
+}));
+
+vi.mock('../lib/line-art-targets.mjs', () => ({
+  resolveLineArtTargets: async () => state.pages,
 }));
 
 vi.mock('../lib/outline-analysis.mjs', () => ({
@@ -203,7 +208,7 @@ async function addPage(
     outlineIssues = [],
   } = {}
 ) {
-  const outline = join(state.roots.coloring, `test/${name}.outline.webp`);
+  const outline = join(state.roots.coloring, `test/${name}.overlay.svg`);
   const fill = join(state.roots.fillSrc, `test/${name}.light.raw.webp`);
   await writeFile(
     outline,
@@ -445,31 +450,31 @@ it.each([
 });
 
 it('golden diff reports a corrupt outline, retains successful pages, and exits non-zero', async () => {
-  await addPage('bad', { corruptOutline: true });
-  await addPage('good');
+  await addPage('bad-tall', { corruptOutline: true });
+  await addPage('good-wide');
   await writeFile(
     join(state.roots.assetGen, 'golden/golden-scores.json'),
-    JSON.stringify({ version: 5, pages: { 'test/bad': {}, 'test/good': {} } })
+    JSON.stringify({ version: 6, pages: { 'test/bad-tall': {}, 'test/good-wide': {} } })
   );
 
   await runCli('check-golden-scores.mjs', '--diff');
 
-  expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
+  expect(outputOf(error)).toContain('test/bad-tall  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('1 page(s) diffed vs golden');
   expect(outputOf(log)).toContain('0 regression(s)');
-  expect(outputOf(log)).not.toContain('test/bad  page missing');
+  expect(outputOf(log)).not.toContain('test/bad-tall  page missing');
   expect(process.exitCode).toBe(1);
 });
 
 it('golden freeze preserves the baseline when any page errors', async () => {
-  await addPage('bad', { corruptOutline: true });
-  await addPage('good');
+  await addPage('bad-tall', { corruptOutline: true });
+  await addPage('good-wide');
   const goldenPath = join(state.roots.assetGen, 'golden/golden-scores.json');
   await writeFile(goldenPath, 'complete baseline\n');
 
   await runCli('check-golden-scores.mjs', '--freeze');
 
-  expect(outputOf(error)).toContain('test/bad  ERROR (corrupt image)');
+  expect(outputOf(error)).toContain('test/bad-tall  ERROR (corrupt image)');
   expect(outputOf(log)).toContain('Skipped freeze after scoring 1 page(s)');
   await expect(readFile(goldenPath, 'utf8')).resolves.toBe('complete baseline\n');
   expect(process.exitCode).toBe(1);

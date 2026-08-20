@@ -1,7 +1,7 @@
 # asset-gen — Splotch asset-generation pipeline
 
 The AI (`@google/genai`) and image-processing (`sharp`) tooling that **produces** Splotch's
-committed art: AI style covers, the light/dark coloring-page fills, picker thumbnails, and
+committed art: AI style covers, the light/dark coloring-page fills, picker cover thumbnails, and
 format/line-art utilities. It lives in its own folder so you can iterate on it in a small footprint
 — the app never runs any of this at build time; it just reads the committed outputs from
 `web/static/`.
@@ -67,16 +67,19 @@ From the **repo root** (the discoverable entry points — ADR-0019):
 ```bash
 npm run gen:style-covers        # AI style thumbnails, both themes -> web/static/styles/{style}.{light,dark}.webp
                                 #   --theme dark / --style Crayon / --temperature 1.4 to narrow or re-roll
-npm run gen:coloring-chalk      # page/cover chalk line art -> web/static/coloring/**/*.chalk.webp
-npm run gen:coloring-outlines:fresh # brand-new pen outline from a text scene (same subject, new drawing)
+npm run gen:coloring-chalk      # page/cover chalk candidates -> uncommitted dark SVG trace source
+npm run gen:coloring-outlines:fresh # brand-new pen candidate -> uncommitted light SVG trace source
+npm run gen:coloring-outlines:normalize # normalized pen candidate -> uncommitted light SVG trace source
+npm run vectorize:coloring      # plan/trace staged pen or chalk sources -> canonical SVGs
+npm run vectorize:coloring:check # verify every canonical SVG against its source/output ledger
+npm run vectorize:postprocess:check # verify every canonical SVG is byte-stable and dimensioned
 npm run gen:coloring-fills      # light fill candidates -> .coloring-samples/ (--apply to ship)
 npm run check:coloring-fill-drift # drift-check the raw fills in fill-src/ (no key/network)
 npm run check:coloring-invented-shapes # invented colored shapes on the open background of the raws (no key/network)
 npm run check:coloring-night-halo # audit shipped night fills against the candidate halo bar + crop-review signal (no key/network)
 npm run gen:coloring-punched-fills      # re-punch the shipped fills from fill-src/ raws (no key/network)
-npm run gen:coloring-thumbs     # picker thumbnails (pen + chalk) -> web/static/coloring/**/*.{thumb,chalk.thumb}.webp
-npm run gen:coloring-overlays   # temporary full-resolution WebP comparison overlays for SVG regeneration
-npm run gen:coloring-responsive # web srcset tiers from canonical fills/thumbs -> web/static/coloring/max-*px/
+npm run gen:coloring-thumbs     # light/dark cover thumbnails -> web/static/coloring/**/cover*.thumb.webp
+npm run gen:coloring-responsive # web srcset tiers from canonical fills/cover thumbs -> web/static/coloring/max-*px/
 npm run check:coloring-golden-scores # re-score the catalog vs the frozen golden/golden-scores.json (no key/network, ~1 min)
 npm run update:coloring-golden-scores # adopt the current catalog scores as the new golden baseline
 npm run gen:assets:manifest     # re-hash the committed art -> golden/asset-manifest.sha256 (CI drift guard)
@@ -86,6 +89,37 @@ npm run gen:coloring-book-proof-sheet -- nature # HTML proof sheet of ONE catego
 **Whenever you touch an asset — generate, retouch, regenerate, or ship a fill — rebuild the contact
 sheet for the affected page/category and publish it with the Artifact tool** so the change is
 visible in the session (see "Viewing a review sheet" below).
+
+### Line-art promotion is a two-stage workflow
+
+The fresh, normalize, and chalk generators always produce a reviewed **raster candidate** first.
+Their `--apply` flag stages that candidate as an uncommitted `.source.webp` under
+`vectorized/coloring-overlays/` (pen) or `vectorized/coloring-dark-overlays/` (chalk); it does not
+replace a canonical asset. Trace and review the staged source before any downstream regeneration:
+
+```bash
+# Pen; add --production only after the paid trace is explicitly authorized.
+npm run vectorize:coloring -- --match=farm/cat-wide --batch-size=1
+npm run vectorize:coloring -- --match=farm/cat-wide --batch-size=1 --production
+
+# Chalk.
+npm run vectorize:coloring -- --theme=dark --match=farm/cat-wide --batch-size=1
+npm run vectorize:coloring -- --theme=dark --match=farm/cat-wide --batch-size=1 --production
+
+npm run vectorize:coloring:analyze -- --book=farm
+npm run vectorize:coloring:analyze -- --theme=dark --book=farm
+npm run vectorize:coloring -- --write-ledger
+npm run vectorize:coloring -- --theme=dark --write-ledger
+npm run vectorize:coloring:check
+npm run vectorize:postprocess:check
+```
+
+The optimized SVG under `web/static/coloring/` is the canonical line art. A pen SVG change then
+invalidates its chalk, light/night fills, and punch; a chalk SVG change invalidates its night fill
+and punch. Cover SVGs stop after regenerating their picker thumbnails and responsive derivative.
+`npm run build` emits the incremental coloring-pack manifest from `bookPackAssetPaths()`—page pen
+and chalk SVGs, including every landscape `-wide` pair, are invariant pack files; cover SVGs remain
+authoring masters because packs render the raster cover thumbnails.
 
 ### The per-page notes registry
 
@@ -164,25 +198,21 @@ The Gemini generators need `GEMINI_API_KEY` in the environment and fail fast wit
 
 ## Inputs & outputs
 
-* **Inputs** (committed): `tools/asset-gen/style-covers/source.svg`, the black-and-white
-  `web/static/coloring/**/*.outline.webp` PEN page and cover outlines (the source of every
-  derivation).
-* **Shipped outputs** (committed, read by the app): `*.chalk.webp` chalk outlines (dedicated
-  dark-mode line art, stored ink-on-white — see `pipeline.md`), `*.light.webp` / `*.night.webp`
-  fills, `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails (light / dark picker tiles),
-  `*.overlay.svg` / `*.dark.overlay.svg` invariant full-page presentation layers, and
-  `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
+* **Inputs** (committed): `tools/asset-gen/style-covers/source.svg` plus canonical page and cover
+  `*.overlay.svg` / `*.dark.overlay.svg` line art.
+* **Committed outputs:** canonical page SVG line art, `*.light.webp` / `*.night.webp` fills, cover
+  `*.thumb.webp` / `*.chalk.thumb.webp` thumbnails, canonical cover SVG masters used only by the
+  pipeline, and `web/static/styles/*.webp` covers. Web-only responsive derivatives live under
   `web/static/coloring/max-{edge}px/`; `build:cap` strips those directories so native keeps one
-  canonical runtime width. `gen:coloring-overlays` writes temporary WebP baselines for the
-  vectorization comparison and fidelity workflow; remove them after analysis rather than shipping
-  them.
+  canonical runtime width. Page or cover regeneration stages uncommitted `.source.webp` inputs under
+  `vectorized/coloring-{,dark-}overlays/` for the paid vector workflow.
 * **Review scratch** (gitignored): `.coloring-samples/`, `.coloring-samples-dark/` — at the **repo
   root** (`lib/asset-paths.mjs` `SAMPLES_DIR` / `SAMPLES_DARK_DIR`), not under `tools/asset-gen/`.
   (The gitignore pattern is unanchored, so the `tools/asset-gen/.coloring-samples/` dir used as the
   ad-hoc analysis-script drop spot is also ignored — that's a different directory; generator outputs
   land at the root.)
 
-Generate → review the scratch → copy the good outputs into `web/static/` → commit.
+Generate → review scratch → stage a trace source → vectorize and review → commit the canonical SVG.
 
 ### Viewing the coloring-book proof sheet
 

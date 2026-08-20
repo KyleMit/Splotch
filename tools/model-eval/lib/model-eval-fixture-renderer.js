@@ -79,31 +79,11 @@
       g.stroke();
     }
   }
-  async function drawOutline(uri, invert) {
+  async function drawOutline(uri) {
     if (!uri) return;
     const img = await loadImg(uri);
     const b = containBox(img.naturalWidth, img.naturalHeight);
-    if (!invert) {
-      // light-mode line art is black-ink-on-white; multiply drops the white so it overlays like the app's --lineart multiply
-      ctx.save();
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.drawImage(img, b.x, b.y, b.w, b.h);
-      ctx.restore();
-      return;
-    }
-    // chalk ships ink-on-white; dark mode inverts to white-on-dark and screens.
-    const off = document.createElement('canvas');
-    off.width = img.naturalWidth;
-    off.height = img.naturalHeight;
-    const o = off.getContext('2d');
-    o.drawImage(img, 0, 0);
-    o.globalCompositeOperation = 'difference';
-    o.fillStyle = '#fff';
-    o.fillRect(0, 0, off.width, off.height);
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.drawImage(off, b.x, b.y, b.w, b.h);
-    ctx.restore();
+    ctx.drawImage(img, b.x, b.y, b.w, b.h);
   }
   // Authored SVG scenes (tools/store-drawings/samples) draw straight onto the
   // paper: they are already the child's colored strokes on transparency, so
@@ -503,7 +483,7 @@
     seed = spec.seed || 987654;
     paper(spec.theme);
     for (const L of spec.layers) {
-      if (L.op === 'outline') await drawOutline(L.uri, L.invert);
+      if (L.op === 'outline') await drawOutline(L.uri);
       else if (L.op === 'art') await drawArt(L.uri, L.w, L.h);
       else if (L.op === 'reveal') await revealFill(L.uri, L.strokes);
       else if (L.op === 'gradient') revealGradient(L.angle, L.strokes);

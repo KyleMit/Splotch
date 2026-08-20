@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import sharp from 'sharp';
-import { COLORING_DIR, FILL_SRC_DIR, resolveNightLineArt } from '../lib/asset-paths.mjs';
+import { COLORING_DIR, FILL_SRC_DIR } from '../lib/asset-paths.mjs';
+import { rasterizeLineArt, resolveNightLineArt } from '../lib/line-art.mjs';
 import { LOCAL_WARP_MAX_PX, localWarp } from '../lib/local-warp.mjs';
 import { mergeFlags, pageLevers } from '../lib/page-notes.mjs';
 import { scoreGoldenPage } from '../lib/golden-catalog.mjs';
@@ -96,8 +97,8 @@ describe('local-warp registration score', () => {
 describe('catalog calibration', () => {
   async function scorePage(page, theme = 'light') {
     const [category, name] = page.split('/');
-    const penPath = join(COLORING_DIR, category, `${name}.outline.webp`);
-    const pen = await readFile(penPath);
+    const penPath = join(COLORING_DIR, category, `${name}.overlay.svg`);
+    const pen = await rasterizeLineArt(penPath);
     const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
     return localWarp(
       source,
@@ -153,8 +154,8 @@ describe('catalog calibration', () => {
 
       for (const [page, theme] of exceptions) {
         const [category, name] = page.split('/');
-        const penPath = join(COLORING_DIR, category, `${name}.outline.webp`);
-        const pen = await readFile(penPath);
+        const penPath = join(COLORING_DIR, category, `${name}.overlay.svg`);
+        const pen = await rasterizeLineArt(penPath);
         const source = theme === 'night' ? (await resolveNightLineArt(penPath, pen)).source : pen;
         const fill = await readFile(join(FILL_SRC_DIR, category, `${name}.${theme}.raw.webp`));
         const score = await localWarp(source, fill);
@@ -187,9 +188,9 @@ describe('catalog calibration', () => {
 
   it('makes the golden warp verdict use the reviewed page ceiling', async () => {
     const page = 'farm/horse-wide';
-    const penPath = join(COLORING_DIR, `${page}.outline.webp`);
+    const penPath = join(COLORING_DIR, `${page}.overlay.svg`);
     const [pen, nightRaw] = await Promise.all([
-      readFile(penPath),
+      rasterizeLineArt(penPath),
       readFile(join(FILL_SRC_DIR, `${page}.night.raw.webp`)),
     ]);
     const { chalk } = await resolveNightLineArt(penPath, pen);

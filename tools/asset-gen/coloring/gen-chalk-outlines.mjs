@@ -1,5 +1,5 @@
 // Generate a page or cover's CHALK OUTLINE — the dedicated dark-mode line art
-// that forks from the single shared outline (the "pen outline", *.outline.webp).
+// that forks from the canonical light line art (the pen, *.overlay.svg).
 //
 // Terms: the PEN outline is black ink on white paper (light mode); the CHALK
 // outline is white ink on a black board (dark mode). The chalk is not a blind
@@ -11,13 +11,9 @@
 // survive into the final combined image by construction — no blob detection, no
 // fill-referencing punch.
 //
-// STORAGE POLARITY: the shipped {page}.chalk.webp is stored INK-ON-WHITE (the
-// negation of what dark mode displays). That keeps the app's existing dark-mode
-// treatment working unchanged (--lineart-filter: invert(1) + screen), lets every
-// ink-on-white analysis tool (outline-match, punch mask, drift audit) read the
-// chalk unmodified, and compresses better than an alpha layer (lossy webp,
-// no alpha plane to encode or silently flatten). Anything that hands the chalk
-// to Gemini or a human negates it back to white-on-black first.
+// STORAGE POLARITY: scoring rasterizes both SVG themes as ink-on-white. A page
+// apply stages a raster trace source; the canonical dark SVG bakes white runtime
+// ink. Transitional cover chalk remains ink-on-white WebP until its vector pass.
 //
 // Gates per candidate (keep-best-of-N with a rising temperature ladder):
 //   1. keep/localKeep — outlineMatch(reference, candidate) where the reference
@@ -68,7 +64,8 @@ import {
 } from '../lib/asset-paths.mjs';
 import { fail, parseNonNegative, parsePositiveInt, parseTemperature } from '../lib/asset-cli.mjs';
 import { generateImage, makeClient } from '../lib/gemini.mjs';
-import { resolveOutlineTargets } from '../lib/outline-targets.mjs';
+import { darkLineArtPath, lineArtStem, rasterizeLineArt } from '../lib/line-art.mjs';
+import { resolveLineArtTargets } from '../lib/line-art-targets.mjs';
 import { pageLevers, mergeFlags, describeLevers, withPageNotes } from '../lib/page-notes.mjs';
 import { outlineMatch, KEEP_THRESHOLD, LOCAL_KEEP_THRESHOLD } from '../lib/outline-match.mjs';
 import { alignToSource } from '../lib/align-to-source.mjs';
@@ -220,8 +217,8 @@ const rank = (c, cfg) =>
   c.keep * 100 -
   c.eyes.whitesMissed * 10;
 
-const pages = await resolveOutlineTargets(positionals, {
-  includeCovers: false,
+const pages = await resolveLineArtTargets(positionals, {
+  includeCovers: true,
   explicitFiles: true,
   sort: 'per-target',
   defaultAll: false,
@@ -230,7 +227,7 @@ const pages = await resolveOutlineTargets(positionals, {
 
 let failures = 0;
 for (const page of pages) {
-  const rel = toPosix(relative(COLORING_DIR, page).replace(/\.outline\.webp$/, ''));
+  const rel = toPosix(lineArtStem(relative(COLORING_DIR, page)));
   const isCover = rel.endsWith('/cover');
   // Resolve this page's levers: defaults < fill-src/<cat>/notes.json < CLI.
   const levers = pageLevers(rel, 'chalk');
@@ -251,12 +248,12 @@ for (const page of pages) {
     console.warn(`(skip) no line art at ${page}`);
     continue;
   }
-  const dest = join(COLORING_DIR, `${rel}.chalk.webp`);
+  const dest = darkLineArtPath(page);
   if (existsSync(dest) && !values.force && !values.apply && !values.rescore) {
     console.log(`${rel}  chalk already shipped — skipping (--force to redraw)`);
     continue;
   }
-  const pen = await readFile(page);
+  const pen = await rasterizeLineArt(page);
   const penAnalysis = await prepareOutlineAnalysis(pen);
   // Keep-gate reference: whiten the pen's solid interiors (keeping a boundary
   // rim) so the chalk's deliberate whitening of a solid pupil doesn't score as
@@ -279,7 +276,7 @@ for (const page of pages) {
     : null;
   const inkAnalysis = await prepareChalkInkDiff(penAnalysis);
   const approvedInk = existsSync(dest)
-    ? await scoreChalkInkDiff(await readFile(dest), inkAnalysis)
+    ? await scoreChalkInkDiff(await rasterizeLineArt(dest), inkAnalysis)
     : null;
   const score = async (candidate, shift, attempt) => {
     const fwd = await outlineMatch(keepReference, candidate);
@@ -366,9 +363,11 @@ for (const page of pages) {
       failures++;
       console.log(`  ✗ NOT applied — gates unmet; review ${relative(REPO_ROOT, sample)} or retry`);
     } else {
-      await writeFile(dest, best.candidate);
+      const source = join(REPO_ROOT, 'vectorized', 'coloring-dark-overlays', `${rel}.source.webp`);
+      await mkdir(dirname(source), { recursive: true });
+      await writeFile(source, best.candidate);
       console.log(
-        `  ✓ applied to ${relative(REPO_ROOT, dest)} — ${isCover ? 'regenerate its thumbnail + responsive asset' : 'regenerate its night fill + re-punch'}`
+        `  ✓ staged ${relative(REPO_ROOT, source)} — vectorize it, then ${isCover ? 'regenerate its cover thumbnail' : 'regenerate its night fill + re-punch'}`
       );
     }
   }

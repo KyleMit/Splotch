@@ -40,8 +40,10 @@ We considered three pack representations:
 Choose option 3 for every light- and dark-mode page overlay.
 
 Every light overlay uses `{page}.overlay.svg`, and every dark overlay uses
-`{page}.dark.overlay.svg`. Picker covers and thumbnails, Magic fills, and authoring outlines remain
-raster assets.
+`{page}.dark.overlay.svg`. These files are also the canonical page line art used by the authoring
+pipeline. Picker covers and Magic fills remain raster assets. The page picker and active-page chip
+use those exact theme- and orientation-matched SVG URLs without responsive candidates or CSS
+line-art filters. Only book covers retain raster thumbnails.
 
 Each committed Vectorizer SVG passes through `tools/vectorize/postprocess-svg.mjs`. The pinned,
 multipass SVGO transformation must reach a byte-stable fixed point, and it restores intrinsic
@@ -72,12 +74,12 @@ deployed SVG responses used gzip; the production decision therefore uses measure
 and raw bytes for native. A watermarked free test trace can rehearse geometry, but its watermark
 becomes traced geometry and cannot approve production size or fidelity.
 
-The exact production recipe and every source/output digest live in
+The exact production recipe and every trace-source/output digest live in
 `tools/vectorize/coloring-overlays.json` and `tools/vectorize/coloring-dark-overlays.json`.
 `npm run vectorize:coloring:check` is the derivation drift guard, while
-`npm run vectorize:coloring:analyze` re-rasterizes either SVG catalog against its authoring
-outlines. The size comparison fields are populated only while the replaced WebPs are available; the
-fidelity gate remains repeatable after those redundant runtime assets are removed.
+`npm run vectorize:coloring:analyze` re-rasterizes either SVG catalog against its authoring sources
+when those temporary sources are present. The committed ledger continues to verify the canonical
+output inventory after those uncommitted trace sources are removed.
 
 ## Consequences
 
@@ -92,3 +94,58 @@ fidelity gate remains repeatable after those redundant runtime assets are remove
 * − Vector fidelity is close but not pixel-identical; future source regeneration still requires the
   derivation, fidelity, visual-registration, and physical-device gates.
 * − Theme-specific SVG files duplicate geometry between pen and chalk presentation.
+
+## Amendment (2026-08): Make Page SVGs the Canonical Authoring Source
+
+The accepted page traces made the opaque page masters redundant. All deterministic audits,
+proof-sheet rendering, Gemini conditioning, and fresh/normalize/chalk regeneration now rasterize the
+canonical SVG alpha onto white. New or edited page art is staged as an uncommitted
+`vectorized/coloring-{,dark-}overlays/{page}.source.webp`, then traced into the canonical SVG. Cover
+masters retain `.outline.webp` and `.chalk.webp` until the separate cover campaign is approved.
+
+The fill punch chooses the SVG-alpha mask directly. The threshold is alpha greater than 105,
+algebraically equivalent to the retired ink-on-white test `luma < 150`. Across all 96 pages, the new
+light masks measured 96.24%–98.91% IoU against the retired raster masks; dark masks measured
+95.63%–98.68%. Median mask-area ratios were 1.003 light and 1.014 dark. We considered keeping the
+raster masks, repunching every fill from the new masks, and using SVG alpha only for future work.
+The third option is retained: shipped fills already passed composite review under these SVGs, while
+repunching 192 binary fills for subpixel edge differences would create catalog-wide churn with no
+visible gain. Existing raw fills and shipped punches remain byte-stable; every future punch uses the
+canonical SVG alpha.
+
+The migration removes 96 light and 96 dark page raster masters (18,288,242 bytes). Golden catalog
+format 6 freezes scores from SVG-derived rasterization. Two reviewed eye coordinates, three local
+warp ceilings, two night-halo ceilings, and the chalk-ink lower-p90 default moved by bounded
+rasterization noise; no creative asset was regenerated. The invented-shape audit retains its three
+pre-existing flags unchanged.
+
+Vectorization ledgers use format 2. Each record keeps the paid trace source digest and byte count as
+provenance plus the canonical output digest and byte count as the live drift guard; the trace source
+itself is recovery scratch and is not committed. `vectorize:coloring:check` independently enumerates
+the exact canonical SVG inventory so deleting a ledger record and its file cannot pass vacuously.
+
+Coloring-pack manifest format 3 already admits the SVG suffixes and fingerprints selected bytes. A
+stale manifest that names a deleted raster master fails its fetch, writes no installed marker, and
+remains retryable. The safe fail-closed behavior needs no manifest-format bump.
+
+## Amendment (2026-08): Make Cover SVGs Canonical
+
+The separately approved cover campaign traced all eight light and eight dark cover masters with the
+same production recipe and 16 credits. Every trace passed the catalog gate: light covers measured at
+least 96.62% binary ink IoU and at most 2.76/255 mean alpha error; dark covers measured at least
+97.25% IoU and at most 2.56/255 error. The light SVGs total 347,803 raw / 148,128 gzip bytes versus
+734,748 source WebP bytes; dark totals are 364,614 / 156,300 versus 686,942.
+
+`cover.overlay.svg` and `cover.dark.overlay.svg` are therefore canonical line-art masters under the
+same format-2 derivation ledgers as pages. The 16 opaque raster masters are removed. Cover picker
+presentation remains `cover.thumb.webp` and `cover.chalk.thumb.webp`; `gen:coloring-thumbs`
+deterministically rasterizes those thumbnails from the canonical SVGs, and `gen:coloring-responsive`
+derives their 240 px candidates. Cover SVGs have no fill, punch, canvas, or downloaded-pack role, so
+native static stripping removes both canonical masters after their thumbnail derivatives are
+present.
+
+The ledgers now contain 104 light and 104 dark records. Fidelity analysis reads the uncommitted
+restart-tree `.source.webp` files rather than assuming a committed raster master. The ledger check
+always binds every canonical SVG to its recorded output digest and also verifies recorded source
+digests when that recovery scratch is locally present; after it is removed, those source fields are
+retained provenance rather than independently verifiable inputs.

@@ -89,14 +89,17 @@ function scribbleSet(box, rng, rows, w) {
 // Resolve a coloring asset, carrying the attempted path alongside the data URI (null
 // if it doesn't exist) so a missing asset can be reported by path, not just by id.
 function resolveAsset(book, page, orientation, kind) {
-  const path = join(COLORING, book, `${page}-${orientation}.${kind}.webp`);
+  const suffix =
+    kind === 'outline' ? 'overlay.svg' : kind === 'chalk' ? 'dark.overlay.svg' : `${kind}.webp`;
+  const path = join(COLORING, book, `${page}-${orientation}.${suffix}`);
+  const mimeType = path.endsWith('.svg') ? 'image/svg+xml' : 'image/webp';
   const uri = existsSync(path)
-    ? `data:image/webp;base64,${readFileSync(path).toString('base64')}`
+    ? `data:${mimeType};base64,${readFileSync(path).toString('base64')}`
     : null;
   return { uri, path };
 }
 
-// Picks the first resolved asset among fallback candidates (e.g. chalk-or-outline),
+// Picks the first resolved asset among fallback candidates,
 // keeping every attempted path so a fully-missing chain still reports where it looked.
 // Spread directly into a layer: { op: 'outline', ...pickAsset(resolveAsset(...)) }.
 function pickAsset(...candidates) {
@@ -243,8 +246,7 @@ const C = Object.fromEntries(PALETTE.map((c) => [c.label.toLowerCase(), c.hex]))
   }
   layers.push({
     op: 'outline',
-    ...pickAsset(resolveAsset(book, page, o, 'chalk'), resolveAsset(book, page, o, 'outline')),
-    invert: true,
+    ...pickAsset(resolveAsset(book, page, o, 'chalk')),
   });
   add({ id: `night__${page}`, theme: 'night', dim: o, layers });
 });

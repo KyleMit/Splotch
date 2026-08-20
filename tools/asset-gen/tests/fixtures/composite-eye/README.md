@@ -22,8 +22,8 @@ They are the **pre-fix** night eyes, recovered from git history (their fixed ver
   orb, before the chalk erase-and-redraw fixed it).
 * `horse-tall`: night raw + chalk at `868c9c7^` (before the chalk + night regen).
 
-Each page's `*.outline.webp` (pen) and `*.light.raw.webp` were unchanged by those fixes, so the
-current committed ones compose correctly with the recovered night+chalk.
+Each page's pen line art and `*.light.raw.webp` were unchanged by those fixes, so the current
+committed ones compose correctly with the recovered night+chalk.
 
 ## Rebuilding
 
