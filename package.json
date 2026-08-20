@@ -418,7 +418,7 @@
     "prettier": "^3.8.4",
     "prettier-plugin-svelte": "^4.1.1",
     "scripts-info": "^1.0.5",
-    "sharp": "^0.35.2",
+    "sharp": "^0.35.3",
     "svelte-check": "^4.7.4",
     "svgo": "^4.0.2",
     "typescript": "^6.0.3",
