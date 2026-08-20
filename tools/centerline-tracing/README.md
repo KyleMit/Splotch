@@ -43,8 +43,9 @@ Install [uv](https://docs.astral.sh/uv/) and the root Node dependencies. On macO
     pnpm install --frozen-lockfile
 
 Linux installation is documented by uv upstream. The wrapper never installs a system tool. If uv is
-absent it exits before creating output and prints the setup hint. Explicit invocation runs uv with
---project tools/centerline-tracing and --locked.
+absent it exits before creating output and prints the setup hint. Explicit generation runs uv with
+--project tools/centerline-tracing, --locked, and --no-dev; tests and benchmarks retain the
+development dependency group.
 
 That command lazily creates tools/centerline-tracing/.venv from .python-version, pyproject.toml, and
 uv.lock; it does not install into the repository root or global Python. @resvg/resvg-js and

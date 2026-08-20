@@ -14,19 +14,22 @@ function hasUv() {
   return !probe.error && probe.status === 0;
 }
 
-export function traceCenterlines(args, { stderr = process.stderr, spawn = spawnSync } = {}) {
+export function traceCenterlines(args) {
   if (!hasUv()) {
-    stderr.write(`centerline tracing requires uv; install it first:\n  ${UV_SETUP_COMMAND}\n`);
+    process.stderr.write(
+      `centerline tracing requires uv; install it first:\n  ${UV_SETUP_COMMAND}\n`
+    );
     return 1;
   }
 
-  const result = spawn(
+  const result = spawnSync(
     'uv',
     [
       'run',
       '--project',
       CAPABILITY_ROOT,
       '--locked',
+      '--no-dev',
       'python',
       '-m',
       'centerline_tracing.cli',
@@ -35,7 +38,7 @@ export function traceCenterlines(args, { stderr = process.stderr, spawn = spawnS
     { cwd: process.cwd(), stdio: 'inherit' }
   );
   if (result.error) {
-    stderr.write(`centerline tracing failed to start: ${result.error.message}\n`);
+    process.stderr.write(`centerline tracing failed to start: ${result.error.message}\n`);
     return 1;
   }
   return result.status ?? 1;

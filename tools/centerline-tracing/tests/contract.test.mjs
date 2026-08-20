@@ -1,6 +1,8 @@
 import {
+  chmodSync,
   copyFileSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -51,6 +53,30 @@ describe('centerline tracing contract', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('centerline tracing requires uv');
     expect(existsSync(output)).toBe(false);
+  });
+
+  it('runs production traces without the development dependency group', () => {
+    const root = temporaryRoot();
+    const bin = join(root, 'bin');
+    const uv = join(bin, 'uv');
+    const argsLog = join(root, 'uv-args.txt');
+    mkdirSync(bin);
+    writeFileSync(
+      uv,
+      '#!/bin/sh\nif [ "$1" = "--version" ]; then exit 0; fi\nprintf "%s\\n" "$@" > "$UV_ARGS_LOG"\n'
+    );
+    chmodSync(uv, 0o755);
+
+    const result = runTrace([], {
+      env: { ...process.env, PATH: bin, UV_ARGS_LOG: argsLog },
+    });
+    const uvArgs = readFileSync(argsLog, 'utf8').trim().split('\n');
+
+    expect(result.status).toBe(0);
+    expect(uvArgs[0]).toBe('run');
+    expect(uvArgs).toContain('--locked');
+    expect(uvArgs).toContain('--no-dev');
+    expect(uvArgs.indexOf('--no-dev')).toBeLessThan(uvArgs.indexOf('python'));
   });
 
   it('rejects invalid input without replacing an existing output', () => {
