@@ -154,6 +154,7 @@ test.describe('AI result modal', () => {
 
         const caption = page.locator('.ai-loading-caption');
         await expect(caption).toBeVisible();
+        await settledStageHeight(page);
         const loading = await loadingBoxes(page);
 
         expect(loading.card.y).toBeGreaterThanOrEqual(-1);

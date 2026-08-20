@@ -201,14 +201,14 @@ export async function revealedBoxes(page: Page) {
   });
 }
 
-// The stage glides to its new height when the keep-drawing pill leaves, so a
-// height read on the frame the picture became visible is a height mid-glide.
+// The stage glides on mount and again when the keep-drawing pill leaves, so a
+// height read from either transition's first frame is not production geometry.
 export async function settledStageHeight(page: Page) {
   let previous = Number.NaN;
   await expect
     .poll(async () => {
       const { stage } = await revealedBoxes(page);
-      const settled = stage.height === previous;
+      const settled = stage.height > 0 && stage.height === previous;
       previous = stage.height;
       return settled;
     })
