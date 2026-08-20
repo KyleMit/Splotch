@@ -1,5 +1,5 @@
-// Deterministic SVG -> PNG for contact sheets.
-// Usage: node render.mjs jobs.json      where jobs.json = [{svg, png, width}, ...]
+// Deterministic SVG -> PNG for the vector-versus-raster agreement check.
+// Invoked by graph/metrics.raster_ink_diff with [{ svg, png, width }, ...].
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { Resvg } from '@resvg/resvg-js';
