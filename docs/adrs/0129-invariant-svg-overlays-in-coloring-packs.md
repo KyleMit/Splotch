@@ -15,9 +15,11 @@ A production Vectorizer.AI pilot found that one optimized SVG can replace both r
 for suitable line art. The subsequent 96-page pen campaign produced 3,572,243 raw SVG bytes and
 1,558,331 gzip transfer bytes, replacing 6,274,180 compact or 9,080,706 full WebP bytes. Every trace
 passed the catalog fidelity gate: binary ink IoU remained at or above 96.34%, and alpha mean
-absolute error remained at or below 2.46/255. Chromium and WebKit decoded, drew, and exported the
-simple, dense, and chalk pilot samples successfully. Picker covers remain smaller as raster
-thumbnails, and chalk still needs its own dense-page production gate before a broader campaign.
+absolute error remained at or below 2.46/255. A separately approved 83-page chalk selection then
+produced 3,314,932 raw SVG bytes and 1,450,755 gzip bytes, replacing 3,780,176 compact or 4,521,752
+full WebP bytes. Its minimum IoU was 95.67% and maximum alpha error was 1.83/255. Chromium and
+WebKit decoded, drew, and exported the simple, dense, and chalk pilot samples successfully. Picker
+covers remain smaller as raster thumbnails.
 
 We considered three pack representations:
 
@@ -36,9 +38,11 @@ Choose option 3 for all light-mode page overlays and for dark-mode entries expli
 vector presentation.
 
 Every light overlay uses `{page}.overlay.svg`. `books.ts` records the smaller dark eligibility set
-by page and orientation; an eligible dark overlay uses `{page}.dark.overlay.svg`, while every other
-dark overlay retains the WebP path from ADR-0091. Picker covers and thumbnails, Magic fills,
-authoring outlines, and non-selected dark overlays remain raster assets.
+by page and orientation: both orientations in Farm, Dinosaurs, Creatures, Nature, Objects, and
+Shapes; both orientations for Astronaut, Meteor, Moon, Rover, and Ship; and Station portrait. These
+83 entries use `{page}.dark.overlay.svg`. Station landscape and all 12 Vehicles orientations retain
+the WebP path from ADR-0091. Picker covers and thumbnails, Magic fills, authoring outlines, and
+non-selected dark overlays remain raster assets.
 
 Each committed Vectorizer SVG passes through `tools/vectorize/postprocess-svg.mjs`. The pinned,
 multipass SVGO transformation must reach a byte-stable fixed point, and it restores intrinsic
@@ -54,19 +58,24 @@ version-and-resolution scoped because the installed marker already fingerprints 
 including its bytes and digest; vector invariance does not introduce a separate migration or cache
 authority.
 
-The pen catalog passed a paid dense-landscape gate on Fairy wide before the remaining pages were
-processed in book-sized batches. The final catalog build then passed physical-iPad page selection,
-theme switching, Magic reveal, rotation, overlay/fill registration, clearing, and export checks. The
-invariant pack path had already passed a real offline install and relaunch with digest-matched SVG
-bytes. The deployed SVG responses used gzip; the production decision therefore uses measured gzip
-bytes for web and raw bytes for native. A watermarked free test trace can rehearse geometry, but its
-watermark becomes traced geometry and cannot approve production size or fidelity.
+The pen and chalk campaigns each passed a paid dense-landscape gate on Fairy wide before the
+remaining pages were processed in book-sized batches. The final light catalog build passed
+physical-iPad page selection, theme switching, Magic reveal, rotation, overlay/fill registration,
+clearing, and export checks. The integrated dark selection then passed the physical-iPad theme and
+coloring interaction rows, loaded a dark SVG directly in Safari, and completed screenshot export;
+the report-only screenshot maximum exceeded its strict gate by 0.5 ms while broader pre-existing
+clear/rotation failures remained. The invariant pack path had already passed a real offline install
+and relaunch with digest-matched SVG bytes. The deployed SVG responses used gzip; the production
+decision therefore uses measured gzip bytes for web and raw bytes for native. A watermarked free
+test trace can rehearse geometry, but its watermark becomes traced geometry and cannot approve
+production size or fidelity.
 
 The exact production recipe and every source/output digest live in
-`tools/vectorize/coloring-overlays.json`. `npm run vectorize:coloring:check` is the derivation drift
-guard, while `npm run vectorize:coloring:analyze` re-rasterizes the SVG catalog against its
-authoring outlines. The size comparison fields are populated only while the replaced WebPs are
-available; the fidelity gate remains repeatable after those redundant runtime assets are removed.
+`tools/vectorize/coloring-overlays.json` and `tools/vectorize/coloring-dark-overlays.json`.
+`npm run vectorize:coloring:check` is the derivation drift guard, while
+`npm run vectorize:coloring:analyze` re-rasterizes either SVG catalog against its authoring
+outlines. The size comparison fields are populated only while the replaced WebPs are available; the
+fidelity gate remains repeatable after those redundant runtime assets are removed.
 
 ## Consequences
 
@@ -74,12 +83,14 @@ available; the fidelity gate remains repeatable after those redundant runtime as
   of compact and full raster derivatives.
 * \+ Compact and full packs retain one logical inventory and the existing atomic verification model.
 * \+ Light presentation has one format and one invariant asset per orientation across the catalog;
-  unproven dark art keeps its current WebP path.
+  the approved dark set has the same invariant representation while 13 explicit fallbacks keep their
+  responsive WebPs.
 * \+ Dark SVGs preserve ADR-0091's source-over presentation contract without runtime recoloring.
 * − Manifest consumers must understand format 3 and enforce byte-identical SVG entries across tiers.
 * − Native packages receive raw SVG bytes without HTTP Brotli compression, so production approval
   must use raw size rather than web transfer size.
 * − Vector fidelity is close but not pixel-identical; future source regeneration still requires the
   derivation, fidelity, visual-registration, and physical-device gates.
-* − Theme-specific SVG files duplicate geometry when both pen and chalk are selected. Chalk remains
-  a separate cost and size decision rather than an automatic consequence of the pen campaign.
+* − Theme-specific SVG files duplicate geometry when both pen and chalk are selected. Future chalk
+  additions remain a separate cost, fidelity, and size decision rather than an automatic consequence
+  of the pen campaign.

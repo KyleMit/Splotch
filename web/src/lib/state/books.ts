@@ -1,63 +1,18 @@
-// Coloring-book catalog - the single source of truth for which books exist and
-// where each one is allowed to ship. This file is intentionally rune-free (and
-// is not a `.svelte.ts` module) so it can be imported both by the app and by
-// Node build scripts (see tools/mobile/strip-static-assets.mjs).
-//
-// Image storage format:
-//   static/coloring/{book}/cover.outline.webp         cover line art, 1:1
-//   static/coloring/{book}/cover.chalk.webp           cover CHALK line art (dark mode)
-//   static/coloring/{book}/{page}-tall.outline.webp   portrait PEN outline, 2:3
-//   static/coloring/{book}/{page}-wide.outline.webp   landscape PEN outline, 3:2
-//   static/coloring/{book}/{page}-tall.chalk.webp     portrait CHALK outline (dark mode)
-//   static/coloring/{book}/{page}-wide.chalk.webp     landscape CHALK outline (dark mode)
-//   static/coloring/{book}/{page}-tall.dark.overlay.webp transparent white dark-mode overlay
-//   static/coloring/{book}/{page}-wide.dark.overlay.webp transparent white dark-mode overlay
-//   static/coloring/{book}/{page}-tall.overlay.svg      traced invariant light overlay
-//   static/coloring/{book}/{page}-tall.dark.overlay.svg traced invariant dark overlay where enabled
-//   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the pen line art
-//   static/coloring/{book}/{name}.chalk.thumb.webp    grid thumbnail of the chalk (dark mode)
-//   static/coloring/{book}/{page}-tall.light.webp     portrait colored fill
-//   static/coloring/{book}/{page}-wide.light.webp     landscape colored fill
-//   static/coloring/{book}/{page}-tall.night.webp     portrait night fill (dark mode)
-//   static/coloring/{book}/{page}-wide.night.webp     landscape night fill (dark mode)
-//   static/coloring/max-{edge}px/{book}/{name}.{variant}.webp web-responsive derivatives
-//
-// The PEN outline (black ink on white) is the light-mode overlay and the source
-// every other asset derives from. The CHALK outline is the dark-mode overlay —
-// an AI redraw of the pen as a chalk drawing whose deliberate solid whites
-// (eye sclera, catchlights) survive into the night render. It ships INK-ON-WHITE
-// (the negation of what dark mode shows). The picker applies invert + screen;
-// gen-overlays derives the transparent white full-page presentation.
-// Orientations without a chalk derive their dark overlay from the pen instead.
-//
-// Each picker-facing line-art image (cover + pages, pen AND chalk) has a
-// thumbnail sibling (tools/asset-gen/coloring/gen-thumbnails.mjs).
-// `thumbPath()` maps a pen outline to its `.thumb.webp`, `chalkThumbPath()` a
-// chalk to its `.chalk.thumb.webp`, and `pageThumb()` picks per theme — dark
-// mode shows the chalk thumb so each tile previews the same line-art treatment
-// the selected page applies.
-// The colored `.light.webp` fill is a flat-colored, pixel-aligned
-// version of the line-art page (tools/asset-gen/coloring/gen-light-fills.mjs) that the magic
-// brush reveals where the child paints (ADR-0043); it never appears in the grid,
-// so it has no thumbnail. `bookAssetPaths()` lists them all so check-assets
-// validates them, generates the verified pack manifest, and strips native assets
-// from the correct distribution boundary. The compact responsive inventory is
-// also the smaller pack variant downloaded by compact web and native screens.
-// Thumbnails: ADR-0045; packs: ADR-0103.
-//
-// `platforms` controls distribution per book:
-//   ['web']            -> web only          (hidden + assets stripped on native)
-//   ['mobile']         -> native only       (hidden on web)
-//   ['web', 'mobile']  -> ships everywhere  ("both")
+// The rune-free catalog is shared by the app and Node build scripts. Pen and chalk source art,
+// theme-specific fills, picker thumbnails, presentation overlays, responsive derivatives, and
+// pack membership follow ADR-0043, ADR-0045, ADR-0103, and ADR-0129. `bookAssetPaths()` is the
+// distribution authority used by validation, pack manifests, and native asset stripping.
 
 import type { Orientation } from '../platform';
 import type { ResolvedTheme } from '../theme';
 import { resolveColoringAssetUrl } from '../coloringPacks/assetResolver.ts';
+import { createBookCatalog, type PageOverrides } from './bookCatalog.ts';
 
 // Distribution platforms a book may ship on - distinct from the runtime
 // platform in $lib/platform (which also has 'ios'/'android').
 export type BookPlatform = 'web' | 'mobile';
 export type BookOrientation = Orientation;
+const BOTH_ORIENTATIONS: BookOrientation[] = ['portrait', 'landscape'];
 
 export interface ResponsiveColoringImage {
   src: string;
@@ -253,25 +208,23 @@ function responsiveImage(
   };
 }
 
-interface PageOverrides {
-  // Night fills and chalk outlines ship for both orientations unless their derivative is absent.
-  nightExcept?: BookOrientation[];
-  chalkExcept?: BookOrientation[];
-  darkVectorOverlayOrientations?: BookOrientation[];
-}
-
 function book(
   bookId: string,
   name: string,
   platforms: BookPlatform[],
   buildPages: (
     page: (id: string, name: string, overrides?: PageOverrides) => ColoringPage
-  ) => ColoringPage[]
+  ) => ColoringPage[],
+  bookDarkVectorOverlayOrientations: BookOrientation[] = []
 ): Book {
   function page(
     id: string,
     name: string,
-    { nightExcept = [], chalkExcept = [], darkVectorOverlayOrientations = [] }: PageOverrides = {}
+    {
+      nightExcept = [],
+      chalkExcept = [],
+      darkVectorOverlayOrientations = bookDarkVectorOverlayOrientations,
+    }: PageOverrides = {}
   ): ColoringPage {
     return {
       id,
@@ -300,72 +253,7 @@ function book(
   };
 }
 
-export const BOOKS: Book[] = [
-  book('farm', 'Farm', ['web', 'mobile'], (page) => [
-    page('cat', 'Cat'),
-    page('cow', 'Cow'),
-    page('dog', 'Dog'),
-    page('duck', 'Duck'),
-    page('horse', 'Horse'),
-    page('pig', 'Pig'),
-  ]),
-  book('dinosaur', 'Dinosaurs', ['web', 'mobile'], (page) => [
-    page('brachiosaurus', 'Brachiosaurus'),
-    page('pterodactyl', 'Pterodactyl'),
-    page('stegosaurus', 'Stegosaurus'),
-    page('trex', 'T. Rex'),
-    page('triceratops', 'Triceratops'),
-    page('velociraptor', 'Velociraptor'),
-  ]),
-  book('creatures', 'Creatures', ['web', 'mobile'], (page) => [
-    page('dragon', 'Dragon'),
-    page('fairy', 'Fairy'),
-    page('mermaid', 'Mermaid'),
-    page('owl', 'Owl', { darkVectorOverlayOrientations: ['portrait'] }),
-    page('pegasus', 'Pegasus'),
-    page('unicorn', 'Unicorn'),
-  ]),
-  book('nature', 'Nature', ['web', 'mobile'], (page) => [
-    page('ant', 'Ant'),
-    page('bee', 'Bee'),
-    page('caterpillar', 'Caterpillar'),
-    page('ladybug', 'Ladybug'),
-    page('snail', 'Snail'),
-    page('spider', 'Spider'),
-  ]),
-  book('objects', 'Objects', ['web', 'mobile'], (page) => [
-    page('apple', 'Apple'),
-    page('balloon', 'Balloon'),
-    page('flower', 'Flower'),
-    page('house', 'House'),
-    page('teddy', 'Teddy'),
-    page('umbrella', 'Umbrella'),
-  ]),
-  book('shapes', 'Shapes', ['web', 'mobile'], (page) => [
-    page('circle', 'Circle'),
-    page('heart', 'Heart'),
-    page('rectangle', 'Rectangle'),
-    page('square', 'Square'),
-    page('star', 'Star'),
-    page('triangle', 'Triangle'),
-  ]),
-  book('space', 'Space', ['web', 'mobile'], (page) => [
-    page('astronaut', 'Astronaut'),
-    page('meteor', 'Meteor'),
-    page('moon', 'Moon'),
-    page('rover', 'Rover'),
-    page('ship', 'Ship'),
-    page('station', 'Station'),
-  ]),
-  book('vehicles', 'Vehicles', ['web', 'mobile'], (page) => [
-    page('excavator', 'Excavator'),
-    page('fire', 'Fire Truck'),
-    page('garbage', 'Garbage Truck'),
-    page('monster', 'Monster Truck'),
-    page('police', 'Police Car'),
-    page('train', 'Train'),
-  ]),
-];
+export const BOOKS: Book[] = createBookCatalog(book, BOTH_ORIENTATIONS);
 
 export const STARTER_COLORING_BOOK_ID = 'farm';
 

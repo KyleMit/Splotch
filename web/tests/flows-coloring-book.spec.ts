@@ -102,7 +102,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
       .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
   });
 
-  test('loads the canonical overlay only when exporting the responsive presentation', async ({
+  test('reuses the decoded invariant overlay when exporting the vector presentation', async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -112,22 +112,22 @@ test.describe('responsive coloring selection at DPR 1', () => {
     const overlay = page.locator('#coloringOverlay');
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.dark\.overlay\.webp$/);
+      .toMatch(/\/coloring\/farm\/cat-tall\.dark\.overlay\.svg$/);
     await draw(page, [
       { x: 100, y: 180 },
       { x: 260, y: 260 },
     ]);
 
-    let canonicalOverlayRequests = 0;
-    await page.route(/\/coloring\/farm\/cat-tall\.dark\.overlay\.webp$/, async (route) => {
-      canonicalOverlayRequests += 1;
+    let exportOverlayRequests = 0;
+    await page.route(/\/coloring\/farm\/cat-tall\.dark\.overlay\.svg$/, async (route) => {
+      exportOverlayRequests += 1;
       await route.continue();
     });
     const download = page.waitForEvent('download');
     await page.locator('#screenshotButton').click();
     expect(await (await download).failure()).toBeNull();
 
-    expect(canonicalOverlayRequests).toBe(1);
+    expect(exportOverlayRequests).toBe(0);
   });
 
   test('prefetches against the locked paper width after rotation', async ({ page }) => {
@@ -152,7 +152,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
 
     const cowOverlayRequests: string[] = [];
     page.on('request', (request) => {
-      if (/\/coloring\/(?:max-1152px\/)?farm\/cow-tall\.dark\.overlay\.webp$/.test(request.url())) {
+      if (/\/coloring\/farm\/cow-tall\.dark\.overlay\.svg$/.test(request.url())) {
         cowOverlayRequests.push(request.url());
       }
     });
@@ -161,9 +161,9 @@ test.describe('responsive coloring selection at DPR 1', () => {
     await cow.dispatchEvent('pointerenter', { pointerType: 'mouse' });
 
     await expect
-      .poll(() => cowOverlayRequests.some((url) => url.includes('/coloring/max-1152px/')))
+      .poll(() => cowOverlayRequests.some((url) => url.endsWith('/cow-tall.dark.overlay.svg')))
       .toBe(true);
-    expect(cowOverlayRequests.some((url) => /\/coloring\/farm\//.test(url))).toBe(false);
+    expect(cowOverlayRequests.some((url) => url.includes('/coloring/max-1152px/'))).toBe(false);
   });
 });
 
@@ -439,7 +439,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
     const controlledWindow = window as Window & { __releaseChalkDecode?: () => void };
     controlledWindow.__releaseChalkDecode = release;
     HTMLImageElement.prototype.decode = function () {
-      if (this.src.endsWith('.dark.overlay.webp')) {
+      if (this.src.endsWith('.dark.overlay.svg')) {
         return pendingChalk.then(() => originalDecode.call(this));
       }
       return originalDecode.call(this);
@@ -457,8 +457,8 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await page.evaluate(() => {
     (window as Window & { __releaseChalkDecode?: () => void }).__releaseChalkDecode?.();
   });
-  await expect(overlay).toHaveAttribute('src', /\.dark\.overlay\.webp$/);
-  await expect(overlay).toHaveAttribute('srcset', /\.dark\.overlay\.webp/);
+  await expect(overlay).toHaveAttribute('src', /\.dark\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute('srcset', /\.dark\.overlay\.svg/);
 });
 
 // A device rotation with ink on the canvas must NOT swap the page's tall/wide

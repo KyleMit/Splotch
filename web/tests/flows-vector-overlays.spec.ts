@@ -47,22 +47,22 @@ async function distinctOpaqueCanvasColors(page: Page): Promise<number> {
 test('a catalog vector light overlay reveals with Magic and keeps its raster theme fallback', async ({
   page,
 }) => {
-  await page.setViewportSize({ width: 820, height: 1180 });
+  await page.setViewportSize({ width: 1180, height: 820 });
   await page.emulateMedia({ colorScheme: 'light' });
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await selectPageFromBook(page, 'Farm', 'Cat');
+  await selectPageFromBook(page, 'Space', 'Station');
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/space\/station-wide\.overlay\.svg$/);
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
+    .toMatch(/\/coloring\/space\/station-wide\.overlay\.svg$/);
   await expect
     .poll(() =>
       overlay.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])
     )
-    .toEqual([1024, 1536]);
+    .toEqual([1536, 1024]);
 
   await pickBrush(page, '#magicBrushButton');
   await draw(page, [
@@ -75,10 +75,13 @@ test('a catalog vector light overlay reveals with Magic and keeps its raster the
     .toBeGreaterThanOrEqual(VECTOR_MAGIC_MIN_COLORS);
 
   await page.emulateMedia({ colorScheme: 'dark' });
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.dark\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute(
+    'src',
+    /\/coloring\/space\/station-wide\.dark\.overlay\.webp$/
+  );
   await expect(overlay).toHaveAttribute(
     'srcset',
-    /\/coloring\/max-1152px\/farm\/cat-tall\.dark\.overlay\.webp/
+    /\/coloring\/max-1152px\/space\/station-wide\.dark\.overlay\.webp/
   );
 });
 

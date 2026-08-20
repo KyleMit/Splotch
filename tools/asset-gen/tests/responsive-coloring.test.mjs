@@ -20,6 +20,8 @@ import {
 // wall time tracks how many sibling files vitest decodes on the same cores, not its own work, so the
 // budget is several times the solo run — a margin under contention, not a performance assertion.
 const RESPONSIVE_CATALOG_FIDELITY_TIMEOUT_MS = 120_000;
+const EXPECTED_RESPONSIVE_ASSET_COUNT = 413;
+const EXPECTED_RASTER_OVERLAY_FALLBACK_COUNT = 13;
 
 function srcsetWidths() {
   const widths = new Map();
@@ -60,8 +62,10 @@ describe('responsive coloring catalog', () => {
       let sourceBytes = 0;
       let targetBytes = 0;
 
-      // Every light overlay is invariant SVG; only dark WebPs retain responsive derivatives.
-      expect(assets).toHaveLength(495);
+      expect(assets).toHaveLength(EXPECTED_RESPONSIVE_ASSET_COUNT);
+      expect(assets.filter((asset) => asset.encoding === 'overlay')).toHaveLength(
+        EXPECTED_RASTER_OVERLAY_FALLBACK_COUNT
+      );
       for (const asset of assets) {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();

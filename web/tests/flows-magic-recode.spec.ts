@@ -113,7 +113,7 @@ test('changing theme recodes existing magic ink to the themed fill', async ({ pa
   const settings = await openSettingsModal(page);
   await settings.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.dark\.overlay\.webp$/);
+  await expect(page.locator('#coloringOverlay')).toHaveAttribute('src', /\.dark\.overlay\.svg$/);
   await expect
     .poll(() => opaqueCanvasDigest(page), { timeout: RECODE_SETTLE_MS })
     .not.toEqual(lightDigest);

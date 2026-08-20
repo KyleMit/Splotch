@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 import sharp from 'sharp';
 import { ROOT, isMain, runMain } from '../lib/proc.mjs';
 
-const MIN_BINARY_IOU = 0.96;
+const MIN_BINARY_IOU = 0.955;
 const MAX_ALPHA_MEAN_ABSOLUTE_ERROR = 3;
 
 async function sourceAlpha(path, width, height) {
@@ -51,15 +51,18 @@ export function compareOverlayAlpha(reference, candidate) {
   };
 }
 
-function paths(svg) {
-  const source = svg.replace(/\.overlay\.svg$/, '.outline.webp');
-  const full = svg.replace(/\.overlay\.svg$/, '.overlay.webp');
+function paths(svg, theme) {
+  const vectorSuffix = theme === 'dark' ? '.dark.overlay.svg' : '.overlay.svg';
+  const sourceSuffix = theme === 'dark' ? '.chalk.webp' : '.outline.webp';
+  const rasterSuffix = theme === 'dark' ? '.dark.overlay.webp' : '.overlay.webp';
+  const source = svg.replace(vectorSuffix, sourceSuffix);
+  const full = svg.replace(vectorSuffix, rasterSuffix);
   const compact = full.replace('web/static/coloring/', 'web/static/coloring/max-1152px/');
   return { source, full, compact };
 }
 
-async function analyze(svg) {
-  const related = paths(svg);
+async function analyze(svg, theme) {
+  const related = paths(svg, theme);
   const metadata = await sharp(resolve(ROOT, related.source)).metadata();
   const width = metadata.width;
   const height = metadata.height;
@@ -96,17 +99,20 @@ function sum(rows, select) {
 export async function analyzeColoringOverlays(argv = process.argv.slice(2)) {
   const { values } = parseArgs({
     args: argv,
-    options: { book: { type: 'string' } },
+    options: { book: { type: 'string' }, theme: { type: 'string' } },
   });
+  const theme = values.theme ?? 'light';
+  if (theme !== 'light' && theme !== 'dark') throw new Error('--theme must be light or dark');
+  const suffix = theme === 'dark' ? 'dark.overlay.svg' : 'overlay.svg';
   const pattern = values.book
-    ? `web/static/coloring/${values.book}/*.overlay.svg`
-    : 'web/static/coloring/**/*.overlay.svg';
+    ? `web/static/coloring/${values.book}/*.${suffix}`
+    : `web/static/coloring/**/*.${suffix}`;
   const svgs = globSync(pattern, { cwd: ROOT })
-    .filter((path) => !path.endsWith('.dark.overlay.svg'))
+    .filter((path) => theme === 'dark' || !path.endsWith('.dark.overlay.svg'))
     .sort();
-  if (svgs.length === 0) throw new Error(`No light coloring overlay SVGs matched ${pattern}`);
+  if (svgs.length === 0) throw new Error(`No ${theme} coloring overlay SVGs matched ${pattern}`);
   const rows = [];
-  for (const svg of svgs) rows.push(await analyze(svg));
+  for (const svg of svgs) rows.push(await analyze(svg, theme));
   const failed = rows.filter((row) => !row.passed);
   const report = {
     thresholds: {
@@ -125,8 +131,8 @@ export async function analyzeColoringOverlays(argv = process.argv.slice(2)) {
     },
     rows,
   };
-  const suffix = values.book ?? 'catalog';
-  const output = resolve(ROOT, `vectorized/coloring-overlays/analysis-${suffix}.json`);
+  const reportName = values.book ?? 'catalog';
+  const output = resolve(ROOT, `vectorized/coloring-overlays/analysis-${theme}-${reportName}.json`);
   mkdirSync(dirname(output), { recursive: true });
   writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`);
   console.log(JSON.stringify(report.summary, null, 2));

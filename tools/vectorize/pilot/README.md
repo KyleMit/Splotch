@@ -1,11 +1,11 @@
 # Coloring-outline vector pilot
 
-Run 2026-08-19 against four initial production Vectorizer.AI traces, followed by the 96-page pen
-campaign on 2026-08-20. This directory commits the raw and optimized keeper SVGs, reproducible
-offline measurements, and browser compatibility results. The watermarked discovery/rehearsal traces
-and generated PNG comparison sheets remain under the gitignored `vectorized/pilot/` workspace. The
-Circle and Owl pen keepers seeded the completed light-overlay catalog, while the Owl chalk keeper
-remains the single approved dark SVG recorded by ADR-0129.
+Run 2026-08-19 against four initial production Vectorizer.AI traces, followed by the 96-page pen and
+83-page chalk campaigns on 2026-08-20. This directory commits the raw and optimized keeper SVGs,
+reproducible offline measurements, and browser compatibility results. The watermarked
+discovery/rehearsal traces and generated PNG comparison sheets remain under the gitignored
+`vectorized/pilot/` workspace. Circle and Owl seeded the completed light-overlay catalog; Owl also
+seeded the bounded dark-overlay catalog recorded by ADR-0129.
 
 ## Keeper recipe
 
@@ -67,11 +67,10 @@ charging a credit. Its watermark was woven into 1,186 traced shapes and dominate
 paid Fairy result passed the dense-wide gate at 79.1 KB raw, 33.6 KB gzip, 97.36% binary ink IoU,
 and 1.08/255 composite mean error.
 
-Chalk needs its own production re-gate. Extrapolating the owl-chalk ratio to the 165.7 KB
-`creatures/fairy-wide.chalk.webp` yields roughly 74.6 KB raw SVG versus its 76.9 KB compact dark
-overlay. Brotli should still help web transfer, but native ships canonical files without HTTP
-compression. Stage pen first, then approve chalk only after a dense-wide production trace proves
-native bytes and overlay/fill registration.
+The paid dense-wide chalk gate used `creatures/fairy-wide.chalk.webp`. Its keeper is 83.5 KB raw and
+35.8 KB gzip versus 76.9 KB compact or 84.0 KB full WebP, with 96.96% binary ink IoU and 1.83/255
+mean alpha error. It is 8.6% larger than compact for native, but the completed 83-page selection is
+12.3% smaller in aggregate raw bytes; web transfer is 61.6% smaller than compact after gzip.
 
 ## Fidelity
 
@@ -100,33 +99,35 @@ Chromium and WebKit. The dense Fairy SVG decoded/drew-and-exported in 1.4/8.2 ms
 | WebKit   | SVG    |        1–2 ms |                 14–15 ms |
 | WebKit   | WebP   |        5–6 ms |                 13–16 ms |
 
-Both engines reported 1024×1536 intrinsic dimensions after the serialization correction and
-successfully drew/exported every SVG. SVG decode was consistently faster; draw plus PNG export was
-faster in Chromium and comparable in WebKit. This is a compatibility and micro-performance signal,
-not a replacement for the physical-iPad selection-frame gate after app integration. Regenerate it
-with:
+Both engines reported the expected intrinsic dimensions after the serialization correction and
+successfully drew/exported every SVG. The dense chalk Fairy measured SVG/WebP decode at 1.3/3.7 ms
+in Chromium and 3/7 ms in WebKit; draw plus PNG export measured 8.9/9.4 ms and 17/17 ms. SVG decode
+was consistently faster, while draw plus export was faster or equal. This is a compatibility and
+micro-performance signal, not a replacement for the physical-iPad selection-frame gate after app
+integration. Regenerate it with:
 
 ```bash
 node tools/vectorize/pilot/check-browser.mjs
 ```
 
-The final catalog build's trusted physical-iPad action sweep passed the coloring-book open and page
-selection gates. Page selection measured 18 ms first-frame P95 and 19 ms post-action frame P95;
-screenshot export measured 8 ms and 17 ms. The broader clear/rotation sweep retained pre-existing
-global frame-gate failures, so those rows are not evidence of a vector regression or approval.
+The integrated dark selection's trusted physical-iPad action sweep passed both theme switches and
+the coloring-book open and page-selection gates. Opening measured 14 ms first-frame P95, 17 ms
+post-action frame P95, and 23 ms maximum; selection measured 18 ms, 19 ms, and 19 ms respectively.
+Screenshot export measured 1 ms and 17 ms at P95 and 34 ms maximum, missing the strict 33.5 ms
+report-only maximum by 0.5 ms. The broader clear/rotation sweep retained pre-existing global
+frame-gate failures, so those rows are not evidence of a vector regression or approval.
 
 ## Cost
 
 The initial pilot charged 4.0 credits. The completed pen campaign reused Circle and Owl and charged
-94 additional credits; the driver reported 83.9 credits remaining after the final batch. Reusing the
-chalk keeper leaves 95 chalk traces, so the remaining balance cannot fund a complete dark catalog.
-Chalk also remains a distinct external-upload and dense-page approval boundary; re-query the balance
-and obtain explicit authorization before starting it.
+94 additional credits. The dark campaign reused Owl chalk and charged 82 credits for 83 selected
+outputs, ending at 0.9 credits. Per-response credit headers can lag the account balance; campaign
+planning and the final record use a fresh `npm run vectorize -- --account` query.
 
 ## Verdict
 
-The complete 96-page pen catalog proceeds as SVG. It passed the automated fidelity and derivation
-checks plus physical-iPad selection, theme, Magic reveal, rotation, exact overlay/fill registration,
-clearing, and export gates. The invariant pack path also passed a real offline relaunch with
-digest-matched SVG bytes. Chalk remains behind its own dense-wide production gate; raster authoring
-sources, fills, picker/cover thumbnails, and non-selected dark overlays remain.
+The complete 96-page pen catalog and the approved 83-page chalk selection proceed as SVG. The dark
+selection covers both orientations in Farm, Dinosaurs, Creatures, Nature, Objects, and Shapes, plus
+both orientations for the first five Space pages and Station portrait. Station landscape and all 12
+Vehicles orientations remain responsive WebP fallbacks. Raster authoring sources, fills,
+picker/cover thumbnails, and those 13 non-selected dark overlays remain.

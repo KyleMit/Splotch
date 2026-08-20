@@ -7,6 +7,7 @@ import {
   coloringOverlayJobs,
   jobState,
   parseColoringOverlayArgs,
+  postprocessArgs,
   selectColoringOverlayJobs,
 } from '../vectorize-coloring-overlays.mjs';
 import { compareOverlayAlpha } from '../analyze-coloring-overlays.mjs';
@@ -24,6 +25,21 @@ describe('coloring overlay campaign', () => {
       output: 'web/static/coloring/creatures/fairy-wide.overlay.svg',
       raw: 'vectorized/coloring-overlays/creatures/fairy-wide.raw.svg',
     });
+  });
+
+  it('maps chalk art to a white dark-overlay derivative in an independent restart tree', () => {
+    const job = coloringOverlayJob(
+      'web/static/coloring/creatures/fairy-wide.chalk.webp',
+      '/repo',
+      'dark'
+    );
+
+    expect(job).toMatchObject({
+      theme: 'dark',
+      output: 'web/static/coloring/creatures/fairy-wide.dark.overlay.svg',
+      raw: 'vectorized/coloring-dark-overlays/creatures/fairy-wide.raw.svg',
+    });
+    expect(postprocessArgs(job).slice(-2)).toEqual(['--fill', '#fff']);
   });
 
   it('resumes a paid raw response through free post-processing before tracing more', () => {
@@ -58,8 +74,18 @@ describe('coloring overlay campaign', () => {
     );
   });
 
+  it('closes the campaign theme vocabulary', () => {
+    expect(() => parseColoringOverlayArgs(['--theme', 'sepia'])).toThrow(
+      '--theme must be light or dark'
+    );
+  });
+
   it('keeps every committed light SVG tied to its exact authoring outline', () => {
     expect(checkColoringOverlayLedger(coloringOverlayJobs())).toBe(96);
+  });
+
+  it('keeps the bounded dark SVG set tied to its exact chalk source', () => {
+    expect(checkColoringOverlayLedger(coloringOverlayJobs(undefined, 'dark'))).toBe(83);
   });
 
   it('measures alpha fidelity independently from vector fill color', () => {

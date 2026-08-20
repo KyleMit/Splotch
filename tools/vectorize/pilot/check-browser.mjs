@@ -32,6 +32,13 @@ const samples = [
     svg: 'tools/vectorize/pilot/owl-tall-chalk.optimized.svg',
     webp: 'web/static/coloring/creatures/owl-tall.dark.overlay.webp',
   },
+  {
+    name: 'fairy-wide-chalk',
+    width: 1536,
+    height: 1024,
+    svg: 'web/static/coloring/creatures/fairy-wide.dark.overlay.svg',
+    webp: 'web/static/coloring/creatures/fairy-wide.dark.overlay.webp',
+  },
 ];
 
 async function dataUrl(relative, mime) {
