@@ -7,11 +7,13 @@ into both `.claude/` and `.agents/` and this material is far too large to trip.
 
 ## Entry point
 
-| Entry point           | Public command                        | Purpose                                                   |
-| --------------------- | ------------------------------------- | --------------------------------------------------------- |
-| `vectorize-image.mjs` | `npm run vectorize --`                | Trace, download, delete, or inspect an account            |
-| `postprocess-svg.mjs` | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
-| `postprocess-svg.mjs` | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
+| Entry point                       | Public command                        | Purpose                                                   |
+| --------------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| `vectorize-image.mjs`             | `npm run vectorize --`                | Trace, download, delete, or inspect an account            |
+| `vectorize-coloring-overlays.mjs` | `npm run vectorize:coloring --`       | Plan or run bounded, restart-safe coloring-page batches   |
+| `vectorize-coloring-overlays.mjs` | `npm run vectorize:coloring:check`    | Guard each outline-to-SVG derivation against drift        |
+| `postprocess-svg.mjs`             | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
+| `postprocess-svg.mjs`             | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
 
 The public npm command, CLI modes, flags, environment variables, default `vectorized/` output,
 credit safeguards, and exit behavior remain stable during the tools naming migration. Inputs and
@@ -69,7 +71,7 @@ Rules that follow from that:
 * **Every test response carries `X-Credits-Calculated`** — what the same call would have cost. Read
   it before committing to production.
 * **Never loop over a directory in production mode without saying the total cost first.** N images =
-  N credits, and the plan is 50.
+  N credits, and the current account balance is the hard ceiling.
 * **Want several formats of one image? Pay 1, not N.** Vectorize once with
   `policy.retention_days=1`, keep the `X-Image-Token` response header, then `/download` each extra
   format at 0.1. Same trick for re-running one image with different output options (`image.token` on
@@ -172,6 +174,55 @@ Vectorizer output at its 100×150 default intrinsic size. No-input mode normaliz
 checks every committed result so a new runtime SVG cannot bypass the invariant. `--fill` bakes a
 root ink color into a themed derivative; use `#fff` for a dark overlay so runtime presentation stays
 ordinary source-over composition without a CSS filter (ADR-0091).
+
+### Repeat the coloring-page pen campaign
+
+`vectorize-coloring-overlays.mjs` owns the production recipe for transparent black pen overlays. It
+enumerates every non-cover `web/static/coloring/**/*.outline.webp`, maps it to the corresponding
+committed `.overlay.svg`, and keeps the paid raw response under the gitignored
+`vectorized/coloring-overlays/` tree. The raw response is the restart boundary: when it exists but
+the committed derivative does not, the next run performs only the free deterministic post-process.
+
+The recipe is fixed in the runner rather than copied into a shell loop, and the final derivation
+ledger records the exact parameters alongside every input/output hash.
+
+Start with a read-only plan. A production run must select a book or substring, must state its batch
+size, and cannot exceed 12 paid traces:
+
+```bash
+npm run vectorize:coloring -- --book=creatures --batch-size=12
+npm run vectorize:coloring -- --book=creatures --batch-size=12 --production
+```
+
+The runner skips committed outputs and post-processes recoverable raw responses before making new
+API calls. Use `--force` only for an intentionally regenerated source, and narrow it with `--match`
+so already-approved pages are not charged again:
+
+```bash
+npm run vectorize:coloring -- \
+  --match=creatures/fairy-wide --batch-size=1 --production --force
+```
+
+After the complete catalog is present, freeze the exact input/output relationship and verify it:
+
+```bash
+npm run vectorize:coloring -- --write-ledger
+npm run vectorize:coloring:check
+npm run vectorize:postprocess:check
+```
+
+The committed ledger records the source and SVG SHA-256 plus byte counts. If an outline is
+regenerated later, the check fails until its SVG is deliberately retraced and the ledger is
+rewritten. Raw service responses remain review/recovery artifacts, not sources of truth, and should
+not be committed.
+
+Promote one book at a time. Before the first broad batch, use a dense landscape page as the size,
+fidelity, and WebKit gate. After each book: inspect representative simple and dense SVGs over the
+matching paper/fill, run the SVG and coloring-asset checks, rebuild the pack manifest, and exercise
+page selection, theme switching, Magic reveal, rotation, clearing, export, offline relaunch, and the
+compact/full pack paths on a physical iPad. Mobile Safari may report CSS-scaled intrinsic dimensions
+for a canonical 1024×1536 SVG; the durable requirements are the SVG's width, height, and viewBox
+plus exact rendered registration with the paper and fill.
 
 ## Endpoints
 

@@ -3,7 +3,7 @@
 //
 // Traces a bitmap to vector art through https://api.vectorizer.ai/api/v1, and
 // wraps the three things that are easy to get wrong by hand: the credit budget
-// (the account is metered, a production trace costs 1 of 50 credits), the
+// (the account is metered, a production trace costs 1 credit), the
 // response headers that carry the Image Token and the per-call charge, and the
 // 429/503 back-off schedule the service documents.
 //
