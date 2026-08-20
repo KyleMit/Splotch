@@ -63,6 +63,10 @@ declare global {
     appinstalled: Event;
   }
 
+  interface DocumentEventMap {
+    resume: Event;
+  }
+
   interface Window {
     // Read-only test/profiling seam, installed by lib/boot/devHarnessSeam.ts in
     // builds compiled with PUBLIC_ENABLE_DEV_HARNESS or PERF_MARKS

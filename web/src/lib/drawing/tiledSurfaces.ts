@@ -31,6 +31,55 @@ export function liveTileSurfaces(tile: LiveTile) {
   return [tile.canvas, tile.crayonBottom, tile.crayonTop] as const;
 }
 
+function contextIsLost(context: CanvasRenderingContext2D) {
+  if (typeof context.isContextLost !== 'function') return false;
+  try {
+    return context.isContextLost();
+  } catch {
+    return false;
+  }
+}
+
+export function liveTileContextsAreLost(tiles: readonly LiveTile[]) {
+  return tiles.some((tile) =>
+    [tile.ctx, tile.crayonBottomCtx, tile.crayonTopCtx].some(contextIsLost)
+  );
+}
+
+export function liveTileContextsNeedRecovery(tiles: readonly LiveTile[]) {
+  return tiles.some((tile) => {
+    const transform = tile.ctx.getTransform();
+    return (
+      tile.ctx.lineCap !== 'round' ||
+      tile.ctx.lineJoin !== 'round' ||
+      transform.a !== 1 ||
+      transform.b !== 0 ||
+      transform.c !== 0 ||
+      transform.d !== 1 ||
+      transform.e !== -tile.x ||
+      transform.f !== -tile.y
+    );
+  });
+}
+
+export function rebindLiveTileContexts(tiles: readonly LiveTile[]) {
+  for (const tile of tiles) {
+    const context = tile.canvas.getContext('2d');
+    const crayonBottomContext = tile.crayonBottom.getContext('2d');
+    const crayonTopContext = tile.crayonTop.getContext('2d');
+    if (!context || !crayonBottomContext || !crayonTopContext) return false;
+    tile.ctx = context;
+    tile.crayonBottomCtx = crayonBottomContext;
+    tile.crayonTopCtx = crayonTopContext;
+    for (const surfaceContext of [context, crayonBottomContext, crayonTopContext]) {
+      surfaceContext.lineCap = 'round';
+      surfaceContext.lineJoin = 'round';
+    }
+    setCrayonBufferForTarget(context, crayonBottomContext, crayonTopContext);
+  }
+  return true;
+}
+
 export function applyLiveTileView(tiles: readonly LiveTile[], paperView: PaperView) {
   const [a, b, c, d, e, f] = viewMatrix(paperView);
   for (const tile of tiles) {

@@ -99,6 +99,7 @@ import {
   recordTiledOp,
   recodeTiledMagicOps,
   repaintTiledRenderer,
+  recoverTiledRendererIfNeeded,
   renderTiledOp,
   renderTiledSnapshot,
   resizeTiledRenderer,
@@ -424,12 +425,12 @@ function handleResize() {
 // A hidden document gets no resize/orientationchange, so rotating the device
 // while the app is backgrounded leaves the backing store, the cached rect, and
 // the paper view stale until some later event happens to fire. On re-entry
-// (visibilitychange → visible; the native WebViews hide the document while the
-// app is backgrounded, so this covers Capacitor resume too) rebuild
-// synchronously — but only when the geometry actually moved while away, so a
-// plain tab switch doesn't pay the backing-store wipe + repaint.
+// Browser visibility and Capacitor's document-level resume event both land
+// here. Rebuild synchronously only when the geometry actually moved while away,
+// so a plain tab switch doesn't pay the backing-store wipe + repaint.
 function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
+  recoverTiledRendererIfNeeded();
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
   const stale =

@@ -203,3 +203,48 @@ test('a drawing survives a resume that beats the layout pass', async ({ page }) 
   ]);
   await expect.poll(() => count(page)).toBeGreaterThan(before);
 });
+
+test('a resume rebuilds live tiles whose canvas state was reset while hidden', async ({ page }) => {
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 40, y: 70 },
+      { x: 260, y: 70 },
+    ])
+  );
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    for (const tile of document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')) {
+      const currentWidth = tile.width;
+      tile.width = currentWidth;
+    }
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  await expect.poll(() => count(page)).toBe(before);
+  const transforms = await page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]'), (tile) => {
+      const transform = tile.getContext('2d')!.getTransform();
+      return [transform.e, transform.f];
+    })
+  );
+  expect(transforms).toEqual([
+    [0, 0],
+    [-75, 0],
+    [-150, 0],
+    [-225, 0],
+    [0, -75],
+    [-75, -75],
+    [-150, -75],
+    [-225, -75],
+    [0, -150],
+    [-75, -150],
+    [-150, -150],
+    [-225, -150],
+    [0, -225],
+    [-75, -225],
+    [-150, -225],
+    [-225, -225],
+  ]);
+});
