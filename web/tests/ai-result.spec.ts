@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { DIAL_MAX_SIZE_PX } from '../src/lib/components/aiDialGeometry';
 import { AI_LOADING_SUBTITLE, AI_LOADING_TITLE } from '../src/lib/ai/loadingCopy';
 import { STORAGE_KEYS } from '../src/lib/storageKeys';
+import { aiOutputFor } from './artifacts/ai-output-fixtures';
 import {
   invokeAiGeneration,
   keepDrawingBlockPx,
@@ -131,6 +132,64 @@ test.describe('AI result modal', () => {
     // The dial is torn down after the reveal.
     await expect(page.locator('.dial')).toHaveCount(0);
     await expect(loadingCaption).toHaveCount(0);
+  });
+
+  test('reserves the picture area while the first preview image decodes', async ({ page }) => {
+    let releasePreview!: () => void;
+    let observePreviewRequest!: () => void;
+    const previewCanLoad = new Promise<void>((resolve) => (releasePreview = resolve));
+    const previewRequested = new Promise<void>((resolve) => (observePreviewRequest = resolve));
+
+    await page.addInitScript(() => {
+      const createObjectUrl = URL.createObjectURL.bind(URL);
+      const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
+      let holdNextImage = true;
+      URL.createObjectURL = (blob) => {
+        if (holdNextImage && blob instanceof Blob && blob.type.startsWith('image/')) {
+          holdNextImage = false;
+          return '/delayed-ai-preview';
+        }
+        return createObjectUrl(blob);
+      };
+      URL.revokeObjectURL = (url) => {
+        if (!url.endsWith('/delayed-ai-preview')) revokeObjectUrl(url);
+      };
+    });
+    await page.route('**/delayed-ai-preview', async (route) => {
+      observePreviewRequest();
+      await previewCanLoad;
+      await route.fulfill({
+        status: 200,
+        contentType: 'image/jpeg',
+        body: aiOutputFor(page.viewportSize()),
+      });
+    });
+
+    const endpoint = await prepareAiGeneration(page);
+    await invokeAiGeneration(page);
+    await expect(page.locator('dialog.ai-result-modal')).toBeVisible();
+    await previewRequested;
+
+    const loading = await loadingBoxes(page);
+    expect(loading.stage.width).toBeGreaterThan(300);
+    expect(loading.stage.height).toBeGreaterThan(200);
+    await expect(page.locator('.stage-sizer:not(.loaded)')).toHaveCount(1);
+
+    releasePreview();
+    await expect
+      .poll(() =>
+        page.locator('.stage-img.preview').evaluate((image) => {
+          const img = image as HTMLImageElement;
+          return img.complete && img.naturalWidth > 0;
+        })
+      )
+      .toBe(true);
+    await expect(page.locator('.stage-sizer.loaded')).toHaveCount(1);
+    expect(
+      await page.locator('.stage-img.preview').evaluate((image) => image.style.filter)
+    ).toMatch(/blur\([\d.]+px\)/);
+
+    await endpoint.fail();
   });
 
   for (const viewport of [
