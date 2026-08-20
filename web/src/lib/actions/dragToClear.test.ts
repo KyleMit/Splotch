@@ -1,11 +1,23 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { stopDrawSound } from '$lib/audio/drawingSound';
+import {
+  cancelClearSound,
+  commitClearSound,
+  startClearSound,
+  stopDrawSound,
+  updateClearSound,
+} from '$lib/audio/drawingSound';
 import { impactThreshold } from '$lib/platform/haptics';
 import { dragToClear, PAGE_TURN_DURATION_MS, type DragToClearOptions } from './dragToClear';
 
 vi.mock('$lib/drawing/engine', () => ({ releaseAllPointers: vi.fn() }));
-vi.mock('$lib/audio/drawingSound', () => ({ stopDrawSound: vi.fn() }));
+vi.mock('$lib/audio/drawingSound', () => ({
+  cancelClearSound: vi.fn(),
+  commitClearSound: vi.fn(),
+  startClearSound: vi.fn(),
+  stopDrawSound: vi.fn(),
+  updateClearSound: vi.fn(),
+}));
 vi.mock('$lib/platform/haptics', () => ({ impactThreshold: vi.fn() }));
 
 // happy-dom lacks a PointerEvent constructor with pointerId, so stub it the
@@ -67,6 +79,25 @@ describe('dragToClear pointer identity', () => {
     node.dispatchEvent(pointerEvent('pointerup', 1, far, 100));
 
     expect(options.onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('drives clear audio from normalized drag progress through commit', () => {
+    const { node, action } = setup();
+    cleanup = () => action.destroy();
+    const radius = acceptRadius();
+
+    node.dispatchEvent(pointerEvent('pointerdown', 1, 100, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 100 + radius / 2, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 100 + radius, 100));
+    node.dispatchEvent(pointerEvent('pointermove', 1, 100 + radius * 1.25, 100));
+    node.dispatchEvent(pointerEvent('pointerup', 1, 100 + radius * 1.25, 100));
+
+    expect(startClearSound).toHaveBeenCalledOnce();
+    expect(updateClearSound).toHaveBeenNthCalledWith(1, 0.5);
+    expect(updateClearSound).toHaveBeenNthCalledWith(2, 1);
+    expect(updateClearSound).toHaveBeenNthCalledWith(3, 1.25);
+    expect(commitClearSound).toHaveBeenCalledOnce();
+    expect(cancelClearSound).not.toHaveBeenCalled();
   });
 
   it('plays the commit exit animation through its class stages and back to rest', () => {
@@ -206,6 +237,7 @@ describe('dragToClear pointer identity', () => {
     expect(options.onClear).not.toHaveBeenCalled();
     expect(options.onTutorialDismiss).not.toHaveBeenCalled();
     expect(impactThreshold).not.toHaveBeenCalled();
+    expect(cancelClearSound).toHaveBeenCalledOnce();
     expect(stopDrawSound).toHaveBeenCalledTimes(1);
     expect(options.onDragEnd).toHaveBeenCalledTimes(1);
     expect(node.releasePointerCapture).toHaveBeenCalledWith(1);
@@ -239,6 +271,7 @@ describe('dragToClear pointer identity', () => {
 
     action.destroy();
 
+    expect(cancelClearSound).toHaveBeenCalledOnce();
     expect(clearProgress()).toBe('0');
     expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
     expect(options.containerEl.style.transform).toBe('');
