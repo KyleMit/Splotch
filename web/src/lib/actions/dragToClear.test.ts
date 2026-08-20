@@ -149,7 +149,7 @@ describe('dragToClear pointer identity', () => {
     expect(node.classList.contains('clearing-return')).toBe(false);
   });
 
-  it('restores a button caught mid-exit when the next drag is cancelled', () => {
+  it('ignores a new press while the cleared button is exiting', () => {
     vi.useFakeTimers();
     const { node, options, action } = setup();
     cleanup = () => action.destroy();
@@ -161,16 +161,16 @@ describe('dragToClear pointer identity', () => {
 
     expect(node.classList.contains('clearing')).toBe(true);
 
-    // The exit is still playing — a fresh drag can start immediately, and
-    // cancelling it must not leave the button faded out.
+    vi.mocked(startClearSound).mockClear();
+    vi.mocked(options.onDragStart)?.mockClear();
     node.dispatchEvent(pointerEvent('pointerdown', 2, 100, 100));
-    node.dispatchEvent(pointerEvent('pointercancel', 2, 100, 100));
+    vi.advanceTimersByTime(500);
 
-    expect(node.classList.contains('clearing')).toBe(false);
-    expect(node.classList.contains('clearing-done')).toBe(false);
-    expect(node.classList.contains('clearing-return')).toBe(false);
-    expect(node.classList.contains('dragging')).toBe(false);
-    expect(options.containerEl.classList.contains('dragging-active')).toBe(false);
+    expect(startClearSound).not.toHaveBeenCalled();
+    expect(options.onDragStart).not.toHaveBeenCalled();
+    expect(options.onTutorialShow).not.toHaveBeenCalled();
+    expect(options.acceptZoneEl.classList.contains('visible')).toBe(false);
+    expect(node.classList.contains('clearing')).toBe(true);
   });
 
   it('ignores moves and releases from a different pointer', () => {

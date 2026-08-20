@@ -37,3 +37,37 @@ test('triple-tapping the clear button reveals the coachmark', async ({ page }) =
   await page.waitForTimeout(300);
   await expect(coachmark).toHaveClass(/\bvisible\b/);
 });
+
+test('the cleared button cannot re-arm its ring from the release point', async ({ page }) => {
+  await gotoApp(page);
+
+  const button = page.locator('#clearButton');
+  const buttonBox = await button.boundingBox();
+  const viewport = page.viewportSize();
+  if (!buttonBox || !viewport) throw new Error('missing clear button box or viewport');
+
+  const start = {
+    x: buttonBox.x + buttonBox.width / 2,
+    y: buttonBox.y + buttonBox.height / 2,
+  };
+  const acceptRadius = Math.min(viewport.width, viewport.height) * 0.4;
+  const release = {
+    x: start.x - (acceptRadius * 1.1) / Math.SQRT2,
+    y: start.y + (acceptRadius * 1.1) / Math.SQRT2,
+  };
+
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(release.x, release.y);
+  await page.mouse.up();
+  await page.mouse.down();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      )
+  );
+
+  await expect(page.locator('#clearAcceptZone')).not.toHaveClass(/\bvisible\b/);
+  await page.mouse.up();
+});

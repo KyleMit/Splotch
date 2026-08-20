@@ -52,6 +52,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   let acceptZoneFrame: number | null = null;
   let clickCount = 0;
   let lastClickTime = 0;
+  let clearExitActive = false;
 
   const resetTimers = new Set<ReturnType<typeof setTimeout>>();
 
@@ -103,6 +104,10 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
 
   function onPointerDown(e: PointerEvent) {
     if (activePointerId !== null) return;
+    if (clearExitActive) {
+      suppress(e);
+      return;
+    }
 
     const o = getOptions();
     if (registerTap(Date.now(), o)) return;
@@ -225,6 +230,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
   // live in ClearButton.svelte's CSS; the delays below only hand the classes over
   // at each stage.
   function playClearExit(o: DragToClearOptions): void {
+    clearExitActive = true;
     node.classList.add('clearing');
     o.pageTurnOverlayEl.classList.add('animating');
 
@@ -240,6 +246,7 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     }, PAGE_TURN_DURATION_MS);
 
     scheduleReset(() => {
+      clearExitActive = false;
       o.containerEl.classList.remove('dragging-active');
       node.classList.remove('clearing', 'clearing-done');
       node.classList.add('clearing-return');
@@ -291,9 +298,8 @@ export function dragToClear(node: HTMLButtonElement, getOptions: () => DragToCle
     finishDrag(o, e.pointerId);
 
     resetDragVisuals(o);
-    // A fresh drag can start while a previous commit's exit is still playing,
-    // so cancelling has to put the button back on screen rather than leave it
-    // mid-fade until that exit's timers catch up.
+    // A drag can start as soon as the button begins its return leg, so cancelling
+    // must put it back on screen rather than leave it mid-fade.
     node.classList.remove('clearing', 'clearing-done', 'clearing-return');
     o.pageTurnOverlayEl.classList.remove('animating');
     cancelClearSound();
