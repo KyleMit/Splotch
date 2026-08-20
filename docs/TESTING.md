@@ -14,7 +14,7 @@ pre-merge blob-encoding guard retired.
 | Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`                 | every push / PR                              |
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
 | Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
-| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer paths + manual dispatch               |
+| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer/consumer paths + manual dispatch      |
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
 | Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
@@ -35,10 +35,10 @@ they need an emulator/simulator and the native toolchains.
 
 Centerline tracing is also intentionally outside `npm test`: it is the repository's first isolated
 Python/uv capability. Its dedicated path-filtered workflow provisions Python 3.11 and uv only when
-`tools/centerline-tracing/**` or that workflow changes. The quick named suite runs ruff, pytest
-without the representative integration mark, and the capability-local Vitest bridge/consumer
-contract. The workflow then runs the marked representative trace; the full corpus benchmark remains
-manual.
+`tools/centerline-tracing/**`, the store-drawing consumer, or that workflow changes. The quick named
+suite runs ruff, pytest without the representative integration mark, and the capability-local Vitest
+bridge/consumer contract. The workflow then runs the marked representative trace; the full corpus
+benchmark remains manual.
 
 ## A test that cannot fail is a lint error
 

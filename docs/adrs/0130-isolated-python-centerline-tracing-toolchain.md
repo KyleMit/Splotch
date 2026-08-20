@@ -40,9 +40,10 @@ The centerline tracer is an **isolated, opt-in capability** under `tools/centerl
   from Python. `fit-curve` is dormant upstream, so its bridge is also the seam for replacing or
   vendoring the compact algorithm later.
 * Exclude the tracer from `npm test`, application builds, Netlify production dependencies, and the
-  deploy path filter. A dedicated workflow runs only when the capability or its workflow changes; it
-  pins Python and uv, syncs the lockfile, runs the quick Python/Node contract suite, and performs
-  one representative integration trace. Benchmarks remain manual review evidence.
+  deploy path filter. A dedicated workflow runs only when the capability, its store-drawing
+  consumer, or its workflow changes; it pins Python and uv, syncs the lockfile, runs the quick
+  Python/Node contract suite, and performs one representative integration trace. Benchmarks remain
+  manual review evidence.
 * Retain synthetic source fixtures, all imported filled SVGs, one golden SVG, and numeric benchmark
   records. Generated batch outputs and review renders stay ignored. Downstream store-drawing
   compilation consumes ordinary stroked SVG and may merge only contiguous same-style segments.

@@ -5,11 +5,13 @@ on:
   pull_request:
     paths:
       - 'tools/centerline-tracing/**'
+      - 'tools/store-drawings/gen-pointer-instructions.mjs'
       - '.github/workflows/centerline-tracing.yml'
   push:
     branches: [main]
     paths:
       - 'tools/centerline-tracing/**'
+      - 'tools/store-drawings/gen-pointer-instructions.mjs'
       - '.github/workflows/centerline-tracing.yml'
 
 permissions:
