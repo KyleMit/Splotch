@@ -395,14 +395,14 @@ def raster_ink_diff(
         capture_output=True, text=True, cwd=CAPABILITY_ROOT, timeout=600,
     )
     if out.returncode != 0:
-        return None
+        raise RuntimeError(f"raster-agreement render failed: {out.stderr[:2000]}")
     try:
         a = np.asarray(Image.open(tmpdir / "source.png").convert("L")) < 128
         b = np.asarray(Image.open(tmpdir / "recon.png").convert("L")) < 128
-    except Exception:  # noqa: BLE001
-        return None
+    except Exception as error:
+        raise RuntimeError(f"raster-agreement output decode failed: {error}") from error
     if a.shape != b.shape:
-        return None
+        raise RuntimeError(f"raster-agreement shape mismatch: {a.shape} != {b.shape}")
     src_ink = int(a.sum())
     if src_ink == 0:
         return None

@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+from types import SimpleNamespace
 
+import pytest
 from shapely.geometry import LineString
 
 from centerline_tracing.graph import CenterlineGraph, metrics, prune, restroke, schema, svgio
@@ -145,6 +147,42 @@ def test_vector_matches_raster() -> None:
         check("vector and raster agree within 0.01",
               abs(v.sym_diff_ratio - r["symDiffRatio"]) < 0.01,
               f"vector {v.sym_diff_ratio:.4f} vs raster {r['symDiffRatio']:.4f}")
+
+
+def test_raster_bridge_failure_preserves_stderr(tmp_path, monkeypatch) -> None:
+    src = svgio.load_source(
+        CAPABILITY_ROOT / "tests" / "fixtures" / "filled" / "balloon-tall.svg"
+    )
+    graph = svgio.graph_from_stroked_svg(
+        CAPABILITY_ROOT / "tests" / "fixtures" / "golden" / "balloon-tall.svg"
+    )
+    monkeypatch.setattr(
+        metrics.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=1, stderr="Cannot find package '@resvg/resvg-js'"
+        ),
+    )
+
+    with pytest.raises(RuntimeError, match="Cannot find package '@resvg/resvg-js'"):
+        metrics.raster_ink_diff(graph, src, workdir=tmp_path)
+
+
+def test_raster_bridge_missing_output_reports_decode_failure(tmp_path, monkeypatch) -> None:
+    src = svgio.load_source(
+        CAPABILITY_ROOT / "tests" / "fixtures" / "filled" / "balloon-tall.svg"
+    )
+    graph = svgio.graph_from_stroked_svg(
+        CAPABILITY_ROOT / "tests" / "fixtures" / "golden" / "balloon-tall.svg"
+    )
+    monkeypatch.setattr(
+        metrics.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stderr=""),
+    )
+
+    with pytest.raises(RuntimeError, match="output decode failed"):
+        metrics.raster_ink_diff(graph, src, workdir=tmp_path)
 
 
 def test_schema_round_trip() -> None:
