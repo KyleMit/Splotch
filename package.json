@@ -422,7 +422,7 @@
     "svelte-check": "^4.7.4",
     "svgo": "^4.0.2",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.65.0",
+    "typescript-eslint": "^8.67.0",
     "vitest": "^4.1.10",
     "ws": "^8.21.3"
   },
