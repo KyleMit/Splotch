@@ -8,11 +8,12 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
-const capabilityRoot = join(import.meta.dirname, '..');
+const capabilityRoot = fileURLToPath(new URL('../', import.meta.url));
 const repoRoot = join(capabilityRoot, '..', '..');
 const wrapper = join(capabilityRoot, 'trace-centerlines.mjs');
 const fixture = join(capabilityRoot, 'benchmark/corpus/01-horizontal-line.svg');
