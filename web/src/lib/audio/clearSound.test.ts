@@ -268,6 +268,91 @@ describe('clear sound', () => {
     expect(pageTurnsIn(sources)).toHaveLength(1);
   });
 
+  // A quick flick can commit before the page turn has finished decoding. The
+  // request has to survive that and play when the buffer arrives — one of the
+  // lifecycle guarantees ADR-0131 pins.
+  it('plays the page turn on a commit that beats the decode', async ({ signal }) => {
+    vi.useFakeTimers();
+    const { setSound } = await import('$lib/state/settings.svelte');
+    signal.throwIfAborted();
+    void setSound;
+
+    let finishDecode: ((buffer: unknown) => void) | undefined;
+    const sources: ReturnType<typeof bufferSource>[] = [];
+    resolvedAudioFetch();
+    stubAudioContext({
+      state: 'running',
+      currentTime: 4,
+      decodeAudioData: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            finishDecode = resolve;
+          })
+      ),
+      createOscillator: vi.fn(() => oscillatorNode()),
+      createBufferSource: vi.fn(() => {
+        const source = bufferSource();
+        sources.push(source);
+        return source;
+      }),
+    });
+    const drawingSound = await import('./drawingSound');
+    signal.throwIfAborted();
+    cancelClearSound = drawingSound.cancelClearSound;
+
+    drawingSound.startClearSound();
+    drawingSound.updateClearSound(1.2);
+    drawingSound.commitClearSound();
+    await vi.runOnlyPendingTimersAsync();
+    expect(pageTurnsIn(sources)).toHaveLength(0);
+
+    finishDecode?.({ duration: 1 });
+    await vi.runOnlyPendingTimersAsync();
+    expect(pageTurnsIn(sources)).toHaveLength(1);
+    expect(pageTurnsIn(sources)[0].start).toHaveBeenCalled();
+  });
+
+  // The mirror of the case above: a request that was never made must not be
+  // fulfilled when the buffer eventually lands.
+  it('does not play a page turn that decodes after the gesture was abandoned', async ({
+    signal,
+  }) => {
+    vi.useFakeTimers();
+    const { setSound } = await import('$lib/state/settings.svelte');
+    signal.throwIfAborted();
+    void setSound;
+
+    let finishDecode: ((buffer: unknown) => void) | undefined;
+    const sources: ReturnType<typeof bufferSource>[] = [];
+    resolvedAudioFetch();
+    stubAudioContext({
+      state: 'running',
+      currentTime: 4,
+      decodeAudioData: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            finishDecode = resolve;
+          })
+      ),
+      createOscillator: vi.fn(() => oscillatorNode()),
+      createBufferSource: vi.fn(() => {
+        const source = bufferSource();
+        sources.push(source);
+        return source;
+      }),
+    });
+    const drawingSound = await import('./drawingSound');
+    signal.throwIfAborted();
+    cancelClearSound = drawingSound.cancelClearSound;
+
+    drawingSound.startClearSound();
+    drawingSound.updateClearSound(0.6);
+    drawingSound.cancelClearSound();
+    finishDecode?.({ duration: 1 });
+    await vi.runOnlyPendingTimersAsync();
+    expect(pageTurnsIn(sources)).toHaveLength(0);
+  });
+
   it('keeps a failed page-turn load from leaking confirmation into a later gesture', async ({
     signal,
   }) => {
