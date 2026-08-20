@@ -131,6 +131,11 @@ Structural folders such as `lib`, `tests`, `fixtures`, `assets`, `prompts`, `gen
 `samples`, and `probes` are documented by their nearest capability README unless they need an
 independent runbook.
 
+The opt-in [centerline-tracing capability](centerline-tracing/README.md) owns Splotch's isolated
+Python/uv filled-SVG-to-centerline stage. It is invoked only through `gen:centerlines`, its named
+test command, its manual benchmark, or its path-filtered workflow; default app and repository
+lifecycles do not provision Python.
+
 ## Libraries and ownership
 
 `tools/lib/` is the cross-capability dependency foundation. It never imports from a capability

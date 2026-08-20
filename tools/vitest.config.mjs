@@ -6,13 +6,13 @@ import { defineConfig } from 'vitest/config';
 // each capability's own `<capability>/tests/**` resolve their relative imports
 // from here — same pattern as tools/asset-gen/vitest.config.mjs.
 //
-// asset-gen and store-drawings are excluded: they keep separately named suites
-// (test:asset-gen, test:store-drawings) that npm test already runs.
+// Opt-in capabilities keep separately named suites. centerline-tracing is also
+// excluded from npm test because its checks require uv and an isolated Python environment.
 export default defineConfig({
   root: import.meta.dirname,
   test: {
     environment: 'node',
     include: ['**/tests/**/*.test.mjs'],
-    exclude: ['asset-gen/**', 'store-drawings/**'],
+    exclude: ['asset-gen/**', 'centerline-tracing/**', 'store-drawings/**'],
   },
 });

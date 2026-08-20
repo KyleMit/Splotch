@@ -184,6 +184,15 @@ deno.lock
 # and pnpm-lock.yaml is what tools/tests/package-manager.test.mjs pins.
 package-lock.json
 
+# Opt-in Python tool environments and caches. The only Python project lives under
+# tools/centerline-tracing; its pyproject.toml and uv.lock are committed.
+.venv/
+__pycache__/
+.pytest_cache/
+/tools/centerline-tracing/benchmark/graphs/
+/tools/centerline-tracing/benchmark/out/
+/tools/centerline-tracing/benchmark/promoted/
+
 # android studio
 android/.idea
 

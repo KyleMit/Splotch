@@ -51,6 +51,23 @@ describe('store drawing conversion', () => {
     );
   });
 
+  it('merges contiguous paths that quantize to the same color and stroke size', () => {
+    const source =
+      '<svg viewBox="0 0 100 100">' +
+      '<g fill="none" stroke="#000000" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M0,0C10,0 20,0 30,0" stroke-width="2"/>' +
+      '<path d="M30,0C40,0 50,0 60,0" stroke-width="2"/>' +
+      '<path d="M60,0C70,0 80,0 90,0" stroke-width="10"/>' +
+      '</g></svg>';
+
+    const drawing = convertSvg(source, 'continuation-wide.svg');
+
+    expect(drawing.strokes).toHaveLength(2);
+    expect(drawing.strokes[0].points.at(-2)).toBe(60);
+    expect(drawing.strokes[0].points.at(-1)).toBe(0);
+    expect(drawing.strokes[0].size).not.toBe(drawing.strokes[1].size);
+  });
+
   it('generates all seven named drawings as finite static instructions', () => {
     const drawings = generateStoreDrawings(drawingsRoot);
 
@@ -64,7 +81,7 @@ describe('store drawing conversion', () => {
       'island-tall',
     ]);
     for (const drawing of drawings) {
-      expect(drawing.strokes.length).toBeGreaterThan(100);
+      expect(drawing.strokes.length).toBeGreaterThan(50);
       for (const stroke of drawing.strokes) {
         expect(stroke.points.length % 2).toBe(0);
         expect(stroke.points.length).toBeGreaterThanOrEqual(2);

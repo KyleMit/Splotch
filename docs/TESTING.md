@@ -14,6 +14,7 @@ pre-merge blob-encoding guard retired.
 | Unit (app)            | Vitest (happy-dom)  | `npm run test:unit`                 | every push / PR                              |
 | Unit (asset pipeline) | Vitest (Node)       | `npm run test:asset-gen`            | every push / PR                              |
 | Unit (store drawings) | Vitest (Node)       | `npm run test:store-drawings`       | every push / PR                              |
+| Opt-in centerlines    | pytest + Vitest     | `npm run test:centerline-tracing`   | tracer paths + manual dispatch               |
 | Unit (repo scripts)   | Vitest (Node)       | `npm run test:tools`                | every push / PR                              |
 | E2E (web)             | Playwright          | `npm run test:e2e`                  | every push / PR                              |
 | Smoke (API contract)  | Node + `vite dev`   | `npm run test:api:smoke`            | every push / PR (unit job)                   |
@@ -31,6 +32,13 @@ integration below. The hosted deploy smoke runs separately against real deployme
 `npm test` runs the first five (`test:unit` + `test:asset-gen` + `test:store-drawings` +
 `test:tools` + `test:e2e`). The native smoke tests are intentionally **not** part of `npm test` —
 they need an emulator/simulator and the native toolchains.
+
+Centerline tracing is also intentionally outside `npm test`: it is the repository's first isolated
+Python/uv capability. Its dedicated path-filtered workflow provisions Python 3.11 and uv only when
+`tools/centerline-tracing/**` or that workflow changes. The quick named suite runs ruff, pytest
+without the representative integration mark, and the capability-local Vitest bridge/consumer
+contract. The workflow then runs the marked representative trace; the full corpus benchmark remains
+manual.
 
 ## A test that cannot fail is a lint error
 
@@ -163,6 +171,21 @@ capture seam: it invokes one stroke on the real drawing route and asserts that t
 rendered history command without leaving synthetic pointer chrome behind. A small three-stroke scene
 then runs through both the pointer and engine paths on separate live pages and requires their
 composited canvases to retain greater than 0.9998 soft color fidelity.
+
+## Opt-in centerline tracing
+
+```bash
+npm run test:centerline-tracing
+uv run --project tools/centerline-tracing --locked \
+  pytest -m integration tools/centerline-tracing/tests/test_integration.py
+```
+
+The Python package, lockfile, and local virtual environment stay under `tools/centerline-tracing/`.
+The quick suite covers graph schema round-trips, pruning geometry and scale invariance, fill rules,
+vector/raster agreement, bridge behavior, deterministic repeated tracing, locked-environment
+failure, batch atomicity, and direct handoff to the exported `convertSvg()` consumer. The marked
+integration case compares a representative trace against the golden using metric thresholds rather
+than bytes so small SciPy/BLAS selection drift does not create a platform-fragile test.
 
 ## Repo-script unit tests — Vitest
 

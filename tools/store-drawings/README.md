@@ -5,6 +5,11 @@ the live app's real drawing engine. Runtime drawing never parses or renders SVG.
 [`generated/store-drawings.mjs`](generated/store-drawings.mjs) contains static numeric pointer
 coordinates and exports one named function per scene, including `drawHouseTall` and `drawHouseWide`.
 
+The supported authoring handoff is [filled SVG → centerline SVG](../centerline-tracing/README.md)
+followed by this compiler. The tracer's piecewise-width output is intentionally accepted here;
+conversion merges adjacent same-color continuations after mapping them to Splotch's five pen-size
+buckets.
+
 ## Layout
 
 * The capability root contains the conversion, evaluation, and brush-review entry points.
