@@ -145,6 +145,7 @@ native static stripping removes both canonical masters after their thumbnail der
 present.
 
 The ledgers now contain 104 light and 104 dark records. Fidelity analysis reads the uncommitted
-restart-tree `.source.webp` files rather than assuming a committed raster master, while the ledger
-check continues to bind every canonical SVG to its recorded source and output digests after recovery
-scratch is removed.
+restart-tree `.source.webp` files rather than assuming a committed raster master. The ledger check
+always binds every canonical SVG to its recorded output digest and also verifies recorded source
+digests when that recovery scratch is locally present; after it is removed, those source fields are
+retained provenance rather than independently verifiable inputs.

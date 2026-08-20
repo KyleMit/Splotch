@@ -118,6 +118,36 @@ describe('coloring overlay campaign', () => {
     expect(checkColoringOverlayLedger('dark')).toBe(104);
   });
 
+  it('verifies available trace sources without requiring recovery scratch', () => {
+    const root = mkdtempSync(join(tmpdir(), 'splotch-vectorize-coloring-'));
+    try {
+      const job = coloringOverlayJob(
+        'vectorized/coloring-overlays/farm/cat-tall.source.webp',
+        root
+      );
+      mkdirSync(join(root, 'vectorized/coloring-overlays/farm'), { recursive: true });
+      mkdirSync(join(root, 'web/static/coloring/farm'), { recursive: true });
+      mkdirSync(join(root, 'tools/vectorize'), { recursive: true });
+      writeFileSync(job.sourcePath, 'approved trace source');
+      writeFileSync(job.outputPath, '<svg/>');
+      const ledger = coloringOverlayLedger([job], null, root);
+      writeFileSync(
+        join(root, 'tools/vectorize/coloring-overlays.json'),
+        `${JSON.stringify(ledger, null, 2)}\n`
+      );
+
+      expect(checkColoringOverlayLedger('light', root)).toBe(1);
+      rmSync(job.sourcePath);
+      expect(checkColoringOverlayLedger('light', root)).toBe(1);
+      writeFileSync(job.sourcePath, 'different trace source');
+      expect(() => checkColoringOverlayLedger('light', root)).toThrow(
+        'Canonical coloring SVG inventory or bytes drifted'
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it('measures alpha fidelity independently from vector fill color', () => {
     expect(compareOverlayAlpha(Uint8Array.from([0, 255]), Uint8Array.from([0, 255]))).toEqual({
       meanAbsoluteError: 0,

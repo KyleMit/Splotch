@@ -221,7 +221,7 @@ export function checkColoringOverlayLedger(theme = 'light', root = ROOT) {
   if (ledger.formatVersion !== 2 || ledger.theme !== theme || !Array.isArray(ledger.entries)) {
     throw new Error('Invalid coloring overlay ledger');
   }
-  const expected = coloringOverlayLedger([], ledger, root);
+  const expected = coloringOverlayLedger(coloringOverlayJobs(root, theme), ledger, root);
   if (JSON.stringify(ledger) !== JSON.stringify(expected)) {
     throw new Error(
       'Canonical coloring SVG inventory or bytes drifted; regenerate the affected trace and run --write-ledger'

@@ -216,7 +216,8 @@ npm run vectorize:coloring -- \
   --match=creatures/fairy-wide --batch-size=1 --production --force
 ```
 
-After the complete catalog is present, freeze the exact input/output relationship and verify it:
+After the complete catalog is present, record the exact input/output relationship and verify the
+committed inventory:
 
 ```bash
 npm run vectorize:coloring -- --write-ledger
@@ -227,8 +228,10 @@ npm run vectorize:postprocess:check
 
 Format-2 ledgers record the paid trace-source and SVG SHA-256 plus byte counts. Both theme ledgers
 cover all 104 page orientations and covers, and the check independently rejects a missing or
-unrecorded canonical SVG. Trace sources and raw service responses remain review/recovery artifacts,
-not sources of truth, and should not be committed.
+unrecorded canonical SVG. When staged trace sources are present, the same check also verifies their
+hashes and byte counts against the ledger. Without that recovery scratch, source fields remain
+provenance rather than a self-contained derivation proof. Trace sources and raw service responses
+remain review/recovery artifacts, not sources of truth, and should not be committed.
 
 ### Regenerate canonical page line art
 
