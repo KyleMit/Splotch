@@ -180,6 +180,14 @@ def _nearest_existing_parent(path: Path) -> Path:
     return parent
 
 
+def _promotion_workspace_parent(jobs: list[TraceJob], manifest_path: Path) -> Path:
+    targets = [job.output for job in jobs] + [manifest_path]
+    parents = [_nearest_existing_parent(target) for target in targets]
+    if len({parent.stat().st_dev for parent in parents}) != 1:
+        raise ValueError("outputs and manifest must share a filesystem for atomic promotion")
+    return _nearest_existing_parent(jobs[0].output if jobs else manifest_path)
+
+
 def _promote(staged: list[tuple[Path, Path]], workspace: Path) -> None:
     promoted: list[tuple[Path, Path | None]] = []
     backup_root = workspace / "backups"
@@ -208,8 +216,12 @@ def _promote(staged: list[tuple[Path, Path]], workspace: Path) -> None:
 
 
 def trace_jobs(jobs: list[TraceJob], manifest_path: Path, config: TraceConfig) -> int:
-    workspace_parent = _nearest_existing_parent(manifest_path)
-    workspace = Path(tempfile.mkdtemp(prefix="centerline-tracing-", dir=workspace_parent))
+    try:
+        workspace_parent = _promotion_workspace_parent(jobs, manifest_path)
+        workspace = Path(tempfile.mkdtemp(prefix=".centerline-tracing-", dir=workspace_parent))
+    except (OSError, ValueError) as error:
+        print(f"centerline tracing: {error}", file=sys.stderr)
+        return 2
     failures: list[tuple[TraceJob, Exception]] = []
     records: list[dict] = []
     staged: list[tuple[Path, Path]] = []

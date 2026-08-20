@@ -192,6 +192,7 @@ __pycache__/
 /tools/centerline-tracing/benchmark/graphs/
 /tools/centerline-tracing/benchmark/out/
 /tools/centerline-tracing/benchmark/promoted/
+.centerline-tracing-*/
 
 # android studio
 android/.idea
