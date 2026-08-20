@@ -364,6 +364,20 @@ button:active{transform:translateY(1px)}
 .explored summary{cursor:pointer; font-weight:750; font-size:1.02rem}
 .explored > p{color:var(--muted); font-size:.9rem; max-width:70ch}
 .explored .options{margin-top:14px}
+
+.opt.is-chosen{
+  border-color:color-mix(in srgb,var(--hue) 55%, var(--hair));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--hue) 26%, transparent), var(--shadow-md);
+}
+.opt.is-chosen .tag{background:var(--hue); color:#fff}
+.outcome{
+  display:flex; gap:12px; align-items:flex-start; margin:18px 0 0;
+  padding:14px 16px; border-radius:var(--r-md);
+  background:var(--accent-wash); border:1px solid color-mix(in srgb,var(--accent) 26%, transparent);
+}
+.outcome .eyebrow{flex:0 0 auto; padding-top:2px}
+.outcome p{margin:0; color:var(--ink); font-size:.94rem; max-width:76ch}
+.outcome b{font-weight:750}
 </style>
 </head>
 <body>
@@ -389,6 +403,13 @@ button:active{transform:translateY(1px)}
     <label class="field"><span>Run</span><select data-sequence-preset></select></label>
     <button class="ghost" type="button" data-sequence-run>across all options</button>
     <button class="ghost" type="button" data-stop>Stop</button>
+  </div>
+
+  <div class="outcome">
+    <span class="eyebrow">Outcome</span>
+    <p><b>Bubble Ladder with Keep climbing, committing on the crisp page turn.</b> Chosen from this
+    sheet and ported into <code>web/src/lib/audio/drawingSound.ts</code>; ADR-0131 carries the
+    reasoning. Everything else here stays playable as the record of what it was chosen over.</p>
   </div>
 
   <section class="intro">

@@ -648,7 +648,8 @@
     {
       id: 'bubble-ladder',
       name: 'Bubble Ladder',
-      tag: 'refinement',
+      tag: 'chosen',
+      chosen: true,
       hue: 'var(--c-blue)',
       blurb:
         'The shipped water-bubble idea, tuned into a tune: each bubble snaps to a note of a pentatonic scale, so dragging out plays a rising melody and dragging back plays it in reverse.',
@@ -762,11 +763,11 @@
 
     {
       id: 'baseline',
-      name: 'Shipped today',
-      tag: 'baseline',
+      name: 'The build before this',
+      tag: 'superseded',
       hue: 'var(--faint)',
       blurb:
-        'A faithful port of what is on main — sine bubble dots on a 0.055 progress gate and a continuous pitch glide, wired to the same treatment picker so the armed state can be judged on its own.',
+        'A faithful port of the build this comparison replaced — sine bubble dots on a 0.055 progress gate and a continuous pitch glide, wired to the same treatment picker so the armed state could be judged on its own.',
       notes: [
         'Level-matched to the other cards so the comparison is about character, not loudness; the sheet masters through a soft ceiling, which only the densest flick on this card reaches.',
         'Pitch is a continuous exponential glide, so two adjacent dots can land a few cents apart.',
@@ -1433,6 +1434,7 @@
 
     const head = el('div', 'opt-head');
     head.append(el('span', 'tag', option.tag), el('h3', null, option.name));
+    if (option.chosen) root.classList.add('is-chosen');
     const blurb = el('p', 'blurb', option.blurb);
 
     const meter = el('div', 'meter');

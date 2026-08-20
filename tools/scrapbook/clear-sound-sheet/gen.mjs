@@ -3,7 +3,9 @@
 //
 // The committed assets/ directory is the source of truth for the audio: this
 // generator re-emits the page from whatever clips are sitting there, so running
-// it twice is a no-op. `--from <dir>` imports freshly generated clips (see
+// it twice is a no-op. That includes baseline-clear-pop.mp3, which the app no
+// longer ships — the sheet is the record of a comparison, so its copy of the
+// sound that lost stays put rather than tracking web/static/. `--from <dir>` imports freshly generated clips (see
 // sounds.json for every prompt), and `--inline <file>` writes a second,
 // fully self-contained copy with the audio embedded as data: URIs for sharing
 // somewhere that cannot serve the assets folder.
@@ -19,8 +21,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, '../../..');
 const OUT_DIR = join(REPO, 'scrapbook/sound-design/clear-sound-contact-sheet');
 const ASSET_DIR = join(OUT_DIR, 'assets');
-const SHIPPED_POP = join(REPO, 'web/static/sounds/clear-pop.mp3');
-const SHIPPED_POP_NAME = 'baseline-clear-pop';
+
 const PAGE_TITLE = 'Drag-to-clear sound options';
 
 const { values: args } = parseArgs({
@@ -30,7 +31,6 @@ const { values: args } = parseArgs({
 
 await mkdir(ASSET_DIR, { recursive: true });
 if (args.from) await importClips(resolve(args.from));
-await copyFile(SHIPPED_POP, join(ASSET_DIR, `${SHIPPED_POP_NAME}.mp3`));
 await copyFile(join(HERE, 'sheet.js'), join(ASSET_DIR, 'sheet.js'));
 
 const provenance = JSON.parse(await readFile(join(HERE, 'sounds.json'), 'utf8'));
@@ -96,6 +96,13 @@ function render({ manifest, scriptTag }) {
     <label class="field"><span>Run</span><select data-sequence-preset></select></label>
     <button class="ghost" type="button" data-sequence-run>across all options</button>
     <button class="ghost" type="button" data-stop>Stop</button>
+  </div>
+
+  <div class="outcome">
+    <span class="eyebrow">Outcome</span>
+    <p><b>Bubble Ladder with Keep climbing, committing on the crisp page turn.</b> Chosen from this
+    sheet and ported into <code>web/src/lib/audio/drawingSound.ts</code>; ADR-0131 carries the
+    reasoning. Everything else here stays playable as the record of what it was chosen over.</p>
   </div>
 
   <section class="intro">
