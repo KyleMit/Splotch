@@ -49,7 +49,7 @@
     return curve;
   }
 
-  const settings = { volume: 0.8, readyDing: true };
+  const settings = { volume: 0.8 };
 
   let ctx = null;
   let master = null;
@@ -339,10 +339,6 @@
     };
   }
 
-  function readyDing(out, level = 0.32) {
-    if (settings.readyDing) playOneShot('ready-ding', out, level);
-  }
-
   // Every card plays its commit clip at the same level, so switching the commit
   // sound compares clips rather than card mixes. The drag beds are matched
   // separately, by measured loudness (tools/scrapbook/clear-sound-sheet/audit.mjs).
@@ -354,8 +350,6 @@
   const APP_SCRATCH_GAIN = 0.2;
   const BASELINE_DOT_PROGRESS_STEP = 0.055;
   const BASELINE_PITCH_CAP = 1.4;
-  const BASELINE_READY_INTERVAL_MS = 240;
-  const BASELINE_READY_GAIN_MULTIPLIER = 0.55;
   const BASELINE_START_HZ = 420;
   const BASELINE_END_HZ = 1050;
   const BASELINE_PITCH_VARIATION = 0.06;
@@ -379,15 +373,13 @@
   const BUBBLE_RISE_START_RATIO = 0.86;
   const BUBBLE_RISE_END_RATIO = 1.08;
   const BUBBLE_DROPLET_RATIO = 3.2;
-  const BUBBLE_TRILL_INTERVAL_MS = 250;
-  const BUBBLE_TRILL_DROP_STEPS = 2;
 
   const XYLO_BASE_HZ = 392;
   const XYLO_NOTE_COUNT = 15;
   const XYLO_BAR_PARTIAL_RATIO = 3.01;
   const XYLO_BODY_DECAY_S = 0.26;
   const XYLO_PARTIAL_DECAY_S = 0.09;
-  const XYLO_READY_INTERVAL_MS = 300;
+  const XYLO_MALLET_HZ = 2600;
 
   const BALLOON_RATE_MIN = 0.9;
   const BALLOON_RATE_MAX = 1.3;
@@ -429,78 +421,277 @@
   const DETENT_TONE_MAX_HZ = 1420;
   const DETENT_READY_INTERVAL_MS = 900;
 
-  const OPTIONS = [
+  // ---- Past-threshold treatments -------------------------------------------
+  // Crossing the threshold is the moment of the gesture with the least to say
+  // for itself. What ships repeats one dot every 240 ms, which reads as a
+  // metronome rather than as a state, and silence there was rejected in
+  // ADR-0131 for reading as a dead app. Each treatment below answers "what does
+  // holding sound like" differently, and any of them drops onto any of the
+  // pitched voices below, so the two choices can be judged separately.
+
+  const PAD_PARTIAL_RATIOS = [1, 1.5, 2];
+  const PAD_PARTIAL_LEVEL = 0.05;
+  const PAD_CUTOFF_HZ = 2400;
+  const PAD_FADE_IN_S = 0.38;
+  const PAD_FADE_OUT_S = 0.3;
+  const PAD_GLIDE_S = 0.18;
+  const PAD_TUNE_IMMEDIATE_S = 0.001;
+  const LOCK_NOTE_LEVEL = 0.45;
+  const BREATH_HZ = 0.22;
+  const BREATH_DEPTH = 0.55;
+  const BLOOM_RISE_S = 0.7;
+  const BLOOM_FALL_S = 2.3;
+  const BLOOM_INTERVAL_MS = 3400;
+  const RING_ENTER_SUSTAIN_S = 2.4;
+  const RING_STEP_SUSTAIN_S = 1.2;
+  const TRILL_INTERVAL_MS = 250;
+  const TRILL_DROP_RATIO = 2 ** (-3 / 12);
+
+  // Three sine partials a fifth and an octave apart, quiet enough to sit under a
+  // room rather than fill it. Built on arming and torn down on release, so a
+  // gesture that never arms never creates one.
+  function createPad(bus) {
+    const cutoff = filterNode('lowpass', PAD_CUTOFF_HZ, 0.7, bus);
+    const swell = gainNode(0, cutoff);
+    const partials = PAD_PARTIAL_RATIOS.map((ratio) => {
+      const gain = gainNode(PAD_PARTIAL_LEVEL, swell);
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.connect(gain);
+      osc.start();
+      return { osc, gain, ratio };
+    });
+    return {
+      swell,
+      tuneTo(frequency, seconds = PAD_GLIDE_S) {
+        for (const { osc, ratio } of partials) rampTo(osc.frequency, frequency * ratio, seconds);
+      },
+      stop(fadeS) {
+        rampTo(swell.gain, 0, fadeS);
+        for (const { osc, gain } of partials) {
+          osc.stop(ctx.currentTime + fadeS + 0.05);
+          disposeOnEnd(osc, gain);
+        }
+        setTimeout(() => {
+          swell.disconnect();
+          cutoff.disconnect();
+        }, (fadeS + 0.2) * 1000);
+      },
+    };
+  }
+
+  // Shared by the three treatments built on a sustained chord: arming plays the
+  // voice's own octave as the lock, then the pad takes over and tracks any
+  // further drag. `shape` decides what the pad's level does once it is up.
+  function chordTreatment(shape) {
+    return ({ bus, voice, pulse, stopPulses }) => {
+      let pad = null;
+      const release = (fadeS) => {
+        stopPulses();
+        pad?.stop(fadeS);
+        pad = null;
+      };
+      return {
+        enter(frequency) {
+          voice({ frequency: frequency * 2, level: LOCK_NOTE_LEVEL });
+          pad = createPad(bus);
+          pad.tuneTo(frequency, PAD_TUNE_IMMEDIATE_S);
+          shape.start(pad, pulse);
+        },
+        step(frequency) {
+          voice({ frequency });
+          pad?.tuneTo(frequency);
+        },
+        exit: () => release(PAD_FADE_OUT_S),
+        stop: (fadeS) => release(fadeS),
+      };
+    };
+  }
+
+  const THRESHOLD_TREATMENTS = [
     {
-      id: 'baseline',
-      name: 'Shipped today',
-      tag: 'baseline',
-      hue: 'var(--faint)',
-      blurb:
-        'A faithful port of what is on main after #1181 — sine bubble dots on a 0.055 progress gate, a 240 ms ready pulse, and clear-pop.mp3 on commit.',
-      notes: [
-        'Level-matched to the other cards so the comparison is about character, not loudness; the sheet masters through a soft ceiling, which only the densest flick on this card reaches.',
-        'Pitch is a continuous exponential glide, so two adjacent dots can land a few cents apart.',
-        'On a fast flick the 0.055 progress gate still fires about fifteen dots inside 260 ms — five deep once the 85 ms envelopes overlap — so a quick clear reads as a buzz rather than as bubbles.',
-        'Releasing short of the threshold is silent — nothing tells the child the drawing survived.',
-        'Its commit clip plays at this sheet’s shared commit level rather than the shipped 0.3, so the commit picker compares clips instead of card mixes.',
-      ],
-      commit: 'baseline-clear-pop',
-      create(out) {
-        const base = engineBase(out, BASELINE_LEVEL_MATCH);
-        let lastProgress = 0;
-        let readyProgress = 0;
-
-        const dot = (progress, multiplier = 1) => {
-          const variation = 1 + (Math.random() * 2 - 1) * BASELINE_PITCH_VARIATION;
-          const frequency =
-            BASELINE_START_HZ *
-            Math.pow(BASELINE_END_HZ / BASELINE_START_HZ, progress) *
-            variation;
-          const peak =
-            (BASELINE_GAIN_MIN +
-              (BASELINE_GAIN_MAX - BASELINE_GAIN_MIN) *
-                Math.pow(progress, BASELINE_GAIN_EXPONENT)) *
-            multiplier;
-          tone(base.bus, {
-            frequency: frequency * BASELINE_PITCH_START_RATIO,
-            endFrequency: frequency,
-            glideS: BASELINE_PITCH_SETTLE_S,
-            peak,
-            attackS: BASELINE_ATTACK_S,
-            durationS: BASELINE_DURATION_S,
-          });
-        };
-
+      value: 'chord',
+      label: 'Held chord',
+      sustains: true,
+      note: 'Arming lands on the octave, then a quiet root-fifth-octave chord holds underneath for as long as you do. Continuous, so there is no beat to count — and pulling further slides the whole chord up with you.',
+      create: chordTreatment({
+        start(pad) {
+          rampTo(pad.swell.gain, 1, PAD_FADE_IN_S);
+        },
+      }),
+    },
+    {
+      value: 'breathe',
+      label: 'Breathing chord',
+      sustains: true,
+      note: 'The held chord with a slow 0.22 Hz swell — about one breath every four and a half seconds. Alive rather than static, and far too slow to read as a pulse.',
+      create: chordTreatment({
+        start(pad) {
+          rampTo(pad.swell.gain, 1, PAD_FADE_IN_S);
+          const depth = gainNode(BREATH_DEPTH, pad.swell.gain);
+          const lfo = ctx.createOscillator();
+          lfo.frequency.value = BREATH_HZ;
+          lfo.connect(depth);
+          lfo.start();
+          disposeOnEnd(lfo, depth);
+          lfo.stop(ctx.currentTime + 60);
+        },
+      }),
+    },
+    {
+      value: 'bloom',
+      label: 'Slow bloom',
+      sustains: true,
+      note: 'The chord swells over 0.7 s and fades over 2.3 s, then does it again every 3.4 s. Technically a repeat, but slow enough to read as weather rather than as a metronome — the middle ground between holding a chord and going quiet.',
+      create: chordTreatment({
+        start(pad, pulse) {
+          const bloom = () => {
+            rampTo(pad.swell.gain, 1, BLOOM_RISE_S);
+            setTimeout(() => rampTo(pad.swell.gain, 0, BLOOM_FALL_S), BLOOM_RISE_S * 1000);
+          };
+          bloom();
+          pulse(BLOOM_INTERVAL_MS, bloom);
+        },
+      }),
+    },
+    {
+      value: 'ring',
+      label: 'Ring out',
+      sustains: true,
+      note: 'No new sound at all — the note you arrived on simply rings for 2.4 s instead of 0.1 s. The instrument does not change, its decay does, which is how a real struck bar tells you it was hit harder.',
+      create: ({ voice }) => ({
+        enter(frequency) {
+          voice({ frequency, level: 0.8, sustainS: RING_ENTER_SUSTAIN_S });
+        },
+        step(frequency) {
+          voice({ frequency, level: 0.85, sustainS: RING_STEP_SUSTAIN_S });
+        },
+        exit() {},
+        stop() {},
+      }),
+    },
+    {
+      value: 'climb',
+      label: 'Just keep climbing',
+      sustains: false,
+      note: 'No armed state whatsoever: notes keep coming while the hand keeps moving, and holding still is silent. The control for whether the armed state needs a sound at all — ADR-0131 says it does, on the grounds that silence reads as a dead app, and this is the way to test that claim.',
+      create: ({ voice }) => ({
+        enter() {},
+        step(frequency) {
+          voice({ frequency });
+        },
+        exit() {},
+        stop() {},
+      }),
+    },
+    {
+      value: 'bell',
+      label: 'Single bell',
+      note: 'One struck bell on arming and nothing after. Kept here as the thing to compare against, not as a recommendation — a foreign timbre over a tuned voice is exactly the intrusive option.',
+      create: ({ out, voice }) => ({
+        enter() {
+          playOneShot('ready-ding', out, 0.3);
+        },
+        step(frequency) {
+          voice({ frequency });
+        },
+        exit() {},
+        stop() {},
+      }),
+    },
+    {
+      value: 'trill',
+      label: 'Repeating trill (shipped)',
+      sustains: true,
+      note: 'What is on main: a dot every 240 ms for as long as you hold. Here so the alternatives have something to beat.',
+      create: ({ voice, pulse, stopPulses }) => {
+        let frequency = 0;
+        let high = true;
         return {
-          start() {},
-          update(progress) {
-            const bubbleProgress = Math.min(Math.max(progress, 0) / BASELINE_PITCH_CAP, 1);
-            base.crossing(
-              progress,
-              () => {
-                readyProgress = bubbleProgress;
-                base.pulse(BASELINE_READY_INTERVAL_MS, () =>
-                  dot(readyProgress, BASELINE_READY_GAIN_MULTIPLIER)
-                );
-              },
-              () => base.stopPulses()
-            );
-            if (base.isReady) readyProgress = bubbleProgress;
-            if (Math.abs(bubbleProgress - lastProgress) < BASELINE_DOT_PROGRESS_STEP) return;
-            lastProgress = bubbleProgress;
-            dot(bubbleProgress);
+          enter(entered) {
+            frequency = entered;
+            pulse(TRILL_INTERVAL_MS, () => {
+              voice({ frequency: high ? frequency : frequency * TRILL_DROP_RATIO, level: 0.45 });
+              high = !high;
+            });
           },
-          commit(commitSound) {
-            base.teardown(0.05);
-            playOneShot(commitSound, out, COMMIT_LEVEL);
+          step(next) {
+            frequency = next;
+            voice({ frequency: next });
           },
-          cancel() {
-            base.teardown(0.05);
-          },
+          exit: stopPulses,
+          stop: stopPulses,
         };
       },
     },
+  ];
 
+  const DEFAULT_TREATMENT = THRESHOLD_TREATMENTS[0].value;
+
+  // The three pitched voices differ only in their timbre and in how drag distance
+  // becomes a note, so they share one engine: `nextNote` reports the frequency the
+  // hand is pointing at and whether that is a new note, and everything about the
+  // armed state is delegated to the selected treatment.
+  function pitchedEngine({ out, level, controls, buildVoice, buildNextNote, cancelTail }) {
+    const base = engineBase(out, level);
+    const voice = buildVoice(base.bus);
+    const nextNote = buildNextNote();
+    const treatment =
+      THRESHOLD_TREATMENTS.find((entry) => entry.value === controls.threshold()) ??
+      THRESHOLD_TREATMENTS[0];
+    const held = treatment.create({
+      bus: base.bus,
+      out,
+      voice,
+      pulse: (intervalMs, fn) => base.pulse(intervalMs, fn),
+      stopPulses: () => base.stopPulses(),
+    });
+    let lastFrequency = 0;
+
+    return {
+      start() {},
+      update(progress) {
+        const { frequency, changed } = nextNote(Math.max(progress, 0));
+        lastFrequency = frequency;
+        let justArmed = false;
+        base.crossing(
+          progress,
+          () => {
+            held.enter(frequency);
+            justArmed = true;
+          },
+          () => held.exit()
+        );
+        if (!changed || justArmed) return;
+        if (base.isReady) held.step(frequency);
+        else voice({ frequency });
+      },
+      commit(commitSound) {
+        held.stop(0.05);
+        base.teardown(0.05);
+        playOneShot(commitSound, out, COMMIT_LEVEL);
+      },
+      cancel() {
+        held.stop(0.05);
+        const tailMs = cancelTail(voice, lastFrequency);
+        setTimeout(() => base.teardown(0.06), tailMs);
+      },
+    };
+  }
+
+  // Walking down the scale the drag just walked up — the ladder unwinding, and
+  // the only thing in the gesture that says the drawing survived.
+  function descendingTail(voice, frequency, { notes, semitones, spacingMs, level }) {
+    for (let i = 0; i < notes; i += 1) {
+      setTimeout(
+        () => voice({ frequency: frequency * 2 ** ((-semitones * (i + 1)) / 12), level }),
+        i * spacingMs
+      );
+    }
+    return notes * spacingMs + 160;
+  }
+
+  const OPTIONS = [
     {
       id: 'bubble-ladder',
       name: 'Bubble Ladder',
@@ -510,71 +701,51 @@
         'The shipped water-bubble idea, tuned into a tune: each bubble snaps to a note of a pentatonic scale, so dragging out plays a rising melody and dragging back plays it in reverse.',
       notes: [
         'Snapping to a scale removes the microtonal wobble of a continuous glide — every dot is consonant with the one before it.',
-        'A dot now fires when the *note* changes rather than on a fixed distance gate, so the rhythm follows the hand instead of the sample rate.',
+        'A dot fires when the *note* changes rather than on a fixed distance gate, so the rhythm follows the hand instead of the sample rate.',
         'The bubble chirps upward (0.86× → 1.08×) like real bubble resonance, with a droplet tick riding the attack.',
-        'Ready state trills between the top note and two scale steps down, so holding sounds different from climbing.',
-        'Releasing short of the threshold plays three descending bubbles — the ladder unwinding.',
+        'Releasing short of the threshold walks three bubbles back down the scale.',
       ],
-      commit: 'commit-pop-sparkle',
+      commit: 'commit-paper-whoosh',
       level: 0.97,
-      create(out) {
-        const base = engineBase(out, this.level);
-        let lastStep = -1;
-        let topStep = 0;
-        let trillHigh = true;
-
-        const bubble = (step, multiplier = 1) => {
-          const frequency = ladderFrequency(BUBBLE_BASE_HZ, step);
-          tone(base.bus, {
-            frequency: frequency * BUBBLE_RISE_START_RATIO,
-            endFrequency: frequency * BUBBLE_RISE_END_RATIO,
-            peak: 0.22 * multiplier,
-            attackS: 0.003,
-            durationS: BUBBLE_DURATION_S,
-          });
-          noiseBurst(base.bus, {
-            peak: 0.06 * multiplier,
-            durationS: 0.014,
-            frequency: frequency * BUBBLE_DROPLET_RATIO,
-            q: 6,
-          });
-        };
-
-        return {
-          start() {},
-          update(progress) {
-            base.crossing(
-              progress,
-              () => {
-                readyDing(out, 0.3);
-                base.pulse(BUBBLE_TRILL_INTERVAL_MS, () => {
-                  bubble(trillHigh ? topStep : Math.max(0, topStep - BUBBLE_TRILL_DROP_STEPS), 0.45);
-                  trillHigh = !trillHigh;
-                });
-              },
-              () => {
-                base.stopPulses();
-                bubble(Math.max(0, topStep - 4), 0.3);
-              }
-            );
-            const step = ladderStep(Math.max(progress, 0), BUBBLE_NOTE_COUNT);
-            topStep = step;
-            if (step === lastStep) return;
-            lastStep = step;
-            bubble(step);
+      threshold: true,
+      create(out, controls) {
+        return pitchedEngine({
+          out,
+          level: this.level,
+          controls,
+          buildVoice: (bus) => ({ frequency, level = 1, sustainS = BUBBLE_DURATION_S }) => {
+            tone(bus, {
+              frequency: frequency * BUBBLE_RISE_START_RATIO,
+              endFrequency: frequency * BUBBLE_RISE_END_RATIO,
+              glideS: Math.min(sustainS, BUBBLE_DURATION_S),
+              peak: 0.22 * level,
+              attackS: 0.003,
+              durationS: sustainS,
+            });
+            noiseBurst(bus, {
+              peak: 0.06 * level,
+              durationS: 0.014,
+              frequency: frequency * BUBBLE_DROPLET_RATIO,
+              q: 6,
+            });
           },
-          commit(commitSound) {
-            base.teardown(0.05);
-            playOneShot(commitSound, out, COMMIT_LEVEL);
+          buildNextNote: () => {
+            let lastStep = -1;
+            return (progress) => {
+              const step = ladderStep(progress, BUBBLE_NOTE_COUNT);
+              const changed = step !== lastStep;
+              lastStep = step;
+              return { frequency: ladderFrequency(BUBBLE_BASE_HZ, step), changed };
+            };
           },
-          cancel() {
-            base.stopPulses();
-            for (let i = 0; i < 3; i += 1) {
-              setTimeout(() => bubble(Math.max(0, lastStep - i * 2), 0.4), i * 55);
-            }
-            setTimeout(() => base.teardown(0.06), 220);
-          },
-        };
+          cancelTail: (voice, frequency) =>
+            descendingTail(voice, frequency, {
+              notes: 3,
+              semitones: 3,
+              spacingMs: 55,
+              level: 0.4,
+            }),
+        });
       },
     },
 
@@ -588,84 +759,114 @@
       notes: [
         'A struck-bar timbre (fundamental plus an inharmonic 3.01× partial) reads as a physical object being played, not as a synthesizer.',
         'Fifteen bars across the full drag, so a long pull is a longer run — the gesture writes the melody.',
-        'Ready state taps the top bar softly against a shaker tick instead of repeating the climb.',
-        'Pairs with the magic-poof commit: wood, wood, wood, sparkle.',
+        'Of the three voices this one takes the Ring out treatment most naturally: a bar that keeps ringing is what a real mallet leaves behind.',
       ],
-      commit: 'commit-magic-poof',
+      commit: 'commit-paper-whoosh',
       level: 0.53,
-      create(out) {
-        const base = engineBase(out, this.level);
-        let lastStep = -1;
-        let topStep = 0;
-        let shakerTurn = false;
+      threshold: true,
+      create(out, controls) {
+        return pitchedEngine({
+          out,
+          level: this.level,
+          controls,
+          buildVoice: (bus) => ({ frequency, level = 1, sustainS = XYLO_BODY_DECAY_S }) => {
+            tone(bus, { frequency, peak: 0.24 * level, attackS: 0.002, durationS: sustainS });
+            tone(bus, {
+              frequency: frequency * XYLO_BAR_PARTIAL_RATIO,
+              peak: 0.07 * level,
+              attackS: 0.001,
+              durationS: Math.min(sustainS, XYLO_PARTIAL_DECAY_S),
+            });
+            noiseBurst(bus, {
+              peak: 0.09 * level,
+              durationS: 0.008,
+              frequency: XYLO_MALLET_HZ,
+              q: 1,
+            });
+          },
+          buildNextNote: () => {
+            let lastStep = -1;
+            return (progress) => {
+              const step = ladderStep(progress, XYLO_NOTE_COUNT);
+              const changed = step !== lastStep;
+              lastStep = step;
+              return { frequency: ladderFrequency(XYLO_BASE_HZ, step), changed };
+            };
+          },
+          cancelTail: (voice, frequency) =>
+            descendingTail(voice, frequency, {
+              notes: 2,
+              semitones: 4,
+              spacingMs: 70,
+              level: 0.35,
+            }),
+        });
+      },
+    },
 
-        const pluck = (step, multiplier = 1) => {
-          const frequency = ladderFrequency(XYLO_BASE_HZ, step);
-          tone(base.bus, {
-            frequency,
-            peak: 0.24 * multiplier,
-            attackS: 0.002,
-            durationS: XYLO_BODY_DECAY_S,
-          });
-          tone(base.bus, {
-            frequency: frequency * XYLO_BAR_PARTIAL_RATIO,
-            peak: 0.07 * multiplier,
-            attackS: 0.001,
-            durationS: XYLO_PARTIAL_DECAY_S,
-          });
-          noiseBurst(base.bus, {
-            peak: 0.09 * multiplier,
-            durationS: 0.008,
-            frequency: 2600,
-            q: 1,
-          });
-        };
-
-        return {
-          start() {},
-          update(progress) {
-            base.crossing(
-              progress,
-              () => {
-                readyDing(out, 0.26);
-                base.pulse(XYLO_READY_INTERVAL_MS, () => {
-                  if (shakerTurn) {
-                    noiseBurst(base.bus, {
-                      peak: 0.05,
-                      durationS: 0.02,
-                      frequency: 7000,
-                      q: 0.7,
-                      type: 'highpass',
-                    });
-                  } else pluck(topStep, 0.4);
-                  shakerTurn = !shakerTurn;
-                });
-              },
-              () => base.stopPulses()
-            );
-            const step = ladderStep(Math.max(progress, 0), XYLO_NOTE_COUNT);
-            topStep = step;
-            if (step === lastStep) return;
-            lastStep = step;
-            pluck(step);
+    {
+      id: 'baseline',
+      name: 'Shipped today',
+      tag: 'baseline',
+      hue: 'var(--faint)',
+      blurb:
+        'A faithful port of what is on main — sine bubble dots on a 0.055 progress gate and a continuous pitch glide, wired to the same treatment picker so the armed state can be judged on its own.',
+      notes: [
+        'Level-matched to the other cards so the comparison is about character, not loudness; the sheet masters through a soft ceiling, which only the densest flick on this card reaches.',
+        'Pitch is a continuous exponential glide, so two adjacent dots can land a few cents apart.',
+        'On a fast flick the 0.055 progress gate fires about fifteen dots inside 260 ms — five deep once the 85 ms envelopes overlap — so a quick clear reads as a buzz rather than as bubbles.',
+        'Cancel is silent here, unlike the two voices above. That is faithful: nothing in the shipped build tells a child the drawing survived.',
+        'Its commit clip plays at this sheet’s shared commit level rather than the shipped 0.3, so the commit picker compares clips instead of card mixes.',
+      ],
+      commit: 'baseline-clear-pop',
+      level: BASELINE_LEVEL_MATCH,
+      threshold: true,
+      defaultThreshold: 'trill',
+      create(out, controls) {
+        let dotProgress = 0;
+        return pitchedEngine({
+          out,
+          level: this.level,
+          controls,
+          buildVoice: (bus) => ({ frequency, level = 1, sustainS = BASELINE_DURATION_S }) => {
+            const variation = 1 + (Math.random() * 2 - 1) * BASELINE_PITCH_VARIATION;
+            const peak =
+              (BASELINE_GAIN_MIN +
+                (BASELINE_GAIN_MAX - BASELINE_GAIN_MIN) *
+                  Math.pow(dotProgress, BASELINE_GAIN_EXPONENT)) *
+              level;
+            tone(bus, {
+              frequency: frequency * variation * BASELINE_PITCH_START_RATIO,
+              endFrequency: frequency * variation,
+              glideS: BASELINE_PITCH_SETTLE_S,
+              peak,
+              attackS: BASELINE_ATTACK_S,
+              durationS: sustainS,
+            });
           },
-          commit(commitSound) {
-            base.teardown(0.05);
-            playOneShot(commitSound, out, COMMIT_LEVEL);
+          buildNextNote: () => {
+            let lastProgress = 0;
+            return (progress) => {
+              dotProgress = Math.min(progress / BASELINE_PITCH_CAP, 1);
+              const changed =
+                Math.abs(dotProgress - lastProgress) >= BASELINE_DOT_PROGRESS_STEP;
+              if (changed) lastProgress = dotProgress;
+              return {
+                frequency:
+                  BASELINE_START_HZ *
+                  Math.pow(BASELINE_END_HZ / BASELINE_START_HZ, dotProgress),
+                changed,
+              };
+            };
           },
-          cancel() {
-            base.stopPulses();
-            for (let i = 0; i < 2; i += 1) {
-              setTimeout(() => pluck(Math.max(0, lastStep - 3 - i * 3), 0.35), i * 70);
-            }
-            setTimeout(() => base.teardown(0.06), 200);
-          },
-        };
+          cancelTail: () => 0,
+        });
       },
     },
 
     {
       id: 'balloon',
+      secondary: true,
       name: 'Balloon Inflate',
       tag: 'fresh take',
       hue: 'var(--c-red)',
@@ -707,7 +908,6 @@
             base.crossing(
               progress,
               () => {
-                readyDing(out, 0.2);
                 rampTo(wobbleDepth.gain, BALLOON_WOBBLE_DEPTH, 0.18);
               },
               () => rampTo(wobbleDepth.gain, 0, 0.18)
@@ -743,6 +943,7 @@
 
     {
       id: 'scrub',
+      secondary: true,
       name: 'Scrubbed Tape',
       tag: 'new delivery',
       hue: 'var(--c-purple)',
@@ -803,7 +1004,7 @@
           update(next) {
             progress = Math.max(next, 0);
             const drag = clamp(progress / PITCH_CAP_PROGRESS, 0, 1);
-            base.crossing(progress, () => readyDing(out, 0.26), () => {});
+            base.crossing(progress, () => {}, () => {});
             rampTo(bed.gain, 0.25 + 0.75 * drag, 0.08);
             rampTo(cutoff.frequency, SCRUB_CUTOFF_MIN_HZ + (SCRUB_CUTOFF_MAX_HZ - SCRUB_CUTOFF_MIN_HZ) * drag, 0.1);
           },
@@ -821,6 +1022,7 @@
 
     {
       id: 'stems',
+      secondary: true,
       name: 'Stacking Stems',
       tag: 'new delivery',
       hue: 'var(--c-green)',
@@ -856,7 +1058,6 @@
             base.crossing(
               progress,
               () => {
-                readyDing(out, 0.24);
                 rampTo(wobbleDepth.gain, STEM_SHIMMER_WOBBLE_DEPTH, 0.25);
               },
               () => rampTo(wobbleDepth.gain, 0, 0.25)
@@ -882,6 +1083,7 @@
 
     {
       id: 'rocket',
+      secondary: true,
       name: 'Rocket Countdown',
       tag: 'fresh take',
       hue: 'var(--c-orange)',
@@ -954,6 +1156,7 @@
 
     {
       id: 'detent',
+      secondary: true,
       name: 'Quiet Detent',
       tag: 'restraint',
       hue: 'var(--c-pink)',
@@ -993,7 +1196,6 @@
             base.crossing(
               progress,
               () => {
-                readyDing(out, 0.34);
                 base.pulse(DETENT_READY_INTERVAL_MS, () => detent(DETENT_COUNT - 1, 0.3));
               },
               () => {
@@ -1027,7 +1229,7 @@
   const PRESETS = [
     { id: 'flick', label: 'Flick', hint: '0 → 1.15 in 260 ms', frames: [[0, 0], [260, 1.15]], outcome: 'commit' },
     { id: 'slow', label: 'Slow pull', hint: '0 → 1.35 over 1.9 s', frames: [[0, 0], [1900, 1.35]], outcome: 'commit' },
-    { id: 'hold', label: 'Hold at ready', hint: 'arrive at 1.05, hold 2 s', frames: [[0, 0], [700, 1.05], [2700, 1.09]], outcome: 'commit' },
+    { id: 'hold', label: 'Hold at ready', hint: 'arrive at 1.05, hold 3.5 s', frames: [[0, 0], [700, 1.05], [4200, 1.09]], outcome: 'commit' },
     { id: 'waver', label: 'Second thoughts', hint: '0.85 → 0.35 → 1.2', frames: [[0, 0], [600, 0.85], [1100, 0.35], [1800, 1.2]], outcome: 'commit' },
     { id: 'abandon', label: 'Chicken out', hint: 'to 0.75, then release', frames: [[0, 0], [700, 0.75]], outcome: 'cancel' },
   ];
@@ -1038,16 +1240,28 @@
   const RELEASE_SETTLE_MS = 900;
   const CLIP_PROBE_MS = 700;
   const PROBE_GAP_MS = 150;
+  const HOLD_PROBE_RAMP_MS = 700;
+  const HOLD_PROBE_LEAD_MS = 400;
+  const HOLD_PROBE_WINDOW_MS = 1000;
 
   const COMMIT_CHOICES = [
+    { value: 'commit-paper-whoosh', label: 'Page turn — original' },
+    { value: 'commit-page-crisp', label: 'Page turn — crisp sheet' },
+    { value: 'commit-page-board-book', label: 'Page turn — board book' },
+    { value: 'commit-page-flick', label: 'Page turn — fast flick' },
+    { value: 'commit-page-slap', label: 'Page turn — flip and land' },
+    { value: 'commit-page-slow', label: 'Page turn — big slow sheet' },
+    { value: 'commit-crumple-quick', label: 'Crumple — quick scrunch' },
+    { value: 'commit-crumple-slow', label: 'Crumple — long scrunch' },
+    { value: 'commit-crumple-toss', label: 'Crumple — scrunch and toss' },
+    { value: 'commit-crumple-basket', label: 'Crumple — into the basket' },
+    { value: 'baseline-clear-pop', label: 'clear-pop.mp3 (shipped)' },
     { value: 'commit-pop-sparkle', label: 'Bubble pop + sparkle' },
     { value: 'commit-magic-poof', label: 'Magic poof + chime' },
     { value: 'commit-confetti-sparkle', label: 'Confetti burst' },
-    { value: 'commit-paper-whoosh', label: 'Paper page turn' },
     { value: 'commit-whoomp-gulp', label: 'Whoomp gulp' },
     { value: 'commit-toy-boing', label: 'Toy boing' },
     { value: 'commit-rocket-liftoff', label: 'Rocket lift-off' },
-    { value: 'baseline-clear-pop', label: 'clear-pop.mp3 (shipped)' },
   ];
 
   const BENCH_ONE_SHOTS = [
@@ -1220,12 +1434,21 @@
     const card = {
       option,
       root,
-      controls: { commit: () => commitSelect.value, source: () => sourceSelect?.value },
+      controls: {
+        commit: () => commitSelect.value,
+        source: () => sourceSelect?.value,
+        threshold: () => thresholdSelect?.value ?? DEFAULT_TREATMENT,
+      },
       render(progress) {
         const capped = clamp(progress / PITCH_CAP_PROGRESS, 0, 1);
         meterFill.style.transform = `scaleX(${capped})`;
         root.classList.toggle('is-ready', progress >= COMMIT_PROGRESS);
         card.readout.textContent = progress.toFixed(2);
+      },
+      setThreshold(value) {
+        if (!thresholdSelect) return;
+        thresholdSelect.value = value;
+        thresholdSelect.dispatchEvent(new Event('change'));
       },
       renderPuck(progress) {
         const distance = Math.min(progress, PITCH_CAP_PROGRESS) * PAD_THRESHOLD_PX;
@@ -1262,6 +1485,18 @@
     presets.append(tour);
 
     const controls = el('div', 'opt-controls');
+    let thresholdSelect = null;
+    const treatmentNote = el('p', 'treatment-note');
+    if (option.threshold) {
+      thresholdSelect = select(THRESHOLD_TREATMENTS, option.defaultThreshold ?? DEFAULT_TREATMENT);
+      const describe = () => {
+        treatmentNote.textContent =
+          THRESHOLD_TREATMENTS.find((entry) => entry.value === thresholdSelect.value)?.note ?? '';
+      };
+      thresholdSelect.addEventListener('change', describe);
+      describe();
+      controls.append(labelled('Past threshold', thresholdSelect));
+    }
     const commitSelect = select(COMMIT_CHOICES, option.commit);
     controls.append(labelled('Commit sound', commitSelect));
     let sourceSelect = null;
@@ -1276,7 +1511,7 @@
     for (const note of option.notes) list.append(el('li', null, note));
     notes.append(list);
 
-    root.append(head, blurb, buildPad(card), meter, presets, controls, notes);
+    root.append(head, blurb, buildPad(card), meter, presets, controls, treatmentNote, notes);
     card.render(0);
     card.renderPuck(0);
     return card;
@@ -1340,9 +1575,10 @@
 
   function boot() {
     const grid = document.querySelector('[data-options]');
+    const asideGrid = document.querySelector('[data-options-secondary]');
     const cards = OPTIONS.map((option) => {
       const card = buildCard(option);
-      grid.append(card.root);
+      (option.secondary ? asideGrid : grid).append(card.root);
       return card;
     });
 
@@ -1356,19 +1592,15 @@
     // Rendered here rather than in gen.mjs so the counts cannot drift from the
     // arrays that produce the cards.
     document.querySelector('[data-option-count]').innerHTML =
-      `<b>${OPTIONS.length}</b> options`;
+      `<b>${OPTIONS.filter((option) => !option.secondary).length}</b> voices`;
+    document.querySelector('[data-treatment-count]').innerHTML =
+      `<b>${THRESHOLD_TREATMENTS.length}</b> hold treatments`;
     document.querySelector('[data-preset-count]').innerHTML =
       `<b>${PRESETS.length}</b> scripted gestures`;
 
     const volume = document.querySelector('[data-volume]');
     volume.value = String(settings.volume);
     volume.addEventListener('input', () => setVolume(Number(volume.value)));
-
-    const bell = document.querySelector('[data-ready-bell]');
-    bell.checked = settings.readyDing;
-    bell.addEventListener('change', () => {
-      settings.readyDing = bell.checked;
-    });
 
     const sequencePreset = document.querySelector('[data-sequence-preset]');
     for (const preset of PRESETS) {
@@ -1476,6 +1708,35 @@
       return reading;
     };
 
+    // Holds still at the threshold and listens to nothing but the armed state —
+    // the one thing a whole-gesture measurement cannot separate from the drag
+    // that led into it.
+    window.__sheetHoldProbe = async (optionId, treatment) => {
+      const card = cards.find((entry) => entry.option.id === optionId);
+      card.setThreshold(treatment);
+      await ensureAudio();
+      const gesture = await playGestureFrames(card, {
+        frames: [
+          [0, 0],
+          [HOLD_PROBE_RAMP_MS, 1.05],
+        ],
+      });
+      await settle(HOLD_PROBE_LEAD_MS);
+      const scope = meter();
+      await settle(HOLD_PROBE_WINDOW_MS);
+      const reading = scope.take();
+      scope.stop();
+      gesture.finish('cancel');
+      card.renderPuck(0);
+      await settle(RELEASE_SETTLE_MS);
+      return reading;
+    };
+
+    window.__sheetTreatments = THRESHOLD_TREATMENTS.map(({ value, label, sustains }) => ({
+      value,
+      label,
+      sustains: sustains ?? null,
+    }));
     window.__sheetOptions = OPTIONS.map((option) => option.id);
     window.__sheetPresets = PRESETS.map((preset) => preset.id);
     window.__sheetClips = () =>

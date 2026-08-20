@@ -73,9 +73,9 @@ function render({ manifest, scriptTag }) {
   const body = `${masthead({
     title: PAGE_TITLE,
     tagline:
-      'Seven ways the Clear button could sound, next to a level-matched port of what ships ' +
-      'today. Press a trash button and drag away from it — every option answers the same four ' +
-      'calls the real app makes.',
+      'Three pitched voices for the Clear drag, each with a swappable answer to the hardest ' +
+      'part of the gesture: what holding past the point of no return should sound like. Press ' +
+      'a trash button and drag away from it, or fire the scripted gestures.',
     crumbs: [
       { label: 'Scrapbook', href: '../../index.html' },
       { label: 'Sound design', href: '../' },
@@ -84,6 +84,7 @@ function render({ manifest, scriptTag }) {
     home: '../../index.html',
     stats:
       `<span class="chip accent" data-option-count></span>` +
+      `<span class="chip" data-treatment-count></span>` +
       `<span class="chip"><b>${manifest.length}</b> clips</span>` +
       `<span class="chip" data-preset-count></span>`,
   })}
@@ -92,7 +93,6 @@ function render({ manifest, scriptTag }) {
     <button class="solid" type="button" data-enable>Turn sound on</button>
     <span class="status" data-status>Audio is off until you tap.</span>
     <label class="field"><span>Volume</span><input type="range" min="0" max="1" step="0.01" data-volume/></label>
-    <label class="field"><input type="checkbox" data-ready-bell/><span>Threshold bell</span></label>
     <label class="field"><span>Run</span><select data-sequence-preset></select></label>
     <button class="ghost" type="button" data-sequence-run>across all options</button>
     <button class="ghost" type="button" data-stop>Stop</button>
@@ -102,15 +102,22 @@ function render({ manifest, scriptTag }) {
     <ol>
       <li><b>Turn sound on</b> — browsers need one tap before audio can start.</li>
       <li><b>Press a trash button and drag away from it.</b> The dashed ring is the commit threshold; past it the card goes ready. Release inside to cancel, outside to clear.</li>
-      <li><b>Or run a scripted gesture</b> — the same five hand shapes on every option, so the comparison is fair.</li>
-      <li><b>Then run one gesture across every option</b> from the bar above and let it play down the page.</li>
+      <li><b>Change "Past threshold"</b> and run <b>Hold at ready</b> again. That picker is the point of this pass — the drag itself is settled.</li>
+      <li><b>Change "Commit sound"</b> to compare the paper family; the picker is shared, so a clip can be judged across all three voices.</li>
     </ol>
-    <p class="tagline">Headphones or a real tablet speaker both matter here: the drag beds live in a
-    band that small speakers roll off, and that is exactly the device a two-year-old is holding.</p>
+    <p class="tagline">Headphones or a real tablet speaker both matter here: the held chord sits in
+    a band that small speakers roll off, and that is exactly the device a two-year-old is holding.</p>
   </section>
 
-  <div class="section-head"><h2>Options</h2><span class="desc">start / update(progress) / commit / cancel — the same contract as drawingSound.ts</span></div>
+  <div class="section-head"><h2>Voices</h2><span class="desc">start / update(progress) / commit / cancel — the same contract as drawingSound.ts</span></div>
   <div class="options" data-options></div>
+
+  <details class="explored">
+    <summary>Also explored — the continuous and themed takes</summary>
+    <p>Set aside for now in favour of the pitched voices above, kept playable rather than deleted.
+    These carry their own armed-state behaviour and do not use the treatment picker.</p>
+    <div class="options" data-options-secondary></div>
+  </details>
 
   <div class="section-head"><h2>One-shot bench</h2><span class="desc">every commit, cancel, and threshold clip on its own, to mix and match above</span></div>
   <div class="bench" data-bench-oneshots></div>

@@ -102,6 +102,28 @@ for (const name of clipNames) {
 console.log(`clips: ${clipNames.length - mute.length}/${clipNames.length} audible when played`);
 failures.push(...mute.map((entry) => `clip plays silent: ${entry}`));
 
+// The armed state is the part being redesigned, so each treatment is held at the
+// threshold and listened to on its own: the ones that promise to sustain must
+// still be sounding a second in, and the one that promises silence must be
+// silent.
+const treatments = await page.evaluate(() => window.__sheetTreatments);
+const TREATMENT_HOST = 'bubble-ladder';
+for (const { value, label, sustains } of treatments) {
+  const { peak } = await page.evaluate(
+    ([option, treatment]) => window.__sheetHoldProbe(option, treatment),
+    [TREATMENT_HOST, value]
+  );
+  const verdict = peak >= SILENCE_PEAK ? 'sounding' : 'silent';
+  console.log(`hold · ${label.padEnd(26)} ${peak.toFixed(3)} ${verdict}`);
+  if (sustains === true && peak < SILENCE_PEAK) {
+    failures.push(`treatment "${label}" promises to sustain but the hold is silent (${peak.toFixed(4)})`);
+  }
+  if (sustains === false && peak >= SILENCE_PEAK) {
+    failures.push(`treatment "${label}" promises silence but the hold sounds (${peak.toFixed(4)})`);
+  }
+}
+await page.evaluate((option) => window.__sheetHoldProbe(option, 'chord'), TREATMENT_HOST);
+
 const options = await page.evaluate(() => window.__sheetOptions);
 const presets = await page.evaluate(() => window.__sheetPresets);
 for (const option of options) {

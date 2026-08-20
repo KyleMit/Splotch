@@ -35,12 +35,84 @@
       "prompt": "One-shot soft confetti burst with light glittering sparkles falling, cheerful and gentle, close and dry, no voice, no music."
     },
     {
+      "name": "commit-crumple-basket",
+      "role": "commit",
+      "durationSeconds": 1.6,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot crumpled paper ball thrown into an empty wire wastebasket, short crackle then a hollow rattling landing, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-crumple-quick",
+      "role": "commit",
+      "durationSeconds": 0.9,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot single sheet of paper crumpled quickly into a ball in one motion, dry crackle, close microphone, no voice, no music."
+    },
+    {
+      "name": "commit-crumple-slow",
+      "role": "commit",
+      "durationSeconds": 1.5,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot sheet of paper being slowly and thoroughly crumpled, long satisfying crackling, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-crumple-toss",
+      "role": "commit",
+      "durationSeconds": 1.4,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot paper being scrunched into a ball and then tossed away landing softly, crackle followed by a light bounce, close and dry, no voice, no music."
+    },
+    {
       "name": "commit-magic-poof",
       "role": "commit",
       "durationSeconds": 1,
       "promptInfluence": 0.7,
       "loop": false,
       "prompt": "One-shot gentle magic poof with a soft bright glockenspiel chime, whimsical children's cartoon, close and dry, no voice, no music bed."
+    },
+    {
+      "name": "commit-page-board-book",
+      "role": "commit",
+      "durationSeconds": 0.8,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot thick cardboard page of a children's board book being turned over, soft heavy paper flop, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-page-crisp",
+      "role": "commit",
+      "durationSeconds": 0.7,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot single sheet of paper turning over quickly, crisp dry paper flick, close microphone, no voice, no music, no room reverb."
+    },
+    {
+      "name": "commit-page-flick",
+      "role": "commit",
+      "durationSeconds": 0.6,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot fast paper whoosh as a page is flicked forward sharply, short and snappy, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-page-slap",
+      "role": "commit",
+      "durationSeconds": 0.8,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot notebook page flipped over and landing flat with a light slap, paper rustle then a soft pat, close and dry, no voice, no music."
+    },
+    {
+      "name": "commit-page-slow",
+      "role": "commit",
+      "durationSeconds": 1.1,
+      "promptInfluence": 0.55,
+      "loop": false,
+      "prompt": "One-shot large sheet of drawing paper turned over slowly and settling, gentle sustained paper rustle, close and dry, no voice, no music."
     },
     {
       "name": "commit-paper-whoosh",
