@@ -49,7 +49,7 @@ export function pwaPrecacheProblems({
   }
   const unexpectedColoringUrls = starterBookId
     ? precacheUrls.filter((url) => {
-        const match = /^coloring\/([^/]+)\/.+\.webp$/.exec(url);
+        const match = /^coloring\/([^/]+)\/.+\.(?:webp|svg)$/.exec(url);
         return !!match && !RESPONSIVE_TIER_PATTERN.test(match[1]) && match[1] !== starterBookId;
       })
     : [];

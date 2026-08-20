@@ -1,4 +1,5 @@
-export const COLORING_PACK_ASSET_URL_PATTERN = /\/coloring\/(?!max-\d+px\/)[^/]+\/.+\.webp$/;
+export const COLORING_PACK_ASSET_URL_PATTERN =
+  /\/coloring\/(?!max-\d+px\/)[^/]+\/.+\.(?:webp|svg)$/;
 
 export async function serveInstalledColoringPackAsset({
   request,

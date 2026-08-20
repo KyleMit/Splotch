@@ -11,6 +11,7 @@ import {
 import {
   COLORING_PACK_FORMAT_VERSION,
   coloringPackManifestPath,
+  isInvariantColoringPackAssetPath,
   type ColoringPackManifest,
 } from './src/lib/coloringPacks/manifest.ts';
 import type { ColoringPackResolution } from './src/lib/coloringPacks/resolution.ts';
@@ -43,13 +44,19 @@ export function buildColoringPackManifest(
         .filter((asset) => asset.encoding === 'thumbnail')
         .map((asset) => asset.source)
     );
-    if (compactPaths.size + canonicalThumbnailPaths.size !== canonicalPaths.length) {
+    const invariantPaths = new Set(canonicalPaths.filter(isInvariantColoringPackAssetPath));
+    if (
+      compactPaths.size + canonicalThumbnailPaths.size + invariantPaths.size !==
+      canonicalPaths.length
+    ) {
       throw new Error(`Compact coloring-pack inventory is incomplete for ${book.id}`);
     }
     const variant = (resolution: ColoringPackResolution) => {
       const files = canonicalPaths.map((path) => {
         const downloadPath =
-          resolution === 'compact' && !canonicalThumbnailPaths.has(path)
+          resolution === 'compact' &&
+          !canonicalThumbnailPaths.has(path) &&
+          !invariantPaths.has(path)
             ? compactPaths.get(path)
             : path;
         if (!downloadPath) throw new Error(`No compact coloring asset for ${path}`);

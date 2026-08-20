@@ -7,9 +7,11 @@ into both `.claude/` and `.agents/` and this material is far too large to trip.
 
 ## Entry point
 
-| Entry point           | Public command         | Purpose                                        |
-| --------------------- | ---------------------- | ---------------------------------------------- |
-| `vectorize-image.mjs` | `npm run vectorize --` | Trace, download, delete, or inspect an account |
+| Entry point           | Public command                        | Purpose                                                   |
+| --------------------- | ------------------------------------- | --------------------------------------------------------- |
+| `vectorize-image.mjs` | `npm run vectorize --`                | Trace, download, delete, or inspect an account            |
+| `postprocess-svg.mjs` | `npm run vectorize:postprocess --`    | Optimize a trace and restore its intrinsic SVG dimensions |
+| `postprocess-svg.mjs` | `npm run vectorize:postprocess:check` | Check committed traces against that fixed point           |
 
 The public npm command, CLI modes, flags, environment variables, default `vectorized/` output,
 credit safeguards, and exit behavior remain stable during the tools naming migration. Inputs and
@@ -19,7 +21,7 @@ that fails *after* the API call returned may still have been charged — the res
 the charge and image token are printed — so check `npm run vectorize -- --account` before re-running
 a `--production` command that errored.
 
-The account this repo uses is a **metered 50-credit plan** — a production vectorization is **1
+The account this repo uses is a **metered 200-credit plan** — a production vectorization is **1
 credit**, and credits do not come back. Read
 [Credits — the one thing to get right](#credits--the-one-thing-to-get-right) before you spend any.
 
@@ -151,6 +153,25 @@ to use instead.
 Results default to **`vectorized/`**, which is gitignored like `screenshots/` and
 `lighthouse-reports/`. Write elsewhere in the tree only when the file is meant to be committed — a
 stray untracked SVG trips the stop-hook git check.
+
+### Post-process a keeper
+
+Preserve the paid service response as the raw review artifact, then derive the runtime SVG through
+the deterministic post-processor:
+
+```bash
+npm run vectorize:postprocess -- vectorized/page.svg --out vectorized/page.optimized.svg
+npm run vectorize:postprocess -- vectorized/page.svg --fill '#fff' --out vectorized/page.dark.svg
+```
+
+The pass runs pinned SVGO `preset-default` to its byte-stable fixed point, then restores `width` and
+`height` from the optimized `viewBox`. Without those attributes, Chromium and WebKit report the
+Vectorizer output at its 100×150 default intrinsic size. No-input mode normalizes the committed
+`tools/vectorize/pilot/*.optimized.svg` and `web/static/coloring/**/*.svg` inventory in place;
+`npm run vectorize:postprocess:check` is the read-only drift guard. The repo-script unit suite also
+checks every committed result so a new runtime SVG cannot bypass the invariant. `--fill` bakes a
+root ink color into a themed derivative; use `#fff` for a dark overlay so runtime presentation stays
+ordinary source-over composition without a CSS filter (ADR-0091).
 
 ## Endpoints
 

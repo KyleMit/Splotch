@@ -11,7 +11,7 @@ function manifest() {
     sha256: 'a'.repeat(64),
   });
   return {
-    formatVersion: 2,
+    formatVersion: 3,
     appVersion: '1.2.3',
     starterBookId: 'farm',
     books: [
@@ -61,5 +61,31 @@ describe('parseColoringPackManifest', () => {
       mutation(value);
       expect(() => parseColoringPackManifest(value, '1.2.3')).toThrow();
     }
+  });
+
+  it('accepts only invariant overlay SVGs and requires identical bytes across tiers', () => {
+    const value = manifest();
+    const svg = {
+      path: '/coloring/farm/cat-tall.overlay.svg',
+      bytes: 2,
+      sha256: 'b'.repeat(64),
+    };
+    value.books[0].variants.compact.files.push(svg);
+    value.books[0].variants.compact.bytes += svg.bytes;
+    value.books[0].variants.full.files.push({ ...svg });
+    value.books[0].variants.full.bytes += svg.bytes;
+
+    expect(() => parseColoringPackManifest(value, '1.2.3')).not.toThrow();
+    value.books[0].variants.compact.files[1].sha256 = 'c'.repeat(64);
+    expect(() => parseColoringPackManifest(value, '1.2.3')).toThrow();
+    value.books[0].variants.compact.files[1] = {
+      ...svg,
+      path: '/coloring/farm/cat-tall.light.svg',
+    };
+    value.books[0].variants.full.files[1] = {
+      ...svg,
+      path: '/coloring/farm/cat-tall.light.svg',
+    };
+    expect(() => parseColoringPackManifest(value, '1.2.3')).toThrow();
   });
 });

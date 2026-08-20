@@ -1,7 +1,7 @@
 import { COLORING_PACK_RESOLUTIONS, type ColoringPackResolution } from './resolution.ts';
 
 /** @public Build-time manifest generator entry used from the Vite config graph. */
-export const COLORING_PACK_FORMAT_VERSION = 2;
+export const COLORING_PACK_FORMAT_VERSION = 3;
 
 interface ColoringPackFile {
   path: string;
@@ -76,6 +76,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+export function isInvariantColoringPackAssetPath(path: string): boolean {
+  return /(?:^|\/)[^/]+(?:\.dark)?\.overlay\.svg$/.test(path);
+}
+
+function isCanonicalColoringAssetPath(path: string, bookId: string): boolean {
+  const prefix = `/coloring/${bookId}/`;
+  if (!path.startsWith(prefix) || path.includes('..')) return false;
+  const filename = path.slice(prefix.length);
+  return path.endsWith('.webp') || isInvariantColoringPackAssetPath(filename);
+}
+
+function validDownloadPath(
+  path: string,
+  downloadPath: string,
+  bookId: string,
+  resolution: ColoringPackResolution
+): boolean {
+  if (resolution === 'full' || isInvariantColoringPackAssetPath(path)) {
+    return downloadPath === path;
+  }
+  const compactMatch = /^\/coloring\/max-\d+px\/([^/]+)\/.+\.webp$/.exec(downloadPath);
+  return downloadPath === path || compactMatch?.[1] === bookId;
+}
+
 function validVariant(
   value: unknown,
   bookId: string,
@@ -90,14 +114,10 @@ function validVariant(
     if (
       !isRecord(file) ||
       typeof file.path !== 'string' ||
-      !file.path.startsWith(`/coloring/${bookId}/`) ||
-      !file.path.endsWith('.webp') ||
-      file.path.includes('..') ||
+      !isCanonicalColoringAssetPath(file.path, bookId) ||
       paths.has(file.path) ||
       (file.downloadPath !== undefined &&
-        (typeof file.downloadPath !== 'string' ||
-          !file.downloadPath.endsWith('.webp') ||
-          file.downloadPath.includes('..'))) ||
+        (typeof file.downloadPath !== 'string' || file.downloadPath.includes('..'))) ||
       !Number.isSafeInteger(file.bytes) ||
       (file.bytes as number) <= 0 ||
       typeof file.sha256 !== 'string' ||
@@ -106,12 +126,7 @@ function validVariant(
       return Number.NaN;
     }
     const downloadPath = file.downloadPath ?? file.path;
-    const validDownloadPath =
-      resolution === 'full'
-        ? downloadPath === file.path
-        : downloadPath === file.path ||
-          new RegExp(`^/coloring/max-\\d+px/${bookId}/`).test(downloadPath);
-    if (!validDownloadPath) return Number.NaN;
+    if (!validDownloadPath(file.path, downloadPath, bookId, resolution)) return Number.NaN;
     paths.add(file.path);
     return sum + (file.bytes as number);
   }, 0);
@@ -148,12 +163,27 @@ export function parseColoringPackManifest(
     );
     if (!variantsValid) return false;
     const [firstResolution, ...otherResolutions] = COLORING_PACK_RESOLUTIONS;
-    const firstPaths = new Set(
-      (variants[firstResolution] as ColoringPackVariantManifest).files.map((file) => file.path)
+    const firstFiles = new Map(
+      (variants[firstResolution] as ColoringPackVariantManifest).files.map((file) => [
+        file.path,
+        file,
+      ])
     );
     return otherResolutions.every((resolution) => {
       const files = (variants as Record<string, ColoringPackVariantManifest>)[resolution].files;
-      return files.length === firstPaths.size && files.every((file) => firstPaths.has(file.path));
+      return (
+        files.length === firstFiles.size &&
+        files.every((file) => {
+          const first = firstFiles.get(file.path);
+          if (!first) return false;
+          return (
+            !isInvariantColoringPackAssetPath(file.path) ||
+            (file.bytes === first.bytes &&
+              file.sha256 === first.sha256 &&
+              (file.downloadPath ?? file.path) === (first.downloadPath ?? first.path))
+          );
+        })
+      );
     });
   });
   const ids = value.books.map((book) => (isRecord(book) ? book.id : undefined));

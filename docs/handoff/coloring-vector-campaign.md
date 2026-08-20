@@ -1,157 +1,140 @@
 # Handoff — coloring vector campaign
 
-> 2026-08-19 · branch `codex/vectorize-coloring-pilot` · PR
-> [#1165](https://github.com/KyleMit/Splotch/pull/1165) · validate the SVG overlay pilot, automate
-> its safe production path, integrate a runtime slice, then stage the pen and chalk campaigns
+> 2026-08-19 · branch `codex/vectorize-coloring-runtime` · PR
+> [#1167](https://github.com/KyleMit/Splotch/pull/1167) · after the runtime slice merges, close its
+> deployment and physical-iPad gates before authorizing the pen-first catalog campaign
 
 ## Objective & non-goals
 
-Validate the committed Vectorizer.AI pilot through PR review, automate its post-processing
-invariants, then prove the proposed runtime path on a small pen/chalk slice before spending credits
-on a pen-first campaign. Re-gate chalk separately on a dense-wide production trace.
+Resume only after PR [#1167](https://github.com/KyleMit/Splotch/pull/1167) merges. Verify the
+deployed SVG transport and the real physical-iPad web/native coloring-pack path, then use one
+dense-wide production trace to decide whether the remaining pen campaign is safe.
 
-This branch does **not** serve SVGs in the app, modify coloring manifests/caches, vectorize the
-remaining catalog, or replace raster authoring sources, fills, covers, or picker thumbnails.
+Do **not** start the 94-trace pen remainder merely because the PR merged. Do not batch chalk with
+pen, forge a Cache Storage installed marker to make Creatures appear installed, vectorize covers or
+picker thumbnails, replace raster authoring sources/fills, or remove WebP fallbacks.
 
 ## State
 
-* Branch: `codex/vectorize-coloring-pilot`, pushed to origin.
-* Draft PR: [#1165](https://github.com/KyleMit/Splotch/pull/1165).
-* Base: `main` at 72982b9a56260743d5c6a430565c6ad4c6e7f1c9.
-* Pilot assets and analyzers: [`tools/vectorize/pilot/`](../../tools/vectorize/pilot/).
-* Generated comparison PNGs and watermarked discovery/rehearsal traces remain gitignored under
-  `vectorized/pilot/`; the seven PR images are hosted on the orphan `pr-assets` branch under
-  `vectorize-coloring-pilot/`.
+* Branch: `codex/vectorize-coloring-runtime`, pushed to origin.
+* Draft PR: [#1167](https://github.com/KyleMit/Splotch/pull/1167), open and mergeable at
+  318aff00090b37ada450f79005994279ca21724e when this packet was written.
+* Base: `main` at 7a680a3c2f01b132dfc905e88835a1d74d61f2fa according to GitHub; the local branch was
+  cut from 77ce0900.
+* Runtime slice: Circle portrait light SVG plus Owl portrait light/dark SVG. All other page,
+  orientation, and theme combinations remain WebP.
+* Contract: coloring-pack format 3; compact and full variants carry byte-identical SVG logical
+  paths, download paths, byte lengths, and SHA-256 digests.
+* The seven pilot/runtime SVGs are normalized by `npm run vectorize:postprocess`; the read-only
+  fixed-point check is `npm run vectorize:postprocess:check`.
 
-| Commit                                   | What                                                                                    |
-| ---------------------------------------- | --------------------------------------------------------------------------------------- |
-| ea090f6720a53ce336ac4b1282ae662ea46178e5 | Add the raw/optimized keeper SVGs, offline analyzers, measurements, and pilot rationale |
-| 5797a1e350207194a0aa468e4ca7c6cfd12e24bf | Add this campaign handoff                                                               |
+| Commit                                   | What                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------- |
+| 75e205993c6729427f2305ff617d2edfc3244d7f | Consume the pilot-era handoff before implementing the runtime slice              |
+| 318aff00090b37ada450f79005994279ca21724e | Integrate invariant SVG overlays, format 3, post-processing, tests, and ADR-0129 |
 
-Files touched by the pilot commit: `knip.json`, `tools/vectorize/README.md`, and
-`tools/vectorize/pilot/**`. This handoff is the only additional feature-branch file.
+The implementation touches ADR-0129, the vectorizer runbook/post-processor, coloring-pack manifest
+generation and validation, PWA routing, the book catalog and resolver, three runtime SVGs, and the
+focused unit/E2E coverage. Use `git diff --name-status 77ce0900...318aff00` for the exact inventory.
 
 ## Decisions made (and why)
 
-* Recommend one SVG for each full-page pen runtime overlay. The three page samples total 99.8 KB raw
-  / 38.4 KB Brotli versus 169 KB of compact WebP or 237 KB of full WebP, while one SVG replaces both
-  raster presentation tiers. Stage chalk separately because its sample saves only 21% versus the
-  compact dark overlay before HTTP compression, and native receives canonical bytes without Brotli.
-* Keep raster cover/picker thumbnails. Covers have no runtime overlay variant and render only at
-  thumbnail size, where resolution independence has no presentation benefit. The farm SVG does beat
-  the 83.5 KB canonical authoring outline at 49.4 KB raw, but the actual runtime comparison is its
-  9.9 KB 240 px thumbnail versus 18.2 KB Brotli SVG. The paid cover trace could not change the
-  structural decision.
-* Keep raster pen/chalk sources and light/night fills. The vector is a presentation derivative, not
-  a new authoring source or Magic-sheet format.
-* Keeper parameters are `processing.max_colors=2`, black/transparent-white palette mapping, disabled
-  gap filler, stacked shapes, and no color grouping. Details are in
-  [`tools/vectorize/pilot/README.md`](../../tools/vectorize/pilot/README.md).
-* Preserve both raw and SVGO-optimized paid outputs. Watermarked discovery and rehearsal files are
-  disposable and were deliberately not promoted into git.
-* Before any batch, replace the pilot's manual SVGO plus intrinsic-size restoration with a
-  re-runnable post-processing script and a drift-guard test. Require every committed page SVG's
-  `width` and `height` to match its `viewBox`, following ADR-0044's fixed-point audit model.
-* Require a runtime slice and physical-iPad gate before the campaign. Browser microbenchmarks are a
-  compatibility signal, not evidence about selection-frame responsiveness on real hardware.
-* The campaign boundary is 96 canonical pen page sources plus 96 canonical chalk page sources. The
-  pilot already produced circle pen, owl pen, and owl chalk keepers, leaving 94 pen and 95 chalk
-  production traces. Run pen first; use one of the 95 chalk traces as the dense-wide production
-  re-gate before authorizing the other 94. The 16 pen/chalk covers are outside the campaign.
+* Roll out vectors explicitly by page, orientation, and resolved theme. This keeps every unproven
+  combination on its existing WebP path and makes the campaign reversible.
+* Share one canonical SVG across compact and full packs. SVG has no responsive derivative; raster
+  fills, thumbnails, and non-selected overlays retain the existing resolution behavior.
+* Keep Cache Storage namespaces version-and-resolution scoped. The installed marker fingerprints
+  each selected file, including bytes and digest, so vector invariance does not create another cache
+  authority or migration.
+* Bake white ink into dark SVG derivatives. Runtime still uses ordinary source-over composition;
+  there is no full-page CSS recoloring filter.
+* Keep raster covers and picker thumbnails. Their actual display assets are smaller than SVG, so
+  resolution independence does not create a runtime win.
+* Stage pen and chalk separately. The two paid pen keepers support the pen direction, but the
+  densest pen sources are wide. Chalk is closer to raw-byte parity on native and needs its own
+  dense-wide production gate after the pen stage.
+* Treat the physical iPad as the runtime acceptance gate. Desktop Chromium/WebKit compatibility and
+  Playwright E2E are necessary evidence, not substitutes for selection-frame responsiveness,
+  rotation, real offline installation, and visual overlay/fill registration on the target device.
 
 ## Unverified assumptions
 
-* Netlify will Brotli-compress the served SVG responses as estimated; verify response headers and
-  transferred bytes on a deployed runtime slice.
-* SVG-backed overlays preserve selection, theme switching, Magic reveal, rotation, offline/PWA
-  behavior, native pack installation, and screenshot export after app integration. Explicitly check
-  raster fill registration beneath vector edges: no fill color peeking through and no hairline gap,
-  especially on chalk where the sample has 97.47% binary IoU and 219/255 maximum alpha error.
-* The manifest representation is undecided. `coloringPacks/manifest.ts` currently rejects any
-  logical or download path not ending in `.webp`; choose and test the SVG-aware wire-format rule
-  before starting the runtime slice.
-* The pack-resolution model is undecided for invariant overlays. `ColoringPackResolution` remains a
-  closed `compact | full` axis used by cache names and markers, while an SVG overlay would be shared
-  across both variants and fills/thumbnails would still vary. Resolve that contract before editing
-  manifest generation or cache behavior.
-* Pack marker fingerprints should invalidate a changed asset set on the next app version without a
-  bespoke migration, but the SVG slice must prove the end-to-end swap and cleanup behavior.
-* Decide whether the raw paid SVGs remain useful once the integration selects the optimized files;
-  the pilot commits both for reviewability, not as a permanent catalog storage rule.
+* The merge commit and production deployment do not change the three runtime SVG bytes or the
+  manifest-3 contract. Resolve the actual merge SHA and deployment before trusting this packet's
+  branch-head pointers.
+* Netlify serves the SVGs as `image/svg+xml` with Brotli transfer compression near the pilot's
+  estimates. This has not been measured on a deployed #1167 build.
+* Circle/Owl selection, theme switching, Magic reveal, rotation, overlay/fill registration,
+  screenshot export, offline installation, and relaunch remain correct on a physical iPad in both
+  deployed web and native Capacitor contexts.
+* A local Appium attempt while preparing #1167 did not expose the installed Creatures pack. It is
+  unknown whether the cause was the real install state, stale manifest/cache data, the selected
+  Appium context, or the build under test. Diagnose that state; do not make the test pass by writing
+  the marker used by `gotoAppWithAllColoringBooksInstalled`.
+* The last recorded Vectorizer.AI balance was 176.9 credits on 2026-08-19. It funds the 94 remaining
+  pen traces at that snapshot, but the live balance and service output must be rechecked before any
+  paid call. The full 189-trace pen-plus-chalk remainder was short 12.1 credits at that snapshot.
+* A production trace of `creatures/fairy-wide.outline.webp` will preserve the pen keeper's useful
+  size/fidelity relationship. The free watermarked rehearsal could validate geometry and tooling,
+  not production bytes or fidelity.
 
 ## Done & verified
 
-* Four production traces charged 4.0 credits; no Vectorizer.AI call was made while preparing this PR
-  or handoff.
-* The post-pilot account query recorded 26.9 credits. The 94-trace pen remainder is short 67.1
-  credits; the complete 189-trace remainder is short 162.1 credits. Treat purchase authorization as
-  a real gate, then re-query immediately before spending.
-* `node tools/vectorize/pilot/analyze-results.mjs` reproduced the committed size and fidelity
-  report. Page binary ink IoU is 97.47–97.91%; mean composite error is 0.46–0.73/255.
-* Offline inspection of all full sheets and 2× crops found every shape, eye ring, catchlight,
-  deliberate chalk white, and line closure intact; differences are antialiasing/subpixel edges.
-* `node tools/vectorize/pilot/check-browser.mjs` passed five decode/draw/export samples per format
-  in Chromium and WebKit; every SVG reported 1024×1536 intrinsic dimensions.
-* `npm run test:tools -- tools/vectorize/tests/vectorize-image.test.mjs` — 11 passed.
-* `npx eslint tools/vectorize/pilot/analyze-results.mjs tools/vectorize/pilot/check-browser.mjs` —
-  passed.
-* `npm run lint:dead` — passed.
+* The production runtime slice is committed and selected only at
+  `web/src/lib/state/books.ts:328-353`; raster fallbacks remain for every other combination.
+* ADR-0129 records the accepted pack and runtime contract at
+  `docs/adrs/0129-invariant-svg-overlays-in-coloring-packs.md:34-76`.
+* `npm run vectorize:postprocess:check` — seven committed SVGs byte-stable.
+* Focused vectorizer tool tests — 23 passed.
+* Focused manifest/state/PWA unit tests — 37 passed.
+* `web/tests/flows-vector-overlays.spec.ts` — two Chromium flows passed: intrinsic decode, Magic
+  reveal, theme fallback, dark SVG, drawing, and screenshot export.
+* `npm run check` — zero errors and zero warnings.
+* `npm run lint` — passed.
 * `npm run format:check` — passed.
-* Hosted PR image sanity check — `200 image/png`.
-* Review validation confirmed 96 pen and 96 chalk page sources; 48 pen pages are tall and 48 are
-  wide. The two pen keepers are approximately the 3rd and 70th source-size percentiles. The five
-  densest pen sources are all wide, and `creatures/fairy-wide.outline.webp` is the maximum at 181.5
-  KB, 1.57 times the densest pen keeper.
-* The runtime integration surface and current invariants were verified against ADR-0091 and
-  ADR-0103, `books.ts`, `manifest.ts`, `resolution.ts`, `cacheKeys.ts`, the manifest/check scripts,
-  and their focused unit/E2E tests.
+* `npm run check:coloring-assets` — 1,389 assets checked.
+* `npm run check:assets:manifest` — 1,600 assets matched.
+* `npm run check:adrs -- --base=origin/main` — 125 ADRs valid.
+* `npm run build` — PWA precache, release-seam, and bundle-budget checks passed.
+* `npm run build:cap` — native static build passed within the package budget.
+* Four pilot production traces charged four credits. The dense-wide rehearsal used test mode and
+  charged zero credits; no catalog campaign was run on #1167.
+* GitHub reported #1167 open, draft, and mergeable at the branch head above. The connector returned
+  no combined-status contexts, so this packet does not claim independently observed CI status.
 
 ## Risks & next 3 steps
 
-Main risks are the manifest's WebP-only validator, manual post-processing silently dropping
-intrinsic dimensions, an unrepresentative tall-only pilot, dense chalk approaching byte parity on
-native, overlay/fill registration artifacts, changed service output during a long paid batch, and
-deployed SVG compression differing from the estimate. Cache migration is not presumed necessary:
-verify existing version/resolution namespaces and marker fingerprints on the slice.
+The largest risks are a deployment transfer profile that differs from local Brotli estimates, a
+physical-device-only selection/rotation/registration failure, mistaking a forged cache marker for a
+real offline installation, and spending a large non-refundable credit batch before the dense-wide
+outlier is accepted.
 
-1. Before any paid batch, add a deterministic Vectorizer post-processor plus an intrinsic-dimension
-   drift guard, then run `creatures/fairy-wide.outline.webp` through free watermarked test mode and
-   the offline fidelity/size analysis. Decide the manifest's SVG allowlist/format-version rule and
-   how invariant overlays participate in the existing `compact | full` pack variants.
-2. Integrate circle pen and owl pen/chalk as the runtime slice across `books.ts`, manifest
-   generation/validation, coloring-asset checks, PWA/native packs, and export. On a deploy and
-   physical iPad, verify transferred bytes, selection frames, light/dark theme, Magic reveal,
-   rotation, offline reload, screenshot export, overlay/fill pixel registration, and automatic pack
-   invalidation from the existing version/resolution namespace plus marker fingerprint.
-3. If the slice passes, re-query the balance and explicitly authorize at least the 67.1-credit pen
-   shortfall before batching the 94 remaining pen traces with an offline acceptance gate after every
-   result. Then production-trace `creatures/fairy-wide.chalk.webp`, compare raw/native bytes and
-   registration, and authorize the other 94 chalk traces only if that separate gate passes. The
-   observed balance is 162.1 credits short of the complete 189-trace remainder.
+1. **Verify the merged deployment.** Start from updated `main`, record the merge and deploy SHAs,
+   fetch the generated manifest, and inspect all three SVG responses for status, `Content-Type`,
+   `Content-Encoding`, cache headers, and actual compressed transfer bytes. Compare web transfer
+   bytes with Brotli estimates and native/raw bytes with `wc -c`; confirm Circle/Owl routes resolve
+   to the expected SVGs while an unselected theme/orientation still resolves to WebP.
+2. **Close the physical-iPad gate through the real product path.** Test deployed MobileSafari and
+   the native Capacitor build: install Shapes/Creatures through the UI, select Circle and Owl,
+   switch light/dark, use Magic and ordinary drawing, inspect edge registration, rotate both ways,
+   export a screenshot, go offline, relaunch, and reopen the pages. Diagnose why Appium could not
+   see Creatures using the actual manifest/cache/manager state; never seed only the installed
+   marker.
+3. **Gate the paid campaign.** If steps 1–2 are green, run `npm run vectorize -- --account`, state
+   the live balance and exact one-credit action, and obtain spending authorization for the
+   `creatures/fairy-wide.outline.webp` production trace. Post-process it, rerun the offline
+   size/fidelity/browser checks, and visually inspect registration. Only after that trace passes may
+   the remaining pen stage proceed (94 total remaining pen traces before this gate). Finish pen
+   before proposing the separate dense-wide chalk gate and its other 94 chalk traces.
 
 ## Reread first
 
+* [`docs/adrs/0129-invariant-svg-overlays-in-coloring-packs.md`](../adrs/0129-invariant-svg-overlays-in-coloring-packs.md)
 * [`tools/vectorize/pilot/README.md`](../../tools/vectorize/pilot/README.md)
 * [`tools/vectorize/README.md`](../../tools/vectorize/README.md)
 * [`web/src/lib/state/books.ts`](../../web/src/lib/state/books.ts)
-* [`web/src/lib/coloringPacks/manifest.ts`](../../web/src/lib/coloringPacks/manifest.ts),
-  [`resolution.ts`](../../web/src/lib/coloringPacks/resolution.ts), and
-  [`cacheKeys.ts`](../../web/src/lib/coloringPacks/cacheKeys.ts)
-* [`tools/asset-gen/gen-asset-manifest.mjs`](../../tools/asset-gen/gen-asset-manifest.mjs) and
-  [`tools/check-coloring-assets.mjs`](../../tools/check-coloring-assets.mjs)
-* Manifest/resolution tests: [`manifest.test.ts`](../../web/src/lib/coloringPacks/manifest.test.ts),
-  [`manifestBuild.test.ts`](../../web/src/lib/coloringPacks/manifestBuild.test.ts), and
-  [`resolution.test.ts`](../../web/src/lib/coloringPacks/resolution.test.ts)
-* Runtime tests: [`coloringFallback.test.ts`](../../web/src/lib/pwa/coloringFallback.test.ts),
-  [`coloringPackRoute.test.ts`](../../web/src/lib/pwa/coloringPackRoute.test.ts),
-  [`imagePrefetch.test.ts`](../../web/src/lib/imagePrefetch.test.ts),
-  [`overlay.test.ts`](../../web/src/lib/drawing/overlay.test.ts),
-  [`exportDrawing.test.ts`](../../web/src/lib/drawing/exportDrawing.test.ts),
-  [`books.test.ts`](../../web/src/lib/state/books.test.ts), and
-  [`coloringBook.svelte.test.ts`](../../web/src/lib/state/coloringBook.svelte.test.ts)
-* Focused E2E: [`pwa-registration.spec.ts`](../../web/tests/pwa-registration.spec.ts) and
-  [`flows-coloring-book.spec.ts`](../../web/tests/flows-coloring-book.spec.ts)
-* [`docs/adrs/0044-svg-optimization-audit.md`](../adrs/0044-svg-optimization-audit.md)
-* [`docs/adrs/0091-alpha-overlays-and-worker-magic-sheets.md`](../adrs/0091-alpha-overlays-and-worker-magic-sheets.md)
-* [`docs/adrs/0103-progressive-coloring-book-packs.md`](../adrs/0103-progressive-coloring-book-packs.md)
-* The `vectorize-image`, `architecture`, `adrs`, `mobile`, `profiling`, and `resume-handoff` skills
+* [`web/src/lib/coloringPacks/manifest.ts`](../../web/src/lib/coloringPacks/manifest.ts)
+* [`web/src/lib/coloringPacks/manager.ts`](../../web/src/lib/coloringPacks/manager.ts)
+* [`web/tests/flows-vector-overlays.spec.ts`](../../web/tests/flows-vector-overlays.spec.ts)
+* [`docs/PROFILING-IPAD.md`](../PROFILING-IPAD.md)
+* The `resume-handoff`, `vectorize-image`, `mobile`, `profiling`, and `run-splotch` skills

@@ -60,7 +60,8 @@ describe('responsive coloring catalog', () => {
       let sourceBytes = 0;
       let targetBytes = 0;
 
-      expect(assets).toHaveLength(592);
+      // Invariant SVG overlays replace their canonical WebP and responsive derivative together.
+      expect(assets).toHaveLength(589);
       for (const asset of assets) {
         const sourceMetadata = await sharp(join(WEB_STATIC, asset.source)).metadata();
         const targetMetadata = await sharp(join(WEB_STATIC, asset.target)).metadata();

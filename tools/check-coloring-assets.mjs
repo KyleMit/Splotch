@@ -31,6 +31,22 @@ function reportMissingCatalogAssets(staticDir, books) {
   return missing;
 }
 
+function reportUnreferencedCatalogAssets(staticDir, books) {
+  const referenced = new Set(
+    books.flatMap(bookAssetPaths).map((assetPath) => assetPath.replace(/^\//, ''))
+  );
+  const unreferenced = globSync('coloring/**/*.{svg,webp}', { cwd: staticDir }).filter(
+    (assetPath) => !referenced.has(assetPath)
+  );
+  for (const assetPath of unreferenced) {
+    console.error(`[check-coloring-assets] UNREFERENCED: ${assetPath}`);
+  }
+  if (unreferenced.length === 0) {
+    console.log('[check-coloring-assets] no unreferenced coloring assets.');
+  }
+  return unreferenced.length;
+}
+
 function reportPlatformFilterMismatch(books, mobileEligibleBooks) {
   // webOnlyBooks is script-side; the app-side booksForPlatform('mobile') result must complement it.
   const mobileBookIds = new Set(mobileEligibleBooks.map((book) => book.id));
@@ -73,6 +89,7 @@ function reportPubliclyServedDocs(staticDir) {
 export function checkAssets(staticDir, books, mobileEligibleBooks) {
   const errors =
     reportMissingCatalogAssets(staticDir, books) +
+    reportUnreferencedCatalogAssets(staticDir, books) +
     reportPlatformFilterMismatch(books, mobileEligibleBooks) +
     reportPubliclyServedDocs(staticDir);
   if (errors > 0) {
