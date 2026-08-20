@@ -1,5 +1,4 @@
 import { scheduleIdle } from '$lib/idle';
-import { requestPersistentStorage } from '$lib/idb';
 import type { ResolvedColoringPackBookManifest, ResolvedColoringPackManifest } from './manifest';
 import type { ColoringPackStore, InstalledColoringPack } from './store';
 import { COLORING_PACK_RESOLUTIONS } from './resolution';
@@ -108,8 +107,9 @@ export function createWebColoringPackStore(): ColoringPackStore {
       return installed.filter((pack): pack is InstalledColoringPack => !!pack);
     },
 
+    // Automatic pack installs share the default boot path, so requesting origin
+    // persistence here would prompt Firefox on startup (ADR-0128).
     async install(manifest, book, _allowMetered, signal) {
-      await requestPersistentStorage();
       const cache = await caches.open(coloringPackCacheName(manifest));
       for (const file of book.files) {
         if (signal.aborted) throw signal.reason;
