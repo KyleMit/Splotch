@@ -1447,7 +1447,7 @@
       button.addEventListener('click', () => runPreset(card, preset));
       presets.append(button);
     }
-    const tour = el('button', 'ghost tour', 'Tour all five');
+    const tour = el('button', 'ghost tour', `Tour all ${PRESETS.length}`);
     tour.type = 'button';
     tour.addEventListener('click', async () => {
       for (const preset of PRESETS) {
