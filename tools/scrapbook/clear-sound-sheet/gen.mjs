@@ -1,0 +1,157 @@
+#!/usr/bin/env node
+// Builds the drag-to-clear sound contact sheet under scrapbook/sound-design/.
+//
+// The committed assets/ directory is the source of truth for the audio: this
+// generator re-emits the page from whatever clips are sitting there, so running
+// it twice is a no-op. That includes baseline-clear-pop.mp3, which the app no
+// longer ships — the sheet is the record of a comparison, so its copy of the
+// sound that lost stays put rather than tracking web/static/. `--from <dir>` imports freshly generated clips (see
+// sounds.json for every prompt), and `--inline <file>` writes a second,
+// fully self-contained copy with the audio embedded as data: URIs for sharing
+// somewhere that cannot serve the assets folder.
+
+import { copyFile, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { basename, dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+import { masthead, page, siteFooter } from '../lib/scrapbook-chrome.mjs';
+import { esc } from '../../lib/html.mjs';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = resolve(HERE, '../../..');
+const OUT_DIR = join(REPO, 'scrapbook/sound-design/clear-sound-contact-sheet');
+const ASSET_DIR = join(OUT_DIR, 'assets');
+
+const PAGE_TITLE = 'Drag-to-clear sound options';
+
+const { values: args } = parseArgs({
+  options: { from: { type: 'string' }, inline: { type: 'string' } },
+  allowPositionals: false,
+});
+
+await mkdir(ASSET_DIR, { recursive: true });
+if (args.from) await importClips(resolve(args.from));
+await copyFile(join(HERE, 'sheet.js'), join(ASSET_DIR, 'sheet.js'));
+
+const provenance = JSON.parse(await readFile(join(HERE, 'sounds.json'), 'utf8'));
+const clipNames = (await readdir(ASSET_DIR))
+  .filter((file) => file.endsWith('.mp3'))
+  .map((file) => basename(file, '.mp3'))
+  .sort();
+
+const css = await readFile(join(HERE, 'sheet.css'), 'utf8');
+const script = await readFile(join(HERE, 'sheet.js'), 'utf8');
+
+await writeFile(
+  join(OUT_DIR, 'index.html'),
+  render({
+    manifest: clipNames.map((name) => ({ name, url: `assets/${name}.mp3` })),
+    scriptTag: '<script src="assets/sheet.js"></script>',
+  })
+);
+console.log(`Wrote ${join(OUT_DIR, 'index.html')} (${clipNames.length} clips)`);
+
+if (args.inline) {
+  const manifest = [];
+  for (const name of clipNames) {
+    const bytes = await readFile(join(ASSET_DIR, `${name}.mp3`));
+    manifest.push({ name, url: `data:audio/mpeg;base64,${bytes.toString('base64')}` });
+  }
+  const target = resolve(args.inline);
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, render({ manifest, scriptTag: `<script>\n${script}\n</script>` }));
+  console.log(`Wrote ${target} (self-contained)`);
+}
+
+async function importClips(sourceDir) {
+  const files = (await readdir(sourceDir)).filter((file) => file.endsWith('.mp3'));
+  for (const file of files) await copyFile(join(sourceDir, file), join(ASSET_DIR, file));
+  console.log(`Imported ${files.length} clip(s) from ${sourceDir}`);
+}
+
+function render({ manifest, scriptTag }) {
+  const body = `${masthead({
+    title: PAGE_TITLE,
+    tagline:
+      'Three pitched voices for the Clear drag, each with a swappable answer to the hardest ' +
+      'part of the gesture: what holding past the point of no return should sound like. Press ' +
+      'a trash button and drag away from it, or fire the scripted gestures.',
+    crumbs: [
+      { label: 'Scrapbook', href: '../../index.html' },
+      { label: 'Sound design', href: '../' },
+      { label: 'Drag-to-clear options' },
+    ],
+    home: '../../index.html',
+    stats:
+      `<span class="chip accent" data-option-count></span>` +
+      `<span class="chip" data-treatment-count></span>` +
+      `<span class="chip"><b>${manifest.length}</b> clips</span>` +
+      `<span class="chip" data-preset-count></span>`,
+  })}
+<main><div class="shell">
+  <div class="controlbar">
+    <button class="solid" type="button" data-enable>Turn sound on</button>
+    <span class="status" data-status>Audio is off until you tap.</span>
+    <label class="field"><span>Volume</span><input type="range" min="0" max="1" step="0.01" data-volume/></label>
+    <label class="field"><span>Run</span><select data-sequence-preset></select></label>
+    <button class="ghost" type="button" data-sequence-run>across all options</button>
+    <button class="ghost" type="button" data-stop>Stop</button>
+  </div>
+
+  <div class="outcome">
+    <span class="eyebrow">Outcome</span>
+    <p><b>Bubble Ladder with Keep climbing, committing on the crisp page turn.</b> Chosen from this
+    sheet and ported into <code>web/src/lib/audio/drawingSound.ts</code>; ADR-0131 carries the
+    reasoning. Everything else here stays playable as the record of what it was chosen over.</p>
+  </div>
+
+  <section class="intro">
+    <ol>
+      <li><b>Turn sound on</b> — browsers need one tap before audio can start.</li>
+      <li><b>Press a trash button and drag away from it.</b> The dashed ring is the commit threshold; past it the card goes ready. Release inside to cancel, outside to clear.</li>
+      <li><b>Change "Past threshold"</b> and run <b>Hold at ready</b> again. That picker is the point of this pass — the drag itself is settled.</li>
+      <li><b>Change "Commit sound"</b> to compare the paper family; the picker is shared, so a clip can be judged across all three voices.</li>
+    </ol>
+    <p class="tagline">Headphones or a real tablet speaker both matter here: the held chord sits in
+    a band that small speakers roll off, and that is exactly the device a two-year-old is holding.</p>
+  </section>
+
+  <div class="section-head"><h2>Voices</h2><span class="desc">start / update(progress) / commit / cancel — the same contract as drawingSound.ts</span></div>
+  <div class="options" data-options></div>
+
+  <details class="explored">
+    <summary>Also explored — the continuous and themed takes</summary>
+    <p>Set aside for now in favour of the pitched voices above, kept playable rather than deleted.
+    These carry their own armed-state behaviour and do not use the treatment picker.</p>
+    <div class="options" data-options-secondary></div>
+  </details>
+
+  <div class="section-head"><h2>One-shot bench</h2><span class="desc">every commit, cancel, and threshold clip on its own, to mix and match above</span></div>
+  <div class="bench" data-bench-oneshots></div>
+
+  <div class="section-head"><h2>Beds and sources</h2><span class="desc">the loops and long recordings the continuous options are built from — 3 s preview</span></div>
+  <div class="bench" data-bench-beds></div>
+
+  <div class="section-head"><h2>Provenance</h2><span class="desc">every clip is ElevenLabs ${esc(provenance.model)} at ${esc(provenance.outputFormat)}; prompts are committed in tools/scrapbook/clear-sound-sheet/sounds.json</span></div>
+  <details class="notes"><summary>Show the ${provenance.clips.length} generation prompts</summary>${provenanceTable()}</details>
+</div></main>
+${siteFooter({ home: '../../index.html' })}
+<script>window.CLEAR_SHEET_SOUNDS = ${JSON.stringify(manifest)};</script>
+${scriptTag}`;
+
+  return page({ title: `${PAGE_TITLE} · Splotch Scrapbook`, extraCss: css, body });
+}
+
+function provenanceTable() {
+  const rows = provenance.clips
+    .map(
+      (clip) =>
+        `<tr><td><code>${esc(clip.name)}</code></td><td>${clip.durationSeconds}s${
+          clip.loop ? ' · loop' : ''
+        } · influence ${clip.promptInfluence}</td><td>${esc(clip.prompt)}</td></tr>`
+    )
+    .join('');
+  return `<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:.84rem;margin-top:10px">
+    <thead><tr style="text-align:left;color:var(--muted)"><th>Clip</th><th>Settings</th><th>Prompt</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}

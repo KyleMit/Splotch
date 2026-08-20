@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Drag-to-clear sound options · Splotch Scrapbook</title>
+<style>
+:root{
+  color-scheme: light dark;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+  --c-red:#ec534e; --c-orange:#f89c45; --c-yellow:#f9d24f;
+  --c-green:#8cc864; --c-blue:#62a2e9; --c-purple:#ab71e1; --c-pink:#f47cb0;
+  --r-sm:9px; --r-md:16px; --r-lg:18px;
+  --shell:1160px;
+  --font: ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}}
+:root[data-theme=light]{
+  color-scheme: light;
+  --paper:#f5f3ee;
+  --paper-2:#efece5;
+  --card:#fdfbf6;
+  --card-2:#f6f3ec;
+  --ink:#23212a;
+  --muted:#6b6774;
+  --faint:#948f9c;
+  --hair:#e6e1d8;
+  --hair-strong:#d9d3c8;
+  --accent:#2f6fed;
+  --accent-ink:#1e50c4;
+  --accent-wash:#e8effe;
+  --gold:#b1780a;
+  --ok:#3f9d55;
+  --warn:#e08a1e;
+  --bad:#d24b3f;
+  --shadow-sm:0 1px 2px rgba(30,28,40,.05);
+  --shadow-md:0 1px 2px rgba(30,28,40,.05), 0 10px 26px rgba(30,28,40,.07);
+  --shadow-lg:0 2px 6px rgba(30,28,40,.06), 0 22px 48px rgba(30,28,40,.12);
+}
+:root[data-theme=dark]{
+  color-scheme: dark;
+  --paper:#131418;
+  --paper-2:#0f1013;
+  --card:#1c1e24;
+  --card-2:#191b20;
+  --ink:#e9e7e2;
+  --muted:#a19da8;
+  --faint:#797682;
+  --hair:#2b2e36;
+  --hair-strong:#3a3e48;
+  --accent:#7aa8ff;
+  --accent-ink:#a9c6ff;
+  --accent-wash:#1b2536;
+  --gold:#d9a441;
+  --ok:#5cc078;
+  --warn:#e6a545;
+  --bad:#e8695c;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-md:0 1px 2px rgba(0,0,0,.3), 0 10px 26px rgba(0,0,0,.4);
+  --shadow-lg:0 2px 6px rgba(0,0,0,.35), 0 22px 48px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:var(--font); font-size:16px; line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent-ink); text-decoration:none}
+a:hover{text-decoration:underline}
+.shell{width:100%; max-width:var(--shell); margin:0 auto; padding:0 clamp(16px,4vw,44px)}
+
+/* ---- Masthead ------------------------------------------------------------ */
+.masthead{
+  position:relative; overflow:hidden;
+  background:
+    radial-gradient(120% 140% at 100% 0, color-mix(in srgb,var(--accent-wash) 55%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--card-2), var(--paper));
+  border-bottom:1px solid var(--hair);
+}
+.masthead .shell{padding-top:clamp(16px,3vw,26px); padding-bottom:clamp(20px,3.5vw,34px)}
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; min-height:34px}
+.brand{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--ink); font-weight:700; letter-spacing:-.01em;
+}
+.brand:hover{text-decoration:none}
+.brand:hover .brand-name{color:var(--accent-ink)}
+.brand-name{font-size:15px; transition:color .12s}
+.brand-name .brand-sub{color:var(--muted); font-weight:600}
+.brand-name .brand-sub::before{content:"/"; margin:0 5px; color:var(--faint); font-weight:400}
+.crayons{display:inline-flex; gap:4px; flex:0 0 auto}
+.crayons i{display:block; border-radius:99px}
+.crayons-lg i{width:22px; height:7px}
+.crayons-sm i{width:15px; height:5px}
+.brand .crayons-lg i{width:16px; height:6px}
+
+.crumbs{margin-left:auto; display:flex; align-items:center; gap:2px; font-size:13px; color:var(--muted); flex-wrap:wrap}
+.crumbs a{color:var(--muted)}
+.crumbs a:hover{color:var(--accent-ink)}
+.crumbs .sep{color:var(--faint); margin:0 5px}
+.crumbs .here{color:var(--ink); font-weight:650}
+
+.masthead-body{margin-top:clamp(16px,3vw,26px); position:relative; z-index:1}
+.masthead h1{
+  font-size:clamp(1.85rem,4.4vw,2.7rem); line-height:1.03; margin:0;
+  letter-spacing:-.032em; text-wrap:balance; font-weight:800;
+}
+.tagline{color:var(--muted); max-width:58ch; margin:.55rem 0 0; font-size:clamp(1rem,1.4vw,1.08rem)}
+.masthead-deco{position:absolute; top:-8px; right:clamp(-20px,-1vw,0px); width:clamp(150px,20vw,240px); pointer-events:none; opacity:.14; filter:saturate(1.1); z-index:0}
+.masthead-deco svg{width:100%; height:auto; display:block}
+@media (prefers-color-scheme:dark){.masthead-deco{opacity:.2}}
+:root[data-theme=dark] .masthead-deco{opacity:.2}
+@media (max-width:640px){.masthead-deco{display:none}}
+.tagline b{color:var(--ink); font-weight:650}
+.tagline a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px}
+.masthead .stat-row{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+
+/* ---- Content ------------------------------------------------------------- */
+main{display:block}
+main .shell{padding-top:clamp(24px,4vw,40px); padding-bottom:clamp(48px,7vw,84px)}
+.section-head{display:flex; align-items:baseline; gap:10px; margin:clamp(30px,5vw,46px) 0 14px}
+.section-head:first-child{margin-top:0}
+.section-head h2{font-size:1.18rem; margin:0; letter-spacing:-.01em; font-weight:750}
+.section-head .desc{color:var(--muted); font-size:.9rem}
+.eyebrow{font-size:.72rem; text-transform:uppercase; letter-spacing:.12em; color:var(--gold); font-weight:700}
+
+/* chips / pills */
+.chip{
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  font-size:.76rem; font-weight:600; padding:4px 11px; border-radius:999px;
+  background:var(--card); border:1px solid var(--hair); color:var(--muted);
+}
+.chip b{color:var(--ink); font-weight:700}
+.chip.accent{background:var(--accent-wash); border-color:transparent; color:var(--accent-ink)}
+.chip .dot{width:7px; height:7px; border-radius:99px; background:var(--accent)}
+
+/* card grid — each card carries a single collection --hue (a crayon color) that
+   tints its top edge and icon plaque; the full rainbow is reserved for the
+   masthead brand + footer so the motif stays a signature, not wallpaper. */
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(288px,1fr)); gap:clamp(14px,2vw,20px)}
+.card{
+  --hue:var(--accent); position:relative; display:flex; flex-direction:column;
+  background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm); overflow:hidden; transition:transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.card:hover{transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--hue) 45%, var(--hair-strong))}
+.card > a.card-hit{position:absolute; inset:0; z-index:1}
+.card-top{height:5px; background:linear-gradient(90deg,var(--hue),color-mix(in srgb,var(--hue) 40%, transparent))}
+.card-body{padding:18px 18px 16px; display:flex; flex-direction:column; gap:9px; flex:1}
+.card-emoji{
+  width:46px; height:46px; border-radius:13px; display:grid; place-items:center;
+  background:color-mix(in srgb,var(--hue) 13%, var(--card-2));
+  border:1px solid color-mix(in srgb,var(--hue) 26%, var(--hair)); color:var(--hue);
+}
+.card-emoji svg{width:26px; height:26px; display:block}
+.card-emoji.is-emoji{font-size:24px}
+.card h3{margin:2px 0 0; font-size:1.14rem; letter-spacing:-.01em; font-weight:750}
+.card p{margin:0; color:var(--muted); font-size:.92rem; flex:1}
+.card-meta{margin-top:2px; font-size:.78rem; color:var(--faint)}
+.card-meta .kind{color:var(--muted); font-weight:650}
+.card-links{position:relative; z-index:2; display:flex; flex-wrap:wrap; gap:6px 14px; margin-top:2px; font-size:.82rem}
+.card .go{position:relative; z-index:2; margin-top:4px; align-self:flex-start; display:inline-flex; align-items:center; gap:6px; font-weight:700; color:var(--accent-ink); font-size:.9rem}
+.card:hover .go .arrow{transform:translateX(3px)}
+.go .arrow{transition:transform .14s ease}
+
+/* footer */
+.site-foot{border-top:1px solid var(--hair); background:var(--card-2)}
+.site-foot .shell{display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding-top:22px; padding-bottom:26px; color:var(--muted); font-size:.85rem}
+.site-foot .crayons{opacity:.9}
+.site-foot p{margin:0}
+.site-foot a{color:var(--accent-ink); text-decoration:none}
+.site-foot a:hover{text-decoration:underline; text-underline-offset:2px}
+
+.empty{color:var(--muted); background:var(--card); border:1px dashed var(--hair-strong); border-radius:var(--r-md); padding:22px}
+code{background:color-mix(in srgb,var(--ink) 8%, transparent); padding:.1em .42em; border-radius:5px; font-size:.88em}
+
+@media (max-width:560px){
+  .crumbs{width:100%; margin-left:0; margin-top:6px}
+  .card-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .card,.go .arrow{transition:none}
+}
+
+/* page */
+.intro{display:grid; gap:14px; max-width:74ch}
+.intro ol{margin:0; padding-left:1.2em; color:var(--muted)}
+.intro li{margin:.2em 0}
+.intro li b{color:var(--ink)}
+
+.controlbar{
+  position:sticky; top:0; z-index:5; margin:22px 0 6px;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px;
+  padding:12px 16px; border-radius:var(--r-md);
+  background:color-mix(in srgb,var(--card) 92%, transparent);
+  backdrop-filter:blur(8px);
+  border:1px solid var(--hair); box-shadow:var(--shadow-sm);
+}
+.controlbar .field{margin:0}
+.controlbar .status{color:var(--muted); font-size:.85rem; flex:1 1 200px; min-width:0}
+body.audio-ready [data-enable]{display:none}
+
+.field{display:inline-flex; align-items:center; gap:8px; font-size:.82rem; color:var(--muted); font-weight:600}
+.field select,.field input[type=range]{font:inherit; font-size:.82rem}
+.field select{
+  background:var(--card); color:var(--ink); border:1px solid var(--hair-strong);
+  border-radius:var(--r-sm); padding:5px 8px; max-width:15rem;
+}
+.field input[type=range]{width:120px; accent-color:var(--accent)}
+
+button.solid,button.ghost{
+  font:inherit; font-weight:650; cursor:pointer; border-radius:999px;
+  border:1px solid var(--hair-strong); background:var(--card); color:var(--ink);
+  padding:6px 14px; font-size:.83rem; transition:background .12s,border-color .12s,transform .12s;
+}
+button.solid{background:var(--accent); border-color:transparent; color:#fff}
+button.ghost:hover{border-color:var(--hue,var(--accent)); background:var(--card-2)}
+button.solid:hover{filter:brightness(1.06)}
+button:active{transform:translateY(1px)}
+
+.options{display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:clamp(14px,2vw,20px); margin-top:18px}
+.opt{
+  --hue:var(--accent);
+  display:flex; flex-direction:column; gap:12px; padding:18px;
+  background:var(--card); border:1px solid var(--hair); border-radius:var(--r-md);
+  box-shadow:var(--shadow-sm); border-top:4px solid var(--hue);
+  transition:box-shadow .16s ease, border-color .16s ease;
+}
+.opt.is-active{box-shadow:var(--shadow-md)}
+.opt.is-spotlit{box-shadow:0 0 0 3px color-mix(in srgb,var(--hue) 45%, transparent), var(--shadow-lg)}
+.opt-head{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap}
+.opt-head h3{margin:0; font-size:1.16rem; font-weight:750; letter-spacing:-.01em}
+.tag{
+  font-size:.68rem; text-transform:uppercase; letter-spacing:.1em; font-weight:800;
+  color:var(--hue); background:color-mix(in srgb,var(--hue) 14%, transparent);
+  border-radius:999px; padding:3px 9px;
+}
+.blurb{margin:0; color:var(--muted); font-size:.92rem}
+
+.pad{
+  position:relative; height:212px; border-radius:var(--r-md); overflow:hidden;
+  background:
+    radial-gradient(70% 90% at 50% 50%, color-mix(in srgb,var(--hue) 9%, var(--card-2)), var(--card-2));
+  border:1px solid var(--hair); touch-action:none; user-select:none;
+}
+.pad .ring{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  border-radius:50%; border:2px dashed color-mix(in srgb,var(--hue) 45%, var(--hair-strong));
+  opacity:.5; transition:opacity .18s, border-color .18s;
+}
+.opt.is-ready .pad .ring{opacity:1; border-style:solid; border-color:var(--hue)}
+.pad .anchor{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:58px; height:58px; border-radius:50%; cursor:grab; touch-action:none;
+  display:grid; place-items:center; color:#fff; border:none;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--hue) 88%, #fff), var(--hue));
+  box-shadow:0 4px 12px color-mix(in srgb,var(--hue) 40%, transparent);
+}
+.pad .anchor:active{cursor:grabbing}
+.pad .anchor svg{width:26px; height:26px}
+.pad .puck{
+  position:absolute; left:50%; top:50%; margin:-24px 0 0 -24px;
+  width:48px; height:48px; border-radius:50%; pointer-events:none; opacity:0;
+  background:color-mix(in srgb,var(--hue) 26%, var(--card));
+  border:2px solid var(--hue); transition:opacity .12s;
+}
+.pad .readout{
+  position:absolute; right:10px; bottom:8px; font-variant-numeric:tabular-nums;
+  font-size:.78rem; font-weight:700; color:var(--muted);
+}
+.opt.is-ready .pad .readout{color:var(--hue)}
+
+.meter{position:relative; height:8px; border-radius:99px; background:var(--card-2); border:1px solid var(--hair); overflow:hidden}
+.meter i{display:block; height:100%; width:100%; transform-origin:left; transform:scaleX(0); background:var(--hue); transition:transform .05s linear}
+.meter .mark{position:absolute; top:0; bottom:0; width:2px; background:var(--hair-strong)}
+.meter .ready-mark{left:38.5%}
+.meter .cap-mark{left:calc(100% - 2px)}
+
+.presets{display:flex; flex-wrap:wrap; gap:6px}
+.presets .tour{margin-left:auto; border-style:dashed}
+.opt-controls{display:flex; flex-wrap:wrap; gap:10px 16px}
+.notes{border-top:1px dashed var(--hair); padding-top:10px; margin-top:auto}
+.notes summary{cursor:pointer; font-size:.85rem; font-weight:700; color:var(--muted)}
+.notes summary:hover{color:var(--ink)}
+.notes ul{margin:10px 0 0; padding-left:1.15em; color:var(--muted); font-size:.88rem; display:grid; gap:7px}
+
+.bench{display:grid; grid-template-columns:repeat(auto-fill,minmax(430px,1fr)); gap:10px 26px; margin-top:6px}
+.bench-row{
+  display:grid; grid-template-columns:auto minmax(9ch,1fr) minmax(120px,2fr) auto; align-items:center; gap:12px;
+  padding:7px 10px; border-radius:var(--r-sm); border:1px solid var(--hair); background:var(--card);
+}
+.bench-row .ghost{padding:3px 11px}
+.bench-row .wave{width:100%; height:34px; color:var(--accent); opacity:.85}
+.bench-name{font-size:.86rem; font-weight:650}
+.bench-meta{font-size:.75rem; color:var(--faint); font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){
+  .bench{grid-template-columns:1fr}
+  .bench-row{grid-template-columns:auto 1fr; grid-template-areas:"play name" "wave wave"}
+  .bench-row .ghost{grid-area:play}
+  .bench-name{grid-area:name}
+  .bench-row .wave{grid-area:wave; width:100%}
+  .bench-meta{display:none}
+}
+@media (max-width:560px){
+  .intro ol{font-size:.9rem}
+  .intro .tagline{font-size:.9rem}
+  .controlbar{gap:8px 12px; padding:10px 12px}
+}
+@media (prefers-reduced-motion:reduce){
+  .meter i,.opt,.pad .ring,.pad .puck{transition:none}
+}
+
+.treatment-note{
+  margin:0; padding:9px 12px; border-radius:var(--r-sm);
+  background:color-mix(in srgb,var(--hue) 8%, var(--card-2));
+  border:1px solid color-mix(in srgb,var(--hue) 18%, var(--hair));
+  color:var(--muted); font-size:.85rem;
+}
+.explored{
+  margin-top:clamp(26px,4vw,40px); border:1px dashed var(--hair-strong);
+  border-radius:var(--r-md); padding:14px 16px; background:var(--card-2);
+}
+.explored summary{cursor:pointer; font-weight:750; font-size:1.02rem}
+.explored > p{color:var(--muted); font-size:.9rem; max-width:70ch}
+.explored .options{margin-top:14px}
+
+.opt.is-chosen{
+  border-color:color-mix(in srgb,var(--hue) 55%, var(--hair));
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--hue) 26%, transparent), var(--shadow-md);
+}
+.opt.is-chosen .tag{background:var(--hue); color:#fff}
+.outcome{
+  display:flex; gap:12px; align-items:flex-start; margin:18px 0 0;
+  padding:14px 16px; border-radius:var(--r-md);
+  background:var(--accent-wash); border:1px solid color-mix(in srgb,var(--accent) 26%, transparent);
+}
+.outcome .eyebrow{flex:0 0 auto; padding-top:2px}
+.outcome p{margin:0; color:var(--ink); font-size:.94rem; max-width:76ch}
+.outcome b{font-weight:750}
+</style>
+</head>
+<body>
+<header class="masthead">
+  
+  <div class="shell">
+    <div class="topbar">
+      <a class="brand" href="../../index.html"><span class="crayons crayons-lg" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span><span class="brand-name">Splotch<span class="brand-sub">Scrapbook</span></span></a>
+      <nav class="crumbs" aria-label="Breadcrumb"><a href="../../index.html">Scrapbook</a><span class="sep">/</span><a href="../">Sound design</a><span class="sep">/</span><span class="here" aria-current="page">Drag-to-clear options</span></nav>
+    </div>
+    <div class="masthead-body">
+      <h1>Drag-to-clear sound options</h1>
+      <p class="tagline">Three pitched voices for the Clear drag, each with a swappable answer to the hardest part of the gesture: what holding past the point of no return should sound like. Press a trash button and drag away from it, or fire the scripted gestures.</p>
+      <div class="stat-row"><span class="chip accent" data-option-count></span><span class="chip" data-treatment-count></span><span class="chip"><b>37</b> clips</span><span class="chip" data-preset-count></span></div>
+    </div>
+  </div>
+</header>
+<main><div class="shell">
+  <div class="controlbar">
+    <button class="solid" type="button" data-enable>Turn sound on</button>
+    <span class="status" data-status>Audio is off until you tap.</span>
+    <label class="field"><span>Volume</span><input type="range" min="0" max="1" step="0.01" data-volume/></label>
+    <label class="field"><span>Run</span><select data-sequence-preset></select></label>
+    <button class="ghost" type="button" data-sequence-run>across all options</button>
+    <button class="ghost" type="button" data-stop>Stop</button>
+  </div>
+
+  <div class="outcome">
+    <span class="eyebrow">Outcome</span>
+    <p><b>Bubble Ladder with Keep climbing, committing on the crisp page turn.</b> Chosen from this
+    sheet and ported into <code>web/src/lib/audio/drawingSound.ts</code>; ADR-0131 carries the
+    reasoning. Everything else here stays playable as the record of what it was chosen over.</p>
+  </div>
+
+  <section class="intro">
+    <ol>
+      <li><b>Turn sound on</b> — browsers need one tap before audio can start.</li>
+      <li><b>Press a trash button and drag away from it.</b> The dashed ring is the commit threshold; past it the card goes ready. Release inside to cancel, outside to clear.</li>
+      <li><b>Change "Past threshold"</b> and run <b>Hold at ready</b> again. That picker is the point of this pass — the drag itself is settled.</li>
+      <li><b>Change "Commit sound"</b> to compare the paper family; the picker is shared, so a clip can be judged across all three voices.</li>
+    </ol>
+    <p class="tagline">Headphones or a real tablet speaker both matter here: the held chord sits in
+    a band that small speakers roll off, and that is exactly the device a two-year-old is holding.</p>
+  </section>
+
+  <div class="section-head"><h2>Voices</h2><span class="desc">start / update(progress) / commit / cancel — the same contract as drawingSound.ts</span></div>
+  <div class="options" data-options></div>
+
+  <details class="explored">
+    <summary>Also explored — the continuous and themed takes</summary>
+    <p>Set aside for now in favour of the pitched voices above, kept playable rather than deleted.
+    These carry their own armed-state behaviour and do not use the treatment picker.</p>
+    <div class="options" data-options-secondary></div>
+  </details>
+
+  <div class="section-head"><h2>One-shot bench</h2><span class="desc">every commit, cancel, and threshold clip on its own, to mix and match above</span></div>
+  <div class="bench" data-bench-oneshots></div>
+
+  <div class="section-head"><h2>Beds and sources</h2><span class="desc">the loops and long recordings the continuous options are built from — 3 s preview</span></div>
+  <div class="bench" data-bench-beds></div>
+
+  <div class="section-head"><h2>Provenance</h2><span class="desc">every clip is ElevenLabs eleven_text_to_sound_v2 at mp3_44100_128; prompts are committed in tools/scrapbook/clear-sound-sheet/sounds.json</span></div>
+  <details class="notes"><summary>Show the 36 generation prompts</summary><div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:.84rem;margin-top:10px">
+    <thead><tr style="text-align:left;color:var(--muted)"><th>Clip</th><th>Settings</th><th>Prompt</th></tr></thead>
+    <tbody><tr><td><code>cancel-deflate</code></td><td>0.7s · influence 0.7</td><td>One-shot small rubber balloon deflating with a short descending squeak, playful and soft, close and dry, no voice, no music.</td></tr><tr><td><code>cancel-soft-settle</code></td><td>0.5s · influence 0.7</td><td>One-shot soft cushioned thud settling, muted and gentle, like a pillow landing, close and dry, no voice, no reverb.</td></tr><tr><td><code>commit-confetti-sparkle</code></td><td>1.2s · influence 0.7</td><td>One-shot soft confetti burst with light glittering sparkles falling, cheerful and gentle, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-basket</code></td><td>1.6s · influence 0.55</td><td>One-shot crumpled paper ball thrown into an empty wire wastebasket, short crackle then a hollow rattling landing, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-long-settle</code></td><td>1.8s · influence 0.55</td><td>One-shot sheet of paper crumpled slowly into a ball then relaxing open slightly, long crackle followed by a few soft ticks, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-long-soft</code></td><td>1.5s · influence 0.55</td><td>One-shot sheet of soft newsprint crumpled slowly and steadily into a ball, long gentle low crackling, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-long-tight</code></td><td>1.5s · influence 0.55</td><td>One-shot sheet of paper squeezed slowly into a tight dense ball, long compressing crackle building in density, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-quick</code></td><td>0.9s · influence 0.55</td><td>One-shot single sheet of paper crumpled quickly into a ball in one motion, dry crackle, close microphone, no voice, no music.</td></tr><tr><td><code>commit-crumple-slow</code></td><td>1.5s · influence 0.55</td><td>One-shot sheet of paper being slowly and thoroughly crumpled, long satisfying crackling, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-then-page</code></td><td>2s · influence 0.55</td><td>One-shot sequence of a sheet of paper being crumpled into a ball and then a fresh clean sheet of paper being laid down flat, crackle then a soft settling rustle, close and dry, no voice, no music.</td></tr><tr><td><code>commit-crumple-toss</code></td><td>1.4s · influence 0.55</td><td>One-shot paper being scrunched into a ball and then tossed away landing softly, crackle followed by a light bounce, close and dry, no voice, no music.</td></tr><tr><td><code>commit-magic-poof</code></td><td>1s · influence 0.7</td><td>One-shot gentle magic poof with a soft bright glockenspiel chime, whimsical children&#39;s cartoon, close and dry, no voice, no music bed.</td></tr><tr><td><code>commit-page-board-book</code></td><td>0.8s · influence 0.55</td><td>One-shot thick cardboard page of a children&#39;s board book being turned over, soft heavy paper flop, close and dry, no voice, no music.</td></tr><tr><td><code>commit-page-crisp</code></td><td>0.7s · influence 0.55</td><td>One-shot single sheet of paper turning over quickly, crisp dry paper flick, close microphone, no voice, no music, no room reverb.</td></tr><tr><td><code>commit-page-crisp-double</code></td><td>0.8s · influence 0.55</td><td>One-shot two sheets of paper turning over together quickly, crisp overlapping paper snaps, close microphone, no voice, no music, no room reverb.</td></tr><tr><td><code>commit-page-crisp-heavy</code></td><td>0.8s · influence 0.55</td><td>One-shot single sheet of heavy cartridge drawing paper turned over, firm crisp rustle with body, close microphone, no voice, no music, no room reverb.</td></tr><tr><td><code>commit-page-crisp-thin</code></td><td>0.7s · influence 0.55</td><td>One-shot single thin sheet of writing paper turned over fast, light crisp dry snap, close microphone, no voice, no music, no room reverb.</td></tr><tr><td><code>commit-page-flick</code></td><td>0.6s · influence 0.55</td><td>One-shot fast paper whoosh as a page is flicked forward sharply, short and snappy, close and dry, no voice, no music.</td></tr><tr><td><code>commit-page-slap</code></td><td>0.8s · influence 0.55</td><td>One-shot notebook page flipped over and landing flat with a light slap, paper rustle then a soft pat, close and dry, no voice, no music.</td></tr><tr><td><code>commit-page-slow</code></td><td>1.1s · influence 0.55</td><td>One-shot large sheet of drawing paper turned over slowly and settling, gentle sustained paper rustle, close and dry, no voice, no music.</td></tr><tr><td><code>commit-paper-whoosh</code></td><td>0.8s · influence 0.7</td><td>One-shot quick paper page turning whoosh, a single sheet flipping fast, crisp and dry, close mic, no voice, no music.</td></tr><tr><td><code>commit-pop-sparkle</code></td><td>0.9s · influence 0.7</td><td>One-shot soft round soap-bubble pop followed immediately by a tiny bright magic sparkle tail, warm and friendly, close and dry, no voice, no music, no reverb.</td></tr><tr><td><code>commit-rocket-liftoff</code></td><td>1.2s · influence 0.7</td><td>One-shot toy rocket lift-off whoosh, air rushing away and fading upward, playful and soft, close and dry, no voice, no music.</td></tr><tr><td><code>commit-toy-boing</code></td><td>0.7s · influence 0.7</td><td>One-shot cheerful cartoon toy boing plop, rubbery and bouncy, playful children&#39;s sound, close and dry, no voice, no music.</td></tr><tr><td><code>commit-whoomp-gulp</code></td><td>0.9s · influence 0.7</td><td>One-shot deep soft whoomp gulp, like something being swallowed up quickly, rounded low end, close and dry, no voice, no music.</td></tr><tr><td><code>ready-ding</code></td><td>0.7s · influence 0.4</td><td>Bright clear bell ding, a single struck glockenspiel note ringing out loudly then decaying, close and dry, no voice, no music.</td></tr><tr><td><code>scrub-bubble-cauldron</code></td><td>8s · influence 0.5</td><td>Eight second continuous underwater bubbling, starting as slow sparse deep bubbles and gradually becoming faster higher and more energetic, smooth even build, no voice, no music, no impact.</td></tr><tr><td><code>scrub-magic-riser</code></td><td>8s · influence 0.35</td><td>Continuous sustained magical sparkling texture lasting the entire eight seconds with no silence and no fade out, dense twinkling shimmer that slowly grows brighter and more excited from beginning to end, constant energy at every moment, no voice, no drums, no melody, no final impact.</td></tr><tr><td><code>scrub-slide-whistle</code></td><td>8s · influence 0.5</td><td>One long slow continuous cartoon slide whistle glissando rising smoothly from low to high across the entire eight seconds, sustained without stopping or fading, playful, close and dry, no voice, no music.</td></tr><tr><td><code>scrub-zipper</code></td><td>8s · influence 0.6</td><td>One long zipper being pulled slowly and steadily for the entire eight seconds, continuous even ratcheting zip texture with no pauses and no fade out, close and dry, no voice, no music.</td></tr><tr><td><code>stem-balloon-stretch</code></td><td>4s · loop · influence 0.6</td><td>Seamless looping rubber balloon being stretched slowly, creaking squeaky rubber tension, close and dry, no voice, no music.</td></tr><tr><td><code>stem-high-shimmer</code></td><td>4s · loop · influence 0.4</td><td>Seamless looping airy high shimmer, glassy bright sustained texture, smooth and even, no voice, no melody, no rhythm.</td></tr><tr><td><code>stem-low-hum</code></td><td>4s · loop · influence 0.4</td><td>Seamless looping warm soft low hum, smooth and steady rounded low frequency bed, no voice, no melody, no rhythm.</td></tr><tr><td><code>stem-mid-sparkle</code></td><td>4s · loop · influence 0.4</td><td>Seamless looping gentle twinkling music-box sparkles, light and airy, evenly spaced, no voice, no drums, no strong melody.</td></tr><tr><td><code>stem-rocket-rumble</code></td><td>4s · loop · influence 0.5</td><td>Seamless looping soft toy rocket engine rumble, steady low roaring air, smooth and even, no voice, no music.</td></tr><tr><td><code>stem-water-fill</code></td><td>4s · loop · influence 0.5</td><td>Seamless looping water bubbling and pouring into a container, lively gentle bubbles, close and dry, no voice, no music.</td></tr></tbody></table></div></details>
+</div></main>
+<footer class="site-foot">
+  <div class="shell">
+    <span class="crayons crayons-sm" aria-hidden="true"><i style="background:var(--c-red)"></i><i style="background:var(--c-orange)"></i><i style="background:var(--c-yellow)"></i><i style="background:var(--c-green)"></i><i style="background:var(--c-blue)"></i><i style="background:var(--c-purple)"></i><i style="background:var(--c-pink)"></i></span>
+    <p>Committed run outputs from the Splotch generators — see <code>scrapbook/README.md</code>. · <a href="https://github.com/KyleMit/Splotch">GitHub</a> · <a href="../../index.html">All collections</a></p>
+  </div>
+</footer>
+<script>window.CLEAR_SHEET_SOUNDS = [{"name":"baseline-clear-pop","url":"assets/baseline-clear-pop.mp3"},{"name":"cancel-deflate","url":"assets/cancel-deflate.mp3"},{"name":"cancel-soft-settle","url":"assets/cancel-soft-settle.mp3"},{"name":"commit-confetti-sparkle","url":"assets/commit-confetti-sparkle.mp3"},{"name":"commit-crumple-basket","url":"assets/commit-crumple-basket.mp3"},{"name":"commit-crumple-long-settle","url":"assets/commit-crumple-long-settle.mp3"},{"name":"commit-crumple-long-soft","url":"assets/commit-crumple-long-soft.mp3"},{"name":"commit-crumple-long-tight","url":"assets/commit-crumple-long-tight.mp3"},{"name":"commit-crumple-quick","url":"assets/commit-crumple-quick.mp3"},{"name":"commit-crumple-slow","url":"assets/commit-crumple-slow.mp3"},{"name":"commit-crumple-then-page","url":"assets/commit-crumple-then-page.mp3"},{"name":"commit-crumple-toss","url":"assets/commit-crumple-toss.mp3"},{"name":"commit-magic-poof","url":"assets/commit-magic-poof.mp3"},{"name":"commit-page-board-book","url":"assets/commit-page-board-book.mp3"},{"name":"commit-page-crisp","url":"assets/commit-page-crisp.mp3"},{"name":"commit-page-crisp-double","url":"assets/commit-page-crisp-double.mp3"},{"name":"commit-page-crisp-heavy","url":"assets/commit-page-crisp-heavy.mp3"},{"name":"commit-page-crisp-thin","url":"assets/commit-page-crisp-thin.mp3"},{"name":"commit-page-flick","url":"assets/commit-page-flick.mp3"},{"name":"commit-page-slap","url":"assets/commit-page-slap.mp3"},{"name":"commit-page-slow","url":"assets/commit-page-slow.mp3"},{"name":"commit-paper-whoosh","url":"assets/commit-paper-whoosh.mp3"},{"name":"commit-pop-sparkle","url":"assets/commit-pop-sparkle.mp3"},{"name":"commit-rocket-liftoff","url":"assets/commit-rocket-liftoff.mp3"},{"name":"commit-toy-boing","url":"assets/commit-toy-boing.mp3"},{"name":"commit-whoomp-gulp","url":"assets/commit-whoomp-gulp.mp3"},{"name":"ready-ding","url":"assets/ready-ding.mp3"},{"name":"scrub-bubble-cauldron","url":"assets/scrub-bubble-cauldron.mp3"},{"name":"scrub-magic-riser","url":"assets/scrub-magic-riser.mp3"},{"name":"scrub-slide-whistle","url":"assets/scrub-slide-whistle.mp3"},{"name":"scrub-zipper","url":"assets/scrub-zipper.mp3"},{"name":"stem-balloon-stretch","url":"assets/stem-balloon-stretch.mp3"},{"name":"stem-high-shimmer","url":"assets/stem-high-shimmer.mp3"},{"name":"stem-low-hum","url":"assets/stem-low-hum.mp3"},{"name":"stem-mid-sparkle","url":"assets/stem-mid-sparkle.mp3"},{"name":"stem-rocket-rumble","url":"assets/stem-rocket-rumble.mp3"},{"name":"stem-water-fill","url":"assets/stem-water-fill.mp3"}];</script>
+<script src="assets/sheet.js"></script>
+</body>
+</html>

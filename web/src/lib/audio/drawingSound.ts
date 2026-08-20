@@ -2,7 +2,7 @@ import { settings, SOUND_VOLUME_DEFAULT } from '$lib/state/settings.svelte';
 import type { DrawSoundData } from '$lib/drawing/engine';
 
 const SOUND_URLS = ['/sounds/pencil-1.mp3', '/sounds/pencil-2.mp3', '/sounds/pencil-3.mp3'];
-const CLEAR_POP_URL = '/sounds/clear-pop.mp3';
+const CLEAR_PAGE_TURN_URL = '/sounds/clear-page-turn.mp3';
 
 const BASE_SCRATCH_GAIN = 0.2;
 // Pointer speed (canvas px/ms) at which the scratch reaches full volume. Slow
@@ -12,28 +12,51 @@ const FULL_VOLUME_SPEED = 0.45;
 const GAIN_RAMP_S = 0.06;
 const STOP_DECLICK_S = 0.005;
 const TEARDOWN_SLACK_MS = 20;
-// This gate keeps ordinary pointer sampling distinct enough to sound like dots instead of a buzz.
-const CLEAR_DOT_PROGRESS_STEP = 0.055;
+
 const CLEAR_COMMIT_PROGRESS = 1;
-// Pitch keeps climbing after commit so extra drag still speaks, then stabilizes at a finite ceiling.
-const CLEAR_DOT_PITCH_CAP_PROGRESS = 1.4;
-const CLEAR_DOT_SILENCE_GAIN = 0.0001;
-// A relaxed pulse avoids a silent ready state without turning a held gesture into a continuous tone.
-const CLEAR_READY_BUBBLE_INTERVAL_MS = 240;
-const CLEAR_READY_BUBBLE_GAIN_MULTIPLIER = 0.55;
-const CLEAR_POP_GAIN = 0.3;
-// This compact band reads as friendly water bubbles while staying clear of harsh high frequencies.
-const CLEAR_BUBBLE_START_HZ = 420;
-const CLEAR_BUBBLE_END_HZ = 1_050;
-const CLEAR_BUBBLE_PITCH_VARIATION = 0.06;
-const CLEAR_BUBBLE_PITCH_START_RATIO = 1.18;
-const CLEAR_BUBBLE_PITCH_SETTLE_S = 0.028;
-const CLEAR_BUBBLE_GAIN_MIN = 0.012;
-const CLEAR_BUBBLE_GAIN_MAX = 0.035;
-const CLEAR_BUBBLE_GAIN_EXPONENT = 1.2;
-const CLEAR_BUBBLE_ATTACK_S = 0.004;
-// Each resonance is long enough to feel rounded but short enough to remain a discrete drag sample.
-const CLEAR_BUBBLE_DURATION_S = 0.085;
+// Drag distance becomes a note on a major pentatonic scale, so the pull plays a
+// rising melody and pulling back plays it in reverse; every dot is consonant
+// with the one before it, which a continuous glide could not promise.
+const CLEAR_SCALE_SEMITONES = [0, 2, 4, 7, 9];
+const CLEAR_BASE_HZ = 262;
+// The approach and the climb past the threshold are sized separately, and the
+// climb is the half that matters: nothing else speaks out there, so a ladder
+// that spends itself before the commit point leaves the most consequential part
+// of the gesture with nothing to say. The reach is further than a thumb travels.
+const CLEAR_APPROACH_NOTES = 9;
+const CLEAR_CLIMB_NOTES = 9;
+const CLEAR_REACH_PROGRESS = 2.6;
+// The top of a long pull lands near 3 kHz, where a small bubble belongs but a
+// toddler's ear does not want it at full level.
+const CLEAR_ROLLOFF_KNEE_HZ = 1_400;
+const CLEAR_ROLLOFF_EXPONENT = 0.6;
+
+// Matched to BASE_SCRATCH_GAIN: the clear drag used to sit around a sixth of the
+// app's own pencil sound, which a tablet speaker in a noisy room loses entirely.
+const CLEAR_BUBBLE_GAIN = 0.22;
+const CLEAR_BUBBLE_ATTACK_S = 0.003;
+const CLEAR_BUBBLE_DURATION_S = 0.11;
+// A real bubble's resonance climbs as it collapses, so the note rises across its
+// own envelope rather than settling onto a target pitch.
+const CLEAR_BUBBLE_RISE_START_RATIO = 0.86;
+const CLEAR_BUBBLE_RISE_END_RATIO = 1.08;
+const CLEAR_SILENCE_GAIN = 0.0001;
+// The droplet tick riding each attack is what makes the note read as water
+// rather than as a synthesizer.
+const CLEAR_DROPLET_RATIO = 3.2;
+const CLEAR_DROPLET_GAIN = 0.06;
+const CLEAR_DROPLET_DURATION_S = 0.014;
+const CLEAR_DROPLET_Q = 6;
+const CLEAR_NOISE_SECONDS = 1;
+
+// Releasing short of the threshold walks back down the scale. It is the only
+// thing in the whole gesture that tells a child the drawing survived.
+const CLEAR_CANCEL_NOTES = 3;
+const CLEAR_CANCEL_STEP_SEMITONES = 3;
+const CLEAR_CANCEL_SPACING_MS = 55;
+const CLEAR_CANCEL_GAIN_MULTIPLIER = 0.4;
+
+const CLEAR_PAGE_TURN_GAIN = 1;
 
 let audioContext: AudioContext | null = null;
 const buffers: AudioBuffer[] = [];
@@ -42,14 +65,15 @@ const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
 let playbackRequested = false;
 let requestedSpeed = 0;
-let clearPopBuffer: AudioBuffer | null = null;
+let clearPageTurnBuffer: AudioBuffer | null = null;
 const clearLoadPromises = new Map<string, Promise<void>>();
 const clearFailedUrls = new Set<string>();
 let clearGestureActive = false;
-let clearPopRequested = false;
-let lastClearBubbleProgress = 0;
-let clearReadyBubbleProgress = 0;
-let clearReadyBubbleTimer: ReturnType<typeof setInterval> | null = null;
+let clearPageTurnRequested = false;
+let clearLastStep = -1;
+let clearLastFrequency = 0;
+let noiseBuffer: AudioBuffer | null = null;
+const clearCancelTimers = new Set<ReturnType<typeof setTimeout>>();
 
 function volumeMultiplier() {
   return settings.soundVolume / SOUND_VOLUME_DEFAULT;
@@ -83,7 +107,7 @@ function loadSound(ctx: AudioContext, url: string): Promise<void> {
   return pending;
 }
 
-function loadClearPop(ctx: AudioContext, url: string): Promise<void> {
+function loadClearPageTurn(ctx: AudioContext, url: string): Promise<void> {
   const existing = clearLoadPromises.get(url);
   if (existing) return existing;
   if (clearFailedUrls.has(url)) return Promise.resolve();
@@ -92,13 +116,13 @@ function loadClearPop(ctx: AudioContext, url: string): Promise<void> {
     .then((response) => response.arrayBuffer())
     .then((data) => ctx.decodeAudioData(data))
     .then((buffer) => {
-      clearPopBuffer = buffer;
+      clearPageTurnBuffer = buffer;
     })
     .catch(() => {
       clearLoadPromises.delete(url);
       clearFailedUrls.add(url);
     })
-    .then(() => playClearPopIfReady())
+    .then(() => playClearPageTurnIfReady())
     .catch(() => {});
   clearLoadPromises.set(url, pending);
   return pending;
@@ -138,100 +162,131 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
 }
 
 export function startClearSound() {
-  cancelClearSound();
+  resetClearGesture();
   if (!settings.soundEnabled) return;
   const ctx = ensureContext();
   if (!ctx) return;
 
   clearFailedUrls.clear();
   clearGestureActive = true;
-  lastClearBubbleProgress = 0;
-  clearReadyBubbleProgress = 0;
-  void loadClearPop(ctx, CLEAR_POP_URL);
+  void loadClearPageTurn(ctx, CLEAR_PAGE_TURN_URL);
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
 
+// `progress` is raw normalized drag distance, so it keeps climbing past the
+// commit threshold; nothing here clamps it to the visual progress the CSS uses.
 export function updateClearSound(progress: number) {
   if (!clearGestureActive) return;
   if (!settings.soundEnabled) {
-    cancelClearSound();
+    resetClearGesture();
     return;
   }
 
   const ctx = audioContext;
   if (!ctx) return;
 
-  const dragProgress = Math.max(0, progress);
-  const bubbleProgress = Math.min(dragProgress / CLEAR_DOT_PITCH_CAP_PROGRESS, 1);
-  if (dragProgress >= CLEAR_COMMIT_PROGRESS) {
-    clearReadyBubbleProgress = bubbleProgress;
-    startClearReadyBubbles(ctx);
-  } else stopClearReadyBubbles();
-  if (Math.abs(bubbleProgress - lastClearBubbleProgress) < CLEAR_DOT_PROGRESS_STEP) return;
-  lastClearBubbleProgress = bubbleProgress;
-  playClearDot(ctx, bubbleProgress);
+  const step = clearLadderStep(Math.max(progress, 0));
+  clearLastFrequency = clearLadderFrequency(step);
+  if (step === clearLastStep) return;
+  clearLastStep = step;
+  playClearNote(ctx, clearLastFrequency);
 }
 
 export function cancelClearSound() {
-  clearGestureActive = false;
-  clearPopRequested = false;
-  lastClearBubbleProgress = 0;
-  clearReadyBubbleProgress = 0;
-  stopClearReadyBubbles();
-}
+  const ctx = audioContext;
+  const shouldUnwind = clearGestureActive && settings.soundEnabled && clearLastStep >= 0 && ctx;
+  const frequency = clearLastFrequency;
+  resetClearGesture();
+  if (!shouldUnwind) return;
 
-export function commitClearSound() {
-  const shouldPlayPop = clearGestureActive && settings.soundEnabled;
-  cancelClearSound();
-  if (shouldPlayPop) {
-    clearPopRequested = true;
-    playClearPopIfReady();
+  for (let note = 1; note <= CLEAR_CANCEL_NOTES; note += 1) {
+    const timer = setTimeout(
+      () => {
+        clearCancelTimers.delete(timer);
+        if (!settings.soundEnabled) return;
+        playClearNote(
+          ctx,
+          frequency * 2 ** ((-CLEAR_CANCEL_STEP_SEMITONES * note) / 12),
+          CLEAR_CANCEL_GAIN_MULTIPLIER
+        );
+      },
+      (note - 1) * CLEAR_CANCEL_SPACING_MS
+    );
+    clearCancelTimers.add(timer);
   }
 }
 
-function startClearReadyBubbles(ctx: AudioContext) {
-  if (clearReadyBubbleTimer !== null) return;
-  clearReadyBubbleTimer = setInterval(() => {
-    if (!clearGestureActive || !settings.soundEnabled) {
-      stopClearReadyBubbles();
-      return;
-    }
-    playClearDot(ctx, clearReadyBubbleProgress, CLEAR_READY_BUBBLE_GAIN_MULTIPLIER);
-  }, CLEAR_READY_BUBBLE_INTERVAL_MS);
+export function commitClearSound() {
+  const shouldPlay = clearGestureActive && settings.soundEnabled;
+  resetClearGesture();
+  if (shouldPlay) {
+    clearPageTurnRequested = true;
+    playClearPageTurnIfReady();
+  }
 }
 
-function stopClearReadyBubbles() {
-  if (clearReadyBubbleTimer === null) return;
-  clearInterval(clearReadyBubbleTimer);
-  clearReadyBubbleTimer = null;
+// Silent teardown. Every entry point resets through here so a pending unwind can
+// never leak into the drag that follows it, and so starting a gesture does not
+// sound like abandoning one.
+function resetClearGesture() {
+  clearGestureActive = false;
+  clearPageTurnRequested = false;
+  clearLastStep = -1;
+  clearLastFrequency = 0;
+  for (const timer of clearCancelTimers) clearTimeout(timer);
+  clearCancelTimers.clear();
 }
 
-function playClearDot(ctx: AudioContext, progress: number, gainMultiplier = 1) {
-  const pitchVariation = 1 + (Math.random() * 2 - 1) * CLEAR_BUBBLE_PITCH_VARIATION;
-  const frequency =
-    CLEAR_BUBBLE_START_HZ *
-    Math.pow(CLEAR_BUBBLE_END_HZ / CLEAR_BUBBLE_START_HZ, progress) *
-    pitchVariation;
-  const peakGain =
-    (CLEAR_BUBBLE_GAIN_MIN +
-      (CLEAR_BUBBLE_GAIN_MAX - CLEAR_BUBBLE_GAIN_MIN) *
-        Math.pow(progress, CLEAR_BUBBLE_GAIN_EXPONENT)) *
-    volumeMultiplier() *
-    gainMultiplier;
-  if (peakGain <= CLEAR_DOT_SILENCE_GAIN) return;
+function clearLadderStep(progress: number): number {
+  if (progress <= CLEAR_COMMIT_PROGRESS) {
+    return Math.round(Math.min(progress, 1) * CLEAR_APPROACH_NOTES);
+  }
+  const past = Math.min(
+    (progress - CLEAR_COMMIT_PROGRESS) / (CLEAR_REACH_PROGRESS - CLEAR_COMMIT_PROGRESS),
+    1
+  );
+  return CLEAR_APPROACH_NOTES + Math.round(past * CLEAR_CLIMB_NOTES);
+}
+
+function clearLadderFrequency(step: number): number {
+  const degree = CLEAR_SCALE_SEMITONES[step % CLEAR_SCALE_SEMITONES.length];
+  const octave = Math.floor(step / CLEAR_SCALE_SEMITONES.length);
+  return CLEAR_BASE_HZ * 2 ** ((degree + 12 * octave) / 12);
+}
+
+function clearRolloff(frequency: number): number {
+  return Math.min(1, (CLEAR_ROLLOFF_KNEE_HZ / frequency) ** CLEAR_ROLLOFF_EXPONENT);
+}
+
+function ensureNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  if (!noiseBuffer) {
+    noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * CLEAR_NOISE_SECONDS, ctx.sampleRate);
+    const samples = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < samples.length; i += 1) samples[i] = Math.random() * 2 - 1;
+  }
+  return noiseBuffer;
+}
+
+function playClearNote(ctx: AudioContext, frequency: number, gainMultiplier = 1) {
+  const level = volumeMultiplier() * gainMultiplier * clearRolloff(frequency);
+  const peakGain = CLEAR_BUBBLE_GAIN * level;
+  if (peakGain <= CLEAR_SILENCE_GAIN) return;
   const now = ctx.currentTime;
 
   const gain = ctx.createGain();
-  gain.gain.value = CLEAR_DOT_SILENCE_GAIN;
-  gain.gain.setValueAtTime(CLEAR_DOT_SILENCE_GAIN, now);
+  gain.gain.value = CLEAR_SILENCE_GAIN;
+  gain.gain.setValueAtTime(CLEAR_SILENCE_GAIN, now);
   gain.gain.exponentialRampToValueAtTime(peakGain, now + CLEAR_BUBBLE_ATTACK_S);
-  gain.gain.exponentialRampToValueAtTime(CLEAR_DOT_SILENCE_GAIN, now + CLEAR_BUBBLE_DURATION_S);
+  gain.gain.exponentialRampToValueAtTime(CLEAR_SILENCE_GAIN, now + CLEAR_BUBBLE_DURATION_S);
   gain.connect(ctx.destination);
 
   const oscillator = ctx.createOscillator();
   oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(frequency * CLEAR_BUBBLE_PITCH_START_RATIO, now);
-  oscillator.frequency.exponentialRampToValueAtTime(frequency, now + CLEAR_BUBBLE_PITCH_SETTLE_S);
+  oscillator.frequency.setValueAtTime(frequency * CLEAR_BUBBLE_RISE_START_RATIO, now);
+  oscillator.frequency.exponentialRampToValueAtTime(
+    frequency * CLEAR_BUBBLE_RISE_END_RATIO,
+    now + CLEAR_BUBBLE_DURATION_S
+  );
   oscillator.connect(gain);
   oscillator.onended = () => {
     oscillator.disconnect();
@@ -239,19 +294,50 @@ function playClearDot(ctx: AudioContext, progress: number, gainMultiplier = 1) {
   };
   oscillator.start(now);
   oscillator.stop(now + CLEAR_BUBBLE_DURATION_S);
+
+  playClearDroplet(ctx, frequency, level, now);
 }
 
-function playClearPopIfReady() {
-  const ctx = audioContext;
-  if (!ctx || !clearPopRequested || !clearPopBuffer || !settings.soundEnabled) return;
-  clearPopRequested = false;
+function playClearDroplet(ctx: AudioContext, frequency: number, level: number, now: number) {
+  const peakGain = CLEAR_DROPLET_GAIN * level;
+  if (peakGain <= CLEAR_SILENCE_GAIN) return;
 
   const gain = ctx.createGain();
-  gain.gain.value = CLEAR_POP_GAIN * volumeMultiplier();
+  gain.gain.value = CLEAR_SILENCE_GAIN;
+  gain.gain.setValueAtTime(CLEAR_SILENCE_GAIN, now);
+  gain.gain.exponentialRampToValueAtTime(peakGain, now + CLEAR_BUBBLE_ATTACK_S);
+  gain.gain.exponentialRampToValueAtTime(CLEAR_SILENCE_GAIN, now + CLEAR_DROPLET_DURATION_S);
+  gain.connect(ctx.destination);
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = frequency * CLEAR_DROPLET_RATIO;
+  filter.Q.value = CLEAR_DROPLET_Q;
+  filter.connect(gain);
+
+  const source = ctx.createBufferSource();
+  source.buffer = ensureNoiseBuffer(ctx);
+  source.connect(filter);
+  source.onended = () => {
+    source.disconnect();
+    filter.disconnect();
+    gain.disconnect();
+  };
+  source.start(now);
+  source.stop(now + CLEAR_DROPLET_DURATION_S);
+}
+
+function playClearPageTurnIfReady() {
+  const ctx = audioContext;
+  if (!ctx || !clearPageTurnRequested || !clearPageTurnBuffer || !settings.soundEnabled) return;
+  clearPageTurnRequested = false;
+
+  const gain = ctx.createGain();
+  gain.gain.value = CLEAR_PAGE_TURN_GAIN * volumeMultiplier();
   gain.connect(ctx.destination);
 
   const source = ctx.createBufferSource();
-  source.buffer = clearPopBuffer;
+  source.buffer = clearPageTurnBuffer;
   source.connect(gain);
   source.onended = () => {
     source.disconnect();

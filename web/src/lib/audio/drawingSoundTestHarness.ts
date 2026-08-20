@@ -9,6 +9,9 @@ interface AudioContextStubOptions {
   createGain?: unknown;
   createBufferSource?: unknown;
   createOscillator?: unknown;
+  createBiquadFilter?: unknown;
+  createBuffer?: unknown;
+  sampleRate?: number;
 }
 
 export function stubAudioContext({
@@ -23,6 +26,7 @@ export function stubAudioContext({
       cancelScheduledValues: vi.fn(),
       setValueAtTime: vi.fn(),
       linearRampToValueAtTime: vi.fn(),
+      exponentialRampToValueAtTime: vi.fn(),
     },
     connect: vi.fn(),
     disconnect: vi.fn(),
@@ -36,6 +40,17 @@ export function stubAudioContext({
     stop: vi.fn(),
   })),
   createOscillator = vi.fn(),
+  createBiquadFilter = vi.fn(() => ({
+    type: 'bandpass',
+    frequency: { value: 0 },
+    Q: { value: 0 },
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  })),
+  createBuffer = vi.fn((_channels: number, length: number) => ({
+    getChannelData: () => new Float32Array(length),
+  })),
+  sampleRate = 44_100,
 }: AudioContextStubOptions = {}) {
   vi.stubGlobal(
     'AudioContext',
@@ -48,6 +63,9 @@ export function stubAudioContext({
       createGain = createGain;
       createBufferSource = createBufferSource;
       createOscillator = createOscillator;
+      createBiquadFilter = createBiquadFilter;
+      createBuffer = createBuffer;
+      sampleRate = sampleRate;
     }
   );
 }
