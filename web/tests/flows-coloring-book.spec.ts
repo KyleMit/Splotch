@@ -62,11 +62,8 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
   const overlay = page.locator('#coloringOverlay');
   await expect(overlay).toBeVisible();
   // The src lands once the art has decoded (the ready-gated swap), so retry.
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.webp$/);
-  await expect(overlay).toHaveAttribute(
-    'srcset',
-    /\/coloring\/max-1152px\/farm\/.+-(wide|tall)\.overlay\.webp/
-  );
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute('srcset', /\/coloring\/farm\/.+-(wide|tall)\.overlay\.svg/);
   await expect
     .poll(() =>
       overlay.evaluate((image) => {
@@ -81,7 +78,7 @@ test('choosing a coloring page sets the canvas overlay', async ({ page }) => {
 test.describe('responsive coloring selection at DPR 1', () => {
   test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
 
-  test('selects the smaller cover, page, and overlay candidates', async ({ page }) => {
+  test('selects smaller raster thumbnails and one invariant overlay', async ({ page }) => {
     await gotoAppWithInstalledColoringBook(page, 'dinosaur');
     await openDrawer(page);
     await openColoringBookGrid(page);
@@ -99,29 +96,30 @@ test.describe('responsive coloring selection at DPR 1', () => {
     await pageTiles.first().click();
 
     const overlay = page.locator('#coloringOverlay');
-    await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.webp$/);
+    await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.svg$/);
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.overlay\.webp$/);
+      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
   });
 
   test('loads the canonical overlay only when exporting the responsive presentation', async ({
     page,
   }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
     await gotoApp(page);
     await openDrawer(page);
     await applyFarmPage(page);
     const overlay = page.locator('#coloringOverlay');
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.overlay\.webp$/);
+      .toMatch(/\/coloring\/max-1152px\/farm\/cat-tall\.dark\.overlay\.webp$/);
     await draw(page, [
       { x: 100, y: 180 },
       { x: 260, y: 260 },
     ]);
 
     let canonicalOverlayRequests = 0;
-    await page.route(/\/coloring\/farm\/cat-tall\.overlay\.webp$/, async (route) => {
+    await page.route(/\/coloring\/farm\/cat-tall\.dark\.overlay\.webp$/, async (route) => {
       canonicalOverlayRequests += 1;
       await route.continue();
     });
@@ -133,6 +131,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
   });
 
   test('prefetches against the locked paper width after rotation', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
     await gotoApp(page);
     await openDrawer(page);
     await applyFarmPage(page);
@@ -153,7 +152,7 @@ test.describe('responsive coloring selection at DPR 1', () => {
 
     const cowOverlayRequests: string[] = [];
     page.on('request', (request) => {
-      if (/\/coloring\/(?:max-1152px\/)?farm\/cow-tall\.overlay\.webp$/.test(request.url())) {
+      if (/\/coloring\/(?:max-1152px\/)?farm\/cow-tall\.dark\.overlay\.webp$/.test(request.url())) {
         cowOverlayRequests.push(request.url());
       }
     });
@@ -189,10 +188,10 @@ test.describe('responsive coloring selection at DPR 3', () => {
     await pageTiles.first().click();
 
     const overlay = page.locator('#coloringOverlay');
-    await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.webp$/);
+    await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.svg$/);
     await expect
       .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.webp$/);
+      .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
   });
 });
 
@@ -266,7 +265,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
   const fullImageHeld = new Promise<void>((resolve) => {
     releaseFullImage = resolve;
   });
-  await page.route(/\/coloring\/(?:max-1152px\/)?farm\/cat-wide\.overlay\.webp$/, async (route) => {
+  await page.route(/\/coloring\/farm\/cat-wide\.overlay\.svg$/, async (route) => {
     await fullImageHeld;
     await route.continue();
   });
@@ -294,7 +293,7 @@ test('a selected page stays hidden while browser-selected art decodes', async ({
     expect(overlayBox).toEqual(canvasBox);
 
     releaseFullImage();
-    await expect(overlay).toHaveAttribute('src', /\/cat-wide\.overlay\.webp$/);
+    await expect(overlay).toHaveAttribute('src', /\/cat-wide\.overlay\.svg$/);
     await expect(overlay).toHaveClass(/overlay-ready/);
     await expect(overlay).toHaveCSS('opacity', '1');
     await expect(overlay).toHaveCSS('transition-duration', '0s');
@@ -318,7 +317,7 @@ test('a save during overlay decode omits the overlay instead of capturing a thum
   const fullImageHeld = new Promise<void>((resolve) => {
     releaseFullImage = resolve;
   });
-  await page.route(/\/coloring\/(?:max-1152px\/)?farm\/cat-wide\.overlay\.webp$/, async (route) => {
+  await page.route(/\/coloring\/farm\/cat-wide\.overlay\.svg$/, async (route) => {
     await fullImageHeld;
     await route.continue();
   });
@@ -371,7 +370,7 @@ test('a newly applied page cannot paint the previous page fill while its art dec
   const nextOverlayHeld = new Promise<void>((resolve) => {
     releaseNextOverlay = resolve;
   });
-  await page.route(/\/coloring\/(?:max-1152px\/)?farm\/cow-wide\.overlay\.webp$/, async (route) => {
+  await page.route(/\/coloring\/farm\/cow-wide\.overlay\.svg$/, async (route) => {
     await nextOverlayHeld;
     await route.continue();
   });
@@ -406,7 +405,7 @@ test('a newly applied page cannot paint the previous page fill while its art dec
     releaseNextOverlay();
     await expect(page.locator('#coloringOverlay')).toHaveAttribute(
       'src',
-      /\/cow-wide\.overlay\.webp$/
+      /\/cow-wide\.overlay\.svg$/
     );
     await expect.poll(() => opaqueCanvasPixelCount(page), { timeout: 15_000 }).toBeGreaterThan(0);
   } finally {
@@ -430,7 +429,7 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   const pixelsBeforeTheme = await opaqueCanvasPixelCount(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.svg$/);
   await page.evaluate(() => {
     const originalDecode = HTMLImageElement.prototype.decode;
     let release!: () => void;
@@ -450,8 +449,8 @@ test('a theme sibling keeps the registered coloring art visible while it decodes
   await openSettingsModal(page);
   await page.locator('#themeOption-dark').click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.webp$/);
-  await expect(overlay).toHaveAttribute('srcset', /(?<!\.dark)\.overlay\.webp/);
+  await expect(overlay).toHaveAttribute('src', /(?<!\.dark)\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute('srcset', /(?<!\.dark)\.overlay\.svg/);
   await expect(overlay).toHaveClass(/overlay-ready/);
   await expect.poll(() => opaqueCanvasPixelCount(page)).toBeGreaterThanOrEqual(pixelsBeforeTheme);
 
@@ -477,7 +476,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.webp$/); // landscape viewport → wide art
+  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.svg$/); // landscape viewport → wide art
   const srcBefore = await overlay.getAttribute('src');
 
   await draw(page, [
@@ -495,7 +494,7 @@ test('rotating with ink keeps the same coloring page art until the canvas is bla
   // Undo the only stroke → blank canvas → the paper re-adopts the portrait
   // viewport and the art swaps to the tall variant.
   await page.locator('#undoButton').click();
-  await expect(overlay).toHaveAttribute('src', /-tall\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-tall\.overlay\.svg$/);
   await expect(page.locator('.paper-sheet.paper-lifted')).toHaveCount(0);
 });
 
@@ -623,11 +622,11 @@ test('rotating the viewport swaps the coloring overlay to the matching art', asy
   await applyFarmPage(page);
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.svg$/);
 
   await page.setViewportSize({ width: 600, height: 900 });
-  await expect(overlay).toHaveAttribute('src', /-tall\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-tall\.overlay\.svg$/);
 
   await page.setViewportSize({ width: 900, height: 600 });
-  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.webp$/);
+  await expect(overlay).toHaveAttribute('src', /-wide\.overlay\.svg$/);
 });

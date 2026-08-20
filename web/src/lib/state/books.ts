@@ -10,11 +10,9 @@
 //   static/coloring/{book}/{page}-wide.outline.webp   landscape PEN outline, 3:2
 //   static/coloring/{book}/{page}-tall.chalk.webp     portrait CHALK outline (dark mode)
 //   static/coloring/{book}/{page}-wide.chalk.webp     landscape CHALK outline (dark mode)
-//   static/coloring/{book}/{page}-tall.overlay.webp   transparent black light-mode overlay
-//   static/coloring/{book}/{page}-wide.overlay.webp   transparent black light-mode overlay
 //   static/coloring/{book}/{page}-tall.dark.overlay.webp transparent white dark-mode overlay
 //   static/coloring/{book}/{page}-wide.dark.overlay.webp transparent white dark-mode overlay
-//   static/coloring/{book}/{page}-tall.overlay.svg      traced invariant light overlay where enabled
+//   static/coloring/{book}/{page}-tall.overlay.svg      traced invariant light overlay
 //   static/coloring/{book}/{page}-tall.dark.overlay.svg traced invariant dark overlay where enabled
 //   static/coloring/{book}/{name}.thumb.webp          grid thumbnail of the pen line art
 //   static/coloring/{book}/{name}.chalk.thumb.webp    grid thumbnail of the chalk (dark mode)
@@ -94,8 +92,8 @@ export interface ColoringPage {
       present for orientations whose chalk has been generated; dark mode falls
       back to inverting the pen outline (`images`) where it's absent. */
   chalkImages: Partial<Record<BookOrientation, string>>;
-  /** Themes whose full-page presentation is the invariant SVG derivative. */
-  vectorOverlayThemes: Partial<Record<BookOrientation, ResolvedTheme[]>>;
+  /** Orientations whose dark presentation has a separately approved chalk SVG. */
+  darkVectorOverlayOrientations: BookOrientation[];
 }
 
 export interface Book {
@@ -259,8 +257,7 @@ interface PageOverrides {
   // Night fills and chalk outlines ship for both orientations unless their derivative is absent.
   nightExcept?: BookOrientation[];
   chalkExcept?: BookOrientation[];
-  // Only traced orientation/theme pairs replace their runtime WebP overlay with invariant SVG.
-  vectorOverlayThemes?: Partial<Record<BookOrientation, ResolvedTheme[]>>;
+  darkVectorOverlayOrientations?: BookOrientation[];
 }
 
 function book(
@@ -274,7 +271,7 @@ function book(
   function page(
     id: string,
     name: string,
-    { nightExcept = [], chalkExcept = [], vectorOverlayThemes = {} }: PageOverrides = {}
+    { nightExcept = [], chalkExcept = [], darkVectorOverlayOrientations = [] }: PageOverrides = {}
   ): ColoringPage {
     return {
       id,
@@ -289,7 +286,7 @@ function book(
       },
       nightImages: optionalPageAssetPaths(bookId, id, nightExcept, 'night'),
       chalkImages: optionalPageAssetPaths(bookId, id, chalkExcept, 'chalk'),
-      vectorOverlayThemes,
+      darkVectorOverlayOrientations,
     };
   }
 
@@ -324,7 +321,7 @@ export const BOOKS: Book[] = [
     page('dragon', 'Dragon'),
     page('fairy', 'Fairy'),
     page('mermaid', 'Mermaid'),
-    page('owl', 'Owl', { vectorOverlayThemes: { portrait: ['light', 'dark'] } }),
+    page('owl', 'Owl', { darkVectorOverlayOrientations: ['portrait'] }),
     page('pegasus', 'Pegasus'),
     page('unicorn', 'Unicorn'),
   ]),
@@ -345,7 +342,7 @@ export const BOOKS: Book[] = [
     page('umbrella', 'Umbrella'),
   ]),
   book('shapes', 'Shapes', ['web', 'mobile'], (page) => [
-    page('circle', 'Circle', { vectorOverlayThemes: { portrait: ['light'] } }),
+    page('circle', 'Circle'),
     page('heart', 'Heart'),
     page('rectangle', 'Rectangle'),
     page('square', 'Square'),
@@ -407,7 +404,7 @@ function pageOverlayAssetPath(
   theme: ResolvedTheme
 ): string {
   const source = pageImage(page, orientation);
-  const vector = page.vectorOverlayThemes[orientation]?.includes(theme) ?? false;
+  const vector = theme === 'light' || page.darkVectorOverlayOrientations.includes(orientation);
   const suffix = vector
     ? theme === 'dark'
       ? ASSET_SUFFIXES.darkVectorOverlay

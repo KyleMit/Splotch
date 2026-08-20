@@ -99,7 +99,7 @@ describe('coloring book state', () => {
   it('picks matching full-resolution art for the resolved theme', () => {
     setOverlayPage(spacePage, 'landscape');
     expect(themedOverlayUrl('light')).toBe(
-      spacePage.images.landscape.replace('.outline.webp', '.overlay.webp')
+      spacePage.images.landscape.replace('.outline.webp', '.overlay.svg')
     );
     expect(themedOverlayUrl('dark')).toBe(
       spacePage.images.landscape.replace('.outline.webp', '.dark.overlay.webp')

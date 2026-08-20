@@ -55,7 +55,15 @@ async function selectFarmImages(page: Page) {
 async function imageSourceAndDecodedWidth(image: ReturnType<Page['locator']>) {
   return image.evaluate(async (element: HTMLImageElement) => {
     const response = await fetch(element.currentSrc);
-    const bitmap = await createImageBitmap(await response.blob());
+    const blob = await response.blob();
+    if (blob.type === 'image/svg+xml') {
+      const document = new DOMParser().parseFromString(await blob.text(), 'image/svg+xml');
+      return {
+        currentSrc: new URL(element.currentSrc).pathname,
+        decodedWidth: Number(document.documentElement.getAttribute('width')),
+      };
+    }
+    const bitmap = await createImageBitmap(blob);
     const result = {
       currentSrc: new URL(element.currentSrc).pathname,
       decodedWidth: bitmap.width,
@@ -153,7 +161,7 @@ test.describe('responsive coloring offline fallback', () => {
       expect.arrayContaining([
         '/coloring/farm/cover.thumb.webp',
         '/coloring/farm/cat-tall.thumb.webp',
-        '/coloring/farm/cat-tall.overlay.webp',
+        '/coloring/farm/cat-tall.overlay.svg',
       ])
     );
 
@@ -170,7 +178,7 @@ test.describe('responsive coloring offline fallback', () => {
       decodedWidth: 267,
     });
     expect(dprOne.overlay).toEqual({
-      currentSrc: '/coloring/max-1152px/farm/cat-tall.overlay.webp',
+      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
       decodedWidth: 1024,
     });
 
@@ -187,7 +195,7 @@ test.describe('responsive coloring offline fallback', () => {
       decodedWidth: 267,
     });
     expect(dprThree.overlay).toEqual({
-      currentSrc: '/coloring/farm/cat-tall.overlay.webp',
+      currentSrc: '/coloring/farm/cat-tall.overlay.svg',
       decodedWidth: 1024,
     });
   });

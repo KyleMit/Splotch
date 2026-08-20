@@ -44,20 +44,20 @@ async function distinctOpaqueCanvasColors(page: Page): Promise<number> {
   }
 }
 
-test('a vector light overlay reveals with Magic and keeps its raster theme fallback', async ({
+test('a catalog vector light overlay reveals with Magic and keeps its raster theme fallback', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 820, height: 1180 });
   await page.emulateMedia({ colorScheme: 'light' });
   await gotoAppWithAllColoringBooksInstalled(page);
   await openDrawer(page);
-  await selectPageFromBook(page, 'Shapes', 'Circle');
+  await selectPageFromBook(page, 'Farm', 'Cat');
 
   const overlay = page.locator('#coloringOverlay');
-  await expect(overlay).toHaveAttribute('src', /\/coloring\/shapes\/circle-tall\.overlay\.svg$/);
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.overlay\.svg$/);
   await expect
     .poll(() => overlay.evaluate((image: HTMLImageElement) => image.currentSrc))
-    .toMatch(/\/coloring\/shapes\/circle-tall\.overlay\.svg$/);
+    .toMatch(/\/coloring\/farm\/cat-tall\.overlay\.svg$/);
   await expect
     .poll(() =>
       overlay.evaluate((image: HTMLImageElement) => [image.naturalWidth, image.naturalHeight])
@@ -75,13 +75,10 @@ test('a vector light overlay reveals with Magic and keeps its raster theme fallb
     .toBeGreaterThanOrEqual(VECTOR_MAGIC_MIN_COLORS);
 
   await page.emulateMedia({ colorScheme: 'dark' });
-  await expect(overlay).toHaveAttribute(
-    'src',
-    /\/coloring\/shapes\/circle-tall\.dark\.overlay\.webp$/
-  );
+  await expect(overlay).toHaveAttribute('src', /\/coloring\/farm\/cat-tall\.dark\.overlay\.webp$/);
   await expect(overlay).toHaveAttribute(
     'srcset',
-    /\/coloring\/max-1152px\/shapes\/circle-tall\.dark\.overlay\.webp/
+    /\/coloring\/max-1152px\/farm\/cat-tall\.dark\.overlay\.webp/
   );
 });
 

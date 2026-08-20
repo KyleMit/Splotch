@@ -320,7 +320,7 @@ export async function applyFarmPage(page: Page) {
   }).toPass({ timeout: COLORING_DIALOG_CLOSE_TIMEOUT_MS });
   await expect(page.locator('#coloringOverlay')).toHaveAttribute(
     'src',
-    /\.(?:dark\.)?overlay\.webp$/,
+    /\.(?:dark\.)?overlay\.(?:webp|svg)$/,
     { timeout: COLORING_OVERLAY_DECODE_TIMEOUT_MS }
   );
 }

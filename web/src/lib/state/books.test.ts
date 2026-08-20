@@ -94,7 +94,7 @@ describe('pageOverlayImage', () => {
   const cat = BOOKS.find((book) => book.id === 'farm')!.pages.find((p) => p.id === 'cat')!;
 
   it('uses transparent presentation overlays for both themes', () => {
-    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.webp');
+    expect(pageOverlayImage(cat, 'portrait', 'light')).toBe('/coloring/farm/cat-tall.overlay.svg');
     expect(pageOverlayImage(cat, 'portrait', 'dark')).toBe(
       '/coloring/farm/cat-tall.dark.overlay.webp'
     );
@@ -108,7 +108,7 @@ describe('pageOverlayImage', () => {
   });
 });
 
-describe('vector overlay slice', () => {
+describe('vector overlays', () => {
   const circle = BOOKS.find((book) => book.id === 'shapes')!.pages.find(
     (page) => page.id === 'circle'
   )!;
@@ -116,7 +116,7 @@ describe('vector overlay slice', () => {
     (page) => page.id === 'owl'
   )!;
 
-  it('uses invariant SVGs only for the traced orientation and themes', () => {
+  it('uses invariant SVGs for every light overlay and only approved dark overlays', () => {
     expect(pageOverlayImage(circle, 'portrait', 'light')).toBe(
       '/coloring/shapes/circle-tall.overlay.svg'
     );
@@ -130,7 +130,7 @@ describe('vector overlay slice', () => {
       '/coloring/creatures/owl-tall.dark.overlay.svg'
     );
     expect(pageOverlayImage(owl, 'landscape', 'light')).toBe(
-      '/coloring/creatures/owl-wide.overlay.webp'
+      '/coloring/creatures/owl-wide.overlay.svg'
     );
   });
 
@@ -160,9 +160,8 @@ describe('responsive image sources', () => {
 
   it('keeps max-edge tiers in directories while width descriptors use intrinsic width', () => {
     expect(pageOverlayImageSource(cat, 'portrait', 'light')).toEqual({
-      src: '/coloring/farm/cat-tall.overlay.webp',
-      srcset:
-        '/coloring/max-1152px/farm/cat-tall.overlay.webp 768w, /coloring/farm/cat-tall.overlay.webp 1024w',
+      src: '/coloring/farm/cat-tall.overlay.svg',
+      srcset: '/coloring/farm/cat-tall.overlay.svg',
     });
     expect(pageOverlayImageSource(cat, 'landscape', 'dark')).toEqual({
       src: '/coloring/farm/cat-wide.dark.overlay.webp',
@@ -332,9 +331,10 @@ describe('bookAssetPaths', () => {
   it('lists every generated responsive candidate', () => {
     const paths = new Set(bookAssetPaths(farm));
     const responsive = responsiveColoringAssets(farm);
-    expect(responsive).toHaveLength(74);
+    expect(responsive).toHaveLength(62);
     for (const asset of responsive) expect(paths.has(asset.target), asset.target).toBe(true);
     for (const canonical of bookPackAssetPaths(farm)) {
+      if (canonical.endsWith('.svg')) continue;
       expect(
         responsive.some((asset) => asset.source === canonical),
         canonical
@@ -361,7 +361,7 @@ describe('downloadable coloring packs', () => {
     try {
       const page = dinosaur.pages[0];
       expect(pageOverlayImage(page, 'portrait', 'light')).toBe(
-        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.overlay.webp'
+        'https://localhost/_capacitor_file_/packs/dinosaur/brachiosaurus-tall.overlay.svg'
       );
       expect(coverThumbImageSource(dinosaur, 'light').src).toBe(
         'https://localhost/_capacitor_file_/packs/dinosaur/cover.thumb.webp'

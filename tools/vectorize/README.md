@@ -218,6 +218,13 @@ regenerated later, the check fails until its SVG is deliberately retraced and th
 rewritten. Raw service responses remain review/recovery artifacts, not sources of truth, and should
 not be committed.
 
+Run `vectorize:coloring:analyze` before deleting replaced WebPs when a campaign needs comparative
+payload totals. Its fidelity comparison uses the authoring outline and remains repeatable after the
+raster presentation files are removed, but the full/compact WebP byte fields then report `null`. The
+completed light catalog measured 3,572,243 raw SVG bytes and 1,558,331 gzip bytes versus 6,274,180
+compact or 9,080,706 full WebP bytes; all 96 pages passed at 96.34% minimum binary ink IoU and
+2.46/255 maximum alpha mean absolute error.
+
 Promote one book at a time. Before the first broad batch, use a dense landscape page as the size,
 fidelity, and WebKit gate. After each book: inspect representative simple and dense SVGs over the
 matching paper/fill, run the SVG and coloring-asset checks, rebuild the pack manifest, and exercise

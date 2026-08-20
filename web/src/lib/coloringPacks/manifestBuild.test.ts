@@ -5,6 +5,8 @@ import { parseColoringPackManifest } from './manifest';
 
 // Bounds verification-metadata overhead while retaining one-document cross-tier validation.
 const MAX_COLORING_PACK_MANIFEST_BYTES = 200_000;
+// Invariant SVG overlays intentionally contribute identical bytes to both tiers.
+const MAX_COMPACT_TO_FULL_BYTES_RATIO = 0.75;
 
 describe('buildColoringPackManifest', () => {
   it('offers every logical runtime file at compact and full resolutions', () => {
@@ -40,7 +42,7 @@ describe('buildColoringPackManifest', () => {
       fullBytes += full.bytes;
     }
 
-    expect(compactBytes).toBeLessThan(fullBytes * 0.7);
+    expect(compactBytes).toBeLessThan(fullBytes * MAX_COMPACT_TO_FULL_BYTES_RATIO);
     expect(Buffer.byteLength(source)).toBeLessThan(MAX_COLORING_PACK_MANIFEST_BYTES);
     expect(() => parseColoringPackManifest(manifest, '1.2.3-test')).not.toThrow();
   });
