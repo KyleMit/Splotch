@@ -127,3 +127,24 @@ the exact canonical SVG inventory so deleting a ledger record and its file canno
 Coloring-pack manifest format 3 already admits the SVG suffixes and fingerprints selected bytes. A
 stale manifest that names a deleted raster master fails its fetch, writes no installed marker, and
 remains retryable. The safe fail-closed behavior needs no manifest-format bump.
+
+## Amendment (2026-08): Make Cover SVGs Canonical
+
+The separately approved cover campaign traced all eight light and eight dark cover masters with the
+same production recipe and 16 credits. Every trace passed the catalog gate: light covers measured at
+least 96.62% binary ink IoU and at most 2.76/255 mean alpha error; dark covers measured at least
+97.25% IoU and at most 2.56/255 error. The light SVGs total 347,803 raw / 148,128 gzip bytes versus
+734,748 source WebP bytes; dark totals are 364,614 / 156,300 versus 686,942.
+
+`cover.overlay.svg` and `cover.dark.overlay.svg` are therefore canonical line-art masters under the
+same format-2 derivation ledgers as pages. The 16 opaque raster masters are removed. Cover picker
+presentation remains `cover.thumb.webp` and `cover.chalk.thumb.webp`; `gen:coloring-thumbs`
+deterministically rasterizes those thumbnails from the canonical SVGs, and `gen:coloring-responsive`
+derives their 240 px candidates. Cover SVGs have no fill, punch, canvas, or downloaded-pack role, so
+native static stripping removes both canonical masters after their thumbnail derivatives are
+present.
+
+The ledgers now contain 104 light and 104 dark records. Fidelity analysis reads the uncommitted
+restart-tree `.source.webp` files rather than assuming a committed raster master, while the ledger
+check continues to bind every canonical SVG to its recorded source and output digests after recovery
+scratch is removed.

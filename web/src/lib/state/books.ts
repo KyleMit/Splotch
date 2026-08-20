@@ -120,10 +120,8 @@ const ORIENTATION_SLUGS: Record<BookOrientation, string> = {
   landscape: 'wide',
 };
 const ASSET_SUFFIXES = {
-  outline: '.outline.webp',
   light: '.light.webp',
   night: '.night.webp',
-  chalk: '.chalk.webp',
   thumb: '.thumb.webp',
   chalkThumb: '.chalk.thumb.webp',
   overlay: '.overlay.svg',
@@ -165,7 +163,7 @@ function optionalPageAssetPaths(
   return paths;
 }
 
-function coverPath(bookId: string, variant: 'outline' | 'chalk'): string {
+function coverPath(bookId: string, variant: 'overlay' | 'darkOverlay'): string {
   return `${COLORING_ROOT}/${bookId}/cover${ASSET_SUFFIXES[variant]}`;
 }
 
@@ -222,8 +220,8 @@ function book(
     id: bookId,
     name,
     platforms,
-    cover: coverPath(bookId, 'outline'),
-    chalkCover: coverPath(bookId, 'chalk'),
+    cover: coverPath(bookId, 'overlay'),
+    chalkCover: coverPath(bookId, 'darkOverlay'),
     pages: buildPages(page),
   };
 }
@@ -284,14 +282,14 @@ export function pageOverlayImage(
 }
 
 function coverThumbPath(src: string): string {
-  return src.endsWith(ASSET_SUFFIXES.outline)
-    ? `${src.slice(0, -ASSET_SUFFIXES.outline.length)}${ASSET_SUFFIXES.thumb}`
+  return src.endsWith(ASSET_SUFFIXES.overlay)
+    ? `${src.slice(0, -ASSET_SUFFIXES.overlay.length)}${ASSET_SUFFIXES.thumb}`
     : src;
 }
 
 function chalkCoverThumbPath(src: string): string {
-  return src.endsWith(ASSET_SUFFIXES.chalk)
-    ? `${src.slice(0, -ASSET_SUFFIXES.chalk.length)}${ASSET_SUFFIXES.chalkThumb}`
+  return src.endsWith(ASSET_SUFFIXES.darkOverlay)
+    ? `${src.slice(0, -ASSET_SUFFIXES.darkOverlay.length)}${ASSET_SUFFIXES.chalkThumb}`
     : src;
 }
 

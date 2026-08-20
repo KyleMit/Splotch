@@ -33,13 +33,12 @@ prevents).
 Fork the line work per theme, with the dark variant *derived from* the light one under registration
 gates:
 
-* **Pen line art** (`{page}.overlay.svg`; transitional cover: `cover.outline.webp`) — transparent
-  black page ink or ink-on-white cover art. It is the light-mode presentation and source of every
-  derivation.
-* **Chalk line art** (`{page}.dark.overlay.svg`; transitional cover: `cover.chalk.webp`) — the
-  dark-mode line art: `tools/asset-gen/coloring/gen-chalk-outlines.mjs` has Gemini redraw the
-  inverted pen as a chalk drawing, making the judgment calls a blind invert can't — eye sclera and
-  catchlights become deliberate SOLID WHITE, pupils stay black. Gates: every pen stroke still traced
+* **Pen line art** (`{page}.overlay.svg`; cover: `cover.overlay.svg`) — transparent black page or
+  cover ink. It is the light-mode presentation and source of every derivation.
+* **Chalk line art** (`{page}.dark.overlay.svg`; cover: `cover.dark.overlay.svg`) — the dark-mode
+  line art: `tools/asset-gen/coloring/gen-chalk-outlines.mjs` has Gemini redraw the inverted pen as
+  a chalk drawing, making the judgment calls a blind invert can't — eye sclera and catchlights
+  become deliberate SOLID WHITE, pupils stay black. Gates: every pen stroke still traced
   (`lib/outline-match.mjs` keep ≥ 92%, worst tile ≥ 80%), new ink only inside pen-enclosed interiors
   (judged by enclosure, not thickness — a sclera is a thin annulus), and a white-area budget. This
   is the "dedicated night line art" option *domesticated*: an edit, not a fresh generation, so
@@ -54,10 +53,11 @@ gates:
 * **Night fills condition on the chalk** (`gen-night-fills.mjs`): the model input is the chalk
   as-displayed, and the eye gate judges the simulated final composite (chalk-punched fill + screened
   chalk over dark paper), since the chalk now owns the eye whites.
-* **Covers stop after the picker derivatives.** They use the same chalk redraw and
-  `.chalk.thumb.webp` naming, but have no fill, punch, or full-page overlay stages.
+* **Covers stop after the picker derivatives.** Their canonical SVGs generate the
+  `.thumb.webp`/`.chalk.thumb.webp` picker assets, but have no fill, punch, or full-page canvas
+  stages.
 * **Canonicalization:** a reviewed chalk candidate is staged as an uncommitted `.source.webp`, then
-  vectorized into the canonical dark SVG. There is no page raster fallback.
+  vectorized into the canonical dark SVG. There is no page or cover raster-master fallback.
 
 Nature (12 cells) is the pilot. Consequent loosening: pen thin-stroke normalization (PR #122's
 machinery) is now a *light-theme quality* call — a solid pen pupil no longer breaks dark mode,

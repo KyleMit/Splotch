@@ -11,7 +11,12 @@ import {
   postprocessArgs,
   selectColoringOverlayJobs,
 } from '../vectorize-coloring-overlays.mjs';
-import { compareOverlayAlpha, sumWhenComplete } from '../analyze-coloring-overlays.mjs';
+import {
+  analysisPaths,
+  compareOverlayAlpha,
+  parseAnalysisArgs,
+  sumWhenComplete,
+} from '../analyze-coloring-overlays.mjs';
 
 describe('coloring overlay campaign', () => {
   it('maps a page outline to the committed overlay and recoverable raw trace', () => {
@@ -106,11 +111,11 @@ describe('coloring overlay campaign', () => {
   });
 
   it('keeps every committed light SVG tied to its exact authoring outline', () => {
-    expect(checkColoringOverlayLedger('light')).toBe(96);
+    expect(checkColoringOverlayLedger('light')).toBe(104);
   });
 
   it('keeps every committed dark SVG tied to its exact chalk source', () => {
-    expect(checkColoringOverlayLedger('dark')).toBe(96);
+    expect(checkColoringOverlayLedger('dark')).toBe(104);
   });
 
   it('measures alpha fidelity independently from vector fill color', () => {
@@ -125,5 +130,18 @@ describe('coloring overlay campaign', () => {
   it('reports unavailable raster comparison totals as null', () => {
     expect(sumWhenComplete([{ bytes: 1 }, { bytes: null }], (row) => row.bytes)).toBeNull();
     expect(sumWhenComplete([{ bytes: 1 }, { bytes: 2 }], (row) => row.bytes)).toBe(3);
+  });
+
+  it('reads fidelity references from the restart-safe campaign source tree', () => {
+    expect(analysisPaths('web/static/coloring/farm/cover.dark.overlay.svg', 'dark')).toMatchObject({
+      source: 'vectorized/coloring-dark-overlays/farm/cover.source.webp',
+    });
+  });
+
+  it('accepts the campaign match filter for focused analysis', () => {
+    expect(parseAnalysisArgs(['--theme=dark', '--match=cover'])).toEqual({
+      theme: 'dark',
+      match: 'cover',
+    });
   });
 });

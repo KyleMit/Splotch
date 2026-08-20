@@ -5,8 +5,7 @@ asset-generation pipeline's decisions live beside the pipeline (the ADR index no
 **Date:** 2026-07
 
 > **Amendment (2026-08):** ADR-0129 makes invariant `.overlay.svg` and `.dark.overlay.svg` files
-> canonical for page line art. Raster `.outline.webp` and `.chalk.webp` remain only for covers
-> during the cover migration.
+> canonical for page and cover line art. Cover thumbnails remain raster derivatives.
 
 ## Context
 
@@ -38,14 +37,14 @@ Every shipped coloring asset carries an explicit dot-separated variant suffix �
 ```
 web/static/coloring/{book}/{page}.overlay.svg   canonical transparent black page pen
 web/static/coloring/{book}/{page}.dark.overlay.svg  canonical transparent white page chalk
-web/static/coloring/{book}/cover.outline.webp   transitional PEN cover master
-web/static/coloring/{book}/cover.chalk.webp     transitional CHALK cover master
+web/static/coloring/{book}/cover.overlay.svg    canonical transparent black cover pen
+web/static/coloring/{book}/cover.dark.overlay.svg  canonical transparent white cover chalk
 web/static/coloring/{book}/cover.thumb.webp     picker cover thumbnail (light)
 web/static/coloring/{book}/cover.chalk.thumb.webp  picker cover thumbnail (dark)
 web/static/coloring/{book}/{name}.light.webp     light magic-brush fill (fills-only)
 web/static/coloring/{book}/{name}.night.webp     dark magic-brush fill (fills-only)
 tools/asset-gen/fill-src/{book}/{name}.{light,night}.raw.webp   raw (lined) fills
-vectorized/coloring-{,dark-}overlays/{page}.source.webp        uncommitted trace source
+vectorized/coloring-{,dark-}overlays/{stem}.source.webp        uncommitted trace source
 ```
 
 Resolution is a separate axis and therefore lives in a directory prefix, never another filename
@@ -53,7 +52,7 @@ suffix:
 
 ```
 web/static/coloring/{book}/{name}.{variant}.webp                 canonical raster asset
-web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant page overlay
+web/static/coloring/{book}/{name}.{overlay-role}.svg             invariant line-art overlay
 web/static/coloring/max-1152px/{book}/{name}.{variant}.webp      web fill candidate
 web/static/coloring/max-240px/{book}/{name}.{variant}.webp       web picker-thumbnail candidate
 ```
@@ -82,8 +81,8 @@ Key implementation points:
 * `responsiveColoringAssets()` derives web-only tier paths for raster fills and cover thumbnails;
   invariant SVG page overlays have no responsive candidate. `bookAssetPaths()` includes every
   runtime path so `check:coloring-assets` rejects a partial inventory.
-* `lib/line-art-targets.mjs` positively selects canonical `*-{tall,wide}.overlay.svg` pages. It adds
-  `cover.overlay.svg` when present and otherwise admits the transitional `cover.outline.webp`.
+* `lib/line-art-targets.mjs` positively selects canonical `*-{tall,wide}.overlay.svg` pages and adds
+  `cover.overlay.svg` when callers request covers.
 * `lib/punch-fill.mjs` derives the shipped fill path from a raw by stripping `.raw`; light and night
   mask against the canonical light or dark SVG alpha.
 * CLI page arguments stay suffix-free (`farm/dog-wide`); each script resolves the canonical SVG, and
@@ -104,6 +103,5 @@ Key implementation points:
 * **−** The original 392-file rename had no runtime behavior change: history for the assets survives
   only via git rename detection, and any external link to an old asset URL (previously shared
   previews, cached PWA precache entries) breaks until the next service-worker update.
-* **−** Transitional `cover.outline.webp` is longer than the bare cover name, and prose in older
-  ADRs (0043/0045/0052 — updated in place) describes the explicit-suffix era with its original
-  dates.
+* **−** Prose in older ADRs (0043/0045/0052 — updated in place) describes the explicit-suffix era
+  with its original dates.

@@ -65,12 +65,12 @@ carve-out):
   `npm run gen:coloring-punched-fills` — offline, deterministic). Never hand-edit a shipped fill,
   and after changing any raw, re-punch it. The drift audit scores the raws.
 * **Line work is forked per theme (the pen/chalk split — see `docs/pipeline.md`).** Canonical page
-  line art is `{page}.overlay.svg` for the PEN and `{page}.dark.overlay.svg` for the CHALK. Pipeline
-  consumers rasterize either SVG alpha to black ink on white; runtime uses the baked black or white
-  ink directly. Night fills condition on the chalk and punch against its alpha. A reviewed
-  fresh/normalized/chalk candidate stages an uncommitted `.source.webp` under `vectorized/` and must
-  be traced before it becomes canonical. Covers temporarily retain `cover.outline.webp` and
-  `cover.chalk.webp` masters. After changing a chalk, regenerate the page's night fill and re-punch.
+  and cover line art is `{stem}.overlay.svg` for the PEN and `{stem}.dark.overlay.svg` for the
+  CHALK. Pipeline consumers rasterize either SVG alpha to black ink on white; runtime uses the baked
+  black or white ink directly. Night fills condition on the chalk and punch against its alpha. A
+  reviewed fresh/normalized/chalk candidate stages an uncommitted `.source.webp` under `vectorized/`
+  and must be traced before it becomes canonical. After changing a page chalk, regenerate its night
+  fill and re-punch; covers stop after their picker thumbnails.
 * **The only sanctioned imports from `web/src`** are the five modules listed in `README.md` (styles,
   prompt, theme, geminiSafety, books) — the app's single source of truth for
   prompts/safety/catalog/theme. Don't reach into anything else under `web/src`, and note the

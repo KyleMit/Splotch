@@ -78,7 +78,7 @@ Since the pen/chalk fork, a solid pen region is a **light-theme quality call**, 
 breaker: light mode covers punched holes with its own black ink, and the chalk redraw makes its own
 judgment from whatever pen it gets. Thin-stroke pens still read better as coloring pages (classic
 outlined pupils) and give the light-fill generator cleaner inputs, so the audit stays — as advice,
-not a prerequisite. Covers (`{book}/cover.outline.webp`) appear in the audit but are picker-only, so
+not a prerequisite. Covers (`{book}/cover.overlay.svg`) appear in the audit but are picker-only, so
 their solid regions are harmless noise.
 
 ### The normalizer

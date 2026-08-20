@@ -217,15 +217,16 @@ active-page chip now use the exact `pageOverlayImage()` URL the canvas applies. 
 `srcset` or `sizes`, and ordinary transparent source-over rendering replaces the raster picker's
 blend/filter treatment.
 
-Book covers remain raster thumbnails because they have not passed the vector fidelity and size
-gates. `gen:coloring-thumbs` therefore generates only `cover.thumb.webp` and
-`cover.chalk.thumb.webp`; `responsiveColoringAssets()` retains only those cover candidates and the
-compact fill tier. The 192 canonical page thumbnails and their 192 `max-240px` derivatives are
-removed from the app, PWA precache, and downloadable packs. Book hover now prefetches the six SVGs
-the page grid will render, while page hover warms the same URL for selection; the existing dedupe
-keeps that from creating a second request. Selection cancels detached prefetches for other pages but
-leaves the decoded grid images intact: they are no longer lower-resolution transfers competing with
-the selected overlay, and preserving the selected SVG lets WebKit reuse its decoded resource.
+Book covers remain raster thumbnails even though their canonical line-art masters are SVG.
+`gen:coloring-thumbs` rasterizes `cover.overlay.svg` and `cover.dark.overlay.svg` into
+`cover.thumb.webp` and `cover.chalk.thumb.webp`; `responsiveColoringAssets()` retains only those
+cover candidates and the compact fill tier. The 192 canonical page thumbnails and their 192
+`max-240px` derivatives are removed from the app, PWA precache, and downloadable packs. Book hover
+now prefetches the six SVGs the page grid will render, while page hover warms the same URL for
+selection; the existing dedupe keeps that from creating a second request. Selection cancels detached
+prefetches for other pages but leaves the decoded grid images intact: they are no longer
+lower-resolution transfers competing with the selected overlay, and preserving the selected SVG lets
+WebKit reuse its decoded resource.
 
 ## Consequences
 

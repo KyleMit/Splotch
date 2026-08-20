@@ -10,6 +10,13 @@
   },
   "entries": [
     {
+      "traceSourceSha256": "4284b9772c1156b182020504b3ce88500b4deb2ca6f1fa17266fae83233bd05d",
+      "traceSourceBytes": 112836,
+      "output": "web/static/coloring/creatures/cover.dark.overlay.svg",
+      "outputSha256": "e5e6b054a96f74af5fc06739f065a28a5f6c88cc73b64a48e03f6c78799bae86",
+      "outputBytes": 76104
+    },
+    {
       "traceSourceSha256": "b8eefbd784236b51e08450bcbba5ad9a33109b0243fb7b49d788876b9612d8b8",
       "traceSourceBytes": 115378,
       "output": "web/static/coloring/creatures/dragon-tall.dark.overlay.svg",
@@ -108,6 +115,13 @@
       "outputBytes": 43170
     },
     {
+      "traceSourceSha256": "4f2d859c53a22b6fe75b75fa2b8ffd565c2585a09d7bd731f802f4feef911813",
+      "traceSourceBytes": 96176,
+      "output": "web/static/coloring/dinosaur/cover.dark.overlay.svg",
+      "outputSha256": "413c5b974e896ba01997d8dcd3901ed4a701739df857a35ffed05c4b221d3cd8",
+      "outputBytes": 59993
+    },
+    {
       "traceSourceSha256": "ab498bfe134ff0f1470322d2293a6ad92ffdc6d56bf5b07196371b6eb443606b",
       "traceSourceBytes": 81494,
       "output": "web/static/coloring/dinosaur/pterodactyl-tall.dark.overlay.svg",
@@ -190,6 +204,13 @@
       "output": "web/static/coloring/farm/cat-wide.dark.overlay.svg",
       "outputSha256": "ac6916764fd3bed49b74d58beb6991c340095d31df7282449d8d4a143cf31272",
       "outputBytes": 57117
+    },
+    {
+      "traceSourceSha256": "e4291c4d23ae09466a4aa8fa1a2f48a725674d58f7c15a94ad32a5d1bfd7c682",
+      "traceSourceBytes": 81542,
+      "output": "web/static/coloring/farm/cover.dark.overlay.svg",
+      "outputSha256": "cf0608f04c408006094d06eb4ca7d9f754cb9b39eb98abdf7449b0fc0c3f8592",
+      "outputBytes": 51600
     },
     {
       "traceSourceSha256": "866d16a870bc1bf775e39bb8ccfdfbbb0a4fc81e50e7a8a89ce2f36e00346369",
@@ -304,6 +325,13 @@
       "outputBytes": 25738
     },
     {
+      "traceSourceSha256": "c6c8441e82289724f769f1643a4ccaa5dd330ee34848484bab070800ed3a162a",
+      "traceSourceBytes": 98764,
+      "output": "web/static/coloring/nature/cover.dark.overlay.svg",
+      "outputSha256": "efdbbe00b3acd2ab7a808390dc6ff24e507ccaf0bb66e5ad10ede20d476899c9",
+      "outputBytes": 41288
+    },
+    {
       "traceSourceSha256": "4273b57d2be772ea3008d6553418c89223b625b1412753aef224c067607a2212",
       "traceSourceBytes": 83938,
       "output": "web/static/coloring/nature/ladybug-tall.dark.overlay.svg",
@@ -374,6 +402,13 @@
       "outputBytes": 25801
     },
     {
+      "traceSourceSha256": "462f0d910b615f79b71cf028242e48c6479d255ab42004d33ce015039de7a948",
+      "traceSourceBytes": 69246,
+      "output": "web/static/coloring/objects/cover.dark.overlay.svg",
+      "outputSha256": "c92a5f477eb6b5689eda1691f630f33e927b9aa478b1786de60cd29f071d8643",
+      "outputBytes": 24192
+    },
+    {
       "traceSourceSha256": "754d30825dd4c0054b11c9e8af0c1fa6be25198b87d9f00450ac7f2eed6e4e52",
       "traceSourceBytes": 62772,
       "output": "web/static/coloring/objects/flower-tall.dark.overlay.svg",
@@ -442,6 +477,13 @@
       "output": "web/static/coloring/shapes/circle-wide.dark.overlay.svg",
       "outputSha256": "acdb1935b57b86dc3cfeada7848ca6919a02e4b2971189d13eb89f3eb5cb6e70",
       "outputBytes": 25520
+    },
+    {
+      "traceSourceSha256": "820906151449cbe6e7d904568115d60b8324afb20ba7d9460b8c7f47bc3700e4",
+      "traceSourceBytes": 46490,
+      "output": "web/static/coloring/shapes/cover.dark.overlay.svg",
+      "outputSha256": "f610c1e383cf28bdcc2ac8da383be3429cd70aedf90bc381b92d8acd7adc882e",
+      "outputBytes": 19415
     },
     {
       "traceSourceSha256": "7f93750f34509a437f6a5138c698bea5faa99f3da2cca7c1ec2a197a4bd46f58",
@@ -528,6 +570,13 @@
       "outputBytes": 44572
     },
     {
+      "traceSourceSha256": "d1b076915fcb7d83fd9c353e1b6f35a36d90ff99c10fc834cf7e563c2b5f5721",
+      "traceSourceBytes": 61712,
+      "output": "web/static/coloring/space/cover.dark.overlay.svg",
+      "outputSha256": "c7be863e314e9c8bdde2e000783aaf5d8fba45250acb1cf5a92f26bcf7119255",
+      "outputBytes": 20352
+    },
+    {
       "traceSourceSha256": "4b788e48bf145256ed0dc854a1cfb40be71b9d6389a411c736ad6f32af02f9c1",
       "traceSourceBytes": 82156,
       "output": "web/static/coloring/space/meteor-tall.dark.overlay.svg",
@@ -596,6 +645,13 @@
       "output": "web/static/coloring/space/station-wide.dark.overlay.svg",
       "outputSha256": "f272dad7a199c382c957f0d3f7f321080cc08b959abcb02f97ff22819c51195d",
       "outputBytes": 32644
+    },
+    {
+      "traceSourceSha256": "e85048bfc2b20b1178d3a3c554dec0b9b06bb55b13e73110332e63192b153f6a",
+      "traceSourceBytes": 120176,
+      "output": "web/static/coloring/vehicles/cover.dark.overlay.svg",
+      "outputSha256": "6cdb71d313e442b941d1a4e72e9eff0ff1ac272a58da3af2b598668c3d1a78cc",
+      "outputBytes": 71670
     },
     {
       "traceSourceSha256": "c940ce4f80ecaf64a953f6341aa269b26d752871f1ca2605de96dea7842b3add",

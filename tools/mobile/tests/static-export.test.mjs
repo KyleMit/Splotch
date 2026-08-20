@@ -54,7 +54,8 @@ describe('stripWebOnlyHeadTags', () => {
 describe('nativeUnusedLineArt', () => {
   it('strips opaque sources only for books shipped on mobile', () => {
     const mobile = {
-      cover: '/coloring/mobile/cover.outline.webp',
+      cover: '/coloring/mobile/cover.overlay.svg',
+      chalkCover: '/coloring/mobile/cover.dark.overlay.svg',
       platforms: ['mobile'],
       pages: [
         {
@@ -66,10 +67,16 @@ describe('nativeUnusedLineArt', () => {
         },
       ],
     };
-    const web = { ...mobile, cover: '/coloring/web/cover.outline.webp', platforms: ['web'] };
+    const web = {
+      ...mobile,
+      cover: '/coloring/web/cover.overlay.svg',
+      chalkCover: '/coloring/web/cover.dark.overlay.svg',
+      platforms: ['web'],
+    };
 
     expect(nativeUnusedLineArt([mobile, web])).toEqual([
-      '/coloring/mobile/cover.outline.webp',
+      '/coloring/mobile/cover.overlay.svg',
+      '/coloring/mobile/cover.dark.overlay.svg',
       '/coloring/mobile/page-tall.overlay.svg',
       '/coloring/mobile/page-wide.overlay.svg',
       '/coloring/mobile/page-tall.dark.overlay.svg',

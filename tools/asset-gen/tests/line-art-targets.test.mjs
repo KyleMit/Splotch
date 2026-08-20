@@ -27,7 +27,7 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'splotch-line-art-targets-'));
   await addLineArt('nature/zebra-wide.overlay.svg');
   await addLineArt('nature/ant-tall.overlay.svg');
-  await addLineArt('nature/cover.outline.webp');
+  await addLineArt('nature/cover.overlay.svg');
   await addLineArt('space/moon-wide.overlay.svg');
 });
 
@@ -70,16 +70,7 @@ it('preserves explicit file support as a caller policy', async () => {
   ).rejects.toThrow('missing nature/missing-tall.overlay.svg');
 });
 
-it('includes legacy covers only when requested and prefers a vector cover', async () => {
-  await expect(
-    resolveLineArtTargets(['nature'], options({ includeCovers: true }))
-  ).resolves.toEqual([
-    join(root, 'nature/ant-tall.overlay.svg'),
-    join(root, 'nature/cover.outline.webp'),
-    join(root, 'nature/zebra-wide.overlay.svg'),
-  ]);
-
-  await addLineArt('nature/cover.overlay.svg');
+it('includes canonical covers only when requested', async () => {
   await expect(
     resolveLineArtTargets(['nature'], options({ includeCovers: true }))
   ).resolves.toEqual([

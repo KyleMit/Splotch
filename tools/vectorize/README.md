@@ -99,12 +99,12 @@ Rules that follow from that:
 
 ```bash
 # Free watermarked trace — prove the parameters before spending anything
-node tools/vectorize/vectorize-image.mjs web/static/coloring/farm/cover.outline.webp \
-  --out vectorized/farm-cover.svg --param processing.max_colors=2
+node tools/vectorize/vectorize-image.mjs input.png \
+  --out vectorized/input.svg --param processing.max_colors=2
 
 # The keeper run (1 credit), retained for a day so extra formats cost 0.1 each
-node tools/vectorize/vectorize-image.mjs web/static/coloring/farm/cover.outline.webp \
-  --out vectorized/farm-cover.svg --production --retain 1 --param processing.max_colors=2
+node tools/vectorize/vectorize-image.mjs input.png \
+  --out vectorized/input.svg --production --retain 1 --param processing.max_colors=2
 
 # Second format from that result (0.1 credit) — token printed by the run above
 node tools/vectorize/vectorize-image.mjs --download <image-token> --out vectorized/owl.png
@@ -226,9 +226,9 @@ npm run vectorize:postprocess:check
 ```
 
 Format-2 ledgers record the paid trace-source and SVG SHA-256 plus byte counts. Both theme ledgers
-cover all 96 page orientations, and the check independently rejects a missing or unrecorded
-canonical SVG. Trace sources and raw service responses remain review/recovery artifacts, not sources
-of truth, and should not be committed.
+cover all 104 page orientations and covers, and the check independently rejects a missing or
+unrecorded canonical SVG. Trace sources and raw service responses remain review/recovery artifacts,
+not sources of truth, and should not be committed.
 
 ### Regenerate canonical page line art
 
@@ -257,6 +257,12 @@ compact or 9,080,706 full WebP bytes; all 96 pages passed at 96.34% minimum bina
 2.46/255 maximum alpha mean absolute error. The complete dark catalog measured 3,959,975 raw SVG
 bytes and 1,731,806 gzip bytes versus 4,479,786 compact or 5,361,446 full WebP bytes; all 96 pages
 passed at 95.67% minimum IoU and 1.83/255 maximum alpha error.
+
+The eight-cover campaign added 347,803 light SVG bytes (148,128 gzip) and 364,614 dark SVG bytes
+(156,300 gzip), replacing 734,748 light and 686,942 dark raster-master bytes. All covers passed:
+light measured at least 96.62% IoU and at most 2.76/255 alpha error; dark measured at least 97.25%
+IoU and at most 2.56/255 alpha error. Raster picker thumbnails remain deterministic derivatives of
+those canonical cover SVGs.
 
 The fidelity gate uses a 95.5% binary-IoU floor together with a 3/255 mean-alpha-error ceiling. The
 IoU floor includes the visually reviewed tall Umbrella trace (97.72% precision, 97.86% recall,

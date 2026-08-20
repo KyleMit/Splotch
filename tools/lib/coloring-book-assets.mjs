@@ -11,6 +11,7 @@ export const nativeUnusedLineArt = (books) =>
     .filter((book) => book.platforms.includes('mobile'))
     .flatMap((book) => [
       book.cover,
+      book.chalkCover,
       ...book.pages.flatMap((page) => [
         ...Object.values(page.images),
         ...Object.values(page.chalkImages),

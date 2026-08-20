@@ -8,18 +8,13 @@ canonical source for every page-line-art consumer.
 
 ## Decision
 
-Every page orientation has one light and one dark canonical line-art asset:
+Every page orientation and cover has one light and one dark canonical line-art asset:
 
 ```text
 {page}-{tall,wide}.overlay.svg       transparent black pen
 {page}-{tall,wide}.dark.overlay.svg  transparent white chalk
-```
-
-Cover line art remains raster during the cover campaign:
-
-```text
-cover.outline.webp
-cover.chalk.webp
+cover.overlay.svg                    transparent black cover pen
+cover.dark.overlay.svg               transparent white cover chalk
 cover.thumb.webp
 cover.chalk.thumb.webp
 ```
@@ -64,10 +59,11 @@ the request path.
 
 ## Consequences
 
-* One committed page-line-art representation replaces the former opaque masters, temporary alpha
-  WebPs, and responsive overlay derivatives.
+* One committed line-art representation replaces the former opaque masters, temporary alpha WebPs,
+  and responsive overlay derivatives.
 * Runtime and pipeline consumers cannot drift onto different line work.
 * Deterministic rasterization keeps existing image-analysis code and Gemini contracts stable.
 * A page edit now requires a retrace before it becomes canonical; raster review output is not a
   shippable fallback.
-* Cover raster masters remain a deliberate transitional exception until their campaign completes.
+* Cover thumbnails remain raster derivatives because the picker does not render their canonical SVG
+  masters directly.

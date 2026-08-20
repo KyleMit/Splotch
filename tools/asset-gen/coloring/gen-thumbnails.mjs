@@ -15,14 +15,15 @@ import { stat } from 'node:fs/promises';
 import sharp from 'sharp';
 import { fail } from '../lib/asset-cli.mjs';
 import { COLORING_DIR } from '../lib/asset-paths.mjs';
+import { rasterizeLineArt } from '../lib/line-art.mjs';
 
 const THUMB_EDGE = 400; // longest-edge px — comfortably covers a 2x DPR ~200px tile
 const THUMB_QUALITY = 80;
-const SOURCE_FILES = ['cover.outline.webp', 'cover.chalk.webp'];
-const SOURCE_SUFFIXES = ['.outline.webp', '.chalk.webp'];
+const SOURCE_FILES = ['cover.overlay.svg', 'cover.dark.overlay.svg'];
+const SOURCE_SUFFIXES = ['.dark.overlay.svg', '.overlay.svg'];
 const THUMB_SUFFIXES = {
-  '.outline.webp': '.thumb.webp',
-  '.chalk.webp': '.chalk.thumb.webp',
+  '.overlay.svg': '.thumb.webp',
+  '.dark.overlay.svg': '.chalk.thumb.webp',
 };
 
 function isCoverSource(path) {
@@ -42,7 +43,7 @@ const dirs = filter.length
       .map((e) => e.name);
 
 const sources = dirs.flatMap((dir) =>
-  globSync(join(COLORING_DIR, dir, '*.webp')).filter(isCoverSource)
+  globSync(join(COLORING_DIR, dir, '*.svg')).filter(isCoverSource)
 );
 
 if (sources.length === 0)
@@ -55,7 +56,7 @@ await Promise.all(
   sources.map(async (src) => {
     const out = thumbTarget(src);
     const before = (await stat(src)).size;
-    await sharp(src)
+    await sharp(await rasterizeLineArt(src))
       .resize(THUMB_EDGE, THUMB_EDGE, { fit: 'inside', withoutEnlargement: true })
       .webp({ quality: THUMB_QUALITY })
       .toFile(out);

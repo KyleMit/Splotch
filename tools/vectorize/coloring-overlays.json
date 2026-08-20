@@ -10,6 +10,13 @@
   },
   "entries": [
     {
+      "traceSourceSha256": "8019ec1c8a43e72bf43462a9568044403de0c5d21f6a0c5ba3e688bcee9a92db",
+      "traceSourceBytes": 118178,
+      "output": "web/static/coloring/creatures/cover.overlay.svg",
+      "outputSha256": "3aa238601995372a0922b64fe38b4254dfeb56976d6e615f80ded73467e94203",
+      "outputBytes": 72183
+    },
+    {
       "traceSourceSha256": "108951e41058560a95a9642ee93e9bb743a5f3158d2942307ea337968c496d75",
       "traceSourceBytes": 131906,
       "output": "web/static/coloring/creatures/dragon-tall.overlay.svg",
@@ -108,6 +115,13 @@
       "outputBytes": 38957
     },
     {
+      "traceSourceSha256": "ca90a6ccf33537ae905db670b2c28d42afaf8e38c55bea6a666204a996bd2d10",
+      "traceSourceBytes": 101268,
+      "output": "web/static/coloring/dinosaur/cover.overlay.svg",
+      "outputSha256": "8a3fcf6719205a6c8b99ce3fceaa9ad023aee920f6bdce60e35784a55dd63cce",
+      "outputBytes": 58164
+    },
+    {
       "traceSourceSha256": "cbb6c8ec5277ee96117ed809c94830fb584b160094b9466376501a4877dacea6",
       "traceSourceBytes": 96834,
       "output": "web/static/coloring/dinosaur/pterodactyl-tall.overlay.svg",
@@ -190,6 +204,13 @@
       "output": "web/static/coloring/farm/cat-wide.overlay.svg",
       "outputSha256": "5679d554d93d8ae4c82cf3be4fea2922040c6f00f7492c190dd6e5fa9988d36c",
       "outputBytes": 52118
+    },
+    {
+      "traceSourceSha256": "487230cc8b9278bc1b4e270db33d5f6687914978a6dfb518a490364655291439",
+      "traceSourceBytes": 83480,
+      "output": "web/static/coloring/farm/cover.overlay.svg",
+      "outputSha256": "e1f162b9414aee899c01a83184176da6a41c6b46fbbc2e8cf5344cb0f21cbfb7",
+      "outputBytes": 49394
     },
     {
       "traceSourceSha256": "9ad81924c8f0fa88ea75cab56877db2f3832ee1733ae37fbef8761e68c901503",
@@ -304,6 +325,13 @@
       "outputBytes": 22685
     },
     {
+      "traceSourceSha256": "2b4acc5f4c7108392d1e2cdc5332037772d4aec008ed8bab1ba8cba21f90ec93",
+      "traceSourceBytes": 106040,
+      "output": "web/static/coloring/nature/cover.overlay.svg",
+      "outputSha256": "3c3825c06ea493738dda1d2f1f2a4b5bd6cd70a671dc37e0adef35ba72ee58c6",
+      "outputBytes": 39763
+    },
+    {
       "traceSourceSha256": "973aee3f6281f0bfb9641bf9198190f5b75b8d18db973c11f7ccec7d0496dde6",
       "traceSourceBytes": 76542,
       "output": "web/static/coloring/nature/ladybug-tall.overlay.svg",
@@ -374,6 +402,13 @@
       "outputBytes": 23521
     },
     {
+      "traceSourceSha256": "75e9e3e7326731c0eb6aa492811b9c914ae64ff74ad8ba11fe073169f04d3880",
+      "traceSourceBytes": 77042,
+      "output": "web/static/coloring/objects/cover.overlay.svg",
+      "outputSha256": "bb11d356414e596f28264726a9b452913665b40723395fc0e38df4e0a69e25c2",
+      "outputBytes": 22756
+    },
+    {
       "traceSourceSha256": "62688793114a5c663b62b386d52ec6928b170b55251de77a56567f4df45f45cd",
       "traceSourceBytes": 76122,
       "output": "web/static/coloring/objects/flower-tall.overlay.svg",
@@ -442,6 +477,13 @@
       "output": "web/static/coloring/shapes/circle-wide.overlay.svg",
       "outputSha256": "f0c3738be1d65e17c863fa4ca9390ebfb5a02aee5af3827fc4fcd260b56ac63e",
       "outputBytes": 21789
+    },
+    {
+      "traceSourceSha256": "47861e39cd993d6f9c32cd28e92953297a0bf3ab4cf924a3ea5644bf2d1373c4",
+      "traceSourceBytes": 52186,
+      "output": "web/static/coloring/shapes/cover.overlay.svg",
+      "outputSha256": "4cccc522b9c8079b0a487a18604c711f57492064eb8aaabb724b78c4369350ad",
+      "outputBytes": 17960
     },
     {
       "traceSourceSha256": "a1d9b2a51b8803dface7ad5b4b041909b336fb130c02959f887f73adf64de2dc",
@@ -528,6 +570,13 @@
       "outputBytes": 42438
     },
     {
+      "traceSourceSha256": "2a1e43a92c654fe503a14c014ad7045f6733dce5947671c253ba4876547865c4",
+      "traceSourceBytes": 67282,
+      "output": "web/static/coloring/space/cover.overlay.svg",
+      "outputSha256": "6f7f5642b83f0b30e854b58fbaac5a8d62c6df1072771f33f553e3a857c8aa1d",
+      "outputBytes": 19684
+    },
+    {
       "traceSourceSha256": "b81b0732215bde46b15fd5591f5df369fbf517a7dd32a5914e2e81027afc1fb8",
       "traceSourceBytes": 99730,
       "output": "web/static/coloring/space/meteor-tall.overlay.svg",
@@ -596,6 +645,13 @@
       "output": "web/static/coloring/space/station-wide.overlay.svg",
       "outputSha256": "89acef0dd9fb2e4397cf4e9ad0220ced7a894341dca673ce5c0b90e2aed8a3a6",
       "outputBytes": 28094
+    },
+    {
+      "traceSourceSha256": "b9c437bbb936dda9794ec9efe8d66bc82bf3fa329951faed340a70d93d23cddf",
+      "traceSourceBytes": 129272,
+      "output": "web/static/coloring/vehicles/cover.overlay.svg",
+      "outputSha256": "312f7b4d920d4b1ede88b80517094a874af8a4b1482750e7c97acc1845beaa9b",
+      "outputBytes": 67899
     },
     {
       "traceSourceSha256": "0f8423cfcc7b45bf83ae4af2651e46d6247e5c462fa9a91132f01a4e60b1e51d",

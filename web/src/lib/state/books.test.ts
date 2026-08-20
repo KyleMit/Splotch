@@ -44,6 +44,8 @@ describe('coverThumb', () => {
   const farm = BOOKS.find((book) => book.id === 'farm')!;
 
   it('uses the pen cover in light mode and the chalk cover in dark mode', () => {
+    expect(farm.cover).toBe('/coloring/farm/cover.overlay.svg');
+    expect(farm.chalkCover).toBe('/coloring/farm/cover.dark.overlay.svg');
     expect(coverThumb(farm, 'light')).toBe('/coloring/farm/cover.thumb.webp');
     expect(coverThumb(farm, 'dark')).toBe('/coloring/farm/cover.chalk.thumb.webp');
   });

@@ -4,8 +4,6 @@ import sharp from 'sharp';
 
 export const LIGHT_OVERLAY_SUFFIX = '.overlay.svg';
 export const DARK_OVERLAY_SUFFIX = '.dark.overlay.svg';
-export const LEGACY_LIGHT_COVER_SUFFIX = '.outline.webp';
-export const LEGACY_DARK_COVER_SUFFIX = '.chalk.webp';
 export const LINE_ART_ALPHA_THRESHOLD = 105;
 
 export function lightLineArtPath(path) {
@@ -13,14 +11,11 @@ export function lightLineArtPath(path) {
 }
 
 export function darkLineArtPath(path) {
-  if (path.endsWith(LIGHT_OVERLAY_SUFFIX)) {
-    return path.slice(0, -LIGHT_OVERLAY_SUFFIX.length) + DARK_OVERLAY_SUFFIX;
-  }
-  return path.replace(LEGACY_LIGHT_COVER_SUFFIX, LEGACY_DARK_COVER_SUFFIX);
+  return path.slice(0, -LIGHT_OVERLAY_SUFFIX.length) + DARK_OVERLAY_SUFFIX;
 }
 
 export function lineArtStem(path) {
-  for (const suffix of [DARK_OVERLAY_SUFFIX, LIGHT_OVERLAY_SUFFIX, LEGACY_LIGHT_COVER_SUFFIX]) {
+  for (const suffix of [DARK_OVERLAY_SUFFIX, LIGHT_OVERLAY_SUFFIX]) {
     if (path.endsWith(suffix)) return path.slice(0, -suffix.length);
   }
   throw new Error(`Not canonical line art: ${path}`);
