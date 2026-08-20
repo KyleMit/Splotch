@@ -76,11 +76,14 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('web coloring-pack inventory', () => {
   it('does not request origin persistence for an automatic background install', async () => {
+    const persist = vi.fn().mockResolvedValue(true);
+    vi.stubGlobal('navigator', { storage: { persist } });
     const store = createWebColoringPackStore();
 
     await store.install(manifest, manifest.books[0], false, new AbortController().signal);
 
     expect(requestPersistentStorage).not.toHaveBeenCalled();
+    expect(persist).not.toHaveBeenCalled();
   });
 
   it('backfills a file added to a previously marked book', async () => {

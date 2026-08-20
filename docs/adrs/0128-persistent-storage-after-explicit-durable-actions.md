@@ -39,8 +39,10 @@ creates durable browser data:
 
 Coloring-pack installation does not request persistence. ADR-0103 makes those downloads automatic
 background work after boot, including on a fresh installation where Coloring Book is enabled by
-default. The Cache Storage data remains evictable unless another qualifying explicit action obtains
-the origin-wide grant.
+default. The Coloring Book and metered-download settings toggles also resume the same downloader,
+but changing an automatic-download policy is not a request for a specific pack. The shared install
+path therefore never requests persistence regardless of what resumed it. All browser-managed origin
+storage remains evictable unless another qualifying explicit action obtains the grant.
 
 Boot hydration never calls `persist()`, even when it finds existing data. Credential requests run
 after the secure write and the credential coordinator's version and ownership checks, so a failed,
@@ -64,7 +66,8 @@ boundary this ADR establishes.
 * − Existing data whose grant never succeeded receives no automatic retry during launch.
 * − An invite-link access code can remain evictable until the parent later takes an explicit
   durable-feature action.
-* − Automatic coloring-pack caches remain evictable when the parent never performs another
-  qualifying explicit action.
+* − No automatic path requests the grant, so an origin whose parent never performs a qualifying
+  explicit action keeps every store evictable — coloring-pack caches, the PWA precache, and stored
+  preferences alike.
 * − Feature call sites must preserve this boundary; moving a request into shared boot hydration or
   an automatic background job reintroduces the Firefox prompt.
