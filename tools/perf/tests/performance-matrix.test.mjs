@@ -268,8 +268,8 @@ describe('deployment matrix report', () => {
     matrix.productCommit = 'final123';
     const markdown = renderMarkdown(matrix);
 
-    expect(markdown).toContain('This cumulative snapshot');
-    expect(markdown).toContain('`final123` is the final performance-affecting product commit');
+    expect(markdown).toContain('This deployment-target snapshot');
+    expect(markdown).toContain('`final123` is the measured product commit');
     expect(markdown).toContain('npm run gen:performance-matrix');
   });
 

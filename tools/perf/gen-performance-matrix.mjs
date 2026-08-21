@@ -759,10 +759,10 @@ function renderMarkdown(matrix) {
   const limitations = matrix.limitations.map((limitation) => `- ${limitation}`).join('\n');
   return `# Deployment-target performance matrix — ${matrix.recordedOn}
 
-This cumulative snapshot combines retained deployment-target evidence with focused final-state
-recaptures. \`${matrix.productCommit}\` is the final performance-affecting product commit. Every
-normalized result retains its target, mode, commit, and raw artifact; focused action captures
-replace only their declared scenarios within that mode.
+This deployment-target snapshot combines the campaign evidence declared in \`sources.json\`.
+\`${matrix.productCommit}\` is the measured product commit. Every normalized result retains its
+target, mode, commit, and raw artifact; focused action captures, when present, replace only their
+declared scenarios within that mode.
 
 The [interactive matrix](./index.html) is the quickest comparison. [\`data.json\`](./data.json)
 contains every normalized drawing run and grouped action result, and
@@ -856,18 +856,18 @@ function renderReport(matrix) {
     (count, row) => count + (row.actions?.finalProductCommitActionCount ?? 0),
     0
   );
-  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> actions compared</span><span class="chip"><b>${finalActionCount}</b> action rows at final commit</span>`;
+  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> actions compared</span><span class="chip"><b>${finalActionCount}</b> action rows at measured commit</span>`;
   const header = masthead({
     title: 'Deployment-target performance matrix',
     tagline:
-      'Cumulative retained evidence across physical devices, simulators, browsers, and native shells, with commit provenance on every measurement.',
+      'Campaign evidence across physical devices, simulators, browsers, and native shells, with commit provenance on every measurement.',
     home: '../../index.html',
     crumbs: [{ label: 'Performance', href: '../' }, { label: matrix.recordedOn }],
     stats,
   });
   const body = `${header}
 <main><div class="shell">
-  <p class="matrix-intro"><code>${esc(matrix.productCommit)}</code> is the final performance-affecting product commit. Each target keeps separate portrait/landscape and light/dark measurements. Focused final-commit captures replace only matching actions inside one mode. Physical-iPad web is the calibrated release gate; older evidence is never relabeled as current.</p>
+  <p class="matrix-intro"><code>${esc(matrix.productCommit)}</code> is the measured product commit. Each target keeps separate portrait/landscape and light/dark measurements. Focused captures, when present, replace only matching actions inside one mode. Physical-iPad web remains the calibrated release gate and is explicitly unavailable in this campaign.</p>
   <div class="matrix-links"><a class="matrix-link" href="data.json">Normalized results JSON</a><a class="matrix-link" href="index.md">Detailed narrative</a><a class="matrix-link" href="sources.json">Source manifest</a></div>
 
   <div class="section-head"><h2>Capture limitations</h2><span class="desc">Constraints retained with the evidence</span></div>
@@ -877,7 +877,7 @@ ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
   <div class="section-head"><h2>Coverage</h2><span class="desc">${matrix.targets.length} deployment targets · four explicit modes each</span></div>
   <div class="target-grid">${targetCards(matrix)}</div>
 
-  <div class="section-head"><h2>Commit provenance</h2><span class="desc">Final-commit action coverage is explicit; older retained evidence remains visible</span></div>
+  <div class="section-head"><h2>Commit provenance</h2><span class="desc">Drawing, undo, and action source commits remain explicit per mode</span></div>
   <div class="provenance"><table><thead><tr><th>Target</th><th>Drawing</th><th>Undo</th><th>Final actions</th><th>Action source commits</th></tr></thead><tbody>${provenanceTable(matrix)}</tbody></table></div>
 
   <div class="section-head"><h2>Drawing margin to gate</h2><span class="desc">Blank-paper aggregate · each panel is normalized to its own gate</span></div>
