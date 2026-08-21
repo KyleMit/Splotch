@@ -25,6 +25,7 @@ import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-ses
 import { profilePath } from '../lib/profile-paths.mjs';
 import {
   SETTINGS_SECTION_ROWS,
+  RESOLVED_THEME_EXPRESSION,
   clickSetupElement,
   ensureCampaignTheme,
   parseCampaignTheme,
@@ -1078,7 +1079,7 @@ export async function runActionSweep({
       selector: '#quickNightToggle',
       baseline: baselineTheme === 'dark',
       readyFor: (enabled) =>
-        `document.documentElement.dataset.theme === '${enabled ? 'dark' : 'light'}'`,
+        `${RESOLVED_THEME_EXPRESSION} === '${enabled ? 'dark' : 'light'}'`,
     });
   }
 

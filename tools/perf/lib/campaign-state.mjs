@@ -51,13 +51,17 @@ export function themeRoundTripPlan(baselineTheme) {
   };
 }
 
+// Choosing the theme that already matches the system clears the explicit override
+// rather than pinning it, so dataset.theme is empty exactly as often as it is set
+// and is not a readiness signal on its own. Everything that waits on a theme waits
+// on the resolved value, from this one definition.
+export const RESOLVED_THEME_EXPRESSION =
+  "(document.documentElement.dataset.theme === 'light' || document.documentElement.dataset.theme === 'dark'" +
+  ' ? document.documentElement.dataset.theme' +
+  " : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'))";
+
 export async function readResolvedTheme(execute) {
-  return execute(`
-    const explicit = document.documentElement.dataset.theme;
-    return explicit === 'light' || explicit === 'dark'
-      ? explicit
-      : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-  `);
+  return execute(`return ${RESOLVED_THEME_EXPRESSION};`);
 }
 
 async function waitForUi(execute, expression, hint) {
@@ -146,7 +150,7 @@ export async function ensureCampaignTheme(execute, theme) {
     }
     await waitForUi(
       execute,
-      `document.documentElement.dataset.theme === ${JSON.stringify(theme)}`,
+      `${RESOLVED_THEME_EXPRESSION} === ${JSON.stringify(theme)}`,
       `${theme} campaign theme`
     );
   } finally {

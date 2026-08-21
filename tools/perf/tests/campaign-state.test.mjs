@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   PLATFORM_OWNS_ROTATION,
+  RESOLVED_THEME_EXPRESSION,
   ensureCampaignTheme,
   setNativeRotationLock,
   parseCampaignTheme,
@@ -8,6 +11,7 @@ import {
   settingsSectionRow,
   themeRoundTripPlan,
 } from '../lib/campaign-state.mjs';
+import { ROOT } from '../../lib/proc.mjs';
 
 describe('performance campaign state', () => {
   it('accepts only the campaign theme vocabulary', () => {
@@ -176,5 +180,44 @@ describe('the compact Settings shell', () => {
     await expect(setNativeRotationLock(execute, false)).rejects.toThrow(
       'Rotation setup cannot run from the compact Settings shell'
     );
+  });
+});
+describe('resolved theme expression', () => {
+  // Picking the theme that already matches the system clears the override instead
+  // of pinning it, so dataset.theme comes back empty for a light choice on a light
+  // host. Waiting on dataset.theme alone therefore waits forever — which is exactly
+  // how the compact shell's Night Mode round trip hung on its first real run.
+  const resolve = (datasetTheme, prefersDark) =>
+    new Function('document', 'matchMedia', `return ${RESOLVED_THEME_EXPRESSION};`)(
+      { documentElement: { dataset: datasetTheme ? { theme: datasetTheme } : {} } },
+      () => ({ matches: prefersDark })
+    );
+
+  it('falls back to the system preference when the override is cleared', () => {
+    expect(resolve(undefined, false)).toBe('light');
+    expect(resolve(undefined, true)).toBe('dark');
+  });
+
+  it('prefers an explicit override over the system preference', () => {
+    expect(resolve('light', true)).toBe('light');
+    expect(resolve('dark', false)).toBe('dark');
+  });
+
+  it('is what the shell-agnostic theme waits actually use', () => {
+    // The three-way picker does pin an explicit override, so the sectioned path may
+    // compare dataset.theme directly. Only the paths that can land on a cleared
+    // override — campaign theme setup, and the compact shell's Night Mode toggle —
+    // have to resolve it.
+    const campaignState = readFileSync(
+      join(ROOT, 'tools', 'perf', 'lib', 'campaign-state.mjs'),
+      'utf8'
+    );
+    const actions = readFileSync(
+      join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
+      'utf8'
+    );
+
+    expect(campaignState).toContain('${RESOLVED_THEME_EXPRESSION} === ${JSON.stringify(theme)}');
+    expect(actions).toContain("${RESOLVED_THEME_EXPRESSION} === '${enabled ? 'dark' : 'light'}'");
   });
 });
