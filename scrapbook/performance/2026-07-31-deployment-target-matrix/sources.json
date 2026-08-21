@@ -8,8 +8,8 @@
   "limitations": [
     "All product measurements use 6961e50b685d441e88b37d20d3f38a27136572fb; later commits change only performance harnesses and report generation.",
     "Physical iPad web and native are P1/unmeasured because iOS 26 XCUITest requires a root-owned RemoteXPC tunnel that could not be started without an administrator credential.",
-    "iPad simulator native actions and landscape drawing are P1/unmeasured: the simulator Settings surface does not expose the persisted rotation-lock control required by ADR-0090. No external rotation or profiling-only preference seam was used.",
-    "Android physical and emulator landscape action sweeps are P1/unmeasured after repeated Settings-navigation timeouts. Valid drawing and undo evidence for those modes is retained.",
+    "iPad simulator native landscape drawing and undo were captured on 2026-08-21 once the runner stopped treating an absent in-app rotation lock as an ADR-0090 unavailability: tablets delegate orientation to the OS, so device rotation is the only path the product offers there and no external rotation or profiling-only preference seam was used. Its two landscape action cells remain unmeasured, blocked by a product defect rather than the harness \u2014 see issue 1192.",
+    "Android landscape action sweeps were captured on 2026-08-21. A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list, so those modes measure that shell under compact-specific labels and each capture records the settingsShell it measured. Compare a mode against the same shell; a differing action label set between modes is a shell difference, not a regression. Physical Android landscape actions stay unmeasured \u2014 no physical device was in scope for this pass.",
     "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
     "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
     "Mac Firefox drawing and all mode-aware Mac undo were captured on 2026-08-21 with the same probe, viewports, and gates as the other desktop rows: the frame runner gained Gecko and an undo-response measurement, so one pen capture per mode now carries drawing and undo under the same recorded orientation and theme. Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
@@ -479,7 +479,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
@@ -488,7 +495,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
@@ -529,7 +543,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
@@ -538,7 +559,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },

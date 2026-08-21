@@ -7,8 +7,8 @@
   "limitations": [
     "All product measurements use 6961e50b685d441e88b37d20d3f38a27136572fb; later commits change only performance harnesses and report generation.",
     "Physical iPad web and native are P1/unmeasured because iOS 26 XCUITest requires a root-owned RemoteXPC tunnel that could not be started without an administrator credential.",
-    "iPad simulator native actions and landscape drawing are P1/unmeasured: the simulator Settings surface does not expose the persisted rotation-lock control required by ADR-0090. No external rotation or profiling-only preference seam was used.",
-    "Android physical and emulator landscape action sweeps are P1/unmeasured after repeated Settings-navigation timeouts. Valid drawing and undo evidence for those modes is retained.",
+    "iPad simulator native landscape drawing and undo were captured on 2026-08-21 once the runner stopped treating an absent in-app rotation lock as an ADR-0090 unavailability: tablets delegate orientation to the OS, so device rotation is the only path the product offers there and no external rotation or profiling-only preference seam was used. Its two landscape action cells remain unmeasured, blocked by a product defect rather than the harness — see issue 1192.",
+    "Android landscape action sweeps were captured on 2026-08-21. A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list, so those modes measure that shell under compact-specific labels and each capture records the settingsShell it measured. Compare a mode against the same shell; a differing action label set between modes is a shell difference, not a regression. Physical Android landscape actions stay unmeasured — no physical device was in scope for this pass.",
     "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
     "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
     "Mac Firefox drawing and all mode-aware Mac undo were captured on 2026-08-21 with the same probe, viewports, and gates as the other desktop rows: the frame runner gained Gecko and an undo-response measurement, so one pen capture per mode now carries drawing and undo under the same recorded orientation and theme. Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
@@ -19247,7 +19247,928 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "finalProductCommitActionCount": 35,
+            "actionCount": 36,
+            "passedActionCount": 33,
+            "worst": {
+              "firstFrameP95": 27.7,
+              "postActionFrameP95": 50.1,
+              "postActionFrameMax": 133.3
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.4,
+                  "p95": 9.5,
+                  "p99": 9.5,
+                  "max": 9.5
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.4,
+                  "p95": 12.5,
+                  "p99": 12.5,
+                  "max": 12.5
+                },
+                "ready": {
+                  "p50": 4.6,
+                  "p95": 4.6,
+                  "p99": 4.6,
+                  "max": 4.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.2,
+                  "p95": 13.9,
+                  "p99": 13.9,
+                  "max": 13.9
+                },
+                "ready": {
+                  "p50": 4,
+                  "p95": 5.2,
+                  "p99": 5.2,
+                  "max": 5.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.5,
+                  "p95": 11.8,
+                  "p99": 11.8,
+                  "max": 11.8
+                },
+                "ready": {
+                  "p50": 5,
+                  "p95": 5.4,
+                  "p99": 5.4,
+                  "max": 5.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.5,
+                  "p95": 9.8,
+                  "p99": 9.8,
+                  "max": 9.8
+                },
+                "ready": {
+                  "p50": 3.1,
+                  "p95": 3.2,
+                  "p99": 3.2,
+                  "max": 3.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.9,
+                  "p95": 11.9,
+                  "p99": 11.9,
+                  "max": 11.9
+                },
+                "ready": {
+                  "p50": 105.5,
+                  "p95": 109.3,
+                  "p99": 109.3,
+                  "max": 109.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.8,
+                  "p95": 12.2,
+                  "p99": 12.2,
+                  "max": 12.2
+                },
+                "ready": {
+                  "p50": 4.2,
+                  "p95": 5.5,
+                  "p99": 5.5,
+                  "max": 5.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.3,
+                  "p95": 12.4,
+                  "p99": 12.4,
+                  "max": 12.4
+                },
+                "ready": {
+                  "p50": 4,
+                  "p95": 6.6,
+                  "p99": 6.6,
+                  "max": 6.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.5,
+                  "p95": 11.6,
+                  "p99": 11.6,
+                  "max": 11.6
+                },
+                "ready": {
+                  "p50": 5.3,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.5,
+                  "p95": 10.5,
+                  "p99": 10.5,
+                  "max": 10.5
+                },
+                "ready": {
+                  "p50": 4.3,
+                  "p95": 12.7,
+                  "p99": 12.7,
+                  "max": 12.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10.3,
+                  "p95": 10.7,
+                  "p99": 10.7,
+                  "max": 10.7
+                },
+                "ready": {
+                  "p50": 3.6,
+                  "p95": 3.6,
+                  "p99": 3.6,
+                  "max": 3.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.1,
+                  "p95": 11.6,
+                  "p99": 11.6,
+                  "max": 11.6
+                },
+                "ready": {
+                  "p50": 4.5,
+                  "p95": 4.8,
+                  "p99": 4.8,
+                  "max": 4.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.5,
+                  "p95": 12.7,
+                  "p99": 12.7,
+                  "max": 12.7
+                },
+                "ready": {
+                  "p50": 4.5,
+                  "p95": 48.8,
+                  "p99": 48.8,
+                  "max": 48.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.5,
+                  "p95": 12.9,
+                  "p99": 12.9,
+                  "max": 12.9
+                },
+                "ready": {
+                  "p50": 7.1,
+                  "p95": 50.9,
+                  "p99": 50.9,
+                  "max": 50.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.3,
+                  "p95": 11.6,
+                  "p99": 11.6,
+                  "max": 11.6
+                },
+                "ready": {
+                  "p50": 29.4,
+                  "p95": 85.3,
+                  "p99": 85.3,
+                  "max": 85.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.7,
+                  "p95": 8.1,
+                  "p99": 8.1,
+                  "max": 8.1
+                },
+                "ready": {
+                  "p50": 11.9,
+                  "p95": 16.4,
+                  "p99": 16.4,
+                  "max": 16.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.6,
+                  "p95": 5.3,
+                  "p99": 5.3,
+                  "max": 5.3
+                },
+                "ready": {
+                  "p50": 6.4,
+                  "p95": 8.8,
+                  "p99": 8.8,
+                  "max": 8.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.3,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 7.1,
+                  "p95": 7.5,
+                  "p99": 7.5,
+                  "max": 7.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.2,
+                  "p95": 6.6,
+                  "p99": 6.6,
+                  "max": 6.6
+                },
+                "ready": {
+                  "p50": 6.2,
+                  "p95": 8.5,
+                  "p99": 8.5,
+                  "max": 8.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.3,
+                  "p95": 6.1,
+                  "p99": 6.1,
+                  "max": 6.1
+                },
+                "ready": {
+                  "p50": 6.8,
+                  "p95": 9.2,
+                  "p99": 9.2,
+                  "max": 9.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.9,
+                  "p95": 8.4,
+                  "p99": 8.4,
+                  "max": 8.4
+                },
+                "ready": {
+                  "p50": 8.9,
+                  "p95": 13.8,
+                  "p99": 13.8,
+                  "max": 13.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.5,
+                  "p95": 10.4,
+                  "p99": 10.4,
+                  "max": 10.4
+                },
+                "ready": {
+                  "p50": 3.3,
+                  "p95": 4,
+                  "p99": 4,
+                  "max": 4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.2,
+                  "p95": 5.4,
+                  "p99": 5.4,
+                  "max": 5.4
+                },
+                "ready": {
+                  "p50": 19.7,
+                  "p95": 20.3,
+                  "p99": 20.3,
+                  "max": 20.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "scroll coloring pages",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.6,
+                  "p95": 13.1,
+                  "p99": 13.1,
+                  "max": 13.1
+                },
+                "ready": {
+                  "p50": 1417,
+                  "p95": 1615.7,
+                  "p99": 1615.7,
+                  "max": 1615.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.6,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 29.9,
+                  "p95": 97,
+                  "p99": 97,
+                  "max": 97
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.8,
+                  "p95": 14.3,
+                  "p99": 14.3,
+                  "max": 14.3
+                },
+                "ready": {
+                  "p50": 5.5,
+                  "p95": 6.9,
+                  "p99": 6.9,
+                  "max": 6.9
+                },
+                "postActionFrames": {
+                  "p50": 16.6,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.9,
+                  "p95": 14.2,
+                  "p99": 14.2,
+                  "max": 14.2
+                },
+                "ready": {
+                  "p50": 118.1,
+                  "p95": 161.2,
+                  "p99": 161.2,
+                  "max": 161.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.8,
+                  "p95": 13.2,
+                  "p99": 13.2,
+                  "max": 13.2
+                },
+                "ready": {
+                  "p50": 4.1,
+                  "p95": 6.4,
+                  "p99": 6.4,
+                  "max": 6.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.8,
+                  "p95": 14,
+                  "p99": 14,
+                  "max": 14
+                },
+                "ready": {
+                  "p50": 986.7,
+                  "p95": 990.8,
+                  "p99": 990.8,
+                  "max": 990.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.3,
+                  "p95": 2.6,
+                  "p99": 2.6,
+                  "max": 2.6
+                },
+                "ready": {
+                  "p50": 2529.4,
+                  "p95": 2530,
+                  "p99": 2530,
+                  "max": 2530
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.7,
+                  "p95": 11.7,
+                  "p99": 11.7,
+                  "max": 11.7
+                },
+                "ready": {
+                  "p50": 3.2,
+                  "p95": 3.8,
+                  "p99": 3.8,
+                  "max": 3.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.8,
+                  "p95": 13.5,
+                  "p99": 13.5,
+                  "max": 13.5
+                },
+                "ready": {
+                  "p50": 4,
+                  "p95": 4.3,
+                  "p99": 4.3,
+                  "max": 4.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.9,
+                  "p95": 13.1,
+                  "p99": 13.1,
+                  "max": 13.1
+                },
+                "ready": {
+                  "p50": 986.7,
+                  "p95": 989.1,
+                  "p99": 989.1,
+                  "max": 989.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.5,
+                  "p95": 9.7,
+                  "p99": 9.7,
+                  "max": 9.7
+                },
+                "ready": {
+                  "p50": 2525,
+                  "p95": 2526.9,
+                  "p99": 2526.9,
+                  "max": 2526.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 50,
+                  "max": 50
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.2,
+                  "p95": 27.7,
+                  "p99": 27.7,
+                  "max": 27.7
+                },
+                "ready": {
+                  "p50": 2514.3,
+                  "p95": 2522,
+                  "p99": 2522,
+                  "max": 2522
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 49.9,
+                  "max": 49.9
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5,
+                  "p95": 11.4,
+                  "p99": 11.4,
+                  "max": 11.4
+                },
+                "ready": {
+                  "p50": 2530.5,
+                  "p95": 2532.3,
+                  "p99": 2532.3,
+                  "max": 2532.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 50.1,
+                  "p99": 133.3,
+                  "max": 133.3
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
@@ -19453,7 +20374,928 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "finalProductCommitActionCount": 35,
+            "actionCount": 36,
+            "passedActionCount": 32,
+            "worst": {
+              "firstFrameP95": 14.2,
+              "postActionFrameP95": 33.4,
+              "postActionFrameMax": 66.7
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.8,
+                  "p95": 8.3,
+                  "p99": 8.3,
+                  "max": 8.3
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.4,
+                  "p95": 13.9,
+                  "p99": 13.9,
+                  "max": 13.9
+                },
+                "ready": {
+                  "p50": 4.1,
+                  "p95": 5.4,
+                  "p99": 5.4,
+                  "max": 5.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.1,
+                  "p95": 12.6,
+                  "p99": 12.6,
+                  "max": 12.6
+                },
+                "ready": {
+                  "p50": 4.9,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10.2,
+                  "p95": 10.4,
+                  "p99": 10.4,
+                  "max": 10.4
+                },
+                "ready": {
+                  "p50": 7.6,
+                  "p95": 9.3,
+                  "p99": 9.3,
+                  "max": 9.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.2,
+                  "p95": 8.3,
+                  "p99": 8.3,
+                  "max": 8.3
+                },
+                "ready": {
+                  "p50": 4.7,
+                  "p95": 5.3,
+                  "p99": 5.3,
+                  "max": 5.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.4,
+                  "p95": 14.2,
+                  "p99": 14.2,
+                  "max": 14.2
+                },
+                "ready": {
+                  "p50": 106.8,
+                  "p95": 108,
+                  "p99": 108,
+                  "max": 108
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.9,
+                  "p95": 12.9,
+                  "p99": 12.9,
+                  "max": 12.9
+                },
+                "ready": {
+                  "p50": 5.8,
+                  "p95": 6.3,
+                  "p99": 6.3,
+                  "max": 6.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.2,
+                  "p95": 11.7,
+                  "p99": 11.7,
+                  "max": 11.7
+                },
+                "ready": {
+                  "p50": 6.2,
+                  "p95": 6.2,
+                  "p99": 6.2,
+                  "max": 6.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.8,
+                  "p95": 13.1,
+                  "p99": 13.1,
+                  "max": 13.1
+                },
+                "ready": {
+                  "p50": 5.5,
+                  "p95": 5.8,
+                  "p99": 5.8,
+                  "max": 5.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.5,
+                  "p95": 12.7,
+                  "p99": 12.7,
+                  "max": 12.7
+                },
+                "ready": {
+                  "p50": 4.7,
+                  "p95": 4.9,
+                  "p99": 4.9,
+                  "max": 4.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.7,
+                  "p95": 13.7,
+                  "p99": 13.7,
+                  "max": 13.7
+                },
+                "ready": {
+                  "p50": 4.9,
+                  "p95": 5.3,
+                  "p99": 5.3,
+                  "max": 5.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.8,
+                  "p95": 13,
+                  "p99": 13,
+                  "max": 13
+                },
+                "ready": {
+                  "p50": 5.3,
+                  "p95": 5.8,
+                  "p99": 5.8,
+                  "max": 5.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.7,
+                  "p95": 12.8,
+                  "p99": 12.8,
+                  "max": 12.8
+                },
+                "ready": {
+                  "p50": 4.8,
+                  "p95": 5.4,
+                  "p99": 5.4,
+                  "max": 5.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.7,
+                  "p95": 13.4,
+                  "p99": 13.4,
+                  "max": 13.4
+                },
+                "ready": {
+                  "p50": 9.1,
+                  "p95": 10.2,
+                  "p99": 10.2,
+                  "max": 10.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.1,
+                  "p95": 6.2,
+                  "p99": 6.2,
+                  "max": 6.2
+                },
+                "ready": {
+                  "p50": 28.6,
+                  "p95": 38,
+                  "p99": 38,
+                  "max": 38
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.2,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 14.7,
+                  "p95": 18.4,
+                  "p99": 18.4,
+                  "max": 18.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.4,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "ready": {
+                  "p50": 6.4,
+                  "p95": 7.7,
+                  "p99": 7.7,
+                  "max": 7.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.4,
+                  "p95": 6.7,
+                  "p99": 6.7,
+                  "max": 6.7
+                },
+                "ready": {
+                  "p50": 6.3,
+                  "p95": 6.4,
+                  "p99": 6.4,
+                  "max": 6.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5,
+                  "p95": 5.4,
+                  "p99": 5.4,
+                  "max": 5.4
+                },
+                "ready": {
+                  "p50": 7.6,
+                  "p95": 7.9,
+                  "p99": 7.9,
+                  "max": 7.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.5,
+                  "p95": 7.7,
+                  "p99": 7.7,
+                  "max": 7.7
+                },
+                "ready": {
+                  "p50": 6.6,
+                  "p95": 7.5,
+                  "p99": 7.5,
+                  "max": 7.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.1,
+                  "p95": 4.4,
+                  "p99": 4.4,
+                  "max": 4.4
+                },
+                "ready": {
+                  "p50": 10.3,
+                  "p95": 13.3,
+                  "p99": 13.3,
+                  "max": 13.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.6,
+                  "p95": 10.3,
+                  "p99": 10.3,
+                  "max": 10.3
+                },
+                "ready": {
+                  "p50": 7,
+                  "p95": 9.7,
+                  "p99": 9.7,
+                  "max": 9.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 66.7,
+                  "max": 66.7
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2.5,
+                  "p95": 6.2,
+                  "p99": 6.2,
+                  "max": 6.2
+                },
+                "ready": {
+                  "p50": 22.1,
+                  "p95": 26.8,
+                  "p99": 26.8,
+                  "max": 26.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "scroll coloring pages",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.4,
+                  "p95": 13.2,
+                  "p99": 13.2,
+                  "max": 13.2
+                },
+                "ready": {
+                  "p50": 1416.6,
+                  "p95": 1417.7,
+                  "p99": 1417.7,
+                  "max": 1417.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.3,
+                  "p95": 7.3,
+                  "p99": 7.3,
+                  "max": 7.3
+                },
+                "ready": {
+                  "p50": 11.3,
+                  "p95": 26.2,
+                  "p99": 26.2,
+                  "max": 26.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.6,
+                  "p95": 12.9,
+                  "p99": 12.9,
+                  "max": 12.9
+                },
+                "ready": {
+                  "p50": 13.9,
+                  "p95": 14.7,
+                  "p99": 14.7,
+                  "max": 14.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13,
+                  "p95": 13.6,
+                  "p99": 13.6,
+                  "max": 13.6
+                },
+                "ready": {
+                  "p50": 179.4,
+                  "p95": 252.2,
+                  "p99": 252.2,
+                  "max": 252.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 66.6
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.3,
+                  "p95": 13.3,
+                  "p99": 13.3,
+                  "max": 13.3
+                },
+                "ready": {
+                  "p50": 3.7,
+                  "p95": 4.3,
+                  "p99": 4.3,
+                  "max": 4.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.5,
+                  "p95": 14.2,
+                  "p99": 14.2,
+                  "max": 14.2
+                },
+                "ready": {
+                  "p50": 985.8,
+                  "p95": 987.4,
+                  "p99": 987.4,
+                  "max": 987.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.8,
+                  "p95": 9.5,
+                  "p99": 9.5,
+                  "max": 9.5
+                },
+                "ready": {
+                  "p50": 2528.1,
+                  "p95": 2529,
+                  "p99": 2529,
+                  "max": 2529
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 33.2,
+                  "max": 33.2
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.8,
+                  "p95": 13,
+                  "p99": 13,
+                  "max": 13
+                },
+                "ready": {
+                  "p50": 4.4,
+                  "p95": 8.3,
+                  "p99": 8.3,
+                  "max": 8.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.3,
+                  "p95": 13.2,
+                  "p99": 13.2,
+                  "max": 13.2
+                },
+                "ready": {
+                  "p50": 4.1,
+                  "p95": 4.2,
+                  "p99": 4.2,
+                  "max": 4.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.6,
+                  "p95": 13.8,
+                  "p99": 13.8,
+                  "max": 13.8
+                },
+                "ready": {
+                  "p50": 985.7,
+                  "p95": 986.2,
+                  "p99": 986.2,
+                  "max": 986.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.4,
+                  "p95": 9.1,
+                  "p99": 9.1,
+                  "max": 9.1
+                },
+                "ready": {
+                  "p50": 2527.7,
+                  "p95": 2535.4,
+                  "p99": 2535.4,
+                  "max": 2535.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.6,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 2528.6,
+                  "p95": 2530.4,
+                  "p99": 2530.4,
+                  "max": 2530.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 33.4,
+                  "p99": 50,
+                  "max": 50
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.7,
+                  "p95": 7.6,
+                  "p99": 7.6,
+                  "max": 7.6
+                },
+                "ready": {
+                  "p50": 2531.7,
+                  "p95": 2534.5,
+                  "p99": 2534.5,
+                  "max": 2534.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 33.3,
+                  "p99": 33.3,
+                  "max": 33.3
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-web/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
@@ -22627,7 +24469,928 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "finalProductCommitActionCount": 35,
+            "actionCount": 36,
+            "passedActionCount": 36,
+            "worst": {
+              "firstFrameP95": 24,
+              "postActionFrameP95": 16.8,
+              "postActionFrameMax": 33.5
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.5,
+                  "p95": 15.8,
+                  "p99": 15.8,
+                  "max": 15.8
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 16.6,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.5,
+                  "p95": 11.1,
+                  "p99": 11.1,
+                  "max": 11.1
+                },
+                "ready": {
+                  "p50": 202.5,
+                  "p95": 203.2,
+                  "p99": 203.2,
+                  "max": 203.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.7,
+                  "p95": 13.2,
+                  "p99": 13.2,
+                  "max": 13.2
+                },
+                "ready": {
+                  "p50": 201,
+                  "p95": 206.1,
+                  "p99": 206.1,
+                  "max": 206.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1.9,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 200.5,
+                  "p95": 201.1,
+                  "p99": 201.1,
+                  "max": 201.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.3,
+                  "p95": 7.6,
+                  "p99": 7.6,
+                  "max": 7.6
+                },
+                "ready": {
+                  "p50": 205.4,
+                  "p95": 209.6,
+                  "p99": 209.6,
+                  "max": 209.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14,
+                  "p95": 14.1,
+                  "p99": 14.1,
+                  "max": 14.1
+                },
+                "ready": {
+                  "p50": 270.6,
+                  "p95": 284.3,
+                  "p99": 284.3,
+                  "max": 284.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.1,
+                  "p95": 14.6,
+                  "p99": 14.6,
+                  "max": 14.6
+                },
+                "ready": {
+                  "p50": 197.5,
+                  "p95": 202.8,
+                  "p99": 202.8,
+                  "max": 202.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.8,
+                  "p95": 14.7,
+                  "p99": 14.7,
+                  "max": 14.7
+                },
+                "ready": {
+                  "p50": 200.1,
+                  "p95": 200.4,
+                  "p99": 200.4,
+                  "max": 200.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12,
+                  "p95": 16.6,
+                  "p99": 16.6,
+                  "max": 16.6
+                },
+                "ready": {
+                  "p50": 200.6,
+                  "p95": 204.2,
+                  "p99": 204.2,
+                  "max": 204.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.6,
+                  "p95": 13.3,
+                  "p99": 13.3,
+                  "max": 13.3
+                },
+                "ready": {
+                  "p50": 209.8,
+                  "p95": 211,
+                  "p99": 211,
+                  "max": 211
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.8,
+                  "p95": 11.4,
+                  "p99": 11.4,
+                  "max": 11.4
+                },
+                "ready": {
+                  "p50": 202.8,
+                  "p95": 205.9,
+                  "p99": 205.9,
+                  "max": 205.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.5,
+                  "p95": 15.8,
+                  "p99": 15.8,
+                  "max": 15.8
+                },
+                "ready": {
+                  "p50": 206.8,
+                  "p95": 212.8,
+                  "p99": 212.8,
+                  "max": 212.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.5,
+                  "p95": 14.7,
+                  "p99": 14.7,
+                  "max": 14.7
+                },
+                "ready": {
+                  "p50": 201.4,
+                  "p95": 206.9,
+                  "p99": 206.9,
+                  "max": 206.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.5,
+                  "p95": 14.8,
+                  "p99": 14.8,
+                  "max": 14.8
+                },
+                "ready": {
+                  "p50": 202.2,
+                  "p95": 204,
+                  "p99": 204,
+                  "max": 204
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.7,
+                  "p95": 15.6,
+                  "p99": 15.6,
+                  "max": 15.6
+                },
+                "ready": {
+                  "p50": 14.7,
+                  "p95": 23.5,
+                  "p99": 23.5,
+                  "max": 23.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.4,
+                  "p95": 11.7,
+                  "p99": 11.7,
+                  "max": 11.7
+                },
+                "ready": {
+                  "p50": 11.7,
+                  "p95": 12.3,
+                  "p99": 12.3,
+                  "max": 12.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.5,
+                  "p95": 14.6,
+                  "p99": 14.6,
+                  "max": 14.6
+                },
+                "ready": {
+                  "p50": 8.9,
+                  "p95": 10.2,
+                  "p99": 10.2,
+                  "max": 10.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.8,
+                  "p95": 14.9,
+                  "p99": 14.9,
+                  "max": 14.9
+                },
+                "ready": {
+                  "p50": 9,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.3,
+                  "p95": 13.7,
+                  "p99": 13.7,
+                  "max": 13.7
+                },
+                "ready": {
+                  "p50": 9.3,
+                  "p95": 9.7,
+                  "p99": 9.7,
+                  "max": 9.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.6,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "ready": {
+                  "p50": 9.2,
+                  "p95": 9.6,
+                  "p99": 9.6,
+                  "max": 9.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.1,
+                  "p95": 5.7,
+                  "p99": 5.7,
+                  "max": 5.7
+                },
+                "ready": {
+                  "p50": 9.9,
+                  "p95": 10.7,
+                  "p99": 10.7,
+                  "max": 10.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.4,
+                  "p95": 6.6,
+                  "p99": 6.6,
+                  "max": 6.6
+                },
+                "ready": {
+                  "p50": 201.2,
+                  "p95": 203,
+                  "p99": 203,
+                  "max": 203
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.8,
+                  "p95": 15.8,
+                  "p99": 15.8,
+                  "max": 15.8
+                },
+                "ready": {
+                  "p50": 9.9,
+                  "p95": 11.1,
+                  "p99": 11.1,
+                  "max": 11.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "scroll coloring pages",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.8,
+                  "p95": 14.2,
+                  "p99": 14.2,
+                  "max": 14.2
+                },
+                "ready": {
+                  "p50": 662.5,
+                  "p95": 667.1,
+                  "p99": 667.1,
+                  "max": 667.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.8,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "ready": {
+                  "p50": 13,
+                  "p95": 13,
+                  "p99": 13,
+                  "max": 13
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.6,
+                  "p95": 14,
+                  "p99": 14,
+                  "max": 14
+                },
+                "ready": {
+                  "p50": 199.3,
+                  "p95": 200.3,
+                  "p99": 200.3,
+                  "max": 200.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.3,
+                  "p95": 5.6,
+                  "p99": 5.6,
+                  "max": 5.6
+                },
+                "ready": {
+                  "p50": 203.4,
+                  "p95": 205.9,
+                  "p99": 205.9,
+                  "max": 205.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.7,
+                  "p95": 14.5,
+                  "p99": 14.5,
+                  "max": 14.5
+                },
+                "ready": {
+                  "p50": 201.2,
+                  "p95": 207.6,
+                  "p99": 207.6,
+                  "max": 207.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.6,
+                  "p95": 15.2,
+                  "p99": 15.2,
+                  "max": 15.2
+                },
+                "ready": {
+                  "p50": 652.9,
+                  "p95": 660.1,
+                  "p99": 660.1,
+                  "max": 660.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.8,
+                  "p95": 18.4,
+                  "p99": 18.4,
+                  "max": 18.4
+                },
+                "ready": {
+                  "p50": 2929.5,
+                  "p95": 2940.2,
+                  "p99": 2940.2,
+                  "max": 2940.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5.4,
+                  "p95": 5.8,
+                  "p99": 5.8,
+                  "max": 5.8
+                },
+                "ready": {
+                  "p50": 201.9,
+                  "p95": 203.3,
+                  "p99": 203.3,
+                  "max": 203.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.7,
+                  "p95": 16.3,
+                  "p99": 16.3,
+                  "max": 16.3
+                },
+                "ready": {
+                  "p50": 201.7,
+                  "p95": 204.8,
+                  "p99": 204.8,
+                  "max": 204.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12.5,
+                  "p95": 15.2,
+                  "p99": 15.2,
+                  "max": 15.2
+                },
+                "ready": {
+                  "p50": 647.6,
+                  "p95": 659.2,
+                  "p99": 659.2,
+                  "max": 659.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.3,
+                  "p95": 18.2,
+                  "p99": 18.2,
+                  "max": 18.2
+                },
+                "ready": {
+                  "p50": 2921.7,
+                  "p95": 2923.2,
+                  "p99": 2923.2,
+                  "max": 2923.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 33.5,
+                  "max": 33.5
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10.3,
+                  "p95": 10.8,
+                  "p99": 10.8,
+                  "max": 10.8
+                },
+                "ready": {
+                  "p50": 2920.2,
+                  "p95": 2930.2,
+                  "p99": 2930.2,
+                  "max": 2930.2
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.2,
+                  "p95": 24,
+                  "p99": 24,
+                  "max": 24
+                },
+                "ready": {
+                  "p50": 2919.1,
+                  "p95": 2933.8,
+                  "p99": 2933.8,
+                  "max": 2933.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-light/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
@@ -22833,7 +25596,928 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "finalProductCommitActionCount": 35,
+            "actionCount": 36,
+            "passedActionCount": 36,
+            "worst": {
+              "firstFrameP95": 30.1,
+              "postActionFrameP95": 16.8,
+              "postActionFrameMax": 33.4
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.7,
+                  "p95": 13.1,
+                  "p99": 13.1,
+                  "max": 13.1
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.4,
+                  "p95": 11.9,
+                  "p99": 11.9,
+                  "max": 11.9
+                },
+                "ready": {
+                  "p50": 205,
+                  "p95": 211.8,
+                  "p99": 211.8,
+                  "max": 211.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.4,
+                  "p95": 11.9,
+                  "p99": 11.9,
+                  "max": 11.9
+                },
+                "ready": {
+                  "p50": 204,
+                  "p95": 204.3,
+                  "p99": 204.3,
+                  "max": 204.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.4,
+                  "p95": 13.9,
+                  "p99": 13.9,
+                  "max": 13.9
+                },
+                "ready": {
+                  "p50": 207.8,
+                  "p95": 213.1,
+                  "p99": 213.1,
+                  "max": 213.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14,
+                  "p95": 14.2,
+                  "p99": 14.2,
+                  "max": 14.2
+                },
+                "ready": {
+                  "p50": 204.6,
+                  "p95": 209,
+                  "p99": 209,
+                  "max": 209
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14,
+                  "p95": 14.3,
+                  "p99": 14.3,
+                  "max": 14.3
+                },
+                "ready": {
+                  "p50": 271,
+                  "p95": 283.7,
+                  "p99": 283.7,
+                  "max": 283.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.9,
+                  "p95": 15.2,
+                  "p99": 15.2,
+                  "max": 15.2
+                },
+                "ready": {
+                  "p50": 211.2,
+                  "p95": 215.5,
+                  "p99": 215.5,
+                  "max": 215.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0.4,
+                  "p95": 6.9,
+                  "p99": 6.9,
+                  "max": 6.9
+                },
+                "ready": {
+                  "p50": 201.7,
+                  "p95": 204.1,
+                  "p99": 204.1,
+                  "max": 204.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9,
+                  "p95": 12.4,
+                  "p99": 12.4,
+                  "max": 12.4
+                },
+                "ready": {
+                  "p50": 194.7,
+                  "p95": 198.8,
+                  "p99": 198.8,
+                  "max": 198.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.9,
+                  "p95": 14,
+                  "p99": 14,
+                  "max": 14
+                },
+                "ready": {
+                  "p50": 205.8,
+                  "p95": 267.9,
+                  "p99": 267.9,
+                  "max": 267.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9,
+                  "p95": 10.1,
+                  "p99": 10.1,
+                  "max": 10.1
+                },
+                "ready": {
+                  "p50": 217.3,
+                  "p95": 231.9,
+                  "p99": 231.9,
+                  "max": 231.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10,
+                  "p95": 13.2,
+                  "p99": 13.2,
+                  "max": 13.2
+                },
+                "ready": {
+                  "p50": 216.7,
+                  "p95": 222.9,
+                  "p99": 222.9,
+                  "max": 222.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.1,
+                  "p95": 15.4,
+                  "p99": 15.4,
+                  "max": 15.4
+                },
+                "ready": {
+                  "p50": 198.8,
+                  "p95": 210.4,
+                  "p99": 210.4,
+                  "max": 210.4
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13,
+                  "p95": 13.1,
+                  "p99": 13.1,
+                  "max": 13.1
+                },
+                "ready": {
+                  "p50": 202.8,
+                  "p95": 212.9,
+                  "p99": 212.9,
+                  "max": 212.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.4,
+                  "p95": 16.5,
+                  "p99": 16.5,
+                  "max": 16.5
+                },
+                "ready": {
+                  "p50": 18.9,
+                  "p95": 23.6,
+                  "p99": 23.6,
+                  "max": 23.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable Night Mode in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.2,
+                  "p95": 8.4,
+                  "p99": 8.4,
+                  "max": 8.4
+                },
+                "ready": {
+                  "p50": 12.7,
+                  "p95": 13.3,
+                  "p99": 13.3,
+                  "max": 13.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.3,
+                  "p95": 12.1,
+                  "p99": 12.1,
+                  "max": 12.1
+                },
+                "ready": {
+                  "p50": 9.5,
+                  "p95": 9.5,
+                  "p99": 9.5,
+                  "max": 9.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable drawing sounds in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.9,
+                  "p95": 15.8,
+                  "p99": 15.8,
+                  "max": 15.8
+                },
+                "ready": {
+                  "p50": 8.9,
+                  "p95": 9.3,
+                  "p99": 9.3,
+                  "max": 9.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8.1,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "ready": {
+                  "p50": 10.1,
+                  "p95": 14.3,
+                  "p99": 14.3,
+                  "max": 14.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable advanced controls in the compact shell",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.5,
+                  "p95": 15.5,
+                  "p99": 15.5,
+                  "max": 15.5
+                },
+                "ready": {
+                  "p50": 10.6,
+                  "p95": 41.3,
+                  "p99": 41.3,
+                  "max": 41.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3.8,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 11.4,
+                  "p95": 12.9,
+                  "p99": 12.9,
+                  "max": 12.9
+                },
+                "postActionFrames": {
+                  "p50": 16.6,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.8,
+                  "p95": 14.8,
+                  "p99": 14.8,
+                  "max": 14.8
+                },
+                "ready": {
+                  "p50": 211.6,
+                  "p95": 432.9,
+                  "p99": 432.9,
+                  "max": 432.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.5,
+                  "p95": 14.9,
+                  "p99": 14.9,
+                  "max": 14.9
+                },
+                "ready": {
+                  "p50": 13.2,
+                  "p95": 16.9,
+                  "p99": 16.9,
+                  "max": 16.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "scroll coloring pages",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.5,
+                  "p95": 15.3,
+                  "p99": 15.3,
+                  "max": 15.3
+                },
+                "ready": {
+                  "p50": 659.9,
+                  "p95": 660.3,
+                  "p99": 660.3,
+                  "max": 660.3
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9.7,
+                  "p95": 12,
+                  "p99": 12,
+                  "max": 12
+                },
+                "ready": {
+                  "p50": 19.6,
+                  "p95": 70.6,
+                  "p99": 70.6,
+                  "max": 70.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7,
+                  "p95": 14.8,
+                  "p99": 14.8,
+                  "max": 14.8
+                },
+                "ready": {
+                  "p50": 202.9,
+                  "p95": 207.6,
+                  "p99": 207.6,
+                  "max": 207.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.5,
+                  "p95": 6.4,
+                  "p99": 6.4,
+                  "max": 6.4
+                },
+                "ready": {
+                  "p50": 216.4,
+                  "p95": 233.1,
+                  "p99": 233.1,
+                  "max": 233.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7.2,
+                  "p95": 15.4,
+                  "p99": 15.4,
+                  "max": 15.4
+                },
+                "ready": {
+                  "p50": 206.3,
+                  "p95": 211.7,
+                  "p99": 211.7,
+                  "max": 211.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.6,
+                  "p95": 14.7,
+                  "p99": 14.7,
+                  "max": 14.7
+                },
+                "ready": {
+                  "p50": 663.7,
+                  "p95": 664.5,
+                  "p99": 664.5,
+                  "max": 664.5
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 24.4,
+                  "p95": 26.3,
+                  "p99": 26.3,
+                  "max": 26.3
+                },
+                "ready": {
+                  "p50": 2926.5,
+                  "p95": 2928.1,
+                  "p99": 2928.1,
+                  "max": 2928.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 14.7,
+                  "p95": 14.9,
+                  "p99": 14.9,
+                  "max": 14.9
+                },
+                "ready": {
+                  "p50": 205.7,
+                  "p95": 208.8,
+                  "p99": 208.8,
+                  "max": 208.8
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.7,
+                  "max": 16.7
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11.4,
+                  "p95": 14.6,
+                  "p99": 14.6,
+                  "max": 14.6
+                },
+                "ready": {
+                  "p50": 206.8,
+                  "p95": 220.7,
+                  "p99": 220.7,
+                  "max": 220.7
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13.5,
+                  "p95": 14.7,
+                  "p99": 14.7,
+                  "max": 14.7
+                },
+                "ready": {
+                  "p50": 676.4,
+                  "p95": 951.6,
+                  "p99": 951.6,
+                  "max": 951.6
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 16,
+                  "p95": 30.1,
+                  "p99": 30.1,
+                  "max": 30.1
+                },
+                "ready": {
+                  "p50": 2916,
+                  "p95": 2940.9,
+                  "p99": 2940.9,
+                  "max": 2940.9
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 33.4,
+                  "max": 33.4
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4.7,
+                  "p95": 5.4,
+                  "p99": 5.4,
+                  "max": 5.4
+                },
+                "ready": {
+                  "p50": 2912.9,
+                  "p95": 2916.1,
+                  "p99": 2916.1,
+                  "max": 2916.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.8,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6.8,
+                  "p95": 7.9,
+                  "p99": 7.9,
+                  "max": 7.9
+                },
+                "ready": {
+                  "p50": 2903.6,
+                  "p95": 2925.1,
+                  "p99": 2925.1,
+                  "max": 2925.1
+                },
+                "postActionFrames": {
+                  "p50": 16.7,
+                  "p95": 16.7,
+                  "p99": 16.8,
+                  "max": 16.8
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/android/emulator-native/landscape-dark/actions/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
