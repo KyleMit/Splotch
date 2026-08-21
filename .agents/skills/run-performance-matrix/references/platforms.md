@@ -250,6 +250,11 @@ Accept the artifact only when its metadata says `transport: native-capacitor-web
 expected app URL, device, orientation, and theme. Never accept the first `WEBVIEW_*`/`CHROMIUM`
 context without that check.
 
+`perf:campaign` enforces the transport half: a native cell is accepted only if its artifact records
+the native transport, and a web cell only if it does not, so a cell that attached to the wrong
+WebView retries instead of landing. The rest of the identity — app URL, device, orientation, theme —
+is still yours to read, and a one-off runner outside the campaign has no such gate at all.
+
 ## Physical Android web
 
 Unlock the phone, enable developer mode and USB debugging, and accept the Mac’s RSA prompt. Verify

@@ -5,6 +5,7 @@ import {
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   UNDO_COUNT,
+  artifactMatchesRuntime,
   artifactPath,
   campaignTarget,
   planCampaign,
@@ -107,6 +108,27 @@ describe('campaign plan', () => {
       `out/t/${mode.id}/pen-real-screen.json`
     );
     expect(artifactPath('out', 't', mode, 'actions')).toBe(`out/t/${mode.id}/actions/actions.json`);
+  });
+});
+
+describe('campaign artifact acceptance', () => {
+  it('accepts a native cell only when the capture attached to the app WebView', () => {
+    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(true);
+    expect(artifactMatchesRuntime({ transport: 'browser' }, 'native')).toBe(false);
+  });
+
+  it('rejects a web cell that attached to the installed app instead', () => {
+    expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'web')).toBe(false);
+  });
+
+  it('accepts both web transports, so a CDP action sweep is not mistaken for a miss', () => {
+    expect(artifactMatchesRuntime({ transport: 'browser' }, 'web')).toBe(true);
+    expect(artifactMatchesRuntime({ transport: 'android-chrome-cdp' }, 'web')).toBe(true);
+  });
+
+  it('treats a capture that names no transport as a web capture, not a native one', () => {
+    expect(artifactMatchesRuntime({}, 'web')).toBe(true);
+    expect(artifactMatchesRuntime({}, 'native')).toBe(false);
   });
 });
 

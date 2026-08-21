@@ -23,6 +23,8 @@ import {
   CAMPAIGN_MODES,
   CAMPAIGN_TARGETS,
   MAX_ATTEMPTS,
+  artifactMatchesRuntime,
+  campaignTarget,
   planCampaign,
 } from './lib/campaign-plan.mjs';
 import {
@@ -46,15 +48,16 @@ function absolute(path) {
   return isAbsolute(path) ? path : join(ROOT, path);
 }
 
-function artifactValid(path) {
+function artifactValid(path, runtime) {
   const full = absolute(path);
   if (!existsSync(full)) return false;
+  let artifact;
   try {
-    JSON.parse(readFileSync(full, 'utf8'));
-    return true;
+    artifact = JSON.parse(readFileSync(full, 'utf8'));
   } catch {
     return false;
   }
+  return artifactMatchesRuntime(artifact, runtime);
 }
 
 function rebootSimulator(udid) {
@@ -123,8 +126,10 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const rebootUdid = flag('reboot-simulator');
   const results = [];
 
+  const { runtime } = campaignTarget(targetId);
+
   for (const cell of plan) {
-    if (artifactValid(cell.artifact)) {
+    if (artifactValid(cell.artifact, runtime)) {
       appendLedger(ledgerPath, {
         cell: cell.id,
         status: ALREADY_VALID,
@@ -149,7 +154,7 @@ export async function runCampaign(argv = process.argv.slice(2)) {
         ['run', cell.command, '--ignore-scripts', '--', ...cell.args],
         { cwd: ROOT, stdio: 'inherit' }
       );
-      landed = artifactValid(cell.artifact);
+      landed = artifactValid(cell.artifact, runtime);
       appendLedger(ledgerPath, {
         cell: cell.id,
         status: `${landed ? COMPLETE : FAILED}-exit-${child.status}`,

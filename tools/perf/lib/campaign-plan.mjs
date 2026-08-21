@@ -66,6 +66,21 @@ export const CAMPAIGN_TARGETS = {
   },
 };
 
+// A native capture writes this; the two web transports (`browser` over Appium,
+// `android-chrome-cdp`) write their own.
+export const NATIVE_TRANSPORT = 'native-capacitor-webview';
+
+// Several debuggable WebViews can satisfy the context search, so a native capture
+// that attached to Chrome — or a web capture that attached to the installed app —
+// produces a well-formed artifact and exits zero. The runbook asks for this to be
+// eyeballed per cell; a queue of 20 is exactly where eyeballing stops happening.
+// Acceptance stays "a parseable artifact" so a red gate survives, but the artifact
+// has to be one of the thing the cell asked for.
+export function artifactMatchesRuntime(artifact, runtime) {
+  const isNative = artifact?.transport === NATIVE_TRANSPORT;
+  return runtime === 'native' ? isNative : !isNative;
+}
+
 export function campaignTarget(targetId) {
   const target = CAMPAIGN_TARGETS[targetId];
   if (!target) {
