@@ -1011,6 +1011,21 @@ describe('probe selectors still match the app', () => {
     expect(component('DrawingCanvas.svelte')).toContain('hidden={!overlayUrl()}');
   });
 
+  it('waits for progressive coloring controls and decoded art before drawing', () => {
+    const setupStart = PROBE.indexOf('async function coloringPageTile()');
+    const setupEnd = PROBE.indexOf("// Drives the app's own coloring-book UI", setupStart);
+    const setup = PROBE.slice(setupStart, setupEnd);
+    const fixStart = PROBE.indexOf('async function fixPaper(need)');
+    const fixEnd = PROBE.indexOf('let hand = null;', fixStart);
+    const fix = PROBE.slice(fixStart, fixEnd);
+
+    expect(setupStart).toBeGreaterThan(-1);
+    expect(setup).toContain('await waitForCondition');
+    expect(setup).toContain('document.querySelector(PAGE_TILE)');
+    expect(fix).toContain('await waitForCondition(() => paperActive() && pageArtShowing())');
+    expect(fix).not.toContain('OVERLAY_DECODE_MS');
+  });
+
   it('shares the native screenshot persistence boundary with the action runner', () => {
     expect(ACTION_RUNNER).toContain('window.__screenshotSaveSink');
     expect(SCREENSHOT_MODULE).toContain('window.__screenshotSaveSink');

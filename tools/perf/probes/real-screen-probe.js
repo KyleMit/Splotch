@@ -366,7 +366,8 @@
   const SHORTS_PER_BURST = 8;
   const STROKE_INSET = 0.08;
   const UI_SETTLE_MS = 350;
-  const OVERLAY_DECODE_MS = 1_200;
+  const PAPER_CONTROL_TIMEOUT_MS = 10_000;
+  const PAPER_CONTROL_POLL_MS = 100;
   // The pump deliberately wakes FASTER than the target rate, so the dispatch
   // condition sets the cadence rather than the timer's clamp — that is what holds
   // 8.3 ms spacing after `setTimeout(8.3)` measured 13 ms on device. Lower than
@@ -497,6 +498,35 @@
     return !!el;
   };
   const settle = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const waitForCondition = async (condition) => {
+    const deadline = performance.now() + PAPER_CONTROL_TIMEOUT_MS;
+    while (performance.now() < deadline) {
+      const result = condition();
+      if (result) return result;
+      await settle(PAPER_CONTROL_POLL_MS);
+    }
+    return null;
+  };
+
+  async function coloringPageTile() {
+    let pageTile = document.querySelector(PAGE_TILE);
+    if (pageTile) return pageTile;
+
+    let bookTile = document.querySelector(BOOK_TILE);
+    if (!bookTile) {
+      if (!clickSelector(COLORING_BOOK_BUTTON)) return null;
+      const firstControl = await waitForCondition(
+        () => document.querySelector(PAGE_TILE) ?? document.querySelector(BOOK_TILE)
+      );
+      if (!firstControl) return null;
+      pageTile = document.querySelector(PAGE_TILE);
+      bookTile = document.querySelector(BOOK_TILE);
+    }
+
+    if (pageTile) return pageTile;
+    bookTile.click();
+    return waitForCondition(() => document.querySelector(PAGE_TILE));
+  }
 
   // Drives the app's own coloring-book UI by selector rather than reaching into
   // its state, so the synthetic path exercises what a child's tap does — and the
@@ -505,18 +535,22 @@
   async function fixPaper(need) {
     paperFixInFlight = true;
     try {
-      if (!clickSelector(COLORING_BOOK_BUTTON)) {
-        console.error(`No ${COLORING_BOOK_BUTTON} — cannot set up paper unattended.`);
+      if (need === 'blank') {
+        if (!clickSelector(ACTIVE_PAGE_CLEAR_BUTTON)) {
+          console.error(`No ${ACTIVE_PAGE_CLEAR_BUTTON} — cannot clear paper unattended.`);
+          return;
+        }
+        await waitForCondition(() => !paperActive());
         return;
       }
-      await settle(UI_SETTLE_MS);
-      if (need === 'blank') {
-        clickSelector(ACTIVE_PAGE_CLEAR_BUTTON);
-      } else if (clickSelector(BOOK_TILE)) {
-        await settle(UI_SETTLE_MS);
-        clickSelector(PAGE_TILE);
+
+      const pageTile = await coloringPageTile();
+      if (!pageTile) {
+        console.error('Coloring picker did not expose a page before the setup timeout.');
+        return;
       }
-      await settle(OVERLAY_DECODE_MS);
+      pageTile.click();
+      await waitForCondition(() => paperActive() && pageArtShowing());
     } finally {
       paperFixInFlight = false;
     }
