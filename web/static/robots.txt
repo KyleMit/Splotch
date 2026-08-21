@@ -4,6 +4,6 @@ User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /api/
-Disallow: /dev/
+Disallow: /dev
 
 Sitemap: https://splotch.art/sitemap.xml
