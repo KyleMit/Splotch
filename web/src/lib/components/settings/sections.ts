@@ -16,7 +16,7 @@ import { hiddenDrawingToolCount } from './drawingTools';
 // below the feature sections because it is set once and left alone.
 export const SECTIONS = [
   { id: 'appearance', label: 'Appearance', icon: 'appearance', contentStamp: '1' },
-  { id: 'sound', label: 'Sound', icon: 'sound', contentStamp: '1' },
+  { id: 'sound', label: 'Sound', icon: 'sound', contentStamp: '2' },
   { id: 'controls', label: 'Tool Drawer', icon: 'controls', contentStamp: '1' },
   { id: 'coloring', label: 'Coloring', icon: 'shapes', contentStamp: '1' },
   { id: 'ai', label: 'AI Art', icon: 'wand-stars', contentStamp: '2' },
@@ -102,8 +102,17 @@ export function sectionSubtitle(id: SectionId): string {
       }
       return parts.join(' · ');
     }
-    case 'sound':
-      return settings.soundEnabled ? `Volume ${settings.soundVolume}%` : 'Muted';
+    case 'sound': {
+      if (
+        !settings.soundEnabled ||
+        (!settings.drawingSoundEnabled && !settings.deleteSoundEnabled)
+      ) {
+        return 'Muted';
+      }
+      const volume = `Volume ${settings.soundVolume}%`;
+      if (settings.drawingSoundEnabled && settings.deleteSoundEnabled) return volume;
+      return `${volume} · ${settings.drawingSoundEnabled ? 'drawing' : 'delete'} only`;
+    }
     case 'saving':
       return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
     case 'coloring':

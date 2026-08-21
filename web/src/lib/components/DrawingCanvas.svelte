@@ -147,9 +147,9 @@
 
   // The first 119 KB pencil sound is prepared on the earliest drawing boot path.
   // The other variants stay behind idle so their transfer and decode do not
-  // compete with first paint. Enabling sound later takes the same fast path.
+  // compete with first paint. Enabling drawing sound later takes the same fast path.
   $effect(() => {
-    if (!settings.soundEnabled) {
+    if (!settings.soundEnabled || !settings.drawingSoundEnabled) {
       stopDrawSound();
       return;
     }

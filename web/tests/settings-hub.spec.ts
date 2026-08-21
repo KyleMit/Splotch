@@ -132,6 +132,23 @@ test('a hub switch acts on its setting without leaving the list', async ({ page 
   await expect(page.locator('#soundToggle')).toHaveAttribute('aria-checked', 'false');
 });
 
+test('the Sound hub subtitle names a single enabled source and mutes an empty mix', async ({
+  page,
+}) => {
+  await openPhoneHub(page);
+  await openHubSection(page, 'sound', '#soundToggle');
+
+  await page.locator('#deleteSoundToggle').click();
+  await page.getByRole('button', { name: 'Back' }).click();
+  const subtitle = page.locator('.hub-row[data-section="sound"] .hub-subtitle');
+  await expect(subtitle).toHaveText('Volume 50% · drawing only');
+
+  await openHubSection(page, 'sound', '#drawingSoundToggle');
+  await page.locator('#drawingSoundToggle').click();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(subtitle).toHaveText('Muted');
+});
+
 test('AI Art reports its off state in the phone hub', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await gotoApp(page);

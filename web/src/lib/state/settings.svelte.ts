@@ -35,6 +35,8 @@ function defaultForceLandscapeOrientation() {
 // is now impossible.
 const BOOL_SETTINGS = {
   soundEnabled: [STORAGE_KEYS.soundEnabled, true],
+  drawingSoundEnabled: [STORAGE_KEYS.drawingSoundEnabled, true],
+  deleteSoundEnabled: [STORAGE_KEYS.deleteSoundEnabled, true],
   saveOnDeleteEnabled: [STORAGE_KEYS.saveOnDelete, false],
   screenshotEnabled: [STORAGE_KEYS.screenshotEnabled, true],
   undoButtonEnabled: [STORAGE_KEYS.undoButtonEnabled, true],
@@ -185,6 +187,8 @@ function normalizeDisabledBrushes() {
 }
 
 export const setSound = makeBoolSetter('soundEnabled');
+export const setDrawingSound = makeBoolSetter('drawingSoundEnabled');
+export const setDeleteSound = makeBoolSetter('deleteSoundEnabled');
 export const setSaveOnDelete = makeBoolSetter('saveOnDeleteEnabled');
 export const setScreenshot = makeBoolSetter('screenshotEnabled');
 export const setUndoButton = makeBoolSetter('undoButtonEnabled');

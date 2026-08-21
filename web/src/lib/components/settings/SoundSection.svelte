@@ -4,6 +4,8 @@
   import SliderRow from './SliderRow.svelte';
   import {
     settings,
+    setDeleteSound,
+    setDrawingSound,
     setSound,
     setSoundVolume,
     SOUND_VOLUME_DEFAULT,
@@ -42,7 +44,7 @@
   <div class="setting">
     <ToggleRow
       icon={settings.soundEnabled ? 'volume-on' : 'volume-off'}
-      label="Drawing Sounds"
+      label="Sound"
       id="soundToggle"
       checked={settings.soundEnabled}
       onToggle={setSound}
@@ -62,10 +64,55 @@
       </div>
     {/if}
   </div>
+
+  {#if settings.soundEnabled}
+    <div class="sound-sources" transition:slide={SECTION_SLIDE}>
+      <h4 class="sources-heading">What makes sound</h4>
+      <div class="source-rows">
+        <div class="setting">
+          <ToggleRow
+            icon="brush-pen"
+            label="Drawing"
+            id="drawingSoundToggle"
+            checked={settings.drawingSoundEnabled}
+            onToggle={setDrawingSound}
+          />
+        </div>
+        <div class="setting">
+          <ToggleRow
+            icon="trash-closed"
+            label="Deleting"
+            id="deleteSoundToggle"
+            checked={settings.deleteSoundEnabled}
+            onToggle={setDeleteSound}
+          />
+        </div>
+      </div>
+    </div>
+  {/if}
 </section>
 
 <style>
   .slider-setting {
     margin: 12px 0 2px;
+  }
+
+  .sound-sources {
+    margin-top: 20px;
+  }
+
+  .source-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .sources-heading {
+    margin: 0 0 10px 0;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
   }
 </style>

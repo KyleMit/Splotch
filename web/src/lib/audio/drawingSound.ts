@@ -79,6 +79,14 @@ function volumeMultiplier() {
   return settings.soundVolume / SOUND_VOLUME_DEFAULT;
 }
 
+function canPlayDrawingSound() {
+  return settings.soundEnabled && settings.drawingSoundEnabled;
+}
+
+function canPlayDeleteSound() {
+  return settings.soundEnabled && settings.deleteSoundEnabled;
+}
+
 function ensureContext(): AudioContext | null {
   if (audioContext) return audioContext;
   if (typeof AudioContext === 'undefined') return null;
@@ -129,21 +137,24 @@ function loadClearPageTurn(ctx: AudioContext, url: string): Promise<void> {
 }
 
 export function preloadFirstDrawSound() {
-  if (!settings.soundEnabled) return;
+  if (!canPlayDrawingSound()) return;
   const ctx = ensureContext();
   if (!ctx) return;
   void loadSound(ctx, SOUND_URLS[0]);
 }
 
 export function preloadDrawSounds() {
-  if (!settings.soundEnabled) return;
+  if (!canPlayDrawingSound()) return;
   const ctx = ensureContext();
   if (!ctx) return;
   for (const url of SOUND_URLS) void loadSound(ctx, url);
 }
 
 export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
-  if (!settings.soundEnabled) return;
+  if (!canPlayDrawingSound()) {
+    if (playbackRequested || currentPlayback) stopDrawSound();
+    return;
+  }
   const gestureStarted = !playbackRequested;
   playbackRequested = true;
   requestedSpeed = speed;
@@ -163,7 +174,7 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
 
 export function startClearSound() {
   resetClearGesture();
-  if (!settings.soundEnabled) return;
+  if (!canPlayDeleteSound()) return;
   const ctx = ensureContext();
   if (!ctx) return;
 
@@ -177,7 +188,7 @@ export function startClearSound() {
 // commit threshold; nothing here clamps it to the visual progress the CSS uses.
 export function updateClearSound(progress: number) {
   if (!clearGestureActive) return;
-  if (!settings.soundEnabled) {
+  if (!canPlayDeleteSound()) {
     resetClearGesture();
     return;
   }
@@ -194,7 +205,7 @@ export function updateClearSound(progress: number) {
 
 export function cancelClearSound() {
   const ctx = audioContext;
-  const shouldUnwind = clearGestureActive && settings.soundEnabled && clearLastStep >= 0 && ctx;
+  const shouldUnwind = clearGestureActive && canPlayDeleteSound() && clearLastStep >= 0 && ctx;
   const frequency = clearLastFrequency;
   resetClearGesture();
   if (!shouldUnwind) return;
@@ -203,7 +214,7 @@ export function cancelClearSound() {
     const timer = setTimeout(
       () => {
         clearCancelTimers.delete(timer);
-        if (!settings.soundEnabled) return;
+        if (!canPlayDeleteSound()) return;
         playClearNote(
           ctx,
           frequency * 2 ** ((-CLEAR_CANCEL_STEP_SEMITONES * note) / 12),
@@ -217,7 +228,7 @@ export function cancelClearSound() {
 }
 
 export function commitClearSound() {
-  const shouldPlay = clearGestureActive && settings.soundEnabled;
+  const shouldPlay = clearGestureActive && canPlayDeleteSound();
   resetClearGesture();
   if (shouldPlay) {
     clearPageTurnRequested = true;
@@ -329,7 +340,7 @@ function playClearDroplet(ctx: AudioContext, frequency: number, level: number, n
 
 function playClearPageTurnIfReady() {
   const ctx = audioContext;
-  if (!ctx || !clearPageTurnRequested || !clearPageTurnBuffer || !settings.soundEnabled) return;
+  if (!ctx || !clearPageTurnRequested || !clearPageTurnBuffer || !canPlayDeleteSound()) return;
   clearPageTurnRequested = false;
 
   const gain = ctx.createGain();
@@ -352,7 +363,7 @@ function startPlaybackIfReady() {
     !ctx ||
     currentPlayback ||
     !playbackRequested ||
-    !settings.soundEnabled ||
+    !canPlayDrawingSound() ||
     buffers.length === 0
   )
     return;

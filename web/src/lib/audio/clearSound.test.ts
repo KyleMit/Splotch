@@ -63,14 +63,16 @@ function notesFrom(oscillators: ReturnType<typeof oscillatorNode>[]): number[] {
 
 interface RigOptions {
   currentTime?: number;
+  deleteSoundEnabled?: boolean;
   soundEnabled?: boolean;
   volume?: number;
 }
 
 async function mountClearSound(signal: AbortSignal, options: RigOptions = {}) {
-  const { setSound, setSoundVolume } = await import('$lib/state/settings.svelte');
+  const { setDeleteSound, setSound, setSoundVolume } = await import('$lib/state/settings.svelte');
   signal.throwIfAborted();
   if (options.soundEnabled === false) setSound(false);
+  if (options.deleteSoundEnabled === false) setDeleteSound(false);
   if (options.volume !== undefined) setSoundVolume(options.volume);
 
   const oscillators: ReturnType<typeof oscillatorNode>[] = [];
@@ -401,6 +403,20 @@ describe('clear sound', () => {
     expect(sources).toHaveLength(0);
   });
 
+  it('creates no audio graph when only the delete source is off', async ({ signal }) => {
+    vi.useFakeTimers();
+    const { drawingSound, oscillators, sources } = await mountClearSound(signal, {
+      deleteSoundEnabled: false,
+    });
+
+    drawingSound.startClearSound();
+    drawingSound.updateClearSound(1.2);
+    drawingSound.commitClearSound();
+    vi.advanceTimersByTime(500);
+    expect(oscillators).toHaveLength(0);
+    expect(sources).toHaveLength(0);
+  });
+
   it('creates no oscillators at zero volume', async ({ signal }) => {
     vi.useFakeTimers();
     const { drawingSound, oscillators } = await mountClearSound(signal, { volume: 0 });
@@ -421,6 +437,22 @@ describe('clear sound', () => {
     oscillators.length = 0;
 
     setSound(false);
+    drawingSound.updateClearSound(1.2);
+    drawingSound.updateClearSound(1.8);
+    expect(oscillators).toHaveLength(0);
+  });
+
+  it('stops mid-gesture when the delete source is switched off', async ({ signal }) => {
+    vi.useFakeTimers();
+    const { drawingSound, oscillators } = await mountClearSound(signal);
+    const { setDeleteSound } = await import('$lib/state/settings.svelte');
+    signal.throwIfAborted();
+
+    drawingSound.startClearSound();
+    drawingSound.updateClearSound(0.6);
+    oscillators.length = 0;
+
+    setDeleteSound(false);
     drawingSound.updateClearSound(1.2);
     drawingSound.updateClearSound(1.8);
     expect(oscillators).toHaveLength(0);

@@ -202,6 +202,34 @@ test('the theme picker is one tab stop and the arrow keys move the selection', a
   await expect(system).toHaveAttribute('aria-checked', 'true');
 });
 
+test('Sound keeps one volume and remembers the enabled sources across master mute', async ({
+  page,
+}) => {
+  await gotoApp(page);
+  await openSettingsSection(page, 'Sound', '#soundToggle');
+
+  const master = page.locator('#soundToggle');
+  const drawing = page.locator('#drawingSoundToggle');
+  const deleting = page.locator('#deleteSoundToggle');
+  const volume = page.locator('.settings-section[data-section="sound"] [role="slider"]');
+
+  await expect(page.getByRole('heading', { name: 'What makes sound' })).toBeInViewport();
+  await expect(drawing).toHaveAttribute('aria-checked', 'true');
+  await expect(deleting).toHaveAttribute('aria-checked', 'true');
+  await deleting.click();
+  await expect(deleting).toHaveAttribute('aria-checked', 'false');
+
+  await master.click();
+  await expect(volume).toHaveCount(0);
+  await expect(drawing).toHaveCount(0);
+  await expect(deleting).toHaveCount(0);
+
+  await master.click();
+  await expect(volume).toBeVisible();
+  await expect(drawing).toHaveAttribute('aria-checked', 'true');
+  await expect(deleting).toHaveAttribute('aria-checked', 'false');
+});
+
 test('the shortest sidebar viewport can still reach every section', async ({ page }) => {
   // One pixel shorter and the compact shell takes over, so this is the least
   // vertical room the sidebar column ever gets — and the section icons are
