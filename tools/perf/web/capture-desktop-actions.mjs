@@ -117,6 +117,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     const client = new PlaywrightWebDriver(page, { useWheelForScroll: true });
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const originalOrientation = await client.orientation();
+    let settingsShell = null;
     const samples = [];
     const expectedLabels = new Set();
     let baselineTheme;
@@ -145,11 +146,12 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         originalOrientation,
         baselineTheme,
       });
+      settingsShell = sweep.settingsShell;
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep) expectedLabels.add(sample.label);
+        for (const sample of sweep.samples) expectedLabels.add(sample.label);
       }
       samples.push(
-        ...sweep.map((sample) => ({
+        ...sweep.samples.map((sample) => ({
           ...sample,
           repeat,
           warmup: repeat <= WARMUP_REPEATS,
@@ -173,6 +175,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       viewport: { ...viewport, deviceScaleFactor },
       headless,
       theme: baselineTheme,
+      settingsShell,
       actions: [...actions],
       repeats,
       samples,

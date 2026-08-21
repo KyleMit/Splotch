@@ -737,3 +737,32 @@ describe('compact settings shell', () => {
     expect(compactShell).not.toContain('data-section');
   });
 });
+describe('runActionSweep callers', () => {
+  // The sweep returns {samples, settingsShell} rather than a bare array, and it has
+  // three transports. Changing that shape broke the two callers that no test covers
+  // and no local run exercises by default — the Android CDP runner failed with
+  // "sweep is not iterable" only once a real Android capture ran, and the desktop
+  // runner was hiding the same break behind preserved results.
+  const CALLERS = [
+    join('tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
+    join('tools', 'perf', 'android', 'capture-browser-actions.mjs'),
+    join('tools', 'perf', 'web', 'capture-desktop-actions.mjs'),
+  ];
+
+  it('covers every file that calls it', () => {
+    const found = CALLERS.filter((relative) =>
+      readFileSync(join(ROOT, relative), 'utf8').includes('runActionSweep({')
+    );
+    expect(found).toEqual(CALLERS);
+  });
+
+  it('reads the sweep through its result shape in each caller', () => {
+    for (const relative of CALLERS) {
+      const source = readFileSync(join(ROOT, relative), 'utf8');
+      expect(source).toContain('sweep.samples');
+      expect(source).toContain('sweep.settingsShell');
+      expect(source).not.toMatch(/for \(const sample of sweep\)/);
+      expect(source).not.toMatch(/\.\.\.sweep\.map\(/);
+    }
+  });
+});

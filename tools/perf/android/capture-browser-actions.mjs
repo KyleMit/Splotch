@@ -295,6 +295,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     if (requestedOrientation) await client.setOrientation(requestedOrientation);
     const originalOrientation = await client.orientation();
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
+    let settingsShell = null;
     const samples = [];
     const expectedLabels = new Set();
     let baselineTheme;
@@ -319,11 +320,12 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         originalOrientation,
         baselineTheme,
       });
+      settingsShell = sweep.settingsShell;
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep) expectedLabels.add(sample.label);
+        for (const sample of sweep.samples) expectedLabels.add(sample.label);
       }
       samples.push(
-        ...sweep.map((sample) => ({
+        ...sweep.samples.map((sample) => ({
           ...sample,
           repeat,
           warmup: repeat <= WARMUP_REPEATS,
@@ -352,6 +354,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       repeats,
       orientation: originalOrientation,
       theme: baselineTheme,
+      settingsShell,
       samples,
       summaries,
       passed: failures.length === 0,
