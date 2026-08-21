@@ -25,6 +25,7 @@ import {
   undoActionPromiseSource,
 } from '../lib/undo-driver.mjs';
 import {
+  PLATFORM_OWNS_ROTATION,
   ensureCampaignTheme,
   parseCampaignOrientation,
   parseCampaignTheme,
@@ -466,6 +467,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   let originalOrientation;
   let execute;
   let restoreNativeRotationLock = false;
+  let platformOwnsRotation = false;
   let cleanupPromise;
   const cleanup = () => {
     cleanupPromise ??= (async () => {
@@ -545,13 +547,12 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     });
     if (needsRotationUnlock) {
       const initialRotationLock = await setNativeRotationLock(execute, false);
-      if (initialRotationLock === null) {
-        throw new Error(
-          'Native orientation capture is unavailable: Settings does not expose the persisted rotation lock control required by ADR-0090'
-        );
-      }
-      restoreNativeRotationLock = initialRotationLock;
-      if (initialRotationLock) {
+      // No in-app lock to release means nothing to bypass: rotating the device is
+      // the only orientation path the product offers on this platform, so ADR-0090's
+      // persisted-setting rule is satisfied rather than skipped.
+      platformOwnsRotation = initialRotationLock === PLATFORM_OWNS_ROTATION;
+      restoreNativeRotationLock = platformOwnsRotation ? false : initialRotationLock;
+      if (restoreNativeRotationLock) {
         await execute('location.reload(); return true;').catch(() => null);
         await switchToWebContext(client, sessionId);
         const unlockedReady = await pollUntil(
@@ -821,6 +822,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         undoPauseMs,
         historySettleMs,
         rotation,
+        platformOwnsRotation,
         pwaEffects: {
           installBanner: 'dismissed',
           serviceWorkerRegistration,

@@ -114,6 +114,13 @@ export async function ensureCampaignTheme(execute, theme) {
   return true;
 }
 
+// Tablets hand orientation to the OS window manager, so the product deliberately
+// renders no in-app rotation lock there (see supportsOrientationLock). Because
+// openAppearanceSettings has already proven the pane rendered, a missing toggle is
+// that product answer and not a targeting failure — the distinction decides whether
+// a native capture may rotate the device at all.
+export const PLATFORM_OWNS_ROTATION = 'platform-owns-rotation';
+
 export async function setNativeRotationLock(execute, locked) {
   await openAppearanceSettings(execute, 'rotation setup');
   try {
@@ -121,7 +128,7 @@ export async function setNativeRotationLock(execute, locked) {
       const toggle = document.querySelector('#lockRotationToggle');
       return toggle ? toggle.getAttribute('aria-checked') === 'true' : null;
     `);
-    if (initial === null) return null;
+    if (initial === null) return PLATFORM_OWNS_ROTATION;
     if (initial !== locked) {
       await clickSetupElement(execute, '#lockRotationToggle');
       await waitForUi(
