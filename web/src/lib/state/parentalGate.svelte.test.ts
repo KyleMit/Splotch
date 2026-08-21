@@ -197,6 +197,10 @@ describe('parental gate', () => {
   });
 
   it('retargets the open challenge at Parent Center, keeping the problem on screen', () => {
+    // Pin the operands to 9×9: with a random problem, 3×3's one-digit answer
+    // turns the partial "4" below into a completed wrong answer, which
+    // regenerates the very problem this test asserts is kept.
+    vi.spyOn(Math, 'random').mockReturnValue(MAX_OPERAND_RANDOM);
     const destination = vi.fn();
     requireParentalGate('externalLinks', destination, { x: 10, y: 20 }, { immediate: true });
     const problem = [gate.x, gate.y];
