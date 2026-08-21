@@ -20,15 +20,19 @@
 //     GPU-side behaviour is not modelled at all. Useful for the CPU-throttle
 //     dimension (`--throttle=N`, CDP-only) and for catching a JS-side regression,
 //     not for judging compositing.
+//   * `--engine=firefox` is Gecko, which no Splotch deployment target ships. It
+//     exists so the desktop row of the deployment matrix covers the third browser
+//     a parent might open splotch.art in, on the same probe and the same maths.
+//     Judge it as a Gecko result, never as evidence about WebKit or Blink.
 //
 // So: a stall that reproduces here is a cheap regression signal worth keeping. A
 // stall that does NOT reproduce here says nothing about the device — check
 // `npm run perf:ios:webkit:frames` before concluding anything is fixed.
 
-import { chromium, webkit } from '@playwright/test';
+import { chromium, firefox, webkit } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
+import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
@@ -41,6 +45,17 @@ import {
   parseCampaignTheme,
   readResolvedTheme,
 } from '../lib/campaign-state.mjs';
+import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import {
+  EXPAND_CONTROLS_SOURCE,
+  UNDO_ACTION_PAUSE_MS,
+  UNDO_ACTION_SETTLE_MS,
+  UNDO_BUTTON_READY_POLL_MS,
+  UNDO_BUTTON_READY_SOURCE,
+  UNDO_BUTTON_READY_TIMEOUT_MS,
+  assertUndoAction,
+  undoActionPromiseSource,
+} from '../lib/undo-driver.mjs';
 
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 const APP_URL_PATH = '/';
@@ -59,11 +74,20 @@ const SERVER_READY_TIMEOUT_MS = 90_000;
 const ENGINES = {
   webkit: { launcher: webkit, hasCdp: false },
   chromium: { launcher: chromium, hasCdp: true },
+  firefox: { launcher: firefox, hasCdp: false },
 };
 
 function positiveNumber(value, label) {
   const number = Number(value);
   if (!Number.isFinite(number) || number <= 0) fail(`${label} must be a positive number`);
+  return number;
+}
+
+function nonNegativeInteger(value, label) {
+  const number = Number.parseInt(value, 10);
+  if (!Number.isSafeInteger(number) || number < 0) {
+    fail(`${label} must be a non-negative integer`);
+  }
   return number;
 }
 
@@ -97,6 +121,8 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
         'no-forensics',
         'output',
         'theme',
+        'undo-count',
+        'undo-pause-ms',
       ],
     },
     argv
@@ -129,6 +155,11 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     'device scale factor'
   );
   const headless = !has('headed');
+  const undoCount = nonNegativeInteger(flag('undo-count', '0'), '--undo-count');
+  const undoPauseMs = nonNegativeInteger(
+    flag('undo-pause-ms', String(UNDO_ACTION_PAUSE_MS)),
+    '--undo-pause-ms'
+  );
   const requestedTheme = parseCampaignTheme(flag('theme'));
   const probeConfig = probeConfigScript({
     phases: flag('phases'),
@@ -193,6 +224,26 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       await sleep(PROGRESS_POLL_MS);
     }
 
+    const historyBeforeUndo =
+      undoCount > 0 ? await execute('return window.__drawingDebug.getUndoDebug();') : null;
+    const undoActions = [];
+    if (undoCount > 0) {
+      await execute(EXPAND_CONTROLS_SOURCE);
+      const undoReady = await pollUntil(
+        () => execute(UNDO_BUTTON_READY_SOURCE).catch(() => false),
+        UNDO_BUTTON_READY_TIMEOUT_MS,
+        UNDO_BUTTON_READY_POLL_MS
+      );
+      if (!undoReady) throw new Error('Action drawer did not expose an enabled #undoButton');
+      for (let index = 0; index < undoCount; index++) {
+        const action = await page.evaluate(undoActionPromiseSource(index));
+        assertUndoAction(action, index);
+        undoActions.push(action);
+        await sleep(undoPauseMs);
+      }
+      await sleep(UNDO_ACTION_SETTLE_MS);
+    }
+
     const report = await page.evaluate(() => window.__probe.finish());
     const counts = await page.evaluate(() => window.__probe.counts());
     report.frames = await page.evaluate((n) => window.__probe.frames(0, n), counts.frames);
@@ -213,8 +264,17 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       report,
       console: pageLogs,
     };
+    if (undoCount > 0) {
+      capture.undo = summarizeUndoActions(undoActions, report.frames);
+      capture.undoActions = undoActions;
+      capture.historyBeforeUndo = historyBeforeUndo;
+    }
     const summaries = printRun(capture, { forensics: !has('no-forensics') });
     capture.summaries = summaries;
+    if (undoCount > 0) {
+      console.log('\nUndo response');
+      console.table(undoActionRows(capture.undo));
+    }
 
     const artifact =
       flag('output') ??

@@ -577,4 +577,115 @@ describe('deployment matrix report', () => {
       )
     ).toThrow('Target fixture must contain exactly four explicit modes (missing: landscape-dark)');
   });
+  describe('preserved evidence', () => {
+    // A red gate the raw capture can no longer justify is exactly what preservation
+    // has to carry forward intact — recapturing it would quietly turn it green.
+    const publishedDrawing = Object.fromEntries(
+      ['pen', 'crayon', 'magic', 'eraser'].map((brush) => [
+        brush,
+        {
+          aggregate: {
+            runCount: 1,
+            paint: { p95: 44, p99: 48, max: 52 },
+            lostFrameTimeShare: 0.09,
+            blankPassed: false,
+            allPhasesPassed: false,
+          },
+          runs: [
+            { source: `perf-profiles/gone/${brush}/real-screen.json`, productCommit: 'final123' },
+          ],
+        },
+      ])
+    );
+
+    function publishReport(directory, mode = {}) {
+      writeFileSync(
+        join(directory, 'data.json'),
+        JSON.stringify({
+          targets: [
+            {
+              id: 'fixture',
+              label: 'Fixture',
+              modes: [{ id: 'portrait-light', drawing: publishedDrawing, undo: null, ...mode }],
+            },
+          ],
+        })
+      );
+      return 'data.json';
+    }
+
+    function preservingManifest(directory, overrides = {}) {
+      const source = manifest([
+        capturedManifestMode(modeSpecs[0], { drawing: 'preserved' }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]);
+      source.preservedEvidence = {
+        from: publishReport(directory),
+        reason: 'The raw captures were local scratch and are gone.',
+        ...overrides,
+      };
+      return source;
+    }
+
+    it('copies a published section forward when its raw capture is gone', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+
+      const matrix = normalizeMatrix(preservingManifest(manifestDirectory), manifestDirectory);
+      const mode = matrix.targets[0].modes[0];
+
+      expect(mode.drawing).toEqual(publishedDrawing);
+      expect(mode.preservedSections).toEqual(['drawing']);
+      expect(matrix.preservedEvidence).toEqual({
+        from: 'data.json',
+        reason: 'The raw captures were local scratch and are gone.',
+      });
+    });
+
+    it('states the preservation in both rendered reports', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+
+      const matrix = normalizeMatrix(preservingManifest(manifestDirectory), manifestDirectory);
+
+      for (const rendered of [renderMarkdown(matrix), renderReport(matrix)]) {
+        expect(rendered).toContain('1 cell carry results preserved from data.json');
+        expect(rendered).toContain('Fixture · portrait-light (drawing)');
+      }
+    });
+
+    it('refuses a preserved section with no declared source', () => {
+      expect(() =>
+        normalizeMatrix(
+          manifest([
+            capturedManifestMode(modeSpecs[0], { drawing: 'preserved' }),
+            ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+          ])
+        )
+      ).toThrow(
+        'Target fixture mode portrait-light marks drawing preserved, but the manifest declares no preservedEvidence source'
+      );
+    });
+
+    it('refuses a preserved section the published report does not carry', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const source = preservingManifest(manifestDirectory);
+      source.targets[0].modes[0].actionSources = 'preserved';
+
+      expect(() => normalizeMatrix(source, manifestDirectory)).toThrow(
+        'data.json has no actions for fixture mode portrait-light'
+      );
+    });
+
+    it('requires a stated reason for preserving evidence', () => {
+      const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+      temporaryDirectories.push(manifestDirectory);
+      const source = preservingManifest(manifestDirectory, { reason: '' });
+
+      expect(() => normalizeMatrix(source, manifestDirectory)).toThrow(
+        'Performance matrix preservedEvidence.reason must say why raw inputs are gone'
+      );
+    });
+  });
 });

@@ -40,6 +40,49 @@ function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
 }
 
+// A cell whose raw capture is gone still has published, normalized evidence in
+// the last data.json. Copying that forward is how a rerun of the generator keeps
+// a first valid result — including a red gate — instead of silently dropping the
+// cell or recapturing it into a different number.
+const PRESERVED = 'preserved';
+
+function loadPreservedEvidence(manifest, manifestDirectory) {
+  const spec = manifest.preservedEvidence;
+  if (!spec) return null;
+  if (typeof spec.from !== 'string' || !spec.from.trim()) {
+    throw new Error('Performance matrix preservedEvidence.from must name a published report');
+  }
+  if (typeof spec.reason !== 'string' || !spec.reason.trim()) {
+    throw new Error('Performance matrix preservedEvidence.reason must say why raw inputs are gone');
+  }
+  const published = readJson(sourcePath(spec.from, manifestDirectory));
+  const byTarget = new Map(
+    (published.targets ?? []).map((target) => [
+      target.id,
+      new Map((target.modes ?? []).map((mode) => [mode.id, mode])),
+    ])
+  );
+  return { from: spec.from, reason: spec.reason, byTarget };
+}
+
+function preservedSection(preserved, targetId, mode, section) {
+  if (!preserved) {
+    throw new Error(
+      `Target ${targetId} mode ${mode.id} marks ${section} preserved, but the manifest declares no preservedEvidence source`
+    );
+  }
+  const publishedMode = preserved.byTarget.get(targetId)?.get(mode.id);
+  if (!publishedMode) {
+    throw new Error(
+      `${preserved.from} has no ${targetId} mode ${mode.id} to preserve ${section} from`
+    );
+  }
+  if (publishedMode[section] === undefined) {
+    throw new Error(`${preserved.from} has no ${section} for ${targetId} mode ${mode.id}`);
+  }
+  return publishedMode[section];
+}
+
 function sourcePath(source, sourceDirectory) {
   return isAbsolute(source) ? source : resolve(sourceDirectory, source);
 }
@@ -237,7 +280,7 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
   };
 }
 
-function normalizeMode(mode, target, finalProductCommit, sourceDirectory) {
+function normalizeMode(mode, target, finalProductCommit, sourceDirectory, preserved) {
   const normalizedMode = {
     ...mode,
     id: mode.id ?? modeKey(mode),
@@ -254,28 +297,41 @@ function normalizeMode(mode, target, finalProductCommit, sourceDirectory) {
   if (normalizedMode.status !== 'captured') {
     return { ...shared, reason: normalizedMode.reason };
   }
+  const preservedSections = [];
+  const resolveSection = (declared, section, compute) => {
+    if (declared !== PRESERVED) return compute();
+    preservedSections.push(section);
+    return preservedSection(preserved, target.id, normalizedMode, section);
+  };
   return {
     ...shared,
     drawingProductCommit: normalizedMode.drawingProductCommit,
     undoProductCommit: normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
-    drawing: normalizeDrawing(
-      normalizedMode.drawing,
-      normalizedMode.drawingProductCommit,
-      sourceDirectory,
-      normalizedMode
+    drawing: resolveSection(normalizedMode.drawing, 'drawing', () =>
+      normalizeDrawing(
+        normalizedMode.drawing,
+        normalizedMode.drawingProductCommit,
+        sourceDirectory,
+        normalizedMode
+      )
     ),
-    undo: normalizeUndo(
-      normalizedMode.undoSource,
-      normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
-      sourceDirectory,
-      normalizedMode
+    undo: resolveSection(normalizedMode.undoSource, 'undo', () =>
+      normalizeUndo(
+        normalizedMode.undoSource,
+        normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
+        sourceDirectory,
+        normalizedMode
+      )
     ),
-    actions: normalizeActions(
-      normalizedMode.actionSources,
-      finalProductCommit,
-      sourceDirectory,
-      normalizedMode
+    actions: resolveSection(normalizedMode.actionSources, 'actions', () =>
+      normalizeActions(
+        normalizedMode.actionSources,
+        finalProductCommit,
+        sourceDirectory,
+        normalizedMode
+      )
     ),
+    ...(preservedSections.length ? { preservedSections } : {}),
   };
 }
 
@@ -365,7 +421,7 @@ function validateManifest(manifest) {
   }
 }
 
-function normalizeTarget(target, finalProductCommit, sourceDirectory) {
+function normalizeTarget(target, finalProductCommit, sourceDirectory, preserved) {
   return {
     id: target.id,
     number: target.number,
@@ -376,7 +432,7 @@ function normalizeTarget(target, finalProductCommit, sourceDirectory) {
     environment: target.environment,
     fidelity: target.fidelity,
     modes: target.modes.map((mode) =>
-      normalizeMode(mode, target, finalProductCommit, sourceDirectory)
+      normalizeMode(mode, target, finalProductCommit, sourceDirectory, preserved)
     ),
   };
 }
@@ -384,6 +440,7 @@ function normalizeTarget(target, finalProductCommit, sourceDirectory) {
 function normalizeMatrix(manifest, sourceDirectory = ROOT) {
   validateManifest(manifest);
   const resolvedSourceDirectory = resolve(sourceDirectory, manifest.sourceRoot ?? '.');
+  const preserved = loadPreservedEvidence(manifest, sourceDirectory);
   return {
     schemaVersion: 3,
     recordedOn: manifest.recordedOn,
@@ -391,6 +448,7 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
     snapshotKind: manifest.snapshotKind,
     architecture: manifest.architecture,
     limitations: manifest.limitations ?? [],
+    preservedEvidence: preserved ? { from: preserved.from, reason: preserved.reason } : null,
     candidateActions: normalizeCandidateActions(manifest.candidateActions),
     gates: {
       drawing: {
@@ -411,9 +469,24 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
       },
     },
     targets: manifest.targets.map((target) =>
-      normalizeTarget(target, manifest.productCommit, resolvedSourceDirectory)
+      normalizeTarget(target, manifest.productCommit, resolvedSourceDirectory, preserved)
     ),
   };
+}
+
+// Preservation is a provenance claim about the evidence, so the report states it
+// rather than leaving a copied-forward cell looking freshly captured.
+function preservedEvidenceNotes(matrix) {
+  if (!matrix.preservedEvidence) return [];
+  const cells = matrix.targets.flatMap((target) =>
+    target.modes
+      .filter((mode) => mode.preservedSections?.length)
+      .map((mode) => `${target.label} · ${mode.id} (${mode.preservedSections.join(', ')})`)
+  );
+  if (!cells.length) return [];
+  return [
+    `${cells.length} cell${cells.length === 1 ? '' : 's'} carry results preserved from ${matrix.preservedEvidence.from} rather than re-read raw captures: ${matrix.preservedEvidence.reason} Preserved cells: ${cells.join('; ')}.`,
+  ];
 }
 
 function fmt(value) {
@@ -756,7 +829,9 @@ function renderMarkdown(matrix) {
         : '—',
     ];
   });
-  const limitations = matrix.limitations.map((limitation) => `- ${limitation}`).join('\n');
+  const limitations = [...matrix.limitations, ...preservedEvidenceNotes(matrix)]
+    .map((limitation) => `- ${limitation}`)
+    .join('\n');
   return `# Deployment-target performance matrix — ${matrix.recordedOn}
 
 This deployment-target snapshot combines the campaign evidence declared in \`sources.json\`.
@@ -871,7 +946,7 @@ function renderReport(matrix) {
   <div class="matrix-links"><a class="matrix-link" href="data.json">Normalized results JSON</a><a class="matrix-link" href="index.md">Detailed narrative</a><a class="matrix-link" href="sources.json">Source manifest</a></div>
 
   <div class="section-head"><h2>Capture limitations</h2><span class="desc">Constraints retained with the evidence</span></div>
-  <div class="method"><ul>${(matrix.limitations ?? []).map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul></div>
+  <div class="method"><ul>${[...(matrix.limitations ?? []), ...preservedEvidenceNotes(matrix)].map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul></div>
 ${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
 
   <div class="section-head"><h2>Coverage</h2><span class="desc">${matrix.targets.length} deployment targets · four explicit modes each</span></div>

@@ -15,6 +15,16 @@ import {
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
 import {
+  EXPAND_CONTROLS_SOURCE,
+  UNDO_ACTION_PAUSE_MS,
+  UNDO_ACTION_SETTLE_MS,
+  UNDO_BUTTON_READY_POLL_MS,
+  UNDO_BUTTON_READY_SOURCE,
+  UNDO_BUTTON_READY_TIMEOUT_MS,
+  assertUndoAction,
+  undoActionPromiseSource,
+} from '../lib/undo-driver.mjs';
+import {
   ensureCampaignTheme,
   parseCampaignOrientation,
   parseCampaignTheme,
@@ -39,9 +49,6 @@ const TABLE_CHUNK_ROWS = 2_000;
 export const BORROWED_SESSION_CAPABILITIES_ERROR =
   '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
-const UNDO_ACTION_SETTLE_MS = 500;
-const UNDO_ACTION_PAUSE_MS = 120;
-const UNDO_MEASURE_TIMEOUT_MS = 5_000;
 const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
 const INSTALL_DISMISSED_STORAGE_KEY = 'splotch-install-dismissed';
 const BRUSH_BUTTON_BY_MODE = {
@@ -752,61 +759,19 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
 
     const undoActions = [];
     if (undoCount > 0) {
-      await execute(
-        `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
-      );
+      await execute(EXPAND_CONTROLS_SOURCE);
       const undoReady = await pollUntil(
-        () =>
-          execute(
-            `const button = document.querySelector('#undoButton'); return !!button && !button.disabled;`
-          ).catch(() => false),
-        BRUSH_SELECT_TIMEOUT_MS,
-        WEBVIEW_READY_POLL_MS
+        () => execute(UNDO_BUTTON_READY_SOURCE).catch(() => false),
+        UNDO_BUTTON_READY_TIMEOUT_MS,
+        UNDO_BUTTON_READY_POLL_MS
       );
       if (!undoReady) throw new Error('Action drawer did not expose an enabled #undoButton');
       for (let index = 0; index < undoCount; index++) {
         const action = await executeAsync(`
           const done = arguments[arguments.length - 1];
-          const button = document.querySelector('#undoButton');
-          if (!button || button.disabled) {
-            done(null);
-            return;
-          }
-          const beforeCount = performance.getEntriesByName('engine.undo', 'measure').length;
-          const startedAt = performance.now();
-          button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
-          const finishAfterMeasure = () => {
-            const measures = performance.getEntriesByName('engine.undo', 'measure');
-            const measure = measures.at(-1);
-            if (measures.length === beforeCount + 1 && Number.isFinite(measure?.duration)) {
-              requestAnimationFrame((paintedAt) => {
-                done({
-                  index: ${index},
-                  startedAt,
-                  endedAt: performance.now(),
-                  beforeCount,
-                  afterCount: measures.length,
-                  engineMs: measure.duration,
-                  nextFrameMs: paintedAt - startedAt
-                });
-              });
-              return;
-            }
-            if (performance.now() - startedAt >= ${UNDO_MEASURE_TIMEOUT_MS}) {
-              done(null);
-              return;
-            }
-            requestAnimationFrame(finishAfterMeasure);
-          };
-          finishAfterMeasure();
+          ${undoActionPromiseSource(index)}.then(done, () => done(null));
         `);
-        if (
-          !action ||
-          action.afterCount !== action.beforeCount + 1 ||
-          !Number.isFinite(action.engineMs)
-        ) {
-          throw new Error(`Undo action ${index + 1} did not produce one engine.undo measure`);
-        }
+        assertUndoAction(action, index);
         undoActions.push(action);
         await sleep(undoPauseMs);
       }
