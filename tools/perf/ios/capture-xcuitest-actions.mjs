@@ -154,7 +154,20 @@ function isPhysicalAppleUdid(value) {
   return /^(?:[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{40})$/i.test(String(value ?? ''));
 }
 
-export function actionGateAllowances({ nativeApp, deviceId, requestedCapabilities, session }) {
+// XCUITest returns no `deviceName` for a physical device — the session names only
+// udid, platformName, platformVersion and browserName — so a ledger scoped to iPads
+// could never reach one, and ADR-0090's exception sat unreachable. Nothing in the
+// session carries a device class, and screen size cannot supply it either: an iPad
+// mini is 744 px wide, below any tablet breakpoint that would exclude a phone. The
+// campaign is the layer that knows which device it queued, so it says so, and a
+// Simulator's `deviceName` still answers for a hand-run capture.
+export function actionGateAllowances({
+  nativeApp,
+  deviceId,
+  deviceClass,
+  requestedCapabilities,
+  session,
+}) {
   const sessionCapabilities = resolvedSessionCapabilities(session);
   const platformName = String(
     capabilityValue(sessionCapabilities, 'platformName') ??
@@ -171,11 +184,9 @@ export function actionGateAllowances({ nativeApp, deviceId, requestedCapabilitie
     capabilityValue(sessionCapabilities, 'udid'),
     capabilityValue(requestedCapabilities, 'udid'),
   ].some(isPhysicalAppleUdid);
+  const isTablet = deviceClass === 'tablet' || deviceName.includes('ipad');
   const isCalibratedPhysicalIpadWeb =
-    !nativeApp &&
-    platformName === 'ios' &&
-    deviceName.includes('ipad') &&
-    physicalDevice;
+    !nativeApp && platformName === 'ios' && isTablet && physicalDevice;
   return isCalibratedPhysicalIpadWeb ? IOS_ACTION_FRAME_P95_ALLOWANCES_MS : {};
 }
 
@@ -1446,6 +1457,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       extra: [
         'url',
         'device-id',
+        'device-class',
         'appium-url',
         'xcode-config',
         'wda-bundle-id',
@@ -1664,6 +1676,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const gateAllowances = actionGateAllowances({
       nativeApp,
       deviceId: flag('device-id'),
+      deviceClass: flag('device-class'),
       requestedCapabilities: capabilities,
       session,
     });

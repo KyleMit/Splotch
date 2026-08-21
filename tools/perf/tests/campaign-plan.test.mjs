@@ -111,6 +111,48 @@ describe('campaign plan', () => {
   });
 });
 
+describe('campaign device class', () => {
+  it('tells the Appium action runner which class it queued', () => {
+    const [cell] = planCampaign('ipad-device-web', {
+      modes: ['portrait-light'],
+      items: ['actions'],
+      outputRoot: 'out',
+      host: { deviceId: 'udid', url: 'http://host/' },
+    });
+
+    expect(cell.args).toContain('--device-class=tablet');
+  });
+
+  it('does not pass it to the CDP runner, which rejects unknown flags', () => {
+    const [cell] = planCampaign('android-device-web', {
+      modes: ['portrait-light'],
+      items: ['actions'],
+      outputRoot: 'out',
+      host: { deviceId: 'serial', url: 'http://host/' },
+    });
+
+    expect(cell.command).toBe('perf:android:browser:actions');
+    expect(cell.args.some((arg) => arg.startsWith('--device-class'))).toBe(false);
+  });
+
+  it('leaves drawing cells alone — the ledger is an action-gate concern', () => {
+    const [cell] = planCampaign('ipad-device-web', {
+      modes: ['portrait-light'],
+      items: ['pen-undo'],
+      outputRoot: 'out',
+      host: { deviceId: 'udid', url: 'http://host/' },
+    });
+
+    expect(cell.args.some((arg) => arg.startsWith('--device-class'))).toBe(false);
+  });
+
+  it('classes every target, so a new one cannot silently arrive without one', () => {
+    for (const [id, target] of Object.entries(CAMPAIGN_TARGETS)) {
+      expect(['tablet', 'handset'], `${id} needs a deviceClass`).toContain(target.deviceClass);
+    }
+  });
+});
+
 describe('campaign artifact acceptance', () => {
   it('accepts a native cell only when the capture attached to the app WebView', () => {
     expect(artifactMatchesRuntime({ transport: 'native-capacitor-webview' }, 'native')).toBe(true);

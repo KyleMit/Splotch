@@ -138,6 +138,59 @@ describe('actionGateAllowances', () => {
     ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
   });
 
+  // The shape a real device actually reports: udid, platformName, platformVersion and
+  // browserName, and no deviceName at all. Every other positive case here supplies a
+  // deviceName the device does not send, which is how the ledger stayed unreachable
+  // while these tests passed.
+  it('applies the ledger to a physical iPad session that reports no deviceName', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceClass: 'tablet',
+        requestedCapabilities: null,
+        session: {
+          capabilities: {
+            browserName: 'Safari',
+            platformName: 'iOS',
+            platformVersion: '26.5',
+            udid: physicalIpadUdid,
+            automationName: 'XCUITest',
+          },
+        },
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  it('keeps a handset on the base gates even when the session names no device', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceClass: 'handset',
+        requestedCapabilities: null,
+        session: {
+          capabilities: { platformName: 'iOS', udid: physicalIpadUdid, browserName: 'Safari' },
+        },
+      })
+    ).toEqual({});
+  });
+
+  it('still needs a physical device, whatever the campaign says the class is', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceClass: 'tablet',
+        requestedCapabilities: null,
+        session: {
+          capabilities: {
+            platformName: 'iOS',
+            udid: 'C6012C49-AA93-4869-B3A6-E47C9EAAC567',
+            browserName: 'Safari',
+          },
+        },
+      })
+    ).toEqual({});
+  });
+
   it('recognizes the exact physical iPad capability-file shape', () => {
     expect(
       actionGateAllowances({
