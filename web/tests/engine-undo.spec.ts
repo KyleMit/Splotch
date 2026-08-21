@@ -48,6 +48,34 @@ test('clearing the canvas is itself undoable', async ({ page }) => {
   expect((await state(page)).canvasEmpty).toBe(false);
 });
 
+test('undo restores the recorded paper after a blank rotation', async ({ page }) => {
+  await page.evaluate(async () => {
+    await window.__engine.resizeTo(400, 300);
+    window.__engine.strokeSync([
+      { x: 330, y: 150 },
+      { x: 380, y: 150 },
+    ]);
+    window.__engine.clearCanvas();
+    window.__engine.setScreenAngleOverride(90);
+    await window.__engine.resizeTo(300, 400);
+  });
+
+  expect((await state(page)).canvasEmpty).toBe(true);
+  expect(await count(page)).toBe(0);
+
+  await page.evaluate(() => window.__engine.undo());
+
+  await expect.poll(() => count(page)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__engine.getViewState())).toMatchObject({
+    active: true,
+    scale: 0.75,
+    paperCssWidth: 400,
+    paperCssHeight: 300,
+    paperOrientation: 'landscape',
+  });
+  expect((await state(page)).canvasEmpty).toBe(false);
+});
+
 test('undo does not reveal stale pixels after an erase-to-empty command', async ({ page }) => {
   const box = await page.locator('#drawingCanvas').boundingBox();
   if (!box) throw new Error('canvas has no bounding box');
