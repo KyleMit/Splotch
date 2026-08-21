@@ -16,6 +16,10 @@
     "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport, and it was unavailable in this campaign.",
     "Raw perf-profiles remain local scratch evidence; sources.json preserves their ordered provenance and data.json contains the committed normalized results."
   ],
+  "preservedEvidence": {
+    "from": "data.json",
+    "reason": "The 2026-08-20 campaign wrote its raw captures to gitignored perf-profiles scratch, and that scratch is no longer on the workstation, so those cells cannot be re-read from raw input. Their normalized results are carried forward from the published report rather than recaptured, which would replace a first valid result — including a red gate — with a different number."
+  },
   "candidateActions": [
     {
       "priority": "P0",
@@ -1654,7 +1658,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -3077,7 +3086,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -4525,7 +4539,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -5973,7 +5992,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         }
       ]
     },
@@ -6187,7 +6211,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -6389,7 +6417,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-light",
@@ -7890,7 +7922,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -9363,7 +9400,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -9565,7 +9607,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -9767,7 +9813,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         }
       ]
     },
@@ -11252,7 +11302,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -12725,7 +12780,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -12927,7 +12987,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -13129,7 +13193,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         }
       ]
     },
@@ -14614,7 +14682,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -16087,7 +16160,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -16289,7 +16367,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -16491,7 +16573,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         }
       ]
     },
@@ -17976,7 +18062,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -19449,7 +19540,12 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "undo",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -19651,7 +19747,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -19853,7 +19953,11 @@
             },
             "passed": true
           },
-          "actions": null
+          "actions": null,
+          "preservedSections": [
+            "drawing",
+            "undo"
+          ]
         }
       ]
     },
@@ -21612,7 +21716,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -23359,7 +23467,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -25131,7 +25243,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -26903,7 +27019,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         }
       ]
     },
@@ -28662,7 +28782,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -30409,7 +30533,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -32181,7 +32309,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -33953,7 +34085,11 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "drawing",
+            "actions"
+          ]
         }
       ]
     },
@@ -35280,7 +35416,10 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "actions"
+          ]
         },
         {
           "id": "portrait-dark",
@@ -36595,7 +36734,10 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "actions"
+          ]
         },
         {
           "id": "landscape-light",
@@ -37935,7 +38077,10 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "actions"
+          ]
         },
         {
           "id": "landscape-dark",
@@ -39275,7 +39420,10 @@
                 "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
               }
             ]
-          }
+          },
+          "preservedSections": [
+            "actions"
+          ]
         }
       ]
     }

@@ -50,6 +50,32 @@ post-action frame max ≤ 33.5 ms.
   the only Safari-calibrated release-gate transport, and it was unavailable in this campaign.
 * Raw perf-profiles remain local scratch evidence; sources.json preserves their ordered provenance
   and data.json contains the committed normalized results.
+* 34 cells carry results preserved from data.json rather than re-read raw captures: The 2026-08-20
+  campaign wrote its raw captures to gitignored perf-profiles scratch, and that scratch is no longer
+  on the workstation, so those cells cannot be re-read from raw input. Their normalized results are
+  carried forward from the published report rather than recaptured, which would replace a first
+  valid result — including a red gate — with a different number. Preserved cells: iPad simulator ·
+  web · portrait-light (drawing, undo, actions); iPad simulator · web · portrait-dark (drawing,
+  undo, actions); iPad simulator · web · landscape-light (drawing, undo, actions); iPad simulator ·
+  web · landscape-dark (drawing, undo, actions); iPad simulator · native · portrait-light (drawing,
+  undo); iPad simulator · native · portrait-dark (drawing, undo); Android physical · web ·
+  portrait-light (drawing, undo, actions); Android physical · web · portrait-dark (drawing, undo,
+  actions); Android physical · web · landscape-light (drawing, undo); Android physical · web ·
+  landscape-dark (drawing, undo); Android physical · native · portrait-light (drawing, undo,
+  actions); Android physical · native · portrait-dark (drawing, undo, actions); Android physical ·
+  native · landscape-light (drawing, undo); Android physical · native · landscape-dark (drawing,
+  undo); Android emulator · web · portrait-light (drawing, undo, actions); Android emulator · web ·
+  portrait-dark (drawing, undo, actions); Android emulator · web · landscape-light (drawing, undo);
+  Android emulator · web · landscape-dark (drawing, undo); Android emulator · native ·
+  portrait-light (drawing, undo, actions); Android emulator · native · portrait-dark (drawing, undo,
+  actions); Android emulator · native · landscape-light (drawing, undo); Android emulator · native ·
+  landscape-dark (drawing, undo); Mac · Chrome · portrait-light (drawing, actions); Mac · Chrome ·
+  portrait-dark (drawing, actions); Mac · Chrome · landscape-light (drawing, actions); Mac · Chrome
+  · landscape-dark (drawing, actions); Mac · Safari · portrait-light (drawing, actions); Mac ·
+  Safari · portrait-dark (drawing, actions); Mac · Safari · landscape-light (drawing, actions); Mac
+  · Safari · landscape-dark (drawing, actions); Mac · Firefox · portrait-light (actions); Mac ·
+  Firefox · portrait-dark (actions); Mac · Firefox · landscape-light (actions); Mac · Firefox ·
+  landscape-dark (actions).
 
 ## Candidate actions
 

@@ -13,7 +13,7 @@
     "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
     "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
     "Firefox drawing is unmeasured because the real-screen frame runner supports Chromium and WebKit only. Standalone Mac undo-scenario captures are advisory and lack the per-mode metadata required by this matrix.",
-    "Desktop captures used exact 1512×982 or 982×1512 CSS viewports at DPR 2. The headed landscape browser window exceeded the physical display height at 100% browser zoom, but Playwright retained the requested page viewport.",
+    "Desktop captures used exact 1512\u00d7982 or 982\u00d71512 CSS viewports at DPR 2. The headed landscape browser window exceeded the physical display height at 100% browser zoom, but Playwright retained the requested page viewport.",
     "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport, and it was unavailable in this campaign.",
     "Raw perf-profiles remain local scratch evidence; sources.json preserves their ordered provenance and data.json contains the committed normalized results."
   ],
@@ -121,11 +121,11 @@
     {
       "id": "ipad-device-web",
       "number": 1,
-      "label": "iPad physical · web",
+      "label": "iPad physical \u00b7 web",
       "platform": "iOS",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "iPad13,8 · iPadOS 26.5 · Safari",
+      "environment": "iPad13,8 \u00b7 iPadOS 26.5 \u00b7 Safari",
       "fidelity": "physical-safari-gated",
       "modes": [
         {
@@ -161,11 +161,11 @@
     {
       "id": "ipad-device-native",
       "number": 2,
-      "label": "iPad physical · native",
+      "label": "iPad physical \u00b7 native",
       "platform": "iOS",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "iPad13,8 · iPadOS 26.5 · Capacitor WebView",
+      "environment": "iPad13,8 \u00b7 iPadOS 26.5 \u00b7 Capacitor WebView",
       "fidelity": "physical-native-advisory",
       "modes": [
         {
@@ -201,11 +201,11 @@
     {
       "id": "ipad-simulator-web",
       "number": 3,
-      "label": "iPad simulator · web",
+      "label": "iPad simulator \u00b7 web",
       "platform": "iOS",
       "deviceKind": "simulator",
       "runtime": "web",
-      "environment": "iPad mini (A17 Pro) simulator · iOS 26.5 · Safari",
+      "environment": "iPad mini (A17 Pro) simulator \u00b7 iOS 26.5 \u00b7 Safari",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -214,28 +214,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -243,28 +224,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/portrait/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -272,28 +234,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -301,39 +244,20 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/pen-real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/ios/simulator-web/landscape/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
       "id": "ipad-simulator-native",
       "number": 4,
-      "label": "iPad simulator · native",
+      "label": "iPad simulator \u00b7 native",
       "platform": "iOS",
       "deviceKind": "simulator",
       "runtime": "native",
-      "environment": "iPad mini (A17 Pro) simulator · iOS 26.5 · Capacitor WebView",
+      "environment": "iPad mini (A17 Pro) simulator \u00b7 iOS 26.5 \u00b7 Capacitor WebView",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -342,21 +266,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/light/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/light/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/light/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/light/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/light/pen-real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -364,21 +275,8 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/dark/pen-real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/dark/crayon-real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/dark/magic-real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/dark/eraser-real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-20-campaign/ios/simulator-native/portrait/dark/pen-real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         },
         {
           "id": "landscape-light",
@@ -399,11 +297,11 @@
     {
       "id": "android-device-web",
       "number": 5,
-      "label": "Android physical · web",
+      "label": "Android physical \u00b7 web",
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 151.0.0.0",
+      "environment": "Samsung SM-G990U1 \u00b7 Android 16 \u00b7 Chrome 151.0.0.0",
       "fidelity": "physical-web-advisory",
       "modes": [
         {
@@ -412,28 +310,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-light/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -441,28 +320,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-device-web/portrait-dark/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -470,21 +330,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-web/landscape-light/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -492,32 +339,19 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-web/landscape-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-web/landscape-dark/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         }
       ]
     },
     {
       "id": "android-device-native",
       "number": 6,
-      "label": "Android physical · native",
+      "label": "Android physical \u00b7 native",
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView (Chrome 150.0.7871.181)",
+      "environment": "Samsung SM-G990U1 \u00b7 Android 16 \u00b7 Capacitor WebView (Chrome 150.0.7871.181)",
       "fidelity": "physical-native-advisory",
       "modes": [
         {
@@ -526,28 +360,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-light/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -555,28 +370,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-device-native/portrait-dark/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -584,21 +380,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-native/landscape-light/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -606,32 +389,19 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-device-native/landscape-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-device-native/landscape-dark/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         }
       ]
     },
     {
       "id": "android-emulator-web",
       "number": 7,
-      "label": "Android emulator · web",
+      "label": "Android emulator \u00b7 web",
       "platform": "Android",
       "deviceKind": "emulator",
       "runtime": "web",
-      "environment": "Pixel 7 Pro API 33 emulator · Android 13 · Chrome 149.0.0.0",
+      "environment": "Pixel 7 Pro API 33 emulator \u00b7 Android 13 \u00b7 Chrome 149.0.0.0",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -640,28 +410,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-light/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -669,28 +420,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-emulator-web/portrait-dark/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -698,21 +430,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-light/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -720,32 +439,19 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-web/landscape-dark/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         }
       ]
     },
     {
       "id": "android-emulator-native",
       "number": 8,
-      "label": "Android emulator · native",
+      "label": "Android emulator \u00b7 native",
       "platform": "Android",
       "deviceKind": "emulator",
       "runtime": "native",
-      "environment": "Pixel 7 Pro API 33 emulator · Android 13 · Capacitor WebView (Chrome 149.0.7827.91)",
+      "environment": "Pixel 7 Pro API 33 emulator \u00b7 Android 13 \u00b7 Capacitor WebView (Chrome 149.0.7827.91)",
       "fidelity": "simulator-advisory",
       "modes": [
         {
@@ -754,28 +460,9 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-light/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -783,28 +470,9 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/pen/real-screen.json",
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-21-overnight/android-emulator-native/portrait-dark/actions/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -812,21 +480,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-light/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-light/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -834,32 +489,19 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-dark/eraser/real-screen.json"
-            ]
-          },
-          "undoSource": "perf-profiles/2026-08-21-overnight/android-emulator-native/landscape-dark/pen/real-screen.json"
+          "drawing": "preserved",
+          "undoSource": "preserved"
         }
       ]
     },
     {
       "id": "mac-chrome",
       "number": 9,
-      "label": "Mac · Chrome",
+      "label": "Mac \u00b7 Chrome",
       "platform": "macOS",
       "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "Mac desktop · macOS 26.6.2 (25G83) · arm64 · Playwright Chromium 151.0.7922.34",
+      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright Chromium 151.0.7922.34",
       "fidelity": "desktop-advisory",
       "modes": [
         {
@@ -868,27 +510,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/light/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -896,27 +519,8 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/dark/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/chromium/portrait/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -924,27 +528,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/light/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -952,38 +537,19 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/dark/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/chromium/landscape/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
       "id": "mac-safari",
       "number": 10,
-      "label": "Mac · Safari",
+      "label": "Mac \u00b7 Safari",
       "platform": "macOS",
       "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "Mac desktop · macOS 26.6.2 (25G83) · arm64 · Playwright WebKit 26.5",
+      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright WebKit 26.5",
       "fidelity": "desktop-advisory",
       "modes": [
         {
@@ -992,27 +558,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/light/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -1020,27 +567,8 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/dark/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/webkit/portrait/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -1048,27 +576,8 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/light/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/light/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/light/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/light/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -1076,38 +585,19 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {
-            "pen": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/dark/pen/real-screen.json"
-            ],
-            "crayon": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/dark/crayon/real-screen.json"
-            ],
-            "magic": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/dark/magic/real-screen.json"
-            ],
-            "eraser": [
-              "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/dark/eraser/real-screen.json"
-            ]
-          },
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/webkit/landscape/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "drawing": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
       "id": "mac-firefox",
       "number": 11,
-      "label": "Mac · Firefox",
+      "label": "Mac \u00b7 Firefox",
       "platform": "macOS",
       "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "Mac desktop · macOS 26.6.2 (25G83) · arm64 · Playwright Firefox 153.0",
+      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright Firefox 153.0",
       "fidelity": "desktop-advisory",
       "modes": [
         {
@@ -1117,13 +607,7 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": {},
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/firefox/portrait/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "actionSources": "preserved"
         },
         {
           "id": "portrait-dark",
@@ -1132,13 +616,7 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": {},
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/firefox/portrait/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-light",
@@ -1147,13 +625,7 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": {},
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/firefox/landscape/light/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "actionSources": "preserved"
         },
         {
           "id": "landscape-dark",
@@ -1162,15 +634,13 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": {},
-          "actionSources": [
-            {
-              "source": "perf-profiles/2026-08-20-campaign/mac/firefox/landscape/dark/actions.json",
-              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-              "kind": "full"
-            }
-          ]
+          "actionSources": "preserved"
         }
       ]
     }
-  ]
+  ],
+  "preservedEvidence": {
+    "from": "data.json",
+    "reason": "The 2026-08-20 campaign wrote its raw captures to gitignored perf-profiles scratch, and that scratch is no longer on the workstation, so those cells cannot be re-read from raw input. Their normalized results are carried forward from the published report rather than recaptured, which would replace a first valid result \u2014 including a red gate \u2014 with a different number."
+  }
 }
