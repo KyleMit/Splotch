@@ -325,12 +325,17 @@ built-in capabilities cannot express:
 --capabilities-file=<capabilities.json> --native-app --native-webview-class=android.webkit.WebView
 ```
 
-**CacheStorage can hang in the Capacitor WebView.** Android System WebView 151 accepts
-`caches.keys()` and never settles it, which used to kill every native capture with a bare
-`script timeout` naming neither the API nor the reason. The runner now bounds that call: a page with
-no service worker registrations and no controller cannot be served a stale bundle, so an unreachable
-CacheStorage is recorded and the capture continues; a controlled page still fails closed. If a
-native capture dies on cache eviction, check what the WebView reports before suspecting the app:
+**CacheStorage wedges the Capacitor WebView.** In Android System WebView 151, `caches.keys()` never
+settles — and worse, once one is pending, async-script callbacks stop being delivered for the rest
+of the session, plain `setTimeout` included, while synchronous evaluation keeps working. An in-page
+deadline therefore cannot rescue it: the timer is the thing being wedged. That cost a wrong fix
+before a probe separated the two, so measure before theorising here.
+
+The runner now reads service worker registrations first and touches `caches` only when a worker
+exists to serve from one. A native app ships no service worker, so the common case never calls the
+wedging API at all — setup went from a 30 s timeout to 22 ms on the device that exposed this. That
+ordering is load-bearing, not stylistic. If a native capture dies on cache eviction, check what the
+WebView reports before suspecting the app:
 
 ```sh
 adb -s <serial> shell dumpsys webviewupdate | grep "Current WebView package"

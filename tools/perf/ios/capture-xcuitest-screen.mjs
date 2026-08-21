@@ -350,55 +350,47 @@ function profilingUrl(appUrl) {
 // does exactly that for `caches.keys()` inside the Capacitor app. Without a
 // deadline the whole capture dies on a bare WebDriver "script timeout" that names
 // neither the API nor the reason.
-const CACHE_EVICTION_DEADLINE_MS = 5_000;
-
 // What this guard is actually for is a service worker serving an earlier build's
-// assets. That needs a worker: with no registrations and no controller, no cache
-// entry can reach the page, so an unreachable CacheStorage cannot hide a stale
-// bundle and the capture is safe to continue. A page that *is* controlled has to
-// evict, and still fails closed.
+// assets. That needs a worker, so a page with no registrations and no controller
+// cannot be reached by any cache entry and is safe to measure without evicting.
 export function cacheEvictionAcceptable(state) {
   if (!state?.ok) return false;
-  if (state.cachesCleared) return true;
-  return state.registrations === 0 && !state.controlled;
+  if (state.cachesCleared || state.cachesSkipped) return true;
+  return false;
 }
 
+// Touching CacheStorage in the Capacitor WebView (Android System WebView 151) wedges
+// async-script callback delivery for the rest of the session: the promise never
+// settles, and afterwards even a bare setTimeout never reaches the driver, so an
+// in-page deadline cannot rescue it — the deadline is the thing being wedged.
+// Synchronous evaluation keeps working, which is how that was pinned down.
+//
+// So the enumeration order is load-bearing rather than stylistic: registrations are
+// read first, and `caches` is touched only when a worker exists to serve from it.
+// A native app ships no service worker, which is the case that used to hang.
 export async function clearDeviceWebCache(executeAsync) {
   const state = await executeAsync(`
     const done = arguments[arguments.length - 1];
-    const withDeadline = (promise) =>
-      Promise.race([
-        promise.then(() => true),
-        new Promise((resolve) => setTimeout(() => resolve(false), ${CACHE_EVICTION_DEADLINE_MS})),
-      ]);
     const registrations = 'serviceWorker' in navigator
       ? navigator.serviceWorker.getRegistrations().catch(() => [])
       : Promise.resolve([]);
-    registrations.then((found) =>
-      Promise.all(found.map((registration) => registration.unregister().catch(() => false)))
+    registrations.then((found) => {
+      const controlled = Boolean(navigator.serviceWorker && navigator.serviceWorker.controller);
+      if (found.length === 0 && !controlled) {
+        done({ ok: true, registrations: 0, controlled: false, cachesSkipped: true });
+        return;
+      }
+      return Promise.all(found.map((registration) => registration.unregister().catch(() => false)))
         .then(() =>
           'caches' in window
-            ? withDeadline(caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key)))))
-            : true
+            ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            : null
         )
-        .then((cachesCleared) =>
-          done({
-            ok: true,
-            registrations: found.length,
-            controlled: Boolean(navigator.serviceWorker && navigator.serviceWorker.controller),
-            cachesCleared,
-          })
-        )
-    ).catch((error) => done({ ok: false, message: String(error) }));
+        .then(() => done({ ok: true, registrations: found.length, controlled, cachesCleared: true }));
+    }).catch((error) => done({ ok: false, message: String(error) }));
   `);
   if (!cacheEvictionAcceptable(state)) {
-    throw new Error(
-      `Could not clear the device web cache: ${
-        state?.ok
-          ? `CacheStorage did not answer within ${CACHE_EVICTION_DEADLINE_MS} ms and the page is controlled by a service worker, so a stale bundle cannot be ruled out`
-          : state?.message
-      }`
-    );
+    throw new Error(`Could not clear the device web cache: ${state?.message ?? 'no usable result'}`);
   }
   return state;
 }

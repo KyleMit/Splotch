@@ -142,37 +142,20 @@ describe('cacheEvictionAcceptable', () => {
     ).toBe(true);
   });
 
-  it('accepts an unreachable CacheStorage when no worker can serve from it', () => {
+  it('accepts a page with no worker, where CacheStorage was deliberately not touched', () => {
     expect(
       cacheEvictionAcceptable({
         ok: true,
         registrations: 0,
         controlled: false,
-        cachesCleared: false,
+        cachesSkipped: true,
       })
     ).toBe(true);
   });
 
-  it('fails closed when the page is controlled and the caches never answered', () => {
-    expect(
-      cacheEvictionAcceptable({
-        ok: true,
-        registrations: 0,
-        controlled: true,
-        cachesCleared: false,
-      })
-    ).toBe(false);
-  });
-
-  it('fails closed when a registration survives and the caches never answered', () => {
-    expect(
-      cacheEvictionAcceptable({
-        ok: true,
-        registrations: 1,
-        controlled: false,
-        cachesCleared: false,
-      })
-    ).toBe(false);
+  it('fails closed when neither an eviction nor a skip is reported', () => {
+    expect(cacheEvictionAcceptable({ ok: true, registrations: 0, controlled: true })).toBe(false);
+    expect(cacheEvictionAcceptable({ ok: true, registrations: 1, controlled: false })).toBe(false);
   });
 
   it('fails closed when the page could not report at all', () => {
