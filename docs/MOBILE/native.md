@@ -38,7 +38,7 @@ The **core engine is 100% offline**: canvas, colors, stroke widths, eraser, soun
 coloring book, and screenshots are bundled on-device. No network is needed to draw or use anything
 already installed.
 
-Two background features use the network. The **AI "magic image" button** calls the hosted endpoint
+Two background features use the network. The **AI image button** calls the hosted endpoint
 `https://splotch.art/api/generate-image` (`__NATIVE_API_BASE__`, injected at build time in
 `web/vite.config.ts`). When the device is offline the AI button is **hidden** automatically
 (`web/src/lib/state/network.svelte.ts` + `@capacitor/network`). When Coloring Book is enabled, the
