@@ -23,6 +23,7 @@ import { probeConfigScript, validateFreeDrawOptions } from '../ios/capture-webki
 import {
   appiumCapabilities,
   blockServiceWorkerRegistrationForMeasurement,
+  borrowedSessionDescriptor,
   dismissInstallBannerForMeasurement,
   inputFidelity,
   isWebContext,
@@ -104,6 +105,33 @@ const move = (
 ];
 const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1, 0, 1, 0.5, 30, 30, -1, -1];
 const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1, 0, 1, 0, 30, 30, -1, -1];
+
+describe('borrowedSessionDescriptor', () => {
+  it('fails closed without resolved target provenance', () => {
+    expect(() => borrowedSessionDescriptor('borrowed-session', null)).toThrow(
+      '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance'
+    );
+  });
+
+  it('uses resolved capabilities without querying the non-W3C session endpoint', () => {
+    const capabilities = {
+      platformName: 'Android',
+      browserName: 'Chrome',
+      'appium:udid': 'physical-device',
+      'appium:deviceName': 'Samsung SM-G990U1',
+      'appium:platformVersion': '16',
+    };
+
+    expect(borrowedSessionDescriptor('borrowed-session', capabilities)).toEqual({
+      sessionId: 'borrowed-session',
+      capabilities: {
+        ...capabilities,
+        deviceName: 'Samsung SM-G990U1',
+        platformVersion: '16',
+      },
+    });
+  });
+});
 
 // A 60 Hz capture, since that is what Safari actually gives web content on the
 // ProMotion iPad this exists to measure.

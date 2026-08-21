@@ -36,6 +36,8 @@ const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
+const BORROWED_SESSION_CAPABILITIES_ERROR =
+  '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
 const UNDO_ACTION_SETTLE_MS = 500;
 const UNDO_ACTION_PAUSE_MS = 120;
@@ -172,6 +174,20 @@ export function appiumCapabilities({
     'appium:wdaStartupRetries': WDA_STARTUP_RETRIES,
     'appium:safariInitialUrl': 'about:blank',
     ...(allowProvisioning ? { 'appium:allowProvisioningDeviceRegistration': true } : {}),
+  };
+}
+
+export function borrowedSessionDescriptor(sessionId, requestedCapabilities) {
+  if (!requestedCapabilities) throw new Error(BORROWED_SESSION_CAPABILITIES_ERROR);
+  const capabilities = requestedCapabilities;
+  return {
+    sessionId,
+    capabilities: {
+      ...capabilities,
+      deviceName: capabilities.deviceName ?? capabilities['appium:deviceName'],
+      platformVersion:
+        capabilities.platformVersion ?? capabilities['appium:platformVersion'],
+    },
   };
 }
 
@@ -386,6 +402,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   if (!deviceId && !capabilitiesFile && !borrowedSessionId) {
     fail('Pass --device-id=, --capabilities-file=, or --session-id=');
   }
+  if (borrowedSessionId && !capabilitiesFile) {
+    fail(BORROWED_SESSION_CAPABILITIES_ERROR);
+  }
   const xcodeConfigFile = flag('xcode-config', DEFAULT_XCODE_CONFIG);
   if (!capabilitiesFile && !borrowedSessionId && !existsSync(xcodeConfigFile)) {
     fail(
@@ -424,6 +443,16 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     fail(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
   }
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
+  const requestedCapabilities = capabilitiesFile
+    ? capabilitiesFromFile(capabilitiesFile)
+    : borrowedSessionId
+      ? null
+      : appiumCapabilities({
+          deviceId,
+          xcodeConfigFile,
+          wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
+          allowProvisioning: has('allow-provisioning'),
+        });
   let server;
   let sessionId = borrowedSessionId;
   let ownsSession = false;
@@ -465,17 +494,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     server = nativeApp ? null : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
     await client.request('GET', '/status');
     const session = sessionId
-      ? await client.request('GET', `/session/${sessionId}`)
+      ? borrowedSessionDescriptor(sessionId, requestedCapabilities)
       : await client.request('POST', '/session', {
           capabilities: {
-            alwaysMatch: capabilitiesFile
-              ? capabilitiesFromFile(capabilitiesFile)
-              : appiumCapabilities({
-                  deviceId,
-                  xcodeConfigFile,
-                  wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
-                  allowProvisioning: has('allow-provisioning'),
-                }),
+            alwaysMatch: requestedCapabilities,
           },
         });
     if (!sessionId) {
