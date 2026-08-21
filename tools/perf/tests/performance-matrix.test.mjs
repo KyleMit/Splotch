@@ -131,6 +131,7 @@ function normalizedMatrix(modes) {
     recordedOn: '2026-08-20',
     productCommit: 'abcdef123456',
     limitations: ['Retained capture.'],
+    candidateActions: [],
     gates: {
       drawing: {
         paintP95Ms: 20,
@@ -224,6 +225,63 @@ describe('deployment matrix report', () => {
     expect(markdown).toContain('This cumulative snapshot');
     expect(markdown).toContain('`final123` is the final performance-affecting product commit');
     expect(markdown).toContain('npm run gen:performance-matrix');
+  });
+
+  it('normalizes and renders the optional candidate-action inventory in manifest order', () => {
+    const source = manifest(modeSpecs.map((spec) => unavailableMode(spec)));
+    source.candidateActions = [
+      {
+        priority: 'P0',
+        action: 'Pinch & zoom',
+        rationale: 'Exercises viewport transforms.',
+        applicability: 'Touch targets',
+        status: 'Planned',
+      },
+      {
+        priority: 'P2',
+        action: 'Recover screenshot',
+        rationale: 'Exercises failure recovery.',
+      },
+    ];
+    const matrix = normalizeMatrix(source);
+    const markdown = renderMarkdown(matrix);
+    const html = renderReport(matrix);
+
+    expect(matrix.candidateActions).toEqual(source.candidateActions);
+    expect(markdown).toContain(
+      '| P0 | Pinch & zoom | Exercises viewport transforms. | Touch targets | Planned |'
+    );
+    expect(markdown).toContain('| P2 | Recover screenshot | Exercises failure recovery. | — | — |');
+    expect(markdown.indexOf('## Candidate actions')).toBeGreaterThan(
+      markdown.indexOf('## Capture limitations')
+    );
+    expect(markdown.indexOf('## Candidate actions')).toBeLessThan(
+      markdown.indexOf('## Commit provenance')
+    );
+    expect(html).toContain('Pinch &amp; zoom');
+    expect(html.indexOf('<h2>Candidate actions</h2>')).toBeGreaterThan(
+      html.indexOf('<h2>Capture limitations</h2>')
+    );
+    expect(html.indexOf('<h2>Candidate actions</h2>')).toBeLessThan(
+      html.indexOf('<h2>Coverage</h2>')
+    );
+  });
+
+  it('keeps schema-v3 manifests without candidate actions backward compatible', () => {
+    const matrix = normalizeMatrix(manifest(modeSpecs.map((spec) => unavailableMode(spec))));
+
+    expect(matrix.candidateActions).toEqual([]);
+    expect(renderMarkdown(matrix)).not.toContain('## Candidate actions');
+    expect(renderReport(matrix)).not.toContain('<h2>Candidate actions</h2>');
+  });
+
+  it('rejects incomplete candidate-action entries', () => {
+    const source = manifest(modeSpecs.map((spec) => unavailableMode(spec)));
+    source.candidateActions = [{ priority: 'P1', action: 'Rotate' }];
+
+    expect(() => normalizeMatrix(source)).toThrow(
+      'Performance matrix candidateActions[0].rationale must be text'
+    );
   });
 
   it('reports missing drawing sources as unavailable rather than failed', () => {

@@ -283,6 +283,38 @@ function modeKey(mode) {
   return `${String(mode.orientation).toLowerCase()}-${String(mode.theme).toLowerCase()}`;
 }
 
+function normalizeCandidateActions(candidateActions) {
+  if (candidateActions === undefined) return [];
+  if (!Array.isArray(candidateActions)) {
+    throw new Error('Performance matrix manifest candidateActions must be an array');
+  }
+  return candidateActions.map((candidate, index) => {
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+      throw new Error(`Performance matrix candidateActions[${index}] must be an object`);
+    }
+    for (const field of ['priority', 'action', 'rationale']) {
+      if (typeof candidate[field] !== 'string' || !candidate[field].trim()) {
+        throw new Error(`Performance matrix candidateActions[${index}].${field} must be text`);
+      }
+    }
+    for (const field of ['applicability', 'status']) {
+      if (
+        candidate[field] !== undefined &&
+        (typeof candidate[field] !== 'string' || !candidate[field].trim())
+      ) {
+        throw new Error(`Performance matrix candidateActions[${index}].${field} must be text`);
+      }
+    }
+    return {
+      priority: candidate.priority,
+      action: candidate.action,
+      rationale: candidate.rationale,
+      ...(candidate.applicability === undefined ? {} : { applicability: candidate.applicability }),
+      ...(candidate.status === undefined ? {} : { status: candidate.status }),
+    };
+  });
+}
+
 function validateManifest(manifest) {
   if (manifest.schemaVersion !== 3) {
     const found = manifest.schemaVersion ?? 'missing';
@@ -359,6 +391,7 @@ function normalizeMatrix(manifest, sourceDirectory = ROOT) {
     snapshotKind: manifest.snapshotKind,
     architecture: manifest.architecture,
     limitations: manifest.limitations ?? [],
+    candidateActions: normalizeCandidateActions(manifest.candidateActions),
     gates: {
       drawing: {
         paintP95Ms: PAINT_P95_GATE_MS,
@@ -643,6 +676,22 @@ function drawingAggregateAvailable(aggregate) {
   );
 }
 
+function renderCandidateActionsMarkdown(candidateActions) {
+  if (!candidateActions.length) return '';
+  const rows = candidateActions.map((candidate) => [
+    candidate.priority,
+    candidate.action,
+    candidate.rationale,
+    candidate.applicability ?? '—',
+    candidate.status ?? '—',
+  ]);
+  return `
+## Candidate actions
+
+${markdownTable(['Priority', 'Action', 'Rationale', 'Applicability', 'Status'], rows)}
+`;
+}
+
 function renderMarkdown(matrix) {
   const rows = modeRows(matrix);
   const drawingRows = rows.map((target) => {
@@ -738,6 +787,7 @@ ${matrix.gates.actions.postActionFrameMaxMs} ms.
 ## Capture limitations
 
 ${limitations || '- None recorded.'}
+${renderCandidateActionsMarkdown(matrix.candidateActions ?? [])}
 
 ## Commit provenance
 
@@ -778,7 +828,22 @@ are advisory comparisons.
 
 const EXTRA_CSS = `
 .matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(var(--action-columns),15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block}.heat-cell.missing{background:var(--card-2)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
+.candidate-actions th,.candidate-actions td{text-align:left;vertical-align:top}
 `;
+
+function renderCandidateActionsHtml(candidateActions) {
+  if (!candidateActions.length) return '';
+  const rows = candidateActions
+    .map(
+      (candidate) =>
+        `<tr><td><b>${esc(candidate.priority)}</b></td><td><b>${esc(candidate.action)}</b></td><td>${esc(candidate.rationale)}</td><td>${esc(candidate.applicability ?? '—')}</td><td>${esc(candidate.status ?? '—')}</td></tr>`
+    )
+    .join('');
+  return `
+  <div class="section-head"><h2>Candidate actions</h2><span class="desc">Additional gestures and workflows considered for this campaign</span></div>
+  <div class="provenance candidate-actions"><table><thead><tr><th>Priority</th><th>Action</th><th>Rationale</th><th>Applicability</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>
+`;
+}
 
 function renderReport(matrix) {
   const rows = modeRows(matrix);
@@ -807,6 +872,7 @@ function renderReport(matrix) {
 
   <div class="section-head"><h2>Capture limitations</h2><span class="desc">Constraints retained with the evidence</span></div>
   <div class="method"><ul>${(matrix.limitations ?? []).map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul></div>
+${renderCandidateActionsHtml(matrix.candidateActions ?? [])}
 
   <div class="section-head"><h2>Coverage</h2><span class="desc">${matrix.targets.length} deployment targets · four explicit modes each</span></div>
   <div class="target-grid">${targetCards(matrix)}</div>
