@@ -6211,7 +6211,1253 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "finalProductCommitActionCount": 48,
+            "actionCount": 49,
+            "passedActionCount": 41,
+            "worst": {
+              "firstFrameP95": 97,
+              "postActionFrameP95": 34,
+              "postActionFrameMax": 101
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13,
+                  "p95": 15,
+                  "p99": 15,
+                  "max": 15
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 21,
+                  "max": 23
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 228,
+                  "p95": 233,
+                  "p99": 233,
+                  "max": 233
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 232,
+                  "p95": 239,
+                  "p99": 239,
+                  "max": 239
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 220,
+                  "p95": 227,
+                  "p99": 227,
+                  "max": 227
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 219,
+                  "p95": 235,
+                  "p99": 235,
+                  "max": 235
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 18,
+                  "p99": 32,
+                  "max": 32
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 322,
+                  "p95": 329,
+                  "p99": 329,
+                  "max": 329
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 220,
+                  "p95": 253,
+                  "p99": 253,
+                  "max": 253
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 239,
+                  "p95": 243,
+                  "p99": 243,
+                  "max": 243
+                },
+                "postActionFrames": {
+                  "p50": 16,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 231,
+                  "p95": 237,
+                  "p99": 237,
+                  "max": 237
+                },
+                "postActionFrames": {
+                  "p50": 16,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 242,
+                  "p95": 243,
+                  "p99": 243,
+                  "max": 243
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 229,
+                  "p95": 240,
+                  "p99": 240,
+                  "max": 240
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 232,
+                  "p95": 236,
+                  "p99": 236,
+                  "max": 236
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 232,
+                  "p95": 252,
+                  "p99": 252,
+                  "max": 252
+                },
+                "postActionFrames": {
+                  "p50": 16,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 217,
+                  "p95": 229,
+                  "p99": 229,
+                  "max": 229
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 20,
+                  "p99": 29,
+                  "max": 30
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Parent Center",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 16,
+                  "p95": 18,
+                  "p99": 18,
+                  "max": 18
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 22,
+                  "max": 22
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "switch dark theme to light",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 219,
+                  "p95": 229,
+                  "p99": 229,
+                  "max": 229
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 21,
+                  "p99": 41,
+                  "max": 41
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "switch light theme to dark",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 221,
+                  "p95": 229,
+                  "p99": 229,
+                  "max": 229
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 21,
+                  "p99": 46,
+                  "max": 46
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable drawing sounds",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 283,
+                  "p95": 293,
+                  "p99": 293,
+                  "max": 293
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 19,
+                  "p99": 20,
+                  "max": 20
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable drawing sounds",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 11,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 15,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 23,
+                  "p99": 26,
+                  "max": 26
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable auto-save on delete",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 5,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable auto-save on delete",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 7,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable advanced controls",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 8,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 20,
+                  "max": 20
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable advanced controls",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "ready": {
+                  "p50": 16,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 19,
+                  "p99": 21,
+                  "max": 21
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable screenshot action button",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "ready": {
+                  "p50": 7,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable screenshot action button",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "ready": {
+                  "p50": 9,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 7,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 26,
+                  "max": 26
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "ready": {
+                  "p50": 237,
+                  "p95": 242,
+                  "p99": 242,
+                  "max": 242
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 21,
+                  "max": 23
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 13,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "postActionFrames": {
+                  "p50": 16,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 13,
+                  "p95": 13,
+                  "p99": 13,
+                  "max": 13
+                },
+                "ready": {
+                  "p50": 74,
+                  "p95": 78,
+                  "p99": 78,
+                  "max": 78
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 28,
+                  "p99": 28,
+                  "max": 28
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "ready": {
+                  "p50": 239,
+                  "p95": 241,
+                  "p99": 241,
+                  "max": 241
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 19
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 214,
+                  "p95": 214,
+                  "p99": 214,
+                  "max": 214
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 23,
+                  "max": 32
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 229,
+                  "p95": 236,
+                  "p99": 236,
+                  "max": 236
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 727,
+                  "p95": 727,
+                  "p99": 727,
+                  "max": 727
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 18,
+                  "p99": 23,
+                  "max": 27
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 0,
+                  "p99": 0,
+                  "max": 0
+                },
+                "ready": {
+                  "p50": 2379,
+                  "p95": 2390,
+                  "p99": 2390,
+                  "max": 2390
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 33,
+                  "max": 36
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 240,
+                  "p95": 243,
+                  "p99": 243,
+                  "max": 243
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 18,
+                  "max": 18
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 238,
+                  "p95": 242,
+                  "p99": 242,
+                  "max": 242
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 735,
+                  "p95": 764,
+                  "p99": 764,
+                  "max": 764
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 18,
+                  "p99": 23,
+                  "max": 23
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 39,
+                  "p99": 39,
+                  "max": 39
+                },
+                "ready": {
+                  "p50": 1669,
+                  "p95": 2387,
+                  "p99": 2387,
+                  "max": 2387
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 40,
+                  "max": 43
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 97,
+                  "p99": 97,
+                  "max": 97
+                },
+                "ready": {
+                  "p50": 1980,
+                  "p95": 2399,
+                  "p99": 2399,
+                  "max": 2399
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 101,
+                  "max": 101
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 0,
+                  "p99": 0,
+                  "max": 0
+                },
+                "ready": {
+                  "p50": 1982,
+                  "p95": 1983,
+                  "p99": 1983,
+                  "max": 1983
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 34,
+                  "p99": 42,
+                  "max": 43
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Sound",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 230,
+                  "p95": 233,
+                  "p99": 233,
+                  "max": 233
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 18,
+                  "max": 18
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Tool Drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 236,
+                  "p95": 283,
+                  "p99": 283,
+                  "max": 283
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Coloring",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 287,
+                  "p95": 292,
+                  "p99": 292,
+                  "max": 292
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: AI Art",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3,
+                  "p95": 4,
+                  "p99": 4,
+                  "max": 4
+                },
+                "ready": {
+                  "p50": 292,
+                  "p95": 294,
+                  "p99": 294,
+                  "max": 294
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Saving",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 288,
+                  "p95": 288,
+                  "p99": 288,
+                  "max": 288
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Install",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 292,
+                  "p95": 297,
+                  "p99": 297,
+                  "max": 297
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 18,
+                  "max": 18
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Feedback",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "ready": {
+                  "p50": 283,
+                  "p95": 290,
+                  "p99": 290,
+                  "max": 290
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: What's New",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 286,
+                  "p95": 292,
+                  "p99": 292,
+                  "max": 292
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: About",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 347,
+                  "p95": 354,
+                  "p99": 354,
+                  "max": 354
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
@@ -6417,7 +7663,1253 @@
             },
             "passed": true
           },
-          "actions": null,
+          "actions": {
+            "sources": [
+              {
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                "kind": "full",
+                "selectedLabels": null,
+                "repeatCount": 4
+              }
+            ],
+            "fullSweepProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "finalProductCommitActionCount": 48,
+            "actionCount": 49,
+            "passedActionCount": 40,
+            "worst": {
+              "firstFrameP95": 41,
+              "postActionFrameP95": 40,
+              "postActionFrameMax": 94
+            },
+            "results": [
+              {
+                "label": "idle frame control",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10,
+                  "p95": 25,
+                  "p99": 25,
+                  "max": 25
+                },
+                "ready": {
+                  "p50": null,
+                  "p95": null,
+                  "p99": null,
+                  "max": null
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 18,
+                  "max": 22
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "expand action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 212,
+                  "p95": 214,
+                  "p99": 214,
+                  "max": 214
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "collapse action drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 15,
+                  "p99": 15,
+                  "max": 15
+                },
+                "ready": {
+                  "p50": 219,
+                  "p95": 227,
+                  "p99": 227,
+                  "max": 227
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change ink color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 225,
+                  "p95": 228,
+                  "p99": 228,
+                  "max": 228
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open custom color picker",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "ready": {
+                  "p50": 222,
+                  "p95": 225,
+                  "p99": 225,
+                  "max": 225
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 21,
+                  "p99": 35,
+                  "max": 35
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select custom color",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 317,
+                  "p95": 326,
+                  "p99": 326,
+                  "max": 326
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open brush menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 217,
+                  "p95": 219,
+                  "p99": 219,
+                  "max": 219
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select crayon brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 227,
+                  "p95": 240,
+                  "p99": 240,
+                  "max": 240
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select Magic brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 218,
+                  "p95": 226,
+                  "p99": 226,
+                  "max": 226
+                },
+                "postActionFrames": {
+                  "p50": 16,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select eraser",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 227,
+                  "p95": 231,
+                  "p99": 231,
+                  "max": 231
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select pen brush",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 2,
+                  "p99": 2,
+                  "max": 2
+                },
+                "ready": {
+                  "p50": 226,
+                  "p95": 231,
+                  "p99": 231,
+                  "max": 231
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open stroke-width menu",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 230,
+                  "p95": 235,
+                  "p99": 235,
+                  "max": 235
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "change stroke width",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 214,
+                  "p95": 227,
+                  "p99": 227,
+                  "max": 227
+                },
+                "postActionFrames": {
+                  "p50": 16,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 223,
+                  "p95": 227,
+                  "p99": 227,
+                  "max": 227
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 29,
+                  "p99": 32,
+                  "max": 33
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Sound",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 230,
+                  "p95": 231,
+                  "p99": 231,
+                  "max": 231
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Tool Drawer",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 289,
+                  "p95": 290,
+                  "p99": 290,
+                  "max": 290
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Coloring",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3,
+                  "p95": 6,
+                  "p99": 6,
+                  "max": 6
+                },
+                "ready": {
+                  "p50": 287,
+                  "p95": 289,
+                  "p99": 289,
+                  "max": 289
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: AI Art",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 286,
+                  "p95": 287,
+                  "p99": 287,
+                  "max": 287
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Saving",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 287,
+                  "p95": 289,
+                  "p99": 289,
+                  "max": 289
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Parent Center",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "ready": {
+                  "p50": 15,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 20,
+                  "max": 20
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Install",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3,
+                  "p95": 4,
+                  "p99": 4,
+                  "max": 4
+                },
+                "ready": {
+                  "p50": 285,
+                  "p95": 285,
+                  "p99": 285,
+                  "max": 285
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 18
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: Feedback",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 284,
+                  "p95": 288,
+                  "p99": 288,
+                  "max": 288
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 18,
+                  "max": 18
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: What's New",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 3,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 289,
+                  "p95": 292,
+                  "p99": 292,
+                  "max": 292
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open Settings section: About",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "ready": {
+                  "p50": 342,
+                  "p95": 345,
+                  "p99": 345,
+                  "max": 345
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "switch dark theme to light",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "ready": {
+                  "p50": 216,
+                  "p95": 230,
+                  "p99": 230,
+                  "max": 230
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 21,
+                  "p99": 40,
+                  "max": 40
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "switch light theme to dark",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 7,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 213,
+                  "p95": 217,
+                  "p99": 217,
+                  "max": 217
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 22,
+                  "p99": 42,
+                  "max": 42
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable drawing sounds",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "ready": {
+                  "p50": 284,
+                  "p95": 287,
+                  "p99": 287,
+                  "max": 287
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 19,
+                  "p99": 21,
+                  "max": 21
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable drawing sounds",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 8,
+                  "p95": 12,
+                  "p99": 12,
+                  "max": 12
+                },
+                "ready": {
+                  "p50": 10,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 20,
+                  "p99": 27,
+                  "max": 27
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable auto-save on delete",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "ready": {
+                  "p50": 5,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable auto-save on delete",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 2,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 6,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable advanced controls",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 5,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "ready": {
+                  "p50": 8,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 18,
+                  "p99": 22,
+                  "max": 22
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable advanced controls",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 15,
+                  "p95": 15,
+                  "p99": 15,
+                  "max": 15
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 19,
+                  "p99": 21,
+                  "max": 21
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "disable screenshot action button",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 10,
+                  "p95": 11,
+                  "p99": 11,
+                  "max": 11
+                },
+                "ready": {
+                  "p50": 5,
+                  "p95": 5,
+                  "p99": 5,
+                  "max": 5
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "enable screenshot action button",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 4,
+                  "p99": 4,
+                  "max": 4
+                },
+                "ready": {
+                  "p50": 8,
+                  "p95": 9,
+                  "p99": 9,
+                  "max": 9
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "close Settings",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12,
+                  "p95": 12,
+                  "p99": 12,
+                  "max": 12
+                },
+                "ready": {
+                  "p50": 7,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 25,
+                  "max": 25
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring books",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 6,
+                  "p95": 8,
+                  "p99": 8,
+                  "max": 8
+                },
+                "ready": {
+                  "p50": 226,
+                  "p95": 230,
+                  "p99": 230,
+                  "max": 230
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 23,
+                  "max": 23
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "open coloring book",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 7,
+                  "p99": 7,
+                  "max": 7
+                },
+                "ready": {
+                  "p50": 10,
+                  "p95": 10,
+                  "p99": 10,
+                  "max": 10
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "select coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 12,
+                  "p95": 15,
+                  "p99": 15,
+                  "max": 15
+                },
+                "ready": {
+                  "p50": 67,
+                  "p95": 71,
+                  "p99": 71,
+                  "max": 71
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 40,
+                  "p99": 40,
+                  "max": 40
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear coloring page",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 16,
+                  "p99": 16,
+                  "max": 16
+                },
+                "ready": {
+                  "p50": 218,
+                  "p95": 228,
+                  "p99": 228,
+                  "max": 228
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 19,
+                  "max": 20
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "save screenshot",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 9,
+                  "p95": 32,
+                  "p99": 32,
+                  "max": 32
+                },
+                "ready": {
+                  "p50": 203,
+                  "p95": 216,
+                  "p99": 216,
+                  "max": 216
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 19
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo latest stroke",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 220,
+                  "p95": 228,
+                  "p99": 228,
+                  "max": 228
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 18,
+                  "max": 18
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear drawing",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 4,
+                  "p95": 4,
+                  "p99": 4,
+                  "max": 4
+                },
+                "ready": {
+                  "p50": 710,
+                  "p95": 719,
+                  "p99": 719,
+                  "max": 719
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 19,
+                  "p99": 24,
+                  "max": 27
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 0,
+                  "p99": 0,
+                  "max": 0
+                },
+                "ready": {
+                  "p50": 2383,
+                  "p95": 2387,
+                  "p99": 2387,
+                  "max": 2387
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 34,
+                  "max": 34
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo clear after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 3,
+                  "p99": 3,
+                  "max": 3
+                },
+                "ready": {
+                  "p50": 213,
+                  "p95": 226,
+                  "p99": 226,
+                  "max": 226
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 19,
+                  "p99": 19,
+                  "max": 19
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "undo restored stroke after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 219,
+                  "p95": 228,
+                  "p99": 228,
+                  "max": 228
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 17,
+                  "max": 17
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "clear restored drawing after blank rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 1,
+                  "p95": 1,
+                  "p99": 1,
+                  "max": 1
+                },
+                "ready": {
+                  "p50": 708,
+                  "p95": 719,
+                  "p99": 719,
+                  "max": 719
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 23,
+                  "max": 28
+                },
+                "passed": true,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "empty after clear: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 39,
+                  "p99": 39,
+                  "max": 39
+                },
+                "ready": {
+                  "p50": 2388,
+                  "p95": 2392,
+                  "p99": 2392,
+                  "max": 2392
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 39,
+                  "max": 43
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: PORTRAIT to LANDSCAPE rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 0,
+                  "p95": 0,
+                  "p99": 0,
+                  "max": 0
+                },
+                "ready": {
+                  "p50": 1972,
+                  "p95": 2390,
+                  "p99": 2390,
+                  "max": 2390
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 94,
+                  "max": 94
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              },
+              {
+                "label": "with ink: LANDSCAPE to PORTRAIT rotation",
+                "count": 3,
+                "firstFrame": {
+                  "p50": 40,
+                  "p95": 41,
+                  "p99": 41,
+                  "max": 41
+                },
+                "ready": {
+                  "p50": 1970,
+                  "p95": 2399,
+                  "p99": 2399,
+                  "max": 2399
+                },
+                "postActionFrames": {
+                  "p50": 17,
+                  "p95": 17,
+                  "p99": 39,
+                  "max": 40
+                },
+                "passed": false,
+                "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+                "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+              }
+            ]
+          },
           "preservedSections": [
             "drawing",
             "undo"
@@ -6427,17 +8919,405 @@
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
-          "status": "unavailable",
+          "status": "captured",
           "fidelity": "simulator-advisory",
-          "reason": "P1: simulator Settings does not expose the persisted rotation-lock control required by ADR-0090; native landscape rotation cannot be established without invalidating the capture."
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": {
+            "pen": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 4,
+                  "p99": 6,
+                  "max": 18
+                },
+                "lostFrameTimeShare": 0.0004,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/pen-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 1,
+                        "p95": 4,
+                        "p99": 6,
+                        "max": 18
+                      },
+                      "lostFrameTimeShare": 0.0004,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "crayon": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 11,
+                  "p99": 19,
+                  "max": 28
+                },
+                "lostFrameTimeShare": 0.0043,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/crayon-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 8,
+                        "p95": 11,
+                        "p99": 19,
+                        "max": 28
+                      },
+                      "lostFrameTimeShare": 0.0043,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "magic": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 16,
+                  "p99": 17,
+                  "max": 23
+                },
+                "lostFrameTimeShare": 0.0002,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/magic-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 0,
+                        "p95": 16,
+                        "p99": 17,
+                        "max": 23
+                      },
+                      "lostFrameTimeShare": 0.0002,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "eraser": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 12,
+                  "p99": 14,
+                  "max": 21
+                },
+                "lostFrameTimeShare": 0.0003,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/eraser-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 11,
+                        "p95": 12,
+                        "p99": 14,
+                        "max": 21
+                      },
+                      "lostFrameTimeShare": 0.0003,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            }
+          },
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/pen-real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 1,
+              "p99": 1,
+              "max": 1
+            },
+            "nextFrame": {
+              "p50": 12,
+              "p95": 14,
+              "p99": 14,
+              "max": 14
+            },
+            "passed": true
+          },
+          "actions": null
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
-          "status": "unavailable",
+          "status": "captured",
           "fidelity": "simulator-advisory",
-          "reason": "P1: simulator Settings does not expose the persisted rotation-lock control required by ADR-0090; native landscape rotation cannot be established without invalidating the capture."
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": {
+            "pen": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 15,
+                  "p99": 16,
+                  "max": 29
+                },
+                "lostFrameTimeShare": 0.0002,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/pen-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 13,
+                        "p95": 15,
+                        "p99": 16,
+                        "max": 29
+                      },
+                      "lostFrameTimeShare": 0.0002,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "crayon": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 13,
+                  "p99": 20,
+                  "max": 24
+                },
+                "lostFrameTimeShare": 0.0013,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/crayon-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 11,
+                        "p95": 13,
+                        "p99": 20,
+                        "max": 24
+                      },
+                      "lostFrameTimeShare": 0.0013,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "magic": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 10,
+                  "p99": 11,
+                  "max": 15
+                },
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/magic-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 8,
+                        "p95": 10,
+                        "p99": 11,
+                        "max": 15
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            },
+            "eraser": {
+              "aggregate": {
+                "runCount": 1,
+                "paint": {
+                  "p95": 5,
+                  "p99": 8,
+                  "max": 11
+                },
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
+              },
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/eraser-real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": {
+                    "passed": false,
+                    "checks": {
+                      "trustedTouch": true,
+                      "cadence": false,
+                      "coalescing": false,
+                      "pressure": true,
+                      "contactGeometry": true
+                    }
+                  },
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 4,
+                        "p95": 5,
+                        "p99": 8,
+                        "max": 11
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
+            }
+          },
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/pen-real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 1,
+              "p99": 1,
+              "max": 1
+            },
+            "nextFrame": {
+              "p50": 10,
+              "p95": 12,
+              "p99": 12,
+              "max": 12
+            },
+            "passed": true
+          },
+          "actions": null
         }
       ]
     },

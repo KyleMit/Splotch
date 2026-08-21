@@ -267,7 +267,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/light/actions.json",
+              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "portrait-dark",
@@ -276,21 +283,62 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/portrait/dark/actions.json",
+              "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-light",
           "orientation": "LANDSCAPE",
           "theme": "light",
-          "status": "unavailable",
-          "reason": "P1: simulator Settings does not expose the persisted rotation-lock control required by ADR-0090; native landscape rotation cannot be established without invalidating the capture."
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": {
+            "pen": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/pen-real-screen.json",
+          "actionsUnavailableReason": "P1: the discrete-action sweep cannot complete from a landscape start. After the blank landscape-to-portrait rotation, tapping Undo does not restore the cleared drawing within the 30 s readiness budget, and the app's screenshot control stays disabled. Reproduced on four independent attempts; the same step passes in both portrait-start cells, which rotate portrait-to-landscape first. Recorded as unmeasured rather than as a zero-cost pass, and unresolved as of this capture."
         },
         {
           "id": "landscape-dark",
           "orientation": "LANDSCAPE",
           "theme": "dark",
-          "status": "unavailable",
-          "reason": "P1: simulator Settings does not expose the persisted rotation-lock control required by ADR-0090; native landscape rotation cannot be established without invalidating the capture."
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": {
+            "pen": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/pen-real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/crayon-real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/magic-real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/eraser-real-screen.json"
+            ]
+          },
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/pen-real-screen.json",
+          "actionsUnavailableReason": "P1: the discrete-action sweep cannot complete from a landscape start. After the blank landscape-to-portrait rotation, tapping Undo does not restore the cleared drawing within the 30 s readiness budget, and the app's screenshot control stays disabled. Reproduced on four independent attempts; the same step passes in both portrait-start cells, which rotate portrait-to-landscape first. Recorded as unmeasured rather than as a zero-cost pass, and unresolved as of this capture."
         }
       ]
     },
