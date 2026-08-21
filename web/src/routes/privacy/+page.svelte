@@ -128,7 +128,7 @@
           <p>
             Saved pictures stay local too. Android puts them in a Splotch album in your gallery;
             iPhone and iPad add them to your photo library; the web uses a normal browser download,
-            or a folder you chose in a supported desktop browser. Saving never uploads anything.
+            or a folder you pick in a supported desktop browser. Saving never uploads anything.
           </p>
           <p>
             Settings — appearance, sound, enabled tools, brush sizes, grown-up-check choices — are
@@ -141,7 +141,7 @@
         <section id="ai-pictures">
           <h3>Making an AI picture</h3>
           <p>
-            The AI image button redraws your child's picture in a chosen art style. It is Splotch's
+            The AI image button redraws your child's drawing in a chosen art style. It is Splotch's
             one big online feature: when someone taps the button, the current drawing is sent to our
             image service (which uses OpenAI), and the finished picture is sent straight back.
             Nothing is sent before the tap. The button follows the grown-up check set in Parent
@@ -153,7 +153,7 @@
           <p>
             <strong>We keep nothing once a picture is delivered.</strong> Our service holds the
             drawing just long enough to hand it to the generator, and holds the finished picture
-            until the app collects it. Collected jobs are deleted immediately. An uncollected job
+            until the app collects it; then we delete our copy immediately. An uncollected picture
             expires after {GENERATION_JOB_TTL_MINUTES}
             minutes, and an hourly cleanup removes its remaining files. The one exception is a report
             a grown-up confirms — see <a href="#reports">Reporting a picture</a>.
@@ -167,7 +167,7 @@
               use:gatedLink
             >
               OpenAI Services Agreement</a
-            >. By default, OpenAI does not use API content to train its models — only an account
+            >. By default, OpenAI does not use what we send to train its models — only an account
             that opts in shares content that way. OpenAI does keep a copy to check for abuse. That
             copy is normally kept for up to 30 days; OpenAI's
             <a
@@ -180,15 +180,15 @@
             > lets it keep one longer where the law requires it or where a copy is needed to stop harm.
             If a safety scan flags a picture as possible child sexual abuse material, OpenAI keeps it
             for a person to review, whatever the account settings say. Those copies are OpenAI's, not
-            ours. Our requests also tell OpenAI not to save the response for later use — the one part
-            of its retention we control.
+            ours. Our requests also tell OpenAI not to save the finished picture for later use — the one
+            part of its retention we control.
           </p>
           <p>
-            A picture made with your <em>own</em> OpenAI key takes the same path, but it reaches
-            OpenAI under <em>your</em> account and your account's terms — including its training setting.
-            Check that setting before adding a key: if your account opts in to sharing, it is your child's
-            drawing that would be shared. Our service passes your key along for that one request and never
-            stores it.
+            With your <em>own</em> OpenAI key, the drawing takes the same path but reaches OpenAI
+            under <em>your</em> account and your account's terms — including its training setting. Check
+            that setting before adding a key: if your account opts in to sharing, it is your child's drawing
+            that would be shared. Our service passes your key along for that one request and never stores
+            it.
           </p>
         </section>
 
@@ -205,16 +205,16 @@
           <p>
             With that code we store attempt and success counts, timestamps, and broad failure
             reasons — enough to enforce the limit and nothing more. A separate anonymous daily total
-            caps what the free service can spend. On the web, clearing site data creates a new code
-            — uninstalling on iOS sometimes does too. On Android the code normally survives a
+            caps what the free service can spend. On the web, clearing site data creates a new code;
+            uninstalling on iOS sometimes does too. On Android the code normally survives a
             reinstall.
           </p>
           <p>
             An access code gets a small tally of its own: how many times it was used, first and
             latest use, and broad style and outcome categories. The tally is keyed by a one-way
-            identifier — not the code itself — and never contains a drawing. It expires {USAGE_RECORD_RETENTION_DAYS}
-            days after its first request; later uses do not extend that deadline. Daily cleanup removes
-            expired tallies. Retiring an access code requests immediate deletion.
+            identifier — not the access code itself — and never contains a drawing. It expires {USAGE_RECORD_RETENTION_DAYS}
+            days after its first use; later uses do not extend that deadline. Daily cleanup removes expired
+            tallies, and when an access code is retired, we delete its tally immediately.
           </p>
           <p>
             Access-code and own-key requests also write an ordinary operational server log: the
@@ -228,26 +228,25 @@
         <section id="reports">
           <h3>Reporting a picture</h3>
           <p>
-            Every finished AI picture is labelled “AI-generated picture.” If one is wrong or
+            Every finished AI picture is labeled “AI-generated picture.” If one is wrong or
             inappropriate, a grown-up can choose “Report this picture,” review exactly what will be
             sent, and send it to us for human review. Nothing is kept unless that final confirmation
             happens.
           </p>
           <p>
-            A confirmed picture report stores the drawing, the exact instruction our server wrote
-            for the generator, the selected art style, the report time, and the AI picture —
-            privately, on Splotch's Netlify account. A private GitHub support issue tells the
-            maintainer where to look; it carries report details, never the images. We investigate
-            and respond within 24 hours. The report bundle is scheduled for deletion after
-            <strong>{IMAGE_REPORT_RETENTION_DAYS} days</strong> by a daily cleanup job. To ask us to
-            delete one sooner, use the {@render feedbackLink()} and include the reference shown after
-            sending.
+            When a grown-up confirms a picture report, we store the drawing, the exact instruction
+            our server wrote for the generator, the chosen art style, the report time, and the AI
+            picture — privately, on Splotch's Netlify account. A private GitHub support issue tells
+            us where to look; it carries report details, never the images. We investigate and
+            respond within 24 hours. A daily cleanup deletes the report after
+            <strong>{IMAGE_REPORT_RETENTION_DAYS} days</strong>. To ask us to delete one sooner, use
+            the {@render feedbackLink()} and include the reference shown after sending.
           </p>
           <p>
             If the AI refuses a harmless drawing, a grown-up can choose “Report this refusal”
-            instead. Its confirmation sends the refused drawing, the same instruction and style
-            details, the AI provider's refusal reason, and the report time — there is no generated
-            picture to include. A refusal is kept only when a grown-up reports it.
+            instead. Confirming sends the refused drawing, the same instruction and style details,
+            OpenAI's refusal reason, and the report time. There is no generated picture to include.
+            A refusal is kept only when a grown-up reports it.
           </p>
         </section>
 
@@ -255,12 +254,12 @@
           <h3>Sending feedback</h3>
           <p>
             Grown-ups can report a bug or suggest a feature from Settings. When you tap “Send
-            report”, only what you type is sent to our <strong>private</strong> support tracker on GitHub.
-            Please don't put personal details, like a name or email address, in a report — the form reminds
+            report,” only what you type is sent to our <strong>private</strong> support tracker on GitHub.
+            Please don't put personal details, like a name or email address, in a report. The form reminds
             you of this too.
           </p>
           <p>
-            For a bug, you can tick a box to include basic device details — app version, platform,
+            For a bug, you can check a box to include basic device details — app version, platform,
             operating system, device model or browser, screen and window sizes, pixel ratio,
             language, display mode, and online status — to help us reproduce the problem. It's off
             by default, and you can expand it first to see exactly what would be sent. A few of
@@ -273,7 +272,7 @@
         <section id="hosting">
           <h3>Hosting and downloads</h3>
           <p>
-            Splotch — the website, the API, and any report evidence above — is hosted by Netlify.
+            Splotch — the website, the API, and the stored reports above — is hosted by Netlify.
             Loading the app there works like loading any website: the request carries normal details
             such as an IP address and browser version. Our API holds the address briefly in memory
             to slow down abuse; it is not stored with the counting records and not used to follow a
@@ -286,10 +285,9 @@
               same kind of request that loads the app itself.
             </li>
             <li>
-              If the site's security rules block something unexpected, the browser can send our
-              first-party security endpoint an automatic technical report (the page and
-              blocked-resource addresses and a short code sample) so we can fix it. There is no
-              third-party error service.
+              If the site's security rules block something unexpected, the browser can send us a
+              short automatic note (the page address, the blocked address, and a small code sample)
+              so we can fix it. There is no third-party error service.
             </li>
           </ul>
           <p>
@@ -310,10 +308,10 @@
           <p>
             Every action that reaches beyond drawing — making an AI picture, reporting one, opening
             an external link, sending feedback, and opening Parent Center — sits behind its own
-            grown-up check. A parent can set each one to Every time, Per session, or Never in Parent
-            Center. The store apps start with every check set to Every time; the web starts with
-            Never; iOS does not allow external links to be set to Never. These checks guard actions
-            — they are not accounts, and they are not legal proof of consent.
+            grown-up check. A grown-up can set each one to Every time, Per session, or Never in
+            Parent Center. The store apps start with every check set to Every time; the web starts
+            with Never; iOS does not allow external links to be set to Never. These checks guard
+            actions; they are not accounts, and they are not legal proof of consent.
           </p>
           <p>
             When the app opens online with AI pictures enabled and no credential added, it checks
