@@ -145,7 +145,7 @@
         "exceptions": ["legal-requirement", "harm-prevention", "potential-csam-review"]
       },
       "privacyPageFacts": [
-        "normally retained for up to 30 days",
+        "normally kept for up to 30 days",
         "where the law requires it",
         "needed to stop harm",
         "possible child sexual abuse material"
@@ -217,10 +217,7 @@
           "contains": "fetch(`${origin}${WORKER_PATH}`"
         }
       ],
-      "privacyPageFacts": [
-        "hosted by Netlify",
-        "automatically download additional packs from our site"
-      ]
+      "privacyPageFacts": ["hosted by Netlify", "downloads coloring pages from our own site"]
     },
     {
       "id": "openai-api",
