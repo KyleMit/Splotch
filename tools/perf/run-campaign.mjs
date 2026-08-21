@@ -30,9 +30,12 @@ import {
 import {
   ALREADY_VALID,
   COMPLETE,
+  EXHAUSTED,
   FAILED,
   LEDGER_HEADER,
   formatLedgerRow,
+  nextAction,
+  parseLedger,
 } from './lib/campaign-ledger.mjs';
 
 const SIMULATOR_SETTLE_MS = 5_000;
@@ -122,6 +125,10 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const ledgerPath = absolute(flag('ledger', `${outputRoot}/${targetId}/ledger.tsv`));
   mkdirSync(dirname(ledgerPath), { recursive: true });
   if (!existsSync(ledgerPath)) writeFileSync(ledgerPath, `${LEDGER_HEADER.join('\t')}\n`);
+  // The attempts a cell has already spent live in the ledger, not in this process.
+  // Reading them is what makes --max-attempts a budget for the campaign rather than
+  // for one invocation, so an interrupted run resumes instead of restarting at 1.
+  const spentRows = parseLedger(readFileSync(ledgerPath, 'utf8'));
 
   const rebootUdid = flag('reboot-simulator');
   const results = [];
@@ -129,7 +136,12 @@ export async function runCampaign(argv = process.argv.slice(2)) {
   const { runtime } = campaignTarget(targetId);
 
   for (const cell of plan) {
-    if (artifactValid(cell.artifact, runtime)) {
+    const decision = nextAction(spentRows, cell.id, {
+      artifactValid: artifactValid(cell.artifact, runtime),
+      maxAttempts,
+    });
+
+    if (decision.action === 'skip') {
       appendLedger(ledgerPath, {
         cell: cell.id,
         status: ALREADY_VALID,
@@ -141,8 +153,20 @@ export async function runCampaign(argv = process.argv.slice(2)) {
       continue;
     }
 
+    if (decision.action === 'p1') {
+      appendLedger(ledgerPath, {
+        cell: cell.id,
+        status: EXHAUSTED,
+        attempt: decision.spent,
+        artifact: cell.artifact,
+      });
+      console.log(`P1    ${cell.id} — ${decision.reason} in earlier runs, not retried`);
+      results.push({ cell: cell.id, status: 'p1' });
+      continue;
+    }
+
     let landed = false;
-    for (let attempt = 1; attempt <= maxAttempts && !landed; attempt++) {
+    for (let attempt = decision.attempt; attempt <= maxAttempts && !landed; attempt++) {
       if (rebootUdid) {
         rebootSimulator(rebootUdid);
         await sleep(SIMULATOR_SETTLE_MS);

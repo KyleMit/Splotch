@@ -9,6 +9,9 @@ export const LEDGER_HEADER = ['timestamp', 'cell', 'status', 'attempt', 'artifac
 export const COMPLETE = 'valid-json';
 export const ALREADY_VALID = 'already-valid';
 export const FAILED = 'missing-or-invalid-json';
+// Distinct from FAILED so a resumed run recording an exhausted cell does not itself
+// count as another failed attempt the next time the ledger is read.
+export const EXHAUSTED = 'attempts-exhausted';
 
 export function formatLedgerRow({ timestamp, cell, status, attempt, artifact, log }) {
   return [timestamp, cell, status, String(attempt), artifact, log ?? '-'].join('\t');
