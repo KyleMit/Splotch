@@ -278,11 +278,25 @@ npm run adb:devices
 ```
 
 Pin the screen awake for the whole campaign rather than trusting the display timeout — a phone that
-locks mid-queue fails every remaining cell:
+dozes mid-queue fails every remaining cell:
 
 ```sh
-adb -s <serial> shell svc power stayon usb
+adb -s <serial> shell svc power stayon true
 ```
+
+`stayon usb` is the trap: it sets the keep-awake mask to USB-only, and a phone that negotiates the
+same cable as an **AC** charger never matches it, so the screen sleeps with the setting still
+reading as applied. `stayon true` covers every power source. Confirm against what the device thinks
+it is plugged into, not what the cable is:
+
+```sh
+adb -s <serial> shell dumpsys battery | grep -E "AC powered|USB powered"
+adb -s <serial> shell settings get global stay_on_while_plugged_in   # want 7 or 15, not 2
+adb -s <serial> shell dumpsys power | grep mWakefulness              # want Awake, not Dozing
+```
+
+Re-check `mWakefulness` between targets. A device that dozed reports `Dozing` long after the cells
+it would have failed, and nothing in a capture records that the screen was off.
 
 If the phone cannot reach the LAN preview running on port 4173, forward that exact preview port with
 `adb -s <serial> reverse tcp:4173 tcp:4173`; the repository `adb:reverse` helper forwards the dev
