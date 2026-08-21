@@ -175,7 +175,7 @@ function normalizeActionCapture(spec, sourceDirectory, mode) {
     ? summarizeActions(profile.samples, [], profile.gateAllowances ?? {})
     : profile.summaries;
   const results = summaries
-    .filter((summary) => !labels || labels.has(summary.label))
+    .filter((summary) => summary.count > 0 && (!labels || labels.has(summary.label)))
     .map((summary) => ({
       label: summary.label,
       count: summary.count,

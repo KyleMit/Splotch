@@ -161,10 +161,22 @@ function normalizedMatrix(modes) {
   };
 }
 
-function writeActionCapture(directory, name, { orientation, theme, summaries }) {
+function writeActionCapture(directory, name, { orientation, theme, summaries, samples }) {
   const path = join(directory, name);
-  writeFileSync(path, JSON.stringify({ orientation, theme, repeats: 4, summaries }));
+  writeFileSync(path, JSON.stringify({ orientation, theme, repeats: 4, summaries, samples }));
   return name;
+}
+
+function actionSample(label, warmup) {
+  return {
+    label,
+    warmup,
+    eventType: 'click',
+    trusted: true,
+    firstFrameMs: 1,
+    readyMs: 1,
+    postActionFrameGapsMs: [1],
+  };
 }
 
 describe('deployment matrix report', () => {
@@ -214,6 +226,40 @@ describe('deployment matrix report', () => {
       action('expand action drawer', true, 'final'),
       action('change ink color', false, 'old'),
     ]);
+  });
+
+  it('excludes warmup-only labels while retaining the real scored action', () => {
+    const manifestDirectory = mkdtempSync(join(tmpdir(), 'splotch-matrix-'));
+    temporaryDirectories.push(manifestDirectory);
+    const scoredLabel = "open Settings section: What's New";
+    const warmupOnlyLabel = `${scoredLabel}  new`;
+    const source = writeActionCapture(manifestDirectory, 'actions.json', {
+      orientation: 'PORTRAIT',
+      theme: 'light',
+      samples: [
+        actionSample(warmupOnlyLabel, true),
+        actionSample(scoredLabel, true),
+        actionSample(scoredLabel, false),
+        actionSample(scoredLabel, false),
+        actionSample(scoredLabel, false),
+      ],
+    });
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0], {
+          actionSources: [{ source, productCommit: 'final123', kind: 'full' }],
+        }),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ]),
+      manifestDirectory
+    );
+    const actions = matrix.targets[0].modes[0].actions;
+
+    expect(actions.results).toHaveLength(1);
+    expect(actions.results[0]).toMatchObject({ label: scoredLabel, count: 3, passed: true });
+    expect(actions.actionCount).toBe(1);
+    expect(actions.passedActionCount).toBe(1);
+    expect(actions.results.some((result) => result.label === warmupOnlyLabel)).toBe(false);
   });
 
   it('identifies cumulative provenance in the Markdown summary', () => {
