@@ -99,6 +99,7 @@ import {
   recordTiledOp,
   recodeTiledMagicOps,
   repaintTiledRenderer,
+  recoverTiledRendererIfNeeded,
   renderTiledOp,
   renderTiledSnapshot,
   resizeTiledRenderer,
@@ -366,8 +367,11 @@ function applyPaperView(presentation: PaperPresentation) {
 // An unmeasured rect is refused rather than adopted — see canvasMeasure.ts for
 // why rebuilding from one is unrecoverable — and the rebuild re-arms for the
 // first layout that gives the canvas a box.
-function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
-  if (!measure.accept(rect, resizeCanvas)) return;
+function resizeCanvas(
+  rect: DOMRect = canvas.getBoundingClientRect(),
+  repaintRecoveredPixels = false
+) {
+  if (!measure.accept(rect, (measured) => resizeCanvas(measured, repaintRecoveredPixels))) return;
   if (PERF_MARKS) performance.mark('engine.resize:start');
   const presentation = paperPresentationFor({
     canvasEmpty,
@@ -390,7 +394,7 @@ function resizeCanvas(rect: DOMRect = canvas.getBoundingClientRect()) {
   applyPaperView(presentation);
 
   resizeMagicSheet(magicActive);
-  if (tiledRendererResized && !canvasEmpty) repaintTiledRenderer();
+  if ((tiledRendererResized || repaintRecoveredPixels) && !canvasEmpty) repaintTiledRenderer();
 
   refreshCanvasRect(rect);
   notifyViewChange();
@@ -424,18 +428,22 @@ function handleResize() {
 // A hidden document gets no resize/orientationchange, so rotating the device
 // while the app is backgrounded leaves the backing store, the cached rect, and
 // the paper view stale until some later event happens to fire. On re-entry
-// (visibilitychange → visible; the native WebViews hide the document while the
-// app is backgrounded, so this covers Capacitor resume too) rebuild
-// synchronously — but only when the geometry actually moved while away, so a
-// plain tab switch doesn't pay the backing-store wipe + repaint.
+// Browser visibility and Capacitor's document-level resume event both land
+// here. Rebuild synchronously only when the geometry actually moved while away,
+// so a plain tab switch doesn't pay the backing-store wipe + repaint.
 function resyncOnReentry() {
   if (document.visibilityState !== 'visible') return;
   const rect = canvas.getBoundingClientRect();
   const { w, h } = backingSizeOf(rect);
   const stale =
     viewport.width !== w || viewport.height !== h || resizedAngle !== currentScreenAngle();
-  if (stale) resizeCanvas(rect);
-  else refreshCanvasRect(rect);
+  if (stale) {
+    const contextsRecovered = recoverTiledRendererIfNeeded(false);
+    resizeCanvas(rect, contextsRecovered);
+  } else {
+    recoverTiledRendererIfNeeded();
+    refreshCanvasRect(rect);
+  }
 }
 
 // --- Stroke rendering -------------------------------------------------------

@@ -1,4 +1,5 @@
 import { count, drawStroke, expect, state, test } from './engine-harness';
+import { LIVE_TILE_COUNT } from '../src/lib/drawing/liveTiles';
 
 test('a dense zigzag survives a resize, repainted from tiled history', async ({ page }) => {
   // A resize rebuilds the live tiles from retained history, so the drawing
@@ -202,4 +203,85 @@ test('a drawing survives a resume that beats the layout pass', async ({ page }) 
     { x: 220, y: 220 },
   ]);
   await expect.poll(() => count(page)).toBeGreaterThan(before);
+});
+
+test('a resume rebuilds live tiles whose canvas state was reset while hidden', async ({ page }) => {
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 40, y: 70 },
+      { x: 260, y: 70 },
+    ])
+  );
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  await page.evaluate(() => {
+    for (const tile of document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')) {
+      const currentWidth = tile.width;
+      tile.width = currentWidth;
+    }
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  await expect.poll(() => count(page)).toBe(before);
+  const transforms = await page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]'), (tile) => {
+      const transform = tile.getContext('2d')!.getTransform();
+      return [transform.e, transform.f];
+    })
+  );
+  expect(transforms).toEqual([
+    [0, 0],
+    [-75, 0],
+    [-150, 0],
+    [-225, 0],
+    [0, -75],
+    [-75, -75],
+    [-150, -75],
+    [-225, -75],
+    [0, -150],
+    [-75, -150],
+    [-150, -150],
+    [-225, -150],
+    [0, -225],
+    [-75, -225],
+    [-150, -225],
+    [-225, -225],
+  ]);
+});
+
+test('a reset context plus stale resume geometry replays retained history once', async ({
+  page,
+}) => {
+  await page.evaluate(() =>
+    window.__engine.strokeSync([
+      { x: 40, y: 70 },
+      { x: 260, y: 70 },
+    ])
+  );
+  const before = await count(page);
+  expect(before).toBeGreaterThan(0);
+
+  const clearCalls = await page.evaluate(() => {
+    for (const tile of document.querySelectorAll<HTMLCanvasElement>('canvas[data-live-tile]')) {
+      const currentWidth = tile.width;
+      tile.width = currentWidth;
+    }
+    const prototype = CanvasRenderingContext2D.prototype;
+    const originalClearRect = prototype.clearRect;
+    let calls = 0;
+    prototype.clearRect = function (...args) {
+      calls++;
+      return originalClearRect.apply(this, args);
+    };
+    try {
+      window.__engine.resumeTo(500, 400);
+      return calls;
+    } finally {
+      prototype.clearRect = originalClearRect;
+    }
+  });
+
+  expect(clearCalls).toBe(LIVE_TILE_COUNT);
+  expect(await count(page)).toBe(before);
 });

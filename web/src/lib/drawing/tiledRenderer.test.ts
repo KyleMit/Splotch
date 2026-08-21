@@ -11,6 +11,7 @@ import {
   clearTiledRenderer,
   commitTiledCommand,
   recordTiledOp,
+  recoverTiledRendererIfNeeded,
   repaintTiledRenderer,
   renderTiledOp,
   resizeTiledRenderer,
@@ -189,6 +190,82 @@ describe('idle tiled canvas visibility', () => {
       lastCommand: { inputOps: 1, rasterizedOps: 1, maxSurfaceVisitsPerOp: 1 },
     });
     undoTiledCommand(1);
+  });
+
+  it('rebinds reset live contexts and rebuilds their pixels from retained history', () => {
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const dot: StrokeOp = {
+      kind: 'dot',
+      x: 50,
+      y: 50,
+      radius: 5,
+      color: '#ff0000',
+      erase: false,
+    };
+    beginTiledCommand(true);
+    renderTiledOp(dot);
+    recordTiledOp(dot);
+    commitTiledCommand();
+
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    for (const tile of tiles) {
+      const context = tile.getContext('2d')!;
+      context.lineCap = 'butt';
+      context.lineJoin = 'miter';
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      tile.hidden = true;
+    }
+    const crayonBottom = host.querySelector<HTMLCanvasElement>('[data-live-crayon-bottom]')!;
+    crayonBottom.getContext('2d')!.lineCap = 'butt';
+
+    expect(recoverTiledRendererIfNeeded()).toBe(true);
+    expect(tiles[0].hidden).toBe(false);
+    expect(tiles[5].getContext('2d')!.getTransform()).toMatchObject({ e: -100, f: -100 });
+    expect(tiles.every((tile) => tile.getContext('2d')!.lineCap === 'round')).toBe(true);
+    expect(crayonBottom.getContext('2d')!.lineCap).toBe('round');
+    expect(recoverTiledRendererIfNeeded()).toBe(false);
+  });
+
+  it('waits until every reported live context is restored before rebuilding', () => {
+    const deferredFrames: FrameRequestCallback[] = [];
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      deferredFrames.push(callback);
+      return deferredFrames.length;
+    });
+    vi.stubGlobal('cancelAnimationFrame', vi.fn());
+    const { host, canvas } = rendererElements();
+    adoptTiledRenderer(canvas, {
+      paperSize: () => ({ width: 400, height: 400 }),
+      hasActivePointers: () => false,
+    });
+    resizeTiledRenderer(400, 400, 1);
+    applyTiledView(IDENTITY_PAPER_VIEW);
+    const tiles = [...host.querySelectorAll<HTMLCanvasElement>('[data-live-tile]')];
+    let firstLost = true;
+    let secondLost = true;
+    Object.assign(tiles[0].getContext('2d')!, { isContextLost: () => firstLost });
+    Object.assign(tiles[1].getContext('2d')!, { isContextLost: () => secondLost });
+    for (const tile of tiles.slice(0, 2)) {
+      tile.getContext('2d')!.lineCap = 'butt';
+      tile.dispatchEvent(new Event('contextlost'));
+    }
+
+    firstLost = false;
+    tiles[0].dispatchEvent(new Event('contextrestored'));
+    deferredFrames.shift()?.(0);
+    expect(tiles[0].getContext('2d')!.lineCap).toBe('butt');
+
+    secondLost = false;
+    tiles[1].dispatchEvent(new Event('contextrestored'));
+    deferredFrames.shift()?.(16);
+    expect(tiles[0].getContext('2d')!.lineCap).toBe('round');
+    expect(tiles[1].getContext('2d')!.getTransform()).toMatchObject({ e: -100, f: 0 });
   });
 
   it('drops pre-clear work from a command that continues after clear', () => {

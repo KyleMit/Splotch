@@ -39,6 +39,21 @@ it('tracks a pen canvas exit before the engine stops its active pointer', () => 
   }
 });
 
+it('registers the document resume listener in the native test build', () => {
+  const removers: Array<() => void> = [];
+  const canvas = document.createElement('canvas');
+  const handlers = listenerHandlers([], vi.fn());
+  registerDrawingEngineListeners(removers, canvas, handlers);
+
+  try {
+    document.dispatchEvent(new Event('resume'));
+
+    expect(handlers.resyncOnReentry).toHaveBeenCalledOnce();
+  } finally {
+    for (const remove of removers) remove();
+  }
+});
+
 it.each(['pointerdown', 'pointerup', 'pointercancel'] as const)(
   'finishes a suspended pen from a window %s',
   (eventType) => {

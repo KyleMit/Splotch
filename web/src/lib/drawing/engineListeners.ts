@@ -31,9 +31,11 @@ export function registerDrawingEngineListeners(
   if (typeof screenOrientation?.addEventListener === 'function') {
     listen(removers, screenOrientation, 'change', handlers.handleResize);
   }
-  // Backgrounded rotations emit neither signal, so visibility restores the
-  // missed state (issue #305).
+  // Browser visibility covers hidden tabs; Capacitor's Android WebView stays
+  // `visible` while its Activity is backgrounded and reports re-entry through
+  // Cordova's document-level resume event instead.
   listen(removers, document, 'visibilitychange', handlers.resyncOnReentry);
+  if (__IS_CAPACITOR__) listen(removers, document, 'resume', handlers.resyncOnReentry);
   listen(removers, canvas, 'pointerdown', handlers.startDrawing);
   listen(removers, canvas, 'pointermove', handlers.draw);
   listen(removers, canvas, 'pointerup', handlers.stopDrawing);

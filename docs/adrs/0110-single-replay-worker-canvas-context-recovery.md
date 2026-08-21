@@ -1,7 +1,8 @@
 # ADR-0110: Recover Worker Canvas Context Loss with One Full Replay
 
 **Status:** Active — amends [ADR-0088](0088-frame-bound-screenshot-export-on-ipad-webkit.md) and
-[ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md) **Date:** 2026-08
+[ADR-0091](0091-alpha-overlays-and-worker-magic-sheets.md); live-surface exclusion amended by
+[ADR-0132](0132-recover-reset-live-tile-contexts-on-resume.md) **Date:** 2026-08
 
 ## Context
 

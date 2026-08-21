@@ -69,6 +69,16 @@ export const WEB_ONLY_MODULE_MARKERS = [
   },
 ];
 
+export const NATIVE_ONLY_MODULE_MARKERS = [
+  {
+    feature: 'Capacitor resume lifecycle',
+    sourcePath: 'web/src/lib/drawing/engineListeners.ts',
+    sourceNeedle:
+      "if (__IS_CAPACITOR__) listen(removers, document, 'resume', handlers.resyncOnReentry);",
+    bundlePattern: /document\s*,\s*["'`]resume["'`]\s*,/,
+  },
+];
+
 // Scanning by **host** rather than whole URL is deliberate. The route's
 // constants are template literals that interpolate PLAY_STORE_APP_ID, and the
 // bundler keeps them that way — the built chunk carries
@@ -125,6 +135,33 @@ export function webOnlyMarkerSourceProblems(
             'update WEB_ONLY_MODULE_MARKERS before the native scan can run.',
         ]
   );
+}
+
+export function nativeOnlyMarkerSourceProblems(
+  readSource = (path) => readFileSync(join(ROOT, path), 'utf8')
+) {
+  return NATIVE_ONLY_MODULE_MARKERS.flatMap(({ feature, sourcePath, sourceNeedle }) =>
+    readSource(sourcePath).includes(sourceNeedle)
+      ? []
+      : [
+          `${sourcePath} no longer contains the ${feature} boundary ${JSON.stringify(sourceNeedle)}; ` +
+            'update NATIVE_ONLY_MODULE_MARKERS before the web/native scan can run.',
+        ]
+  );
+}
+
+export function nativeOnlyMarkerBundleProblems(dir, expectedPresent) {
+  if (!existsSync(dir)) return [`Build output does not exist: ${dir}`];
+  const scripts = bundleFiles(dir)
+    .filter((path) => path.endsWith('.js'))
+    .map((path) => readFileSync(path, 'utf8'));
+  return NATIVE_ONLY_MODULE_MARKERS.flatMap(({ feature, bundlePattern }) => {
+    const present = scripts.some((source) => bundlePattern.test(source));
+    if (present === expectedPresent) return [];
+    return expectedPresent
+      ? [`Native bundle is missing the native-only ${feature}`]
+      : [`Web bundle retains the native-only ${feature}`];
+  });
 }
 
 export function nativeBundleProblems(
@@ -253,10 +290,26 @@ export function nativePrivacyFeedbackProblems(dir) {
   ];
 }
 
-export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } = {}) {
+export async function checkStaticBundle({
+  dir = BUILD_DIR,
+  log = console.log,
+  target = 'native',
+} = {}) {
   const sentinels = adminConsoleSentinels();
+  const boundaryProblems = [
+    ...nativeOnlyMarkerSourceProblems(),
+    ...nativeOnlyMarkerBundleProblems(dir, target === 'native'),
+  ];
+  if (target === 'web') {
+    if (boundaryProblems.length) throw new Error(boundaryProblems.join('\n'));
+    log(
+      `[check-static-bundle] web export omits ${NATIVE_ONLY_MODULE_MARKERS.length} native-only marker(s)`
+    );
+    return;
+  }
   const problems = [
     ...webOnlyMarkerSourceProblems(),
+    ...boundaryProblems,
     ...nativeBundleProblems(dir, sentinels),
     ...requiredNativePageProblems(dir),
     ...nativeContentSecurityPolicyProblems(dir),
@@ -270,6 +323,7 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
       `no dev store-frames copy; ` +
       `no web-only support email; ` +
       `no web-only boot code (${WEB_ONLY_MODULE_MARKERS.length} marker(s)); ` +
+      `native-only lifecycle code is present (${NATIVE_ONLY_MODULE_MARKERS.length} marker(s)); ` +
       `required pages ${REQUIRED_NATIVE_PAGES.join(', ')} are present and linked; ` +
       `every HTML document carries one native CSP; ` +
       `privacy links to the hosted feedback form; ` +
@@ -277,4 +331,6 @@ export async function checkStaticBundle({ dir = BUILD_DIR, log = console.log } =
   );
 }
 
-if (isMain(import.meta.url)) runMain(checkStaticBundle);
+if (isMain(import.meta.url)) {
+  runMain(() => checkStaticBundle({ target: process.argv.includes('--web') ? 'web' : 'native' }));
+}
