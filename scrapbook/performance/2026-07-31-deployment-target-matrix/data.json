@@ -11,10 +11,10 @@
     "Android physical and emulator landscape action sweeps are P1/unmeasured after repeated Settings-navigation timeouts. Valid drawing and undo evidence for those modes is retained.",
     "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
     "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
-    "Firefox drawing is unmeasured because the real-screen frame runner supports Chromium and WebKit only. Standalone Mac undo-scenario captures are advisory and lack the per-mode metadata required by this matrix.",
+    "Mac Firefox drawing and all mode-aware Mac undo were captured on 2026-08-21 with the same probe, viewports, and gates as the other desktop rows: the frame runner gained Gecko and an undo-response measurement, so one pen capture per mode now carries drawing and undo under the same recorded orientation and theme. Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
     "Desktop captures used exact 1512×982 or 982×1512 CSS viewports at DPR 2. The headed landscape browser window exceeded the physical display height at 100% browser zoom, but Playwright retained the requested page viewport.",
     "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport, and it was unavailable in this campaign.",
-    "Raw perf-profiles remain local scratch evidence; sources.json preserves their ordered provenance and data.json contains the committed normalized results."
+    "Raw perf-profiles are local scratch evidence. The 2026-08-20 captures are no longer on the workstation, so their cells are carried forward from the published normalized results and each run keeps the raw source path it was captured from; only the 2026-08-21 gap captures are re-readable from raw input."
   ],
   "preservedEvidence": {
     "from": "data.json",
@@ -20469,7 +20469,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/portrait/light/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0.1,
+              "p95": 0.4,
+              "p99": 0.4,
+              "max": 0.4
+            },
+            "nextFrame": {
+              "p50": -0.8,
+              "p95": 7.1,
+              "p99": 7.1,
+              "max": 7.1
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -22220,7 +22237,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/portrait/dark/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0.1,
+              "p95": 0.3,
+              "p99": 0.3,
+              "max": 0.3
+            },
+            "nextFrame": {
+              "p50": 1.2,
+              "p95": 7.7,
+              "p99": 7.7,
+              "max": 7.7
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -23971,7 +24005,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/landscape/light/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0.1,
+              "p95": 0.4,
+              "p99": 0.4,
+              "max": 0.4
+            },
+            "nextFrame": {
+              "p50": -0.8,
+              "p95": 7.4,
+              "p99": 7.4,
+              "max": 7.4
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -25747,7 +25798,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/landscape/dark/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0.1,
+              "p95": 0.5,
+              "p99": 0.5,
+              "max": 0.5
+            },
+            "nextFrame": {
+              "p50": 0.9,
+              "p95": 3.4,
+              "p99": 3.4,
+              "max": 3.4
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -27535,7 +27603,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/portrait/light/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 1,
+              "p99": 1,
+              "max": 1
+            },
+            "nextFrame": {
+              "p50": 9,
+              "p95": 11,
+              "p99": 11,
+              "max": 11
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -29286,7 +29371,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/portrait/dark/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 1,
+              "p99": 1,
+              "max": 1
+            },
+            "nextFrame": {
+              "p50": 10,
+              "p95": 14,
+              "p99": 14,
+              "max": 14
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -31037,7 +31139,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/landscape/light/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 1,
+              "p99": 1,
+              "max": 1
+            },
+            "nextFrame": {
+              "p50": 8,
+              "p95": 11,
+              "p99": 11,
+              "max": 11
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -32813,7 +32932,24 @@
               ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/landscape/dark/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 0,
+              "p99": 0,
+              "max": 0
+            },
+            "nextFrame": {
+              "p50": 10,
+              "p95": 13,
+              "p99": 13,
+              "max": 13
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -34114,62 +34250,511 @@
           "drawing": {
             "pen": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.74,
+                  "p99": 9.14,
+                  "max": 9.16
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/pen/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.44,
+                        "p95": 8.74,
+                        "p99": 9.14,
+                        "max": 9.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.4,
+                        "p95": 8.68,
+                        "p99": 9.08,
+                        "max": 9.12
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.38,
+                        "p99": 8.98,
+                        "max": 9.06
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 8.3,
+                        "p99": 8.92,
+                        "max": 9.02
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 8.58,
+                        "p99": 8.94,
+                        "max": 9.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 8.56,
+                        "p99": 9.14,
+                        "max": 9.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 8.72,
+                        "p99": 9.12,
+                        "max": 9.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 8.9,
+                        "p99": 9.44,
+                        "max": 10.08
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.42,
+                        "p95": 9.24,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "crayon": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.98,
+                  "p99": 9.98,
+                  "max": 10.28
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/crayon/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.98,
+                        "p99": 9.98,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 9.26,
+                        "p99": 9.92,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 9.48,
+                        "p99": 9.86,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 9.14,
+                        "p99": 9.98,
+                        "max": 10.14
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.68,
+                        "p95": 8.74,
+                        "p99": 9.44,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.4,
+                        "p95": 9.34,
+                        "p99": 10.02,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0.0009,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9,
+                        "p99": 9.66,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9,
+                        "p99": 9.9,
+                        "max": 10.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 9.16,
+                        "p99": 9.86,
+                        "max": 15.2
+                      },
+                      "lostFrameTimeShare": 0.0025,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "magic": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.02,
+                  "p99": 9.74,
+                  "max": 12.42
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0.0009,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/magic/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.44,
+                        "p95": 9.02,
+                        "p99": 9.74,
+                        "max": 12.42
+                      },
+                      "lostFrameTimeShare": 0.0009,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.38,
+                        "p95": 9.34,
+                        "p99": 10,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9.2,
+                        "p99": 9.64,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.28,
+                        "p99": 9.94,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.44,
+                        "p99": 9.88,
+                        "max": 10.22
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9.38,
+                        "p99": 10.1,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 9.28,
+                        "p99": 9.76,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.22,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.3,
+                        "p99": 9.94,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "eraser": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.3,
+                  "p99": 10.2,
+                  "max": 10.26
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/eraser/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 9.3,
+                        "p99": 10.2,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 9.52,
+                        "p99": 10.16,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 9.44,
+                        "p99": 9.92,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.46,
+                        "p95": 9.06,
+                        "p99": 9.72,
+                        "max": 10.08
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.24,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.98,
+                        "p99": 9.9,
+                        "max": 10.3
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.98,
+                        "p99": 9.74,
+                        "max": 10.22
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.5,
+                        "p99": 10.16,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.7,
+                        "p95": 9.08,
+                        "p99": 9.78,
+                        "max": 10.12
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 1,
+              "p95": 8,
+              "p99": 8,
+              "max": 8
+            },
+            "nextFrame": {
+              "p50": 1.68,
+              "p95": 7.12,
+              "p99": 7.12,
+              "max": 7.12
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -35432,62 +36017,511 @@
           "drawing": {
             "pen": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.2,
+                  "p99": 9.8,
+                  "max": 10.28
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/pen/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.2,
+                        "p99": 9.8,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.22,
+                        "p99": 9.9,
+                        "max": 10.22
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 9.04,
+                        "p99": 9.88,
+                        "max": 10.5
+                      },
+                      "lostFrameTimeShare": 0.0018,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 9.12,
+                        "p99": 9.8,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.68,
+                        "p95": 8.52,
+                        "p99": 9.7,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.78,
+                        "p99": 9.66,
+                        "max": 10.02
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.26,
+                        "p99": 9.94,
+                        "max": 9.98
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.26,
+                        "p99": 9.9,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.16,
+                        "p99": 9.84,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "crayon": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.24,
+                  "p99": 9.88,
+                  "max": 10.2
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/crayon/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.24,
+                        "p99": 9.88,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 8.56,
+                        "p99": 9.54,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.72,
+                        "p95": 9,
+                        "p99": 9.78,
+                        "max": 10.14
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.46,
+                        "p99": 9.7,
+                        "max": 10.06
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9.04,
+                        "p99": 9.98,
+                        "max": 10.3
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.16,
+                        "p99": 9.92,
+                        "max": 10.3
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.18,
+                        "p99": 9.88,
+                        "max": 10.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.14,
+                        "p99": 9.8,
+                        "max": 10.22
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.08,
+                        "p99": 9.76,
+                        "max": 10.12
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "magic": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.28,
+                  "p99": 9.92,
+                  "max": 10.28
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/magic/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.28,
+                        "p99": 9.92,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.18,
+                        "p99": 9.86,
+                        "max": 10.22
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 9.4,
+                        "p99": 9.8,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.42,
+                        "p95": 9.06,
+                        "p99": 9.74,
+                        "max": 10.08
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 9.22,
+                        "p99": 9.96,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 8.94,
+                        "p99": 9.64,
+                        "max": 10.3
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.2,
+                        "p99": 9.9,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.18,
+                        "p99": 9.84,
+                        "max": 10.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.46,
+                        "p95": 8.98,
+                        "p99": 9.78,
+                        "max": 10.14
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "eraser": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.96,
+                  "p99": 9.92,
+                  "max": 10.28
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0.0009,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/eraser/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 8.96,
+                        "p99": 9.92,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0.0009,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.2,
+                        "p99": 9.88,
+                        "max": 23.16
+                      },
+                      "lostFrameTimeShare": 0.0017,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 9.14,
+                        "p99": 9.82,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.42,
+                        "p95": 8.88,
+                        "p99": 9.7,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.02,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 9.3,
+                        "p99": 9.96,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 9.56,
+                        "p99": 9.92,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 9.5,
+                        "p99": 10.08,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.46,
+                        "p95": 9.38,
+                        "p99": 10.04,
+                        "max": 10.14
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 0,
+              "p95": 4,
+              "p99": 4,
+              "max": 4
+            },
+            "nextFrame": {
+              "p50": 1.82,
+              "p95": 7.36,
+              "p99": 7.36,
+              "max": 7.36
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -36750,62 +37784,511 @@
           "drawing": {
             "pen": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.2,
+                  "p99": 9.98,
+                  "max": 15.02
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0.0008,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/pen/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9.2,
+                        "p99": 9.98,
+                        "max": 15.02
+                      },
+                      "lostFrameTimeShare": 0.0008,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 9.56,
+                        "p99": 9.92,
+                        "max": 12.26
+                      },
+                      "lostFrameTimeShare": 0.0011,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.16,
+                        "p99": 9.84,
+                        "max": 16.18
+                      },
+                      "lostFrameTimeShare": 0.001,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 9.18,
+                        "p99": 9.8,
+                        "max": 10.14
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.44,
+                        "p95": 9.3,
+                        "p99": 9.78,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.38,
+                        "p99": 10.02,
+                        "max": 28.64
+                      },
+                      "lostFrameTimeShare": 0.0026,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9.26,
+                        "p99": 9.94,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.04,
+                        "p99": 9.88,
+                        "max": 10.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.22,
+                        "p99": 9.84,
+                        "max": 10.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "crayon": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.08,
+                  "p99": 9.7,
+                  "max": 10.04
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/crayon/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.08,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 9.16,
+                        "p99": 9.64,
+                        "max": 13.62
+                      },
+                      "lostFrameTimeShare": 0.0009,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 9.18,
+                        "p99": 9.9,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 9.22,
+                        "p99": 9.86,
+                        "max": 10.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.46,
+                        "p95": 9.14,
+                        "p99": 9.76,
+                        "max": 22.78
+                      },
+                      "lostFrameTimeShare": 0.0018,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 9.02,
+                        "p99": 9.76,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.96,
+                        "p99": 9.64,
+                        "max": 9.92
+                      },
+                      "lostFrameTimeShare": 0.0016,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 8.92,
+                        "p99": 9.62,
+                        "max": 10
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 8.98,
+                        "p99": 9.72,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "magic": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.78,
+                  "p99": 9.46,
+                  "max": 10.1
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/magic/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.44,
+                        "p95": 8.78,
+                        "p99": 9.46,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.42,
+                        "p95": 8.96,
+                        "p99": 9.72,
+                        "max": 10.06
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 8.98,
+                        "p99": 9.98,
+                        "max": 10.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 9.2,
+                        "p99": 9.92,
+                        "max": 10.08
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 9.04,
+                        "p99": 9.82,
+                        "max": 10.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 8.82,
+                        "p99": 9.8,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 8.78,
+                        "p99": 9.74,
+                        "max": 10.08
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.6,
+                        "p99": 9.38,
+                        "max": 10
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 8.94,
+                        "p99": 9.6,
+                        "max": 9.98
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "eraser": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.92,
+                  "p99": 9.6,
+                  "max": 10.06
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/eraser/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.92,
+                        "p99": 9.6,
+                        "max": 10.06
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.78,
+                        "p99": 9.74,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.86,
+                        "p95": 8.86,
+                        "p99": 9.6,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.76,
+                        "p95": 9.06,
+                        "p99": 9.84,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.74,
+                        "p95": 8.7,
+                        "p99": 9.48,
+                        "max": 10.12
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.68,
+                        "p95": 8.98,
+                        "p99": 9.74,
+                        "max": 16.06
+                      },
+                      "lostFrameTimeShare": 0.0009,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.56,
+                        "p99": 9.64,
+                        "max": 10.02
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.7,
+                        "p99": 9.94,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 8.98,
+                        "p99": 9.88,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 1,
+              "p95": 3,
+              "p99": 3,
+              "max": 3
+            },
+            "nextFrame": {
+              "p50": 3.48,
+              "p95": 8.14,
+              "p99": 8.14,
+              "max": 8.14
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {
@@ -38093,62 +39576,511 @@
           "drawing": {
             "pen": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.82,
+                  "p99": 9.8,
+                  "max": 10.16
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/pen/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 8.82,
+                        "p99": 9.8,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 8.74,
+                        "p99": 9.72,
+                        "max": 10.12
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 8.7,
+                        "p99": 9.68,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.66,
+                        "p99": 9.64,
+                        "max": 10.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 8.88,
+                        "p99": 9.58,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 8.56,
+                        "p99": 9.54,
+                        "max": 10.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 8.64,
+                        "p99": 9.7,
+                        "max": 10.12
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.42,
+                        "p95": 8.66,
+                        "p99": 9.58,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 8.68,
+                        "p99": 9.4,
+                        "max": 10.02
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "crayon": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 9.02,
+                  "p99": 9.84,
+                  "max": 10.18
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/crayon/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.52,
+                        "p95": 9.02,
+                        "p99": 9.84,
+                        "max": 10.18
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 8.96,
+                        "p99": 9.8,
+                        "max": 16.48
+                      },
+                      "lostFrameTimeShare": 0.0051,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 9.08,
+                        "p99": 9.94,
+                        "max": 17.02
+                      },
+                      "lostFrameTimeShare": 0.0044,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.78,
+                        "p99": 9.66,
+                        "max": 16.28
+                      },
+                      "lostFrameTimeShare": 0.0027,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 8.88,
+                        "p99": 9.6,
+                        "max": 16.28
+                      },
+                      "lostFrameTimeShare": 0.0027,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.56,
+                        "p95": 8.82,
+                        "p99": 9.56,
+                        "max": 16.54
+                      },
+                      "lostFrameTimeShare": 0.0026,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.5,
+                        "p95": 9.08,
+                        "p99": 9.84,
+                        "max": 16.44
+                      },
+                      "lostFrameTimeShare": 0.0052,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.46,
+                        "p95": 8.8,
+                        "p99": 9.74,
+                        "max": 16.72
+                      },
+                      "lostFrameTimeShare": 0.0043,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 8.84,
+                        "p99": 9.72,
+                        "max": 17.3
+                      },
+                      "lostFrameTimeShare": 0.0028,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "magic": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.76,
+                  "p99": 9.44,
+                  "max": 10.14
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/magic/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.44,
+                        "p95": 8.76,
+                        "p99": 9.44,
+                        "max": 10.14
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.68,
+                        "p95": 8.68,
+                        "p99": 9.7,
+                        "max": 10.06
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.64,
+                        "p99": 9.66,
+                        "max": 10.02
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.6,
+                        "p95": 8.76,
+                        "p99": 9.6,
+                        "max": 9.96
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.54,
+                        "p95": 8.84,
+                        "p99": 9.54,
+                        "max": 10.2
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.48,
+                        "p95": 8.82,
+                        "p99": 9.48,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 8.54,
+                        "p99": 9.72,
+                        "max": 10.1
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.58,
+                        "p95": 8.98,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 8.52,
+                        "p99": 9.58,
+                        "max": 9.94
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             },
             "eraser": {
               "aggregate": {
-                "runCount": 0,
+                "runCount": 1,
                 "paint": {
-                  "p95": null,
-                  "p99": null,
-                  "max": null
+                  "p95": 8.96,
+                  "p99": 9.7,
+                  "max": 10.04
                 },
-                "lostFrameTimeShare": null,
-                "blankPassed": false,
-                "allPhasesPassed": false
+                "lostFrameTimeShare": 0,
+                "blankPassed": true,
+                "allPhasesPassed": true
               },
-              "runs": []
+              "runs": [
+                {
+                  "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/eraser/real-screen.json",
+                  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+                  "fidelity": null,
+                  "phases": [
+                    {
+                      "phase": "blank",
+                      "paint": {
+                        "p50": 7.64,
+                        "p95": 8.96,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.98,
+                        "p99": 9.7,
+                        "max": 10.04
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-nudge",
+                      "paint": {
+                        "p50": 7.9,
+                        "p95": 8.64,
+                        "p99": 9.62,
+                        "max": 10.24
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-blend",
+                      "paint": {
+                        "p50": 7.8,
+                        "p95": 8.88,
+                        "p99": 9.74,
+                        "max": 10.22
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-no-halos",
+                      "paint": {
+                        "p50": 7.78,
+                        "p95": 8.84,
+                        "p99": 9.8,
+                        "max": 10.16
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-bare",
+                      "paint": {
+                        "p50": 7.7,
+                        "p95": 9.02,
+                        "p99": 9.76,
+                        "max": 15.8
+                      },
+                      "lostFrameTimeShare": 0.0009,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-again",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.74,
+                        "p99": 9.7,
+                        "max": 10.06
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-hidden",
+                      "paint": {
+                        "p50": 7.66,
+                        "p95": 8.8,
+                        "p99": 9.66,
+                        "max": 10.28
+                      },
+                      "lostFrameTimeShare": 0.0008,
+                      "passed": true
+                    },
+                    {
+                      "phase": "page-halos-transparent",
+                      "paint": {
+                        "p50": 7.62,
+                        "p95": 8.68,
+                        "p99": 9.58,
+                        "max": 10.26
+                      },
+                      "lostFrameTimeShare": 0,
+                      "passed": true
+                    }
+                  ],
+                  "passed": true
+                }
+              ]
             }
           },
-          "undo": null,
+          "undo": {
+            "source": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/pen/real-screen.json",
+            "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+            "count": 10,
+            "engine": {
+              "p50": 1,
+              "p95": 4,
+              "p99": 4,
+              "max": 4
+            },
+            "nextFrame": {
+              "p50": 3.2,
+              "p95": 7.16,
+              "p99": 7.16,
+              "max": 7.16
+            },
+            "passed": true
+          },
           "actions": {
             "sources": [
               {

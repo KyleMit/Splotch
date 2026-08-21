@@ -12,10 +12,10 @@
     "Android physical and emulator landscape action sweeps are P1/unmeasured after repeated Settings-navigation timeouts. Valid drawing and undo evidence for those modes is retained.",
     "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
     "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
-    "Firefox drawing is unmeasured because the real-screen frame runner supports Chromium and WebKit only. Standalone Mac undo-scenario captures are advisory and lack the per-mode metadata required by this matrix.",
+    "Mac Firefox drawing and all mode-aware Mac undo were captured on 2026-08-21 with the same probe, viewports, and gates as the other desktop rows: the frame runner gained Gecko and an undo-response measurement, so one pen capture per mode now carries drawing and undo under the same recorded orientation and theme. Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
     "Desktop captures used exact 1512\u00d7982 or 982\u00d71512 CSS viewports at DPR 2. The headed landscape browser window exceeded the physical display height at 100% browser zoom, but Playwright retained the requested page viewport.",
     "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport, and it was unavailable in this campaign.",
-    "Raw perf-profiles remain local scratch evidence; sources.json preserves their ordered provenance and data.json contains the committed normalized results."
+    "Raw perf-profiles are local scratch evidence. The 2026-08-20 captures are no longer on the workstation, so their cells are carried forward from the published normalized results and each run keeps the raw source path it was captured from; only the 2026-08-21 gap captures are re-readable from raw input."
   ],
   "candidateActions": [
     {
@@ -511,7 +511,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/portrait/light/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "portrait-dark",
@@ -520,7 +522,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/portrait/dark/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-light",
@@ -529,7 +533,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/landscape/light/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-dark",
@@ -538,7 +544,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/chromium/landscape/dark/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     },
@@ -559,7 +567,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/portrait/light/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "portrait-dark",
@@ -568,7 +578,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/portrait/dark/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-light",
@@ -577,7 +589,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/landscape/light/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-dark",
@@ -586,7 +600,9 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "actionSources": "preserved"
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/webkit/landscape/dark/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     },
@@ -606,8 +622,23 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {},
-          "actionSources": "preserved"
+          "drawing": {
+            "pen": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/pen/real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/crayon/real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/magic/real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/eraser/real-screen.json"
+            ]
+          },
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/light/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "portrait-dark",
@@ -615,8 +646,23 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {},
-          "actionSources": "preserved"
+          "drawing": {
+            "pen": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/pen/real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/crayon/real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/magic/real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/eraser/real-screen.json"
+            ]
+          },
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/portrait/dark/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-light",
@@ -624,8 +670,23 @@
           "theme": "light",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {},
-          "actionSources": "preserved"
+          "drawing": {
+            "pen": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/pen/real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/crayon/real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/magic/real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/eraser/real-screen.json"
+            ]
+          },
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/light/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         },
         {
           "id": "landscape-dark",
@@ -633,8 +694,23 @@
           "theme": "dark",
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
-          "drawing": {},
-          "actionSources": "preserved"
+          "drawing": {
+            "pen": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/pen/real-screen.json"
+            ],
+            "crayon": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/crayon/real-screen.json"
+            ],
+            "magic": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/magic/real-screen.json"
+            ],
+            "eraser": [
+              "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/eraser/real-screen.json"
+            ]
+          },
+          "actionSources": "preserved",
+          "undoSource": "perf-profiles/2026-08-21-campaign-gaps/mac/firefox/landscape/dark/pen/real-screen.json",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     }
