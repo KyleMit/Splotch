@@ -703,3 +703,37 @@ describe('action-owned frame attribution', () => {
     expect(summary.passed).toBe(false);
   });
 });
+describe('compact settings shell', () => {
+  const read = (relative) => readFileSync(join(ROOT, relative), 'utf8');
+  const sweep = read(join('tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'));
+  const compactShell = read(
+    join('web', 'src', 'lib', 'components', 'settings', 'CompactShell.svelte')
+  );
+  const settingsModal = read(join('web', 'src', 'lib', 'components', 'SettingsModal.svelte'));
+
+  // The sweep measures a shell it cannot see from here, so these hold the
+  // selectors it reaches for against the markup that has to provide them. A
+  // renamed id would otherwise turn every landscape-phone action cell into a
+  // silent timeout, which is exactly how the 2026-08-20 campaign lost them.
+  it('detects the shell by a container CompactShell actually renders', () => {
+    expect(sweep).toContain('#settingsModal .quick-toggles');
+    expect(compactShell).toContain('class="quick-toggles"');
+  });
+
+  it('measures only quick toggles CompactShell actually renders', () => {
+    for (const id of ['quickNightToggle', 'quickSoundToggle', 'quickAdvancedControlsToggle']) {
+      expect(sweep).toContain(`#${id}`);
+      expect(compactShell).toContain(`id="${id}"`);
+    }
+  });
+
+  it('stays keyed to the landscape-phone media query that selects the shell', () => {
+    expect(settingsModal).toContain('(orientation: landscape) and (max-height:');
+  });
+
+  it('skips the section list rather than waiting for rows the shell omits', () => {
+    expect(sweep).toContain("actions.has('settings-sections') && !settingsShellIsCompact");
+    expect(sweep).toContain('if (settingsInScope && !settingsShellIsCompact) {');
+    expect(compactShell).not.toContain('data-section');
+  });
+});

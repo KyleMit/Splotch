@@ -961,12 +961,13 @@ export async function runActionSweep({
     );
   }
 
-  if (
+  const settingsInScope =
     actions.has('settings') ||
     actions.has('settings-sections') ||
     actions.has('settings-controls') ||
-    actions.has('theme')
-  ) {
+    actions.has('theme');
+
+  if (settingsInScope) {
     await closeDialogs(execute);
     await record(
       measureClick({
@@ -981,12 +982,15 @@ export async function runActionSweep({
     );
   }
 
-  if (
-    actions.has('settings') ||
-    actions.has('settings-sections') ||
-    actions.has('settings-controls') ||
-    actions.has('theme')
-  ) {
+  // A landscape phone gets CompactShell, which by design replaces the section list
+  // with quick toggles and a pointer to portrait (COMPACT_QUERY in
+  // SettingsModal.svelte). Waiting for section rows there times out against a
+  // product that is behaving correctly, and takes the whole sweep down with it —
+  // including every action that has nothing to do with Settings.
+  const settingsShellIsCompact = settingsInScope
+    ? await execute(`return document.querySelector('#settingsModal .quick-toggles') !== null;`)
+    : false;
+  if (settingsInScope && !settingsShellIsCompact) {
     await waitForReady(
       execute,
       `document.querySelector('${SETTINGS_SECTION_ROWS}') !== null`,
@@ -1019,7 +1023,7 @@ export async function runActionSweep({
     );
   };
 
-  if (actions.has('settings-sections')) {
+  if (actions.has('settings-sections') && !settingsShellIsCompact) {
     const sectionIds = await execute(`
       return [...document.querySelectorAll('${SETTINGS_SECTION_ROWS}')]
         .map((element) => element.dataset.section).filter(Boolean);
@@ -1068,7 +1072,17 @@ export async function runActionSweep({
     );
   }
 
-  if (actions.has('theme')) {
+  if (actions.has('theme') && settingsShellIsCompact) {
+    await recordToggleRoundTrip({
+      label: 'Night Mode in the compact shell',
+      selector: '#quickNightToggle',
+      baseline: baselineTheme === 'dark',
+      readyFor: (enabled) =>
+        `document.documentElement.dataset.theme === '${enabled ? 'dark' : 'light'}'`,
+    });
+  }
+
+  if (actions.has('theme') && !settingsShellIsCompact) {
     const themePlan = themeRoundTripPlan(baselineTheme);
     await openSettingsSection(
       'appearance',
@@ -1123,7 +1137,24 @@ export async function runActionSweep({
     }
   }
 
-  if (actions.has('settings-controls')) {
+  if (actions.has('settings-controls') && settingsShellIsCompact) {
+    await recordToggleRoundTrip({
+      label: 'drawing sounds in the compact shell',
+      selector: '#quickSoundToggle',
+      baseline: true,
+    });
+    await recordToggleRoundTrip({
+      label: 'advanced controls in the compact shell',
+      selector: '#quickAdvancedControlsToggle',
+      baseline: true,
+      readyFor: (enabled) =>
+        enabled
+          ? actionPanelLacksAttribute('data-off-adv')
+          : actionPanelHasAttribute('data-off-adv'),
+    });
+  }
+
+  if (actions.has('settings-controls') && !settingsShellIsCompact) {
     await openSettingsSection(
       'sound',
       `document.querySelector('#soundToggle') !== null`,
@@ -1189,12 +1220,7 @@ export async function runActionSweep({
     });
   }
 
-  if (
-    actions.has('settings') ||
-    actions.has('settings-sections') ||
-    actions.has('settings-controls') ||
-    actions.has('theme')
-  ) {
+  if (settingsInScope) {
     await record(
       measureClick({
         client,
@@ -1398,7 +1424,10 @@ export async function runActionSweep({
     );
   }
 
-  return samples;
+  return {
+    samples,
+    settingsShell: settingsInScope ? (settingsShellIsCompact ? 'compact' : 'sectioned') : null,
+  };
 }
 
 export async function runIpadActions(argv = process.argv.slice(2)) {
@@ -1573,6 +1602,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
 
+    let settingsShell = null;
     const samples = [];
     const expectedLabels = new Set();
     let baselineTheme;
@@ -1608,11 +1638,12 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         originalOrientation,
         baselineTheme,
       });
+      settingsShell = sweep.settingsShell;
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep) expectedLabels.add(sample.label);
+        for (const sample of sweep.samples) expectedLabels.add(sample.label);
       }
       samples.push(
-        ...sweep.map((sample) => ({
+        ...sweep.samples.map((sample) => ({
           ...sample,
           repeat,
           warmup: repeat <= WARMUP_REPEATS,
@@ -1649,6 +1680,9 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       repeats,
       orientation: originalOrientation,
       theme: baselineTheme,
+      // A landscape phone measures CompactShell's quick toggles instead of the
+      // section list, so the label set differs by shell rather than by regression.
+      settingsShell,
       samples,
       summaries,
       // The gate exceptions this capture was scored under (ADR-0090 amendment):
