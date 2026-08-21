@@ -9,10 +9,14 @@ import {
   actionRows,
   summarizeActions,
 } from '../lib/action-stats.mjs';
+import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import {
+  BORROWED_SESSION_CAPABILITIES_ERROR,
   appiumCapabilities,
+  borrowedSessionDescriptor,
   capabilitiesFromFile,
+  capturedDeviceId,
   clearDeviceWebCache,
   createWebDriverClient,
   isWebContext,
@@ -21,6 +25,18 @@ import {
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
+import {
+  SETTINGS_SECTION_ROWS,
+  RESOLVED_THEME_EXPRESSION,
+  clickSetupElement,
+  settingsShellIsCompact as isCompactSettingsShell,
+  ensureCampaignTheme,
+  parseCampaignTheme,
+  readResolvedTheme,
+  settingsSectionRow,
+  setNativeRotationLock,
+  themeRoundTripPlan,
+} from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
@@ -43,6 +59,7 @@ const REPEAT_SETTLE_MS = 500;
 const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
 const COLORING_SCROLL_MS = 450;
+const COLORING_SCROLL_DISTANCE_PX = 400;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
@@ -90,7 +107,14 @@ function actionPanelDatasetEquals(key, value) {
   return `${ACTION_PANEL_STATE_TARGET}.dataset[${JSON.stringify(key)}] === ${JSON.stringify(value)}`;
 }
 
-function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProvisioning, file }) {
+function sessionCapabilities({
+  deviceId,
+  xcodeConfigFile,
+  wdaBundleId,
+  allowProvisioning,
+  file,
+  nativeApp,
+}) {
   if (file) return capabilitiesFromFile(file);
   if (!deviceId) fail('Pass --device-id= for a local iPad or --capabilities-file= for a cloud one');
   if (!existsSync(xcodeConfigFile)) {
@@ -104,18 +128,68 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
     xcodeConfigFile,
     wdaBundleId,
     allowProvisioning,
+    nativeApp,
   });
 }
 
-// Both Settings shells render a section row as a button stamped with the section
-// id — the phone hub's list and the wide sidebar's table of contents — so the
-// attribute addresses either without naming a shell's classes, which are styling
-// and get renamed with it. The tag separates a row from the wide pane's own
-// `.settings-section` wrappers, which carry the same attribute.
-// tools/perf/tests/xcuitest-actions.test.mjs holds this contract against both shells.
-const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
-const settingsSectionRow = (section) =>
-  `#settingsModal button[data-section=${JSON.stringify(section)}]`;
+function resolvedSessionCapabilities(session) {
+  return session.capabilities ?? session.value?.capabilities ?? {};
+}
+
+export async function createActionSession(client, sessionId, capabilities) {
+  if (sessionId) return borrowedSessionDescriptor(sessionId, capabilities);
+  return client.request('POST', '/session', {
+    capabilities: { alwaysMatch: capabilities },
+  });
+}
+
+export function validateBorrowedActionSession(sessionId, capabilitiesFile) {
+  if (sessionId && !capabilitiesFile) throw new Error(BORROWED_SESSION_CAPABILITIES_ERROR);
+}
+
+function capabilityValue(capabilities, name) {
+  return capabilities?.[name] ?? capabilities?.[`appium:${name}`];
+}
+
+function isPhysicalAppleUdid(value) {
+  return /^(?:[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{40})$/i.test(String(value ?? ''));
+}
+
+// XCUITest returns no `deviceName` for a physical device — the session names only
+// udid, platformName, platformVersion and browserName — so a ledger scoped to iPads
+// could never reach one, and ADR-0090's exception sat unreachable. Nothing in the
+// session carries a device class, and screen size cannot supply it either: an iPad
+// mini is 744 px wide, below any tablet breakpoint that would exclude a phone. The
+// campaign is the layer that knows which device it queued, so it says so, and a
+// Simulator's `deviceName` still answers for a hand-run capture.
+export function actionGateAllowances({
+  nativeApp,
+  deviceId,
+  deviceClass,
+  requestedCapabilities,
+  session,
+}) {
+  const sessionCapabilities = resolvedSessionCapabilities(session);
+  const platformName = String(
+    capabilityValue(sessionCapabilities, 'platformName') ??
+      capabilityValue(requestedCapabilities, 'platformName') ??
+      ''
+  ).toLowerCase();
+  const deviceName = String(
+    capabilityValue(sessionCapabilities, 'deviceName') ??
+      capabilityValue(requestedCapabilities, 'deviceName') ??
+      ''
+  ).toLowerCase();
+  const physicalDevice = [
+    deviceId,
+    capabilityValue(sessionCapabilities, 'udid'),
+    capabilityValue(requestedCapabilities, 'udid'),
+  ].some(isPhysicalAppleUdid);
+  const isTablet = deviceClass === 'tablet' || deviceName.includes('ipad');
+  const isCalibratedPhysicalIpadWeb =
+    !nativeApp && platformName === 'ios' && isTablet && physicalDevice;
+  return isCalibratedPhysicalIpadWeb ? IOS_ACTION_FRAME_P95_ALLOWANCES_MS : {};
+}
 
 export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
   const selector = settingsSectionRow(section);
@@ -193,6 +267,12 @@ export function coloringClearActivation() {
   return 'native-accessibility';
 }
 
+export function coloringScrollTransport(client) {
+  return client.useWheelForScroll === true
+    ? { eventTypes: ['wheel'], activation: 'trusted-wheel' }
+    : { eventTypes: ['pointerdown'], activation: 'native-touch' };
+}
+
 export function customColorSelectionEventTypes() {
   return ['pointerdown'];
 }
@@ -263,58 +343,6 @@ async function clickWebElement(client, sessionId, selector) {
   });
   const elementId = result[ELEMENT_KEY] ?? result.ELEMENT;
   await client.request('POST', `/session/${sessionId}/element/${elementId}/click`);
-}
-
-async function clickSetupElement(execute, selector) {
-  await execute(`
-    const target = document.querySelector(${JSON.stringify(selector)});
-    if (!target) throw new Error(${JSON.stringify(`Missing setup target ${selector}`)});
-    target.click();
-    return true;
-  `);
-}
-
-async function setNativeRotationLock(execute, locked) {
-  await clickSetupElement(execute, 'button[aria-label="Settings"]');
-  await waitForReady(
-    execute,
-    `document.querySelector('#settingsModal')?.open === true`,
-    'Settings for rotation setup'
-  );
-  if (!(await execute(`return document.querySelector('#lockRotationToggle') !== null;`))) {
-    const appearanceSelector = settingsSectionRow('appearance');
-    const appearanceRowExists = await execute(
-      `return document.querySelector(${JSON.stringify(appearanceSelector)}) !== null;`
-    );
-    if (appearanceRowExists) {
-      await clickSetupElement(execute, appearanceSelector);
-      await waitForReady(
-        execute,
-        `document.querySelector('#themeOption-light') !== null`,
-        'Appearance section for rotation setup'
-      );
-    }
-  }
-  const initial = await execute(`
-    const toggle = document.querySelector('#lockRotationToggle');
-    return toggle ? toggle.getAttribute('aria-checked') === 'true' : null;
-  `);
-  if (initial !== null && initial !== locked) {
-    await clickSetupElement(execute, '#lockRotationToggle');
-    await waitForReady(
-      execute,
-      `document.querySelector('#lockRotationToggle')?.getAttribute('aria-checked') === '${locked}'`,
-      `rotation lock to become ${locked ? 'enabled' : 'disabled'}`
-    );
-  }
-  await clickSetupElement(execute, '#settingsModal button[aria-label="Close"]');
-  await waitForReady(
-    execute,
-    `document.querySelector('#settingsModal')?.open !== true`,
-    'Settings to close after rotation setup'
-  );
-  await sleep(ANIMATED_ACTION_SETTLE_MS);
-  return initial;
 }
 
 async function measureClick({
@@ -416,31 +444,39 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   `);
   if (!scrollable) return null;
 
-  const { bounds, webContext } = await nativeBoundsForSelector(
-    client,
-    sessionId,
-    execute,
-    selector
-  );
-  const x = Math.round(bounds.x + bounds.width / 2);
-  const startY = Math.round(bounds.y + bounds.height * 0.75);
-  const endY = Math.round(bounds.y + bounds.height * 0.3);
+  const transport = coloringScrollTransport(client);
+  const useWheel = transport.activation === 'trusted-wheel';
   await ensureActionProbe(execute);
   await execute(
-    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ['pointerdown']);`
+    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ${JSON.stringify(
+      transport.eventTypes
+    )});`
   );
-  await performNativeGesture(client, sessionId, webContext, [
-    { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
-    { type: 'pointerDown', button: 0 },
-    {
-      type: 'pointerMove',
-      duration: COLORING_SCROLL_MS,
-      origin: 'viewport',
-      x,
-      y: endY,
-    },
-    { type: 'pointerUp', button: 0 },
-  ]);
+  if (useWheel) {
+    await client.scrollElementWithWheel(selector, COLORING_SCROLL_DISTANCE_PX);
+  } else {
+    const { bounds, webContext } = await nativeBoundsForSelector(
+      client,
+      sessionId,
+      execute,
+      selector
+    );
+    const x = Math.round(bounds.x + bounds.width / 2);
+    const startY = Math.round(bounds.y + bounds.height * 0.75);
+    const endY = Math.round(bounds.y + bounds.height * 0.3);
+    await performNativeGesture(client, sessionId, webContext, [
+      { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
+      { type: 'pointerDown', button: 0 },
+      {
+        type: 'pointerMove',
+        duration: COLORING_SCROLL_MS,
+        origin: 'viewport',
+        x,
+        y: endY,
+      },
+      { type: 'pointerUp', button: 0 },
+    ]);
+  }
   const readyAt = await waitForReady(
     execute,
     `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
@@ -450,7 +486,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
   await sleep(ACTION_SETTLE_MS);
-  return { ...sample, activation: 'native-touch' };
+  return { ...sample, activation: transport.activation };
 }
 
 async function measureIdle(execute) {
@@ -739,7 +775,14 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   return { ...sample, activation: 'native-system' };
 }
 
-export async function runActionSweep({ client, sessionId, execute, actions, originalOrientation }) {
+export async function runActionSweep({
+  client,
+  sessionId,
+  execute,
+  actions,
+  originalOrientation,
+  baselineTheme = 'dark',
+}) {
   const samples = [];
   const record = async (promise) => samples.push(await promise);
   const recordToggleRoundTrip = async ({
@@ -941,12 +984,13 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
-  if (
+  const settingsInScope =
     actions.has('settings') ||
     actions.has('settings-sections') ||
     actions.has('settings-controls') ||
-    actions.has('theme')
-  ) {
+    actions.has('theme');
+
+  if (settingsInScope) {
     await closeDialogs(execute);
     await record(
       measureClick({
@@ -961,12 +1005,13 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
-  if (
-    actions.has('settings') ||
-    actions.has('settings-sections') ||
-    actions.has('settings-controls') ||
-    actions.has('theme')
-  ) {
+  // A landscape phone gets CompactShell, which by design replaces the section list
+  // with quick toggles and a pointer to portrait (COMPACT_QUERY in
+  // SettingsModal.svelte). Waiting for section rows there times out against a
+  // product that is behaving correctly, and takes the whole sweep down with it —
+  // including every action that has nothing to do with Settings.
+  const settingsShellIsCompact = settingsInScope ? await isCompactSettingsShell(execute) : false;
+  if (settingsInScope && !settingsShellIsCompact) {
     await waitForReady(
       execute,
       `document.querySelector('${SETTINGS_SECTION_ROWS}') !== null`,
@@ -999,7 +1044,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   };
 
-  if (actions.has('settings-sections')) {
+  if (actions.has('settings-sections') && !settingsShellIsCompact) {
     const sectionIds = await execute(`
       return [...document.querySelectorAll('${SETTINGS_SECTION_ROWS}')]
         .map((element) => element.dataset.section).filter(Boolean);
@@ -1048,13 +1093,24 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
-  if (actions.has('theme')) {
+  if (actions.has('theme') && settingsShellIsCompact) {
+    await recordToggleRoundTrip({
+      label: 'Night Mode in the compact shell',
+      selector: '#quickNightToggle',
+      baseline: baselineTheme === 'dark',
+      readyFor: (enabled) =>
+        `${RESOLVED_THEME_EXPRESSION} === '${enabled ? 'dark' : 'light'}'`,
+    });
+  }
+
+  if (actions.has('theme') && !settingsShellIsCompact) {
+    const themePlan = themeRoundTripPlan(baselineTheme);
     await openSettingsSection(
       'appearance',
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
     );
-    await clickSetupElement(execute, '#themeOption-dark');
+    await clickSetupElement(execute, `#themeOption-${themePlan.setup}`);
     await waitForReady(
       execute,
       `document.documentElement.dataset.theme === 'dark'`,
@@ -1091,9 +1147,35 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
+    if (themePlan.restore) {
+      await clickSetupElement(execute, `#themeOption-${themePlan.restore}`);
+      await waitForReady(
+        execute,
+        `document.documentElement.dataset.theme === ${JSON.stringify(themePlan.restore)}`,
+        `${themePlan.restore} theme restoration`
+      );
+      await sleep(ACTION_SETTLE_MS);
+    }
   }
 
-  if (actions.has('settings-controls')) {
+  if (actions.has('settings-controls') && settingsShellIsCompact) {
+    await recordToggleRoundTrip({
+      label: 'drawing sounds in the compact shell',
+      selector: '#quickSoundToggle',
+      baseline: true,
+    });
+    await recordToggleRoundTrip({
+      label: 'advanced controls in the compact shell',
+      selector: '#quickAdvancedControlsToggle',
+      baseline: true,
+      readyFor: (enabled) =>
+        enabled
+          ? actionPanelLacksAttribute('data-off-adv')
+          : actionPanelHasAttribute('data-off-adv'),
+    });
+  }
+
+  if (actions.has('settings-controls') && !settingsShellIsCompact) {
     await openSettingsSection(
       'sound',
       `document.querySelector('#soundToggle') !== null`,
@@ -1159,12 +1241,7 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     });
   }
 
-  if (
-    actions.has('settings') ||
-    actions.has('settings-sections') ||
-    actions.has('settings-controls') ||
-    actions.has('theme')
-  ) {
+  if (settingsInScope) {
     await record(
       measureClick({
         client,
@@ -1368,7 +1445,10 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
     );
   }
 
-  return samples;
+  return {
+    samples,
+    settingsShell: settingsInScope ? (settingsShellIsCompact ? 'compact' : 'sectioned') : null,
+  };
 }
 
 export async function runIpadActions(argv = process.argv.slice(2)) {
@@ -1378,6 +1458,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       extra: [
         'url',
         'device-id',
+        'device-class',
         'appium-url',
         'xcode-config',
         'wda-bundle-id',
@@ -1394,11 +1475,13 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         'output',
         'report-only',
         'no-serve',
+        'theme',
       ],
     },
     argv
   );
   const nativeApp = has('native-app');
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedOrientation = flag('orientation')?.toUpperCase();
   if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
     fail('--orientation must be PORTRAIT or LANDSCAPE');
@@ -1410,15 +1493,16 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
   const actions = selectedActions(flag('actions'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   let sessionId = flag('session-id');
-  const capabilities = sessionId
-    ? null
-    : sessionCapabilities({
-        deviceId: flag('device-id'),
-        xcodeConfigFile: flag('xcode-config', DEFAULT_XCODE_CONFIG),
-        wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
-        allowProvisioning: has('allow-provisioning'),
-        file: flag('capabilities-file'),
-      });
+  const capabilitiesFile = flag('capabilities-file');
+  validateBorrowedActionSession(sessionId, capabilitiesFile);
+  const capabilities = sessionCapabilities({
+    deviceId: flag('device-id'),
+    xcodeConfigFile: flag('xcode-config', DEFAULT_XCODE_CONFIG),
+    wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
+    allowProvisioning: has('allow-provisioning'),
+    file: capabilitiesFile,
+    nativeApp,
+  });
   let server;
   let client;
   let ownsSession = false;
@@ -1431,16 +1515,16 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
 
   function cleanup() {
     cleanupPromise ??= (async () => {
-      if (sessionId && execute && restoreNativeRotationLock) {
-        await switchToWebContext(client, sessionId).catch(() => null);
-        await setNativeRotationLock(execute, true).catch(() => null);
-      }
       if (sessionId && restoreOrientation) {
         await client
           ?.request('POST', `/session/${sessionId}/orientation`, {
             orientation: restoreOrientation,
           })
           .catch(() => {});
+      }
+      if (sessionId && execute && restoreNativeRotationLock) {
+        await switchToWebContext(client, sessionId).catch(() => null);
+        await setNativeRotationLock(execute, true).catch(() => null);
       }
       if (sessionId && ownsSession) {
         await client?.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -1465,12 +1549,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     client.nativeWebViewClass = flag('native-webview-class', DEFAULT_NATIVE_WEBVIEW_CLASS);
     client.webdriverClicks = has('webdriver-clicks');
     await client.request('GET', '/status');
-    if (sessionId) {
-      session = await client.request('GET', `/session/${sessionId}`);
-    } else {
-      session = await client.request('POST', '/session', {
-        capabilities: { alwaysMatch: capabilities },
-      });
+    session = await createActionSession(client, sessionId, capabilities);
+    if (!sessionId) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
@@ -1479,13 +1559,12 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
     restoreOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
-    if (requestedOrientation && requestedOrientation !== restoreOrientation) {
+    if (!nativeApp && requestedOrientation && requestedOrientation !== restoreOrientation) {
       await client.request('POST', `/session/${sessionId}/orientation`, {
         orientation: requestedOrientation,
       });
       await sleep(ROTATION_NATIVE_SETTLE_MS);
     }
-    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
 
     if (nativeApp) {
       await switchToWebContext(client, sessionId);
@@ -1509,24 +1588,47 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       );
     }
     await clearDeviceWebCache(executeAsync);
-    if (nativeApp && actions.has('rotation')) {
-      restoreNativeRotationLock = (await setNativeRotationLock(execute, false)) === true;
-      await execute(`location.reload(); return true;`).catch(() => null);
-      await switchToWebContext(client, sessionId);
-      const unlockedReady = await pollUntil(
-        () =>
-          execute(
-            "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-          ).catch(() => false),
-        READY_TIMEOUT_MS,
-        POLL_MS
-      );
-      if (!unlockedReady) throw new Error('The native app did not reload after unlocking rotation');
+    const needsNativeRotationUnlock =
+      nativeApp &&
+      (actions.has('rotation') ||
+        (requestedOrientation && requestedOrientation !== restoreOrientation));
+    if (needsNativeRotationUnlock) {
+      const initialRotationLock = await setNativeRotationLock(execute, false);
+      if (initialRotationLock === null) {
+        throw new Error(
+          'Native orientation capture is unavailable: Settings does not expose the persisted rotation lock control required by ADR-0090'
+        );
+      }
+      restoreNativeRotationLock = initialRotationLock === true;
+      if (initialRotationLock) {
+        await execute(`location.reload(); return true;`).catch(() => null);
+        await switchToWebContext(client, sessionId);
+        const unlockedReady = await pollUntil(
+          () =>
+            execute(
+              "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+            ).catch(() => false),
+          READY_TIMEOUT_MS,
+          POLL_MS
+        );
+        if (!unlockedReady) {
+          throw new Error('The native app did not reload after unlocking rotation');
+        }
+      }
     }
+    if (nativeApp && requestedOrientation && requestedOrientation !== restoreOrientation) {
+      await client.request('POST', `/session/${sessionId}/orientation`, {
+        orientation: requestedOrientation,
+      });
+      await sleep(ROTATION_NATIVE_SETTLE_MS);
+    }
+    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
 
+    let settingsShell = null;
     const samples = [];
     const expectedLabels = new Set();
+    let baselineTheme;
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(appUrl, repeat);
       if (nativeApp) {
@@ -1546,6 +1648,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         POLL_MS
       );
       if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
+      await ensureCampaignTheme(execute, requestedTheme);
+      baselineTheme = await readResolvedTheme(execute);
       await installActionProbe(execute);
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nAction sweep ${repeat}/${repeats}`);
@@ -1555,12 +1659,14 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         execute,
         actions,
         originalOrientation,
+        baselineTheme,
       });
+      settingsShell = sweep.settingsShell;
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep) expectedLabels.add(sample.label);
+        for (const sample of sweep.samples) expectedLabels.add(sample.label);
       }
       samples.push(
-        ...sweep.map((sample) => ({
+        ...sweep.samples.map((sample) => ({
           ...sample,
           repeat,
           warmup: repeat <= WARMUP_REPEATS,
@@ -1568,7 +1674,14 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       );
     }
 
-    const summaries = summarizeActions(samples, expectedLabels, IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+    const gateAllowances = actionGateAllowances({
+      nativeApp,
+      deviceId: flag('device-id'),
+      deviceClass: flag('device-class'),
+      requestedCapabilities: capabilities,
+      session,
+    });
+    const summaries = summarizeActions(samples, expectedLabels, gateAllowances);
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
@@ -1581,21 +1694,25 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
           session.capabilities?.platformVersion ??
           session.value?.capabilities?.platformVersion ??
           'unknown',
-        id: flag('device-id') ?? 'cloud',
+        id: capturedDeviceId(flag('device-id'), session),
       },
       appUrl,
-      transport: nativeApp ? 'native-capacitor-webview' : 'browser',
+      transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       uiActivation: uiActivationLabel(samples),
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],
       repeats,
       orientation: originalOrientation,
+      theme: baselineTheme,
+      // A landscape phone measures CompactShell's quick toggles instead of the
+      // section list, so the label set differs by shell rather than by regression.
+      settingsShell,
       samples,
       summaries,
       // The gate exceptions this capture was scored under (ADR-0090 amendment):
       // re-summarizers read them from here, so a capture carries its own
       // calibration and historical captures without the field stay on base gates.
-      gateAllowances: IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
+      gateAllowances,
       passed: failures.length === 0,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { probeConfigScript } from './capture-webkit-frames.mjs';
@@ -14,12 +15,35 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import {
+  EXPAND_CONTROLS_SOURCE,
+  UNDO_ACTION_PAUSE_MS,
+  UNDO_ACTION_SETTLE_MS,
+  UNDO_BUTTON_READY_POLL_MS,
+  UNDO_BUTTON_READY_SOURCE,
+  UNDO_BUTTON_READY_TIMEOUT_MS,
+  assertUndoAction,
+  undoActionPromiseSource,
+} from '../lib/undo-driver.mjs';
+import {
+  PLATFORM_OWNS_ROTATION,
+  ensureCampaignTheme,
+  parseCampaignOrientation,
+  parseCampaignTheme,
+  readResolvedTheme,
+  setNativeRotationLock,
+} from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 const DEFAULT_APPIUM_URL = 'http://127.0.0.1:4723';
 const DEFAULT_XCODE_CONFIG = join(ROOT, 'ios', 'local.xcconfig');
 const DEFAULT_WDA_BUNDLE_ID = 'art.splotch.WebDriverAgentRunner';
+// The bundle a native capture attaches to is the one Capacitor builds, so it is
+// read from that config rather than restated here.
+const NATIVE_APP_BUNDLE_ID = JSON.parse(
+  readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')
+).appId;
 const DEFAULT_NATIVE_WEBVIEW_CLASS = 'XCUIElementTypeWebView';
 const WEBVIEW_READY_TIMEOUT_MS = 30_000;
 const WEBVIEW_READY_POLL_MS = 250;
@@ -29,10 +53,9 @@ const WDA_STARTUP_RETRIES = 1;
 const PROBE_CONTACT_BUDGET_MS = 60_000;
 const AFTER_GESTURE_SETTLE_MS = 500;
 const TABLE_CHUNK_ROWS = 2_000;
+export const BORROWED_SESSION_CAPABILITIES_ERROR =
+  '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance';
 const BRUSH_SELECT_TIMEOUT_MS = 10_000;
-const UNDO_ACTION_SETTLE_MS = 500;
-const UNDO_ACTION_PAUSE_MS = 120;
-const UNDO_MEASURE_TIMEOUT_MS = 5_000;
 const ROTATION_SETTLE_TIMEOUT_MS = 10_000;
 const INSTALL_DISMISSED_STORAGE_KEY = 'splotch-install-dismissed';
 const BRUSH_BUTTON_BY_MODE = {
@@ -153,9 +176,16 @@ export function appiumCapabilities({
   xcodeConfigFile,
   wdaBundleId,
   allowProvisioning = false,
+  nativeApp = false,
 }) {
   return {
-    browserName: 'Safari',
+    // A native capture attaches to the app's own WebView, so it must open the app.
+    // Asking for Safari here still produces a session and still switches to a web
+    // context — Safari's, sitting on about:blank — and the run only fails a couple
+    // of minutes later with "never showed a sized #drawingCanvas".
+    ...(nativeApp
+      ? { 'appium:bundleId': NATIVE_APP_BUNDLE_ID }
+      : { browserName: 'Safari', 'appium:safariInitialUrl': 'about:blank' }),
     platformName: 'iOS',
     'appium:automationName': 'XCUITest',
     'appium:udid': deviceId,
@@ -163,8 +193,33 @@ export function appiumCapabilities({
     'appium:updatedWDABundleId': wdaBundleId,
     'appium:wdaLaunchTimeout': WDA_LAUNCH_TIMEOUT_MS,
     'appium:wdaStartupRetries': WDA_STARTUP_RETRIES,
-    'appium:safariInitialUrl': 'about:blank',
     ...(allowProvisioning ? { 'appium:allowProvisioningDeviceRegistration': true } : {}),
+  };
+}
+
+// A hosted provider is addressed by a capability file and has no local device id,
+// which is what the `cloud` fallback exists for. A local capability-file run —
+// every native-app capture, since `appiumCapabilities` builds a Safari session —
+// has no `--device-id` either, and filing it as `cloud` throws away the hardware
+// identity ADR-0090 provenances a calibrated gate by. The negotiated session
+// names the device it attached to, so read that before falling back.
+export function capturedDeviceId(explicitDeviceId, session) {
+  if (explicitDeviceId) return explicitDeviceId;
+  const capabilities = session?.capabilities ?? session?.value?.capabilities;
+  return capabilities?.udid ?? capabilities?.['appium:udid'] ?? 'cloud';
+}
+
+export function borrowedSessionDescriptor(sessionId, requestedCapabilities) {
+  if (!requestedCapabilities) throw new Error(BORROWED_SESSION_CAPABILITIES_ERROR);
+  const capabilities = requestedCapabilities;
+  return {
+    sessionId,
+    capabilities: {
+      ...capabilities,
+      deviceName: capabilities.deviceName ?? capabilities['appium:deviceName'],
+      platformVersion:
+        capabilities.platformVersion ?? capabilities['appium:platformVersion'],
+    },
   };
 }
 
@@ -258,6 +313,19 @@ export function isWebContext(context) {
   return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
 }
 
+export function nativeOrientationNeedsUnlock({
+  nativeApp,
+  rotateBeforeUndo,
+  requestedOrientation,
+  originalOrientation,
+}) {
+  return (
+    nativeApp &&
+    (rotateBeforeUndo ||
+      (requestedOrientation !== null && requestedOrientation !== originalOrientation))
+  );
+}
+
 export async function switchToWebContext(client, sessionId) {
   const webContext = await pollUntil(
     () =>
@@ -279,23 +347,53 @@ function profilingUrl(appUrl) {
   return url.toString();
 }
 
+// CacheStorage can accept a call and never settle it — Android System WebView 151
+// does exactly that for `caches.keys()` inside the Capacitor app. Without a
+// deadline the whole capture dies on a bare WebDriver "script timeout" that names
+// neither the API nor the reason.
+// What this guard is actually for is a service worker serving an earlier build's
+// assets. That needs a worker, so a page with no registrations and no controller
+// cannot be reached by any cache entry and is safe to measure without evicting.
+export function cacheEvictionAcceptable(state) {
+  if (!state?.ok) return false;
+  if (state.cachesCleared || state.cachesSkipped) return true;
+  return false;
+}
+
+// Touching CacheStorage in the Capacitor WebView (Android System WebView 151) wedges
+// async-script callback delivery for the rest of the session: the promise never
+// settles, and afterwards even a bare setTimeout never reaches the driver, so an
+// in-page deadline cannot rescue it — the deadline is the thing being wedged.
+// Synchronous evaluation keeps working, which is how that was pinned down.
+//
+// So the enumeration order is load-bearing rather than stylistic: registrations are
+// read first, and `caches` is touched only when a worker exists to serve from it.
+// A native app ships no service worker, which is the case that used to hang.
 export async function clearDeviceWebCache(executeAsync) {
-  const result = await executeAsync(`
+  const state = await executeAsync(`
     const done = arguments[arguments.length - 1];
-    const unregister = 'serviceWorker' in navigator
-      ? navigator.serviceWorker.getRegistrations().then((registrations) =>
-          Promise.all(registrations.map((registration) => registration.unregister()))
+    const registrations = 'serviceWorker' in navigator
+      ? navigator.serviceWorker.getRegistrations().catch(() => [])
+      : Promise.resolve([]);
+    registrations.then((found) => {
+      const controlled = Boolean(navigator.serviceWorker && navigator.serviceWorker.controller);
+      if (found.length === 0 && !controlled) {
+        done({ ok: true, registrations: 0, controlled: false, cachesSkipped: true });
+        return;
+      }
+      return Promise.all(found.map((registration) => registration.unregister().catch(() => false)))
+        .then(() =>
+          'caches' in window
+            ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            : null
         )
-      : Promise.resolve();
-    const clearCaches = 'caches' in window
-      ? caches.keys().then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
-      : Promise.resolve();
-    Promise.all([unregister, clearCaches]).then(
-      () => done({ ok: true }),
-      (error) => done({ ok: false, message: String(error) })
-    );
+        .then(() => done({ ok: true, registrations: found.length, controlled, cachesCleared: true }));
+    }).catch((error) => done({ ok: false, message: String(error) }));
   `);
-  if (!result?.ok) throw new Error(`Could not clear the iPad web cache: ${result?.message}`);
+  if (!cacheEvictionAcceptable(state)) {
+    throw new Error(`Could not clear the device web cache: ${state?.message ?? 'no usable result'}`);
+  }
+  return state;
 }
 
 export async function dismissInstallBannerForMeasurement(execute) {
@@ -354,6 +452,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'output',
         'report-only',
         'no-serve',
+        'orientation',
+        'theme',
       ],
     },
     argv
@@ -364,6 +464,9 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   if (!deviceId && !capabilitiesFile && !borrowedSessionId) {
     fail('Pass --device-id=, --capabilities-file=, or --session-id=');
   }
+  if (borrowedSessionId && !capabilitiesFile) {
+    fail(BORROWED_SESSION_CAPABILITIES_ERROR);
+  }
   const xcodeConfigFile = flag('xcode-config', DEFAULT_XCODE_CONFIG);
   if (!capabilitiesFile && !borrowedSessionId && !existsSync(xcodeConfigFile)) {
     fail(
@@ -373,6 +476,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   }
 
   const nativeApp = has('native-app');
+  const requestedOrientation = parseCampaignOrientation(flag('orientation'));
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   const gestureRepeats = Number.parseInt(flag('gesture-repeats', '1'), 10);
   if (!Number.isSafeInteger(gestureRepeats) || gestureRepeats < 1) {
@@ -400,10 +505,27 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     fail(`--brush must be one of ${Object.keys(BRUSH_BUTTON_BY_MODE).join(', ')}`);
   }
   const client = createWebDriverClient(flag('appium-url', DEFAULT_APPIUM_URL));
+  const requestedCapabilities = capabilitiesFile
+    ? capabilitiesFromFile(capabilitiesFile)
+    : borrowedSessionId
+      ? null
+      : appiumCapabilities({
+          deviceId,
+          xcodeConfigFile,
+          wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
+          allowProvisioning: has('allow-provisioning'),
+          nativeApp,
+        });
   let server;
   let sessionId = borrowedSessionId;
   let ownsSession = false;
   let originalOrientation;
+  let execute;
+  let restoreNativeRotationLock = false;
+  // Three-valued on purpose: null means the rotation path was never exercised
+  // (the device already sat in the requested orientation), which is not the same
+  // claim as the product owning an in-app lock.
+  let platformOwnsRotation = null;
   let cleanupPromise;
   const cleanup = () => {
     cleanupPromise ??= (async () => {
@@ -413,6 +535,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
             orientation: originalOrientation,
           })
           .catch(() => {});
+      }
+      if (sessionId && execute && restoreNativeRotationLock) {
+        await switchToWebContext(client, sessionId).catch(() => null);
+        await setNativeRotationLock(execute, true).catch(() => null);
       }
       if (sessionId && ownsSession) {
         await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -435,24 +561,17 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     server = nativeApp ? null : await ensurePreviewServer(requestedAppUrl, port, !has('no-serve'));
     await client.request('GET', '/status');
     const session = sessionId
-      ? await client.request('GET', `/session/${sessionId}`)
+      ? borrowedSessionDescriptor(sessionId, requestedCapabilities)
       : await client.request('POST', '/session', {
           capabilities: {
-            alwaysMatch: capabilitiesFile
-              ? capabilitiesFromFile(capabilitiesFile)
-              : appiumCapabilities({
-                  deviceId,
-                  xcodeConfigFile,
-                  wdaBundleId: flag('wda-bundle-id', DEFAULT_WDA_BUNDLE_ID),
-                  allowProvisioning: has('allow-provisioning'),
-                }),
+            alwaysMatch: requestedCapabilities,
           },
         });
     if (!sessionId) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
-    const execute = (script, args = []) =>
+    execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
@@ -477,6 +596,55 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
       );
     }
+    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+    const needsRotationUnlock = nativeOrientationNeedsUnlock({
+      nativeApp,
+      rotateBeforeUndo: has('rotate-before-undo'),
+      requestedOrientation,
+      originalOrientation,
+    });
+    if (needsRotationUnlock) {
+      const initialRotationLock = await setNativeRotationLock(execute, false);
+      // No in-app lock to release means nothing to bypass: rotating the device is
+      // the only orientation path the product offers on this platform, so ADR-0090's
+      // persisted-setting rule is satisfied rather than skipped.
+      platformOwnsRotation = initialRotationLock === PLATFORM_OWNS_ROTATION;
+      restoreNativeRotationLock = platformOwnsRotation ? false : initialRotationLock;
+      if (restoreNativeRotationLock) {
+        await execute('location.reload(); return true;').catch(() => null);
+        await switchToWebContext(client, sessionId);
+        const unlockedReady = await pollUntil(
+          () =>
+            execute(
+              "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+            ).catch(() => false),
+          WEBVIEW_READY_TIMEOUT_MS,
+          WEBVIEW_READY_POLL_MS
+        );
+        if (!unlockedReady) {
+          throw new Error('The native app did not reload after releasing its orientation lock');
+        }
+      }
+    }
+    if (requestedOrientation && requestedOrientation !== originalOrientation) {
+      await client.request('POST', `/session/${sessionId}/orientation`, {
+        orientation: requestedOrientation,
+      });
+      const rotated = await pollUntil(
+        () =>
+          execute('return { width: innerWidth, height: innerHeight };')
+            .then((size) =>
+              requestedOrientation === 'PORTRAIT'
+                ? size.height > size.width
+                : size.width > size.height
+            )
+            .catch(() => false),
+        ROTATION_SETTLE_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!rotated) throw new Error(`The device did not settle into ${requestedOrientation}`);
+      await sleep(AFTER_GESTURE_SETTLE_MS);
+    }
     await clearDeviceWebCache(executeAsync);
     await dismissInstallBannerForMeasurement(execute);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
@@ -500,6 +668,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
     await clearDeviceWebCache(executeAsync);
     const serviceWorkerRegistration = await blockServiceWorkerRegistrationForMeasurement(execute);
+    await ensureCampaignTheme(execute, requestedTheme);
+    const theme = await readResolvedTheme(execute);
     if (undoCount > 0) {
       const debugReady = await pollUntil(
         () => execute('return !!window.__drawingDebug?.getUndoDebug;').catch(() => false),
@@ -593,7 +763,6 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       })
       .catch(() => nativeWindow);
     const orientation = await client.request('GET', `/session/${sessionId}/orientation`);
-    originalOrientation = orientation;
     const canvasBounds = nativeCanvasBounds({
       webGeometry,
       webViewBounds,
@@ -649,61 +818,19 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
 
     const undoActions = [];
     if (undoCount > 0) {
-      await execute(
-        `document.querySelector('button[aria-label="Expand controls"]')?.click(); return true;`
-      );
+      await execute(EXPAND_CONTROLS_SOURCE);
       const undoReady = await pollUntil(
-        () =>
-          execute(
-            `const button = document.querySelector('#undoButton'); return !!button && !button.disabled;`
-          ).catch(() => false),
-        BRUSH_SELECT_TIMEOUT_MS,
-        WEBVIEW_READY_POLL_MS
+        () => execute(UNDO_BUTTON_READY_SOURCE).catch(() => false),
+        UNDO_BUTTON_READY_TIMEOUT_MS,
+        UNDO_BUTTON_READY_POLL_MS
       );
       if (!undoReady) throw new Error('Action drawer did not expose an enabled #undoButton');
       for (let index = 0; index < undoCount; index++) {
         const action = await executeAsync(`
           const done = arguments[arguments.length - 1];
-          const button = document.querySelector('#undoButton');
-          if (!button || button.disabled) {
-            done(null);
-            return;
-          }
-          const beforeCount = performance.getEntriesByName('engine.undo', 'measure').length;
-          const startedAt = performance.now();
-          button.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }));
-          const finishAfterMeasure = () => {
-            const measures = performance.getEntriesByName('engine.undo', 'measure');
-            const measure = measures.at(-1);
-            if (measures.length === beforeCount + 1 && Number.isFinite(measure?.duration)) {
-              requestAnimationFrame((paintedAt) => {
-                done({
-                  index: ${index},
-                  startedAt,
-                  endedAt: performance.now(),
-                  beforeCount,
-                  afterCount: measures.length,
-                  engineMs: measure.duration,
-                  nextFrameMs: paintedAt - startedAt
-                });
-              });
-              return;
-            }
-            if (performance.now() - startedAt >= ${UNDO_MEASURE_TIMEOUT_MS}) {
-              done(null);
-              return;
-            }
-            requestAnimationFrame(finishAfterMeasure);
-          };
-          finishAfterMeasure();
+          ${undoActionPromiseSource(index)}.then(done, () => done(null));
         `);
-        if (
-          !action ||
-          action.afterCount !== action.beforeCount + 1 ||
-          !Number.isFinite(action.engineMs)
-        ) {
-          throw new Error(`Undo action ${index + 1} did not produce one engine.undo measure`);
-        }
+        assertUndoAction(action, index);
         undoActions.push(action);
         await sleep(undoPauseMs);
       }
@@ -732,10 +859,11 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       device: {
         name: session.capabilities?.deviceName ?? 'iPad',
         os: session.capabilities?.platformVersion ?? 'unknown',
-        id: deviceId,
+        id: capturedDeviceId(deviceId, session),
       },
       appUrl,
-      transport: nativeApp ? 'native-capacitor-webview' : 'browser',
+      transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
+      theme,
       mode: `xcuitest:${label}`,
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
@@ -752,6 +880,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         undoPauseMs,
         historySettleMs,
         rotation,
+        platformOwnsRotation,
         pwaEffects: {
           installBanner: 'dismissed',
           serviceWorkerRegistration,

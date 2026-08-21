@@ -69,4 +69,28 @@ describe('Playwright WebDriver trusted touch', () => {
     ]);
     expect(page.mouse.move).not.toHaveBeenCalled();
   });
+
+  it('scrolls a desktop dialog with a trusted wheel over the target', async () => {
+    const hover = vi.fn();
+    const wheel = vi.fn();
+    const page = {
+      locator: vi.fn(() => ({ hover })),
+      mouse: { wheel },
+    };
+    const driver = new PlaywrightWebDriver(page, { useWheelForScroll: true });
+
+    await driver.scrollElementWithWheel('#coloring-book-dialog', 400);
+
+    expect(page.locator).toHaveBeenCalledWith('#coloring-book-dialog');
+    expect(hover).toHaveBeenCalledOnce();
+    expect(wheel).toHaveBeenCalledWith(0, 400);
+  });
+
+  it('does not expose wheel scrolling on touch transports', async () => {
+    const driver = new PlaywrightWebDriver({});
+
+    await expect(driver.scrollElementWithWheel('#dialog', 400)).rejects.toThrow(
+      'Trusted wheel scrolling is not enabled'
+    );
+  });
 });

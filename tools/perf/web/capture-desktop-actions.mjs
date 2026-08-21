@@ -16,6 +16,11 @@ import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { chromiumExecutablePath } from '../../lib/playwright.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
+import {
+  ensureCampaignTheme,
+  parseCampaignTheme,
+  readResolvedTheme,
+} from '../lib/campaign-state.mjs';
 
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
 const DEFAULT_VIEWPORT = { width: 1512, height: 982 };
@@ -77,6 +82,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         'label',
         'output',
         'report-only',
+        'theme',
       ],
     },
     argv
@@ -94,6 +100,7 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const headless = !has('headed');
   const externalUrl = flag('url');
   const preview = externalUrl
@@ -107,11 +114,13 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
     browser = await engine.launch(browserLaunchOptions(engineName, headless));
     const context = await browser.newContext({ viewport, deviceScaleFactor });
     const page = await context.newPage();
-    const client = new PlaywrightWebDriver(page);
+    const client = new PlaywrightWebDriver(page, { useWheelForScroll: true });
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const originalOrientation = await client.orientation();
+    let settingsShell = null;
     const samples = [];
     const expectedLabels = new Set();
+    let baselineTheme;
 
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(base, repeat);
@@ -124,6 +133,8 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         undefined,
         { timeout: READY_TIMEOUT_MS }
       );
+      await ensureCampaignTheme(execute, requestedTheme);
+      baselineTheme = await readResolvedTheme(execute);
       await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nDesktop action sweep ${repeat}/${repeats}`);
@@ -133,12 +144,14 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
         execute,
         actions,
         originalOrientation,
+        baselineTheme,
       });
+      settingsShell = sweep.settingsShell;
       if (repeat <= WARMUP_REPEATS) {
-        for (const sample of sweep) expectedLabels.add(sample.label);
+        for (const sample of sweep.samples) expectedLabels.add(sample.label);
       }
       samples.push(
-        ...sweep.map((sample) => ({
+        ...sweep.samples.map((sample) => ({
           ...sample,
           repeat,
           warmup: repeat <= WARMUP_REPEATS,
@@ -161,6 +174,8 @@ export async function runDesktopActions(argv = process.argv.slice(2)) {
       engine: engineName,
       viewport: { ...viewport, deviceScaleFactor },
       headless,
+      theme: baselineTheme,
+      settingsShell,
       actions: [...actions],
       repeats,
       samples,

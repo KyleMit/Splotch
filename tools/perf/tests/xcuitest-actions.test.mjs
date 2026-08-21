@@ -12,9 +12,12 @@ import {
 } from '../lib/action-stats.mjs';
 import {
   activationModeFor,
+  actionGateAllowances,
   canvasHasInk,
   coloringClearActivation,
+  coloringScrollTransport,
   coloringSelectionSteps,
+  createActionSession,
   customColorSelectionEventTypes,
   largestNativeRect,
   nativeAccessibilityFallbackWarning,
@@ -25,6 +28,7 @@ import {
   settingsSectionMeasurement,
   settingsSectionSetupReady,
   uiActivationLabel,
+  validateBorrowedActionSession,
   visibleInactiveSwatchColorExpression,
 } from '../ios/capture-xcuitest-actions.mjs';
 import { hasMinimumActionRepeats, resolveViewport } from '../web/capture-desktop-actions.mjs';
@@ -56,6 +60,10 @@ const IPAD_ACTIONS = readFileSync(
   join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
   'utf8'
 );
+const CAMPAIGN_STATE = readFileSync(
+  join(ROOT, 'tools', 'perf', 'lib', 'campaign-state.mjs'),
+  'utf8'
+);
 const PAGE_INVENTORY = readFileSync(
   join(ROOT, 'tools', 'page-inventory', 'capture-page-inventory.mjs'),
   'utf8'
@@ -80,6 +88,188 @@ const action = (postActionFrames, changes = {}) => ({
   canvasMutations: [],
   measures: [],
   ...changes,
+});
+
+describe('createActionSession', () => {
+  it('fails closed when a borrowed session has no capabilities file', async () => {
+    expect(() => validateBorrowedActionSession('borrowed-session')).toThrow(
+      '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance'
+    );
+  });
+
+  it('uses resolved capabilities for borrowed sessions without querying Appium', async () => {
+    const capabilities = {
+      platformName: 'Android',
+      'appium:udid': 'emulator-5554',
+      'appium:deviceName': 'Pixel 7 Pro API 33',
+      'appium:platformVersion': '13',
+    };
+    const client = {
+      request: () => {
+        throw new Error('borrowed sessions must not query Appium for a descriptor');
+      },
+    };
+
+    await expect(createActionSession(client, 'borrowed-session', capabilities)).resolves.toEqual({
+      sessionId: 'borrowed-session',
+      capabilities: {
+        ...capabilities,
+        deviceName: 'Pixel 7 Pro API 33',
+        platformVersion: '13',
+      },
+    });
+  });
+});
+
+describe('actionGateAllowances', () => {
+  const physicalIpadUdid = '00008103-0006202E3CF1001E';
+  const physicalIpadSession = {
+    capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' },
+  };
+
+  it('applies the calibrated ledger to the local physical iPad web path', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceId: physicalIpadUdid,
+        requestedCapabilities: null,
+        session: physicalIpadSession,
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  // The shape a real device actually reports: udid, platformName, platformVersion and
+  // browserName, and no deviceName at all. Every other positive case here supplies a
+  // deviceName the device does not send, which is how the ledger stayed unreachable
+  // while these tests passed.
+  it('applies the ledger to a physical iPad session that reports no deviceName', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceClass: 'tablet',
+        requestedCapabilities: null,
+        session: {
+          capabilities: {
+            browserName: 'Safari',
+            platformName: 'iOS',
+            platformVersion: '26.5',
+            udid: physicalIpadUdid,
+            automationName: 'XCUITest',
+          },
+        },
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  it('keeps a handset on the base gates even when the session names no device', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceClass: 'handset',
+        requestedCapabilities: null,
+        session: {
+          capabilities: { platformName: 'iOS', udid: physicalIpadUdid, browserName: 'Safari' },
+        },
+      })
+    ).toEqual({});
+  });
+
+  it('still needs a physical device, whatever the campaign says the class is', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceClass: 'tablet',
+        requestedCapabilities: null,
+        session: {
+          capabilities: {
+            platformName: 'iOS',
+            udid: 'C6012C49-AA93-4869-B3A6-E47C9EAAC567',
+            browserName: 'Safari',
+          },
+        },
+      })
+    ).toEqual({});
+  });
+
+  it('recognizes the exact physical iPad capability-file shape', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        requestedCapabilities: {
+          platformName: 'iOS',
+          browserName: 'Safari',
+          'appium:udid': physicalIpadUdid,
+          'appium:deviceName': 'Kyle\u2019s iPad',
+        },
+        session: { capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' } },
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  it('recognizes a borrowed physical iPad web session and a legacy physical UDID', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        requestedCapabilities: null,
+        session: {
+          value: {
+            capabilities: {
+              platformName: 'iOS',
+              deviceName: 'iPad Pro',
+              udid: 'a'.repeat(40),
+            },
+          },
+        },
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  it.each([
+    ['iPad native', { nativeApp: true, deviceId: physicalIpadUdid, session: physicalIpadSession }],
+    [
+      'iPad simulator web',
+      {
+        nativeApp: false,
+        requestedCapabilities: {
+          platformName: 'iOS',
+          'appium:udid': 'C6012C49-AA93-4869-B3A6-E47C9EAAC567',
+          'appium:deviceName': 'iPad mini (A17 Pro)',
+        },
+        session: { capabilities: { platformName: 'iOS', deviceName: 'iPad mini (A17 Pro)' } },
+      },
+    ],
+    [
+      'Android native',
+      {
+        nativeApp: true,
+        deviceId: 'android-device',
+        session: { capabilities: { platformName: 'Android', deviceName: 'Galaxy' } },
+      },
+    ],
+    [
+      'Android browser',
+      {
+        nativeApp: false,
+        deviceId: 'android-device',
+        session: { capabilities: { platformName: 'Android', deviceName: 'Galaxy' } },
+      },
+    ],
+    [
+      'physical iPhone web',
+      {
+        nativeApp: false,
+        deviceId: physicalIpadUdid,
+        session: { value: { capabilities: { platformName: 'iOS', deviceName: 'iPhone' } } },
+      },
+    ],
+  ])('keeps %s on the base gates', (_name, options) => {
+    expect(
+      actionGateAllowances({
+        requestedCapabilities: null,
+        ...options,
+      })
+    ).toEqual({});
+  });
 });
 
 describe('selectedActions', () => {
@@ -363,6 +553,44 @@ describe('desktop action options', () => {
 });
 
 describe('trusted action setup', () => {
+  it('releases the native rotation lock before applying a requested orientation', () => {
+    const setupStart = IPAD_ACTIONS.indexOf('const needsNativeRotationUnlock =');
+    const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
+    const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
+    const unlock = setup.indexOf('setNativeRotationLock(execute, false)');
+    const rotate = setup.indexOf('orientation: requestedOrientation');
+
+    expect(setupStart).toBeGreaterThan(-1);
+    expect(setupEnd).toBeGreaterThan(setupStart);
+    expect(unlock).toBeGreaterThan(-1);
+    expect(rotate).toBeGreaterThan(unlock);
+    expect(setup).toContain('Settings does not expose the persisted rotation lock control');
+  });
+
+  it('restores the original orientation before restoring the native rotation lock', () => {
+    const cleanupStart = IPAD_ACTIONS.indexOf('function cleanup()');
+    const cleanupEnd = IPAD_ACTIONS.indexOf('const onSignal', cleanupStart);
+    const cleanup = IPAD_ACTIONS.slice(cleanupStart, cleanupEnd);
+    const restoreOrientation = cleanup.indexOf('orientation: restoreOrientation');
+    const restoreLock = cleanup.indexOf('setNativeRotationLock(execute, true)');
+
+    expect(cleanupStart).toBeGreaterThan(-1);
+    expect(cleanupEnd).toBeGreaterThan(cleanupStart);
+    expect(restoreOrientation).toBeGreaterThan(-1);
+    expect(restoreLock).toBeGreaterThan(restoreOrientation);
+  });
+
+  it('records desktop scroll as trusted wheel while retaining native touch transport', () => {
+    expect(coloringScrollTransport({ useWheelForScroll: true })).toEqual({
+      eventTypes: ['wheel'],
+      activation: 'trusted-wheel',
+    });
+    expect(coloringScrollTransport({ cdp: {} })).toEqual({
+      eventTypes: ['pointerdown'],
+      activation: 'native-touch',
+    });
+  });
+
   it('checks canvas ink rather than undo history after a clear', async () => {
     let expression;
     await canvasHasInk(async (script) => {
@@ -390,7 +618,7 @@ describe('trusted action setup', () => {
     expect(SIDEBAR_TOC).toMatch(/<button\b[^<>]*data-section=\{item\.id\}/);
     expect(SETTINGS_MODAL).toMatch(/<button\b[^<>]*data-section=\{section\.id\}/);
     expect(SETTINGS_WIDE_SHELL).toMatch(/id: section\.id/);
-    for (const harness of [IPAD_ACTIONS, PAGE_INVENTORY]) {
+    for (const harness of [CAMPAIGN_STATE, PAGE_INVENTORY]) {
       expect(harness).toContain('button[data-section');
     }
   });
@@ -526,5 +754,72 @@ describe('action-owned frame attribution', () => {
     expect(summary.frames.p95).toBe(200);
     expect(summary.frames.raw.p95).toBe(16.7);
     expect(summary.passed).toBe(false);
+  });
+});
+describe('compact settings shell', () => {
+  const read = (relative) => readFileSync(join(ROOT, relative), 'utf8');
+  const sweep = read(join('tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'));
+  const compactShell = read(
+    join('web', 'src', 'lib', 'components', 'settings', 'CompactShell.svelte')
+  );
+  const settingsModal = read(join('web', 'src', 'lib', 'components', 'SettingsModal.svelte'));
+
+  // The sweep measures a shell it cannot see from here, so these hold the
+  // selectors it reaches for against the markup that has to provide them. A
+  // renamed id would otherwise turn every landscape-phone action cell into a
+  // silent timeout, which is exactly how the 2026-08-20 campaign lost them.
+  it('detects the shell through the one shared selector, not a second copy', () => {
+    const campaignState = read(join('tools', 'perf', 'lib', 'campaign-state.mjs'));
+
+    expect(sweep).toContain('isCompactSettingsShell');
+    expect(sweep).not.toContain('.quick-toggles');
+    expect(campaignState).toContain("'#settingsModal .quick-toggles'");
+    expect(compactShell).toContain('class="quick-toggles"');
+  });
+
+  it('measures only quick toggles CompactShell actually renders', () => {
+    for (const id of ['quickNightToggle', 'quickSoundToggle', 'quickAdvancedControlsToggle']) {
+      expect(sweep).toContain(`#${id}`);
+      expect(compactShell).toContain(`id="${id}"`);
+    }
+  });
+
+  it('stays keyed to the landscape-phone media query that selects the shell', () => {
+    expect(settingsModal).toContain('(orientation: landscape) and (max-height:');
+  });
+
+  it('skips the section list rather than waiting for rows the shell omits', () => {
+    expect(sweep).toContain("actions.has('settings-sections') && !settingsShellIsCompact");
+    expect(sweep).toContain('if (settingsInScope && !settingsShellIsCompact) {');
+    expect(compactShell).not.toContain('data-section');
+  });
+});
+describe('runActionSweep callers', () => {
+  // The sweep returns {samples, settingsShell} rather than a bare array, and it has
+  // three transports. Changing that shape broke the two callers that no test covers
+  // and no local run exercises by default — the Android CDP runner failed with
+  // "sweep is not iterable" only once a real Android capture ran, and the desktop
+  // runner was hiding the same break behind preserved results.
+  const CALLERS = [
+    join('tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
+    join('tools', 'perf', 'android', 'capture-browser-actions.mjs'),
+    join('tools', 'perf', 'web', 'capture-desktop-actions.mjs'),
+  ];
+
+  it('covers every file that calls it', () => {
+    const found = CALLERS.filter((relative) =>
+      readFileSync(join(ROOT, relative), 'utf8').includes('runActionSweep({')
+    );
+    expect(found).toEqual(CALLERS);
+  });
+
+  it('reads the sweep through its result shape in each caller', () => {
+    for (const relative of CALLERS) {
+      const source = readFileSync(join(ROOT, relative), 'utf8');
+      expect(source).toContain('sweep.samples');
+      expect(source).toContain('sweep.settingsShell');
+      expect(source).not.toMatch(/for \(const sample of sweep\)/);
+      expect(source).not.toMatch(/\.\.\.sweep\.map\(/);
+    }
   });
 });

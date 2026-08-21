@@ -98,8 +98,22 @@ tree-shaken from release output. Run the applicable release build after changing
   `--native-app --native-webview-class=android.webkit.WebView`.
 
 Appium automation round-trip time is not an application frame metric. The probe must measure inside
-the page. Native rotation must change the real Settings rotation-lock setting and restore it; do not
-bypass product persistence with a test-only preference mutation.
+the page. Native rotation must go through whatever orientation control the product actually offers,
+and restore what it changed; do not bypass product persistence with a test-only preference mutation.
+Which control that is depends on the platform, and the runner resolves it rather than assuming:
+
+* Where the product persists an in-app rotation lock, the run flips that Settings control and
+  restores the observed lock and orientation in cleanup.
+* On a native tablet there is no such control — `supportsOrientationLock()` is false because iPadOS
+  windowing ignores an in-app lock — so device rotation is the only path the product offers and the
+  runner takes it, recording `platformOwnsRotation` in the capture. A missing toggle there is the
+  product's answer, not a targeting failure; treating it as unavailable is what left the iPad
+  simulator's native landscape cells unmeasured in the 2026-08-20 campaign.
+
+Shells differ by mode too, and an action plan that assumes one will time out against the other. A
+landscape phone renders the compact Settings shell — quick toggles and a pointer to portrait instead
+of the section list — so the sweep measures that shell's own controls under compact-specific labels
+and records which shell it measured. Compare a mode against the same shell, never across two.
 
 ## Apply fidelity tiers
 

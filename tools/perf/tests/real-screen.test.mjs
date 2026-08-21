@@ -23,10 +23,14 @@ import { probeConfigScript, validateFreeDrawOptions } from '../ios/capture-webki
 import {
   appiumCapabilities,
   blockServiceWorkerRegistrationForMeasurement,
+  borrowedSessionDescriptor,
+  cacheEvictionAcceptable,
+  capturedDeviceId,
   dismissInstallBannerForMeasurement,
   inputFidelity,
   isWebContext,
   nativeCanvasBounds,
+  nativeOrientationNeedsUnlock,
   summarizeLiveSurfaceTopology,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
@@ -104,10 +108,116 @@ const move = (
 const down = (stamp, id = 1) => [stamp, stamp + 6, DOWN, id, 1, 0, 1, 0, 1, 0.5, 30, 30, -1, -1];
 const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1, 0, 1, 0, 30, 30, -1, -1];
 
+describe('borrowedSessionDescriptor', () => {
+  it('fails closed without resolved target provenance', () => {
+    expect(() => borrowedSessionDescriptor('borrowed-session', null)).toThrow(
+      '--session-id requires --capabilities-file so borrowed-session artifacts retain target provenance'
+    );
+  });
+
+  it('uses resolved capabilities without querying the non-W3C session endpoint', () => {
+    const capabilities = {
+      platformName: 'Android',
+      browserName: 'Chrome',
+      'appium:udid': 'physical-device',
+      'appium:deviceName': 'Samsung SM-G990U1',
+      'appium:platformVersion': '16',
+    };
+
+    expect(borrowedSessionDescriptor('borrowed-session', capabilities)).toEqual({
+      sessionId: 'borrowed-session',
+      capabilities: {
+        ...capabilities,
+        deviceName: 'Samsung SM-G990U1',
+        platformVersion: '16',
+      },
+    });
+  });
+});
+
+describe('cacheEvictionAcceptable', () => {
+  it('accepts an eviction that completed', () => {
+    expect(
+      cacheEvictionAcceptable({ ok: true, registrations: 2, controlled: true, cachesCleared: true })
+    ).toBe(true);
+  });
+
+  it('accepts a page with no worker, where CacheStorage was deliberately not touched', () => {
+    expect(
+      cacheEvictionAcceptable({
+        ok: true,
+        registrations: 0,
+        controlled: false,
+        cachesSkipped: true,
+      })
+    ).toBe(true);
+  });
+
+  it('fails closed when neither an eviction nor a skip is reported', () => {
+    expect(cacheEvictionAcceptable({ ok: true, registrations: 0, controlled: true })).toBe(false);
+    expect(cacheEvictionAcceptable({ ok: true, registrations: 1, controlled: false })).toBe(false);
+  });
+
+  it('fails closed when the page could not report at all', () => {
+    expect(cacheEvictionAcceptable({ ok: false, message: 'boom' })).toBe(false);
+    expect(cacheEvictionAcceptable(undefined)).toBe(false);
+  });
+});
+
+describe('capturedDeviceId', () => {
+  it('prefers the explicitly requested device', () => {
+    expect(capturedDeviceId('00008103-0006202E3CF1001E', { capabilities: { udid: 'other' } })).toBe(
+      '00008103-0006202E3CF1001E'
+    );
+  });
+
+  it('reads the negotiated session when a capability file supplied the target', () => {
+    expect(capturedDeviceId(undefined, { capabilities: { udid: 'R5CRC3AVCXM' } })).toBe(
+      'R5CRC3AVCXM'
+    );
+  });
+
+  it('accepts the prefixed capability and the unwrapped session envelope', () => {
+    expect(
+      capturedDeviceId(undefined, {
+        value: { capabilities: { 'appium:udid': '00008103-0006202E3CF1001E' } },
+      })
+    ).toBe('00008103-0006202E3CF1001E');
+  });
+
+  it('falls back to cloud only when no session names a device', () => {
+    expect(capturedDeviceId(undefined, { capabilities: { platformName: 'iOS' } })).toBe('cloud');
+  });
+});
+
 // A 60 Hz capture, since that is what Safari actually gives web content on the
 // ProMotion iPad this exists to measure.
 const beat = (count, { from = 0, interval = 16.7, contact = 1 } = {}) =>
   Array.from({ length: count }, (_, i) => [from + i * interval, i === 0 ? -1 : interval, contact]);
+
+describe('native screen orientation preparation', () => {
+  it('unlocks only native captures that will rotate', () => {
+    const baseline = {
+      nativeApp: true,
+      rotateBeforeUndo: false,
+      requestedOrientation: 'PORTRAIT',
+      originalOrientation: 'PORTRAIT',
+    };
+
+    expect(nativeOrientationNeedsUnlock(baseline)).toBe(false);
+    expect(nativeOrientationNeedsUnlock({ ...baseline, requestedOrientation: 'LANDSCAPE' })).toBe(
+      true
+    );
+    expect(nativeOrientationNeedsUnlock({ ...baseline, rotateBeforeUndo: true })).toBe(true);
+    expect(
+      nativeOrientationNeedsUnlock({
+        ...baseline,
+        nativeApp: false,
+        requestedOrientation: 'LANDSCAPE',
+      })
+    ).toBe(false);
+  });
+});
 
 describe('percentile', () => {
   it('is absent rather than zero for an empty sample', () => {
@@ -901,6 +1011,24 @@ describe('trusted XCUITest input', () => {
     );
   });
 
+  it('opens the app bundle for a native capture and Safari otherwise', () => {
+    const base = {
+      deviceId: 'device',
+      xcodeConfigFile: '/tmp/local.xcconfig',
+      wdaBundleId: 'art.splotch.WebDriverAgentRunner',
+    };
+    const appId = JSON.parse(readFileSync(join(ROOT, 'capacitor.config.json'), 'utf8')).appId;
+
+    const web = appiumCapabilities(base);
+    expect(web.browserName).toBe('Safari');
+    expect(web).not.toHaveProperty('appium:bundleId');
+
+    const native = appiumCapabilities({ ...base, nativeApp: true });
+    expect(native['appium:bundleId']).toBe(appId);
+    expect(native).not.toHaveProperty('browserName');
+    expect(native).not.toHaveProperty('appium:safariInitialUrl');
+  });
+
   it('accepts the calibrated trusted-touch signature and rejects untrusted input', () => {
     const input = {
       kinds: 'touch',
@@ -984,6 +1112,21 @@ describe('probe selectors still match the app', () => {
   // attribute being how DrawingCanvas hides the overlay wrapper.
   it('still learns paper state from the wrapper’s hidden attribute', () => {
     expect(component('DrawingCanvas.svelte')).toContain('hidden={!overlayUrl()}');
+  });
+
+  it('waits for progressive coloring controls and decoded art before drawing', () => {
+    const setupStart = PROBE.indexOf('async function coloringPageTile()');
+    const setupEnd = PROBE.indexOf("// Drives the app's own coloring-book UI", setupStart);
+    const setup = PROBE.slice(setupStart, setupEnd);
+    const fixStart = PROBE.indexOf('async function fixPaper(need)');
+    const fixEnd = PROBE.indexOf('let hand = null;', fixStart);
+    const fix = PROBE.slice(fixStart, fixEnd);
+
+    expect(setupStart).toBeGreaterThan(-1);
+    expect(setup).toContain('await waitForCondition');
+    expect(setup).toContain('document.querySelector(PAGE_TILE)');
+    expect(fix).toContain('await waitForCondition(() => paperActive() && pageArtShowing())');
+    expect(fix).not.toContain('OVERLAY_DECODE_MS');
   });
 
   it('shares the native screenshot persistence boundary with the action runner', () => {

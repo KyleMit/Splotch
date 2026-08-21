@@ -1,309 +1,713 @@
 {
-  "schemaVersion": 2,
-  "recordedOn": "2026-07-31",
-  "productCommit": "7c5125ce17d8",
-  "snapshotKind": "cumulative-final-state",
+  "schemaVersion": 3,
+  "recordedOn": "2026-08-21",
+  "productCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+  "snapshotKind": "deployment-target-campaign",
   "architecture": "tiled renderer",
   "sourceRoot": "../../../",
   "limitations": [
-    "The final physical-iPad recapture could not start WebDriverAgent: Xcode timed out enabling UI automation, and the preinstalled-WDA launch timed out while the device was unavailable for automation. The retained physical-iPad evidence remains attributed to 09c4efac27ca.",
-    "The final product commit includes unmeasured post-capture changes to screenshot recovery, alpha-overlay theme swaps and thumbnails, crayon warming/checkpoints, PNG composition, audio teardown, engine extraction, Magic worker recovery, remount/resize behavior, progressive clear, and tiled undo safety. Every retained result remains attributed to the product commit that produced its source capture.",
-    "Only physical iPad web uses the Safari-calibrated trusted-input release gate. Simulator, desktop, native-shell, and automated Android results are advisory."
+    "Cells pinned to 6961e50b685d441e88b37d20d3f38a27136572fb measure a tree whose later commits change only performance harnesses and report generation.",
+    "Physical iPad capture needs a root-owned RemoteXPC tunnel before iOS 26 XCUITest discovery will see the device; the 2026-08-21 physical-iPad rows were captured once that tunnel was running. See docs/PROFILING-IPAD.md.",
+    "iPad simulator native landscape drawing and undo were captured on 2026-08-21 once the runner stopped treating an absent in-app rotation lock as an ADR-0090 unavailability: tablets delegate orientation to the OS, so device rotation is the only path the product offers there and no external rotation or profiling-only preference seam was used. Its two landscape action cells remain unmeasured, blocked by a product defect rather than the harness \u2014 see issue 1192.",
+    "Android landscape action sweeps were captured on 2026-08-21. A landscape phone renders the compact Settings shell, which offers quick toggles and a pointer to portrait instead of the section list, so those modes measure that shell under compact-specific labels and each capture records the settingsShell it measured. Compare a mode against the same shell; a differing action label set between modes is a shell difference, not a regression. Physical Android landscape actions stay unmeasured \u2014 no physical device was in scope for this pass.",
+    "Resolved campaign-harness P1s: desktop coloring scroll was changed to a trusted wheel path, the WebKit coloring-page readiness race was fixed, and Appium 3 borrowed screen/action sessions were made W3C-safe with explicit provenance. Exact post-fix retries completed; no product result was rerun merely to turn a valid red gate green.",
+    "Two Firefox action waits failed once at different labels and passed their exact retries, so they are retained as transient incidents rather than repeated P1s.",
+    "Mac Firefox drawing and all mode-aware Mac undo were captured on 2026-08-21 with the same probe, viewports, and gates as the other desktop rows: the frame runner gained Gecko and an undo-response measurement, so one pen capture per mode now carries drawing and undo under the same recorded orientation and theme. Firefox is Gecko, which no Splotch deployment target ships; read it as the third desktop browser a parent might open splotch.art in, never as evidence about WebKit or Blink.",
+    "Desktop captures used exact 1512\u00d7982 or 982\u00d71512 CSS viewports at DPR 2. The headed landscape browser window exceeded the physical display height at 100% browser zoom, but Playwright retained the requested page viewport.",
+    "Simulator, desktop, native-shell, and automated Android results are advisory. Physical iPad web is the only Safari-calibrated release-gate transport.",
+    "Raw perf-profiles are local scratch evidence and are not tracked, so every cell is carried forward from the published normalized results and each run keeps the raw source path it was captured from.",
+    "The 2026-08-21 physical-iPad cells were captured on ce88c8e587ac45847c419e05ef7a79d282bc747a, which carries the blank-rotation undo fix; every other cell stays pinned to 6961e50b685d441e88b37d20d3f38a27136572fb. Those pinned cells were checked rather than assumed: a fresh mac-safari landscape-light action sweep at the newer commit matched the pinned result on all 50 labels within 5 ms, the three blank-rotation labels included, so the pinned rows are not stale and were not recaptured. The same labels cost 100-106 ms on the iPad, where resizeCanvas spans a 4.7 Mpx canvas rather than a 1512x982 desktop viewport - a device-size effect, not a code regression."
+  ],
+  "candidateActions": [
+    {
+      "priority": "P0",
+      "action": "Sound-source and Clear gesture matrix",
+      "rationale": "Exercise Drawing/Delete sound toggles, volume drag, and Clear cancel/reverse/success paths with audio enabled and disabled.",
+      "applicability": "All web/native targets",
+      "status": "Partial: drawing-sound toggle and successful Clear captured; delete sound, volume, and cancelled/reversed Clear remain."
+    },
+    {
+      "priority": "P0",
+      "action": "Coloring-backed brush matrix",
+      "rationale": "Measure Pen, Crayon, Magic, and Eraser on active coloring art, including reversal, undo, clear, theme swap, and rotation.",
+      "applicability": "All targets",
+      "status": "Partial: page phases and selection/clear captured; dense ink/theme/rotation combinations remain."
+    },
+    {
+      "priority": "P0",
+      "action": "Continuous Settings gestures",
+      "rationale": "Exercise pane/sidebar scrolling, phone drill/back, quick switches, button-size and volume sliders, and individual tool toggles.",
+      "applicability": "All targets; touch variants on mobile",
+      "status": "Not captured; current suite measures section navigation and selected toggles."
+    },
+    {
+      "priority": "P0",
+      "action": "Coloring picker cold/warm and race paths",
+      "rationale": "Separate cold open from warm reopen, page-grid scroll, back, double-tap guard, active-page clear, and progressive pack arrival.",
+      "applicability": "All targets",
+      "status": "Partial: open/book/scroll/select/clear captured; cold/warm and race variants remain."
+    },
+    {
+      "priority": "P1",
+      "action": "Deterministic AI interaction flow",
+      "rationale": "Gate local frames for style choice, generating/minimize/restore, drawing while waiting, completion, refusal, retry, and result decode without gating network latency.",
+      "applicability": "Physical targets plus one simulator control per OS",
+      "status": "Not captured."
+    },
+    {
+      "priority": "P1",
+      "action": "Parental Gate flow",
+      "rationale": "Measure guarded open, wrong-answer regeneration, backspace, correct solve, close, Parent Center retarget, and policy confirmation.",
+      "applicability": "All native targets; representative web targets",
+      "status": "Partial: Parent Center entry captured; full gate interaction remains."
+    },
+    {
+      "priority": "P1",
+      "action": "Screenshot cold versus warm",
+      "rationale": "Separate pointerdown preparation, save readiness, repeated warm save, active-coloring export, and native OS handoff.",
+      "applicability": "All targets",
+      "status": "Partial: one intercepted save action captured."
+    },
+    {
+      "priority": "P1",
+      "action": "Theme swaps on realistic content",
+      "rationale": "Compare blank, dense Pen/Crayon, and active coloring/Magic swaps to expose decode, style, and raster costs.",
+      "applicability": "All targets",
+      "status": "Partial: Settings theme round-trip captured without dense content."
+    },
+    {
+      "priority": "P1",
+      "action": "Rotation state matrix",
+      "rationale": "Add Settings-open, picker-open, active coloring with ink, AI waiting, and slider-active rotations.",
+      "applicability": "Rotatable mobile targets",
+      "status": "Partial: blank and generic-ink rotations captured where platform setup allowed."
+    },
+    {
+      "priority": "P2",
+      "action": "True custom-color drag",
+      "rationale": "Measure drag-across/explore/lift selection, gap snapping, and cancellation instead of a single click.",
+      "applicability": "Touch and pointer targets",
+      "status": "Not captured."
+    },
+    {
+      "priority": "P2",
+      "action": "Settings pinch text zoom",
+      "rationale": "Exercise CSS zoom over the fully mounted Settings surface and reset on section change/close.",
+      "applicability": "Physical touch targets",
+      "status": "Not captured."
+    },
+    {
+      "priority": "P2",
+      "action": "Apple Pencil gestures",
+      "rationale": "Measure Pencil double-tap brush/eraser switching and Pencil/Scribble Clear guards.",
+      "applicability": "Physical iPad",
+      "status": "Not captured; physical iPad unavailable."
+    },
+    {
+      "priority": "P2",
+      "action": "Platform-only shell gestures",
+      "rationale": "Cover Android web fullscreen/install-banner paths and desktop Ctrl+Z undo.",
+      "applicability": "Android web and desktop web",
+      "status": "Not captured."
+    },
+    {
+      "priority": "P2",
+      "action": "Lifecycle recovery",
+      "rationale": "Background/foreground during dense drawing, AI generation, and coloring-pack work to validate recovery and context restoration.",
+      "applicability": "Physical and emulated mobile targets",
+      "status": "Not captured."
+    }
   ],
   "targets": [
     {
-      "id": "ipad-device-native",
+      "id": "ipad-device-web",
       "number": 1,
-      "label": "iPad device · native",
+      "label": "iPad physical \u00b7 web",
+      "platform": "iOS",
+      "deviceKind": "physical",
+      "runtime": "web",
+      "environment": "iPad13,8 \u00b7 iPadOS 26.5 \u00b7 Safari",
+      "fidelity": "physical-safari-gated",
+      "modes": [
+        {
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "ipad-device-native",
+      "number": 2,
+      "label": "iPad physical \u00b7 native",
       "platform": "iOS",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "iPad13,8 · iPadOS 26.5 · Capacitor WebView",
-      "status": "captured",
+      "environment": "iPad13,8 \u00b7 iPadOS 26.5 \u00b7 Capacitor WebView",
       "fidelity": "physical-native-advisory",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": ["perf-profiles/2026-07-31T13-04-14-489Z-ipad-xcuitest-matrix-ipad-device-native-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-07-31T13-04-34-301Z-ipad-xcuitest-matrix-ipad-device-native-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-07-31T13-05-00-393Z-ipad-xcuitest-matrix-ipad-device-native-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-07-31T13-05-19-733Z-ipad-xcuitest-matrix-ipad-device-native-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-07-31T13-04-14-489Z-ipad-xcuitest-matrix-ipad-device-native-pen-undo/real-screen.json",
-      "actionSources": [
+      "modes": [
         {
-          "source": "perf-profiles/2026-07-31T13-11-19-189Z-ipad-actions-matrix-ipad-device-native/actions.json",
-          "productCommit": "09c4efac27ca",
-          "kind": "full"
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionsUnavailableReason": "P1: the landscape action sweep cannot complete on the native WebView \u2014 undo after a blank landscape rotation never restores the drawing, so the sweep times out at 'undo clear after blank rotation'. Tracked as #1194; all three attempts failed identically in both themes."
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionsUnavailableReason": "P1: the landscape action sweep cannot complete on the native WebView \u2014 undo after a blank landscape rotation never restores the drawing, so the sweep times out at 'undo clear after blank rotation'. Tracked as #1194; all three attempts failed identically in both themes."
         }
       ]
     },
     {
       "id": "ipad-simulator-web",
-      "number": 2,
-      "label": "iPad simulator · web",
+      "number": 3,
+      "label": "iPad simulator \u00b7 web",
       "platform": "iOS",
       "deviceKind": "simulator",
       "runtime": "web",
-      "environment": "iPad Pro 13-inch (M5) · iOS 26.5 · Safari",
-      "status": "captured",
+      "environment": "iPad mini (A17 Pro) simulator \u00b7 iOS 26.5 \u00b7 Safari",
       "fidelity": "simulator-advisory",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": ["perf-profiles/2026-07-31T12-39-33-049Z-ipad-xcuitest-matrix-ipad-simulator-web-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-07-31T12-39-53-533Z-ipad-xcuitest-matrix-ipad-simulator-web-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-07-31T12-40-11-217Z-ipad-xcuitest-matrix-ipad-simulator-web-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-07-31T12-40-32-172Z-ipad-xcuitest-matrix-ipad-simulator-web-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-07-31T12-39-33-049Z-ipad-xcuitest-matrix-ipad-simulator-web-pen-undo/real-screen.json",
-      "actionSources": [
+      "modes": [
         {
-          "source": "perf-profiles/2026-07-31T12-39-07-355Z-ipad-actions-matrix-ipad-simulator-web/actions.json",
-          "productCommit": "09c4efac27ca",
-          "kind": "full"
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
       "id": "ipad-simulator-native",
-      "number": 3,
-      "label": "iPad simulator · native",
+      "number": 4,
+      "label": "iPad simulator \u00b7 native",
       "platform": "iOS",
       "deviceKind": "simulator",
       "runtime": "native",
-      "environment": "iPad Pro 13-inch (M5) · iOS 26.5 · Capacitor WebView",
-      "status": "captured",
+      "environment": "iPad mini (A17 Pro) simulator \u00b7 iOS 26.5 \u00b7 Capacitor WebView",
       "fidelity": "simulator-advisory",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": ["perf-profiles/2026-07-31T12-41-33-606Z-ipad-xcuitest-matrix-ipad-simulator-native-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-07-31T12-47-45-439Z-ipad-xcuitest-matrix-ipad-simulator-native-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-07-31T12-48-04-671Z-ipad-xcuitest-matrix-ipad-simulator-native-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-07-31T12-48-23-590Z-ipad-xcuitest-matrix-ipad-simulator-native-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-07-31T12-41-33-606Z-ipad-xcuitest-matrix-ipad-simulator-native-pen-undo/real-screen.json",
-      "actionSources": [
+      "modes": [
         {
-          "source": "perf-profiles/2026-07-31T12-47-22-749Z-ipad-actions-matrix-ipad-simulator-native/actions.json",
-          "productCommit": "09c4efac27ca",
-          "kind": "full"
-        }
-      ]
-    },
-    {
-      "id": "android-emulator-web",
-      "number": 4,
-      "label": "Android emulator · web",
-      "platform": "Android",
-      "deviceKind": "emulator",
-      "runtime": "web",
-      "environment": "Pixel 7 Pro API 33 · Android 13 · Chrome 149",
-      "status": "captured",
-      "fidelity": "simulator-advisory",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": ["perf-profiles/2026-07-31T13-11-52-021Z-ipad-xcuitest-matrix-android-emulator-web-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-07-31T13-12-17-823Z-ipad-xcuitest-matrix-android-emulator-web-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-07-31T13-12-41-029Z-ipad-xcuitest-matrix-android-emulator-web-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-07-31T13-13-01-887Z-ipad-xcuitest-matrix-android-emulator-web-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-07-31T13-11-52-021Z-ipad-xcuitest-matrix-android-emulator-web-pen-undo/real-screen.json",
-      "actionSources": [
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
         {
-          "source": "perf-profiles/2026-07-31T13-02-57-213Z-ipad-actions-matrix-android-emulator-web/actions.json",
-          "productCommit": "09c4efac27ca",
-          "kind": "full"
-        }
-      ]
-    },
-    {
-      "id": "android-emulator-native",
-      "number": 5,
-      "label": "Android emulator · native",
-      "platform": "Android",
-      "deviceKind": "emulator",
-      "runtime": "native",
-      "environment": "Pixel 7 Pro API 33 · Android 13 · Capacitor WebView 149",
-      "status": "captured",
-      "fidelity": "simulator-advisory",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": ["perf-profiles/2026-07-31T13-14-48-574Z-ipad-xcuitest-matrix-android-emulator-native-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-07-31T13-15-11-013Z-ipad-xcuitest-matrix-android-emulator-native-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-07-31T13-15-29-320Z-ipad-xcuitest-matrix-android-emulator-native-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-07-31T13-15-47-200Z-ipad-xcuitest-matrix-android-emulator-native-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-07-31T13-14-48-574Z-ipad-xcuitest-matrix-android-emulator-native-pen-undo/real-screen.json",
-      "actionSources": [
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
         {
-          "source": "perf-profiles/2026-07-31T13-22-56-341Z-ipad-actions-matrix-android-emulator-native/actions.json",
-          "productCommit": "09c4efac27ca",
-          "kind": "full"
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionsUnavailableReason": "P1: the landscape action sweep times out at 'undo clear after blank rotation' \u2014 undo after a blank landscape rotation never restores the drawing in the Capacitor WebView. Previously attributed to #1192; that is fixed and merged, and the sweep still fails, so it is tracked as #1194. Two attempts failed identically in both themes."
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionsUnavailableReason": "P1: the landscape action sweep times out at 'undo clear after blank rotation' \u2014 undo after a blank landscape rotation never restores the drawing in the Capacitor WebView. Previously attributed to #1192; that is fixed and merged, and the sweep still fails, so it is tracked as #1194. Two attempts failed identically in both themes."
         }
       ]
     },
     {
       "id": "android-device-web",
-      "number": 6,
-      "label": "Android device · web",
+      "number": 5,
+      "label": "Android physical \u00b7 web",
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "web",
-      "environment": "Samsung SM-G990U1 · Android 16 · Chrome 150",
-      "status": "captured",
+      "environment": "Samsung SM-G990U1 \u00b7 Android 16 \u00b7 Chrome 151.0.0.0",
       "fidelity": "physical-web-advisory",
-      "drawingProductCommit": "b91fcc08fa63",
-      "drawing": {
-        "pen": ["perf-profiles/2026-08-01T00-40-17-508Z-ipad-xcuitest-matrix-android-device-web-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-08-01T00-41-47-082Z-ipad-xcuitest-matrix-android-device-web-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-08-01T00-43-14-530Z-ipad-xcuitest-matrix-android-device-web-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-08-01T00-44-44-718Z-ipad-xcuitest-matrix-android-device-web-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-08-01T00-40-17-508Z-ipad-xcuitest-matrix-android-device-web-pen-undo/real-screen.json",
-      "actionSources": [
+      "modes": [
         {
-          "source": "perf-profiles/2026-08-01T02-06-58-170Z-android-web-actions-final-action-regression-current/actions.json",
-          "productCommit": "b91fcc08fa63",
-          "kind": "full"
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
-          "source": "perf-profiles/2026-08-01T02-12-01-818Z-android-web-actions-final-action-regression-parent-settings-trace/actions.json",
-          "productCommit": "b91fcc08fa63",
-          "kind": "focused",
-          "labels": ["disable advanced controls"]
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
-          "source": "perf-profiles/2026-08-01T02-30-02-287Z-android-web-actions-final-action-regression-drawer-motion/actions.json",
-          "productCommit": "4c57798b9ac1",
-          "kind": "focused",
-          "labels": ["expand action drawer", "collapse action drawer"]
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
-          "source": "perf-profiles/2026-08-01T03-03-34-330Z-android-web-actions-deployment-matrix-final-current-web/actions.json",
-          "productCommit": "4c57798b9ac1",
-          "kind": "focused",
-          "labels": ["change ink color"]
-        },
-        {
-          "source": "perf-profiles/2026-08-01T02-30-38-218Z-android-web-actions-final-action-regression-rotation-motion-isolated/actions.json",
-          "productCommit": "4c57798b9ac1",
-          "kind": "focused",
-          "labels": [
-            "clear drawing",
-            "empty after clear: PORTRAIT to LANDSCAPE rotation",
-            "undo clear after blank rotation",
-            "undo restored stroke after blank rotation",
-            "clear restored drawing after blank rotation",
-            "empty after clear: LANDSCAPE to PORTRAIT rotation",
-            "with ink: PORTRAIT to LANDSCAPE rotation",
-            "with ink: LANDSCAPE to PORTRAIT rotation"
-          ]
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
       "id": "android-device-native",
-      "number": 7,
-      "label": "Android device · native",
+      "number": 6,
+      "label": "Android physical \u00b7 native",
       "platform": "Android",
       "deviceKind": "physical",
       "runtime": "native",
-      "environment": "Samsung SM-G990U1 · Android 16 · Capacitor WebView 150",
-      "status": "captured",
+      "environment": "Samsung SM-G990U1 \u00b7 Android 16 \u00b7 Capacitor WebView (Chrome 150.0.7871.181)",
       "fidelity": "physical-native-advisory",
-      "drawingProductCommit": "b91fcc08fa63",
-      "drawing": {
-        "pen": ["perf-profiles/2026-08-01T00-53-18-022Z-ipad-xcuitest-matrix-android-device-native-pen-undo/real-screen.json"],
-        "crayon": ["perf-profiles/2026-08-01T00-54-46-212Z-ipad-xcuitest-matrix-android-device-native-crayon/real-screen.json"],
-        "magic": ["perf-profiles/2026-08-01T00-56-12-103Z-ipad-xcuitest-matrix-android-device-native-magic/real-screen.json"],
-        "eraser": ["perf-profiles/2026-08-01T00-57-38-448Z-ipad-xcuitest-matrix-android-device-native-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-08-01T00-53-18-022Z-ipad-xcuitest-matrix-android-device-native-pen-undo/real-screen.json",
-      "actionSources": [
+      "modes": [
         {
-          "source": "perf-profiles/2026-08-01T01-08-46-611Z-ipad-actions-matrix-android-device-native/actions.json",
-          "productCommit": "b91fcc08fa63",
-          "kind": "full"
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         },
         {
-          "source": "perf-profiles/2026-08-01T02-53-29-699Z-ipad-actions-deployment-matrix-final-current-native/actions.json",
-          "productCommit": "4c57798b9ac1",
-          "kind": "focused",
-          "labels": [
-            "expand action drawer",
-            "collapse action drawer",
-            "change ink color",
-            "with ink: PORTRAIT to LANDSCAPE rotation",
-            "with ink: LANDSCAPE to PORTRAIT rotation"
-          ]
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
-      "id": "ipad-device-web",
+      "id": "android-emulator-web",
+      "number": 7,
+      "label": "Android emulator \u00b7 web",
+      "platform": "Android",
+      "deviceKind": "emulator",
+      "runtime": "web",
+      "environment": "Pixel 7 Pro API 33 emulator \u00b7 Android 13 \u00b7 Chrome 149.0.0.0",
+      "fidelity": "simulator-advisory",
+      "modes": [
+        {
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        }
+      ]
+    },
+    {
+      "id": "android-emulator-native",
       "number": 8,
-      "label": "iPad device · web",
-      "platform": "iOS",
-      "deviceKind": "physical",
-      "runtime": "web",
-      "environment": "iPad13,8 · iPadOS 26.5 · MobileSafari",
-      "status": "captured",
-      "fidelity": "release-gate",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": ["perf-profiles/2026-07-31T09-11-21-207Z-ipad-xcuitest-final-pen-undo-regression-instrumented/real-screen.json"],
-        "crayon": ["perf-profiles/2026-07-31T09-11-47-249Z-ipad-xcuitest-final-crayon-undo-regression/real-screen.json"],
-        "magic": ["perf-profiles/2026-07-31T09-12-12-518Z-ipad-xcuitest-final-magic-undo-regression/real-screen.json"],
-        "eraser": ["perf-profiles/2026-07-31T13-24-50-180Z-ipad-xcuitest-matrix-ipad-device-web-eraser/real-screen.json"]
-      },
-      "undoSource": "perf-profiles/2026-07-31T09-11-21-207Z-ipad-xcuitest-final-pen-undo-regression-instrumented/real-screen.json",
-      "actionSources": [
+      "label": "Android emulator \u00b7 native",
+      "platform": "Android",
+      "deviceKind": "emulator",
+      "runtime": "native",
+      "environment": "Pixel 7 Pro API 33 emulator \u00b7 Android 13 \u00b7 Capacitor WebView (Chrome 149.0.7827.91)",
+      "fidelity": "simulator-advisory",
+      "modes": [
         {
-          "source": "perf-profiles/2026-07-31T09-43-50-043Z-ipad-actions-expanded-46-action-regression/actions.json",
-          "productCommit": "09c4efac27ca",
-          "kind": "full"
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "undoSource": "preserved",
+          "actionSources": "preserved"
         }
       ]
     },
     {
-      "id": "macos-web",
+      "id": "mac-chrome",
       "number": 9,
-      "label": "macOS · web",
+      "label": "Mac \u00b7 Chrome",
       "platform": "macOS",
-      "deviceKind": "physical",
+      "deviceKind": "desktop",
       "runtime": "web",
-      "environment": "MacBook Pro M5 · 32 GB · macOS 26.5.2 · Playwright WebKit",
-      "status": "captured",
-      "fidelity": "synthetic-advisory",
-      "drawingProductCommit": "09c4efac27ca",
-      "drawing": {
-        "pen": [
-          "perf-profiles/2026-07-31T10-47-05-983Z-frames-local-webkit-raw/real-screen.json",
-          "perf-profiles/2026-07-31T10-47-25-500Z-frames-local-webkit-raw/real-screen.json",
-          "perf-profiles/2026-07-31T10-47-44-410Z-frames-local-webkit-raw/real-screen.json"
-        ],
-        "crayon": [
-          "perf-profiles/2026-07-31T10-49-46-825Z-frames-local-webkit-raw-crayon/real-screen.json",
-          "perf-profiles/2026-07-31T10-52-50-078Z-frames-local-webkit-raw-crayon/real-screen.json",
-          "perf-profiles/2026-07-31T10-53-09-265Z-frames-local-webkit-raw-crayon/real-screen.json"
-        ],
-        "magic": [
-          "perf-profiles/2026-07-31T10-50-29-795Z-frames-local-webkit-raw-magic/real-screen.json",
-          "perf-profiles/2026-07-31T10-51-52-924Z-frames-local-webkit-raw-magic/real-screen.json",
-          "perf-profiles/2026-07-31T10-52-13-581Z-frames-local-webkit-raw-magic/real-screen.json"
-        ],
-        "eraser": [
-          "perf-profiles/2026-07-31T13-27-52-760Z-frames-local-webkit-raw-eraser/real-screen.json",
-          "perf-profiles/2026-07-31T13-29-58-785Z-frames-local-webkit-raw-eraser/real-screen.json",
-          "perf-profiles/2026-07-31T13-32-01-212Z-frames-local-webkit-raw-eraser/real-screen.json"
-        ]
-      },
-      "actionSources": [
+      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright Chromium 151.0.7922.34",
+      "fidelity": "desktop-advisory",
+      "modes": [
         {
-          "source": "perf-profiles/2026-08-01T02-49-33-224Z-desktop-actions-webkit-deployment-matrix-final-current/actions.json",
-          "productCommit": "4c57798b9ac1",
-          "kind": "full"
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        }
+      ]
+    },
+    {
+      "id": "mac-safari",
+      "number": 10,
+      "label": "Mac \u00b7 Safari",
+      "platform": "macOS",
+      "deviceKind": "desktop",
+      "runtime": "web",
+      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright WebKit 26.5",
+      "fidelity": "desktop-advisory",
+      "modes": [
+        {
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        }
+      ]
+    },
+    {
+      "id": "mac-firefox",
+      "number": 11,
+      "label": "Mac \u00b7 Firefox",
+      "platform": "macOS",
+      "deviceKind": "desktop",
+      "runtime": "web",
+      "environment": "Mac desktop \u00b7 macOS 26.6.2 (25G83) \u00b7 arm64 \u00b7 Playwright Firefox 153.0",
+      "fidelity": "desktop-advisory",
+      "modes": [
+        {
+          "id": "portrait-light",
+          "orientation": "PORTRAIT",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "portrait-dark",
+          "orientation": "PORTRAIT",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "landscape-light",
+          "orientation": "LANDSCAPE",
+          "theme": "light",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
+        },
+        {
+          "id": "landscape-dark",
+          "orientation": "LANDSCAPE",
+          "theme": "dark",
+          "status": "captured",
+          "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
+          "drawing": "preserved",
+          "actionSources": "preserved",
+          "undoSource": "preserved",
+          "undoProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb"
         }
       ]
     }
-  ]
+  ],
+  "preservedEvidence": {
+    "from": "data.json",
+    "reason": "Raw captures land in gitignored perf-profiles scratch on the capture host, so no campaign's raw input survives in a clean checkout: the 2026-08-20 scratch is gone from the workstation, and the 2026-08-21 scratch was never tracked. Those cells are carried forward from the published normalized results rather than recaptured, which would replace a first valid result \u2014 including a red gate \u2014 with a different number."
+  }
 }

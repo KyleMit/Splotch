@@ -73,9 +73,48 @@ appium --port 4723
 ```
 
 WebDriverAgent also needs `ios/local.xcconfig` with
-`DEVELOPMENT_TEAM = <your Apple Developer team id>`. Its first device install may need
+`DEVELOPMENT_TEAM = <your Apple Developer team id>`. It is gitignored, so it exists in the main
+checkout and **not** in a fresh worktree — copy it across before the first run there, or every
+XCUITest command stops on "No signing config". Its first device install may need
 `--allow-provisioning`; that flag authorizes Xcode/Appium to create or update Apple Developer
 provisioning and device registration, so use it deliberately. Omit it from normal runs.
+
+**⟨iPad⟩** Set **Settings → Display & Brightness → Auto-Lock → Never** for the length of a campaign.
+A locked device fails every remaining cell, and the failure reads as a discovery problem rather than
+a sleeping screen.
+
+### The root-owned RemoteXPC tunnel — required on iOS 17 and newer
+
+Appium cannot discover a modern physical device on its own: `xcuitest` reaches it over a RemoteXPC
+tunnel that only root can open. `xcrun devicectl` talks to the device through a different path and
+succeeds without the tunnel, so **a successful `devicectl` launch is not evidence that Appium can
+see the device** — those two paths diverge, and the tunnel is the one that matters here.
+
+Start it in its own long-lived process and leave it up for the whole campaign:
+
+```sh
+sudo node ~/.appium/node_modules/appium-xcuitest-driver/scripts/tunnel-creation.mjs --udid <udid> --disconnect-retry-max-attempts 3
+```
+
+An agent session has no terminal to type a password into, which is what blocked this for three
+sessions. Route the prompt through the macOS GUI instead — the password goes to the system dialog,
+never through the agent:
+
+```sh
+osascript -e 'do shell script "node ~/.appium/node_modules/appium-xcuitest-driver/scripts/tunnel-creation.mjs --udid <udid> --disconnect-retry-max-attempts 3 > /tmp/ios-tunnel.log 2>&1" with administrator privileges'
+```
+
+Run it in the background and read `/tmp/ios-tunnel.log`. Success ends in a tunnel address, an RSD
+port, and a published service catalog:
+
+```text
+✅ Tunnel creation completed successfully for device: <udid>
+   Published tunnel catalog for <udid> (73 services)
+```
+
+`do shell script` runs with a bare environment, so give `node` its absolute path if the login shell
+puts it on `PATH` through nvm. Confirm the tunnel with one short probe before queueing a campaign —
+`--gesture-repeats=2` reaches a real capture in a couple of minutes and proves discovery end to end.
 
 ---
 
