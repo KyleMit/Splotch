@@ -5,7 +5,7 @@ import type { MagicSheetSnapshot } from './magicBrush';
 import type { PaperView } from './paperView';
 import { createProgressiveClearCapture } from './progressiveClearCapture';
 import { renderOp, type StrokeGroupCommand, type StrokeOp } from './strokeOps';
-import { MAX_UNDO_DEPTH } from './undoHistory';
+import { MAX_UNDO_DEPTH, type RecordedPaperState } from './undoHistory';
 import {
   geometryIntersectsTile,
   opDeviceBounds,
@@ -41,7 +41,14 @@ import {
 
 interface TiledRendererHost {
   paperSize: () => { width: number; height: number } | null;
+  // Optional only so the renderer's own test hosts can omit it; engine.ts always supplies it.
+  recordedPaper?: () => RecordedPaperState | null;
   hasActivePointers: () => boolean;
+}
+
+function recordedCommand(ops: StrokeOp[], wasEmpty: boolean): StrokeGroupCommand {
+  const recordedPaper = host?.recordedPaper?.();
+  return { ops, wasEmpty, ...(recordedPaper ? { recordedPaper } : {}) };
 }
 
 export const TILE_HISTORY_FOLD_IDLE_MS = 1_500;
@@ -315,9 +322,7 @@ function renderCommandAcrossTiles(command: StrokeGroupCommand, captureUndo = fal
   const paper = host?.paperSize();
   if (!paper) return;
   clipTilesToPaper(liveTiles, paper);
-  for (const op of command.ops) {
-    renderTiledOpForCommand(op, captureUndo ? command : null);
-  }
+  for (const op of command.ops) renderTiledOpForCommand(op, captureUndo ? command : null);
   restoreTileContexts(liveTiles);
   if (captureUndo) undoPatches.crop(command);
 }
@@ -401,7 +406,7 @@ export function recodeTiledMagicOps(snapshot: MagicSheetSnapshot, sourceKey: str
 
 export function beginTiledCommand(wasEmpty: boolean) {
   cancelHistoryFold();
-  activeCommand = { ops: [], wasEmpty };
+  activeCommand = recordedCommand([], wasEmpty);
   workCounters?.begin();
 }
 
@@ -415,6 +420,10 @@ export function commitTiledCommand() {
   workCounters?.commit();
   scheduleTiledHistoryFold();
   return true;
+}
+
+export function peekTiledUndoPaper(): RecordedPaperState | undefined {
+  return history.at(-1)?.wasEmpty === false ? history.at(-1)?.recordedPaper : undefined;
 }
 
 export function undoTiledCommand(renderScale: number) {
@@ -459,12 +468,13 @@ export function undoTiledCommand(renderScale: number) {
   return {
     empty,
     canUndo: undoableCommands > 0,
+    ...(undone?.recordedPaper ? { recordedPaper: undone.recordedPaper } : {}),
     ...(undone?.magicRecode ? { restoreAppearance: undone.magicRecode.restoreAppearance } : {}),
   };
 }
 
 export function clearTiledRenderer(wasEmpty: boolean) {
-  const clearCommand: StrokeGroupCommand = { ops: [{ kind: 'clear' }], wasEmpty };
+  const clearCommand = recordedCommand([{ kind: 'clear' }], wasEmpty);
   const captureIndices: number[] = [];
   history.push(clearCommand);
   undoableCommands = Math.min(MAX_UNDO_DEPTH, undoableCommands + 1);

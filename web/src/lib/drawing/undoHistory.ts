@@ -4,6 +4,14 @@
 // tiled history, the perf scenarios, and E2E coverage share one value.
 export const MAX_UNDO_DEPTH = 20;
 
+export interface RecordedPaperState {
+  pxW: number;
+  pxH: number;
+  cssW: number;
+  cssH: number;
+  angle: number;
+}
+
 export interface HistoryDebug {
   strokeRevision?: number;
   snapshots: number;
