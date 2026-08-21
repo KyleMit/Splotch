@@ -27,6 +27,7 @@ import {
   SETTINGS_SECTION_ROWS,
   RESOLVED_THEME_EXPRESSION,
   clickSetupElement,
+  settingsShellIsCompact as isCompactSettingsShell,
   ensureCampaignTheme,
   parseCampaignTheme,
   readResolvedTheme,
@@ -988,9 +989,7 @@ export async function runActionSweep({
   // SettingsModal.svelte). Waiting for section rows there times out against a
   // product that is behaving correctly, and takes the whole sweep down with it —
   // including every action that has nothing to do with Settings.
-  const settingsShellIsCompact = settingsInScope
-    ? await execute(`return document.querySelector('#settingsModal .quick-toggles') !== null;`)
-    : false;
+  const settingsShellIsCompact = settingsInScope ? await isCompactSettingsShell(execute) : false;
   if (settingsInScope && !settingsShellIsCompact) {
     await waitForReady(
       execute,

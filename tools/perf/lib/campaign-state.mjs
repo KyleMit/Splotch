@@ -13,7 +13,7 @@ export const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
 // A landscape phone gets CompactShell: quick toggles and a pointer to portrait
 // instead of the section list (COMPACT_QUERY in SettingsModal.svelte). Its
 // controls are different elements, not missing ones.
-export const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
+const COMPACT_SHELL_MARKER = '#settingsModal .quick-toggles';
 
 export async function settingsShellIsCompact(execute) {
   return execute(`return document.querySelector('${COMPACT_SHELL_MARKER}') !== null;`);

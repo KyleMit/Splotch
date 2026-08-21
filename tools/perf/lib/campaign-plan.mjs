@@ -15,12 +15,12 @@ export const CAMPAIGN_MODES = [
   { id: 'landscape-dark', orientation: 'LANDSCAPE', theme: 'dark' },
 ];
 
-export const DRAWING_ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser'];
+const DRAWING_ITEMS = ['pen-undo', 'crayon', 'magic', 'eraser'];
 export const ALL_ITEMS = [...DRAWING_ITEMS, 'actions'];
 
 // One warmup plus three scored samples — the action scorer rejects any other split.
 export const ACTION_REPEATS = 4;
-export const GESTURE_REPEATS = 10;
+const GESTURE_REPEATS = 10;
 export const UNDO_COUNT = 10;
 export const MAX_ATTEMPTS = 3;
 

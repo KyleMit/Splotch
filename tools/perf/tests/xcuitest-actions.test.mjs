@@ -715,8 +715,12 @@ describe('compact settings shell', () => {
   // selectors it reaches for against the markup that has to provide them. A
   // renamed id would otherwise turn every landscape-phone action cell into a
   // silent timeout, which is exactly how the 2026-08-20 campaign lost them.
-  it('detects the shell by a container CompactShell actually renders', () => {
-    expect(sweep).toContain('#settingsModal .quick-toggles');
+  it('detects the shell through the one shared selector, not a second copy', () => {
+    const campaignState = read(join('tools', 'perf', 'lib', 'campaign-state.mjs'));
+
+    expect(sweep).toContain('isCompactSettingsShell');
+    expect(sweep).not.toContain('.quick-toggles');
+    expect(campaignState).toContain("'#settingsModal .quick-toggles'");
     expect(compactShell).toContain('class="quick-toggles"');
   });
 
