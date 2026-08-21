@@ -21,6 +21,20 @@ Start Appium 3 only for Appium targets and confirm its driver for the platform i
 capability file for simulators, Android, retained sessions, or hosted providers; do not commit the
 file if it contains IDs or credentials.
 
+Detach every viewer from the device before capturing. A mirrored or recorded screen is not a passive
+observer: an editor's device panel, a simulator stream, QuickTime recording, or scrcpy encodes video
+continuously and adds host load the measured baseline never had. That makes a run non-comparable
+with evidence captured without it, which is worse than a slow run because nothing in the artifact
+records that a mirror was attached. Simulator.app's own window is the exception — it is part of the
+established baseline. Check for stray streams before starting:
+
+```sh
+pgrep -fl "simctl (io|spawn)|scrcpy|screenrecord"
+```
+
+Re-check after any tool offers to show you the device mid-campaign, and treat cells captured while a
+mirror was attached as unmeasured rather than merging them.
+
 ## macOS web
 
 Drawing on the production route, one brush at a time:
@@ -47,6 +61,12 @@ npm run perf:web:actions -- \
 
 The established comparison geometry is 1512×982 CSS pixels at 2× DPR. The runner defaults to that
 profile; pass `--viewport=1512x982 --device-scale-factor=2` when recording an explicit command.
+
+Headed, that CSS viewport plus the browser's own chrome can make the outer window taller than a
+shorter physical display, so the bottom looks cut off at 100% zoom. Playwright still gives the page
+the requested viewport, so the artifact is correct and the crop is cosmetic — scroll or move the
+outer window to inspect it. Do not shrink the geometry to make the window fit: that changes the
+matrix cell. A smaller exploratory viewport is fine, but label it non-comparable.
 
 ## Physical iPad web
 
@@ -145,8 +165,19 @@ npm run android:boot
 npm run adb:devices
 ```
 
+Physical Chrome, the physical WebView, and the emulator image routinely run different Chromium
+majors, so one pinned Chromedriver cannot serve them all. Record the versions and either point the
+capability file at a matching cached driver or start Appium with the download explicitly authorized:
+
+```sh
+appium server --port <owned-port> --allow-insecure uiautomator2:chromedriver_autodownload
+```
+
+Keep downloaded drivers and device-specific capability files untracked.
+
 Drawing uses the shared Appium real-screen runner with Android Chrome capabilities and a reachable
-preview URL. Report missing contact geometry as advisory.
+preview URL. Report missing contact geometry as advisory. Web *actions* use direct CDP rather than
+Appium (ADR-0092).
 
 Actions must use direct CDP:
 
@@ -174,8 +205,21 @@ Use an instrumented build for actual profiling. Drawing and actions use the Appi
 --native-app --native-webview-class=android.webkit.WebView
 ```
 
-Do not navigate the native WebView to the hosted URL. Rotation runs must unlock and restore the real
-Settings preference; the action runner owns that sequence.
+Do not navigate the native WebView to the hosted URL. Rotation runs must go through whatever
+orientation control the product offers in that mode; the action runner owns that sequence.
+
+**Several debuggable WebViews can satisfy the context search.** If Chrome is running with an open
+tab, a native capture can attach to Chrome's WebView instead of the Capacitor one and still look
+successful. Stop Chrome before a native run and verify the artifact's identity rather than the exit
+code:
+
+```sh
+adb -s "$SERIAL" shell am force-stop com.android.chrome
+```
+
+Accept the artifact only when its metadata says `transport: native-capacitor-webview` with the
+expected app URL, device, orientation, and theme. Never accept the first `WEBVIEW_*`/`CHROMIUM`
+context without that check.
 
 ## Physical Android web
 
