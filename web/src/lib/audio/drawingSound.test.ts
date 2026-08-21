@@ -160,6 +160,24 @@ describe('playDrawSound', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('does not prepare or play audio while only the drawing source is off', async () => {
+    const { setDrawingSound, setSound } = await import('$lib/state/settings.svelte');
+    const drawingSound = await import('./drawingSound');
+    const AudioContext = vi.fn();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('AudioContext', AudioContext);
+    vi.stubGlobal('fetch', fetchMock);
+
+    setSound(true);
+    setDrawingSound(false);
+    drawingSound.preloadFirstDrawSound();
+    drawingSound.preloadDrawSounds();
+    drawingSound.playDrawSound({ speed: 0.45, isStrokeStart: true });
+
+    expect(AudioContext).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('retries a failed preload once per gesture instead of once per pointer event', async ({
     signal,
   }) => {

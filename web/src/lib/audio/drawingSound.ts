@@ -63,8 +63,9 @@ const buffers: AudioBuffer[] = [];
 const loadPromises = new Map<string, Promise<void>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
-let playbackRequested = false;
-let requestedSpeed = 0;
+type PencilPlaybackKind = 'drawing' | 'volume-preview';
+
+let playbackRequest: { kind: PencilPlaybackKind; speed: number } | null = null;
 let clearPageTurnBuffer: AudioBuffer | null = null;
 const clearLoadPromises = new Map<string, Promise<void>>();
 const clearFailedUrls = new Set<string>();
@@ -77,6 +78,14 @@ const clearCancelTimers = new Set<ReturnType<typeof setTimeout>>();
 
 function volumeMultiplier() {
   return settings.soundVolume / SOUND_VOLUME_DEFAULT;
+}
+
+export function canPlayDrawingSound() {
+  return settings.soundEnabled && settings.drawingSoundEnabled;
+}
+
+function canPlayDeleteSound() {
+  return settings.soundEnabled && settings.deleteSoundEnabled;
 }
 
 function ensureContext(): AudioContext | null {
@@ -128,29 +137,35 @@ function loadClearPageTurn(ctx: AudioContext, url: string): Promise<void> {
   return pending;
 }
 
-export function preloadFirstDrawSound() {
-  if (!settings.soundEnabled) return;
+function preloadFirstPencilSound() {
   const ctx = ensureContext();
   if (!ctx) return;
   void loadSound(ctx, SOUND_URLS[0]);
 }
 
-export function preloadDrawSounds() {
-  if (!settings.soundEnabled) return;
+function preloadPencilSounds() {
   const ctx = ensureContext();
   if (!ctx) return;
   for (const url of SOUND_URLS) void loadSound(ctx, url);
 }
 
-export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
-  if (!settings.soundEnabled) return;
-  const gestureStarted = !playbackRequested;
-  playbackRequested = true;
-  requestedSpeed = speed;
+export function preloadFirstDrawSound() {
+  if (!canPlayDrawingSound()) return;
+  preloadFirstPencilSound();
+}
+
+export function preloadDrawSounds() {
+  if (!canPlayDrawingSound()) return;
+  preloadPencilSounds();
+}
+
+function requestPencilPlayback({ speed, isStrokeStart }: DrawSoundData, kind: PencilPlaybackKind) {
+  const gestureStarted = !playbackRequest;
+  playbackRequest = { kind, speed };
   if (isStrokeStart) {
     failedUrls.clear();
-    preloadDrawSounds();
-  } else preloadFirstDrawSound();
+    preloadPencilSounds();
+  } else preloadFirstPencilSound();
   const ctx = audioContext;
   if (!ctx) return;
 
@@ -161,9 +176,25 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   else startPlaybackIfReady();
 }
 
+export function playDrawSound(data: DrawSoundData) {
+  if (!canPlayDrawingSound()) {
+    if (playbackRequest || currentPlayback) stopDrawSound();
+    return;
+  }
+  requestPencilPlayback(data, 'drawing');
+}
+
+export function playVolumePreview(data: DrawSoundData) {
+  if (!settings.soundEnabled) {
+    if (playbackRequest || currentPlayback) stopDrawSound();
+    return;
+  }
+  requestPencilPlayback(data, 'volume-preview');
+}
+
 export function startClearSound() {
   resetClearGesture();
-  if (!settings.soundEnabled) return;
+  if (!canPlayDeleteSound()) return;
   const ctx = ensureContext();
   if (!ctx) return;
 
@@ -177,7 +208,7 @@ export function startClearSound() {
 // commit threshold; nothing here clamps it to the visual progress the CSS uses.
 export function updateClearSound(progress: number) {
   if (!clearGestureActive) return;
-  if (!settings.soundEnabled) {
+  if (!canPlayDeleteSound()) {
     resetClearGesture();
     return;
   }
@@ -194,7 +225,7 @@ export function updateClearSound(progress: number) {
 
 export function cancelClearSound() {
   const ctx = audioContext;
-  const shouldUnwind = clearGestureActive && settings.soundEnabled && clearLastStep >= 0 && ctx;
+  const shouldUnwind = clearGestureActive && canPlayDeleteSound() && clearLastStep >= 0 && ctx;
   const frequency = clearLastFrequency;
   resetClearGesture();
   if (!shouldUnwind) return;
@@ -203,7 +234,7 @@ export function cancelClearSound() {
     const timer = setTimeout(
       () => {
         clearCancelTimers.delete(timer);
-        if (!settings.soundEnabled) return;
+        if (!canPlayDeleteSound()) return;
         playClearNote(
           ctx,
           frequency * 2 ** ((-CLEAR_CANCEL_STEP_SEMITONES * note) / 12),
@@ -217,7 +248,7 @@ export function cancelClearSound() {
 }
 
 export function commitClearSound() {
-  const shouldPlay = clearGestureActive && settings.soundEnabled;
+  const shouldPlay = clearGestureActive && canPlayDeleteSound();
   resetClearGesture();
   if (shouldPlay) {
     clearPageTurnRequested = true;
@@ -329,7 +360,7 @@ function playClearDroplet(ctx: AudioContext, frequency: number, level: number, n
 
 function playClearPageTurnIfReady() {
   const ctx = audioContext;
-  if (!ctx || !clearPageTurnRequested || !clearPageTurnBuffer || !settings.soundEnabled) return;
+  if (!ctx || !clearPageTurnRequested || !clearPageTurnBuffer || !canPlayDeleteSound()) return;
   clearPageTurnRequested = false;
 
   const gain = ctx.createGain();
@@ -348,11 +379,13 @@ function playClearPageTurnIfReady() {
 
 function startPlaybackIfReady() {
   const ctx = audioContext;
+  const request = playbackRequest;
   if (
     !ctx ||
     currentPlayback ||
-    !playbackRequested ||
+    !request ||
     !settings.soundEnabled ||
+    (request.kind === 'drawing' && !settings.drawingSoundEnabled) ||
     buffers.length === 0
   )
     return;
@@ -368,7 +401,7 @@ function startPlaybackIfReady() {
   source.connect(gain);
   source.start(0, Math.random() * buffer.duration);
   currentPlayback = { source, gain };
-  updateGain(gain.gain, requestedSpeed, ctx.currentTime);
+  updateGain(gain.gain, request.speed, ctx.currentTime);
 }
 
 function updateGain(param: AudioParam, speed: number, now: number) {
@@ -378,8 +411,7 @@ function updateGain(param: AudioParam, speed: number, now: number) {
 
 export function stopDrawSound() {
   failedUrls.clear();
-  playbackRequested = false;
-  requestedSpeed = 0;
+  playbackRequest = null;
   const playback = currentPlayback;
   if (playback && audioContext) {
     const now = audioContext.currentTime;

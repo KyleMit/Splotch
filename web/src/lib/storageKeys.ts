@@ -1,5 +1,7 @@
 export const STORAGE_KEYS = {
   soundEnabled: 'splotch-sound-enabled',
+  drawingSoundEnabled: 'splotch-drawing-sound-enabled',
+  deleteSoundEnabled: 'splotch-delete-sound-enabled',
   soundVolume: 'splotch-sound-volume',
   actionButtonScale: 'splotch-action-button-scale',
   saveOnDelete: 'splotch-save-on-delete',

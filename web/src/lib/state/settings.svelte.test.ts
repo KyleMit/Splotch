@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { STORAGE_KEYS } from '../storage';
 
 import {
   settings,
+  setDeleteSound,
+  setDrawingSound,
   setSound,
   setSoundVolume,
   setActionButtonScale,
@@ -20,6 +22,9 @@ import {
 import { selectBrush, toolState } from './tool.svelte';
 
 beforeEach(() => {
+  setSound(true);
+  setDrawingSound(true);
+  setDeleteSound(true);
   setCrayon(true);
   setMagicBrush(true);
   setEraser(true);
@@ -28,6 +33,14 @@ beforeEach(() => {
 });
 
 describe('defaults', () => {
+  it('enables both sound sources for existing installs without source preferences', async () => {
+    vi.resetModules();
+    const { settings: freshSettings } = await import('./settings.svelte');
+
+    expect(freshSettings.drawingSoundEnabled).toBe(true);
+    expect(freshSettings.deleteSoundEnabled).toBe(true);
+  });
+
   it('keeps AI image creation off until a parent opts in', () => {
     expect(settings.aiImageEnabled).toBe(false);
   });
@@ -52,6 +65,8 @@ describe('boolean setters', () => {
   });
 
   it.each([
+    ['drawing sound', setDrawingSound, STORAGE_KEYS.drawingSoundEnabled],
+    ['delete sound', setDeleteSound, STORAGE_KEYS.deleteSoundEnabled],
     ['crayon', setCrayon, STORAGE_KEYS.crayonEnabled],
     ['magic', setMagicBrush, STORAGE_KEYS.magicBrushEnabled],
     ['eraser', setEraser, STORAGE_KEYS.eraserEnabled],
@@ -151,8 +166,12 @@ describe('reloadSettings', () => {
     // Simulate values recovered into localStorage by the durable layer after a
     // WebView eviction, differing from the current in-memory state.
     setSound(true);
+    setDrawingSound(true);
+    setDeleteSound(true);
     setDrawerOpen(false);
     localStorage.setItem(STORAGE_KEYS.soundEnabled, 'false');
+    localStorage.setItem(STORAGE_KEYS.drawingSoundEnabled, 'false');
+    localStorage.setItem(STORAGE_KEYS.deleteSoundEnabled, 'false');
     localStorage.setItem(STORAGE_KEYS.soundVolume, '35');
     localStorage.setItem(STORAGE_KEYS.actionButtonScale, '130');
     localStorage.setItem(STORAGE_KEYS.drawerOpen, 'true');
@@ -161,6 +180,8 @@ describe('reloadSettings', () => {
     reloadSettings();
 
     expect(settings.soundEnabled).toBe(false);
+    expect(settings.drawingSoundEnabled).toBe(false);
+    expect(settings.deleteSoundEnabled).toBe(false);
     expect(settings.soundVolume).toBe(35);
     expect(settings.actionButtonScale).toBe(130);
     expect(settings.drawerOpen).toBe(true);
