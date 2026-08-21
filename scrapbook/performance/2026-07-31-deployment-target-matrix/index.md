@@ -60,6 +60,14 @@ post-action frame max ≤ 33.5 ms.
   workstation, so their cells are carried forward from the published normalized results and each run
   keeps the raw source path it was captured from; only the 2026-08-21 gap captures are re-readable
   from raw input.
+* The 2026-08-21 physical-iPad cells were captured on ce88c8e587ac45847c419e05ef7a79d282bc747a,
+  which carries the blank-rotation undo fix; every other cell stays pinned to
+  6961e50b685d441e88b37d20d3f38a27136572fb. Those pinned cells were checked rather than assumed: a
+  fresh mac-safari landscape-light action sweep at the newer commit matched the pinned result on all
+  50 labels within 5 ms, the three blank-rotation labels included, so the pinned rows are not stale
+  and were not recaptured. The same labels cost 100-106 ms on the iPad, where resizeCanvas spans a
+  4.7 Mpx canvas rather than a 1512x982 desktop viewport - a device-size effect, not a code
+  regression.
 * 34 cells carry results preserved from data.json rather than re-read raw captures: The 2026-08-20
   campaign wrote its raw captures to gitignored perf-profiles scratch, and that scratch is no longer
   on the workstation, so those cells cannot be re-read from raw input. Their normalized results are
