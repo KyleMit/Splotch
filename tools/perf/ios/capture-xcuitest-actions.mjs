@@ -9,6 +9,7 @@ import {
   actionRows,
   summarizeActions,
 } from '../lib/action-stats.mjs';
+import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import {
   BORROWED_SESSION_CAPABILITIES_ERROR,
@@ -1696,7 +1697,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         id: capturedDeviceId(flag('device-id'), session),
       },
       appUrl,
-      transport: nativeApp ? 'native-capacitor-webview' : 'browser',
+      transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       uiActivation: uiActivationLabel(samples),
       appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),
       actions: [...actions],

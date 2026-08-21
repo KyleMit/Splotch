@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, pollUntil, runMain, sleep } from '../../lib/proc.mjs';
+import { NATIVE_TRANSPORT } from '../lib/campaign-plan.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
 import { drawingGateRows, scoreDrawingRun } from '../lib/drawing-gates.mjs';
 import { probeConfigScript } from './capture-webkit-frames.mjs';
@@ -861,7 +862,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         id: capturedDeviceId(deviceId, session),
       },
       appUrl,
-      transport: nativeApp ? 'native-capacitor-webview' : 'browser',
+      transport: nativeApp ? NATIVE_TRANSPORT : 'browser',
       theme,
       mode: `xcuitest:${label}`,
       automation: {
