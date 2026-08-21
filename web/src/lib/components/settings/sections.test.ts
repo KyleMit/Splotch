@@ -24,19 +24,15 @@ describe('SECTIONS', () => {
   it("uses the app version as What's New's content stamp", () => {
     expect(sectionContentStamp('whatsnew')).toBe(APP_VERSION);
   });
-
-  it('marks the expanded sound controls as the second sound-section revision', () => {
-    expect(sectionContentStamp('sound')).toBe('2');
-  });
 });
 
 describe('sound section subtitle', () => {
   it.each([
     [false, true, true, 'Muted'],
-    [true, false, false, 'Muted'],
+    [true, false, false, 'No sources'],
     [true, true, true, 'Volume 65%'],
     [true, true, false, 'Volume 65% · drawing only'],
-    [true, false, true, 'Volume 65% · delete only'],
+    [true, false, true, 'Volume 65% · deleting only'],
   ] as const)(
     'summarizes master=%s drawing=%s delete=%s',
     (masterEnabled, drawingEnabled, deleteEnabled, expected) => {

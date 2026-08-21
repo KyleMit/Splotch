@@ -63,8 +63,9 @@ const buffers: AudioBuffer[] = [];
 const loadPromises = new Map<string, Promise<void>>();
 const failedUrls = new Set<string>();
 let currentPlayback: { source: AudioBufferSourceNode; gain: GainNode } | null = null;
-let playbackRequested = false;
-let requestedSpeed = 0;
+type PencilPlaybackKind = 'drawing' | 'volume-preview';
+
+let playbackRequest: { kind: PencilPlaybackKind; speed: number } | null = null;
 let clearPageTurnBuffer: AudioBuffer | null = null;
 const clearLoadPromises = new Map<string, Promise<void>>();
 const clearFailedUrls = new Set<string>();
@@ -79,7 +80,7 @@ function volumeMultiplier() {
   return settings.soundVolume / SOUND_VOLUME_DEFAULT;
 }
 
-function canPlayDrawingSound() {
+export function canPlayDrawingSound() {
   return settings.soundEnabled && settings.drawingSoundEnabled;
 }
 
@@ -136,32 +137,35 @@ function loadClearPageTurn(ctx: AudioContext, url: string): Promise<void> {
   return pending;
 }
 
-export function preloadFirstDrawSound() {
-  if (!canPlayDrawingSound()) return;
+function preloadFirstPencilSound() {
   const ctx = ensureContext();
   if (!ctx) return;
   void loadSound(ctx, SOUND_URLS[0]);
 }
 
-export function preloadDrawSounds() {
-  if (!canPlayDrawingSound()) return;
+function preloadPencilSounds() {
   const ctx = ensureContext();
   if (!ctx) return;
   for (const url of SOUND_URLS) void loadSound(ctx, url);
 }
 
-export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
-  if (!canPlayDrawingSound()) {
-    if (playbackRequested || currentPlayback) stopDrawSound();
-    return;
-  }
-  const gestureStarted = !playbackRequested;
-  playbackRequested = true;
-  requestedSpeed = speed;
+export function preloadFirstDrawSound() {
+  if (!canPlayDrawingSound()) return;
+  preloadFirstPencilSound();
+}
+
+export function preloadDrawSounds() {
+  if (!canPlayDrawingSound()) return;
+  preloadPencilSounds();
+}
+
+function requestPencilPlayback({ speed, isStrokeStart }: DrawSoundData, kind: PencilPlaybackKind) {
+  const gestureStarted = !playbackRequest;
+  playbackRequest = { kind, speed };
   if (isStrokeStart) {
     failedUrls.clear();
-    preloadDrawSounds();
-  } else preloadFirstDrawSound();
+    preloadPencilSounds();
+  } else preloadFirstPencilSound();
   const ctx = audioContext;
   if (!ctx) return;
 
@@ -170,6 +174,22 @@ export function playDrawSound({ speed, isStrokeStart }: DrawSoundData) {
   if (gestureStarted && ctx.state === 'suspended') ctx.resume().catch(() => {});
   if (currentPlayback) updateGain(currentPlayback.gain.gain, speed, ctx.currentTime);
   else startPlaybackIfReady();
+}
+
+export function playDrawSound(data: DrawSoundData) {
+  if (!canPlayDrawingSound()) {
+    if (playbackRequest || currentPlayback) stopDrawSound();
+    return;
+  }
+  requestPencilPlayback(data, 'drawing');
+}
+
+export function playVolumePreview(data: DrawSoundData) {
+  if (!settings.soundEnabled) {
+    if (playbackRequest || currentPlayback) stopDrawSound();
+    return;
+  }
+  requestPencilPlayback(data, 'volume-preview');
 }
 
 export function startClearSound() {
@@ -359,11 +379,13 @@ function playClearPageTurnIfReady() {
 
 function startPlaybackIfReady() {
   const ctx = audioContext;
+  const request = playbackRequest;
   if (
     !ctx ||
     currentPlayback ||
-    !playbackRequested ||
-    !canPlayDrawingSound() ||
+    !request ||
+    !settings.soundEnabled ||
+    (request.kind === 'drawing' && !settings.drawingSoundEnabled) ||
     buffers.length === 0
   )
     return;
@@ -379,7 +401,7 @@ function startPlaybackIfReady() {
   source.connect(gain);
   source.start(0, Math.random() * buffer.duration);
   currentPlayback = { source, gain };
-  updateGain(gain.gain, requestedSpeed, ctx.currentTime);
+  updateGain(gain.gain, request.speed, ctx.currentTime);
 }
 
 function updateGain(param: AudioParam, speed: number, now: number) {
@@ -389,8 +411,7 @@ function updateGain(param: AudioParam, speed: number, now: number) {
 
 export function stopDrawSound() {
   failedUrls.clear();
-  playbackRequested = false;
-  requestedSpeed = 0;
+  playbackRequest = null;
   const playback = currentPlayback;
   if (playback && audioContext) {
     const now = audioContext.currentTime;

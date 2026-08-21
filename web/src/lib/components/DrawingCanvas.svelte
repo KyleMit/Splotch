@@ -26,8 +26,8 @@
   } from '$lib/state/coloringBook.svelte';
   import { resolvedTheme } from '$lib/state/appearance.svelte';
   import { pageCompositionKey } from '$lib/state/books';
-  import { settings } from '$lib/state/settings.svelte';
   import {
+    canPlayDrawingSound,
     playDrawSound,
     preloadDrawSounds,
     preloadFirstDrawSound,
@@ -149,7 +149,7 @@
   // The other variants stay behind idle so their transfer and decode do not
   // compete with first paint. Enabling drawing sound later takes the same fast path.
   $effect(() => {
-    if (!settings.soundEnabled || !settings.drawingSoundEnabled) {
+    if (!canPlayDrawingSound()) {
       stopDrawSound();
       return;
     }

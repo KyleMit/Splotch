@@ -103,15 +103,11 @@ export function sectionSubtitle(id: SectionId): string {
       return parts.join(' · ');
     }
     case 'sound': {
-      if (
-        !settings.soundEnabled ||
-        (!settings.drawingSoundEnabled && !settings.deleteSoundEnabled)
-      ) {
-        return 'Muted';
-      }
+      if (!settings.soundEnabled) return 'Muted';
+      if (!settings.drawingSoundEnabled && !settings.deleteSoundEnabled) return 'No sources';
       const volume = `Volume ${settings.soundVolume}%`;
       if (settings.drawingSoundEnabled && settings.deleteSoundEnabled) return volume;
-      return `${volume} · ${settings.drawingSoundEnabled ? 'drawing' : 'delete'} only`;
+      return `${volume} · ${settings.drawingSoundEnabled ? 'drawing' : 'deleting'} only`;
     }
     case 'saving':
       return settings.saveOnDeleteEnabled ? 'Auto-save on' : 'Auto-save off';
