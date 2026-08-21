@@ -182,6 +182,24 @@ describe('deployment matrix report', () => {
     expect(html).not.toContain('idle frame control');
   });
 
+  it('keeps more than 46 action columns in one dynamically sized heatmap row', () => {
+    const results = Array.from({ length: 49 }, (_, index) => action(`action ${index + 1}`, true));
+    const matrix = normalizedMatrix([
+      normalizedMode(modeSpecs[0], { actions: normalizedActions(results) }),
+      ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+    ]);
+    const html = renderReport(matrix);
+    const grids = [...html.matchAll(/<div class="heat-cells">(.*?)<\/div>/g)];
+
+    expect(html).toContain('style="--action-columns:49"');
+    expect(html).toContain('grid-template-columns:repeat(var(--action-columns),15px)');
+    expect(html).not.toContain('repeat(46,15px)');
+    expect(grids).toHaveLength(5);
+    for (const [, cells] of grids) {
+      expect(cells.match(/class="(?:action-number|heat-cell)/g)).toHaveLength(49);
+    }
+  });
+
   it('applies focused action captures only to their measured labels', () => {
     const baseline = {
       results: [
@@ -206,6 +224,28 @@ describe('deployment matrix report', () => {
     expect(markdown).toContain('This cumulative snapshot');
     expect(markdown).toContain('`final123` is the final performance-affecting product commit');
     expect(markdown).toContain('npm run gen:performance-matrix');
+  });
+
+  it('reports missing drawing sources as unavailable rather than failed', () => {
+    const matrix = normalizeMatrix(
+      manifest([
+        capturedManifestMode(modeSpecs[0]),
+        ...modeSpecs.slice(1).map((spec) => unavailableMode(spec)),
+      ])
+    );
+    const markdown = renderMarkdown(matrix);
+    const portraitLightRows = markdown
+      .split('\n')
+      .filter((line) => line.startsWith('| 1. Fixture · Portrait · Light |'));
+
+    expect(
+      portraitLightRows.some((line) =>
+        line.includes(
+          '| Unavailable: not measured | Unavailable: not measured | Unavailable: not measured | Unavailable: not measured |'
+        )
+      )
+    ).toBe(true);
+    expect(markdown).not.toContain('**FAIL — / — / — · L—%**');
   });
 
   it('resolves mode evidence from the manifest directory and preserves missing metrics', () => {
