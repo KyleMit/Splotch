@@ -6,6 +6,20 @@ values. Add `--report-only` for a measurement-only snapshot that must retain all
 
 ## Shared preparation
 
+Run a campaign through `npm run perf:campaign -- --target=<id> …` rather than a one-off script. It
+expands the target into its cells, retries, records a resumable ledger, and continues past an
+exhausted cell instead of ending the run; `--dry-run` prints the queue without capturing. The
+previous campaign's queue lived in a temporary shell script and survived only as long as
+`/private/tmp` did.
+
+**A fresh worktree needs two things the main checkout hides**, both gitignored and both failing
+immediately rather than subtly:
+
+* `android/local.properties` does not exist, so Gradle stops with "SDK location not found". Write
+  `sdk.dir=<android-sdk-path>` into it, or export `ANDROID_HOME`.
+* Appium's UiAutomator2 driver reads `ANDROID_HOME` from the **server's** environment, not the
+  client's, so start Appium with it exported or every Android session fails to create.
+
 Check the worktree and product commit. Stop stale servers on the profiling port before rebuilding.
 Build and serve one marked web bundle when several web targets will share it:
 

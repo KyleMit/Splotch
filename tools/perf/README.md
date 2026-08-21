@@ -8,6 +8,12 @@ complete flag and output descriptions.
 
 * Root analyzers consume existing evidence: `perf:analyze:chrome`, `perf:analyze:web-inspector`, and
   `perf:analyze:frames`.
+* `perf:campaign` drives one deployment-target capture campaign to completion and is resumable:
+  rerunning the same command skips cells whose artifacts already parse, retries failed ones, and
+  records exhausted ones as P1s while the queue continues. `lib/campaign-plan.mjs` owns which cells
+  exist and where each writes; `lib/campaign-ledger.mjs` owns what the ledger rows mean. Host
+  identity — device ids, capability files, preview URLs — stays a flag, so nothing device-specific
+  is committed.
 * `gen:performance-matrix` rebuilds the committed deployment-target report from its source manifest.
 * `perf:build` and `perf:serve` prepare and serve the instrumented production bundle.
 * Platform capture commands live under [`web/`](web/README.md), [`android/`](android/README.md), and
