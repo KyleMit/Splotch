@@ -118,6 +118,30 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
   });
 }
 
+function resolvedSessionCapabilities(session) {
+  return session.capabilities ?? session.value?.capabilities ?? {};
+}
+
+export function actionGateAllowances({
+  nativeApp,
+  deviceId,
+  capabilitiesFile,
+  borrowedSessionId,
+  session,
+}) {
+  const capabilities = resolvedSessionCapabilities(session);
+  const platformName = String(capabilities.platformName ?? '').toLowerCase();
+  const deviceName = String(capabilities.deviceName ?? '').toLowerCase();
+  const isCalibratedPhysicalIpadWeb =
+    !nativeApp &&
+    Boolean(deviceId) &&
+    !capabilitiesFile &&
+    !borrowedSessionId &&
+    platformName === 'ios' &&
+    deviceName.includes('ipad');
+  return isCalibratedPhysicalIpadWeb ? IOS_ACTION_FRAME_P95_ALLOWANCES_MS : {};
+}
+
 export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
   const selector = settingsSectionRow(section);
   const sectionReady = settingsModalUsesSidebar
@@ -1554,7 +1578,14 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       );
     }
 
-    const summaries = summarizeActions(samples, expectedLabels, IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+    const gateAllowances = actionGateAllowances({
+      nativeApp,
+      deviceId: flag('device-id'),
+      capabilitiesFile: flag('capabilities-file'),
+      borrowedSessionId: flag('session-id'),
+      session,
+    });
+    const summaries = summarizeActions(samples, expectedLabels, gateAllowances);
     const failures = actionFailures(summaries);
     const output =
       flag('output') ??
@@ -1582,7 +1613,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       // The gate exceptions this capture was scored under (ADR-0090 amendment):
       // re-summarizers read them from here, so a capture carries its own
       // calibration and historical captures without the field stay on base gates.
-      gateAllowances: IOS_ACTION_FRAME_P95_ALLOWANCES_MS,
+      gateAllowances,
       passed: failures.length === 0,
     };
     writeFileSync(output, `${JSON.stringify(artifact, null, 2)}\n`);

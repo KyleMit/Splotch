@@ -12,6 +12,7 @@ import {
 } from '../lib/action-stats.mjs';
 import {
   activationModeFor,
+  actionGateAllowances,
   canvasHasInk,
   coloringClearActivation,
   coloringScrollTransport,
@@ -85,6 +86,77 @@ const action = (postActionFrames, changes = {}) => ({
   canvasMutations: [],
   measures: [],
   ...changes,
+});
+
+describe('actionGateAllowances', () => {
+  const physicalIpadSession = {
+    capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' },
+  };
+
+  it('applies the calibrated ledger only to the local physical iPad web path', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        deviceId: 'physical-ipad',
+        capabilitiesFile: undefined,
+        borrowedSessionId: undefined,
+        session: physicalIpadSession,
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  it.each([
+    ['iPad native', { nativeApp: true, deviceId: 'physical-ipad', session: physicalIpadSession }],
+    [
+      'iPad simulator web',
+      {
+        nativeApp: false,
+        capabilitiesFile: '/tmp/ipad-simulator.json',
+        session: physicalIpadSession,
+      },
+    ],
+    [
+      'borrowed iPad session',
+      {
+        nativeApp: false,
+        deviceId: 'physical-ipad',
+        borrowedSessionId: 'retained-session',
+        session: physicalIpadSession,
+      },
+    ],
+    [
+      'Android native',
+      {
+        nativeApp: true,
+        deviceId: 'android-device',
+        session: { capabilities: { platformName: 'Android', deviceName: 'Galaxy' } },
+      },
+    ],
+    [
+      'Android browser',
+      {
+        nativeApp: false,
+        deviceId: 'android-device',
+        session: { capabilities: { platformName: 'Android', deviceName: 'Galaxy' } },
+      },
+    ],
+    [
+      'physical iPhone web',
+      {
+        nativeApp: false,
+        deviceId: 'physical-iphone',
+        session: { value: { capabilities: { platformName: 'iOS', deviceName: 'iPhone' } } },
+      },
+    ],
+  ])('keeps %s on the base gates', (_name, options) => {
+    expect(
+      actionGateAllowances({
+        capabilitiesFile: undefined,
+        borrowedSessionId: undefined,
+        ...options,
+      })
+    ).toEqual({});
+  });
 });
 
 describe('selectedActions', () => {
