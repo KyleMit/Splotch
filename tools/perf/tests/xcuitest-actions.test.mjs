@@ -440,6 +440,33 @@ describe('desktop action options', () => {
 });
 
 describe('trusted action setup', () => {
+  it('releases the native rotation lock before applying a requested orientation', () => {
+    const setupStart = IPAD_ACTIONS.indexOf('const needsNativeRotationUnlock =');
+    const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
+    const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
+    const unlock = setup.indexOf('setNativeRotationLock(execute, false)');
+    const rotate = setup.indexOf("orientation: requestedOrientation");
+
+    expect(setupStart).toBeGreaterThan(-1);
+    expect(setupEnd).toBeGreaterThan(setupStart);
+    expect(unlock).toBeGreaterThan(-1);
+    expect(rotate).toBeGreaterThan(unlock);
+    expect(setup).toContain('Settings does not expose the persisted rotation lock control');
+  });
+
+  it('restores the original orientation before restoring the native rotation lock', () => {
+    const cleanupStart = IPAD_ACTIONS.indexOf('function cleanup()');
+    const cleanupEnd = IPAD_ACTIONS.indexOf('const onSignal', cleanupStart);
+    const cleanup = IPAD_ACTIONS.slice(cleanupStart, cleanupEnd);
+    const restoreOrientation = cleanup.indexOf('orientation: restoreOrientation');
+    const restoreLock = cleanup.indexOf('setNativeRotationLock(execute, true)');
+
+    expect(cleanupStart).toBeGreaterThan(-1);
+    expect(cleanupEnd).toBeGreaterThan(cleanupStart);
+    expect(restoreOrientation).toBeGreaterThan(-1);
+    expect(restoreLock).toBeGreaterThan(restoreOrientation);
+  });
+
   it('records desktop scroll as trusted wheel while retaining native touch transport', () => {
     expect(coloringScrollTransport({ useWheelForScroll: true })).toEqual({
       eventTypes: ['wheel'],

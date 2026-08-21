@@ -1437,16 +1437,16 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
 
   function cleanup() {
     cleanupPromise ??= (async () => {
-      if (sessionId && execute && restoreNativeRotationLock) {
-        await switchToWebContext(client, sessionId).catch(() => null);
-        await setNativeRotationLock(execute, true).catch(() => null);
-      }
       if (sessionId && restoreOrientation) {
         await client
           ?.request('POST', `/session/${sessionId}/orientation`, {
             orientation: restoreOrientation,
           })
           .catch(() => {});
+      }
+      if (sessionId && execute && restoreNativeRotationLock) {
+        await switchToWebContext(client, sessionId).catch(() => null);
+        await setNativeRotationLock(execute, true).catch(() => null);
       }
       if (sessionId && ownsSession) {
         await client?.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -1485,13 +1485,12 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
     restoreOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
-    if (requestedOrientation && requestedOrientation !== restoreOrientation) {
+    if (!nativeApp && requestedOrientation && requestedOrientation !== restoreOrientation) {
       await client.request('POST', `/session/${sessionId}/orientation`, {
         orientation: requestedOrientation,
       });
       await sleep(ROTATION_NATIVE_SETTLE_MS);
     }
-    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
 
     if (nativeApp) {
       await switchToWebContext(client, sessionId);
@@ -1515,20 +1514,41 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       );
     }
     await clearDeviceWebCache(executeAsync);
-    if (nativeApp && actions.has('rotation')) {
-      restoreNativeRotationLock = (await setNativeRotationLock(execute, false)) === true;
-      await execute(`location.reload(); return true;`).catch(() => null);
-      await switchToWebContext(client, sessionId);
-      const unlockedReady = await pollUntil(
-        () =>
-          execute(
-            "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
-          ).catch(() => false),
-        READY_TIMEOUT_MS,
-        POLL_MS
-      );
-      if (!unlockedReady) throw new Error('The native app did not reload after unlocking rotation');
+    const needsNativeRotationUnlock =
+      nativeApp &&
+      (actions.has('rotation') ||
+        (requestedOrientation && requestedOrientation !== restoreOrientation));
+    if (needsNativeRotationUnlock) {
+      const initialRotationLock = await setNativeRotationLock(execute, false);
+      if (initialRotationLock === null) {
+        throw new Error(
+          'Native orientation capture is unavailable: Settings does not expose the persisted rotation lock control required by ADR-0090'
+        );
+      }
+      restoreNativeRotationLock = initialRotationLock === true;
+      if (initialRotationLock) {
+        await execute(`location.reload(); return true;`).catch(() => null);
+        await switchToWebContext(client, sessionId);
+        const unlockedReady = await pollUntil(
+          () =>
+            execute(
+              "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+            ).catch(() => false),
+          READY_TIMEOUT_MS,
+          POLL_MS
+        );
+        if (!unlockedReady) {
+          throw new Error('The native app did not reload after unlocking rotation');
+        }
+      }
     }
+    if (nativeApp && requestedOrientation && requestedOrientation !== restoreOrientation) {
+      await client.request('POST', `/session/${sessionId}/orientation`, {
+        orientation: requestedOrientation,
+      });
+      await sleep(ROTATION_NATIVE_SETTLE_MS);
+    }
+    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
 
     const samples = [];
