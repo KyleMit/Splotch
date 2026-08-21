@@ -89,39 +89,67 @@ const action = (postActionFrames, changes = {}) => ({
 });
 
 describe('actionGateAllowances', () => {
+  const physicalIpadUdid = '00008103-0006202E3CF1001E';
   const physicalIpadSession = {
     capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' },
   };
 
-  it('applies the calibrated ledger only to the local physical iPad web path', () => {
+  it('applies the calibrated ledger to the local physical iPad web path', () => {
     expect(
       actionGateAllowances({
         nativeApp: false,
-        deviceId: 'physical-ipad',
-        capabilitiesFile: undefined,
-        borrowedSessionId: undefined,
+        deviceId: physicalIpadUdid,
+        requestedCapabilities: null,
         session: physicalIpadSession,
       })
     ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
   });
 
+  it('recognizes the exact physical iPad capability-file shape', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        requestedCapabilities: {
+          platformName: 'iOS',
+          browserName: 'Safari',
+          'appium:udid': physicalIpadUdid,
+          'appium:deviceName': 'Kyle\u2019s iPad',
+        },
+        session: { capabilities: { platformName: 'iOS', deviceName: 'Kyle\u2019s iPad' } },
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
+  it('recognizes a borrowed physical iPad web session and a legacy physical UDID', () => {
+    expect(
+      actionGateAllowances({
+        nativeApp: false,
+        requestedCapabilities: null,
+        session: {
+          value: {
+            capabilities: {
+              platformName: 'iOS',
+              deviceName: 'iPad Pro',
+              udid: 'a'.repeat(40),
+            },
+          },
+        },
+      })
+    ).toBe(IOS_ACTION_FRAME_P95_ALLOWANCES_MS);
+  });
+
   it.each([
-    ['iPad native', { nativeApp: true, deviceId: 'physical-ipad', session: physicalIpadSession }],
+    ['iPad native', { nativeApp: true, deviceId: physicalIpadUdid, session: physicalIpadSession }],
     [
       'iPad simulator web',
       {
         nativeApp: false,
-        capabilitiesFile: '/tmp/ipad-simulator.json',
-        session: physicalIpadSession,
-      },
-    ],
-    [
-      'borrowed iPad session',
-      {
-        nativeApp: false,
-        deviceId: 'physical-ipad',
-        borrowedSessionId: 'retained-session',
-        session: physicalIpadSession,
+        requestedCapabilities: {
+          platformName: 'iOS',
+          'appium:udid': 'C6012C49-AA93-4869-B3A6-E47C9EAAC567',
+          'appium:deviceName': 'iPad mini (A17 Pro)',
+        },
+        session: { capabilities: { platformName: 'iOS', deviceName: 'iPad mini (A17 Pro)' } },
       },
     ],
     [
@@ -144,15 +172,14 @@ describe('actionGateAllowances', () => {
       'physical iPhone web',
       {
         nativeApp: false,
-        deviceId: 'physical-iphone',
+        deviceId: physicalIpadUdid,
         session: { value: { capabilities: { platformName: 'iOS', deviceName: 'iPhone' } } },
       },
     ],
   ])('keeps %s on the base gates', (_name, options) => {
     expect(
       actionGateAllowances({
-        capabilitiesFile: undefined,
-        borrowedSessionId: undefined,
+        requestedCapabilities: null,
         ...options,
       })
     ).toEqual({});
@@ -445,7 +472,7 @@ describe('trusted action setup', () => {
     const setupEnd = IPAD_ACTIONS.indexOf('const appUrl =', setupStart);
     const setup = IPAD_ACTIONS.slice(setupStart, setupEnd);
     const unlock = setup.indexOf('setNativeRotationLock(execute, false)');
-    const rotate = setup.indexOf("orientation: requestedOrientation");
+    const rotate = setup.indexOf('orientation: requestedOrientation');
 
     expect(setupStart).toBeGreaterThan(-1);
     expect(setupEnd).toBeGreaterThan(setupStart);

@@ -122,23 +122,36 @@ function resolvedSessionCapabilities(session) {
   return session.capabilities ?? session.value?.capabilities ?? {};
 }
 
-export function actionGateAllowances({
-  nativeApp,
-  deviceId,
-  capabilitiesFile,
-  borrowedSessionId,
-  session,
-}) {
-  const capabilities = resolvedSessionCapabilities(session);
-  const platformName = String(capabilities.platformName ?? '').toLowerCase();
-  const deviceName = String(capabilities.deviceName ?? '').toLowerCase();
+function capabilityValue(capabilities, name) {
+  return capabilities?.[name] ?? capabilities?.[`appium:${name}`];
+}
+
+function isPhysicalAppleUdid(value) {
+  return /^(?:[0-9a-f]{8}-[0-9a-f]{16}|[0-9a-f]{40})$/i.test(String(value ?? ''));
+}
+
+export function actionGateAllowances({ nativeApp, deviceId, requestedCapabilities, session }) {
+  const sessionCapabilities = resolvedSessionCapabilities(session);
+  const platformName = String(
+    capabilityValue(sessionCapabilities, 'platformName') ??
+      capabilityValue(requestedCapabilities, 'platformName') ??
+      ''
+  ).toLowerCase();
+  const deviceName = String(
+    capabilityValue(sessionCapabilities, 'deviceName') ??
+      capabilityValue(requestedCapabilities, 'deviceName') ??
+      ''
+  ).toLowerCase();
+  const physicalDevice = [
+    deviceId,
+    capabilityValue(sessionCapabilities, 'udid'),
+    capabilityValue(requestedCapabilities, 'udid'),
+  ].some(isPhysicalAppleUdid);
   const isCalibratedPhysicalIpadWeb =
     !nativeApp &&
-    Boolean(deviceId) &&
-    !capabilitiesFile &&
-    !borrowedSessionId &&
     platformName === 'ios' &&
-    deviceName.includes('ipad');
+    deviceName.includes('ipad') &&
+    physicalDevice;
   return isCalibratedPhysicalIpadWeb ? IOS_ACTION_FRAME_P95_ALLOWANCES_MS : {};
 }
 
@@ -1601,8 +1614,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
     const gateAllowances = actionGateAllowances({
       nativeApp,
       deviceId: flag('device-id'),
-      capabilitiesFile: flag('capabilities-file'),
-      borrowedSessionId: flag('session-id'),
+      requestedCapabilities: capabilities,
       session,
     });
     const summaries = summarizeActions(samples, expectedLabels, gateAllowances);
