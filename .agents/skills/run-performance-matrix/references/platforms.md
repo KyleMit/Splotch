@@ -298,6 +298,23 @@ adb -s <serial> shell dumpsys power | grep mWakefulness              # want Awak
 Re-check `mWakefulness` between targets. A device that dozed reports `Dozing` long after the cells
 it would have failed, and nothing in a capture records that the screen was off.
 
+**Confirm the phone is unlocked, not merely awake.** This is the one that wastes an afternoon: a
+locked phone still answers ADB, still exposes its WebView to CDP and Appium, and still passes every
+portrait cell — while the keyguard holds the display in portrait, so `user_rotation` is accepted and
+ignored, and `screencap` returns a constant black frame because Android blocks capture of a secure
+window. The result is a target where portrait cells land and landscape cells fail at rotation, which
+reads like an orientation bug in the product.
+
+```sh
+adb -s <serial> shell dumpsys trust | grep -o "deviceLocked=[0-9]"   # want 0
+adb -s <serial> shell dumpsys window displays | grep -o "rotation=[A-Z_0-9]*"
+```
+
+Waking the screen is not unlocking it: `KEYCODE_WAKEUP` clears Doze and leaves the keyguard up. A
+swipe-only lock screen yields to a swipe gesture; anything stronger needs the device's owner, and no
+agent should be entering that credential. Check `deviceLocked` before queueing any landscape cells,
+and again after any period where the device was left alone.
+
 If the phone cannot reach the LAN preview running on port 4173, forward that exact preview port with
 `adb -s <serial> reverse tcp:4173 tcp:4173`; the repository `adb:reverse` helper forwards the dev
 server’s 5173 instead. Alternatively, pass a reachable network URL. Drawing uses Appium Android

@@ -478,7 +478,7 @@
             ]
           },
           "undoSource": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/light/pen-real-screen.json",
-          "actionsUnavailableReason": "P1: blocked by a product defect, not by the harness — see issue 1192. From a landscape start, the action plan draws, clears, performs a blank landscape-to-portrait rotation, then taps Undo. Undo restores the strokes into the pre-rotation paper geometry instead of letterboxing them into the new orientation, so they fall outside the visible canvas and the canvas continues to report itself empty. Reproduced on four independent attempts; the same step passes from a portrait start, where the blank rotation runs portrait-to-landscape first. Recorded as unmeasured, not as a zero-cost pass."
+          "actionsUnavailableReason": "P1: the landscape action sweep times out at 'undo clear after blank rotation' — undo after a blank landscape rotation never restores the drawing in the Capacitor WebView. Previously attributed to #1192; that is fixed and merged, and the sweep still fails, so it is tracked as #1194. Two attempts failed identically in both themes."
         },
         {
           "id": "landscape-dark",
@@ -502,7 +502,7 @@
             ]
           },
           "undoSource": "perf-profiles/2026-08-21-campaign-gaps/ios/simulator-native/landscape/dark/pen-real-screen.json",
-          "actionsUnavailableReason": "P1: blocked by a product defect, not by the harness — see issue 1192. From a landscape start, the action plan draws, clears, performs a blank landscape-to-portrait rotation, then taps Undo. Undo restores the strokes into the pre-rotation paper geometry instead of letterboxing them into the new orientation, so they fall outside the visible canvas and the canvas continues to report itself empty. Reproduced on four independent attempts; the same step passes from a portrait start, where the blank rotation runs portrait-to-landscape first. Recorded as unmeasured, not as a zero-cost pass."
+          "actionsUnavailableReason": "P1: the landscape action sweep times out at 'undo clear after blank rotation' — undo after a blank landscape rotation never restores the drawing in the Capacitor WebView. Previously attributed to #1192; that is fixed and merged, and the sweep still fails, so it is tracked as #1194. Two attempts failed identically in both themes."
         }
       ]
     },
