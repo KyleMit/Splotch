@@ -133,6 +133,24 @@ native cells and would equally have blocked the physical-iPad native cells.
 Still to verify empirically on a booted simulator: that the toggle is in fact absent there and the
 rotation completes end to end.
 
+### Closed on 2026-08-21
+
+* **Mac Firefox drawing — 16/16 captured, all gates pass.** The frame runner gained Gecko; the probe
+  needed no change. Firefox is not a deployment target, so read it as the third desktop browser a
+  parent might open `splotch.art` in, never as evidence about WebKit or Blink.
+* **Mac mode-aware undo — 12/12 captured, all pass.** The frame runner now drives undo, so one pen
+  capture per mode carries drawing and undo under the same recorded orientation and theme. Chrome
+  and WebKit drawing stayed preserved; their new captures are undo sources only.
+* **iPad simulator native rotation — unblocked and empirically confirmed.** A landscape native probe
+  recorded `platformOwnsRotation: true` with a 1133x744 native window, drawing PASS and undo PASS.
+* **Android landscape Settings — diagnosed and handled.** Not a targeting bug and not a product
+  defect; see above. The sweep now measures the compact shell.
+
+Coverage after the Mac phase: drawing 34/44 modes, undo 34/44, actions 24/44.
+
+Decisions from this session are recorded in
+[ADR-0133](../adrs/0133-capture-the-control-surface-the-product-actually-offers.md).
+
 ## Decisions made
 
 * Keep the product fixed at `6961e50b685d441e88b37d20d3f38a27136572fb`; later commits are
