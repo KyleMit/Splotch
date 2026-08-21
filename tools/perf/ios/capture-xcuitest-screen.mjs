@@ -14,6 +14,13 @@ import {
   summarizeRun,
 } from '../lib/real-screen-stats.mjs';
 import { summarizeUndoActions, undoActionRows } from '../lib/undo-action-stats.mjs';
+import {
+  ensureCampaignTheme,
+  parseCampaignOrientation,
+  parseCampaignTheme,
+  readResolvedTheme,
+  setNativeRotationLock,
+} from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
@@ -258,6 +265,19 @@ export function isWebContext(context) {
   return context === 'CHROMIUM' || context.startsWith('WEBVIEW');
 }
 
+export function nativeOrientationNeedsUnlock({
+  nativeApp,
+  rotateBeforeUndo,
+  requestedOrientation,
+  originalOrientation,
+}) {
+  return (
+    nativeApp &&
+    (rotateBeforeUndo ||
+      (requestedOrientation !== null && requestedOrientation !== originalOrientation))
+  );
+}
+
 export async function switchToWebContext(client, sessionId) {
   const webContext = await pollUntil(
     () =>
@@ -354,6 +374,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         'output',
         'report-only',
         'no-serve',
+        'orientation',
+        'theme',
       ],
     },
     argv
@@ -373,6 +395,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   }
 
   const nativeApp = has('native-app');
+  const requestedOrientation = parseCampaignOrientation(flag('orientation'));
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedAppUrl = nativeApp ? null : resolveDeviceUrl(flag('url'), port, APP_PATH);
   const gestureRepeats = Number.parseInt(flag('gesture-repeats', '1'), 10);
   if (!Number.isSafeInteger(gestureRepeats) || gestureRepeats < 1) {
@@ -404,6 +428,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
   let sessionId = borrowedSessionId;
   let ownsSession = false;
   let originalOrientation;
+  let execute;
+  let restoreNativeRotationLock = false;
   let cleanupPromise;
   const cleanup = () => {
     cleanupPromise ??= (async () => {
@@ -413,6 +439,10 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
             orientation: originalOrientation,
           })
           .catch(() => {});
+      }
+      if (sessionId && execute && restoreNativeRotationLock) {
+        await switchToWebContext(client, sessionId).catch(() => null);
+        await setNativeRotationLock(execute, true).catch(() => null);
       }
       if (sessionId && ownsSession) {
         await client.request('DELETE', `/session/${sessionId}`).catch(() => {});
@@ -452,7 +482,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       sessionId = session.sessionId;
       ownsSession = true;
     }
-    const execute = (script, args = []) =>
+    execute = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/sync`, { script, args });
     const executeAsync = (script, args = []) =>
       client.request('POST', `/session/${sessionId}/execute/async`, { script, args });
@@ -477,6 +507,56 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
         `${nativeApp ? 'The native app' : requestedAppUrl} never showed a sized #drawingCanvas`
       );
     }
+    originalOrientation = await client.request('GET', `/session/${sessionId}/orientation`);
+    const needsRotationUnlock = nativeOrientationNeedsUnlock({
+      nativeApp,
+      rotateBeforeUndo: has('rotate-before-undo'),
+      requestedOrientation,
+      originalOrientation,
+    });
+    if (needsRotationUnlock) {
+      const initialRotationLock = await setNativeRotationLock(execute, false);
+      if (initialRotationLock === null) {
+        throw new Error(
+          'Native orientation capture is unavailable: Settings does not expose the persisted rotation lock control required by ADR-0090'
+        );
+      }
+      restoreNativeRotationLock = initialRotationLock;
+      if (initialRotationLock) {
+        await execute('location.reload(); return true;').catch(() => null);
+        await switchToWebContext(client, sessionId);
+        const unlockedReady = await pollUntil(
+          () =>
+            execute(
+              "const canvas = document.querySelector('#drawingCanvas'); return !!canvas && canvas.width > 0;"
+            ).catch(() => false),
+          WEBVIEW_READY_TIMEOUT_MS,
+          WEBVIEW_READY_POLL_MS
+        );
+        if (!unlockedReady) {
+          throw new Error('The native app did not reload after releasing its orientation lock');
+        }
+      }
+    }
+    if (requestedOrientation && requestedOrientation !== originalOrientation) {
+      await client.request('POST', `/session/${sessionId}/orientation`, {
+        orientation: requestedOrientation,
+      });
+      const rotated = await pollUntil(
+        () =>
+          execute('return { width: innerWidth, height: innerHeight };')
+            .then((size) =>
+              requestedOrientation === 'PORTRAIT'
+                ? size.height > size.width
+                : size.width > size.height
+            )
+            .catch(() => false),
+        ROTATION_SETTLE_TIMEOUT_MS,
+        WEBVIEW_READY_POLL_MS
+      );
+      if (!rotated) throw new Error(`The device did not settle into ${requestedOrientation}`);
+      await sleep(AFTER_GESTURE_SETTLE_MS);
+    }
     await clearDeviceWebCache(executeAsync);
     await dismissInstallBannerForMeasurement(execute);
     const appUrl = nativeApp ? await execute('return location.href;') : requestedAppUrl;
@@ -500,6 +580,8 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
     if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
     await clearDeviceWebCache(executeAsync);
     const serviceWorkerRegistration = await blockServiceWorkerRegistrationForMeasurement(execute);
+    await ensureCampaignTheme(execute, requestedTheme);
+    const theme = await readResolvedTheme(execute);
     if (undoCount > 0) {
       const debugReady = await pollUntil(
         () => execute('return !!window.__drawingDebug?.getUndoDebug;').catch(() => false),
@@ -593,7 +675,6 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       })
       .catch(() => nativeWindow);
     const orientation = await client.request('GET', `/session/${sessionId}/orientation`);
-    originalOrientation = orientation;
     const canvasBounds = nativeCanvasBounds({
       webGeometry,
       webViewBounds,
@@ -736,6 +817,7 @@ export async function runIpadXcuitest(argv = process.argv.slice(2)) {
       },
       appUrl,
       transport: nativeApp ? 'native-capacitor-webview' : 'browser',
+      theme,
       mode: `xcuitest:${label}`,
       automation: {
         appiumUrl: flag('appium-url', DEFAULT_APPIUM_URL),

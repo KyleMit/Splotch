@@ -21,6 +21,16 @@ import {
 } from './capture-xcuitest-screen.mjs';
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
+import {
+  SETTINGS_SECTION_ROWS,
+  clickSetupElement,
+  ensureCampaignTheme,
+  parseCampaignTheme,
+  readResolvedTheme,
+  settingsSectionRow,
+  setNativeRotationLock,
+  themeRoundTripPlan,
+} from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
@@ -43,6 +53,7 @@ const REPEAT_SETTLE_MS = 500;
 const TRUSTED_STROKE_MS = 650;
 const CLEAR_DRAG_MS = 450;
 const COLORING_SCROLL_MS = 450;
+const COLORING_SCROLL_DISTANCE_PX = 400;
 const ROTATION_NATIVE_SETTLE_MS = 1_500;
 const MAX_SETUP_RECOVERY_ATTEMPTS = 3;
 const ELEMENT_KEY = 'element-6066-11e4-a52e-4f735466cecf';
@@ -106,16 +117,6 @@ function sessionCapabilities({ deviceId, xcodeConfigFile, wdaBundleId, allowProv
     allowProvisioning,
   });
 }
-
-// Both Settings shells render a section row as a button stamped with the section
-// id — the phone hub's list and the wide sidebar's table of contents — so the
-// attribute addresses either without naming a shell's classes, which are styling
-// and get renamed with it. The tag separates a row from the wide pane's own
-// `.settings-section` wrappers, which carry the same attribute.
-// tools/perf/tests/xcuitest-actions.test.mjs holds this contract against both shells.
-const SETTINGS_SECTION_ROWS = '#settingsModal button[data-section]';
-const settingsSectionRow = (section) =>
-  `#settingsModal button[data-section=${JSON.stringify(section)}]`;
 
 export function settingsSectionMeasurement(section, label, settingsModalUsesSidebar) {
   const selector = settingsSectionRow(section);
@@ -193,6 +194,12 @@ export function coloringClearActivation() {
   return 'native-accessibility';
 }
 
+export function coloringScrollTransport(client) {
+  return client.useWheelForScroll === true
+    ? { eventTypes: ['wheel'], activation: 'trusted-wheel' }
+    : { eventTypes: ['pointerdown'], activation: 'native-touch' };
+}
+
 export function customColorSelectionEventTypes() {
   return ['pointerdown'];
 }
@@ -263,58 +270,6 @@ async function clickWebElement(client, sessionId, selector) {
   });
   const elementId = result[ELEMENT_KEY] ?? result.ELEMENT;
   await client.request('POST', `/session/${sessionId}/element/${elementId}/click`);
-}
-
-async function clickSetupElement(execute, selector) {
-  await execute(`
-    const target = document.querySelector(${JSON.stringify(selector)});
-    if (!target) throw new Error(${JSON.stringify(`Missing setup target ${selector}`)});
-    target.click();
-    return true;
-  `);
-}
-
-async function setNativeRotationLock(execute, locked) {
-  await clickSetupElement(execute, 'button[aria-label="Settings"]');
-  await waitForReady(
-    execute,
-    `document.querySelector('#settingsModal')?.open === true`,
-    'Settings for rotation setup'
-  );
-  if (!(await execute(`return document.querySelector('#lockRotationToggle') !== null;`))) {
-    const appearanceSelector = settingsSectionRow('appearance');
-    const appearanceRowExists = await execute(
-      `return document.querySelector(${JSON.stringify(appearanceSelector)}) !== null;`
-    );
-    if (appearanceRowExists) {
-      await clickSetupElement(execute, appearanceSelector);
-      await waitForReady(
-        execute,
-        `document.querySelector('#themeOption-light') !== null`,
-        'Appearance section for rotation setup'
-      );
-    }
-  }
-  const initial = await execute(`
-    const toggle = document.querySelector('#lockRotationToggle');
-    return toggle ? toggle.getAttribute('aria-checked') === 'true' : null;
-  `);
-  if (initial !== null && initial !== locked) {
-    await clickSetupElement(execute, '#lockRotationToggle');
-    await waitForReady(
-      execute,
-      `document.querySelector('#lockRotationToggle')?.getAttribute('aria-checked') === '${locked}'`,
-      `rotation lock to become ${locked ? 'enabled' : 'disabled'}`
-    );
-  }
-  await clickSetupElement(execute, '#settingsModal button[aria-label="Close"]');
-  await waitForReady(
-    execute,
-    `document.querySelector('#settingsModal')?.open !== true`,
-    'Settings to close after rotation setup'
-  );
-  await sleep(ANIMATED_ACTION_SETTLE_MS);
-  return initial;
 }
 
 async function measureClick({
@@ -416,31 +371,39 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   `);
   if (!scrollable) return null;
 
-  const { bounds, webContext } = await nativeBoundsForSelector(
-    client,
-    sessionId,
-    execute,
-    selector
-  );
-  const x = Math.round(bounds.x + bounds.width / 2);
-  const startY = Math.round(bounds.y + bounds.height * 0.75);
-  const endY = Math.round(bounds.y + bounds.height * 0.3);
+  const transport = coloringScrollTransport(client);
+  const useWheel = transport.activation === 'trusted-wheel';
   await ensureActionProbe(execute);
   await execute(
-    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ['pointerdown']);`
+    `return window.__actionProbe.begin('scroll coloring pages', ${JSON.stringify(selector)}, ${JSON.stringify(
+      transport.eventTypes
+    )});`
   );
-  await performNativeGesture(client, sessionId, webContext, [
-    { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
-    { type: 'pointerDown', button: 0 },
-    {
-      type: 'pointerMove',
-      duration: COLORING_SCROLL_MS,
-      origin: 'viewport',
-      x,
-      y: endY,
-    },
-    { type: 'pointerUp', button: 0 },
-  ]);
+  if (useWheel) {
+    await client.scrollElementWithWheel(selector, COLORING_SCROLL_DISTANCE_PX);
+  } else {
+    const { bounds, webContext } = await nativeBoundsForSelector(
+      client,
+      sessionId,
+      execute,
+      selector
+    );
+    const x = Math.round(bounds.x + bounds.width / 2);
+    const startY = Math.round(bounds.y + bounds.height * 0.75);
+    const endY = Math.round(bounds.y + bounds.height * 0.3);
+    await performNativeGesture(client, sessionId, webContext, [
+      { type: 'pointerMove', duration: 0, origin: 'viewport', x, y: startY },
+      { type: 'pointerDown', button: 0 },
+      {
+        type: 'pointerMove',
+        duration: COLORING_SCROLL_MS,
+        origin: 'viewport',
+        x,
+        y: endY,
+      },
+      { type: 'pointerUp', button: 0 },
+    ]);
+  }
   const readyAt = await waitForReady(
     execute,
     `document.querySelector(${JSON.stringify(selector)})?.scrollTop > 0`,
@@ -450,7 +413,7 @@ async function measureColoringPageScroll(client, sessionId, execute) {
   const sample = await execute(`return window.__actionProbe.finish(${readyAt});`);
   await execute(`document.querySelector(${JSON.stringify(selector)}).scrollTop = 0; return true;`);
   await sleep(ACTION_SETTLE_MS);
-  return { ...sample, activation: 'native-touch' };
+  return { ...sample, activation: transport.activation };
 }
 
 async function measureIdle(execute) {
@@ -739,7 +702,14 @@ async function measureRotation(client, sessionId, execute, from, to, label) {
   return { ...sample, activation: 'native-system' };
 }
 
-export async function runActionSweep({ client, sessionId, execute, actions, originalOrientation }) {
+export async function runActionSweep({
+  client,
+  sessionId,
+  execute,
+  actions,
+  originalOrientation,
+  baselineTheme = 'dark',
+}) {
   const samples = [];
   const record = async (promise) => samples.push(await promise);
   const recordToggleRoundTrip = async ({
@@ -1049,12 +1019,13 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
   }
 
   if (actions.has('theme')) {
+    const themePlan = themeRoundTripPlan(baselineTheme);
     await openSettingsSection(
       'appearance',
       `document.querySelector('#themeOption-light') !== null`,
       'Appearance section'
     );
-    await clickSetupElement(execute, '#themeOption-dark');
+    await clickSetupElement(execute, `#themeOption-${themePlan.setup}`);
     await waitForReady(
       execute,
       `document.documentElement.dataset.theme === 'dark'`,
@@ -1091,6 +1062,15 @@ export async function runActionSweep({ client, sessionId, execute, actions, orig
         settleMs: ANIMATED_ACTION_SETTLE_MS,
       })
     );
+    if (themePlan.restore) {
+      await clickSetupElement(execute, `#themeOption-${themePlan.restore}`);
+      await waitForReady(
+        execute,
+        `document.documentElement.dataset.theme === ${JSON.stringify(themePlan.restore)}`,
+        `${themePlan.restore} theme restoration`
+      );
+      await sleep(ACTION_SETTLE_MS);
+    }
   }
 
   if (actions.has('settings-controls')) {
@@ -1394,11 +1374,13 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         'output',
         'report-only',
         'no-serve',
+        'theme',
       ],
     },
     argv
   );
   const nativeApp = has('native-app');
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedOrientation = flag('orientation')?.toUpperCase();
   if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
     fail('--orientation must be PORTRAIT or LANDSCAPE');
@@ -1527,6 +1509,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
 
     const samples = [];
     const expectedLabels = new Set();
+    let baselineTheme;
     for (let repeat = 1; repeat <= repeats; repeat++) {
       const loadedUrl = profilingUrl(appUrl, repeat);
       if (nativeApp) {
@@ -1546,6 +1529,8 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         POLL_MS
       );
       if (!ready) throw new Error(`${loadedUrl} never showed a sized #drawingCanvas`);
+      await ensureCampaignTheme(execute, requestedTheme);
+      baselineTheme = await readResolvedTheme(execute);
       await installActionProbe(execute);
       await sleep(REPEAT_SETTLE_MS);
       console.log(`\nAction sweep ${repeat}/${repeats}`);
@@ -1555,6 +1540,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
         execute,
         actions,
         originalOrientation,
+        baselineTheme,
       });
       if (repeat <= WARMUP_REPEATS) {
         for (const sample of sweep) expectedLabels.add(sample.label);
@@ -1590,6 +1576,7 @@ export async function runIpadActions(argv = process.argv.slice(2)) {
       actions: [...actions],
       repeats,
       orientation: originalOrientation,
+      theme: baselineTheme,
       samples,
       summaries,
       // The gate exceptions this capture was scored under (ADR-0090 amendment):

@@ -17,6 +17,11 @@ import { profilingUrl, runActionSweep, selectedActions } from '../ios/capture-xc
 import { ensurePreviewServer, resolveDeviceUrl } from '../lib/profile-device-session.mjs';
 import { profilePath } from '../lib/profile-paths.mjs';
 import { PlaywrightWebDriver } from '../lib/webdriver-client.mjs';
+import {
+  ensureCampaignTheme,
+  parseCampaignTheme,
+  readResolvedTheme,
+} from '../lib/campaign-state.mjs';
 
 const APP_PATH = '/';
 const ACTION_PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'action-probe.js');
@@ -197,6 +202,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         'trace',
         'report-only',
         'no-serve',
+        'theme',
       ],
     },
     argv
@@ -209,6 +215,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     fail(`--repeats must provide one warmup and ${MIN_GATED_SAMPLES} scored samples`);
   }
   const actions = selectedActions(flag('actions'));
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const requestedOrientation = flag('orientation')?.toUpperCase();
   if (requestedOrientation && !['PORTRAIT', 'LANDSCAPE'].includes(requestedOrientation)) {
     fail('--orientation must be PORTRAIT or LANDSCAPE');
@@ -290,6 +297,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     const execute = (script) => page.evaluate(`(() => {${script}})()`);
     const samples = [];
     const expectedLabels = new Set();
+    let baselineTheme;
     if (has('trace')) {
       traceEvents = await startTrace(cdp);
       traceActive = true;
@@ -298,6 +306,8 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
     for (let repeat = 1; repeat <= repeats; repeat++) {
       await page.goto(profilingUrl(base, repeat), { waitUntil: 'load' });
       await waitForCanvas(page);
+      await ensureCampaignTheme(execute, requestedTheme);
+      baselineTheme = await readResolvedTheme(execute);
       await page.evaluate(readFileSync(ACTION_PROBE_FILE, 'utf8'));
       await waitForStableFrames(page);
       console.log(`\nAndroid web action sweep ${repeat}/${repeats}`);
@@ -307,6 +317,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
         execute,
         actions,
         originalOrientation,
+        baselineTheme,
       });
       if (repeat <= WARMUP_REPEATS) {
         for (const sample of sweep) expectedLabels.add(sample.label);
@@ -340,6 +351,7 @@ export async function runAndroidWebActions(argv = process.argv.slice(2)) {
       actions: [...actions],
       repeats,
       orientation: originalOrientation,
+      theme: baselineTheme,
       samples,
       summaries,
       passed: failures.length === 0,

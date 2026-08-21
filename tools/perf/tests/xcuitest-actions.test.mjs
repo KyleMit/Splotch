@@ -14,6 +14,7 @@ import {
   activationModeFor,
   canvasHasInk,
   coloringClearActivation,
+  coloringScrollTransport,
   coloringSelectionSteps,
   customColorSelectionEventTypes,
   largestNativeRect,
@@ -54,6 +55,10 @@ const SIDEBAR_TOC = readFileSync(
 );
 const IPAD_ACTIONS = readFileSync(
   join(ROOT, 'tools', 'perf', 'ios', 'capture-xcuitest-actions.mjs'),
+  'utf8'
+);
+const CAMPAIGN_STATE = readFileSync(
+  join(ROOT, 'tools', 'perf', 'lib', 'campaign-state.mjs'),
   'utf8'
 );
 const PAGE_INVENTORY = readFileSync(
@@ -363,6 +368,17 @@ describe('desktop action options', () => {
 });
 
 describe('trusted action setup', () => {
+  it('records desktop scroll as trusted wheel while retaining native touch transport', () => {
+    expect(coloringScrollTransport({ useWheelForScroll: true })).toEqual({
+      eventTypes: ['wheel'],
+      activation: 'trusted-wheel',
+    });
+    expect(coloringScrollTransport({ cdp: {} })).toEqual({
+      eventTypes: ['pointerdown'],
+      activation: 'native-touch',
+    });
+  });
+
   it('checks canvas ink rather than undo history after a clear', async () => {
     let expression;
     await canvasHasInk(async (script) => {
@@ -390,7 +406,7 @@ describe('trusted action setup', () => {
     expect(SIDEBAR_TOC).toMatch(/<button\b[^<>]*data-section=\{item\.id\}/);
     expect(SETTINGS_MODAL).toMatch(/<button\b[^<>]*data-section=\{section\.id\}/);
     expect(SETTINGS_WIDE_SHELL).toMatch(/id: section\.id/);
-    for (const harness of [IPAD_ACTIONS, PAGE_INVENTORY]) {
+    for (const harness of [CAMPAIGN_STATE, PAGE_INVENTORY]) {
       expect(harness).toContain('button[data-section');
     }
   });

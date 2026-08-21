@@ -27,6 +27,7 @@ import {
   inputFidelity,
   isWebContext,
   nativeCanvasBounds,
+  nativeOrientationNeedsUnlock,
   summarizeLiveSurfaceTopology,
   trustedGestureActions,
 } from '../ios/capture-xcuitest-screen.mjs';
@@ -108,6 +109,30 @@ const up = (stamp, id = 1) => [stamp, stamp + 6, UP, id, 0, 0, 1, 0, 1, 0, 30, 3
 // ProMotion iPad this exists to measure.
 const beat = (count, { from = 0, interval = 16.7, contact = 1 } = {}) =>
   Array.from({ length: count }, (_, i) => [from + i * interval, i === 0 ? -1 : interval, contact]);
+
+describe('native screen orientation preparation', () => {
+  it('unlocks only native captures that will rotate', () => {
+    const baseline = {
+      nativeApp: true,
+      rotateBeforeUndo: false,
+      requestedOrientation: 'PORTRAIT',
+      originalOrientation: 'PORTRAIT',
+    };
+
+    expect(nativeOrientationNeedsUnlock(baseline)).toBe(false);
+    expect(nativeOrientationNeedsUnlock({ ...baseline, requestedOrientation: 'LANDSCAPE' })).toBe(
+      true
+    );
+    expect(nativeOrientationNeedsUnlock({ ...baseline, rotateBeforeUndo: true })).toBe(true);
+    expect(
+      nativeOrientationNeedsUnlock({
+        ...baseline,
+        nativeApp: false,
+        requestedOrientation: 'LANDSCAPE',
+      })
+    ).toBe(false);
+  });
+});
 
 describe('percentile', () => {
   it('is absent rather than zero for an empty sample', () => {

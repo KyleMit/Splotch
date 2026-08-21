@@ -27,7 +27,7 @@
 
 import { chromium, webkit } from '@playwright/test';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { ROOT, fail, isMain, runMain, sleep } from '../../lib/proc.mjs';
 import { waitForUrl } from '../../lib/net.mjs';
 import { parsePerfArgs } from '../lib/cli-args.mjs';
@@ -36,6 +36,11 @@ import { warnIfNoPerfMarks } from '../lib/profile-warnings.mjs';
 import { spawnPerfServe } from '../serve-profile-build.mjs';
 import { printRun } from '../analyze-frame-capture.mjs';
 import { probeConfigScript } from '../ios/capture-webkit-frames.mjs';
+import {
+  ensureCampaignTheme,
+  parseCampaignTheme,
+  readResolvedTheme,
+} from '../lib/campaign-state.mjs';
 
 const PROBE_FILE = join(ROOT, 'tools', 'perf', 'probes', 'real-screen-probe.js');
 const APP_URL_PATH = '/';
@@ -90,6 +95,8 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
         'headed',
         'no-serve',
         'no-forensics',
+        'output',
+        'theme',
       ],
     },
     argv
@@ -122,6 +129,7 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
     'device scale factor'
   );
   const headless = !has('headed');
+  const requestedTheme = parseCampaignTheme(flag('theme'));
   const probeConfig = probeConfigScript({
     phases: flag('phases'),
     contactMs: contactSeconds * 1000,
@@ -159,6 +167,9 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       undefined,
       { timeout: READY_TIMEOUT_MS }
     );
+    const execute = (script) => page.evaluate(`(() => {${script}})()`);
+    await ensureCampaignTheme(execute, requestedTheme);
+    const theme = await readResolvedTheme(execute);
     await page.evaluate(probeConfig);
     await page.evaluate(readFileSync(PROBE_FILE, 'utf8'));
     if (!(await page.evaluate(() => !!window.__probe))) {
@@ -198,15 +209,17 @@ export async function runFramesLocal(argv = process.argv.slice(2)) {
       throttle: throttle.tag,
       viewport: { ...viewport, deviceScaleFactor },
       headless,
+      theme,
       report,
       console: pageLogs,
     };
     const summaries = printRun(capture, { forensics: !has('no-forensics') });
     capture.summaries = summaries;
 
-    const outDir = profilePath('frames-local', engineName, throttle.tag, brush);
-    mkdirSync(outDir, { recursive: true });
-    const artifact = join(outDir, 'real-screen.json');
+    const artifact =
+      flag('output') ??
+      join(profilePath('frames-local', engineName, throttle.tag, brush), 'real-screen.json');
+    mkdirSync(dirname(artifact), { recursive: true });
     writeFileSync(artifact, `${JSON.stringify(capture, null, 2)}\n`);
     console.log(`\nWrote ${artifact}`);
     return { summaries, report };

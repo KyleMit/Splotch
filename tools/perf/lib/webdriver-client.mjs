@@ -16,6 +16,7 @@ export class PlaywrightWebDriver {
     this.readWindowRect = options.readWindowRect;
     this.includeBrowserChrome = options.includeBrowserChrome;
     this.useWebGeometryForClear = options.useWebGeometryForClear;
+    this.useWheelForScroll = options.useWheelForScroll ?? false;
     this.elements = new Map();
     this.elementSequence = 0;
     this.pointer = { x: 0, y: 0 };
@@ -87,6 +88,14 @@ export class PlaywrightWebDriver {
         await sleep(action.duration ?? 0);
       }
     }
+  }
+
+  async scrollElementWithWheel(selector, deltaY) {
+    if (!this.useWheelForScroll) {
+      throw new Error('Trusted wheel scrolling is not enabled for this browser transport');
+    }
+    await this.page.locator(selector).hover();
+    await this.page.mouse.wheel(0, deltaY);
   }
 
   async setOrientation(orientation) {
