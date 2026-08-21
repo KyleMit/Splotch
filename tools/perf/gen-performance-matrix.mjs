@@ -30,6 +30,11 @@ const DEFAULT_MANIFEST = join(
 const BRUSHES = ['pen', 'crayon', 'magic', 'eraser'];
 const BRUSH_LABELS = { pen: 'Pen', crayon: 'Crayon', magic: 'Magic', eraser: 'Eraser' };
 const ACTION_CONTROL_LABELS = new Set(['idle frame control']);
+const ORIENTATIONS = ['PORTRAIT', 'LANDSCAPE'];
+const THEMES = ['light', 'dark'];
+const MODE_KEYS = ORIENTATIONS.flatMap((orientation) =>
+  THEMES.map((theme) => `${orientation.toLowerCase()}-${theme}`)
+);
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -54,8 +59,42 @@ function normalizedDistribution(distribution) {
   );
 }
 
-function normalizeDrawingRun(source, productCommit, sourceDirectory) {
+function captureOrientation(profile) {
+  const explicit = profile.orientation ?? profile.automation?.orientation;
+  if (explicit) return String(explicit).toUpperCase();
+  const viewport = profile.viewport ?? profile.report?.meta?.viewport;
+  const width = viewport?.width ?? viewport?.w;
+  const height = viewport?.height ?? viewport?.h;
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width === height) return null;
+  return width > height ? 'LANDSCAPE' : 'PORTRAIT';
+}
+
+function captureTheme(profile) {
+  const theme = profile.theme ?? profile.report?.meta?.theme;
+  return theme ? String(theme).toLowerCase() : null;
+}
+
+function validateCaptureMode(profile, mode, source) {
+  const orientation = captureOrientation(profile);
+  const theme = captureTheme(profile);
+  const modeLabel = `${mode.orientation.toLowerCase()} / ${mode.theme}`;
+  if (!orientation) {
+    throw new Error(`${source} is missing orientation metadata for ${modeLabel}`);
+  }
+  if (!theme) throw new Error(`${source} is missing theme metadata for ${modeLabel}`);
+  if (orientation !== mode.orientation) {
+    throw new Error(
+      `${source} recorded ${orientation.toLowerCase()} orientation; expected ${mode.orientation.toLowerCase()}`
+    );
+  }
+  if (theme !== mode.theme) {
+    throw new Error(`${source} recorded ${theme} theme; expected ${mode.theme}`);
+  }
+}
+
+function normalizeDrawingRun(source, productCommit, sourceDirectory, mode) {
   const profile = readJson(sourcePath(source, sourceDirectory));
+  validateCaptureMode(profile, mode, source);
   const phases = profile.report ? summarizeRun(profile.report).phases : profile.summaries?.phases;
   const scored = scoreDrawingRun(phases ?? []);
   return {
@@ -98,20 +137,22 @@ function aggregateDrawingRuns(runs) {
   };
 }
 
-function normalizeDrawing(sources = {}, productCommit, sourceDirectory) {
+function normalizeDrawing(sources = {}, productCommit, sourceDirectory, mode) {
   return Object.fromEntries(
     BRUSHES.map((brush) => {
       const runs = (sources[brush] ?? []).map((source) =>
-        normalizeDrawingRun(source, productCommit, sourceDirectory)
+        normalizeDrawingRun(source, productCommit, sourceDirectory, mode)
       );
       return [brush, { aggregate: aggregateDrawingRuns(runs), runs }];
     })
   );
 }
 
-function normalizeUndo(source, productCommit, sourceDirectory) {
+function normalizeUndo(source, productCommit, sourceDirectory, mode) {
   if (!source) return null;
-  const summary = readJson(sourcePath(source, sourceDirectory)).undo;
+  const profile = readJson(sourcePath(source, sourceDirectory));
+  validateCaptureMode(profile, mode, source);
+  const summary = profile.undo;
   if (!summary) return null;
   return {
     source,
@@ -123,8 +164,9 @@ function normalizeUndo(source, productCommit, sourceDirectory) {
   };
 }
 
-function normalizeActionCapture(spec, sourceDirectory) {
+function normalizeActionCapture(spec, sourceDirectory, mode) {
   const profile = readJson(sourcePath(spec.source, sourceDirectory));
+  validateCaptureMode(profile, mode, spec.source);
   const labels = spec.labels ? new Set(spec.labels) : null;
   // A capture is re-scored under its own recorded gate exceptions (ADR-0090
   // amendment); one without the field — every capture predating it, and every
@@ -168,9 +210,9 @@ function mergeActionResults(captures) {
   return [...byLabel.values()];
 }
 
-function normalizeActions(sources, finalProductCommit, sourceDirectory) {
+function normalizeActions(sources, finalProductCommit, sourceDirectory, mode) {
   if (!sources?.length) return null;
-  const captures = sources.map((source) => normalizeActionCapture(source, sourceDirectory));
+  const captures = sources.map((source) => normalizeActionCapture(source, sourceDirectory, mode));
   const results = mergeActionResults(captures);
   const comparableResults = results.filter((result) => !ACTION_CONTROL_LABELS.has(result.label));
   return {
@@ -195,8 +237,104 @@ function normalizeActions(sources, finalProductCommit, sourceDirectory) {
   };
 }
 
-function normalizeTarget(target, finalProductCommit, sourceDirectory) {
+function normalizeMode(mode, target, finalProductCommit, sourceDirectory) {
+  const normalizedMode = {
+    ...mode,
+    id: mode.id ?? modeKey(mode),
+    orientation: String(mode.orientation).toUpperCase(),
+    theme: String(mode.theme).toLowerCase(),
+  };
   const shared = {
+    id: normalizedMode.id,
+    orientation: normalizedMode.orientation,
+    theme: normalizedMode.theme,
+    status: normalizedMode.status,
+    fidelity: normalizedMode.fidelity ?? target.fidelity,
+  };
+  if (normalizedMode.status !== 'captured') {
+    return { ...shared, reason: normalizedMode.reason };
+  }
+  return {
+    ...shared,
+    drawingProductCommit: normalizedMode.drawingProductCommit,
+    undoProductCommit: normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
+    drawing: normalizeDrawing(
+      normalizedMode.drawing,
+      normalizedMode.drawingProductCommit,
+      sourceDirectory,
+      normalizedMode
+    ),
+    undo: normalizeUndo(
+      normalizedMode.undoSource,
+      normalizedMode.undoProductCommit ?? normalizedMode.drawingProductCommit,
+      sourceDirectory,
+      normalizedMode
+    ),
+    actions: normalizeActions(
+      normalizedMode.actionSources,
+      finalProductCommit,
+      sourceDirectory,
+      normalizedMode
+    ),
+  };
+}
+
+function modeKey(mode) {
+  return `${String(mode.orientation).toLowerCase()}-${String(mode.theme).toLowerCase()}`;
+}
+
+function validateManifest(manifest) {
+  if (manifest.schemaVersion !== 3) {
+    const found = manifest.schemaVersion ?? 'missing';
+    const migration =
+      found === 2 ? ' Move each target’s capture fields into four targets[].modes entries.' : '';
+    throw new Error(
+      `Performance matrix manifest schemaVersion ${found} is unsupported; expected 3.${migration}`
+    );
+  }
+  if (!Array.isArray(manifest.targets)) {
+    throw new Error('Performance matrix manifest targets must be an array');
+  }
+  const targetIds = new Set();
+  for (const target of manifest.targets) {
+    if (targetIds.has(target.id)) throw new Error(`Duplicate performance target id: ${target.id}`);
+    targetIds.add(target.id);
+    if (!Array.isArray(target.modes)) {
+      throw new Error(`Target ${target.id} must contain four explicit modes`);
+    }
+    const keys = target.modes.map(modeKey);
+    const unknown = keys.filter((key) => !MODE_KEYS.includes(key));
+    const duplicate = keys.find((key, index) => keys.indexOf(key) !== index);
+    const missing = MODE_KEYS.filter((key) => !keys.includes(key));
+    if (unknown.length || duplicate || missing.length || keys.length !== MODE_KEYS.length) {
+      const details = [
+        unknown.length ? `unknown: ${unknown.join(', ')}` : null,
+        duplicate ? `duplicate: ${duplicate}` : null,
+        missing.length ? `missing: ${missing.join(', ')}` : null,
+      ]
+        .filter(Boolean)
+        .join('; ');
+      throw new Error(
+        `Target ${target.id} must contain exactly four explicit modes${details ? ` (${details})` : ''}`
+      );
+    }
+    for (const mode of target.modes) {
+      const id = mode.id ?? modeKey(mode);
+      if (mode.id && mode.id !== modeKey(mode)) {
+        throw new Error(`Target ${target.id} mode ${mode.id} does not match ${modeKey(mode)}`);
+      }
+      if (!['captured', 'unavailable'].includes(mode.status)) {
+        throw new Error(`Target ${target.id} mode ${id} has invalid status ${mode.status}`);
+      }
+      if (mode.status === 'unavailable' && !mode.reason) {
+        throw new Error(`Target ${target.id} mode ${id} must record an unavailable reason`);
+      }
+    }
+  }
+}
+
+function normalizeTarget(target, finalProductCommit, sourceDirectory) {
+  return {
     id: target.id,
     number: target.number,
     label: target.label,
@@ -204,28 +342,18 @@ function normalizeTarget(target, finalProductCommit, sourceDirectory) {
     deviceKind: target.deviceKind,
     runtime: target.runtime,
     environment: target.environment,
-    status: target.status,
     fidelity: target.fidelity,
-  };
-  if (target.status !== 'captured') return { ...shared, reason: target.reason };
-  return {
-    ...shared,
-    drawingProductCommit: target.drawingProductCommit,
-    undoProductCommit: target.undoProductCommit ?? target.drawingProductCommit,
-    drawing: normalizeDrawing(target.drawing, target.drawingProductCommit, sourceDirectory),
-    undo: normalizeUndo(
-      target.undoSource,
-      target.undoProductCommit ?? target.drawingProductCommit,
-      sourceDirectory
+    modes: target.modes.map((mode) =>
+      normalizeMode(mode, target, finalProductCommit, sourceDirectory)
     ),
-    actions: normalizeActions(target.actionSources, finalProductCommit, sourceDirectory),
   };
 }
 
 function normalizeMatrix(manifest, sourceDirectory = ROOT) {
+  validateManifest(manifest);
   const resolvedSourceDirectory = resolve(sourceDirectory, manifest.sourceRoot ?? '.');
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
     recordedOn: manifest.recordedOn,
     productCommit: manifest.productCommit,
     snapshotKind: manifest.snapshotKind,
@@ -263,27 +391,59 @@ function fmtPercent(value) {
   return Number.isFinite(value) ? `${fmt(value * 100)}%` : '—';
 }
 
-function statusChip(target) {
-  if (target.status !== 'captured') return '<span class="matrix-chip missing">Unavailable</span>';
-  const label = target.fidelity === 'release-gate' ? 'Release gate' : 'Advisory';
-  return `<span class="matrix-chip ${target.fidelity === 'release-gate' ? 'trusted' : ''}">${label}</span>`;
+function displayMode(mode) {
+  const orientation = `${mode.orientation[0]}${mode.orientation.slice(1).toLowerCase()}`;
+  const theme = `${mode.theme[0].toUpperCase()}${mode.theme.slice(1)}`;
+  return `${orientation} · ${theme}`;
+}
+
+function modeRows(matrix) {
+  return matrix.targets.flatMap((target) =>
+    target.modes.map((mode, modeIndex) => ({
+      ...mode,
+      targetId: target.id,
+      targetNumber: target.number,
+      targetLabel: target.label,
+      platform: target.platform,
+      deviceKind: target.deviceKind,
+      runtime: target.runtime,
+      environment: target.environment,
+      modeLabel: displayMode(mode),
+      firstTargetMode: modeIndex === 0,
+    }))
+  );
+}
+
+function rowLabel(row) {
+  return `${row.targetLabel} · ${row.modeLabel}`;
+}
+
+function statusChip(entry) {
+  if (entry.status !== 'captured') return '<span class="matrix-chip missing">Unavailable</span>';
+  const label = entry.fidelity === 'release-gate' ? 'Release gate' : 'Advisory';
+  return `<span class="matrix-chip ${entry.fidelity === 'release-gate' ? 'trusted' : ''}">${label}</span>`;
 }
 
 function drawingPlot(matrix, metric, gate, title) {
-  const targets = matrix.targets.filter((target) => target.status === 'captured');
-  const rows = targets
+  const rows = modeRows(matrix)
     .map((target) => {
+      if (target.status !== 'captured') {
+        return `<div class="plot-row unavailable${target.firstTargetMode ? ' target-break' : ''}" title="${esc(target.reason)}">
+        <div class="plot-label"><span>${esc(target.targetLabel)}</span><small>${esc(target.modeLabel)} · unavailable</small></div>
+        <div class="plot-track"><i class="gate-line"></i></div>
+      </div>`;
+      }
       const dots = BRUSHES.map((brush, index) => {
         const result = target.drawing[brush].aggregate;
         const value = result.paint[metric];
         const ratio = Number.isFinite(value) ? Math.min(value / gate, 2) : null;
         const failed = Number.isFinite(value) && value > gate;
-        const tooltip = `${target.label} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms`;
+        const tooltip = `${rowLabel(target)} · ${BRUSH_LABELS[brush]} · ${metric.toUpperCase()} ${fmt(value)} ms · gate ${gate} ms`;
         const placement = ratio === null ? '' : `left:${ratio * 50}%;`;
         return `<span class="plot-dot brush-${brush}${failed ? ' failed' : ''}${ratio === null ? ' missing' : ''}" style="${placement}top:${8 + index * 7}px" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
       }).join('');
-      return `<div class="plot-row">
-        <div class="plot-label"><span>${esc(target.label)}</span><small>${esc(target.runtime)}</small></div>
+      return `<div class="plot-row${target.firstTargetMode ? ' target-break' : ''}">
+        <div class="plot-label"><span>${esc(target.targetLabel)}</span><small>${esc(target.modeLabel)}</small></div>
         <div class="plot-track"><i class="gate-line"></i>${dots}</div>
       </div>`;
     })
@@ -322,13 +482,15 @@ function comparableActionResults(actions) {
 function comparableActionLabels(targets) {
   return [
     ...new Set(
-      targets.flatMap((target) => comparableActionResults(target.actions).map(({ label }) => label))
+      targets.flatMap((target) =>
+        target.actions ? comparableActionResults(target.actions).map(({ label }) => label) : []
+      )
     ),
   ];
 }
 
 function actionHeatmap(matrix) {
-  const targets = matrix.targets.filter((target) => target.actions);
+  const targets = modeRows(matrix);
   const labels = comparableActionLabels(targets);
   const columns = labels
     .map(
@@ -339,24 +501,30 @@ function actionHeatmap(matrix) {
   const rows = targets
     .map((target) => {
       const resultsByLabel = new Map(
-        comparableActionResults(target.actions).map((result) => [result.label, result])
+        (target.actions ? comparableActionResults(target.actions) : []).map((result) => [
+          result.label,
+          result,
+        ])
       );
       const cells = labels
         .map((label, index) => {
           const result = resultsByLabel.get(label);
           if (!result) {
-            const tooltip = `${index + 1}. ${label} · not measured`;
+            const availability =
+              target.status === 'captured' ? 'not measured' : `unavailable: ${target.reason}`;
+            const tooltip = `${index + 1}. ${label} · ${rowLabel(target)} · ${availability}`;
             return `<span class="heat-cell missing" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
           }
           const ratio = actionRatio(result, matrix.gates.actions);
           const provenance = result.productCommit ? ` · measured at ${result.productCommit}` : '';
-          const tooltip = `${index + 1}. ${result.label} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${result.passed ? 'PASS' : 'FAIL'}${provenance}`;
+          const tooltip = `${index + 1}. ${result.label} · ${rowLabel(target)} · first P95 ${fmt(result.firstFrame.p95)} ms · post P95 ${fmt(result.postActionFrames.p95)} ms · post max ${fmt(result.postActionFrames.max)} ms · ${result.passed ? 'PASS' : 'FAIL'}${provenance}`;
           return `<span class="heat-cell ${heatClass(ratio)}" title="${esc(tooltip)}" aria-label="${esc(tooltip)}"></span>`;
         })
         .join('');
-      const comparableResults = comparableActionResults(target.actions);
+      const comparableResults = target.actions ? comparableActionResults(target.actions) : [];
       const passingCount = comparableResults.filter((result) => result.passed).length;
-      return `<div class="heat-row"><div class="heat-label"><span>${esc(target.label)}</span><b>${passingCount}/${comparableResults.length}</b></div><div class="heat-cells">${cells}</div></div>`;
+      const score = target.actions ? `${passingCount}/${comparableResults.length}` : '—';
+      return `<div class="heat-row${target.firstTargetMode ? ' target-break' : ''}"><div class="heat-label"><span>${esc(target.targetLabel)}<small>${esc(target.modeLabel)}</small></span><b>${score}</b></div><div class="heat-cells">${cells}</div></div>`;
     })
     .join('');
   const legend = labels
@@ -370,7 +538,7 @@ function actionHeatmap(matrix) {
 }
 
 function rankedActionFailures(matrix) {
-  const captured = matrix.targets.filter((target) => target.actions);
+  const captured = modeRows(matrix).filter((target) => target.actions);
   const labels = comparableActionLabels(captured);
   const ranked = labels
     .map((label) => {
@@ -395,19 +563,21 @@ function rankedActionFailures(matrix) {
   return ranked
     .map(
       (entry, index) =>
-        `<li><span class="rank">${index + 1}</span><span><b>${esc(entry.label)}</b><small>${entry.failed} of ${entry.measured} targets failed · worst ${fmt(entry.worstRatio)}× gate</small></span></li>`
+        `<li><span class="rank">${index + 1}</span><span><b>${esc(entry.label)}</b><small>${entry.failed} of ${entry.measured} modes failed · worst ${fmt(entry.worstRatio)}× gate</small></span></li>`
     )
     .join('');
 }
 
 function undoTable(matrix) {
-  return matrix.targets
-    .filter((target) => target.status === 'captured')
+  return modeRows(matrix)
     .map((target) => {
-      if (!target.undo) {
-        return `<tr><th>${esc(target.label)}</th><td colspan="4" class="muted">No engine/next-frame probe</td></tr>`;
+      if (target.status !== 'captured') {
+        return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
       }
-      return `<tr><th>${esc(target.label)}</th><td>${fmt(target.undo.engine.p95)}</td><td>${fmt(target.undo.nextFrame.p95)}</td><td>${fmt(target.undo.nextFrame.max)}</td><td><span class="verdict ${target.undo.passed ? 'pass' : 'fail'}">${target.undo.passed ? 'Pass' : 'Fail'}</span></td></tr>`;
+      if (!target.undo) {
+        return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">No engine/next-frame probe</td></tr>`;
+      }
+      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td>${fmt(target.undo.engine.p95)}</td><td>${fmt(target.undo.nextFrame.p95)}</td><td>${fmt(target.undo.nextFrame.max)}</td><td><span class="verdict ${target.undo.passed ? 'pass' : 'fail'}">${target.undo.passed ? 'Pass' : 'Fail'}</span></td></tr>`;
     })
     .join('');
 }
@@ -415,33 +585,37 @@ function undoTable(matrix) {
 function targetCards(matrix) {
   return matrix.targets
     .map((target) => {
-      const body =
-        target.status === 'captured'
-          ? (() => {
-              const actionResults = target.actions ? comparableActionResults(target.actions) : [];
-              const passingCount = actionResults.filter((result) => result.passed).length;
-              return `<div class="target-scores"><span><b>${target.actions ? passingCount : '—'}</b><small>actions passing</small></span><span><b>${target.actions ? actionResults.length : '—'}</b><small>measured</small></span><span><b>${target.actions?.finalProductCommitActionCount ?? '—'}</b><small>at final commit</small></span></div>`;
-            })()
-          : `<p class="target-reason">${esc(target.reason)}</p>`;
-      return `<article class="target-card ${target.status}">
-        <div><span class="target-number">${target.number}</span>${statusChip(target)}</div>
-        <h3>${esc(target.label)}</h3><p>${esc(target.environment)}</p>${body}
+      const modes = target.modes
+        .map((mode) => {
+          if (mode.status !== 'captured') {
+            return `<li class="unavailable"><div><b>${esc(displayMode(mode))}</b>${statusChip(mode)}</div><small>${esc(mode.reason)}</small></li>`;
+          }
+          const actionResults = mode.actions ? comparableActionResults(mode.actions) : [];
+          const passingCount = actionResults.filter((result) => result.passed).length;
+          return `<li><div><b>${esc(displayMode(mode))}</b>${statusChip(mode)}</div><small>${mode.actions ? `${passingCount}/${actionResults.length} actions passing` : 'Actions not measured'}</small></li>`;
+        })
+        .join('');
+      return `<article class="target-card">
+        <div><span class="target-number">${target.number}</span></div>
+        <h3>${esc(target.label)}</h3><p>${esc(target.environment)}</p><ul class="target-modes">${modes}</ul>
       </article>`;
     })
     .join('');
 }
 
 function provenanceTable(matrix) {
-  return matrix.targets
-    .filter((target) => target.status === 'captured')
+  return modeRows(matrix)
     .map((target) => {
+      if (target.status !== 'captured') {
+        return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td colspan="4" class="muted">Unavailable: ${esc(target.reason)}</td></tr>`;
+      }
       const actionCommits = target.actions
         ? [...new Set(target.actions.sources.map((source) => source.productCommit))].join(', ')
         : '—';
       const actionCoverage = target.actions
         ? `${target.actions.finalProductCommitActionCount}/${comparableActionResults(target.actions).length}`
         : '—';
-      return `<tr><th>${esc(target.label)}</th><td><code>${esc(target.drawingProductCommit)}</code></td><td><code>${esc(target.undoProductCommit)}</code></td><td>${actionCoverage}</td><td><code>${esc(actionCommits)}</code></td></tr>`;
+      return `<tr class="${target.firstTargetMode ? 'target-break' : ''}"><th>${esc(rowLabel(target))}</th><td><code>${esc(target.drawingProductCommit)}</code></td><td><code>${esc(target.undoProductCommit)}</code></td><td>${actionCoverage}</td><td><code>${esc(actionCommits)}</code></td></tr>`;
     })
     .join('');
 }
@@ -463,31 +637,47 @@ function markdownStatus(passed) {
 }
 
 function renderMarkdown(matrix) {
-  const captured = matrix.targets.filter((target) => target.status === 'captured');
-  const drawingRows = captured.map((target) => [
-    `${target.number}. ${target.label}`,
-    ...BRUSHES.map((brush) => {
-      const aggregate = target.drawing[brush].aggregate;
-      const value = `${fmt(aggregate.paint.p95)} / ${fmt(aggregate.paint.p99)} / ${fmt(aggregate.paint.max)} · L${fmtPercent(aggregate.lostFrameTimeShare)}`;
-      return aggregate.blankPassed ? value : `**FAIL ${value}**`;
-    }),
-  ]);
-  const undoRows = captured.map((target) => [
-    `${target.number}. ${target.label}`,
-    target.undo
-      ? `${fmt(target.undo.engine.p95)} / ${fmt(target.undo.nextFrame.p95)} / ${fmt(target.undo.nextFrame.max)}`
-      : '—',
-    target.undo ? markdownStatus(target.undo.passed) : 'Not measured',
-    target.undo ? target.undo.productCommit : '—',
-  ]);
-  const actionRows = captured.map((target) => {
+  const rows = modeRows(matrix);
+  const drawingRows = rows.map((target) => {
+    const label = `${target.targetNumber}. ${rowLabel(target)}`;
+    if (target.status !== 'captured') {
+      return [label, ...BRUSHES.map(() => `Unavailable: ${target.reason}`)];
+    }
+    return [
+      label,
+      ...BRUSHES.map((brush) => {
+        const aggregate = target.drawing[brush].aggregate;
+        const value = `${fmt(aggregate.paint.p95)} / ${fmt(aggregate.paint.p99)} / ${fmt(aggregate.paint.max)} · L${fmtPercent(aggregate.lostFrameTimeShare)}`;
+        return aggregate.blankPassed ? value : `**FAIL ${value}**`;
+      }),
+    ];
+  });
+  const undoRows = rows.map((target) => {
+    const label = `${target.targetNumber}. ${rowLabel(target)}`;
+    if (target.status !== 'captured') {
+      return [label, '—', `Unavailable: ${target.reason}`, '—'];
+    }
+    return [
+      label,
+      target.undo
+        ? `${fmt(target.undo.engine.p95)} / ${fmt(target.undo.nextFrame.p95)} / ${fmt(target.undo.nextFrame.max)}`
+        : '—',
+      target.undo ? markdownStatus(target.undo.passed) : 'Not measured',
+      target.undo ? target.undo.productCommit : '—',
+    ];
+  });
+  const actionRows = rows.map((target) => {
+    const label = `${target.targetNumber}. ${rowLabel(target)}`;
+    if (target.status !== 'captured') {
+      return [label, '—', '—', '—', '—', `Unavailable: ${target.reason}`];
+    }
     if (!target.actions) {
-      return [`${target.number}. ${target.label}`, '—', '—', '—', '—', 'Not measured'];
+      return [label, '—', '—', '—', '—', 'Not measured'];
     }
     const comparable = comparableActionResults(target.actions);
     const failures = comparable.filter((result) => !result.passed).map((result) => result.label);
     return [
-      `${target.number}. ${target.label}`,
+      label,
       `${comparable.filter((result) => result.passed).length} / ${comparable.length}`,
       `${target.actions.finalProductCommitActionCount} / ${comparable.length}`,
       fmt(target.actions.worst.firstFrameP95),
@@ -495,21 +685,27 @@ function renderMarkdown(matrix) {
       failures.length ? failures.join('; ') : 'None',
     ];
   });
-  const provenanceRows = captured.map((target) => [
-    `${target.number}. ${target.label}`,
-    target.drawingProductCommit,
-    target.undo ? target.undoProductCommit : '—',
-    target.actions
-      ? [...new Set(target.actions.sources.map((source) => source.productCommit))].join(', ')
-      : '—',
-  ]);
+  const provenanceRows = rows.map((target) => {
+    const label = `${target.targetNumber}. ${rowLabel(target)}`;
+    if (target.status !== 'captured') {
+      return [label, `Unavailable: ${target.reason}`, '—', '—'];
+    }
+    return [
+      label,
+      target.drawingProductCommit,
+      target.undo ? target.undoProductCommit : '—',
+      target.actions
+        ? [...new Set(target.actions.sources.map((source) => source.productCommit))].join(', ')
+        : '—',
+    ];
+  });
   const limitations = matrix.limitations.map((limitation) => `- ${limitation}`).join('\n');
   return `# Deployment-target performance matrix — ${matrix.recordedOn}
 
 This cumulative snapshot combines retained deployment-target evidence with focused final-state
 recaptures. \`${matrix.productCommit}\` is the final performance-affecting product commit. Every
-normalized result retains the commit and raw artifact that produced it; focused action captures
-replace only their declared scenarios.
+normalized result retains its target, mode, commit, and raw artifact; focused action captures
+replace only their declared scenarios within that mode.
 
 The [interactive matrix](./index.html) is the quickest comparison. [\`data.json\`](./data.json)
 contains every normalized drawing run and grouped action result, and
@@ -542,7 +738,8 @@ ${markdownTable(['Target', 'Drawing', 'Undo', 'Action source commits'], provenan
 ## Drawing
 
 Each cell is blank-paper paint \`P95 / P99 / max\` in milliseconds, followed by the cumulative
-lost-frame share of in-contact time. macOS values aggregate three runs; other targets use one run.
+lost-frame share of in-contact time. Every target retains separate portrait/landscape and
+light/dark rows.
 
 ${markdownTable(['Target', 'Pen', 'Crayon', 'Magic', 'Eraser'], drawingRows)}
 
@@ -562,28 +759,31 @@ ${markdownTable(['Target', 'Passing', 'At final commit', 'Worst first P95', 'Wor
 
 ## Method
 
-Action sources are applied in manifest order. A focused capture replaces only its declared labels;
-all other labels retain their earlier measurement and provenance. Drawing raw tables and action
-samples are re-scored with the current metric definitions when this report is generated; stored
-derived summaries are not trusted. Physical iPad web remains the Safari-calibrated release gate.
-Simulator, desktop, native-shell, and automated Android input are advisory comparisons.
+Action sources are applied in manifest order within one target mode. A focused capture replaces
+only its declared labels in that mode; all other labels retain their earlier measurement and
+provenance. Drawing raw tables and action samples are re-scored with the current metric definitions
+when this report is generated; stored derived summaries are not trusted. Physical iPad web remains
+the Safari-calibrated release gate. Simulator, desktop, native-shell, and automated Android input
+are advisory comparisons.
 `;
 }
 
 const EXTRA_CSS = `
-.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card.unavailable{border-style:dashed;opacity:.72}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.target-scores{display:flex!important;justify-content:flex-start!important;gap:18px!important;margin-top:13px}.target-scores span{display:flex;flex-direction:column}.target-scores b{font-size:1.16rem}.target-scores small{font-size:.68rem;color:var(--faint)}.target-reason{margin-top:13px!important;min-height:auto!important}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:190px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-label small{color:var(--faint)}.heat-cells{display:grid;grid-template-columns:repeat(46,15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:150px max-content}.heat-label span{max-width:120px;overflow:hidden;text-overflow:ellipsis}}
+.matrix-intro{max-width:78ch;color:var(--muted);margin:0 0 22px}.matrix-links{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}.matrix-link{display:inline-flex;padding:7px 12px;border:1px solid var(--hair);border-radius:9px;background:var(--card);font-size:.84rem;font-weight:700}.target-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.target-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;box-shadow:var(--shadow-sm)}.target-card>div:first-child{display:flex;align-items:center;justify-content:space-between}.target-card h3{font-size:1rem;margin:10px 0 5px}.target-card p{font-size:.78rem;color:var(--muted);margin:0;min-height:2.6em}.target-number{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:var(--card-2);font-size:.76rem;font-weight:800}.target-modes{list-style:none;padding:0;margin:12px 0 0}.target-modes li{padding:8px 0;border-top:1px solid var(--hair)}.target-modes li>div{display:flex;justify-content:space-between;gap:8px;align-items:center}.target-modes b{font-size:.72rem}.target-modes small{display:block;margin-top:3px;color:var(--muted);font-size:.68rem}.target-modes .unavailable{opacity:.72}.matrix-chip{font-size:.67rem;font-weight:750;padding:3px 8px;border-radius:999px;background:var(--accent-wash);color:var(--accent-ink)}.matrix-chip.trusted{background:color-mix(in srgb,var(--ok) 15%,var(--card));color:var(--ok)}.matrix-chip.missing{background:var(--card-2);color:var(--muted)}.provenance{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:10px}.provenance code{font-size:.68rem}.brush-legend{display:flex;gap:14px;flex-wrap:wrap;margin:0 0 16px;font-size:.78rem;color:var(--muted)}.brush-legend span{display:inline-flex;align-items:center;gap:6px}.brush-legend i{width:9px;height:9px;border-radius:50%}.brush-pen{--dot:var(--accent)}.brush-crayon{--dot:var(--warn)}.brush-magic{--dot:color-mix(in srgb,var(--accent) 55%,var(--bad))}.brush-eraser{--dot:var(--ok)}.brush-legend .brush-pen,.brush-legend .brush-crayon,.brush-legend .brush-magic,.brush-legend .brush-eraser{background:var(--dot)}.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(300px,1fr));gap:14px;overflow-x:auto;padding-bottom:6px}.metric-panel{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px;min-width:300px}.metric-title{display:flex;justify-content:space-between;align-items:baseline}.metric-title h3{font-size:.95rem;margin:0}.metric-title span{font-size:.7rem;color:var(--muted)}.plot-axis{margin:10px 0 2px;padding-left:125px;display:flex;justify-content:space-between;font-size:.62rem;color:var(--faint)}.plot-row{display:grid;grid-template-columns:116px 1fr;gap:9px;align-items:center;min-height:41px}.plot-row.target-break,.heat-row.target-break{margin-top:10px}.plot-row.unavailable{opacity:.65}.plot-label{min-width:0}.plot-label span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.72rem;font-weight:700}.plot-label small{font-size:.63rem;color:var(--faint)}.plot-track{height:36px;position:relative;border-left:1px solid var(--hair-strong);border-right:1px solid var(--hair);background:linear-gradient(90deg,transparent 49.7%,color-mix(in srgb,var(--warn) 13%,transparent) 50%,color-mix(in srgb,var(--warn) 13%,transparent) 100%)}.plot-track:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 24.8%,var(--hair) 25%,transparent 25.2%,transparent 74.8%,var(--hair) 75%,transparent 75.2%);pointer-events:none}.gate-line{position:absolute;left:50%;top:0;bottom:0;border-left:2px dashed var(--warn)}.plot-dot{position:absolute;width:8px;height:8px;border:2px solid var(--card);border-radius:50%;background:var(--dot);box-shadow:0 0 0 1px color-mix(in srgb,var(--dot) 50%,var(--hair));transform:translate(-50%,-50%);z-index:2}.plot-dot.failed{width:11px;height:11px;box-shadow:0 0 0 2px var(--bad)}.heat-scroll{overflow-x:auto;background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:13px}.heat-row{display:grid;grid-template-columns:210px max-content;gap:10px;align-items:center;margin:4px 0}.heat-row.header{margin-bottom:8px}.heat-label{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.72rem;font-weight:700;white-space:nowrap}.heat-label span small{display:block;color:var(--faint);font-weight:400}.heat-label b{font-size:.68rem;color:var(--muted)}.heat-cells{display:grid;grid-template-columns:repeat(46,15px);gap:3px}.heat-cell,.action-number{width:15px;height:15px;border-radius:3px;display:block}.heat-cell.missing{background:var(--card-2)}.action-number{font-size:.5rem;text-align:center;color:var(--faint);line-height:15px}.heat-cell.cool{background:color-mix(in srgb,var(--accent) 35%,var(--card-2))}.heat-cell.pass{background:color-mix(in srgb,var(--ok) 70%,var(--card))}.heat-cell.warn{background:color-mix(in srgb,var(--warn) 78%,var(--card))}.heat-cell.hot{background:var(--bad)}.heat-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.72rem;color:var(--muted);margin:0 0 10px}.heat-legend span{display:inline-flex;gap:5px;align-items:center}.heat-legend i{width:11px;height:11px;border-radius:3px}.action-key{margin-top:10px;font-size:.78rem;color:var(--muted)}.action-key summary{cursor:pointer;font-weight:700;color:var(--accent-ink)}.action-key ol{columns:3;column-gap:30px;padding-left:24px}.action-key li{break-inside:avoid;padding:2px 0}.ranked-grid{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);gap:16px;margin-top:16px}.rank-card,.undo-card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r-md);padding:15px}.rank-card h3,.undo-card h3{font-size:.95rem;margin:0 0 10px}.rank-list{list-style:none;padding:0;margin:0}.rank-list li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--hair)}.rank-list li:first-child{border-top:0}.rank{display:grid;place-items:center;min-width:23px;height:23px;border-radius:7px;background:var(--card-2);font-size:.68rem;font-weight:800}.rank-list b{display:block;font-size:.78rem}.rank-list small{display:block;color:var(--muted);font-size:.68rem}table{width:100%;border-collapse:collapse;font-size:.72rem}th,td{text-align:right;padding:6px;border-top:1px solid var(--hair)}th:first-child{text-align:left}thead th{border-top:0;color:var(--muted);font-weight:650}tr.target-break th,tr.target-break td{border-top-color:var(--hair-strong)}.muted{color:var(--faint);text-align:left}.verdict{font-weight:800}.verdict.pass{color:var(--ok)}.verdict.fail{color:var(--bad)}.method{background:var(--card-2);border:1px solid var(--hair);border-radius:var(--r-md);padding:16px;color:var(--muted);font-size:.84rem}.method p{margin:0 0 10px}.method p:last-child{margin:0}@media(max-width:800px){.ranked-grid{grid-template-columns:1fr}.action-key ol{columns:1}.heat-row{grid-template-columns:170px max-content}.heat-label span{max-width:140px;overflow:hidden;text-overflow:ellipsis}}
 `;
 
 function renderReport(matrix) {
-  const capturedCount = matrix.targets.filter((target) => target.status === 'captured').length;
-  const actionCount = comparableActionLabels(
-    matrix.targets.filter((target) => target.actions)
+  const rows = modeRows(matrix);
+  const capturedTargetCount = matrix.targets.filter((target) =>
+    target.modes.some((mode) => mode.status === 'captured')
   ).length;
-  const finalActionCount = matrix.targets.reduce(
-    (count, target) => count + (target.actions?.finalProductCommitActionCount ?? 0),
+  const capturedModeCount = rows.filter((row) => row.status === 'captured').length;
+  const actionCount = comparableActionLabels(rows).length;
+  const finalActionCount = rows.reduce(
+    (count, row) => count + (row.actions?.finalProductCommitActionCount ?? 0),
     0
   );
-  const stats = `<span class="chip"><b>${capturedCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${actionCount}</b> actions per target</span><span class="chip"><b>${finalActionCount}</b> action rows at final commit</span>`;
+  const stats = `<span class="chip"><b>${capturedTargetCount}/${matrix.targets.length}</b> targets captured</span><span class="chip"><b>${capturedModeCount}/${rows.length}</b> modes captured</span><span class="chip"><b>${actionCount}</b> actions compared</span><span class="chip"><b>${finalActionCount}</b> action rows at final commit</span>`;
   const header = masthead({
     title: 'Deployment-target performance matrix',
     tagline:
@@ -594,13 +794,13 @@ function renderReport(matrix) {
   });
   const body = `${header}
 <main><div class="shell">
-  <p class="matrix-intro"><code>${esc(matrix.productCommit)}</code> is the final performance-affecting product commit. This is a cumulative campaign report: measurements retain the commit that produced them, and focused final-commit captures replace only the matching actions. Physical-iPad web is the calibrated release gate; its retained older capture is not relabeled as final-current evidence.</p>
+  <p class="matrix-intro"><code>${esc(matrix.productCommit)}</code> is the final performance-affecting product commit. Each target keeps separate portrait/landscape and light/dark measurements. Focused final-commit captures replace only matching actions inside one mode. Physical-iPad web is the calibrated release gate; older evidence is never relabeled as current.</p>
   <div class="matrix-links"><a class="matrix-link" href="data.json">Normalized results JSON</a><a class="matrix-link" href="index.md">Detailed narrative</a><a class="matrix-link" href="sources.json">Source manifest</a></div>
 
   <div class="section-head"><h2>Capture limitations</h2><span class="desc">Constraints retained with the evidence</span></div>
   <div class="method"><ul>${(matrix.limitations ?? []).map((limitation) => `<li>${esc(limitation)}</li>`).join('')}</ul></div>
 
-  <div class="section-head"><h2>Coverage</h2><span class="desc">Nine requested deployment targets</span></div>
+  <div class="section-head"><h2>Coverage</h2><span class="desc">${matrix.targets.length} deployment targets · four explicit modes each</span></div>
   <div class="target-grid">${targetCards(matrix)}</div>
 
   <div class="section-head"><h2>Commit provenance</h2><span class="desc">Final-commit action coverage is explicit; older retained evidence remains visible</span></div>
@@ -619,12 +819,12 @@ function renderReport(matrix) {
   ${actionHeatmap(matrix)}
 
   <div class="ranked-grid">
-    <section class="rank-card"><h3>Most cross-target failures</h3><ol class="rank-list">${rankedActionFailures(matrix)}</ol></section>
+    <section class="rank-card"><h3>Most cross-mode failures</h3><ol class="rank-list">${rankedActionFailures(matrix)}</ol></section>
     <section class="undo-card"><h3>Undo engine and next-frame timing</h3><table><thead><tr><th>Target</th><th>Engine P95</th><th>Next P95</th><th>Next max</th><th>Gate</th></tr></thead><tbody>${undoTable(matrix)}</tbody></table></section>
   </div>
 
   <div class="section-head"><h2>How to read this snapshot</h2></div>
-  <div class="method"><p>Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, the source commit for each run, and the source artifact and commit for each action result.</p><p>Action sources are applied in manifest order. A focused capture replaces only its declared labels; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
+  <div class="method"><p>Drawing dots show the median P95/P99 and worst maximum across repeated blank-paper runs in one target mode. Raw drawing tables and action samples are re-scored with the current metric definitions. The committed JSON preserves every renderer phase, target mode, source commit, and raw source path.</p><p>Action sources are applied in manifest order inside one mode. A focused capture replaces only its declared labels in that mode; all other labels retain their earlier measurement and provenance. Profiling controls such as the idle-frame sample remain in normalized data but are omitted from the user-action comparison.</p></div>
 </div></main>
 ${siteFooter({ home: '../../index.html' })}`;
   return page({
