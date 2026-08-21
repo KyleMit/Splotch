@@ -608,7 +608,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-physical-devices/android-device-native/landscape-light/actions/actions.json",
+              "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+              "kind": "full"
+            }
+          ]
         },
         {
           "id": "landscape-dark",
@@ -617,7 +624,14 @@
           "status": "captured",
           "drawingProductCommit": "6961e50b685d441e88b37d20d3f38a27136572fb",
           "drawing": "preserved",
-          "undoSource": "preserved"
+          "undoSource": "preserved",
+          "actionSources": [
+            {
+              "source": "perf-profiles/2026-08-21-physical-devices/android-device-native/landscape-dark/actions/actions.json",
+              "productCommit": "ce88c8e587ac45847c419e05ef7a79d282bc747a",
+              "kind": "full"
+            }
+          ]
         }
       ]
     },
