@@ -132,9 +132,11 @@
           </p>
           <p>
             Settings — appearance, sound, enabled tools, brush sizes, grown-up-check choices — are
-            stored on your device and never sent to us. The same is true of an access code a
-            grown-up adds. A grown-up's own OpenAI key is kept in the device's secure storage (the
-            Keychain on Apple devices) and encrypted in the browser on the web.
+            stored on your device and never sent to us. An access code or your own OpenAI key is
+            stored on the device too: the code alongside those settings, the key in the device's
+            secure storage (the Keychain on Apple devices) and encrypted in the browser on the web.
+            Unlike a setting, either one is sent to us — once when a grown-up adds it, so we can
+            check it, and again each time someone makes or reports an AI picture with it.
           </p>
         </section>
 
@@ -214,7 +216,8 @@
             latest use, and broad style and outcome categories. The tally is keyed by a one-way
             identifier — not the access code itself — and never contains a drawing. It expires {USAGE_RECORD_RETENTION_DAYS}
             days after its first use; later uses do not extend that deadline. Daily cleanup removes expired
-            tallies, and when an access code is retired, we delete its tally immediately.
+            tallies. Retiring an access code also asks for its tally to be deleted right away; if that
+            request fails, the fixed expiry still removes it.
           </p>
           <p>
             Access-code and own-key requests also write an ordinary operational server log: the

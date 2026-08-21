@@ -165,7 +165,8 @@
       "privacyPageFacts": [
         "later uses do not extend that deadline",
         "Daily cleanup removes expired tallies",
-        "when an access code is retired, we delete its tally immediately"
+        "asks for its tally to be deleted right away",
+        "if that request fails, the fixed expiry still removes it"
       ]
     },
     {
@@ -217,7 +218,11 @@
           "contains": "fetch(`${origin}${WORKER_PATH}`"
         }
       ],
-      "privacyPageFacts": ["hosted by Netlify", "downloads coloring pages from our own site"]
+      "privacyPageFacts": [
+        "hosted by Netlify",
+        "downloads coloring pages from our own site",
+        "each time someone makes or reports an AI picture with it"
+      ]
     },
     {
       "id": "openai-api",
